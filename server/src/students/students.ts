@@ -22,6 +22,7 @@ import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { cauEmailTrung, emailDangDung } from './emailHocVien.ts';
 
 import { LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL } from './tamDung.ts';
+import { sauDoiChiNhanhEm, theoTvvHienTai } from '../worklist/giaoViec.ts';
 
 
 
@@ -477,6 +478,7 @@ export function hocLai(p: Principal, studentId: number, o: {
         .run(studentId, lopMoi.id, date, nowIso());
       moi.ghiDanhId = Number(ins.lastInsertRowid);
       conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopMoi.branch_id, studentId);
+      sauDoiChiNhanhEm([studentId], p.userId);   // GV-1 (rà PTA C): nhận lại em vào lớp (có thể chi nhánh khác) — phần Meeting, người được giao, theo dõi GVCN
       moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle, target: tg?.target ?? null, kck: !!tg?.kck, thangThi, sauThi: o.sauThi }).moiId;
       tgDoi = doiTg(cuCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moi.loTrinhId) as any);
       thongBaoChuyenVao({
@@ -950,7 +952,12 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   }
   if (!sets.length) return s;
   params.push(studentId);
-  tx(() => { kiemEmail(); conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params); });
+  tx(() => {
+    kiemEmail();
+    conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    /* GV-1 (N58): đổi TVV → người theo dõi mặc định (TVV cũ) của việc còn mở chuyển sang TVV mới. */
+    if (patch.consultantUserId !== undefined && (patch.consultantUserId ?? null) !== (s.consultant_user_id ?? null)) theoTvvHienTai(studentId);
+  });
   const sau = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   /* OV-13j: chỉ ghi trường thực sự đổi; gửi lại nguyên giá trị cũ thì không có dòng nhật ký. */
   const doi = Object.keys(sau).filter((k) => k !== 'normalized_name' && sau[k] !== s[k]);

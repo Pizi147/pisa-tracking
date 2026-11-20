@@ -257,6 +257,7 @@ const NHAT_KY_HAN: [RegExp, string][] = [
   [/^support:(\d+)$/, 'reset_case:han_them_pa'],
   [/^(?:baoph|bao-ph):(\d+)$/, 'bao_ph'],
   [/^phoi-hop-xong:(\d+)$/, 'phoi_hop'],
+  [/^(?:phoi_hop_viec|phoi-hop-giao-xong):(\d+)$/, 'phoi_hop'],   // GV-1: việc Phối hợp đã giao — hạn gốc theo hành động
 ];
 
 /**
@@ -318,6 +319,8 @@ export function khoaDonVi(key: string, it: { due?: string | null; caseId?: numbe
   if ((m = /^ban_giao_mon:(\d+):(.+)$/.exec(key))) return `ban_giao_mon:${m[1]}:${monDonVi(m[2])}:${it.ownerId ?? ''}:${han}`;
   if ((m = /^ban-giao-xong:gvbm:\d+:(.+)$/.exec(key))) return `ban_giao_mon:${it.classId}:${monDonVi(m[1])}:${it.ownerId ?? ''}:${han}`;
   if ((m = /^ban-giao-xong:gv:(\d+)$/.exec(key))) return `ban_giao_gv:${m[1]}`;
+  /* GV-1 (N58): việc Phối hợp đã giao — MỘT khoá theo hành động từ mở (`phoi_hop_viec:`) tới xong (`phoi-hop-giao-xong:`), đứng tên người được giao. */
+  if ((m = /^(?:phoi_hop_viec|phoi-hop-giao-xong):(\d+)$/.exec(key))) return `phoi_hop_viec:${m[1]}`;
   if ((m = /^phoi_hop_sos:(\d+)(?::.+)?$/.exec(key))) return `phoi_hop_sos:${m[1]}:${han}`;   // PHOI-HOP-V2: khoá lớp × việc → đơn vị lớp + hạn như trước
   if (/^phoi-hop-xong:\d+$/.test(key)) return `phoi_hop_sos:${it.classId}:${han}`;
   if ((m = /^yt_xu_ly:(\d+)$/.exec(key))) return `yt_xu_ly:${m[1]}:${han}`;

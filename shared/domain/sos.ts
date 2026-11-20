@@ -172,7 +172,7 @@ export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanC
   /* CAU-HINH-CASE-SOS: hạn n ngày của việc theo bản chụp của dòng; mã không có trong cấu hình → luật cũ (chỉ Meeting CX, 5 ngày). */
   const v = viecCua(kind, pb);
   const so = v ? v.hanNgay : laMeetingCx(kind) ? HAN_MEETING_CX_NGAY : null;
-  if (so == null) return null;
+  if (so == null) return hanChon || null;   // GV-1 (N58, sửa N34 ②): việc không hạn đặt hạn được
   if (hanChon) return hanChon;
   const ngay = ngayTheoGioVN(taoLuc);
   return ngay ? addDaysIso(ngay, so) : null;

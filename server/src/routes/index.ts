@@ -25,6 +25,7 @@ import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
+import * as giaoViecSvc from '../worklist/giaoViec.ts';
 import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
@@ -159,7 +160,9 @@ const KHU_TEST = [/^\/cham\/lich-test\/?$/, /^\/diem-theo-lop(\/|$)/, /^\/ke-hoa
 const KHU_VIEC = [/^\/my-work(\/|$)/, /^\/mgmt-tasks(\/|$)/, /^\/meeting(\/|$)/, /^\/tasks(\/|$)/, /^\/signals\/?$/, /^\/yeu-cau\/dem\/?$/];
 /** UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV không có `work.view` vẫn đọc `GET /my-work` — route trả CHỈ việc TVV của chính mình (`NHOM_VIEC_TVV`). */
 const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
-  method === 'GET' && /^\/my-work\/?$/.test(duong) && p.roleKeys.includes('consultant');
+  method === 'GET' && ((/^\/my-work\/?$/.test(duong) && p.roleKeys.includes('consultant'))
+    /* GV-1 (N58): tab "Đang theo dõi" mọi vai — chỉ đọc dòng theo dõi của chính người gọi. */
+    || /^\/my-work\/theo-doi\/?$/.test(duong));
 api.use((req, _res, next) => {
   const p = req.principal;
   if (!p) { next(); return; }
@@ -602,6 +605,11 @@ api.get('/my-work', requireAuth, wrap((req) => {
   return kemTestSapToi(p, nheMyWork(myWork(p, { branchId })), branchId);
 }));
 
+/** GV-1 (N58): tab "Đang theo dõi" — việc tôi theo dõi còn mở + vừa xong 7 ngày, chia theo loại. Chỉ gọi khi mở tab (không vào /my-work, không số đếm). */
+api.get('/my-work/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoViecSvc.viecTheoDoi(principalOf(req));
+}));
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
 api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req), req.body?.key, req.body?.boQua !== false)));
 
@@ -2527,6 +2535,52 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = (req.body ?? {}) as Record<string, any>;
   return phoiHopSvc.removeCoordination(principalOf(req), pInt(req, 'id'), { reasonCode: b.reasonCode ?? null, reasonText: b.reasonText ?? null });
+}));
+/* GV-1 (N58): Meeting CX / GĐCN — ba phần (Xếp lịch họp · Kết quả meeting · Báo PH của TVV) cho panel. */
+api.get('/phoi-hop-sos/:id/meeting', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoViecSvc.xemMeeting(principalOf(req), pInt(req, 'id'));
+}));
+
+/*
+ * GV-1 (N58, chủ SP 20/11): GIAO VIỆC LIÊN PHÒNG BAN — `:loai` = bao_ph | phoi_hop | tinh_hinh | meeting, `:id` = id dòng việc. Quyền kiểm trong `giaoViec.ts`:
+ * xem = người phụ trách / người giao / người theo dõi / người xem được em / Head-CX · đổi người = người đang phụ trách, Head, Quản trị, CX · theo dõi = + người giao.
+ */
+api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoViecSvc.xemGiaoViec(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'));
+}));
+/* { userId: số | null (về mặc định), phuTrachCu? } → khối + `hoanTac` (id bản ghi đảo; null = không đổi gì). */
+api.post('/giao-viec/:loai/:id/phu-trach', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.doiPhuTrach(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
+api.post('/giao-viec/:loai/:id/phu-trach/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.hoanTacGiao(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'));
+}));
+/* { han: YYYY-MM-DD | null, hanCu } — việc không hạn đặt hạn được (sửa N34 ②). */
+api.post('/giao-viec/:loai/:id/han', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.suaHan(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
+/* { userIds: số[] } — thêm người theo dõi. DELETE …/theo-doi/:userId — bỏ (tự bỏ: ai cũng được). */
+api.post('/giao-viec/:loai/:id/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.themTheoDoi(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
+api.delete('/giao-viec/:loai/:id/theo-doi/:userId', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.boTheoDoi(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), pInt(req, 'userId'));
+}));
+/* Phần Meeting: { ngayGio?: 'YYYY-MM-DD[ HH:MM]', ketQua? } Hoàn thành / lưu lại (sửa) · mo-lai = Hoàn tác. */
+api.post('/giao-viec/meeting/:id/xong', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.xongPhanMeeting(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
+api.post('/giao-viec/meeting/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.moLaiPhanMeeting(principalOf(req), pInt(req, 'id'));
 }));
 
 /*

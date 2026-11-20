@@ -1,0 +1,88 @@
+/**
+ * GV-1 (N58, chủ SP 20/11 — giao việc liên phòng ban), chạy lặp không đổi, khớp `schema.sql`:
+ *   1. `phu_trach_id`, `giao_boi`, `giao_luc` trên viec_bao_ph · sos_coordination_actions · tinh_hinh_hoc_tap (NULL = theo luật — dữ liệu cũ giữ nguyên).
+ *   2. Bảng viec_theo_doi (người theo dõi) · viec_giao_lan (lịch sử giao) · meeting_phan (Meeting CX / GĐCN: Xếp lịch họp, Kết quả meeting).
+ *   3. Chỉ mục một phần `phu_trach_id IS NOT NULL` (việc giao cho tôi) — dòng cũ đều NULL nên không vào chỉ mục, câu cũ không đổi kế hoạch / thứ tự.
+ *   4. ĐỔI DỮ LIỆU (chỉ thêm): Meeting CX / GĐCN đã xác nhận trước GV-1 mà việc Báo PH của TVV còn mở → sinh hai phần (chưa xong) để panel / Công việc có.
+ * Mỗi khối TỰ LÀNH: thiếu bảng HOẶC thiếu chỉ mục nào → chạy lại cả khối (`IF NOT EXISTS`). Bảng gốc chưa có (DB rất cũ ở lần đầu) → bỏ qua; lần sau làm nốt.
+ */
+const BANG_MOI = `
+  CREATE TABLE IF NOT EXISTS viec_theo_doi (
+    id INTEGER PRIMARY KEY, loai TEXT NOT NULL, ref_id INTEGER NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id),
+    nguon TEXT NOT NULL DEFAULT 'tay', them_boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_theo_doi ON viec_theo_doi(loai, ref_id, user_id);
+  CREATE INDEX IF NOT EXISTS idx_viec_theo_doi_nguoi ON viec_theo_doi(user_id);
+  CREATE TABLE IF NOT EXISTS viec_giao_lan (
+    id INTEGER PRIMARY KEY, loai TEXT NOT NULL, ref_id INTEGER NOT NULL, truong TEXT NOT NULL, cu TEXT, moi TEXT,
+    boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_viec_giao_lan ON viec_giao_lan(loai, ref_id);`;
+const TEN_BANG_MOI = ['viec_theo_doi', 'uq_viec_theo_doi', 'idx_viec_theo_doi_nguoi', 'viec_giao_lan', 'idx_viec_giao_lan'];
+
+const MEETING = `
+  CREATE TABLE IF NOT EXISTS meeting_phan (
+    id INTEGER PRIMARY KEY,
+    phoi_hop_id INTEGER NOT NULL REFERENCES sos_coordination_actions(id),
+    phan TEXT NOT NULL,
+    branch_id INTEGER,
+    trang_thai TEXT NOT NULL DEFAULT 'mo',
+    ngay_gio TEXT,
+    ket_qua TEXT,
+    xong_boi INTEGER REFERENCES users(id), xong_luc TEXT, nhap_ho_boi INTEGER REFERENCES users(id),
+    han_chon TEXT,
+    phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,
+    tao_luc TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
+  CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
+  CREATE INDEX IF NOT EXISTS idx_meeting_phan_giao ON meeting_phan(phu_trach_id) WHERE phu_trach_id IS NOT NULL;`;
+const TEN_MEETING = ['meeting_phan', 'uq_meeting_phan', 'idx_meeting_phan_mo', 'idx_meeting_phan_giao'];
+
+/** Bảng có cột giao việc + tên chỉ mục một phần của nó. */
+const BANG_VIEC: [string, string][] = [
+  ['viec_bao_ph', 'idx_viec_bao_ph_giao'], ['sos_coordination_actions', 'idx_sca_giao'], ['tinh_hinh_hoc_tap', 'idx_tinh_hinh_giao'],
+];
+
+const co = (conn: any, ten: string) => !!conn.prepare(`SELECT 1 FROM sqlite_master WHERE name = ?`).get(ten);
+
+export function migratePrGiaoViec(conn: any, applied: string[]) {
+  if (!co(conn, 'users')) return;
+  if (TEN_BANG_MOI.some((t) => !co(conn, t))) {
+    conn.exec(BANG_MOI);
+    applied.push('GV-1: bảng viec_theo_doi (người theo dõi việc) + viec_giao_lan (lịch sử giao việc) + chỉ mục.');
+  }
+  for (const [bang, chiMuc] of BANG_VIEC) {
+    if (!co(conn, bang)) continue;
+    const cot = new Set((conn.prepare(`SELECT name FROM pragma_table_info(?)`).all(bang) as any[]).map((c) => c.name as string));
+    const thieu = ['phu_trach_id', 'giao_boi', 'giao_luc'].filter((c) => !cot.has(c));
+    if (thieu.length) {
+      if (thieu.includes('phu_trach_id')) conn.exec(`ALTER TABLE ${bang} ADD COLUMN phu_trach_id INTEGER REFERENCES users(id)`);
+      if (thieu.includes('giao_boi')) conn.exec(`ALTER TABLE ${bang} ADD COLUMN giao_boi INTEGER REFERENCES users(id)`);
+      if (thieu.includes('giao_luc')) conn.exec(`ALTER TABLE ${bang} ADD COLUMN giao_luc TEXT`);
+      applied.push(`GV-1: thêm ${bang}.${thieu.join(', ')} (người được giao; NULL = theo luật).`);
+    }
+    if (!co(conn, chiMuc)) {
+      conn.exec(`CREATE INDEX IF NOT EXISTS ${chiMuc} ON ${bang}(phu_trach_id) WHERE phu_trach_id IS NOT NULL`);
+      applied.push(`GV-1: chỉ mục một phần ${chiMuc} (việc giao cho tôi).`);
+    }
+  }
+  if (!co(conn, 'sos_coordination_actions')) return;
+  if (TEN_MEETING.some((t) => !co(conn, t))) {
+    conn.exec(MEETING);
+    applied.push('GV-1: bảng meeting_phan (Meeting CX / GĐCN: Xếp lịch họp · Kết quả meeting) + chỉ mục.');
+  }
+  /* 4. Meeting đã xác nhận trước GV-1, việc Báo PH của TVV còn mở, chưa có hai phần → sinh (chi nhánh của em như lúc sinh việc mới). Chạy lặp: ON CONFLICT bỏ qua. */
+  if (co(conn, 'viec_bao_ph') && co(conn, 'students')) {
+    const n = conn.prepare(
+      `INSERT INTO meeting_phan (phoi_hop_id, phan, branch_id, trang_thai, tao_luc)
+       SELECT x.id, ph.phan, COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active'
+                ORDER BY e.id DESC LIMIT 1), s.branch_id), 'mo', ?
+         FROM sos_coordination_actions x JOIN viec_bao_ph v ON v.phoi_hop_id = x.id AND v.trang_thai = 'mo' JOIN students s ON s.id = x.student_id
+         CROSS JOIN (SELECT 'xep_lich' AS phan UNION ALL SELECT 'ket_qua') ph
+        WHERE x.status = 'done' AND x.kind IN ('cx_meeting_student', 'cx_meeting_family')
+       ON CONFLICT(phoi_hop_id, phan) DO NOTHING`,
+    ).run(new Date().toISOString()).changes;
+    if (n) applied.push(`GV-1: sinh ${n} phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) cho Meeting đã xác nhận, Báo PH của TVV còn mở.`);
+  }
+}

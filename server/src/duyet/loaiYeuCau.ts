@@ -534,7 +534,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* Q-RL2c: lần xử lý (cả hai) · Từ chối thêm việc Báo PH của lần đó + hạn chốt các vi phạm của em. */
     dao: {
       /* TINH-HINH: duyệt sinh việc Báo PH TVV — Hoàn tác bỏ cả việc đó. */
-      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }, { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'them' }],
+      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }, { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'them' },
+        /* GV-1: người theo dõi mặc định của việc Báo PH vừa sinh — Hoàn tác gỡ cùng. */
+        { bang: 'viec_theo_doi', dk: `loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE measure_id = ?)`, args: [yc.doi_tuong_id], k: 'them' }],
       tuChoi: (yc) => [
         { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },

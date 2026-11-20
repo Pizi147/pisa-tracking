@@ -20,6 +20,7 @@ import { moLaiLop } from './xoaKetThucLop.ts';
 import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany } from './schedule.ts';
 import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo, type ViecLop } from '../cases/owner.ts';
+import { theoGvcnCacLop } from '../worklist/giaoViec.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, monGopConCanMany, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
 import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi, viecBanGiaoGv } from './banGiaoGv.ts';
 
@@ -282,9 +283,10 @@ export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: s
   const chuyen = chuyenViecKhiDoi({ classId, ct, doi: rows.map((r, i) => ({ ...doi[i], id: r.id })), conDay, actorId: p.userId, luc: nowIso(), code: c.code, chon, gvcnSau,
     ...(o.san ? { ten: o.san.lo.ten } : {}) });
   const tom = (ds: SlotPhanCong[]) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
-  return ghiPhanCong(p, classId, slots, ngay,
+  const kq = ghiPhanCong(p, classId, slots, ngay,
     { via: o.via ?? 'quan_ly', truoc: tom(cu), sau: tom(slots), doi: rows.map((r) => r.id), chuyen: Object.fromEntries(chuyen) }, c.code,
     o.san ? { active: o.san.active, gopCan: o.san.lo.gop().get(classId)!, ...(caseThieu ? { caseThieu: caseThieu as any } : {}) } : undefined);
+  return kq;
 }
 
 /**
@@ -478,6 +480,8 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
       throw conflict('Không hoàn tác được: việc bàn giao vừa tạo đã có góp ý — sửa trực tiếp ở bảng phân công.');
     }
     daoLai(conn, g, p.userId);
+    /* GV-1 (rà PTA E): người theo dõi `gvcn` không nằm trong bản ghi đảo (không chặn Hoàn tác) — tính lại theo GVCN sau khi đảo. */
+    theoGvcnCacLop([...new Set(dong.map((d) => d.class_id as number))]);   // một lượt cho cả lô (2 câu)
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,
       after: { loai: g.loai, ghiDao: g.id, lop: [...new Set(dong.map((d) => d.class_id))] } });
   });

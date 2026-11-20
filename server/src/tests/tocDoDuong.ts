@@ -119,6 +119,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
+  /* GV-1 (N58): tab "Đang theo dõi" — đường riêng, chỉ gọi khi mở tab (không vào /my-work, không số đếm), mọi vai. */
+  { trang: 'Công việc · Đang theo dõi', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'TVV', 'CX', 'ADMIN'], url: '/my-work/theo-doi' },
   /* N52: CX xem Phân tích phần GV + Test (như QL). */
   { trang: 'Phân tích GV CX', vai: ['CX'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1' },
   { trang: 'Lịch Test CX', vai: ['CX'], url: '/cham/lich-test' },
@@ -551,6 +553,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* GV-1 (N58): tab "Đang theo dõi" — đo 2–3 câu (phiên + MỘT câu theo dõi) → đo + 10. /my-work mọi vai: +1 câu (việc giao cho tôi, UNION ALL), +0 dòng — trần cũ đủ. */
+  'QL /my-work/theo-doi': 13, 'QT /my-work/theo-doi': 13, 'GVCN /my-work/theo-doi': 13, 'GVBM /my-work/theo-doi': 13, 'TVV /my-work/theo-doi': 13, 'CX /my-work/theo-doi': 13, 'ADMIN /my-work/theo-doi': 13,
   /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: chỉ câu phiên) đo 2 · "Tất cả" (danh sách QL cùng phạm vi, CX demo toàn hệ thống) đo 51 / 51
      · Lịch Test đo 22 · Phân tích GV đo 17 (trước N52: 403) → max(đo + 10, ⌈đo × 1,3⌉). */
   'CX /my-work': 12, 'CX /my-work?nguoi=tat-ca': 67, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 67, 'CX /cham/lich-test': 32, 'CX /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30,
@@ -1377,6 +1381,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GV-1 (N58): tab "Đang theo dõi" — đo 1–2 dòng (seed chưa có ai theo dõi) → đo + 50. ponytail: dòng tăng theo số việc từng theo dõi (đọc hết rồi lọc 7 ngày ở mã). */
+  'QL /my-work/theo-doi': 52, 'QT /my-work/theo-doi': 52, 'GVCN /my-work/theo-doi': 52, 'GVBM /my-work/theo-doi': 52, 'TVV /my-work/theo-doi': 52, 'CX /my-work/theo-doi': 52, 'ADMIN /my-work/theo-doi': 52,
   /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
   'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -2254,7 +2260,7 @@ export const TRAN_GHI_LO = {
   /** PC-GV-A: POST /phan-cong/luu 8 lớp (trần một lần lưu) mỗi lớp một ô + 1 Case + 1 PA chuyển, hôm nay — lõi chung (kiểm + ghi_dao + áp + chuyển + nhật ký); đo trong prPhanCongGv. */
   luuPhanCong8Lop: 166,   // LUU-PC-LO: đo 127 câu (trước gom theo lô: 241, ~30 / lớp; nay ~16 / lớp, phần còn lại chủ yếu là câu GHI mỗi lớp) → max(127 + 10, ⌈127 × 1,3⌉)
   /** PC-GV-A: POST /phan-cong/hoan-tac cả lô 8 lớp trên (daoLai đọc / xoá theo lô, bỏ dòng không đổi). */
-  hoanTacPhanCong8Lop: 62,   // đo 47 câu (trước 68) → max(47 + 10, ⌈47 × 1,3⌉)
+  hoanTacPhanCong8Lop: 64,   // GV-1 (N58, rà PTA E): +2 câu CỐ ĐỊNH — người theo dõi `gvcn` tính lại theo GVCN sau khi đảo (UPDATE + DELETE cho cả lô, không theo lớp) · đo 47 câu (trước 68) → max(47 + 10, ⌈47 × 1,3⌉)
   /** TU-b: POST /tutors/tai-len lưu 50 dòng (40 mới + 10 cập nhật) — đọc tutors + chi nhánh một lần, ghi gom một câu upsert, một nhật ký. */
   taiLenTutor: 24,   // đo 14 câu, 11 dòng → max(14 + 10, ⌈14 × 1,3⌉)
   /** OV-15f: PUT /hoc-vien-lop/lich-thi/:cycleId (kết luận + ghi chú: quyền, đọc / ghi 5 cột lich_thi_*, nhật ký) */
@@ -2317,7 +2323,7 @@ export const TRAN_GHI_LO = {
   raLenhSinhBoTro: 64,   // OV-3b: + 9 câu cố định (tiến độ lớp nguồn + xoá nháp) → đo 61, trần đo + 3. Trước: đo 51 (10 em có Case Giữa khoá nhận PA — `dongBoTrangThaiCaseLo` theo lô; từng Case: 59), trần đo + 3
   /** PR-CT2 (§8): đổi lệnh 10 em Lên → Học lại → huỷ bổ trợ chưa ai đụng THEO LÔ (đóng Case, huỷ PA, xoá Mini Test / chuông / Hành trình). */
   doiLenhHuyBoTro: 68,   // OV-3b: + 13 câu cố định (tiến độ lớp nguồn + xoá nháp + phiếu làm lại khi đổi hướng) → đo 65, trần đo + 3. Trước: đo 52 (10 em có Case Giữa khoá giữ, chỉ huỷ PA + mốc — đồng bộ trạng thái theo lô; từng Case: 70), trần đo + 3
-  chuyenCaLopSangFT: 295,   // SỔ NGHĨA VỤ (chủ SP 10/11): +8 câu CỐ ĐỊNH — đặt lại hạn việc tuyến Case của Case đổi chủ theo lớp mới (một lần cho lô: đọc Case + PA + 3 câu việc mở + UPDATE theo cột + INSERT nhật ký) → đo 293. DON-LUONG K8: +18 câu GHI (không đọc thêm — kiểm "còn dạy" nằm trong câu `ganChuCaseThieu`) — 6 Case có chủ ở lớp thường mà lớp FT đích không có GV đó → đổi chủ theo lớp mới (UPDATE + lịch sử + chuông mỗi Case) → đo 283; P8 MON-DANG-KY: +1 câu CỐ ĐỊNH — lượt MT mặc định vừa tạo theo môn đăng ký (`apMonChoLuotMoi`, một UPDATE cho cả lô) → đo 265; CV-LOI: +1 câu CỐ ĐỊNH — gán chủ Case chưa có người phụ trách của cả lô theo lớp mới (`ganChuCaseThieu`, một SELECT; 0 Case thì không ghi) → đo 264; PR-TK: +21 câu CỐ ĐỊNH (không theo số em) cho `ghiBanChup` — bản chụp lộ trình đóng, ghi theo lô một lần mỗi lý do → đo 253 → 263; PR-LUI-b: +1 câu mỗi em có Case đóng (chụp PA để Hoàn tác Kết thúc học mở lại đúng) → đo 225 → 232; PR-LT2b (4, 5): đọc Final Test cả lớp + Case/PA bổ trợ theo lô sau chuyển (đo 214; gốc 200, +7 %) → 224; PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Final Test 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
+  chuyenCaLopSangFT: 300,   // GV-1 (N58): +4 câu CỐ ĐỊNH cho cả lô — phần Meeting còn mở theo chi nhánh mới (UPDATE) + người được giao hết vai (SELECT UNION ALL; ghi chỉ khi có) + người theo dõi `gvcn` theo GVCN lớp mới (UPDATE + DELETE) → đo 299. SỔ NGHĨA VỤ (chủ SP 10/11): +8 câu CỐ ĐỊNH — đặt lại hạn việc tuyến Case của Case đổi chủ theo lớp mới (một lần cho lô: đọc Case + PA + 3 câu việc mở + UPDATE theo cột + INSERT nhật ký) → đo 293. DON-LUONG K8: +18 câu GHI (không đọc thêm — kiểm "còn dạy" nằm trong câu `ganChuCaseThieu`) — 6 Case có chủ ở lớp thường mà lớp FT đích không có GV đó → đổi chủ theo lớp mới (UPDATE + lịch sử + chuông mỗi Case) → đo 283; P8 MON-DANG-KY: +1 câu CỐ ĐỊNH — lượt MT mặc định vừa tạo theo môn đăng ký (`apMonChoLuotMoi`, một UPDATE cho cả lô) → đo 265; CV-LOI: +1 câu CỐ ĐỊNH — gán chủ Case chưa có người phụ trách của cả lô theo lớp mới (`ganChuCaseThieu`, một SELECT; 0 Case thì không ghi) → đo 264; PR-TK: +21 câu CỐ ĐỊNH (không theo số em) cho `ghiBanChup` — bản chụp lộ trình đóng, ghi theo lô một lần mỗi lý do → đo 253 → 263; PR-LUI-b: +1 câu mỗi em có Case đóng (chụp PA để Hoàn tác Kết thúc học mở lại đúng) → đo 225 → 232; PR-LT2b (4, 5): đọc Final Test cả lớp + Case/PA bổ trợ theo lô sau chuyển (đo 214; gốc 200, +7 %) → 224; PR-HVL (10): bộ demo H2 thêm 2 em vào MB FOU 12 (một em có 2 Case đóng theo S17, một em có bài Final Test 4 điểm) → đo 191; trần theo dữ liệu, không phải chậm đi của đường
   /** POST /ke-hoach-test/hang-loat `xemTruoc` — cả lớp MB FT 101 (63 em trong bộ đo), MT3, 4 kỹ năng tuần tới (PR-XLMT, rà #126). Đo 78 câu. */
   xemTruocXepLichMt: 114,   // PR-LT2b (10): bộ demo D13 thêm 2 em vào MB FT 101 (+3 câu/em) → đo 111; PR-HVL (10): bộ demo H1 thêm 1 em vào MB FT 101 (+3 câu/em) → đo 105
   /** GET /my-work?nguoi=tat-ca (QL) khi 30 PA "đến lúc thi" chưa có ngày thi (PR-S3F, rà cuối đợt 3). Trước 63 → 147 câu; ngày thi + tuần MT kế tiếp nay lấy trong câu chính. Đo 70 câu (68 khi không có PA) → trần max(sau+10, ⌈sau×1.3⌉) = 91. */

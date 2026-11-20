@@ -31,6 +31,7 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { luuPhanCong } from './phanCongGv.ts';
+import { theoGvcnCuaLop } from '../worklist/giaoViec.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -1178,7 +1179,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
     .all(classId) as any[];
 
-  let added = 0; let ended = 0;
+  let added = 0; let ended = 0; let doiGvcn = false;
   const gopCan = san?.gopCan ?? monGopConCan(classId);
   for (const a of active) {
     const k = keyOf(a.user_id, a.skill, a.is_core);
@@ -1187,7 +1188,9 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     if (a.skill && !a.is_core && gopCan.has(a.skill)) continue;
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(ngay, a.id);
     ended += 1;
+    if (a.is_core) doiGvcn = true;
   }
+  if ([...wanted.values()].some((s) => s.isCore)) doiGvcn = true;
   for (const s of wanted.values()) {
     conn
       .prepare(
@@ -1198,6 +1201,8 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     added += 1;
   }
 
+  /* GV-1 (N58, 7): đổi GVCN → người theo dõi nguồn `gvcn` của việc còn mở của em lớp này theo GVCN HIỆN TẠI (sau khi ghi dòng mới). */
+  if (doiGvcn) theoGvcnCuaLop(classId);
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
   if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso(), ...(san?.caseThieu ? { caseThieu: san.caseThieu } : {}) });
   if (added || ended) ghiSoTheoLop(classId);   // SỔ NGHĨA VỤ: người chịu trách nhiệm bài của lớp đổi theo phân công

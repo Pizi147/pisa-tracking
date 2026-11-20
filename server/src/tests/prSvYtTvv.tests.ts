@@ -297,11 +297,11 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
   }));
 
   // ---------------------------------------------------------------- HAN-BAO-PH (chủ SP 03/11, 17.1–17.3) + X04 + X05
-  check('HAN-1 · hạn chọn thắng mặc định và KHÔNG trượt theo Tạm dừng; meeting CX nhận hạn chọn, việc không hạn thì không', () => {
+  check('HAN-1 · hạn chọn thắng mặc định và KHÔNG trượt theo Tạm dừng; meeting CX nhận hạn chọn, việc không hạn đặt hạn được (GV-1)', () => {
     assert(d.hanBaoPhHieuLuc('2026-09-18', [{ tu: '2026-09-15', den: '2026-09-25' }], '2026-09-20') === '2026-09-20', 'chọn thắng Quay lại');
     assert(d.hanBaoPhHieuLuc('2026-09-18', [], null) === '2026-09-18', 'null = mặc định');
     assert(d.hanPhoiHop('cx_meeting_family', '2026-09-14T03:00:00Z', '2026-09-30') === '2026-09-30' && d.hanPhoiHop('cx_meeting_family', '2026-09-14T03:00:00Z') === '2026-09-19', 'meeting');
-    assert(d.hanPhoiHop('talk_family', '2026-09-14T03:00:00Z', '2026-09-30') === null, 'việc không hạn giữ không hạn');
+    assert(d.hanPhoiHop('talk_family', '2026-09-14T03:00:00Z') === null && d.hanPhoiHop('talk_family', '2026-09-14T03:00:00Z', '2026-09-30') === '2026-09-30', 'việc không hạn: mặc định không hạn, đặt hạn được (GV-1, sửa N34 ②)');
   });
 
   const suaHan = (p: any, id: number, han: string | null, hanCu: string | null) => bp.suaHanBaoPh(p, id, { han, hanCu });
@@ -373,7 +373,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(viecToi(ql, sid).length === 1 && viecToi(P.cpManager, sid).length === 0, 'theo chi nhánh');
   }));
 
-  await checkAsync('HAN-5 (17.2) · Meeting CX/GĐCN: GVCN / QL sửa hạn, Công việc dùng hạn chọn; GVBM 403; việc không hạn → 400', () => thu(async () => {
+  await checkAsync('HAN-5 (17.2) · Meeting CX/GĐCN: GVCN / QL sửa hạn, Công việc dùng hạn chọn; GVBM 403; việc không hạn đặt hạn được (GV-1)', () => thu(async () => {
     const ph: any = await import('../yThuc/phoiHop.ts');
     const a = conn.prepare(`SELECT a.id, a.student_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
       JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = a.student_id AND s.status = 'active'
@@ -389,7 +389,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     const dong = ((myWork(gvcn, {}) as any).items as any[]).find((i) => i.group === 'phoi_hop_sos' && i.key === `phoi_hop_sos:${classId(LOP)}:cx_meeting_family`);   // PHOI-HOP-V2: dòng lớp × việc
     assert(dong?.due === '2020-01-01', 'Công việc cùng hạn ' + dong?.due);
     assert(ma(() => ph.suaHanPhoiHop(gvbm, m, { han: TODAY, hanCu: '2020-01-01' })) === 403, 'GVBM 403');
-    assert(ma(() => ph.suaHanPhoiHop(gvcn, tf, { han: TODAY, hanCu: null })) === 400, 'việc không hạn');
+    assert(ph.suaHanPhoiHop(gvcn, tf, { han: TODAY, hanCu: null }).han === TODAY, 'việc không hạn đặt hạn được (GV-1, sửa N34 ②)');
     assert(ma(() => ph.suaHanPhoiHop(ql, m, { han: TODAY, hanCu: null })) === 409, '409');
     assert(bp.lichSuHan('phoi_hop', m).length === 1, 'lịch sử');
   }));

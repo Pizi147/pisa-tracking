@@ -12,6 +12,7 @@ import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
+import { dongViecGiao, viecGiaoChoToi } from '../worklist/giaoViec.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
 
 /** Độ gấp của hạn (V22) — MỘT hàm cho mọi dòng việc của hồ sơ; `quaHan` ép đỏ khi nguồn đã có cờ quá hạn riêng (ô Nhập điểm). */
@@ -156,13 +157,13 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
 
   /* Báo PH kết quả Test — Giữa khoá: GVCN lớp em đang học · Cuối khoá < 50%: Quản lý (`mywork.ts` 3c). Không hạn (M-05). */
   const baoPh = conn.prepare(
-    `SELECT x.id, a.kind FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
+    `SELECT x.id, a.kind, x.phu_trach_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
       WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' AND x.student_id = ? ORDER BY x.id`,
   ).all(sid) as any[];
   for (const x of baoPh) {
     const cuoi = x.kind === 'final';
     ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo PH kết quả Test · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
-      han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Head' : undefined,
+      han: null, tone: 'info', nguoiId: x.phu_trach_id ?? (cuoi ? null : -1), vaiChu: cuoi && !x.phu_trach_id ? 'Head' : undefined,   // GV-1: việc đã giao đứng tên người được giao
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
   }
@@ -171,9 +172,15 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* Rà #1788: chỉ người giữ được (GVCN hiệu lực của lớp · QL lớp — "Của GV" / nhận thay khi lớp chưa có GVCN) mới đọc — vai khác 0 câu. Người giữ như Công việc:
      GVCN hiệu lực (`-2`), lớp chưa có GVCN → người xem (QL). */
   if (n.lopId && (isCoreTeacherOf(p, n.lopId, today) || can(p, PERMISSIONS.CASE_APPROVE, { classId: n.lopId }))) {
-    for (const l of dongPhoiHopTheoViec([n.lopId], sid)) {
+    const giaoPh: any[] = [];   // GV-1: Phối hợp đã giao — cùng câu, đứng tên người được giao
+    for (const l of dongPhoiHopTheoViec([n.lopId], sid, giaoPh)) {
       ds.push({ key: `phoi_hop_sos:${l.classId}:${l.khoa}`, loai: 'phoi-hop-sos', chu: l.ten, kyNang: null, caseId: null, paId: null,
         han: l.han, tone: 'info', nguoiId: -2, nut: 'Xác nhận', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
+    }
+    for (const r of giaoPh) {
+      const v = dongViecGiao(r, today, r.phu_trach_id, r.phu_trach_id === p.userId);
+      ds.push({ key: v.key, loai: 'phoi-hop-sos', chu: v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null,
+        han: v.due, tone: 'info', nguoiId: r.phu_trach_id, nut: 'Xác nhận', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
     }
   }
   /* P1-04 (B2-07): Báo PH vi phạm / tình hình / sau Meeting CX — CÙNG hàm Công việc (`viecBaoPhCuaToi`: người giữ TVV của em → GVCN / QL), khoá `bao-ph:{id}`.
@@ -245,6 +252,20 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     ds.push({ key: v.key, loai: 'tinh-hinh', chu: 'Trả lời tình hình', the: [{ chu: 'TVV hỏi' }, ...(hoi ? [{ chu: `${hoi.slice(8, 10)}/${hoi.slice(5, 7)}` }] : [])],
       kyNang: null, caseId: null, paId: null, han: v.due ?? null, tone: 'info', nguoiId: p.userId, nut: 'Trả lời',
       mo: v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') } : { loai: 'duong', href: v.href } });
+  }
+
+  /* GV-1 (N58): việc người khác giao cho NGƯỜI XEM với em này (+ phần Meeting của người xem) — cùng hàm Công việc (`viecGiaoChoToi`, một câu), cùng khoá. */
+  const LOAI_GIAO_HV: Record<string, ViecHocVien['loai']> = { bao_ph_yt: 'bao-ph-yt', phoi_hop_tvv: 'phoi-hop-tvv', phoi_hop: 'bao-ph', phoi_hop_sos: 'phoi-hop-sos',
+    yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos' };
+  const coKhoa = new Set(ds.map((x) => x.key));
+  for (const v of viecGiaoChoToi(p, { today, studentId: sid })) {
+    const hien = ds.find((x) => x.key === v.key);
+    if (hien) { hien.nguoiId = p.userId; continue; }
+    if (coKhoa.has(v.key)) continue;
+    ds.push({ key: v.key, loai: LOAI_GIAO_HV[v.group] ?? 'phoi-hop-sos', chu: v.phu ?? v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null, viecId: v.viecId ?? undefined,
+      han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel,
+      mo: v.group === 'yt_hoi_tinh_hinh' && v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') }
+        : { loai: 'tab', tab: 'y-thuc', ...(v.group === 'bao_ph_yt' ? {} : { sub: 'phoi-hop' as const }) } });
   }
 
   /* Tên + vai người làm — MỘT câu: người có việc + GVCN lớp đang học (Báo PH / Mini Test không người dạy dùng `-1` = GVCN). */

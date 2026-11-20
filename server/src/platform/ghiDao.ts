@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import { conflict, nowIso } from '../util.ts';
+import { LOAI_CUA_BANG, donViec } from '../worklist/giaoViec.ts';
 
 /**
  * GHI ĐỂ ĐẢO (Q-RL2c, N24 ② "không khoá cứng") — thao tác ĐỔI TRẠNG THÁI (Kết thúc PA, Bỏ việc Báo PH / Phối hợp SOS, Duyệt / Từ chối ở Chờ duyệt)
@@ -109,6 +110,9 @@ export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
       for (let i = 0; i < m.truoc.length; i += 500) {
         const lo = m.truoc.slice(i, i + 500).map((d) => d.__r);
         if (conn.prepare(`DELETE FROM ${m.bang} WHERE rowid IN (${lo.map(() => '?').join(',')})`).run(...lo).changes !== lo.length) throw conflict(KHAC(m.bang));
+        /* GV-1 (rà PTA A): dòng VIỆC vừa xoá (Hoàn tác duyệt…) → dọn người theo dõi / lịch sử giao / hạn — id được dùng lại. */
+        const loai = LOAI_CUA_BANG[m.bang];
+        if (loai) donViec(loai, lo.map(Number));
       }
       continue;
     }
