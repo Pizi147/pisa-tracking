@@ -27,8 +27,7 @@ import { baoTheoDoi, conHieuLuc, docViec, donViec, laNguoiTheoDoi, ql, themTheoD
 
 const TOI_DA = 500;
 const HOAN_TAC_MS = 60_000;
-export const KET_QUA_TRA_LAI = ['da_sua', 'giu_nguyen', 'da_xoa', 'thu_hoi', 'tvv_da_bao'] as const;
-export type KetQuaTraLai = (typeof KET_QUA_TRA_LAI)[number];
+export type KetQuaTraLai = 'da_sua' | 'giu_nguyen' | 'da_xoa' | 'thu_hoi' | 'tvv_da_bao';
 const NHAN_KET_QUA: Record<KetQuaTraLai, string> = { da_sua: 'GV đã sửa', giu_nguyen: 'GV đã trả lời', da_xoa: 'GV đã xoá vi phạm', thu_hoi: 'GVCN đã thu hồi', tvv_da_bao: 'TVV đã báo PH' };
 const KIND = 'tra_lai_vi_pham';
 
@@ -38,7 +37,6 @@ function kiemChu(v: unknown, ten: string): string {
   if (s.length > TOI_DA) throw badRequest(`${ten}: tối đa ${TOI_DA} ký tự.`);
   return s;
 }
-const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
 /** Phía TVV của em (N61): TVV của em · TVV / CX cùng phạm vi (`coQuyenBuocTiep`) · Head / Quản trị trong phạm vi. GV, GVCN, Admin, BPXL: không. */
 export const coTheTraLai = (p: Principal, s: { consultant_user_id: number | null; student_id: number }): boolean =>
@@ -53,7 +51,7 @@ function load(id: number): any {
 }
 
 /** Câu SQL con: lần xử lý liên quan của một yêu cầu (`?1` = measure_id, `?2` = violation_id). */
-const XU_LY_LIEN_QUAN = `SELECT ?1 WHERE ?1 IS NOT NULL UNION SELECT mv.measure_id FROM measure_violations mv WHERE mv.violation_id = ?2`;
+const XU_LY_LIEN_QUAN = `SELECT m.id AS measure_id FROM discipline_measures m WHERE m.id = ?1 UNION SELECT mv.measure_id AS measure_id FROM measure_violations mv WHERE mv.violation_id = ?2`;
 /** Việc Báo PH (vi phạm, không phải "báo lại") của các lần xử lý liên quan. */
 const baoPhLienQuan = (measureId: number | null, violationId: number | null) => db().prepare(
   `SELECT id, measure_id, student_id, trang_thai, han, han_chon, tra_lai_id FROM viec_bao_ph WHERE measure_id IN (${XU_LY_LIEN_QUAN}) ORDER BY id`,
@@ -168,7 +166,7 @@ export function traLai(p: Principal, body: { violationId?: unknown; measureId?: 
     if (g.gvcn && g.gvcn !== nhan) themTheoDoiDong('tra_lai', id, [g.gvcn], 'gvcn', null, branchId);
     ghiLichSu({ id, violation_id: vid, measure_id: mid }, 'tra_lai', lyDo, p.userId);
     if (nhan && nhan !== p.userId) {
-      notify({ userId: nhan, kind: KIND, title: `${vid ? 'Vi phạm' : 'Lần xử lý'} bị trả lại · ${s.full_name} · hạn ${ddmm(han)}`, body: lyDo.slice(0, 160),
+      notify({ userId: nhan, kind: KIND, title: `${vid ? 'Vi phạm' : 'Lần xử lý'} bị trả lại · ${s.full_name} · hạn ${han.slice(8, 10)}/${han.slice(5, 7)}`, body: lyDo.slice(0, 160),
         entityType: 'student', entityId: s.student_id, dedupKey: `tra-lai:${id}`, duong: `/cong-viec?viec=${encodeURIComponent(`yt_tra_lai:${id}`)}`, han });
     }
     writeAudit({ actorUserId: p.userId, action: 'tra_lai.tao', entityType: 'vi_pham_tra_lai', entityId: id,

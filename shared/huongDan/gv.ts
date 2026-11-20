@@ -235,6 +235,17 @@ export const HD_GV: HuongDan = {
       tuKhac: ['tình hình', 'hỏi', 'tvv'],
     },
     {
+      id: 'tra-lai', ten: 'Vi phạm bị trả lại', nhom: 'hv', tab: 'y-thuc', viecWeb: ['yt_tra_lai'],
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Vi phạm bị trả lại', duong: CV },
+      khiCo: 'TVV trả lại vi phạm bạn ghi (hoặc lần xử lý của lớp bạn chủ nhiệm) kèm lý do.',
+      buoc: ['Đọc lý do.', 'Chọn: <b>Sửa rồi gửi lại</b>, <b>Giữ nguyên</b> + trả lời, hoặc <b>Xoá vi phạm</b>.'],
+      xong: 'TVV nhận chuông; Báo PH tính lại hạn.',
+      han: '{han:tra_lai_vi_pham}, tính cả ngày trả.',
+      khongDuoc: ['TVV rút yêu cầu hoặc đã báo PH: việc tự hết.'],
+      sau: 'Lịch sử vi phạm ghi đủ.',
+      tuKhac: ['trả lại', 'tvv', 'sửa vi phạm'],
+    },
+    {
       id: 'phoi-hop-sos', ten: 'Phối hợp SOS', nhom: 'hv', tab: 'y-thuc', chiGvcn: true, viecWeb: ['phoi_hop_sos'],
       tep: ['web/src/modules/yThuc/BangPhoiHop.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Phối hợp SOS', duong: CV },
