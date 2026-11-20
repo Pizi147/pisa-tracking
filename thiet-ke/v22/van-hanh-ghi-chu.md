@@ -45,10 +45,10 @@ Màn thật: `web/src/modules/worklist/MgmtTasksPage.tsx` (đã đọc: hàng s�
 - Trạng thái trong panel cập nhật là chip (danh sách ngắn cố định ≤ 7 — N45 cho phép).
 - 375 Head: "Nhóm…" vào nút ⋯ đầu trang.
 
-## 4. [XM]
+## 4. [XM] — đã xử lý
 
-- **[XM-1]** BPXL: thiết kế A ghi Công việc BPXL "chỉ Việc được giao + Đang theo dõi". Mockup này vẽ "Việc được giao" là MỤC trong tab Vận hành của GV; với BPXL đề xuất là TAB riêng (vì BPXL không có tab Vận hành). Cần chốt tên tab / mục cho đồng nhất.
-- **[XM-2]** Sửa hạn: luật cũ bắt lý do; thiết kế C cho người phụ trách sửa với lý do tuỳ chọn. Head sửa có còn bắt lý do không? Mockup chưa vẽ hộp sửa hạn (dùng `DongHan` sẵn có).
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — BPXL: "Việc được giao" là TAB riêng (như ảnh giao-viec G8a: Xếp lịch họp · Việc được giao · Đang theo dõi); vai khác: mục trong tab Vận hành như V5.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — Head (và người phụ trách) sửa hạn việc Vận hành: lý do TUỲ CHỌN, vẫn ghi lịch sử.
 
 ## 5. Dòng đọc
 

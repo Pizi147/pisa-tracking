@@ -57,12 +57,12 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 - Tự quyết: ngày giờ họp BPXL ghi hiện trên dòng việc của CX và TVV ("họp 18/09 · 15:00").
 - Chuông BPXL (bpxl-trang-dau K3) có thanh "Xếp lịch họp 2".
 
-## 4. [XM]
+## 4. [XM] — đã xử lý
 
-- **[XM-1]** Thiết kế B: "Hạn — ai đổi được: người phụ trách, người giao, Head / CX" — **thiếu GVCN và TVV cùng chi nhánh** mà N34 ① cho sửa hạn Báo PH. Mockup GIỮ theo N34 (G5: GVCN đang theo dõi vẫn có "Sửa hạn"). Cần chốt khi viết N57–N61.
-- **[XM-2]** Panel người theo dõi là "chỉ xem" nhưng GVCN có quyền sẵn có (sửa hạn) → panel G5 có một nút. Đề xuất: theo dõi = chỉ xem TRỪ quyền vai đang có.
-- **[XM-4]** Meeting: nút ở dòng việc BPXL là "Hoàn thành" (bấm thẳng, không mở panel) — đúng "ít thao tác" nhưng khác các dòng khác (nút mở panel). Cần chốt.
-- **[XM-3]** Mục gập "nhớ theo người + tab": mockup giả định lưu ở trình duyệt (không thêm request); nếu muốn đồng bộ nhiều máy thì cần lưu máy chủ (+1 câu ghi).
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — ai sửa hạn: giữ N34 ① — thêm GVCN và TVV cùng chi nhánh vào danh sách người sửa hạn (cùng người phụ trách, người giao, Head / CX).
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — người theo dõi chỉ xem, TRỪ quyền vai sẵn có (GVCN vẫn "Sửa hạn" Báo PH theo N34) — như G5.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — nút "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp của BPXL — giữ như G8a (chủ SP duyệt mockup).
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — nhớ gập / mở ở trình duyệt (localStorage), theo người + tab; không thêm request.
 
 ## 5. Dòng đọc
 

@@ -20,8 +20,8 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 |---|---|---|
 | Xuất Excel…, Xếp nhiều MT…, tab Lịch Test tuần / Kế hoạch Test | có | GIỮ (BPXL được xếp như Admin) |
 | Fast Track / Lớp thường, ô tìm lớp / HV / email, ⓘ, "Mở tất cả lớp" | có | GIỮ |
-| Nút-chip "Chưa đủ MT n" ở hàng lọc | có | với BPXL: gộp vào số "Chưa xếp lịch MT" của dải (cùng tập, cùng hàm) — [XM-1] |
-| Ô số "Chưa đủ MT · n em" trên hàng lớp | có | GIỮ; thêm "Vắng · n em" (em vắng tuần này của lớp, chỉ thông tin) |
+| Nút-chip "Chưa đủ MT n" ở hàng lọc | có | với BPXL: gộp vào số "Chưa xếp lịch MT" của dải (cùng tập, cùng hàm) |
+| Ô số "Chưa đủ MT · n em" trên hàng lớp | có | đổi tên "Chưa xếp lịch MT · n em" (một tên với dải); thêm "Vắng · n em" (em vắng tuần này của lớp, chỉ thông tin) |
 | Lưới HV × MT, + MT, S Ex, Xếp MT, ô bị chặn có lý do, Đã xoá · Khôi phục | có | GIỮ (hộp xếp một kỹ năng ⑦ B2 không đổi) |
 | Dải số lặng (4 số) | — | MỚI, chỉ vai BPXL |
 | Tin vắng trong chuông | — | MỚI, mục "Cập nhật" |
@@ -40,10 +40,10 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 
 - Công việc của BPXL (tab Xếp lịch họp · Việc được giao · Đang theo dõi) vẽ ở `giao-viec.html` khung G8a (cạnh panel Meeting).
 
-## 4. [XM] cần PTA / chủ SP quyết
+## 4. [XM] — đã xử lý
 
-- **[XM-1]** "Chưa xếp lịch MT" (dải) và "Chưa đủ MT" (chip / ô số hàng lớp) là MỘT khái niệm hai tên (vi phạm "một khái niệm một tên"). Đề xuất: dùng một tên cho cả hai — "Chưa đủ MT" (đã có trên web) hoặc đổi cả hai thành "Chưa xếp lịch MT".
-- **[XM-2]** Có cần thanh "Đang theo dõi" trong chuông BPXL không? Mockup không vẽ (tab không có số → không có thanh), theo thiết kế B.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — một tên **"Chưa xếp lịch MT"** cho cả dải số lẫn ô số hàng lớp, mọi khung 1440 + 375.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — chuông BPXL không có thanh "Đang theo dõi" (tab không số) — giữ như mockup.
 
 ## 5. Dòng đọc
 

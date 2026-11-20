@@ -44,11 +44,11 @@ Mốc: trả lại 14/09 → hạn GV 17/09 · GV gửi lại 16/09 → Báo PH 
 - Tin chuông TVV xuống hai dòng để không cắt nội dung sau tên HV.
 - Hạn sau gửi lại ghi "tính lại sau khi GV gửi lại" ở dòng Hạn (thay "mặc định").
 
-## 4. [XM]
+## 4. [XM] — đã xử lý
 
-- **[XM-1]** GV ghi là người đã nghỉ / chuyển chi nhánh → việc về ai? Thiết kế chưa nói; đề xuất về GVCN.
-- **[XM-2]** "Sửa rồi gửi lại" khi em đã đủ 3 vi phạm / 2 tuần: sửa ngày có thể làm vi phạm rơi khỏi cửa sổ 2 tuần. Thiết kế "không đổi bậc, không đổi luật 3 vi phạm / 2 tuần" — mockup không chặn; cần chốt có cho sửa NGÀY không (mockup cho sửa Ngày · Môn · Nội dung).
-- **[XM-3]** Trả lại khi TVV đã ghi Báo PH xong (việc đã đóng) — có còn nút không? Mockup chỉ vẽ khi việc còn mở.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — GV ghi vi phạm đã nghỉ / chuyển chi nhánh → vi phạm bị trả lại về GVCN.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — GV được sửa NGÀY vi phạm khi bị trả lại (cùng Môn, Nội dung), có lịch sử — như T4a.
+- **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — Báo PH đã xong (việc đã đóng) thì KHÔNG trả lại được nữa — nút "Trả lại" chỉ có khi việc Báo PH còn mở.
 
 ## 5. Dòng đọc
 

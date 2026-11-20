@@ -62,8 +62,9 @@ details.nhom:not([open]) > summary .ic { color:var(--text-faint); }
 .dai-cs.lang .oso[aria-pressed="true"] { color:var(--text); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); text-decoration:none; }
 .dai-cs.lang .oso.khong { color:var(--text-faint); }
 .dai-cs.lang .oso.khong:hover { background:none; }
-.dt .dai-cs.lang > span { justify-content:space-between; }
-.dt .dai-cs.lang .oso { min-height:36px; display:inline-flex; align-items:center; font-size:16px; }
+.dt .dai-cs.lang { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.dt .dai-cs.lang > span { justify-content:space-between; gap:8px; padding:10px 12px; font-size:13px; min-width:0; }
+.dt .dai-cs.lang .oso { min-height:36px; display:inline-flex; align-items:center; font-size:15px; padding:2px 4px; }
 
 
 
