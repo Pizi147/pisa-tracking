@@ -8,12 +8,17 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 | Khung | Trạng thái |
 |---|---|
 | G1 | 1440 · TVV · tab Báo PH · panel Báo PH vi phạm có khối **Phụ trách · Hạn · Theo dõi** · dòng việc "Lương Thảo Vy giao" · mục gập / mở (bấm thử) |
-| G2a | panel Meeting CX / GĐCN đã giao lại (CX giao) · theo dõi mặc định CX + BPXL · Lịch sử mở: đổi người, sửa hạn, bỏ theo dõi, tạo việc |
+| G2a | panel Báo PH Meeting của TVV (giữ như nay, B2) đã giao lại · theo dõi CX + GVCN (BPXL không còn theo dõi) · Lịch sử mở: đổi người, sửa hạn, bỏ theo dõi, tạo việc |
 | G2b / G2c | việc chưa có hạn ("Đặt hạn") · người không có quyền đổi (không nút ở dòng đó) |
 | G3a / G3b / G3c | hộp "Đổi người phụ trách" mở (Liên quan trước, ✓ người hiện tại, "Về mặc định" tắt) · sau "Giao" + Hoàn tác · đang gõ, "Về mặc định · {tên}" bật |
 | G4a / G4b | "+" thêm người theo dõi (chọn nhiều) · ✕ bỏ người + Hoàn tác |
 | G5 | 1440 · GVCN · tab **Đang theo dõi**: mục Báo PH (Quá hạn đầu) · Phối hợp SOS · "Vừa xong 7 ngày" gập · panel chỉ đọc + "Bỏ theo dõi" |
 | G6 | mục mở + hai mục gập (vẫn "n việc · m quá hạn") — bấm thử |
+| G8a | 1440 · BPXL · Công việc (tab **Xếp lịch họp** · Việc được giao · Đang theo dõi) · panel Meeting hai phần cạnh nhau, chưa ai xong |
+| G8b | CX mở việc: Xếp lịch họp ✓ (ngày giờ 18/09 · 15:00), Kết quả meeting đang ghi |
+| G8c / G8d | TVV nhập hộ CX · cả hai xong ("Đặng Hải Yến nhập hộ CX"), Hoàn tác, Sửa |
+| G8e | CX · Công việc · dòng "Kết quả meeting" |
+| G8f | 375 · BPXL · hai phần xếp dọc |
 | G7a / b / c | 375 · Đang theo dõi · panel toàn màn có khối · đổi người toàn màn |
 
 ## 2. Thao tác TRƯỚC → SAU
@@ -41,10 +46,21 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 - Chevron mục đặt sát tên (dáng dải gập CV6 đã duyệt); mục gập không đổi chiều cao dải.
 - Lịch sử đổi người / hạn / theo dõi dùng chung khối "Lịch sử · n" đang có (một kiểu ⑤), không thêm khối.
 
+## 3b. Meeting CX / GĐCN (B2 — chủ SP 20/11 tối, bản đơn giản)
+
+- Hai phần ĐỘC LẬP, không thứ tự, không đánh số, không thanh tiến trình, không chữ "chờ…": **Xếp lịch họp** (BPXL) · **Kết quả meeting** (CX; TVV nhập hộ).
+- Mỗi phần cùng một kiểu: trạng thái chữ (Chưa xong / ✓ Hoàn thành) · khối Phụ trách + Hạn thu gọn · ô (tuỳ chọn) · nút **Hoàn thành**. Xếp lịch họp thêm ô **Ngày giờ họp** tuỳ chọn (ô ngày gõ được + nút lịch, ô giờ).
+- Phần của người khác chỉ đọc: chỉ trạng thái + người phụ trách + hạn (chưa xong) hoặc ai · lúc · nội dung (đã xong).
+- Tự quyết: dòng **Theo dõi** dùng chung cho cả việc (một dòng dưới hai phần) thay vì lặp ở mỗi phần — theo dõi là của cuộc họp, lặp hai lần là thừa. Nếu PTA muốn đúng chữ "khối ba dòng cho từng phần" thì tách lại.
+- Tự quyết: Công việc của BPXL vẽ ở **giao-viec.html G8a** (tab "Xếp lịch họp" đầu hàng tab), không ở bpxl-trang-dau.html; chuông BPXL (bpxl-trang-dau K3) thêm thanh "Xếp lịch họp 2".
+- Tự quyết: CX thấy ngày giờ họp BPXL ghi ngay trên dòng việc ("họp 18/09 · 15:00").
+- Việc "Báo PH Meeting" của TVV giữ như nay (G2a), theo B2 "PTA hiểu".
+
 ## 4. [XM]
 
 - **[XM-1]** Thiết kế B: "Hạn — ai đổi được: người phụ trách, người giao, Head / CX" — **thiếu GVCN và TVV cùng chi nhánh** mà N34 ① cho sửa hạn Báo PH. Mockup GIỮ theo N34 (G5: GVCN đang theo dõi vẫn có "Sửa hạn"). Cần chốt khi viết N57–N61.
 - **[XM-2]** Panel người theo dõi là "chỉ xem" nhưng GVCN có quyền sẵn có (sửa hạn) → panel G5 có một nút. Đề xuất: theo dõi = chỉ xem TRỪ quyền vai đang có.
+- **[XM-4]** Meeting: nút ở dòng việc BPXL là "Hoàn thành" (bấm thẳng, không mở panel) — đúng "ít thao tác" nhưng khác các dòng khác (nút mở panel). Cần chốt.
 - **[XM-3]** Mục gập "nhớ theo người + tab": mockup giả định lưu ở trình duyệt (không thêm request); nếu muốn đồng bộ nhiều máy thì cần lưu máy chủ (+1 câu ghi).
 
 ## 5. Dòng đọc

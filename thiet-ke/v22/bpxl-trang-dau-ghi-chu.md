@@ -10,7 +10,7 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 |---|---|
 | K1 | 1440 · BPXL vào thẳng Kế hoạch Test, dải số lặng, một lớp mở lưới (có ô vắng chờ xếp lại, ô đã huỷ, ô bị chặn) · bấm thử số ở dải |
 | K2 | 1440 · đã bấm "Vắng chờ xếp lại 4" → số đang lọc + chip "Lọc: … ✕", chỉ còn 2 lớp, lưới chỉ em khớp |
-| K3 | 1440 · chuông mở: Việc cần làm (Việc được giao 1) + Cập nhật có 2 tin vắng gộp lớp × tuần (một tin mở từng em) + tin giao việc đã xem |
+| K3 | 1440 · chuông mở: Việc cần làm (Xếp lịch họp 2 · Việc được giao 1) + Cập nhật có 2 tin vắng gộp lớp × tuần (một tin mở từng em) + tin giao việc đã xem |
 | K4 | 1440 · mọi số = 0 (số mờ, không bấm) |
 | K5a / K5b | 375 · mặc định (dải 2 × 2) · đang lọc |
 
@@ -35,6 +35,8 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 - Bấm tin vắng = Kế hoạch Test lọc đúng lớp ("Lớp: … ✕" như ⑦ A4).
 - Số 0 vẫn hiện (biết là đã xếp hết), không câu chúc mừng.
 - Menu BPXL đặt trang đầu đứng đầu (Test · Học viên & Lớp · Công việc) như GV/TVV; Công việc chỉ có badge khi có việc của mình.
+
+- Công việc của BPXL (tab Xếp lịch họp · Việc được giao · Đang theo dõi) vẽ ở `giao-viec.html` khung G8a (cạnh panel Meeting).
 
 ## 4. [XM] cần PTA / chủ SP quyết
 

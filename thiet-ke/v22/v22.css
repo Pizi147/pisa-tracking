@@ -216,3 +216,24 @@ table.vh { width:100%; border-collapse:collapse; table-layout:fixed; font-size:1
 .vh tr.nh button > span:first-child { white-space:nowrap; }
 .cach.ba { grid-template-columns:repeat(3, minmax(0,1fr)); }
 .dt .cach.ba { grid-template-columns:1fr; }
+/* ---------- v22: MEETING CX / GĐCN — hai phần độc lập, mỗi phần: (khối gọn) · ô · Hoàn thành ---------- */
+.hai-phan { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start; }
+.dt .hai-phan { grid-template-columns:1fr; }
+.phan { display:grid; gap:12px; align-content:start; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.phan.cua-toi { border-color:var(--line-strong); }
+.phan.da-xong { background:var(--surface-2); }
+.phan-dau { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:30px; }
+.phan-dau h3 { font:700 15px var(--phong); }
+.tt-phan { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; background:var(--muted-nen); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.tt-phan.xong { background:var(--ok-nen); color:var(--ok); box-shadow:inset 0 0 0 1px var(--ok-vien); }
+.phan-ai { font-size:13px; color:var(--text-dim); margin:-4px 0 0; }
+.phan-rong { font-size:14px; color:var(--text-faint); }
+.phan .nut.xong { justify-self:start; }
+.dt .phan .nut.xong { justify-self:stretch; height:44px; }
+.pht.gon { grid-template-columns:72px minmax(0,1fr) auto; }
+.pht.gon > div > * { min-height:40px; padding:5px 10px; }
+.pht.gon .nt { padding-left:0; }
+.ngay-gio { display:grid; grid-template-columns:minmax(0,1fr) 84px; gap:8px; }
+.o.gio { min-height:40px; justify-content:center; font-family:var(--phong-so); }
+.dt .o.gio { min-height:44px; }
+.phan .gt { flex-wrap:nowrap; }
