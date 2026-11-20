@@ -132,7 +132,8 @@ const KICH_BAN = [
   ['dang-nhap', 0, '/'],
   ['menu-tk', 7, '/', async (p) => { await p.getByRole('button', { name: /^(Tài khoản|Account) / }).click(); await p.waitForTimeout(300); }],
   // Panel: chỉ đo nút tràn / chữ cắt — panel tự cuộn trong thân là đúng thiết kế.
-  ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
+  /* LECH-BANG: Case 5 nay chỉ còn PA Tutor (kết quả do tutor ghi, GV không có "Ghi kết quả") → dùng Case 13 (PA Xếp tự học đang chạy, "Cập nhật trước hạn"). */
+  ['panel-pa', 7, '/hoc-thuat/case/13', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
     // RA-GD-0711c: CASE-PA-UI v16 — PA là thẻ mở tại chỗ ("Mở PA …"), ô Kết quả PA nằm trong thẻ; nút cũ còn thì bấm tiếp.
     const ngan = p.locator('[role=dialog]');
@@ -594,6 +595,9 @@ if (!CHI_BANG && (!LOC || 'lich'.includes(LOC) || LOC.startsWith('lich-'))) {
     ['lich-loc-them', 2, '/hoc-vien?lt=1&ltu=2026-08-03&lden=2026-09-13', hopThoiGian],
     ...['hop-ky-nang-mt', 'panel-tao-case', 'panel-vi-pham', 'panel-pa'].map((k) => { const [, v, d, mo] = theoTen(k); return [`lich-${k}`, v, d, mo]; }),
   ];
+  /* LECH-BANG: Ghi kết quả PA — "Ngày ghi" gọn một dòng "Ghi ngày dd/mm · Đổi" (chủ SP 14/11, rà #1563); ô ngày chỉ hiện sau khi bấm Đổi. */
+  const moPa = HOP_NGAY.find(([ten]) => ten === 'lich-panel-pa');
+  if (moPa) { const mo = moPa[3]; moPa[3] = async (p) => { await mo(p); await p.locator('[role=dialog]').getByRole('button', { name: /^(Đổi|Change)$/ }).first().click(); await p.waitForTimeout(200); }; }
   /* ONgay (nút lịch) và TuanNho (nút giữa ‹ tuần ›) — hai cửa mở LichNho. */
   const NUT_LICH = 'button[aria-haspopup=dialog][aria-label^="Mở lịch"]:visible, button[aria-haspopup=dialog][title*="họn tuần"]:visible';
   const LICH = '[role=dialog]:has(button[aria-label="Tháng trước"], button[aria-label="Năm trước"])';
