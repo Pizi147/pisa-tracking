@@ -22,7 +22,7 @@ import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { cauEmailTrung, emailDangDung } from './emailHocVien.ts';
 
 import { LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL } from './tamDung.ts';
-import { theoTvvHienTai } from '../worklist/giaoViec.ts';
+import { sauDoiChiNhanhEm, theoTvvHienTai } from '../worklist/giaoViec.ts';
 
 
 
@@ -478,6 +478,7 @@ export function hocLai(p: Principal, studentId: number, o: {
         .run(studentId, lopMoi.id, date, nowIso());
       moi.ghiDanhId = Number(ins.lastInsertRowid);
       conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopMoi.branch_id, studentId);
+      sauDoiChiNhanhEm([studentId], p.userId);   // GV-1 (rà PTA C): nhận lại em vào lớp (có thể chi nhánh khác) — phần Meeting, người được giao, theo dõi GVCN
       moi.loTrinhId = cycleId = moLoTrinhMoi(p, { sid: studentId, ngay: date, toClass: lopMoi, tuLop, denLop, cuCycle, target: tg?.target ?? null, kck: !!tg?.kck, thangThi, sauThi: o.sauThi }).moiId;
       tgDoi = doiTg(cuCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moi.loTrinhId) as any);
       thongBaoChuyenVao({

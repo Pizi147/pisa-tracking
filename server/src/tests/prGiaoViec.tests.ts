@@ -94,7 +94,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const cuaAdmin = items(admin).find((x) => x.key === `bao-ph:${id}`);
     assert(cuaAdmin && cuaAdmin.mine && cuaAdmin.giaoBoi === 'GIAOVIEC TVV' && cuaAdmin.group === 'bao_ph_yt', `Admin: ${JSON.stringify(cuaAdmin)}`);
     assert(!items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `bao-ph:${id}`), 'TVV cũ không còn ở Của tôi');
-    assert(theoDoi('bao_ph', id).some((r) => r.user_id === tvv.userId && r.nguon === 'tay'), 'TVV cũ (người giao) thành người theo dõi');
+    assert(theoDoi('bao_ph', id).some((r) => r.user_id === tvv.userId && r.nguon === 'tvv'), 'TVV cũ (người theo luật tự giao đi) theo dõi, giữ nguồn tvv');
     xoaNho();
     const d = gv.viecTheoDoi(tvv).nhom.find((g: any) => g.loai === 'bao_ph')?.mo.find((x: any) => x.refId === id);
     assert(d && d.phuTrach === 'GIAOVIEC ADMIN' && d.trangThai === 'mo', 'tab Đang theo dõi');
@@ -200,9 +200,13 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       'sửa việc đã xong không báo lại');
   }));
 
-  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel', () => thu(async () => {
+  const voiMeeting = async (fn: () => Promise<void>) => { gv.meetingCongViec.bat = true; try { await fn(); } finally { gv.meetingCongViec.bat = false; } };
+  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel; cờ tắt → không ở /my-work', () => thu(() => voiMeeting(async () => {
     const sid = moiEm();
     const { aid, xep, kq, bpId } = meeting(sid);
+    gv.meetingCongViec.bat = false;
+    assert(!items(cx).some((x) => x.key === `meeting_ket_qua:${kq.id}`) && !items(ql, { nguoi: 'tat-ca' }).some((x) => /^meeting_/.test(x.key)), 'cờ tắt (chưa có GV-2): không dòng Meeting ở /my-work');
+    gv.meetingCongViec.bat = true;
     assert(xep && kq && xep.trang_thai === 'mo' && kq.trang_thai === 'mo' && bpId, 'ba phần');
     const coBpxl = nguoiVaiCuaChiNhanh(mbId, 'scheduler').length > 0;
     if (!coBpxl) assert(items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'chưa có BPXL → TVV của em xếp lịch');
@@ -234,7 +238,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const sau = hang('SELECT phan, trang_thai FROM meeting_phan WHERE phoi_hop_id = ? ORDER BY phan', aid);
     assert(sau.find((r) => r.phan === 'ket_qua').trang_thai === 'xong' && sau.find((r) => r.phan === 'xep_lich').trang_thai === 'bo', JSON.stringify(sau));
     assert(!items(cx).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'phần đã đóng rời /my-work');
-  }));
+  })));
 
   await checkAsync('GV1-7 · đổi TVV / đổi GVCN thật (luuPhanCong + Hoàn tác): theo dõi `tvv` / `gvcn` chuyển theo, `gv_ghi` giữ', () => thu(async () => {
     const sid = moiEm(); const id = baoPhViPham(sid);
@@ -265,7 +269,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(theoDoi('bao_ph', id).length === truoc.td && hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'bao_ph' AND ref_id = ?`, id).length === truoc.ls, 'khôi phục: theo dõi + lịch sử');
   }));
 
-  await checkAsync('GV1-10 · BPXL thuần (N57: không việc theo luật) được giao một việc Báo PH → thấy ở /my-work, ghi được; Xếp lịch họp ở chi nhánh có BPXL là của BPXL', () => thu(async () => {
+  await checkAsync('GV1-10 · BPXL thuần (N57: không việc theo luật) được giao một việc Báo PH → thấy ở /my-work, ghi được; Xếp lịch họp ở chi nhánh có BPXL là của BPXL', () => thu(() => voiMeeting(async () => {
     const bpxl = taiKhoan('bpxl', 'scheduler');
     const sid = moiEm(); const id = baoPhViPham(sid);
     giao(tvv, 'bao_ph', id, bpxl.userId);
@@ -277,6 +281,76 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     xoaNho();
     assert(((myWork(bpxl, {}) as any).items as any[]).some((x) => x.key === `meeting_xep_lich:${xep.id}` && x.mine), 'BPXL có Xếp lịch họp');
     assert(!items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'có BPXL → TVV không giữ Xếp lịch họp');
+  })));
+
+  const yc: any = await import('../duyet/yeuCau.ts');
+  const snv: any = await import('../phanTich/soNghiaVu.ts');
+  await checkAsync('GV1-11 · (A) Hoàn tác DUYỆT xoá việc Báo PH → dọn cả người theo dõi thêm tay + lịch sử (id dùng lại không rò)', () => thu(async () => {
+    const sid = moiEm();
+    const ids = [1, 2, 3].map((i) => viol.recordViolation(gvbm, { studentId: sid, category: 'homework', ten: `GV1-11 vi phạm ${i}`, occurredOn: addDays(TODAY, -i) }).violation.id);
+    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    (await import('../platform/attachments.ts') as any).addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(gvcn, nhap.id);
+    const ycId = mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id;
+    yc.duyetYeuCau(ql, ycId);
+    const v = mot('SELECT id FROM viec_bao_ph WHERE measure_id = ?', nhap.id);
+    assert(v, 'duyệt sinh việc Báo PH');
+    gv.themTheoDoi(ql, 'bao_ph', v.id, { userIds: [tvv2.userId] });
+    yc.huyQuyetDinh(ql, ycId);
+    assert(!mot('SELECT id FROM viec_bao_ph WHERE id = ?', v.id), 'Huỷ duyệt xoá việc');
+    assert(!hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ?`, v.id).length && !hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'bao_ph' AND ref_id = ?`, v.id).length,
+      'dọn theo dõi thêm tay + lịch sử');
+  }));
+
+  await checkAsync('GV1-12 · (B) phần Meeting: người giữ vai đọc MỘT lần mỗi request, không câu con theo dòng; một em → lọc ngay trong vế', () => thu(() => voiMeeting(async () => {
+    for (let i = 0; i < 3; i++) meeting(moiEm());
+    const { soCauSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts') as any;
+    let n = 0;
+    chayTrongRequest('GET', () => { const truoc = soCauSql(); gv.viecGiaoChoToi(ql, { today: TODAY }); n = soCauSql() - truoc; });
+    assert(n >= 1 && n <= 2, `viecGiaoChoToi (3 Meeting): ${n} câu (≤ 2: UNION + người giữ vai)`);
+    const sid = moiEm(); const { kq } = meeting(sid);
+    assert(gv.viecGiaoChoToi(cx, { today: TODAY, studentId: sid }).every((x: any) => x.studentId === sid) && gv.viecGiaoChoToi(cx, { today: TODAY, studentId: sid }).some((x: any) => x.key === `meeting_ket_qua:${kq.id}`), 'một em');
+  })));
+
+  await checkAsync('GV1-13 · (C) em đổi chi nhánh: phần Meeting còn mở theo chi nhánh mới; người được giao hết vai ở chi nhánh mới → về người theo luật', () => thu(() => voiMeeting(async () => {
+    const sid = moiEm(); const { kq } = meeting(sid);
+    const id = baoPhViPham(sid);
+    giao(tvv, 'bao_ph', id, admin.userId);   // Admin chỉ có vai MB
+    const lopCp = mot(`SELECT c.id, c.branch_id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'CP' AND c.status = 'active' LIMIT 1`);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND status = 'active'`).run(sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(sid, lopCp.id, TODAY, new Date().toISOString());
+    conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(lopCp.branch_id, sid);
+    gv.sauDoiChiNhanhEm([sid], ql.userId);
+    assert(mot('SELECT branch_id FROM meeting_phan WHERE id = ?', kq.id).branch_id === lopCp.branch_id, 'branch_id phần Meeting = chi nhánh mới');
+    assert(mot('SELECT phu_trach_id FROM viec_bao_ph WHERE id = ?', id).phu_trach_id === null, 'Admin MB hết vai ở CP → về người theo luật');
+  })));
+
+  check('GV1-14 · (D) sổ nghĩa vụ: Phối hợp đã giao — MỘT khoá mở → xong', () => {
+    assert(snv.khoaDonVi('phoi_hop_viec:77', { due: '2026-11-01' }) === snv.khoaDonVi('phoi-hop-giao-xong:77', { due: '2026-11-02', classId: 5 }), 'khoá mở = khoá xong');
+    assert(snv.khoaDonVi('phoi-hop-xong:77', { due: '2026-11-01', classId: 5 }) !== snv.khoaDonVi('phoi_hop_viec:77', { due: '2026-11-01' }), 'việc theo luật giữ đơn vị lớp');
+  });
+
+  await checkAsync('GV1-15 · (E) Hoàn tác phân công không bị chặn bởi dòng theo dõi đổi sau; người theo dõi gvcn tính lại theo GVCN sau khi đảo', () => thu(async () => {
+    const sid = moiEm(); const id = baoPhViPham(sid);
+    const slots = hang(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop).map((r) => ({ userId: r.user_id, skill: r.skill, isCore: r.is_core === 1 }));
+    const r = pc.luuPhanCong(ql, { lop: [{ classId: lop, slots: slots.filter((s) => !s.isCore).concat([{ userId: P.w2Teacher.userId, skill: null, isCore: true }]) }] });
+    gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);   // một dòng theo dõi đổi sau lần lưu
+    baoPhViPham(moiEm());   // việc mới của lớp (dòng theo dõi mới)
+    pc.hoanTacLuu(ql, { lo: r.lo });
+    assert(theoDoi('bao_ph', id).some((x) => x.user_id === gvcn.userId && x.nguon === 'gvcn') && !theoDoi('bao_ph', id).some((x) => x.user_id === P.w2Teacher.userId), 'gvcn về GVCN cũ');
+  }));
+
+  await checkAsync('GV1-16 · (F) người theo dõi đã rời chi nhánh của việc: không thấy ở tab, không nhận tin, không đọc panel', () => thu(async () => {
+    const sid = moiEm(); const id = baoPhViPham(sid);
+    const roi = taiKhoan('roi', 'consultant');
+    gv.themTheoDoi(ql, 'bao_ph', id, { userIds: [roi.userId] });
+    accounts.setRoles(P.admin, roi.userId, [{ role: 'consultant', branches: ['CP'] }]);
+    const p2 = loadPrincipal(roi.userId);
+    xoaNho();
+    assert(!gv.viecTheoDoi(p2).nhom.some((g: any) => g.mo.some((x: any) => x.refId === id)), 'tab Đang theo dõi bỏ việc');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
+    assert(!tin(`gv:bao_ph:${id}:ket_qua:`).includes(roi.userId), 'không nhận tin có kết quả');
+    assert(await ma(() => bp.xemViecBaoPh(p2, id)) === 403, 'không đọc panel');
   }));
 
   const fs = await import('node:fs');

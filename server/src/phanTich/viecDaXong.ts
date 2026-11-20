@@ -89,7 +89,7 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
 
   /* 3. Báo PH (TVV của em) — lần "đã báo" đầu. PHOI-HOP-V2: việc sau Meeting CX là loại việc riêng (`phoi_hop_tvv`, khớp Công việc). */
   for (const r of conn.prepare(
-    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, s.consultant_user_id AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
+    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
             (SELECT MIN(x.ngay) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id AND x.ket_qua = 'da_bao') AS xong
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN classes l ON l.id = ${lopEm('v.student_id', 'NULL')}
       WHERE s.branch_id = ? AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
@@ -146,7 +146,7 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
 
   /* 7. Phối hợp SOS — chỉ meeting CX có hạn (`hanPhoiHop`); GVCN lớp em đang học. */
   for (const r of conn.prepare(
-    `SELECT x.id, x.kind, x.created_at, x.han_chon, x.pb_moc, x.performed_on AS xong, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
+    `SELECT x.id, x.kind, x.created_at, x.han_chon, x.pb_moc, x.performed_on AS xong, x.phu_trach_id AS giao, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
             ${gvLop('l.id', 'x.performed_on', null)} AS owner
        FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN assessment_attempts a ON a.id = x.attempt_id
        JOIN classes l ON l.id = ${lopEm('x.student_id', 'a.class_id')}
@@ -156,6 +156,12 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
     /* CAU-HINH-CASE-SOS: việc có hạn theo bản chụp của dòng (bản gốc: chỉ Meeting CX, 5 ngày → cửa sổ 10 như cũ; Quản trị đặt hạn dài → cửa sổ theo hạn). */
     const han = hanPhoiHop(r.kind, r.created_at, r.han_chon, r.pb_moc ?? null);
     if (!han) continue;
+    /* GV-1 (N58): việc đã giao — đơn vị riêng theo hành động (khớp dòng mở `phoi_hop_viec:`), đứng tên người được giao. */
+    if (r.giao) {
+      them({ ...lopCua(r), hv: null, ten: null, owner: r.giao, han, xong: String(r.xong).slice(0, 10) },
+        { key: `phoi-hop-giao-xong:${r.id}`, group: 'phoi_hop_sos', tieuDe: 'Phối hợp SOS', href: `/hoc-vien/lop/${r.lop}?tab=y-thuc&sub=phoi-hop` });
+      continue;
+    }
     them({ ...lopCua(r), hv: null, ten: null, owner: r.owner, han, xong: String(r.xong).slice(0, 10) },
       { key: `phoi-hop-xong:${r.id}`, group: 'phoi_hop_sos', tieuDe: 'Phối hợp SOS', href: `/hoc-vien/lop/${r.lop}?tab=y-thuc&sub=phoi-hop` });
   }
