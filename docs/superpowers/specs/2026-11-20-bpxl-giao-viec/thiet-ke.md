@@ -16,7 +16,7 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 
 ## A. Vai BPXL — Chuyên viên Xếp lịch
 
-- **[CHỐT]** xếp / sửa lịch Mock Test + lịch lớp thường · KHÔNG xếp họp trên app ("trên app chỉ thuần về lịch test + thi") · việc "Xếp lịch MT còn thiếu" vẫn của Head (BPXL chỉ có danh sách để xem và tự xếp) · việc Meeting CX / GĐCN: BPXL mặc định là người theo dõi.
+- **[CHỐT]** xếp / sửa lịch Mock Test + lịch lớp thường · KHÔNG xếp họp trên app ("trên app chỉ thuần về lịch test + thi") · việc "Xếp lịch MT còn thiếu" vẫn của Head (BPXL chỉ có danh sách để xem và tự xếp) · việc Meeting CX / GĐCN: BPXL được GIAO phần "Xếp lịch họp" (lời mới hơn cùng ngày — mục B2).
 - Phạm vi: 1 / nhiều chi nhánh, bỏ trống = toàn hệ thống (như CX).
 - Làm được: xếp, dời, + MT, S Ex ở Kế hoạch Test; sửa tuần khai giảng / Progress / Final lớp thường. Khoá cuối tuần T6–CN (N15) áp dụng như Admin.
 - Chỉ xem: Lịch Test tuần, Học viên & Lớp, Lịch thi thật.
@@ -24,7 +24,7 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 - Menu: **Test · Học viên & Lớp · Công việc**. Trang đầu = **Kế hoạch Test**.
 - **Dải số lặng** trên đầu Kế hoạch Test (chữ xám, không đỏ, không cộng vào số việc trên menu): Chưa xếp lịch MT · Vắng chờ xếp lại · Bài chưa có điểm · Lượt thi tuần này. Bấm số = lọc danh sách lớp ngay bên dưới (ô số = mở tại chỗ).
 - Chuông, mục "Cập nhật": tin em vắng (đã dời sang tuần … / đã huỷ), gộp theo lớp × tuần, không nhắc lại.
-- Công việc của BPXL: chỉ "Việc được giao" + "Đang theo dõi"; không bị giao việc theo luật.
+- Công việc của BPXL: "Xếp lịch họp" (Meeting CX / GĐCN — mục B2) + "Việc được giao" + "Đang theo dõi"; ngoài ra không bị giao việc theo luật.
 
 ## B. Giao việc liên phòng ban
 
@@ -36,13 +36,24 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 |---|---|---|
 | Phụ trách | Người theo luật | Người đang phụ trách, Head / Quản trị, CX. Giao cho bất kỳ ai có tài khoản ở chi nhánh (ô tìm + chọn, người liên quan trước); có "Về mặc định" |
 | Hạn | Theo luật | Người phụ trách, người giao, Head / CX. Việc không hạn đặt hạn được (sửa N34 ②) |
-| Theo dõi | Người giao tự vào · Báo PH vi phạm: GVCN + GV ghi · Meeting: CX + BPXL | Người phụ trách, người giao, Head / CX thêm bớt; ai cũng tự bỏ theo dõi |
+| Theo dõi | Người giao tự vào · Báo PH vi phạm: GVCN + GV ghi · Meeting: xem B2 | Người phụ trách, người giao, Head / CX thêm bớt; ai cũng tự bỏ theo dõi |
 
 - Người được giao được làm ĐÚNG việc đó dù vai thường không có quyền (máy chủ kiểm theo việc).
 - Người theo dõi chỉ xem; nhận tin "Cập nhật" khi: giao / đổi người · đổi hạn · có kết quả · bỏ việc · trả lại. Không tin "quá hạn" tự động.
 - **Tab "Đang theo dõi"** trong Công việc (mọi vai): việc còn mở, chia mục theo loại như các tab khác, quá hạn lên đầu; mỗi dòng: việc · em / lớp · người phụ trách · hạn · trạng thái; "Vừa xong 7 ngày" gập sẵn. Bấm dòng = mở panel chỉ đọc.
 - Việc người khác giao cho tôi nằm ở "Của tôi", đúng mục, kèm nhãn "{tên} giao".
 - Mọi lần đổi người / hạn / theo dõi có lịch sử (ai · lúc · từ → đến).
+
+### B2. Meeting CX / GĐCN — hai phần trên một việc
+
+- **[CHỐT — chủ SP 20/11 tối, thay "BPXL chỉ theo dõi" ở mục A]** "khi giao việc meeting CX/ GĐCN thì cần giao việc xếp lịch họp cho BPXL và CX sẽ phải cập nhật kết quả luôn trên task, TVV có thể nhập hộ".
+- Một việc Meeting, panel có hai bước theo thứ tự:
+  1. **Xếp lịch họp** — phụ trách: BPXL chi nhánh. BPXL ghi ngày giờ họp (ô ngày gõ được + nút lịch, ô giờ) → bước xong, CX + TVV + GVCN nhận tin "Cập nhật". Sửa lại ngày giờ được, có lịch sử. App không có màn lịch họp riêng.
+  2. **Kết quả meeting** — phụ trách: CX. CX ghi kết quả ngay trên việc (một ô Nội dung); **TVV nhập hộ được** (ghi rõ "{TVV} nhập hộ CX").
+- Hai bước hiện ở Công việc của đúng người: BPXL thấy "Xếp lịch họp", CX thấy "Kết quả meeting" (sau khi đã có lịch; chưa có lịch thì ghi "Chờ BPXL xếp lịch", vẫn nhập được — không chặn).
+- Khối Phụ trách · Hạn · Theo dõi áp cho từng bước (đổi người được như mọi việc phần B). Theo dõi mặc định: TVV của em, GVCN, Head.
+- Chi nhánh không có BPXL → TVV của em xếp như nay; không có CX → Head. Ngoại lệ của "CX / BPXL không bị giao việc theo luật" (N52).
+- PTA hiểu, chờ chủ SP xác nhận: phần "Báo PH · Meeting" của TVV (báo gia đình về buổi họp) giữ như nay.
 
 ## C. Việc Vận hành
 
