@@ -25,6 +25,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 /** Vai chọn được 1 / nhiều chi nhánh hoặc bỏ trống = toàn hệ thống (CX — PR-OV2a; BPXL — N57). Máy chủ (`accounts.ts`) và web cùng danh sách. */
 export const VAI_CN_TUY_CHON: readonly string[] = ['cx', 'scheduler'];
+/** BPXL-1 (N57): tài khoản chỉ có vai Chuyên viên Xếp lịch — giao diện ẩn / tắt thao tác đụng điểm (thi lại, huỷ điểm, vắng, xoá MT có điểm). Máy chủ vẫn chặn. */
+export const laChiXepLich = (roles: readonly string[] | null | undefined): boolean => !!roles?.length && roles.every((r) => r === 'scheduler');
 /** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */
 export const VAI_DANG_KY = ['teacher', 'manager', 'consultant', 'cx', 'office_admin', 'scheduler'] as const satisfies readonly Role[];
 /** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */

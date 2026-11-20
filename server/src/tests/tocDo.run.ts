@@ -29,7 +29,7 @@ const { createSession } = await import('../auth.ts');
 const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, soDongSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
-const { loadPrincipal, can, napTruocPhamVi, scopeFor, boLopCu } = await import('../permissions.ts');
+const { loadPrincipal, can, napTruocPhamVi, scopeFor, boLopCu, boVaiBpxl } = await import('../permissions.ts');
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
@@ -618,6 +618,7 @@ function thamChieuCaseIds(
   p: ReturnType<typeof loadPrincipal>,
   f: { branchId?: number; classId?: number; studentId?: number; status?: string },
 ): Set<number> {
+  p = boVaiBpxl(p);   // BPXL-1 (N57): BPXL không xem Case — cùng luật `listCases`
   if (scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none) return new Set();
   const where: string[] = ['sc.tam = 0'];   // OV-13a: listCases không kèm Case tạm (`CASE_THAT`) — SOS-TAM-PA sinh Case tạm cả ô chưa nhận xét
   const params: unknown[] = [];

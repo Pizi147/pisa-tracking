@@ -53,6 +53,8 @@ export type QuyenTT = {
   doiLich?: boolean;
   /** Chủ SP 28/10: tuần thi của kỹ năng ĐÃ QUA (Chủ nhật < hôm nay) — GVCN được "Dời lịch" (máy chủ `gvcnDoiMtCu`). */
   quaTuan?: boolean;
+  /** BPXL-1 (N57): false = Quản lý lịch không có quyền điểm (BPXL) — không Vắng / Huỷ điểm / Khôi phục điểm. Bỏ trống = có. */
+  diem?: boolean;
 };
 
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
@@ -61,7 +63,8 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   /* NHAP-DIEM-a (chủ SP 14/11, đặc tả 5.1 "không để hai nút cùng nghĩa"): menu kỹ năng KHÔNG còn "Xoá" (`bo-ky-nang`) — "Huỷ điểm" thay. "Xoá" chỉ còn
      là thao tác lập lịch của Quản lý FT ở hộp một đợt (`menuHopKyNang`) và "Khôi phục" môn đã xoá (`khong-yeu-cau`). */
   /* LUAT-34 (T20b): ô trống có điểm cũ đã huỷ còn cất → "Khôi phục điểm" một bấm, người sửa được ô. */
-  const khoiPhuc: ThaoTac[] = q.diemHuy && (q.nhapDiem || ql) ? ['khoi-phuc-diem'] : [];
+  const qlDiem = ql && (q.diem ?? true);   // BPXL-1: xếp lịch được ≠ sửa điểm được
+  const khoiPhuc: ThaoTac[] = q.diemHuy && (q.nhapDiem || qlDiem) ? ['khoi-phuc-diem'] : [];
   /* Chủ SP 28/10: GVCN dời MT tuần đã qua (kể cả có điểm) — như Quản lý, chỉ "Dời lịch". */
   const doi = ql || (q.gvcn && !!q.quaTuan);
   /* N38 (PR-MT-VANG L5, L6): FT vắng / đã huỷ / huỷ vắng 2 lần / bỏ khỏi đợt → "Dời lịch" = chọn tuần = xếp lại từ đầu (một thao tác thay Xếp lại
@@ -72,7 +75,7 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   const nhap: ThaoTac[] = q.nhapDiem && q.laFt ? ['nhap-diem'] : [];
   /* NHAP-DIEM-a (chủ SP 14/11, thay Huỷ môn LG-9): "Huỷ điểm" một kỹ năng ⇄ "Khôi phục" — người nhập được ô / GVCN / QL, mọi loại bài,
      mọi trạng thái còn kỹ năng (máy chủ `huyDiemKn` kiểm lại). */
-  const nguoiHuy = q.nhapDiem || q.gvcn || ql;
+  const nguoiHuy = q.nhapDiem || q.gvcn || qlDiem;
   const huyDiem: ThaoTac[] = nguoiHuy ? ['huy-diem'] : [];
   const traLai: ThaoTac[] = nguoiHuy ? ['khoi-phuc-diem'] : [];
   switch (tt) {
@@ -111,6 +114,9 @@ export const CHU_MUC_HOP: Record<MucHop, string> = {
   'doi-tuan': t('Dời'), 'bao-vang': t('Vắng'), 'bo-ky-nang': t('Xoá'), 'doi-han': t('Dời hạn chấm'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Lịch sử'),   // GD-4c (10-ra-dong-bo C2): lịch sử sửa của lượt = "Lịch sử", "Nhật ký" chỉ cho trang nhật ký chung
 };
 
+/** BPXL-1: Vắng / Huỷ điểm mờ với người chỉ xếp lịch. */
+const viSaoChiLich = () => t('Việc của GV, Head');
+
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
 function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
   if (moi) return muc === 'bao-vang' || muc === 'doi-han' || muc === 'huy-diem' || muc === 'nhat-ky' ? t('Đợt chưa tạo') : t('Chỉ Head');
@@ -140,7 +146,9 @@ export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean): Array<
     'huy-diem': !moi && t.menu.includes('huy-diem'),
     'nhat-ky': !moi,
   };
-  return (Object.keys(CHU_MUC_HOP) as MucHop[]).map((muc) => ({ muc, duoc: duoc[muc], viSao: duoc[muc] ? null : viSaoMo(muc, tt, moi) }));
+  const chiLich = q.diem === false && !moi;   // BPXL-1: Vắng / Huỷ điểm mờ — lý do tại nút
+  return (Object.keys(CHU_MUC_HOP) as MucHop[]).map((muc) => ({ muc, duoc: duoc[muc],
+    viSao: duoc[muc] ? null : chiLich && (muc === 'bao-vang' || muc === 'huy-diem') ? viSaoChiLich() : viSaoMo(muc, tt, moi) }));
 }
 
 /**

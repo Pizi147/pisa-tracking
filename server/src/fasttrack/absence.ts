@@ -72,7 +72,8 @@ function loadAttempt(attemptId: number): any {
  * việc của GVCN (mục 10.6), vì chỉ họ mới biết hôm đó em có đi học không.
  */
 export function canRequest(p: Principal, attempt: any): boolean {
-  if (can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id })) return true;
+  /* BPXL-1 (N57): "-" / huỷ điểm / vắng lớp thường là việc điểm — `qlDiem` (BPXL có plan.week chỉ để xếp lịch). */
+  if (qlDiem(p, { classId: attempt.class_id, studentId: attempt.student_id })) return true;
   return !!attempt.class_id && isCoreTeacherOf(p, attempt.class_id);
 }
 

@@ -35,4 +35,7 @@ export const EN_BPXL = {
   'Trang đầu mở thẳng Kế hoạch Test.': 'Home opens Test plan directly.',
   'Đăng nhập: trang đầu mở thẳng <b>Kế hoạch Test</b>.': 'Sign in: home opens <b>Test plan</b> directly.',
   'Lớp đã kết thúc, học viên đã lưu trữ (chỉ xem).': 'Finished classes, archived students (view only).',
+  'Việc của GV, Head': 'Teacher or Head task',
+  'Thi lại huỷ điểm đã có — Head hoặc GV kỹ năng đó làm.': 'A retake cancels the existing score — the Head or the skill teacher does it.',
+  '{nhan} đã có điểm — nhờ Head xoá.': '{nhan} already has scores — ask the Head to delete it.',
 } as const;

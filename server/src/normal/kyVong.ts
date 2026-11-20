@@ -313,8 +313,8 @@ export const EM_KQDR_FT_SQL = emKqdrFt('substr(e.started_at, 1, 10) >= ?');
 const EM_KQDR_FT_CHUA_CHOT_SQL = emKqdrFt(`(substr(e.started_at, 1, 10) >= ? OR (lt.ky_vong_dat IS NULL AND EXISTS (SELECT 1 FROM lenh_chuyen_lop l
     WHERE l.student_id = e.student_id AND l.lop_nguon_id = c.id AND l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen'))))`);
 
-/** Bảng vai đặc tả OV mục 2: Kết quả đầu ra — Admin "—". Người xem được lớp (`attempt.view`) trừ tài khoản chỉ có vai Admin. */
-export const laChiAdmin = (p: Principal) => !p.roleKeys.some((k) => k !== 'office_admin');
+/** Bảng vai đặc tả OV mục 2: Kết quả đầu ra — Admin "—". Người xem được lớp (`attempt.view`) trừ tài khoản chỉ có vai Admin / BPXL (BPXL-1, N57). */
+export const laChiAdmin = (p: Principal) => !p.roleKeys.some((k) => k !== 'office_admin' && k !== 'scheduler');
 const xemKqdrLopFt = (p: Principal, classId: number) => !laChiAdmin(p) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId });
 
 /**

@@ -12,7 +12,7 @@ import { BranchFilter } from '../../../ui/Filters.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
 import {
-  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, demSeXep, laChiXepLich, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
@@ -446,6 +446,8 @@ function HangEm({ h, homNay, cot, dot, d, chon, dangXem, rieng, thiLai, onTick, 
 function HopThiLai({ h, d, onThiLai, onKhong }: { h: Hang; d: DongHangLoat; onThiLai: (ks: KyNangKH[]) => void; onKhong: () => void }) {
   const ks = d.coDiem ?? [];
   const [chon, setChon] = useState<KyNangKH[]>(ks.length === 1 ? ks : []);
+  /* BPXL-1 (N57): thi lại huỷ điểm đã có — BPXL không làm; nút mờ, lý do tại nút (máy chủ cũng chặn). */
+  const chiXepLich = laChiXepLich(useSession().session?.roles);
   const o = d.attemptNo ? h.dot[d.attemptNo] : undefined;
   const mon = (k: KyNangKH) => tenMonNgan(null, k);
   const tuan = ks.map((k) => o?.kn[k]?.tuan).find(Boolean);
@@ -469,9 +471,11 @@ function HopThiLai({ h, d, onThiLai, onKhong }: { h: Hang; d: DongHangLoat; onTh
             </div>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.length} onClick={() => onThiLai(chon)}>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.length || chiXepLich} onClick={() => onThiLai(chon)}
+              title={chiXepLich ? t('Thi lại huỷ điểm đã có — Head hoặc GV kỹ năng đó làm.') : undefined}>
               {t('Thi lại')} {chon.length ? chon.map(mon).join(' ') : ''}
             </button>
+            {chiXepLich && <span className="self-center text-slate-400">{t('Thi lại huỷ điểm đã có — Head hoặc GV kỹ năng đó làm.')}</span>}
             <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onKhong}>{t('Không')}</button>
           </div>
         </div>

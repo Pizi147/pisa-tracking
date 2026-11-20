@@ -1647,6 +1647,8 @@ export function xoaLuot(p: Principal, attemptId: number) {
   /* Chỉ ô của kỹ năng đang trong đợt (ô kỹ năng đã bỏ / task không học không đổi khi Xoá). */
   const coDiem = scoresOf(attemptId).filter((s) => (s.band !== null || s.raw_score !== null)
     && ds.some((r) => r.skill === assessedSkillOf(s.skill) && r.bo_task !== s.skill));
+  /* BPXL-1 (N57, PTA rà #1923): xoá MT đã có điểm = huỷ điểm — người không sửa được điểm (BPXL) chặn TRƯỚC câu hỏi, không 403 giữa chừng. */
+  if (coDiem.some((s) => !scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind }))) throw loi(403, '{nhan} đã có điểm — nhờ Head xoá.', { nhan });
   if (coDiem.length) canXacNhan('{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)', { nhan }, 'Huỷ điểm và xoá');
   return tx(() => {
     for (const s of coDiem) saveScore(p, attemptId, s.skill, { rawScore: null, criteria: [null, null, null, null], lyDo: LY_DO_XOA_MT });

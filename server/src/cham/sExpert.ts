@@ -149,6 +149,8 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
   requireSuaLichTest(p, { studentId }, QL_MSG);
   if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học (hoặc đang tạm dừng) — xếp em vào lớp / cho em học lại trước khi thêm lượt S Expert.');
   const t = docThan(body, null, today);
+  /* BPXL-1 (N57): tạo lượt kèm điểm / nhận xét = chấm → người chấm được (`chamDuoc`); BPXL chỉ tạo lượt trống. */
+  if ((t.diem !== null || t.nhanXet) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
   chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
   const luc = nowIso();
   const chamBoi = t.diem !== null || t.nhanXet ? p.userId : null;
@@ -220,6 +222,8 @@ function doiXoa(p: Principal, id: number, xoa: boolean) {
   return tx(() => {
     const { studentId, t } = docLuot(id, !xoa);
     requireSuaLichTest(p, { studentId }, QL_MSG);
+    /* BPXL-1 (N57, PTA rà #1923): lượt đã chấm (điểm / nhận xét) — xoá / khôi phục là đụng điểm → chỉ người chấm được; BPXL chỉ lượt trống. */
+    if ((t.diem !== null || t.nhanXet) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
     motDong(db().prepare(`UPDATE s_expert SET xoa_luc = ?, xoa_boi = ? WHERE id = ? AND xoa_luc IS ${xoa ? '' : 'NOT '}NULL`)
       .run(xoa ? nowIso() : null, xoa ? p.userId : null, id));
