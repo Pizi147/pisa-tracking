@@ -541,7 +541,7 @@ function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
   opts: { entityType?: string; dedupBase?: string } = {},
   /** PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp — không còn một tiêu đề lịch thi chung chung cho mọi trường hợp. */
-  viec = 'Duyệt dời lịch Test',
+  viec = 'Đề nghị dời lịch Test',
 ) {
   const conn = db();
   const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')

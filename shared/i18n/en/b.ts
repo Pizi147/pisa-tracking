@@ -1359,7 +1359,7 @@ const EN_B_MAY = {
   '{skillName} chưa bị huỷ — không có gì để khôi phục.': '{skillName} is not cancelled — nothing to restore.',
   '{skillName} đang có lịch hẹn — dùng thao tác đổi lịch thường.': '{skillName} is scheduled — use the normal reschedule.',
   'Head khôi phục và đặt tuần mới': 'Head restored and set a new week',
-  'Duyệt dời lịch Test': 'Approve test move',
+  'Đề nghị dời lịch Test': 'Test move request',
   '{reason} (tuần {periodCode})': '{reason} ({periodCode})',
   'Vắng — tự dời': 'Absent — moved automatically',
   'Đã dời bài vắng · {em}': 'Absent paper moved · {em}',
