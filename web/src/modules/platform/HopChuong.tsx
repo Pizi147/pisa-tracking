@@ -19,7 +19,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import {
   NHAN_NHOM_NGAY, NHAN_LOAI_VIEC, VIEC_TU_TIN, LOAI_HAN_CUA_VIEC, duongThongBao, gomViecTheoTab, gomTinViPham, laTinViec, laTinViPhamMoi, laViecTuTin, loaiTin,
   moDuocThongBao, nhomNgayTin, soViecMoi, tachTin, thoiGianThongBao, xepLoaiViec, type DemYeuCau, type DongViecChuong, type LoaiViecChuong, type NhomNgayTin,
-  type TabViecChuong, bacNgan } from '@shared/domain/index.ts';
+  type TabViecChuong, bacNgan, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Phần `/my-work` chuông đọc (bản của badge ở App). */
@@ -208,7 +208,50 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       </li>
     );
   };
-  const mucCapNhat = (ds: readonly any[]) => gomTinViPham(ds).map((m) => ('tin' in m ? tin(m.tin, false) : nhomTin(m.lop, m.ds)));
+  /*
+   * BPXL-2 (N57, mockup v22 K3): tin "n em vắng · lớp · tuần" — MỘT tin mỗi lớp × tuần (máy chủ `tinVang.ts` gộp). Dòng hai tóm "3 đã dời · 1 đã huỷ"
+   * (tên HV không bị cắt); ⌄ = từng em tại chỗ; bấm dòng = Kế hoạch Test lọc đúng lớp. Chỉ để biết — không việc, không chữ "xếp lại".
+   */
+  const tinVang = (n: any) => {
+    let d: { soEm: number; lop: string; tuan: string; em: Array<{ ten: string; mt: number; kn: string[]; huy: boolean; tuanMoi: string | null; luc: string | null }> };
+    try { d = JSON.parse(n.body); } catch { return tin(n, false); }
+    const mo = moGom === `vang:${n.id}`;
+    const luc = thoiGianThongBao(n.created_at, homNay);
+    const nhanLoai = t('{n} em vắng', { n: d.soEm });
+    const lop = `${d.lop} · ${tuanLich(d.tuan, homNay)}`;
+    const doi = d.em.filter((e) => !e.huy), huy = d.em.length - doi.length;
+    const tuanDoi = [...new Set(doi.map((e) => e.tuanMoi))];
+    const tom = !huy && doi.length > 1 && tuanDoi.length === 1 && tuanDoi[0] ? t('cả {n} đã dời sang {tuan}', { n: doi.length, tuan: tuanLich(tuanDoi[0], homNay) })
+      : [doi.length ? t('{n} đã dời', { n: doi.length }) : null, huy ? t('{n} đã huỷ', { n: huy }) : null].filter(Boolean).join(' · ');
+    const chuEm = (e: (typeof d.em)[number]) => `MT${e.mt} · ${e.huy ? t('vắng lần 2 · đã huỷ')
+      : t('{x} vắng · đã dời sang {tuan}', { x: e.kn.map((k) => tenMonNgan(null, k)).join(' '), tuan: e.tuanMoi ? tuanLich(e.tuanMoi, homNay) : '—' })}`;
+    return (
+      <li key={n.id} className={`chv-tin-o chv-gom${mo ? ' chv-mo' : ''}`}>
+        <button type="button" className={`chv-tin${n.read_at ? '' : ' chv-chua'}`} onClick={() => { void moTin(n); }} aria-label={`${n.read_at ? '' : t('Chưa đọc: ')}${nhanLoai} · ${lop}: ${tom}, ${luc}`}>
+          <span aria-hidden className="chv-c" />
+          <span className="chv-m"><span className="chv-l">{nhanLoai}</span><span className="chv-lop">{lop}</span><time title={nhan(homNay, n.created_at)}>{luc}</time></span>
+          <span className="chv-x">{tom}</span>
+        </button>
+        <button type="button" className="chv-mo-rong" aria-expanded={mo} aria-label={mo ? t('Thu gọn {x}', { x: `${nhanLoai} · ${lop}` }) : t('Mở {x}', { x: `${nhanLoai} · ${lop}` })}
+          onClick={() => setMoGom(mo ? null : `vang:${n.id}`)}><MuiXuong /></button>
+        {!n.read_at && <button type="button" className="chv-xem" aria-label={t('Đã xem: {x}', { x: `${nhanLoai} · ${lop}` })} title={t('Đã xem')} onClick={() => { void daXem([n]); }}><DauXem /></button>}
+        {mo && (
+          <ul className="chv-gom-mo">
+            {d.em.map((e, i) => (
+              <li key={i} className="chv-tin-o">
+                <span className="chv-tin chv-day">
+                  <span className="chv-m"><span className="chv-l ten-hv">{e.ten}</span>{e.luc && <time>{thoiGianThongBao(e.luc, homNay)}</time>}</span>
+                  <span className="chv-x">{chuEm(e)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  };
+  const motTin = (n: any, day: boolean) => (n.kind === 'vang_lop' ? tinVang(n) : tin(n, day));
+  const mucCapNhat = (ds: readonly any[]) => gomTinViPham(ds).map((m) => ('tin' in m ? motTin(m.tin, false) : nhomTin(m.lop, m.ds)));
 
   const thanhTab = (g: ThanhTab) => {
     const mo = moThanh === g.tab;
@@ -285,7 +328,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
           : thuTu.filter((k) => nhom.get(k)?.length).map((k) => (
             <section key={k}>
               <h3 className="chv-x-nhom">{NHAN_NHOM_NGAY[k]}</h3>
-              <ul className="chv-ds">{gomTinViPham(nhom.get(k)!).map((m) => ('tin' in m ? tin(m.tin, true) : nhomTin(m.lop, m.ds)))}</ul>
+              <ul className="chv-ds">{gomTinViPham(nhom.get(k)!).map((m) => ('tin' in m ? motTin(m.tin, true) : nhomTin(m.lop, m.ds)))}</ul>
             </section>
           ))}
       </div>

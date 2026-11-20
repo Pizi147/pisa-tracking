@@ -183,25 +183,6 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       assert(tong === coDuKien && dem.canXacNhan === 1 && dem.chuaCoDuKien === 1, `${tong} ≠ ${coDuKien}: ${JSON.stringify(dem)}`);
     });
 
-    await checkAsync('SL1-9 · Kế hoạch Test "Chỉ cần xếp lại": tệp chỉ em cần xếp lại (= Σ canXepLai các lớp); không cờ → mọi em như cũ', async () => {
-      const kh: any = await import('../keHoach/keHoachTest.ts');
-      const QL = P.mbManager;
-      thu(() => {
-        /* Dựng một em cần xếp lại: một kỹ năng bắt buộc của lượt MT đang chạy → vắng (không đề nghị chờ). */
-        const k = one(`SELECT k.attempt_id, k.skill FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
-          JOIN classes c ON c.id = a.class_id JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
-          WHERE c.branch_id = ? AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock' AND k.required = 1 AND k.sit_status NOT IN ('absent', 'cancelled') LIMIT 1`, MB);
-        conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = ?`).run(k.attempt_id, k.skill);
-        const lop = (kh.danhSachLop(QL, { branchId: MB }).lop as any[]).filter((l) => l.loai === 'ft' && l.canXepLai > 0);
-        assert(lop.length > 0, 'phải có lớp cần xếp lại');
-        const ids = lop.map((l) => l.id);
-        const chi = kh.xuatKeHoach(QL, { branchId: MB, classIds: ids, xemTruoc: true, chiXepLai: true });
-        const het = kh.xuatKeHoach(QL, { branchId: MB, classIds: ids, xemTruoc: true });
-        const tong = lop.reduce((n: number, l: any) => n + l.canXepLai, 0);
-        assert(chi.dem.hocVien <= tong && chi.dem.hocVien > 0 && chi.dem.hocVien < het.dem.hocVien, `tệp xếp lại ${chi.dem.hocVien} em, Σ canXepLai ${tong}, cả lớp ${het.dem.hocVien}`);
-      });
-    });
-
     check('SL1-10a · chuông N1 (thuần): 3 loại tự động + Case giao vào Cần làm; "SOS n" của GVCN → Để biết; một Case một dòng; sắp theo hạn; số = Cần làm', () => {
       for (const k of ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao']) assert(d.nhomThongBao({ kind: k }) === 'can-lam', `${k} phải ở Cần làm`);
       assert(d.nhomThongBao({ kind: 'sos', entity_type: 'assessment_attempt' }) === 'de-biet', 'SOS-lượt (tin cho GVCN) → Để biết');

@@ -16,8 +16,7 @@ type KetQua = { sheets: SheetXuat[]; tenTep: string; dem: { hocVien: number; lop
  * (chi nhánh + các lớp FT đang hiện), thu hẹp được ngay trong ngăn (`lopCo` từ chính câu phạm vi của xem trước). 13 cột `Gmail | Tên học sinh | Lớp | MT1…MT10`,
  * ô MT là LỊCH THI (không phải điểm). Xem trước 4 hàng, sheet "Thông tin xuất". Xem trước và tải gọi CÙNG `POST /ke-hoach-test/xuat` (tải mới ghi nhật ký).
  */
-export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe = t('Xuất Excel'), tabs, vungTab, onDong }: { branchId: number | null; classIds: number[];
-  /** SL1 (V3B-07 #4): chip "Chỉ cần xếp lại" đang bật — tệp cùng tập. */ chiXepLai?: boolean;
+export function NganXuatKeHoach({ branchId, classIds, tieuDe = t('Xuất Excel'), tabs, vungTab, onDong }: { branchId: number | null; classIds: number[];
   tieuDe?: string; tabs?: ReactNode; vungTab?: { id: string; nhan: string }; onDong: () => void }) {
   const toast = useToast();
   const [chon, setChon] = useState<{ id: number; ma: string }[]>([]);   // rỗng = theo bộ lọc đang xem
@@ -25,7 +24,7 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
   const [lopCo, setLopCo] = useState<LopCo[]>([]);
   const [loi, setLoi] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const body = { branchId, classIds: chon.length ? chon.map((l) => l.id) : classIds, chiXepLai };
+  const body = { branchId, classIds: chon.length ? chon.map((l) => l.id) : classIds };
   const khoa = JSON.stringify(body);
   useEffect(() => {
     let con = true;
@@ -51,7 +50,7 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
     }
   };
   const goiY: LopKH[] = lopCo.filter((l) => !chon.some((c) => c.id === l.id)).map((l) => ({
-    id: l.id, code: l.ma, loai: 'ft', chiNhanh: l.chiNhanh, chuongTrinh: null, soHv: l.soHv, chuaCoLichTiep: 0, hvChuaCoLich: 0, tomTat: '', canXepLai: 0,
+    id: l.id, code: l.ma, loai: 'ft', chiNhanh: l.chiNhanh, chuongTrinh: null, soHv: l.soHv, chuaCoLichTiep: 0, hvChuaCoLich: 0, tomTat: '', vangTuanNay: 0,
   }));
   const bang = kq?.sheets[0]?.aoa ?? [];
   const thongTin = kq?.sheets[1]?.aoa ?? [];

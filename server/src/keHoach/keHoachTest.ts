@@ -25,7 +25,8 @@ import {
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
-import { effectiveSkillDeadline } from '../platform/week.ts';
+import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
+import { VANG_TUAN_SQL, laVangTuan } from './tinVang.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
@@ -110,6 +111,9 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   /** `lớp:em` → mọi lượt Mock của lộ trình đang chạy (để `oXepMt`). */
   const luotLoTrinh = new Map<string, LuotSo[]>();
   const chuaCoLichTiep = new Map<number, number>();
+  /** BPXL-2 (N57): em vắng tuần thi này (đã dời / đã huỷ) theo lớp — chỉ thông tin. */
+  const vangTuan = new Map<number, Set<number>>();
+  const tuanNay = mondayOf(demoToday());
   /** Số MT mặc định của lịch lớp (`lichMtCua`) — gợi ý "MT{b} chưa xếp" tới đó (P2 MT-DEM, thay hằng 3). */
   const soMacDinh = new Map<number, number>();
   if (ftClassIds.length) {
@@ -140,16 +144,19 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     const dangHoc = new Map([...hvCuaLop].map(([lop, ds]) => [lop, new Set(ds)]));
     for (const r of conn
       .prepare(
+        /* BPXL-2: `vang_tuan` (tinVang.ts) — cùng lượt đã đọc, cùng lượt quét ô điểm của `co_diem` → "Vắng · n em" không thêm câu. */
         `SELECT e.class_id AS lop, a.class_id AS a_lop, a.kind, a.student_id, a.attempt_no, a.status, a.planned_period_id,
                 CASE WHEN ${LUOT_CON_KE_HOACH_SQL('a')} THEN 1 ELSE 0 END AS con_ke_hoach,
-                EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem
+                EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS co_diem,
+                CASE WHEN a.kind = 'mock' THEN EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND ${VANG_TUAN_SQL('sc')}) ELSE 0 END AS vang_tuan
            FROM assessment_attempts a
            JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
            JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
           WHERE e.class_id IN (${phOf(ftClassIds.length)}) AND (a.kind = 'mock' OR a.class_id = e.class_id)`,
       )
-      .all(...ftClassIds) as any[]) {
+      .all(tuanNay, ...ftClassIds) as any[]) {
       if (!dangHoc.get(r.lop)?.has(r.student_id) || !r.con_ke_hoach) continue;
+      if (r.vang_tuan) (vangTuan.get(r.lop) ?? vangTuan.set(r.lop, new Set()).get(r.lop)!).add(r.student_id);
       if (r.a_lop === r.lop && r.status !== 'cancelled') {
         if (!luotCuaLop.has(r.lop)) luotCuaLop.set(r.lop, []);
         luotCuaLop.get(r.lop)!.push({ hv: r.student_id, no: r.attempt_no, status: r.status, coTuan: r.planned_period_id != null });
@@ -221,6 +228,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         chuongTrinh: loai === 'thuong' ? (progressAll.get(r.id)?.programmeCode ?? null) : null,
         soHv: r.so_hv as number,
         chuaCoLichTiep: chuaCoLichTiep.get(r.id) ?? 0,
+        vangTuanNay: vangTuan.get(r.id)?.size ?? 0,
         hvChuaCoLich: hvChuaCoLich.get(r.id) ?? 0,
         canXepLai: canXepLai.get(r.id) ?? 0,
         tomTat: loai === 'ft' ? tomTatFT(r.id) : tomTatThuong(r.id),
@@ -466,6 +474,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       soKeTiep: soKeTiepCua.get(s.id)!,
       /* XEP-MT-NHAC: lọc "Chưa đủ MT" của lưới — cùng `thieuMt` với `chuaCoLichTiep` (MT đã có = mọi lượt Mock, `LUOT_MT_DA_CO_SQL`). */
       thieuMt: thieuMt((tatCaCua.get(s.id) ?? []).length, lichMtCua(cls, s.route_nhac).length),
+      /* BPXL-2: lọc "Vắng tuần này" của lưới — cùng luật `laVangTuan` với số "Vắng · n em" (`danhSachLop`), trên điểm đã nạp (0 câu). */
+      ...((tatCaCua.get(s.id) ?? []).some((a) => (bundle.scores.get(a.id) ?? []).some((sc: any) => laVangTuan(sc, mondayOf(today)))) ? { vangTuan: true } : {}),
       mt0: mt0Cua.get(s.id) ?? null,
     };
   });
@@ -1494,7 +1504,7 @@ export function lopTheoLoTrinh(cycleIds: readonly number[], p?: Principal): Map<
   return out;
 }
 
-/** Em cần Quản lý xếp lại theo lớp (K4-11, Q7) — một câu; số trên chip "Chỉ cần xếp lại" và tệp xuất của chip đó cùng tập (SL1 V3B-07 #4). */
+/** Em có kỹ năng vắng chưa dời theo lớp (K4-11, Q7; `canXepLai` — tên trong mã, không hiện ra màn — N38) — một câu. */
 function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
   const out = new Map<number, Set<number>>();
   theoLo([...classIds], (lo, ph) => {
@@ -1513,8 +1523,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
 }
 
 /** POST /ke-hoach-test/xuat — tệp Kế hoạch Test 13 cột theo bộ lọc đang xem (chỉ Fast Track). `xemTruoc` không ghi nhật ký. */
-export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds: number[]; xemTruoc: boolean;
-  /** SL1 (V3B-07 #4): chip "Chỉ cần xếp lại" đang bật — tệp chỉ em cần xếp lại (trước: mọi em của lớp). */ chiXepLai?: boolean }, luc = nowIso()) {
+export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds: number[]; xemTruoc: boolean }, luc = nowIso()) {
   const { tat, lop } = lopFtXuat(p, i.branchId, i.classIds);
   const conn = db();
   const em: any[] = [];
@@ -1525,10 +1534,6 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
         WHERE e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}`).all(...lo) as any[]);
   });
-  if (i.chiXepLai) {
-    const can = emCanXepLai(lop.map((l) => l.id as number));
-    em.splice(0, em.length, ...em.filter((e) => can.get(e.class_id)?.has(e.id)));
-  }
   const maLop = new Map(lop.map((l) => [l.id as number, l.code as string]));
   /* OV-15h2 (ý 6): em học cùng lúc hai lớp FT = MỘT hàng; mọi lớp đang học vào cột Lớp (theo thứ tự lớp). */
   const lopDangHoc = new Map<number, string[]>();
@@ -1558,13 +1563,13 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
   });
   const bang = bangKeHoachXuat(hv);
   const chiNhanh = tenChiNhanh(lop);
-  const boLoc = `Fast Track · ${lop.length === 1 ? lop[0].code : `${lop.length} lớp`}${i.chiXepLai ? ' · chỉ cần xếp lại' : ''} · ${hv.length} học viên`;
+  const boLoc = `Fast Track · ${lop.length === 1 ? lop[0].code : `${lop.length} lớp`} · ${hv.length} học viên`;
   const sheets: SheetXuat[] = [
     { ten: 'Kế hoạch Test', aoa: bang.aoa },
     { ten: 'Thông tin xuất', aoa: bangThongTinXuat({ chiNhanh, boLoc, luc: gioVn(luc), nguoi: p.fullName, ngoai: bang.ngoai }) },
   ];
   if (!i.xemTruoc) {
-    writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_excel', entityType: 'xuat_ke_hoach', entityLabel: `${hv.length} học viên · ${boLoc}`, after: { branchId: i.branchId, classIds: i.classIds, chiXepLai: !!i.chiXepLai } });
+    writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_excel', entityType: 'xuat_ke_hoach', entityLabel: `${hv.length} học viên · ${boLoc}`, after: { branchId: i.branchId, classIds: i.classIds } });
   }
   return {
     sheets, tenTep: `Ke-hoach-Test_${chuTep(chiNhanh)}_${ngayTep(demoToday())}.xlsx`, dem: { hocVien: hv.length, lop: lop.length }, boLoc,
