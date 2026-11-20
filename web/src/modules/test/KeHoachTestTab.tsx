@@ -152,7 +152,7 @@ export function KeHoachTestTab() {
     setLopLoc(null);
     if (params.has('lop')) { const next = new URLSearchParams(params); next.delete('lop'); setParams(next, { replace: true }); }
   };
-  const NHAN_SO: Record<SoLoc, string> = { 'chua-xep': t('Chưa xếp lịch MT'), vang: t('Vắng tuần này'), bai: t('Bài chưa có điểm'), luot: t('Lượt thi tuần này') };
+  const NHAN_SO: Record<SoLoc, string> = { 'chua-xep': t('Chưa xếp lịch MT'), vang: t('Vắng tuần này'), bai: t('Bài chưa có điểm'), luot: t('Lượt MT tuần này') };
   const soDai: Array<{ k: SoLoc; n: number | null }> = [
     { k: 'chua-xep', n: soChuaCoKe },
     { k: 'vang', n: lopFT.reduce((n, l) => n + l.vangTuanNay, 0) },

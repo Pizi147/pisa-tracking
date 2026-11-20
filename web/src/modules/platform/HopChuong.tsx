@@ -229,7 +229,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       <li key={n.id} className={`chv-tin-o chv-gom${mo ? ' chv-mo' : ''}`}>
         <button type="button" className={`chv-tin${n.read_at ? '' : ' chv-chua'}`} onClick={() => { void moTin(n); }} aria-label={`${n.read_at ? '' : t('Chưa đọc: ')}${nhanLoai} · ${lop}: ${tom}, ${luc}`}>
           <span aria-hidden className="chv-c" />
-          <span className="chv-m"><span className="chv-l">{nhanLoai}</span><span className="chv-lop">{lop}</span><time title={nhan(homNay, n.created_at)}>{luc}</time></span>
+          <span className="chv-m flex-wrap gap-y-0"><span className="chv-l">{nhanLoai}</span><span className="chv-lop">{lop}</span><time title={nhan(homNay, n.created_at)}>{luc}</time></span>
           <span className="chv-x">{tom}</span>
         </button>
         <button type="button" className="chv-mo-rong" aria-expanded={mo} aria-label={mo ? t('Thu gọn {x}', { x: `${nhanLoai} · ${lop}` }) : t('Mở {x}', { x: `${nhanLoai} · ${lop}` })}

@@ -8,7 +8,6 @@ export const EN_BPXL2 = {
   'Vắng tuần này': 'Absent this week',
   'Vắng · {n} em': 'Absent · {n} students',
   'Bài chưa có điểm': 'Papers without scores',
-  'Lượt thi tuần này': 'Sittings this week',
   'Lọc: {x}': 'Filter: {x}',
   'Bỏ lọc {x}': 'Clear filter {x}',
   'Không lớp nào khớp "{x}"': 'No class matches "{x}"',
