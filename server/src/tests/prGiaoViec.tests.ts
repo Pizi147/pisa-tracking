@@ -265,6 +265,20 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(theoDoi('bao_ph', id).length === truoc.td && hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'bao_ph' AND ref_id = ?`, id).length === truoc.ls, 'khôi phục: theo dõi + lịch sử');
   }));
 
+  await checkAsync('GV1-10 · BPXL thuần (N57: không việc theo luật) được giao một việc Báo PH → thấy ở /my-work, ghi được; Xếp lịch họp ở chi nhánh có BPXL là của BPXL', () => thu(async () => {
+    const bpxl = taiKhoan('bpxl', 'scheduler');
+    const sid = moiEm(); const id = baoPhViPham(sid);
+    giao(tvv, 'bao_ph', id, bpxl.userId);
+    const w = myWork(bpxl, {}) as any;
+    assert(w.items.some((x: any) => x.key === `bao-ph:${id}` && x.mine) && w.summary.viec >= 1, `BPXL /my-work: ${JSON.stringify(w.items.map((x: any) => x.key))}`);
+    bp.ghiKetQuaBaoPh(bpxl, { viecIds: [id], ketQua: 'da_bao', ghiChu: 'BPXL đã gọi phụ huynh em' });
+    assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', id).trang_thai === 'xong', 'BPXL ghi được');
+    const { xep } = meeting(moiEm());
+    xoaNho();
+    assert(((myWork(bpxl, {}) as any).items as any[]).some((x) => x.key === `meeting_xep_lich:${xep.id}` && x.mine), 'BPXL có Xếp lịch họp');
+    assert(!items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'có BPXL → TVV không giữ Xếp lịch họp');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

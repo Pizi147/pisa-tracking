@@ -31,7 +31,7 @@ export async function runPrHdTests(t: any) {
     'SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? ORDER BY ur.user_id LIMIT 1').get(vai) as any).id);
   const MAU: Record<string, any[]> = {
     gv: [P.coreTeacher, P.subjectTeacher], ql: [P.mbManager], qt: [P.admin],
-    tvv: [theoVai('consultant')], cx: [theoVai('cx')], admin: [theoVai('office_admin')], ht: [theoVai('head_tutor')],
+    tvv: [theoVai('consultant')], cx: [theoVai('cx')], admin: [theoVai('office_admin')], ht: [theoVai('head_tutor')], bpxl: [theoVai('scheduler')],
   };
   /* HD-b: thêm Phân tích (tab Tổng quan) và Quản trị (menu Tài khoản) khi vai có. */
   const duongNav = (nav: any): string[] => [
@@ -44,7 +44,7 @@ export async function runPrHdTests(t: any) {
 
   check('HD-NAV · mỗi vai có hướng dẫn đều có tài khoản mẫu; mỗi đường trên thanh điều hướng của vai đó có mục Theo màn', () => {
     const loi: string[] = [];
-    assert(Object.keys(hd.HUONG_DAN).length === 7, `đủ 7 vai (TU-b: Head tutor) (${Object.keys(hd.HUONG_DAN).join(', ')})`);
+    assert(Object.keys(hd.HUONG_DAN).length === 8, `đủ 8 vai (TU-b: Head tutor; BPXL-1: BPXL) (${Object.keys(hd.HUONG_DAN).join(', ')})`);
     for (const vai of Object.keys(hd.HUONG_DAN)) {
       if (!MAU[vai]) { loi.push(`vai ${vai} chưa có tài khoản mẫu trong phép kiểm`); continue; }
       for (const p of MAU[vai]) {

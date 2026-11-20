@@ -11,7 +11,7 @@ import { getConfig, setConfig } from '../demoConfig.ts';
 import { nhoCaRequest, quenNhoCaRequest } from './nguCanhRequest.ts';
 import { db, tx } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { can, isCoreTeacherOf, require_, type Ctx, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, isCoreTeacherOf, require_, type Ctx, type Principal } from '../permissions.ts';
 import { badRequest, nowIso } from '../util.ts';
 import { writeAudit } from './audit.ts';
 
@@ -49,7 +49,8 @@ export function choSuaLichTest(p: Principal, ctx: Ctx): boolean {
 
 /** Huỷ / khôi phục lượt: `ATTEMPT_CANCEL` như cũ; công tắc BẬT thì thêm người sửa được lịch Test (Admin, GVCN lớp đó). */
 export function choHuyKhoiPhucLichTest(p: Principal, ctx: Ctx): boolean {
-  return can(p, PERMISSIONS.ATTEMPT_CANCEL, ctx) || (dangMoSuaLichTest() && choSuaLichTest(p, ctx));
+  /* BPXL-1 (N57, PTA rà #1923): BPXL không huỷ / khôi phục lượt kể cả khi công tắc BẬT — bỏ grant BPXL ở nhánh công tắc. */
+  return can(p, PERMISSIONS.ATTEMPT_CANCEL, ctx) || (dangMoSuaLichTest() && choSuaLichTest(boVaiBpxl(p), ctx));
 }
 
 /** `require_` của đường ghi lịch Test (thay `require_(PLAN_WEEK)`). */

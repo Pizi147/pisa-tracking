@@ -10,6 +10,7 @@ import { HD_TVV } from './tvv.ts';
 import { HD_CX } from './cx.ts';
 import { HD_ADMIN } from './admin.ts';
 import { HD_HT } from './headTutor.ts';
+import { HD_BPXL } from './bpxl.ts';
 import { boDau, PANEL_HD, PHIEN_BAN_HD, type HuongDan, type ManHd, type MucHd, type TinhHuongHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
 import { chenHan } from '../domain/hanMacDinh.ts';
 import { KHOA_CHAM_SPEAKING } from '../domain/gopViec.ts';
@@ -18,15 +19,15 @@ import { NHOM_CV_TVV, TAB_CV, nhanTabCv } from '../domain/tongQuan.ts';
 export { PANEL_HD, PHIEN_BAN_HD };
 export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd, TinhHuongHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
 
-export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN, ht: HD_HT };
+export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN, ht: HD_HT, bpxl: HD_BPXL };
 
 export const TEN_VAI_HD: Record<VaiHd, string> = {
-  gv: t('Giáo viên'), ql: t('Head'), qt: t('Quản trị hệ thống'), tvv: t('Tư vấn viên'), cx: 'CX', admin: 'Admin', ht: 'Head tutor',
+  gv: t('Giáo viên'), ql: t('Head'), qt: t('Quản trị hệ thống'), tvv: t('Tư vấn viên'), cx: 'CX', admin: 'Admin', ht: 'Head tutor', bpxl: 'BPXL',
 };
 
 /** Vai của tài khoản cho Hướng dẫn: vai "rộng" nhất trước (QL dạy lớp vẫn đọc hướng dẫn QL). */
 export function vaiHdCua(roles: readonly string[] = []): VaiHd {
-  const thu: [string, VaiHd][] = [['system_admin', 'qt'], ['manager', 'ql'], ['teacher', 'gv'], ['consultant', 'tvv'], ['cx', 'cx'], ['office_admin', 'admin'], ['head_tutor', 'ht']];
+  const thu: [string, VaiHd][] = [['system_admin', 'qt'], ['manager', 'ql'], ['teacher', 'gv'], ['consultant', 'tvv'], ['cx', 'cx'], ['office_admin', 'admin'], ['scheduler', 'bpxl'], ['head_tutor', 'ht']];
   return thu.find(([r]) => roles.includes(r))?.[1] ?? 'gv';
 }
 

@@ -9,20 +9,24 @@ import { padCode } from '../util.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { DEMO_DATE } from './data.ts';
 
+const NOW_OV2A = `${DEMO_DATE}T09:00:00.000Z`;
+/** Một tài khoản demo (mật khẩu mặc định) + một vai ở `branchId` (null = toàn hệ thống). */
+function taiKhoanDemo(conn: any, ten: string, email: string, title: string, vai: string, branchId: number | null): number {
+  const now = NOW_OV2A;
+  const n = (conn.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS n FROM users').get() as any).n as number;
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
+  const id = Number(conn.prepare(
+    `INSERT INTO users (code, full_name, email, title, password_hash, password_salt, approval_state, status, created_at)
+     VALUES (?,?,?,?,?,?, 'approved', 'active', ?)`).run(padCode('NV', n, 3), ten, `${email}${EMAIL_SUFFIX}`, title, hash, salt, now).lastInsertRowid);
+  const roleId = (conn.prepare('SELECT id FROM roles WHERE key = ?').get(vai) as any).id as number;
+  conn.prepare('INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?,?,?)').run(id, roleId, branchId, 'active', now);
+  return id;
+}
+
 export function buildOv2aDemo(conn: any): { tvv: number; soHv: number } {
-  const now = `${DEMO_DATE}T09:00:00.000Z`;
   const cp = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
-  const taiKhoan = (ten: string, email: string, title: string, vai: string, branchId: number | null) => {
-    const n = (conn.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS n FROM users').get() as any).n as number;
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.scryptSync(DEFAULT_ADMIN_PASSWORD, salt, 64).toString('hex');
-    const id = Number(conn.prepare(
-      `INSERT INTO users (code, full_name, email, title, password_hash, password_salt, approval_state, status, created_at)
-       VALUES (?,?,?,?,?,?, 'approved', 'active', ?)`).run(padCode('NV', n, 3), ten, `${email}${EMAIL_SUFFIX}`, title, hash, salt, now).lastInsertRowid);
-    const roleId = (conn.prepare('SELECT id FROM roles WHERE key = ?').get(vai) as any).id as number;
-    conn.prepare('INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?,?,?)').run(id, roleId, branchId, 'active', now);
-    return id;
-  };
+  const taiKhoan = (ten: string, email: string, title: string, vai: string, branchId: number | null) => taiKhoanDemo(conn, ten, email, title, vai, branchId);
   taiKhoan('Đào Minh Ngọc', 'ngoc.dao', 'Admin Cẩm Phả', 'office_admin', cp);
   const tvv = taiKhoan('Nguyễn Thu Hương', 'huong.nguyen', 'Tư vấn viên Cẩm Phả', 'consultant', cp);
   taiKhoan('Vũ Thanh Tâm', 'tam.vu', 'CX', 'cx', null);
@@ -33,4 +37,10 @@ export function buildOv2aDemo(conn: any): { tvv: number; soHv: number } {
   ).all(cp) as any[]).slice(0, 4);
   for (const r of em) conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv, r.id);
   return { tvv, soHv: em.length };
+}
+
+/** BPXL-1 (N57): một Chuyên viên Xếp lịch ở Monbay (tên GIẢ). Dựng CUỐI seed — id người dùng cũ không đổi. */
+export function buildBpxlDemo(conn: any): number {
+  const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id as number;
+  return taiKhoanDemo(conn, 'Lương Thu Trang', 'trang.luong', 'Chuyên viên Xếp lịch Monbay', 'scheduler', mb);
 }

@@ -10,7 +10,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, boVaiCx, can, coVaiCx, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, boVaiBpxl, boVaiCx, can, coVaiCx, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -836,6 +836,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * N52: CX không là chủ việc. "Của tôi" (mọi nơi không `tat-ca`: badge, chuông, hồ sơ GV…) = việc của các vai KHÁC của tài khoản; CX thuần → rỗng, 0 câu.
    * "Tất cả" = danh sách của Quản lý trong phạm vi grant CX (`nhinNhuQl`) — cuối hàm bỏ hết "của tôi", làm thay theo quyền thật (`nguoiXem`).
    */
+  /* BPXL-1 (N57): BPXL không bị giao việc theo luật — bỏ grant BPXL; BPXL thuần → rỗng, 0 câu. */
+  if (p.roleKeys.includes('scheduler')) {
+    p = boVaiBpxl(p);
+    if (!p.grants.length) return chiGiao();   // GV-1 (N58): BPXL thuần — chỉ việc được giao + Xếp lịch họp (câu `giao` đọc ở trên, theo grant gốc)
+  }
   const nguoiXem = p;
   if (coVaiCx(p)) {
     if (f.nguoi === 'tat-ca' && phamViXemViec(p)) p = nhinNhuQl(p);

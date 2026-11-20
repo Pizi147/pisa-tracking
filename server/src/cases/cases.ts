@@ -24,7 +24,7 @@ import { mucPaCua, maNhomHopLe, cauHinh,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { HttpError, addDays, badRequest, canXacNhan, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { boLopCu, can, isCoreTeacherOf, khongQuyenTam, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
+import { boLopCu, boVaiBpxl, can, isCoreTeacherOf, khongQuyenTam, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coNho, nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -514,8 +514,9 @@ const laRutSuaDiem = (c: { status?: string; outcome_note?: string | null }) =>
 export function caseAccess(caseId: number) {
   const c = loadCase(caseId);
   return {
+    /* BPXL-1 (N57): BPXL không xem Case — bỏ grant BPXL (vai khác của tài khoản giữ nguyên). */
     requireView: (p: Principal, message: string) =>
-      require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
+      require_(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, message),
     requireEdit: (p: Principal, message: string) => require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), message),
     /** Ngữ cảnh quyền của Case (lớp, học viên, kỹ năng) — cho `cases/boTro.ts` hỏi quyền mà không dựng lại (AUTH-01). */
     ctx: sosEditCtx(c),
@@ -2331,7 +2332,7 @@ export function kiemXemCase(p: Principal, caseId: number) {
   const giu = giuCuaCase(c, ivCuaCase);
   /* Chỉ PA đang chạy mở quyền xem — PA đã khép / huỷ thì người giữ việc (vd. chủ Case dự phòng) không còn việc ở đây. */
   if (!ivCuaCase.some((iv) => (iv.status === 'planned' || iv.status === 'started') && giu.get(iv.id) === p.userId)) {
-    require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, 'Case này nằm ngoài phạm vi bạn được xem.');
+    require_(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id }, 'Case này nằm ngoài phạm vi bạn được xem.');   // BPXL-1: không Case
   }
   return { c, ivCuaCase, giu };
 }
@@ -3149,6 +3150,7 @@ export function listCases(p: Principal, f: CaseFilters = {}): {
   scopeEmpty: boolean;
   facets?: ReturnType<typeof facetsOf>;
 } {
+  p = boVaiBpxl(p);   // BPXL-1 (N57): BPXL không xem Case — danh sách theo các vai khác của tài khoản
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
   return trongBoNho(() => {

@@ -4,7 +4,7 @@ import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, te
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { laLopKetThuc } from './hoanTat.ts';
-import { can, isCoreTeacherOf, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, qlDiem, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -72,7 +72,8 @@ function loadAttempt(attemptId: number): any {
  * việc của GVCN (mục 10.6), vì chỉ họ mới biết hôm đó em có đi học không.
  */
 export function canRequest(p: Principal, attempt: any): boolean {
-  if (can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id })) return true;
+  /* BPXL-1 (N57): "-" / huỷ điểm / vắng lớp thường là việc điểm — `qlDiem` (BPXL có plan.week chỉ để xếp lịch). */
+  if (qlDiem(p, { classId: attempt.class_id, studentId: attempt.student_id })) return true;
   return !!attempt.class_id && isCoreTeacherOf(p, attempt.class_id);
 }
 
@@ -680,7 +681,7 @@ export function duocGoDau(p: Principal, o: {
   /** LUAT-34 (T09): Hoàn tác — chính người vừa gõ "-", trong cửa sổ `duocHoanTacVang` — gỡ được cả khi "-" vừa huỷ phần thi (vắng 2 lần). */
   hoanTac?: boolean;
 }): string | null {
-  if (can(p, PERMISSIONS.PLAN_WEEK, { classId: o.classId })) return null;
+  if (qlDiem(p, { classId: o.classId })) return null;   // BPXL-1: gỡ "-" là việc điểm — BPXL không
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Head gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }

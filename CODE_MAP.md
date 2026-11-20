@@ -395,6 +395,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Tài khoản: lọc, nhóm, sửa thông tin, kỹ năng | `web/src/modules/platform/AccountsAdmin.tsx` · `shared/domain/taiKhoan.ts` (`locTaiKhoan`) · `accounts.ts` (`adminUpdateAccount`, `setUserSkills`) |
 | Xoá tài khoản (cứng / mềm) | `server/src/platform/xoaTaiKhoan.ts` · `web/src/modules/platform/XoaTaiKhoanPanel.tsx` |
 | Vai trò, quyền, nhóm quyền, cấp riêng | `shared/domain/{people,nhomQuyen}.ts` (`ROLES`, `PERMISSIONS`) · `web/src/modules/platform/CapQuyenRieng.tsx` · `accounts.ts` (`setUserPermissions`) |
+| Vai BPXL — Chuyên viên Xếp lịch (N57: xếp / dời MT + lịch lớp thường, chỉ xem phần còn lại, không bị giao việc; migrate `server/src/migrate/prBpxl.ts`) | `server/src/seed/data.ts` (`scheduler`) · `server/src/permissions.ts` (`boVaiBpxl`, `qlDiem`, `duocSuaLichLop`) · `server/src/platform/nav.ts` (`trangDauTest`) · phép kiểm `server/src/tests/prBpxl.tests.ts` |
 | Bảng quyền theo vai | `server/src/platform/sysconfig.ts` (`setRolePermission`, `maTranQuyen`) · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` (`can`, `teacherAllows`, `scoreEditPath`, `editableSkills`) |
 | Chương trình, lộ trình FT, chương trình mới | `server/src/platform/sysconfig.ts` (`saveProgramme`, `saveRoute`, `taoChuongTrinh`) · `web/src/modules/platform/CatalogAdmin.tsx` |
@@ -411,7 +412,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Chữ tự do: một cửa kiểm | `server/src/util.ts` (`chuTuDo`) |
 | Tiếng Anh: ngôn ngữ tài khoản | `web/src/ui/NutNgonNgu.tsx` · `web/src/lib/ngonNgu.ts` (`doiNgonNgu`) · `server/src/util.ts` (`loi`) · `server/src/app.ts` (`traLoiLoi`) |
 | Dịch chữ GV nhập | `web/src/ui/ChuDich.tsx` · `shared/domain/doanNgonNgu.ts` (`canDich`) · `POST /dich` → `server/src/dich/dich.ts` |
-| Hướng dẫn theo vai | `shared/huongDan/{kieu,gv,ql,qt,tvv,cx,admin,headTutor}.ts` |
+| Hướng dẫn theo vai | `shared/huongDan/{kieu,gv,ql,qt,tvv,cx,admin,headTutor,bpxl}.ts` |
 | Danh mục route, bọc handler | `server/src/routes/index.ts` · `server/src/routes/helpers.ts` (`wrap`, `qInt`) |
 | Điểm khởi động máy chủ | `server/src/index.ts` · `server/src/app.ts` |
 

@@ -13,7 +13,7 @@ import { db, theoLo, tx } from '../db.ts';
 import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, chuTep, chuanHoaMaLop, gioVn, soTenVi, type HvKeHoach, type KnLich } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
-import { can, classScopeSql, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { can, classScopeSql, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, scopeFor, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
 import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
@@ -707,6 +707,7 @@ export function luuDot(p: Principal, i: {
  * THI LẠI (T37 "ép vào đợt trùng", §5.5, Q13 — chủ sản phẩm chốt 29/09 câu 1 = A): Quản lý cho em thi lại kỹ năng ĐÃ CÓ ĐIỂM ở
  * chính đợt đó — xoá ô (RB-5 ghi lý do, lịch sử điểm giữ giá trị cũ) → "chờ thi" → tuần mới. Mọi ô của kỹ năng (W1 + W2). Một `tx`.
  */
+export const THI_LAI_MSG = 'Thi lại huỷ điểm đã có — Head hoặc GV kỹ năng đó làm.';
 export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; periodId: number; lyDo?: string | null; force?: boolean }) {
   const a = docDot(i.attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
@@ -720,6 +721,8 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
     if (!entrySkillsOf(k as any).some((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)))) {
       throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; kỹ năng đã huỷ thì "Khôi phục và đặt tuần".`);
     }
+    /* BPXL-1 (N57, PTA rà #1923): thi lại huỷ điểm đã có — chặn TRƯỚC giao dịch người không sửa được điểm (BPXL), không 403 giữa chừng. */
+    if (entrySkillsOf(k as any).some((e) => !scoreEditPath(p, a.class_id, e, { lich_su: 0, kind: a.kind }))) throw forbidden(THI_LAI_MSG);
   }
   return tx(() => {
     for (const k of i.skills.map(chonKyNang)) {

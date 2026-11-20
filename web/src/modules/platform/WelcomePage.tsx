@@ -7,7 +7,7 @@ import { Alert, ChuDam, Field, Info, NutChon, SectionNote } from '../../ui/ui.ts
 import { ChonKyNang } from './ProfilePage.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 
-import { ROLES, ROLE_LABEL, VAI_DANG_KY, type Role } from '@shared/domain/index.ts';
+import { ROLES, ROLE_LABEL, VAI_CN_TUY_CHON, VAI_DANG_KY, type Role } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 type Account = {
@@ -305,7 +305,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
         CHI NHÁNH LÀ ĐỀ NGHỊ, KHÔNG PHẢI QUYẾT ĐỊNH. Nói thẳng điều đó ngay ở đây để không ai
         tưởng mình vừa tự cấp cho mình quyền vào năm chi nhánh.
       */}
-      <Field as="div" label={t('Chi nhánh bạn đang hoạt động')} required={role !== 'cx'}
+      <Field as="div" label={t('Chi nhánh bạn đang hoạt động')} required={!VAI_CN_TUY_CHON.includes(role)}
         hint={t('Đây là đề nghị của bạn — người duyệt sửa lại được trước khi đồng ý.')}>
         <div className="flex flex-wrap gap-1.5">
           {(branches.data ?? []).map((b) => (

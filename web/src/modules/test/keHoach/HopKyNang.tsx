@@ -7,7 +7,7 @@ import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import { useSession } from '../../../lib/session.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, NUT_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, NUT_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, laChiXepLich, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
   nhanTuanKhoa, tenMon, tenMonNgan, theoTuanChung, trangThaiTT, tuanDaSo, tuanMacDinhDotMoi, tuanNamChu,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
@@ -75,11 +75,12 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const ngayNghiepVu = nghiepVu || null;
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
   /** `ca-luot` = nhật ký cả lượt (⋯ đầu hộp). */
-  const { can } = useSession();
+  const { can, session } = useSession();
+  const chiXepLich = laChiXepLich(session?.roles);   // BPXL-1 (N57): không Vắng / Huỷ điểm / thi lại / xoá MT có điểm
 
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` qua `menuHopKyNang` (T38; mockup phần 2). Hộp là màn của Quản lý. */
-  const quyen = { nhapDiem: true, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false,
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE) };
+  const quyen = { nhapDiem: !chiXepLich, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false,
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diem: !chiXepLich };
   const ttCua = (k: KyNangKH): TrangThaiTT => {
     const o = kn[k];
     if (moi) return 'chua-xep';
@@ -353,7 +354,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   /* Chủ SP 06/11: FT ⋯ "Xoá MT{n}" (mọi kỹ năng ra khỏi đợt, tuần giữ) — cùng đường, cùng chữ hồ sơ MT; MT đã xoá → "Khôi phục MT{n}". */
   const daXoaHet = loai === 'ft' && !moi && ky.every((k) => !kn[k]?.batBuoc);
   /* RKC: MT có điểm / đã làm bài vẫn Xoá — máy chủ hỏi "huỷ điểm rồi xoá?". */
-  const lyDoXoaFt = khoaCt(...ky.map((k) => (kn[k]?.batBuoc ? kn[k]?.tuan : null)));
+  const lyDoXoaFt = khoaCt(...ky.map((k) => (kn[k]?.batBuoc ? kn[k]?.tuan : null)))
+    ?? (chiXepLich && ky.some((k) => kn[k]?.khoa === 'đã có điểm') ? t('{nhan} đã có điểm — nhờ Head xoá.', { nhan: nhanDot(dot) }) : null);   // BPXL-1
   const mtNay = { attemptId: attemptId ?? 0, nhan: nhanDot(dot), tenHv, onXong: () => { onSaved(); onClose(); } };
   const chanFt = (lyDo: string | null) => ({ tat: !!(lyDo || daSua || doiGhi || busy), title: lyDo ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined) });
   const mucDau = attemptId === null ? [] : loai === 'thuong' ? [

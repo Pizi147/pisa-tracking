@@ -33,13 +33,17 @@ export function navOf(p: Principal): NavQuyen {
   /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1, C05): TVV có Công việc — CHỈ việc của chính mình (`/my-work` lọc `NHOM_VIEC_TVV`), không Chấm điểm / Case / duyệt. */
   const viecTvv = !viec && p.roleKeys.includes('consultant');
   const work = (viec && (attempt || board || meeting)) || viecTvv;
+  const overview = !(work && (!analysis || hvCuaToi)) && !(tutor && !analysis && !work && !students);
+  /* BPXL-1 (N57): Chuyên viên Xếp lịch (không kèm vai GV, không Tổng quan) — trang đầu Kế hoạch Test, menu Test · Học viên & Lớp · Công việc. */
+  const trangDauTest = !overview && plan && test && p.roleKeys.includes('scheduler') && !p.roleKeys.includes('teacher');
   return {
     /* NEN-V5: mọi vai có Tổng quan. GD-1 (Overhaul V6, `04-thiet-ke.md` 5.1): GV (Công việc, không Phân tích, không TVV — cùng điều kiện vai 'gv'
        của `OverviewPage`) không còn Tổng quan: trang đầu = Công việc, số liệu sang Hồ sơ GV. */
     /* GD-8 (mockup v21 ④ R4.1): TVV (Công việc của mình + HV của tôi) cũng không còn Tổng quan — trang đầu = Công việc, dải 5 chỉ số ở đầu trang. */
     /* N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor (vai 'ht' của `OverviewPage`: không Phân tích / Công việc / Học viên, có Tutor) vào thẳng
        /tutor → không còn mục Tổng quan. Kèm vai GV có Công việc → nhánh GV ở trên (N43). */
-    overview: !(work && (!analysis || hvCuaToi)) && !(tutor && !analysis && !work && !students),
+    overview,
+    trangDauTest,
     students,
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,
@@ -51,9 +55,9 @@ export function navOf(p: Principal): NavQuyen {
     testPlanXem: test && (plan || p.assignments.some((a) => activeAt(a, demoToday())) || lopFtChoGvSpeaking(p).length > 0),
     work,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
-    /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
+    /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`), BPXL (N57) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
     /* N52: hộp Chờ bạn duyệt + badge là việc của QL — CX duyệt / làm thay ở hồ sơ em, không có hộp (vai CX không là chủ việc). */
-    workApprove: viec && can(boVaiCx(p), PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)
+    workApprove: viec && can(boVaiCx(p), PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !trangDauTest && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)
     workChamDiem: support && chamDiem,
     workCx: support && coVaiCx(p) && phamViXemViec(p) === 'het',
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
