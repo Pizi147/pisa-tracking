@@ -108,6 +108,7 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
     assert(viec && /đã thu hồi/.test(viec.tieuDe), `việc TVV: ${JSON.stringify(viec)}`);
     const xem = bp.xemViecBaoPh(tvv, bl[0].id);
     assert(xem.coTheGhi === true && xem.boiCanh.viPham.length === 1, JSON.stringify({ coTheGhi: xem.coTheGhi, vp: xem.boiCanh.viPham }));
+    assert(xem.boiCanh.viPham.every((r: any) => Number.isInteger(r.id) && typeof r.moTa === 'string') && Number.isInteger(xem.boiCanh.xuLyId), `VI-PHAM-MO: dòng vi phạm thiếu id / mô tả: ${JSON.stringify(xem.boiCanh)}`);
     yc.huyQuyetDinh(ql, the);
     assert(baoLaiCua(mid).length === 0, 'Huỷ quyết định: việc báo lại gỡ (chưa ghi lần nào)');
   }));

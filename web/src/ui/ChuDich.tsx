@@ -4,7 +4,7 @@
  * Lỗi / hết lượt → giữ bản gốc + câu lỗi + "Thử lại". Máy chủ tắt dịch (`session.dichBat`) → chỉ in chữ, không nút.
  * R1-DICH-2: đổi nguồn / chữ → đặt lại trạng thái, phản hồi về muộn bị bỏ; máy chủ trả `gocBam` — lệch chữ đang thấy thì không gắn bản dịch.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { canDich } from '@shared/domain/index.ts';
 import { NGON_NGU, dichDu, t } from '@shared/i18n/index.ts';
 import { api } from '../lib/api.ts';
@@ -73,5 +73,74 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
         </button>}
       </span>
     </>
+  );
+}
+
+/**
+ * VI-PHAM-MO (chủ SP 21/11): MỘT nút Dịch cho NHIỀU chữ cùng chỗ (vi phạm: tên + mô tả) — dùng chung bộ nhớ `daDich`, hàm băm và đường `/dich` ở trên.
+ * Chữ rỗng / không dịch được bị bỏ qua (không bao giờ gọi máy chủ với chữ rỗng). `chu(i)` = bản dịch khi đang xem dịch, không thì chữ gốc.
+ */
+export type MucDich = { chu: string | null | undefined; nguon: NguonDich };
+/** Chữ nào đang XEM BẢN DỊCH — dùng chung giữa nút Dịch (`useDichGop`) và chữ ở nơi khác trang (`TenDich`): đổi ở nút, chữ ở dòng cha đổi theo. */
+const xemChung = new Set<string>();
+const nguoiNghe = new Set<() => void>();
+const theoDoi = (f: () => void) => { nguoiNghe.add(f); return () => { nguoiNghe.delete(f); }; };
+const datXem = (khoas: string[], xem: boolean) => { for (const k of khoas) { if (xem) xemChung.add(k); else xemChung.delete(k); } nguoiNghe.forEach((f) => f()); };
+/** Chữ ở dòng cha (vd tên vi phạm): bản dịch khi nút Dịch của phần mở đang xem dịch, không thì chữ gốc. */
+export function TenDich({ chu, nguon }: { chu: string; nguon: NguonDich }) {
+  const k = khoaCua(nguon, chu);
+  const ban = useSyncExternalStore(theoDoi, () => (xemChung.has(k) ? daDich.get(k) : undefined));
+  return <>{ban ?? chu}</>;
+}
+const LECH_CHU = () => t('Nội dung vừa đổi — tải lại trang để dịch.');
+export function useDichGop(muc: MucDich[]) {
+  const { session } = useSession();
+  const ds = muc.map((m) => ({ goc: m.chu ?? '', nguon: m.nguon }));
+  const lamDuoc = (x: { goc: string }) => x.goc.trim() !== '' && dichDu(x.goc) === x.goc && canDich(x.goc, NGON_NGU);
+  const cac = ds.filter(lamDuoc);
+  const khoa = JSON.stringify(cac.map((x) => khoaCua(x.nguon, x.goc)));
+  const khoaMuc = cac.map((x) => khoaCua(x.nguon, x.goc));
+  const xemDich = useSyncExternalStore(theoDoi, () => khoaMuc.length > 0 && khoaMuc.every((k) => xemChung.has(k)));
+  const setXemDich = (xem: boolean) => datXem(khoaMuc, xem);
+  const [dang, setDang] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const khoaHienTai = useRef(khoa);
+  useEffect(() => { khoaHienTai.current = khoa; setDang(false); setLoi(null); }, [khoa]);
+  const co = !!session?.dichBat && cac.length > 0;
+  const daCo = cac.every((x) => daDich.has(khoaCua(x.nguon, x.goc)));
+  const hien = co && xemDich && daCo;
+  const goi = async () => {
+    if (daCo) { setXemDich(true); return; }
+    const k = khoa;
+    setDang(true); setLoi(null);
+    try {
+      await Promise.all(cac.filter((x) => !daDich.has(khoaCua(x.nguon, x.goc))).map(async (x) => {
+        const [r, bam] = await Promise.all([api.post<{ banDich: string; gocBam: string }>('/dich', { ...x.nguon, den: NGON_NGU }), bamChu(x.goc.trim())]);
+        if (bam && r.gocBam !== bam) throw new Error(LECH_CHU());
+        daDich.set(khoaCua(x.nguon, x.goc), r.banDich);
+      }));
+      if (khoaHienTai.current !== k) return;   // về muộn: chỗ này đã sang chữ khác
+      setXemDich(true);
+    } catch (e) {
+      if (khoaHienTai.current === k) setLoi((e as Error).message || t('Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.'));
+    } finally { if (khoaHienTai.current === k) setDang(false); }
+  };
+  return {
+    co, hien, dang, loi, lech: loi === LECH_CHU(),
+    bam: dang ? undefined : hien ? () => setXemDich(false) : goi,
+    chu: (i: number) => { const x = ds[i]; return hien && lamDuoc(x) ? daDich.get(khoaCua(x.nguon, x.goc)) ?? x.goc : x.goc; },
+  };
+}
+
+/** Nút của `useDichGop` — cùng nhãn / trạng thái như `ChuDich` (một nút đổi nhãn, giữ focus). */
+export function NutDichGop({ d }: { d: ReturnType<typeof useDichGop> }) {
+  if (!d.co) return null;
+  return (
+    <span aria-live="polite" className={d.loi && !d.dang ? 'mt-1 block text-xs' : 'whitespace-nowrap'}>
+      {d.loi && !d.dang && !d.hien && <span role="alert" className="text-bad">{d.loi}</span>}
+      {!d.lech && <button type="button" className={NUT} aria-disabled={d.dang || undefined} aria-busy={d.dang || undefined} onClick={d.bam}>
+        {d.hien ? t('Xem bản gốc') : d.dang ? t('Đang dịch…') : d.loi ? t('Thử lại') : t('Dịch')}
+      </button>}
+    </span>
   );
 }

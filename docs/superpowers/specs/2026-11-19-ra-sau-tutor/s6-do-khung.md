@@ -50,105 +50,29 @@ Phân loại khi mở thật từng nhóm đúng vai (61 dòng đo lại trên s
 
 Không thêm request / câu SQL (hướng dẫn là dữ liệu tĩnh).
 
-## 4. Lệch bảng / cắt chữ còn lại, theo màn (để PTA giao sửa)
+## 4. Lệch bảng / cắt chữ — LECH-BANG (20/11): 127 → **21**
 
-(g) lệch tiêu đề ↔ ô, đường cơ sở lệch > 2 px, cao hàng ∉ {44, 64}; (c) chữ cắt. Đã gộp trùng theo chiều rộng / sáng tối. Tên PA Tutor dài cắt 2 dòng ở 375 (hv-menu, panel-tao-case) là chủ ý "tối đa 2 dòng" (chủ SP 17/11).
+Đo một mình trên seed sạch (API 4731 · web 5731), trước = main `9ae217245`, sau = 3 PR LECH-BANG. Không thêm request / câu SQL.
 
-**bang-diem-thuong** (5)
-- g «Bảng điểm MB FOU 12» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 9
-- g «Bảng điểm MB FOU 12» g2 đường cơ sở lệch > 2px 2/5 hàng 
-- g «Bảng điểm MB FOU 12» g3 cao hàng ∉ {44, 64}
-- g «Bảng điểm MB FOU 12» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Bảng điểm MB FOU 12» g2 đường cơ sở lệch > 2px 1/6 hàng 
+| Loại | Trước | Sau |
+|---|---|---|
+| g (lệch bảng) | 87 | **21** (đều [XM] dưới) |
+| c (chữ cắt) | 30 | **0** (16 dòng tên PA Tutor 2 dòng ở 375 vào miễn `TUTOR-2-DONG` — chủ SP 17/11) |
+| f | 8 | **0** |
+| lich-panel-pa | 2 | **0** (kịch bản) |
+| Tổng | 127 | **21** (−83 %) |
 
-**gv-bang-diem-thuong** (4)
-- g «Bảng điểm MB FOU 12» g2 đường cơ sở lệch > 2px 2/2 hàng 
-- g «Bảng điểm MB FOU 12» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 9
-- g «Bảng điểm MB FOU 12» g2 đường cơ sở lệch > 2px 2/5 hàng 
-- g «Bảng điểm MB FOU 12» g3 cao hàng ∉ {44, 64}
+Theo màn (trước → sau): bang-diem-thuong 12 → 0 · gv-bang-diem-thuong 8 → 0 · gv-diem-lop 4 → 0 · test-diem-lop 4 → 0 · test-lichTest 4 → 0 · gv-hop-diem 8 → 0 · gv-nhap-diem 8 → 0 · nhap-diem 4 → 0 · gvbm-test 6 → 3 · gv-ho-so 10 → 6 · gv-ho-so-ql 4 → 2 · sos-cx 8 → 0 · phan-tich 7 → 4 · phan-tich-thuong 4 → 2 · phan-tich-giao-vien 2 → 0 · phan-tich-hieu-qua-pa 10 → 4 · phan-tich-tong-hop 6 → 0 · lich 2 → 0 · hv-gvbm / hv-hoc-thuat / hv-menu / panel-tao-case 4 + 4 + 4 + 4 → 0 (miễn TUTOR-2-DONG). Không màn nào tăng.
 
-**gv-diem-lop** (2)
-- g «Bảng điểm MB Pre FOU 03» g2 đường cơ sở lệch > 2px 3/4 hàng 
-- g «Bảng điểm MB Pre FOU 03» g3 cao hàng ∉ {44, 64}
+Gốc đã sửa:
+1. **Lưới điểm** (`index.css`): khối `.lt-bang .bang` (bảng Lịch thi của Học viên & Lớp) lọt vào lưới điểm lồng trong bảng Lịch Test (`table.lt-bang`) — đè đệm tiêu đề cột chip (20 → 12), căn giữa dọc, hàng `height: auto` (42,5). Giới hạn về `div.lt-bang .bang`. Thêm: dòng phụ cột Kết quả lùi 8 px như chữ trong chip (`LuoiThuong` `KetQua`); ô điểm FT chưa có ký hiệu ✓/✗ giữ khoảng trắng (span rỗng kéo đường cơ sở nút xuống 4,7 px — `HopNhapDiem`).
+2. **Hồ sơ GV**: chip kỹ năng "Lớp đang dạy" bỏ kéo trái `-ml-1.5` (cột chip, tiêu đề đã lùi 20). Cột "SOS hiện tại" (Lớp chủ nhiệm) 340 → 380 px = mockup `v21/ho-so-gv.html`.
+3. **sos-cx 375**: công tắc FT / LT cạnh ô "Xem" bị ép còn 2 px (ô Xem `w-full`, công tắc `flex-1` cơ sở 0) → công tắc không co, chỉ giãn khi đứng một mình.
+4. **Phân tích**: hàng tổng "Theo lớp" vạch trên = bóng trong (viền 1 px làm hàng 45,5); hàng chân "S chéo chung" hai dòng có `data-phu-odiem` → 64; thẻ tuần 375 theo mockup `v21/phan-tich.html`: Kết quả FT 3 × 2 (Lượt MT · Thiếu điểm · trống / SOS 1 · 2 · 3), nhãn một dòng không "…", cột tối thiểu bằng nhãn; "Tiến bộ theo kỹ năng" 375 số + % giữa cột.
+5. **lich-panel-pa**: kịch bản sai — Case 5 nay chỉ còn PA Tutor (GV không ghi kết quả) → dùng Case 13; "Ngày ghi" chỉ mở sau "Đổi" (chủ SP 14/11) → kịch bản bấm Đổi.
 
-**gv-ho-so** (5)
-- c chữ cắt  «SOS 1 4 SOS 2 2 SOS 3 5»
-- g «Lớp đang dạy» g1 lệch tiêu đề ↔ ô 1 cột: Kỹ năng -5.9
-- g «Lớp đang dạy» g2 đường cơ sở lệch > 2px 9/10 hàng 
-- g «Lớp chủ nhiệm» g2 đường cơ sở lệch > 2px 8/8 hàng 
-- g «Em đang bổ trợ» g2 đường cơ sở lệch > 2px 2/2 hàng 
-
-**gv-ho-so-ql** (2)
-- g «Lớp đang dạy» g1 lệch tiêu đề ↔ ô 1 cột: Kỹ năng -8
-- g «Em đang bổ trợ» g2 đường cơ sở lệch > 2px 2/2 hàng 
-
-**gv-hop-diem** (4)
-- g «Lưới điểm MT1, MT2» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Lưới điểm MT1, MT2» g2 đường cơ sở lệch > 2px 9/9 hàng 
-- g «Bảng điểm MB Pre FOU 03» g2 đường cơ sở lệch > 2px 3/4 hàng 
-- g «Bảng điểm MB Pre FOU 03» g3 cao hàng ∉ {44, 64}
-
-**gv-nhap-diem** (4)
-- g «Lưới điểm MT1, MT2» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Lưới điểm MT1, MT2» g2 đường cơ sở lệch > 2px 9/9 hàng 
-- g «Lưới điểm MT1, MT3» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Lưới điểm MT1, MT3» g2 đường cơ sở lệch > 2px 2/6 hàng 
-
-**gvbm-test** (3)
-- g «Bảng điểm MB FOU 12» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Bảng điểm MB FOU 12» g2 đường cơ sở lệch > 2px 1/6 hàng 
-- g «Bảng điểm MB FOU 12» g3 cao hàng ∉ {44, 64}: 41 · 42.5
-
-**hv-gvbm** (2)
-- c chữ cắt  «PA Tutor Speaking 4 buổi, ghép nhóm hai em»
-- c chữ cắt  «PA Tutor Writing 1-1, chữa trực tiếp bố cục từng bài»
-
-**hv-hoc-thuat** (2)
-- c chữ cắt  «PA Tutor Speaking 4 buổi, ghép nhóm hai em»
-- c chữ cắt  «PA Tutor Writing 1-1, chữa trực tiếp bố cục từng bài»
-
-**hv-menu** (2)
-- c chữ cắt  «PA Tutor Speaking 4 buổi, ghép nhóm hai em»
-- c chữ cắt  «PA Tutor Writing 1-1, chữa trực tiếp bố cục từng bài»
-
-**nhap-diem** (2)
-- g «Lưới điểm MT1, MT3» g1 lệch tiêu đề ↔ ô 1 cột: Kết quả 8
-- g «Lưới điểm MT1, MT3» g2 đường cơ sở lệch > 2px 2/6 hàng 
-
-**panel-tao-case** (2)
-- c chữ cắt  «PA Tutor Speaking 4 buổi, ghép nhóm hai em»
-- c chữ cắt  «PA Tutor Writing 1-1, chữa trực tiếp bố cục từng bài»
-
-**phan-tich** (4)
-- g «Theo lớp» g1 lệch tiêu đề ↔ ô 2 cột: Đạt MT · HV -2.7 · Tiến bộ · lượt -2.7
-- g «Theo lớp» g3 cao hàng ∉ {44, 64}
-- g «Tiến bộ theo kỹ năng» g1 lệch tiêu đề ↔ ô 3 cột: ↑ Tăng 3.1 · Giữ nguyên 3.1 · ↓ Giảm 3.1
-- g «Tiến bộ theo kỹ năng» g1 lệch tiêu đề ↔ ô 3 cột: ↑ Tăng -15.7 · Giữ nguyên -22.1 · ↓ Giảm -15.7
-
-**phan-tich-giao-vien** (1)
-- g «Giáo viên — Chấm Test và Việc» g3 cao hàng ∉ {44, 64}
-
-**phan-tich-hieu-qua-pa** (5)
-- g «Theo tuần» g1 lệch tiêu đề ↔ ô 3 cột: Tuần 32 · Thiếu điểm -2.1 · Chưa chốt PA -4.3
-- g «Theo tuần» g3 cao hàng ∉ {44, 64}: 46 · 52
-- c chữ cắt  «Thiếu điểm»
-- c chữ cắt  «Chưa chốt PA»
-- g «Theo tuần» g1 lệch tiêu đề ↔ ô 3 cột: Tuần 32 · Thiếu điểm -3.5 · Chưa chốt PA -5.8
-
-**phan-tich-thuong** (2)
-- g «Theo lớp» g1 lệch tiêu đề ↔ ô 1 cột: Đạt Test · bài -6.2
-- g «Theo lớp» g3 cao hàng ∉ {44, 64}
-
-**phan-tich-tong-hop** (2)
-- c chữ cắt  «Thiếu điểm»
-- c chữ cắt  «Chưa chốt PA»
-
-**sos-cx** (4)
-- f chữ bị cắt bởi khối overflow-hidden 2<19 «FT11»
-- f chữ bị cắt bởi khối overflow-hidden 2<17 «11»
-- f chữ bị cắt bởi khối overflow-hidden 2<16 «LT21»
-- f chữ bị cắt bởi khối overflow-hidden 2<17 «21»
-
-**test-diem-lop** (2)
-- g «Bảng điểm MB Pre FOU 03» g2 đường cơ sở lệch > 2px 3/4 hàng 
-- g «Bảng điểm MB Pre FOU 03» g3 cao hàng ∉ {44, 64}
+Còn lại 21 dòng — [XM] cho PTA Tutor (không tự sửa: cần đổi bố cục / thao tác hoặc thêm miễn):
+- **[XM-1] hồ sơ GV g2** (8 dòng: Lớp đang dạy · Lớp chủ nhiệm · Em đang bổ trợ, 1440 / 1280): mockup `v21/ho-so-gv.html` (`tong-quan.css .bang td{vertical-align:middle}`) cố ý căn giữa dọc (hộp số ngang tên lớp hai dòng — GD-15). Mockup thắng luật "chung đường cơ sở" → đề xuất miễn g2 `gv-ho-so(-ql)`.
+- **[XM-2] Phân tích `.cap-so`** (6 dòng: Theo lớp Đạt MT / Tiến bộ / Đạt Test, Tiến bộ theo kỹ năng 1440 / 1280): hộp số căn phải · phân số căn trái quanh TÂM cột (mockup v19 khung 3a — số các dòng thẳng nhau); máy đo so tâm mực nên báo ±3–6 px. Đề xuất: miễn g1 cho ô `.cap-so`, hoặc dạy `do-bang` lấy tâm khối `.cap-so`.
+- **[XM-3] `phan-tich-hieu-qua-pa` «Theo tuần»** (4 dòng): đường `?goc=hieu-qua-pa` chuyển về trang Tổng hợp — cùng bảng đã miễn `PT-BANG` ở `phan-tich-tong-hop`. Đề xuất thêm `hieu-qua-pa` vào khớp của dòng miễn `PT-BANG`.
+- **[XM-4] `gvbm-test`** (3 dòng: L / R / G+V lệch −19, hàng 61 ở 1280): vai GV bổ trợ chỉ xem — ô có MỘT thao tác nên hiện nút chữ "Lịch sử" (ẩn chờ rê, giữ chỗ ~60 px) thay ⋯ 28 px mà tiêu đề chừa (`.luoi-thuong th[data-kieu=diem-ti-le]` đệm phải 44); ở 1280 nút xuống dòng. Phương án: ô chỉ đọc dùng ⋯ chứa "Lịch sử" như vai khác (đổi thao tác → cần chủ SP), hoặc chừa theo bề rộng nút (CSS `:has`).

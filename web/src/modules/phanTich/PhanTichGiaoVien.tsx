@@ -170,7 +170,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     <span className="inline-flex items-center gap-1.5">
       {tong && nCn > 1 && nutMo(id, ten, nCn)}
       <span className="grid leading-tight"><span className="font-semibold italic text-dim">{ten}</span>
-        <span className="text-xs text-faint">{tong && nCn > 1 ? t('{n} chi nhánh', { n: nCn }) : phu}</span></span>
+        {/* LECH-BANG: dòng phụ đánh dấu `data-phu-odiem` → hàng chân hai dòng cao 64 như mọi hàng có dòng phụ (không 52). */}
+        <span className="text-xs text-faint" data-phu-odiem="">{tong && nCn > 1 ? t('{n} chi nhánh', { n: nCn }) : phu}</span></span>
     </span>
   );
   const soCpc = (n: number, cn?: number) => (n ? <OSo giaTri={n} nguon={nguonO(chuaPc!.h, 'cham-diem', cn)} tieuDe={t('Chưa phân công')} className="text-bad" /> : <span>0</span>);

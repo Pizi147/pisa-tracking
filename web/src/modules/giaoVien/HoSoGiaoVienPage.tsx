@@ -329,7 +329,8 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
           <ChipBanGiaoLop l={l} />
         </span>
       );
-      case 'ky': return <span className={`flex gap-1 ${dienThoai ? '' : '-ml-1.5'}`}>{l.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span>;
+      /* LECH-BANG: cột kiểu chip — tiêu đề đã lùi 20 px (index.css `th[data-kieu="chip"]`) thẳng chữ trong chip; không kéo chip sang trái. */
+      case 'ky': return <span className="flex gap-1">{l.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span>;
       case 'hv': return <span className="tabular-nums">{l.hocVien}</span>;
       case 'gvcn': return l.laGvcn || !l.gvcn ? null : <span className="truncate">{l.gvcn}</span>;
       case 'chua': return <OSo giaTri={l.chuaNhap} tieuDe={`${t('Bài chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=chua-nhap&lop=${l.id}`)} />;

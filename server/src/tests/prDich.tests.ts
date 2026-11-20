@@ -71,6 +71,11 @@ export async function runPrDichTests(t: any) {
       ['web/src/modules/yThuc/CaseSosControls.tsx', ['case_issues.observation', 'assessment_scores.comment', 'assessment_scores.nhan_xet_phu_trach']],
       ['web/src/modules/classes/BanGiaoPanel.tsx', ['ban_giao_mon.noi_dung', 'lenh_chuyen_lop.nhan_xet_chung']],
       ['web/src/modules/students/TienDoTrenLop.tsx', ['bai_tren_lop.nhan_xet', 'gop_y_tuan.noi_dung']],
+      ['web/src/modules/yThuc/DongViPham.tsx', ['violations.ten', 'violations.mo_ta']],
+      ['web/src/modules/yThuc/ChiTietViPham.tsx', ['violations.ten', 'violations.mo_ta']],
+      ['web/src/modules/yThuc/BangLan.tsx', ['violations.ten']],
+      ['web/src/modules/yThuc/PanelXemViPham.tsx', ['violations.ten']],
+      ['web/src/modules/congViec/PanelBaoPhTvv.tsx', ['discipline_measures.note']],
     ];
     for (const [tep, can] of noi) {
       const s = doc(tep);
@@ -140,6 +145,39 @@ export async function runPrDichTests(t: any) {
       } finally { conn.prepare('DELETE FROM bai_tren_lop WHERE id = ?').run(id); }
     });
 
+    await checkAsync('DICH-4c · VI-PHAM-MO: tên + mô tả vi phạm dịch đúng chữ người dùng thấy (tachTenMoTa); GV ngoài phạm vi em → 403, không gọi OpenAI', async () => {
+      const vp = conn.prepare("SELECT id, student_id FROM violations WHERE description <> '' LIMIT 1").get() as any;
+      const { tachTenMoTa }: any = await import('../../../shared/domain/index.ts');
+      const r0 = conn.prepare('SELECT ten, description, category FROM violations WHERE id = ?').get(vp.id) as any;
+      const tm = tachTenMoTa(r0.ten, r0.description, r0.category);
+      gui.length = 0;
+      for (const [cot, chu] of [['ten', tm.ten], ['mo_ta', tm.moTa]] as [string, string][]) {
+        if (!chu) continue;
+        const ok = await svc.dich(P.admin, { bang: 'violations', id: vp.id, cot, den: 'en' });
+        assert(typeof ok.banDich === 'string' && ok.banDich.length > 0, `${cot}: không dịch được`);
+      }
+      assert((await loiCua(() => svc.dich(P.admin, { bang: 'violations', id: vp.id, cot: 'description', den: 'en' })))?.status === 400, 'cột ngoài danh sách phải 400');
+      const n = gui.length;
+      const e = await loiCua(() => svc.dich(loadPrincipal(gvKhac.id), { bang: 'violations', id: vp.id, cot: 'ten', den: 'en' }));
+      assert(e?.status === 403, `phải 403: ${e?.status} ${e?.message}`);
+      assert(gui.length === n, 'gọi OpenAI dù không quyền');
+    });
+
+    await checkAsync('DICH-4d · VI-PHAM-MO: dòng vi phạm mô tả rỗng → máy chủ 404 "Không có chữ để dịch"; web không vẽ nút Dịch cho phần rỗng (không bao giờ hiện lỗi đó)', async () => {
+      const vp = conn.prepare("SELECT id FROM violations WHERE ten IS NOT NULL AND TRIM(ten) != '' LIMIT 1").get() as any;
+      conn.exec('SAVEPOINT dich4d');
+      try {
+        conn.prepare("UPDATE violations SET description = '' WHERE id = ?").run(vp.id);
+        const e = await loiCua(() => svc.dich(P.admin, { bang: 'violations', id: vp.id, cot: 'mo_ta', den: 'en' }));
+        assert(e?.status === 404, `mô tả rỗng phải 404: ${e?.status} ${e?.message}`);
+      } finally { conn.exec('ROLLBACK TO dich4d; RELEASE dich4d'); }
+      const w = doc('web/src/modules/yThuc/DongViPham.tsx');
+      const cdd = doc('web/src/ui/ChuDich.tsx');
+      assert(w.includes('v.moTa.trim() ? d.chu(1)') && w.includes("t('Không có mô tả thêm')") && w.includes("d.chu(0).trim() || t('Vi phạm')"), 'DongViPham phải bỏ qua phần rỗng (tên dự phòng, không mô tả)');
+      assert(doc('web/src/modules/yThuc/ChiTietViPham.tsx').includes('d.moTa.trim() ? dg.chu(1)'), 'ChiTietViPham không được dịch chữ rỗng');
+      assert(cdd.includes("x.goc.trim() !== ''") && cdd.includes('cac.filter((x) => !daDich.has') && cdd.includes('useDichGop') && cdd.includes('NutDichGop'), 'useDichGop phải bỏ chữ rỗng và chỉ gọi phần chưa có bản dịch');
+    });
+
     await checkAsync('DICH-5 · thân gửi đi đã che tên HV / GV / email / SĐT; bản dịch thay lại tên; khoá chỉ ở header', async () => {
       const goi = c.hv.trim().split(/\s+/).pop();
       datMoTa(`${c.hv} nói ${goi} đã báo cô ${gvTen}; email ph.hoc-sinh@gmail.com, số 0912 345 678, cần luyện đọc.`);
@@ -174,9 +212,14 @@ export async function runPrDichTests(t: any) {
       let thu = 0;
       for (const [bang, n] of Object.entries(svc.NGUON_DICH) as [string, any][]) {
         for (const cot of n.cot) {
-          const r = bang === 'assessment_scores'
-            ? conn.prepare(`SELECT attempt_id AS id, skill FROM assessment_scores WHERE TRIM(COALESCE(${cot}, '')) != '' LIMIT 1`).get() as any
-            : conn.prepare(`SELECT id FROM ${bang} WHERE TRIM(COALESCE(${cot}, '')) != '' LIMIT 1`).get() as any;
+          const cotSql = bang === 'violations' ? 'description' : cot;   // VI-PHAM-MO: `ten` / `mo_ta` = chữ sau tachTenMoTa (cột thật: ten · description)
+          const { tachTenMoTa }: any = await import('../../../shared/domain/index.ts');
+          const r = bang === 'violations'
+            ? (conn.prepare("SELECT id, ten, description, category FROM violations LIMIT 200").all() as any[])
+              .find((x) => tachTenMoTa(x.ten, x.description, x.category)[cot === 'ten' ? 'ten' : 'moTa'])
+            : bang === 'assessment_scores'
+            ? conn.prepare(`SELECT attempt_id AS id, skill FROM assessment_scores WHERE TRIM(COALESCE(${cotSql}, '')) != '' LIMIT 1`).get() as any
+            : conn.prepare(`SELECT id FROM ${bang} WHERE TRIM(COALESCE(${cotSql}, '')) != '' LIMIT 1`).get() as any;
           if (!r) continue;
           const kq = await svc.dich(P.admin, { bang, id: r.id, cot, den: 'en', kyNang: r.skill });
           assert(typeof kq.banDich === 'string' && kq.banDich.length > 0, `${bang}.${cot} rỗng`);

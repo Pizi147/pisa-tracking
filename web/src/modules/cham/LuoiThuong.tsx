@@ -648,7 +648,8 @@ export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Ro
       </div>
       {/* OV-11e (CA3-11): dòng phụ xuống dòng, không cắt. */}
       {/* BADGE-QUA-HAN XM-5 (PTA 15/11): dòng phụ quá hạn giữ chữ đỏ (ô nhỏ, không badge) nhưng xuống dòng, không cắt "…". */}
-      {phu && <span className={`block max-w-full ${phu.xuong ? 'break-words' : 'truncate'} text-xs leading-4 ${phu.tone}`} data-phu-odiem="" title={phu.title}>{dich(phu.chu)}</span>}
+      {/* LECH-BANG: dòng phụ lùi 8 px (`px-2`) như chữ trong chip — thẳng chữ tiêu đề "Kết quả" (`th[data-kieu="chip"]` đệm 20). */}
+      {phu && <span className={`block max-w-full px-2 ${phu.xuong ? 'break-words' : 'truncate'} text-xs leading-4 ${phu.tone}`} data-phu-odiem="" title={phu.title}>{dich(phu.chu)}</span>}
     </div>
   );
 }
