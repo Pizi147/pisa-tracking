@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from 'react';
 import { NutChon } from '../../ui/ui.tsx';
 import { OChon as OChonThuong } from '../phanTich/dungChung.tsx';
-import { ROLES, ROLE_LABEL, roleLabel, type Role } from '@shared/domain/index.ts';
+import { ROLES, ROLE_LABEL, VAI_CN_TUY_CHON, roleLabel, type Role } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Một vai + các chi nhánh của vai đó (rỗng = toàn hệ thống với Quản trị, CX, Head tutor). */
@@ -9,7 +9,7 @@ export type CapVai = { role: string; branches: Set<string> };
 type Branch = { code: string; name: string };
 
 /** Vai luôn / được phép toàn hệ thống — không bắt chọn chi nhánh (máy chủ cùng luật, `chuanVai`). */
-const KHONG_CAN_CN = new Set(['system_admin', 'cx', 'head_tutor']);
+const KHONG_CAN_CN = new Set(['system_admin', 'head_tutor', ...VAI_CN_TUY_CHON]);
 
 export function capTuTaiKhoan(roles: { role: string; branchCode: string | null }[]): CapVai[] {
   const m = new Map<string, Set<string>>();
@@ -54,8 +54,8 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
               {g.role === 'system_admin' || g.role === 'head_tutor' ? (
                 <span className="text-xs text-slate-400">{t('Toàn hệ thống — không gắn chi nhánh')}</span>
               ) : (<>
-                {/* PR-OV2a: CX mặc định toàn hệ thống (không chọn chi nhánh nào); chọn chi nhánh thì theo chi nhánh như vai khác. */}
-                {g.role === 'cx' && (
+                {/* PR-OV2a · N57: CX, BPXL mặc định toàn hệ thống (không chọn chi nhánh nào); chọn chi nhánh thì theo chi nhánh như vai khác. */}
+                {VAI_CN_TUY_CHON.includes(g.role) && (
                   <NutChon nho chon={g.branches.size === 0} onClick={() => sua(i, (x) => ({ ...x, branches: new Set<string>() }))}>
                     {t('Toàn hệ thống')}
                   </NutChon>

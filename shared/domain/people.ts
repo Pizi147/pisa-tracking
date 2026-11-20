@@ -16,14 +16,17 @@ import { t } from '../i18n/index.ts';
  * mã cũ giữ để đọc lịch sử, không dùng lại.
  */
 /* TU-a (đặc tả Tutor mục 4): `head_tutor` = Head tutor — rà soát tutor part-time (trang Tutor), toàn hệ thống, không mở HV / Case / điểm. */
-export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx', 'head_tutor'] as const;
+/* BPXL-1 (N57, chủ SP 20/11): `scheduler` = Chuyên viên Xếp lịch (BPXL) — xếp / dời lịch MT + lịch lớp thường; chỉ xem phần còn lại; không bị giao việc theo luật. */
+export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx', 'head_tutor', 'scheduler'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
   system_admin: t('Quản trị hệ thống'), manager: t('Head'), teacher: t('Giáo viên'),
-  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor',
+  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor', scheduler: t('Chuyên viên Xếp lịch'),
 };
+/** Vai chọn được 1 / nhiều chi nhánh hoặc bỏ trống = toàn hệ thống (CX — PR-OV2a; BPXL — N57). Máy chủ (`accounts.ts`) và web cùng danh sách. */
+export const VAI_CN_TUY_CHON: readonly string[] = ['cx', 'scheduler'];
 /** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */
-export const VAI_DANG_KY = ['teacher', 'manager', 'consultant', 'cx', 'office_admin'] as const satisfies readonly Role[];
+export const VAI_DANG_KY = ['teacher', 'manager', 'consultant', 'cx', 'office_admin', 'scheduler'] as const satisfies readonly Role[];
 /** PR-OV2a: câu 403 khi Admin / TVV / CX gửi trường ngoài "thông tin HV". */
 export const CHI_SUA_THONG_TIN = 'Bạn chỉ sửa được thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.';
 /** Vai đổi được góc nhìn (đặc tả OV mục 2): QL hoặc Quản trị nắm từ hai vai trở lên. */

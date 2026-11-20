@@ -30,6 +30,8 @@ export type NavQuyen = {
   workChamDiem: boolean;
   /** N52: CX — Công việc xem mọi việc trong phạm vi để làm thay, không có việc của mình (mặc định "Tất cả", không hộp Chờ bạn duyệt). */
   workCx?: boolean;
+  /** BPXL-1 (N57): trang đầu = Kế hoạch Test, Test đứng đầu thanh (Chuyên viên Xếp lịch). */
+  trangDauTest?: boolean;
   /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
   xuatMt: boolean;
   /** TU-a · TU12: trang Tutor (`tutor.view`) — Head tutor, Quản trị, Head, CX. */
@@ -77,7 +79,8 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
 /* GD-1 (Overhaul V6): không có Tổng quan (GV) → Công việc là trang đầu, đứng đầu thanh: Công việc · Học viên & Lớp · Test. */
 export function khuVucHienThi(nav: NavQuyen, _soChoDuyet = 0): KhuVucMuc[] {
   const ds = KHU_VUC.filter((k) => HIEN[k.key](nav));
-  return nav.overview ? ds : [...ds.filter((k) => k.key === 'cong-viec'), ...ds.filter((k) => k.key !== 'cong-viec')];
+  const dau = nav.trangDauTest ? 'test' : 'cong-viec';   // BPXL-1 (N57): Test · Học viên & Lớp · Công việc
+  return nav.overview ? ds : [...ds.filter((k) => k.key === dau), ...ds.filter((k) => k.key !== dau)];
 }
 
 /**

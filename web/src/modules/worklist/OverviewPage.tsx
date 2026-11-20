@@ -40,6 +40,8 @@ export default function OverviewPage() {
   const dsCn = useApi<{ id: number; name: string }[]>(vai === 'admin' ? '/ref/branches' : null).data;
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
+  /* BPXL-1 (N57): Chuyên viên Xếp lịch (không kèm vai GV) — trang đầu = Kế hoạch Test. Dải 4 số lặng: PR BPXL-2. */
+  if (nav?.trangDauTest) return <Navigate to="/test/ke-hoach" replace />;
   /* GD-1 (Overhaul V6, mockup v21 ①): trang đầu GV = Công việc (việc bên trái + "Lớp của tôi" bên phải); số liệu GV sang Hồ sơ GV. Giữ tham số (`cn`…). */
   /* GD-8 (mockup v21 ④ R4.1): TVV cũng vậy — trang đầu = Công việc (việc trái + "HV của tôi" phải, dải 5 chỉ số trên). */
   if (vai === 'gv' || vai === 'tvv') return <Navigate to={`/cong-viec${params.toString() ? `?${params}` : ''}`} replace />;

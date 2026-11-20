@@ -30,6 +30,7 @@ export const ROLES = [
   { key: 'consultant', name: 'Tư vấn viên' },
   { key: 'cx', name: 'CX' },
   { key: 'head_tutor', name: 'Head tutor' },
+  { key: 'scheduler', name: 'Chuyên viên Xếp lịch' },
 ] as const;
 
 /**
@@ -111,6 +112,12 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'class.edit', 'violation.record', 'discipline.manage', 'test.view', 'work.view', 'analysis.view_teacher', 'discipline.stats', 'meeting.view', 'tutor.view'],
   /* TU-a: Head tutor — chỉ trang Tutor (toàn hệ thống). Không Case, HV, điểm, Công việc. */
   head_tutor: ['tutor.view', 'tutor.manage'],
+  /*
+   * BPXL-1 — N57 (chủ SP 20/11): Chuyên viên Xếp lịch, 1 / nhiều chi nhánh (grant không chi nhánh = toàn hệ thống). XẾP / DỜI lịch MT (Kế hoạch Test, + MT, S Ex:
+   * `plan.week`, `schedule.move`; khoá cuối tuần N15 như Admin) + lịch lớp thường (`duocSuaLichLop`). CHỈ XEM Lịch Test tuần, Học viên & Lớp, Lịch thi thật.
+   * KHÔNG: điểm, thông tin HV, Case, Ý thức, Phân tích, huỷ / khôi phục lượt. Không bị giao việc theo luật (`boVaiBpxl`, `permissions.ts`). Migrate: `migrate/prBpxl.ts`.
+   */
+  scheduler: ['attempt.view', 'test.view', 'plan.week', 'schedule.move', 'student.view', 'work.view'],
 };
 
 /*

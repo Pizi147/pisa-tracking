@@ -15,7 +15,7 @@ import { BadgeMo, CHIP_VUONG, ChipKy } from '../../ui/Nhan.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
 import { useSession } from '../../lib/session.tsx';
 import {
-  BO_LOC_TAI_KHOAN_TRONG, KY_NANG_TAI_KHOAN, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
+  BO_LOC_TAI_KHOAN_TRONG, KY_NANG_TAI_KHOAN, PERMISSION_LABEL, PHAN_LOAI_TAI_KHOAN, ROLES, ROLE_LABEL, VAI_CN_TUY_CHON, coQuyenCapRieng, docBoLocTaiKhoan, dsLoi, duocCapRieng,
   ghiBoLocTaiKhoan, locTaiKhoan, ngay, nhomTaiKhoan, phanLoaiTaiKhoan, roleLabel, type BoLocTaiKhoan, type LoiTruong, type Role,
 } from '@shared/domain/index.ts';
 import { HangNhom } from '../../ui/HangNhom.tsx';
@@ -482,7 +482,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
               <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>
             ))}
           </OChonThuong>
-          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && role !== 'cx' && role !== 'head_tutor')}
+          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && !VAI_CN_TUY_CHON.includes(role) && role !== 'head_tutor')}
             onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }),
               t('Đã duyệt {ten} · {vai} · {cn}', { ten: user.fullName, vai: roleLabel(role), cn: cnChon }))}>
             {t('Duyệt')}

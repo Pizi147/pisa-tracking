@@ -13,7 +13,7 @@ import { db, theoLo, tx } from '../db.ts';
 import { kiemBand, NHAN_XET_TOI_DA, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
-import { can, coTheXemLuotCham, grantGvNhapDiem, isCoreTeacherOf, laGvSpeaking, scoreEditPath, type Principal } from '../permissions.ts';
+import { can, coTheXemLuotCham, grantGvNhapDiem, isCoreTeacherOf, laGvSpeaking, qlDiem, scoreEditPath, type Principal } from '../permissions.ts';
 import { dangMoSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanCuoiTuan } from '../fasttrack/skillSchedule.ts';
@@ -50,7 +50,7 @@ const lopDangHoc = (studentId: number) => nho('sex-lop:' + studentId, () => db()
 
 /** Như ô S MT ở một lớp đang học của em (GV S phân công · QL / Admin nhập hộ) hoặc GV Speaking cùng chi nhánh ghi danh active (N7). */
 export function chamDuoc(p: Principal, studentId: number): boolean {
-  if (laQl(p, studentId)) return true;   // QL / Admin nhập hộ cả khi em đã rời lớp (không kẹt lượt cũ)
+  if (qlDiem(p, { studentId })) return true;   // QL / Admin nhập hộ (BPXL-1: BPXL chỉ xếp lịch S Ex, không chấm) cả khi em đã rời lớp (không kẹt lượt cũ)
   const gvS = laGvSpeaking(p) ? grantGvNhapDiem(p) : [];
   return lopDangHoc(studentId).some((l) => scoreEditPath(p, l.id, 'speaking') !== null
     || gvS.some((g) => g.branchId === null || g.branchId === l.branch_id));

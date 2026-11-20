@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_DANG_KY } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_CN_TUY_CHON, VAI_DANG_KY } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
@@ -150,7 +150,7 @@ export function register(input: {
   const codes = (input.branches ?? []).map((c) => String(c).trim().toUpperCase()).filter(Boolean);
   const known = new Set((conn.prepare('SELECT code FROM branches').all() as any[]).map((b) => b.code));
   for (const c of codes) if (!known.has(c)) throw badRequest(`Không có chi nhánh mã "${c}".`);
-  if (!codes.length && vai !== 'cx') throw badRequest('Chọn ít nhất một chi nhánh bạn đang hoạt động.');
+  if (!codes.length && !VAI_CN_TUY_CHON.includes(vai)) throw badRequest('Chọn ít nhất một chi nhánh bạn đang hoạt động.');
 
   return tx(() => {
     const { hash, salt } = hashPassword(password);
@@ -279,8 +279,8 @@ export function decline(p: Principal, userId: number, reason: string) {
 
 /* ------------------------------------------------------------------ tạo và cấp vai */
 
-/** Vai không cần chi nhánh: Quản trị, Head tutor (TU-a) luôn toàn hệ thống; CX bỏ trống chi nhánh = toàn hệ thống (PR-OV2a). */
-const VAI_TOAN_HE_THONG = ['system_admin', 'cx', 'head_tutor'];
+/** Vai không cần chi nhánh: Quản trị, Head tutor (TU-a) luôn toàn hệ thống; CX (PR-OV2a), BPXL (N57) bỏ trống chi nhánh = toàn hệ thống. */
+const VAI_TOAN_HE_THONG = ['system_admin', 'head_tutor', ...VAI_CN_TUY_CHON];
 
 /**
  * OV-11b: kiểm danh sách vai gửi lên (createAccount / setRoles / approve) — mảng đối tượng `{ role, branches: string[] }`, sai dạng → 400
@@ -308,7 +308,7 @@ function grantRole(conn: any, userId: number, roleKey: string, branchCodes: stri
    * thống là vai duy nhất như vậy: gắn nó vào một chi nhánh thì nó không còn là toàn quyền.
    */
   /* PR-OV2a: CX không chọn chi nhánh = toàn hệ thống (mặc định của vai này); chọn chi nhánh thì theo chi nhánh như vai khác. */
-  if (roleKey === 'system_admin' || roleKey === 'head_tutor' || (roleKey === 'cx' && !branchCodes.length)) {
+  if (roleKey === 'system_admin' || roleKey === 'head_tutor' || (VAI_CN_TUY_CHON.includes(roleKey) && !branchCodes.length)) {
     if (!conn.prepare("SELECT 1 FROM user_roles WHERE user_id=? AND role_id=? AND branch_id IS NULL AND status='active'")
       .get(userId, role.id)) {
       conn.prepare("INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,NULL,'active',?)")
