@@ -29,6 +29,7 @@ import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi, LuotChinhContext } from './DongThi.tsx';
 import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
+import { HopNhanXetThuong } from '../fasttrack/HopNhapDiemHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 type SkillResult = {
@@ -144,8 +145,9 @@ export function tongPhoBien(rows: Row[], k: string): number | null {
   return [...dem.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? null;
 }
 
-/* BANG-1: rộng cột theo kiểu của `Bang`; ô môn sửa được chứa Nhận xét · đúng / tổng · ⋯ trên MỘT hàng → 236 px. */
-const COT_MON = 236;
+/* BANG-1: rộng cột theo kiểu của `Bang`. Chủ SP 20/11: ô môn sửa được = đúng / tổng + ⋯ (Nhận xét vào ⋯) → 164 px (trước 236 có nút chữ "Nhận xét")
+   — Head (4 môn nhập được) vừa khung 1280: 250 + 4 × 164 + 260 = 1166. */
+const COT_MON = 164;
 const COT_KQ = 260;
 /* G1-11: lưới gọn trong panel việc. */
 const COT_TEN_GON = 200;
@@ -264,9 +266,6 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
   const cotSuaDuoc = (k: string) => data.rows.some((r) => lichCua(r, k)?.canEdit);
-  /* LECH-BANG XM-4: cột có ô chỉ còn "Lịch sử" (nút chữ) giữ chỗ 68 thay 28 — cột rộng thêm phần đó, tiêu đề chừa đúng chỗ (`--dem-phai`). */
-  const { can } = useSession();
-  const oNut = (k: string) => (data.rows.some((r) => thaoTacO(r, k, data, can).length === 0) ? O_NUT_CHU : O_NUT_3CHAM);
 
   const plan = async () => {
     setBusy(true);
@@ -326,8 +325,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   ] : [
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
-      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: (cotSuaDuoc(k) ? COT_MON : 128) + oNut(k) - O_NUT_3CHAM,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
-      demPhai: 12 + 4 + oNut(k),
+      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
     ...(laCp ? [{ key: 'pt', nhan: t('% tổng'), kieu: 'phan-tram', goiY: t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.') } as const] : []),
@@ -387,9 +385,6 @@ function thaoTacO(row: Row, k: string, sheet: ThuongSheet, can: (q: string) => b
     huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
   return [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
 }
-/** LECH-BANG XM-4: chỗ giữ cho nút ẩn chờ rê của ô — ⋯ 28 px, nút chữ "Lịch sử" 68 px. CỐ ĐỊNH theo cột (mọi ô cùng chỗ) → chữ thẳng tiêu đề, rê chuột không xê dịch. */
-const O_NUT_3CHAM = 28;
-const O_NUT_CHU = 68;
 
 /**
  * MENU ⋯ CỦA MỘT Ô LỚP THƯỜNG + hộp thao tác + Lịch sử — dùng chung cho lưới (`DongThuong`) và màn điện thoại (`MotKyNang`, NHAP-DIEM-b: 375 có ⋯).
@@ -410,19 +405,21 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
    * "Lịch sử" (không phải thao tác, ngoài ≤ 3 — Q5). Nhập/Sửa điểm làm ngay trong ô nên không lặp trong menu. Nút ⋯ đứng SAU ô nhập
    * trong DOM: Tab đi qua ô nhập trước, Enter/mũi tên của ô giữ nguyên.
    */
-  /** `rong`: chỗ giữ cố định của cột (lưới ≥ 640) — `O_NUT_3CHAM` / `O_NUT_CHU`. */
-  const menuO = (k: string, luon = false, rong?: number) => {
+  /** `nx`: mục "Nhận xét" đầu menu (chủ SP 20/11 — ô lưới không còn nút chữ "Nhận xét"; đã có nhận xét → ⋯ luôn hiện, có dấu •). */
+  const menuO = (k: string, luon = false, nx?: { chu: string | null; mo: () => void }) => {
     const ds = thaoTacO(row, k, sheet, can);
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
        U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
        ẩn bằng `invisible` nên vẫn giữ chỗ (rê vào ô không làm chữ nhảy). */
     return (
-      <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}
-        style={rong ? { width: rong } : undefined}>
-        <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
+      <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}>
+        {/* Chủ SP 20/11: luôn là nút ⋯ nhỏ (28 px) — kể cả ô chỉ còn "Lịch sử" (không nút chữ) → mọi ô cùng chỗ, cột hẹp. */}
+        <MenuDong nhan={`${t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })}${nx?.chu ? ` · ${t('Nhận xét')}: ${nx.chu}` : ''}`}
+          mat={nx?.chu ? <span className="inline-flex items-center">⋯<span aria-hidden className="-mr-0.5 text-[color:var(--accent-strong)]">•</span></span> : '⋯'} muc={[
+          ...(nx ? [{ key: 'nhan-xet', nhan: t('Nhận xét'), onChon: nx.mo }] : []),
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'huy-diem' || x === 'khoi-phuc-diem' ? huyDiem(k, x === 'huy-diem')
             : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
-          { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
+          { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 || !!nx },
         ]} />
       </span>
     );
@@ -452,12 +449,13 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
-  const { menuO: menuGoc, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
-  /* LECH-BANG XM-4: chỗ giữ của nút ẩn = phần cột chừa ở tiêu đề (`demPhai` − đệm 12 − khe 4); ô hai tầng (`luon`) không giữ chỗ. */
-  const menuO = (k: string, luon = false) => menuGoc(k, luon, luon || !cc[k]?.demPhai ? undefined : cc[k].demPhai! - 16);
+  const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
+  /* Chủ SP 20/11: Nhận xét mở từ ⋯ — hộp neo vào ô của môn đó. */
+  const hang = useRef<HTMLTableRowElement>(null);
+  const [nxMo, setNxMo] = useState<string | null>(null);
 
   return (
-    <tr className={`do-hang group/hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
+    <tr ref={hang} className={`do-hang group/hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
       data-hv={row.studentId}>
       {/* Tên (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: "{bài} ›" · dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
@@ -549,9 +547,10 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
                 </div>
               </div>
             ) : (
-              /* BANG-1: Nhận xét · đúng / tổng một hàng; ⋯ ở mép phải ô, ẩn tới khi rê chuột / focus vào ô (điện thoại luôn hiện). */
-              <div className={`inline-flex items-baseline justify-center gap-1 ${nutNx ? 'pr-1' : ''}`}>{/* bù đệm trái nút Nhận xét (px-1) → hai mép cân, số thẳng tâm cột; đệm 4 (không 6) để "Comment" (EN) vẫn vừa cột 236 (DON-NHO-3) */}
-                {nutNx}{oDiem}{menuO(k)}
+              /* Chủ SP 20/11 (gọn chỗ): đúng / tổng + ⋯ nhỏ cạnh — Nhận xét, Vắng, Huỷ điểm (Hoàn tác), Lịch sử trong ⋯. ⋯ ẩn tới khi rê / focus vào ô
+                 (điện thoại luôn hiện); ô đã có nhận xét: ⋯ luôn hiện, có dấu •. */
+              <div className="inline-flex items-baseline justify-center gap-1">
+                {oDiem}{menuO(k, !!s?.nhanXet, nutNx ? { chu: s?.nhanXet ?? null, mo: () => setNxMo(k) } : undefined)}
               </div>
             )}
             {quaHan && (
@@ -574,6 +573,15 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           <KetQua row={row} sheet={sheet} />
           {hopO}
           {lichSuO}
+          {nxMo && (() => {
+            const s = lichCua(row, nxMo);
+            const neo = hang.current?.querySelector<HTMLElement>(`td[data-kn="${nxMo}"]`);
+            return s && neo ? (
+              <HopNhanXetThuong anchor={neo} tenMon={tenMon(ct, nxMo)} giaTri={s.nhanXet ?? null}
+                phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}
+                nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: nxMo }} onLuu={(v) => nhanXet(nxMo, v)} onDong={() => setNxMo(null)} />
+            ) : null;
+          })()}
         </OBang>
       )}
     </tr>
