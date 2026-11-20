@@ -18,7 +18,7 @@ import {
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, lamMoiYThucTheo, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
-import { ChipMon, chuMoc } from './BangLan.tsx';
+import { chuMoc } from './BangLan.tsx';
 import { DongViPham } from './DongViPham.tsx';
 import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -127,7 +127,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
             {v.reportedByName && <span><b className="font-semibold text-slate-100">{v.reportedByName}</b> {t('ghi')} · {ngay(v.reportedOn, homNay)}</span>}
             <span className="ml-auto tabular-nums">{t('Trong 2 tuần:')} <b className="font-semibold text-slate-100">{soHaiTuan}</b> / 3 {t('vi phạm')}</span>
           </p>
-          <ul className="m-0 list-none p-0 text-sm text-slate-100"><DongViPham v={v} ngay={ngay(v.occurredOn, homNay)} moSan /></ul>
+          <ul className="m-0 list-none p-0 text-sm text-slate-100"><li><DongViPham v={v} ngay={ngay(v.occurredOn, homNay)} moSan /></li></ul>
         </div>
       ))}
     </div>
@@ -303,18 +303,13 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   /* "Chèn" và chữ máy tự ghi khi Mô tả trống (N56 ③, `moTaTuDong` máy chủ) — cùng một câu: bậc kế · các vi phạm đang chọn. */
   const cauChen = chon.size ? [bacKe ? bacDu(dich(bacKe.nhan)) : null, [...new Set([...chon].map((id) => theoId.get(id)?.ten).filter(Boolean))].join(', ')].filter(Boolean).join(' · ') : '';
   const dongVp = (v: ViPhamV4) => (
-    <li key={v.id}>
-      {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
-      <label className="flex min-h-[44px] cursor-pointer items-start gap-2 px-3 py-2">
-        <input type="checkbox" className="mt-1" checked={chon.has(v.id)} onChange={() => doi(v.id)}
-          aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} />
-        <span className="w-11 shrink-0 pt-0.5 text-xs tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
-        <span className="min-w-0 flex-1 text-sm text-slate-200">
-          <ChipMon skill={v.skill} />{v.ten}
-          <span className="block text-xs text-slate-500">{dich(v.categoryLabel)}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
-        </span>
-        <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />
-      </label>
+    <li key={v.id} className="min-h-[44px] px-3 py-2 text-sm text-slate-200">
+      {/* VI-PHAM-MO: ô tick CHỈ chọn (vùng chạm ≥ 44px); bấm TÊN mở mô tả tại chỗ — cùng một kiểu mở với mọi danh sách vi phạm. */}
+      <DongViPham v={v} ngay={ngay(v.occurredOn, homNay)}
+        truoc={<label className="-m-3 shrink-0 cursor-pointer p-3 max-sm:pt-6"><input type="checkbox" className="mt-0.5 block" checked={chon.has(v.id)} onChange={() => doi(v.id)}
+          aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
+        duoi={<>{dich(v.categoryLabel)}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</>}
+        phu={<NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />} />
     </li>
   );
 

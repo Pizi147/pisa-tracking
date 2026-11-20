@@ -72,6 +72,7 @@ export async function runPrDichTests(t: any) {
       ['web/src/modules/classes/BanGiaoPanel.tsx', ['ban_giao_mon.noi_dung', 'lenh_chuyen_lop.nhan_xet_chung']],
       ['web/src/modules/students/TienDoTrenLop.tsx', ['bai_tren_lop.nhan_xet', 'gop_y_tuan.noi_dung']],
       ['web/src/modules/yThuc/DongViPham.tsx', ['violations.ten', 'violations.mo_ta']],
+      ['web/src/modules/yThuc/ChiTietViPham.tsx', ['violations.mo_ta']],
       ['web/src/modules/congViec/PanelBaoPhTvv.tsx', ['discipline_measures.note']],
     ];
     for (const [tep, can] of noi) {
@@ -169,7 +170,10 @@ export async function runPrDichTests(t: any) {
         assert(e?.status === 404, `mô tả rỗng phải 404: ${e?.status} ${e?.message}`);
       } finally { conn.exec('ROLLBACK TO dich4d; RELEASE dich4d'); }
       const w = doc('web/src/modules/yThuc/DongViPham.tsx');
-      assert(w.includes('v.moTa.trim() ? <ChuDich') && w.includes("t('Không có mô tả thêm')") && w.includes('v.ten.trim() &&'), 'DongViPham phải bỏ qua phần rỗng (không ChuDich)');
+      const cdd = doc('web/src/ui/ChuDich.tsx');
+      assert(w.includes('v.moTa.trim() ? d.chu(1)') && w.includes("t('Không có mô tả thêm')") && w.includes("d.chu(0).trim() || t('Vi phạm')"), 'DongViPham phải bỏ qua phần rỗng (tên dự phòng, không mô tả)');
+      assert(doc('web/src/modules/yThuc/ChiTietViPham.tsx').includes('d.moTa.trim() ? <ChuDich'), 'ChiTietViPham không được ChuDich chữ rỗng');
+      assert(cdd.includes("x.goc.trim() !== ''") && cdd.includes('cac.filter((x) => !daDich.has') && cdd.includes('useDichGop') && cdd.includes('NutDichGop'), 'useDichGop phải bỏ chữ rỗng và chỉ gọi phần chưa có bản dịch');
     });
 
     await checkAsync('DICH-5 · thân gửi đi đã che tên HV / GV / email / SĐT; bản dịch thay lại tên; khoá chỉ ở header', async () => {

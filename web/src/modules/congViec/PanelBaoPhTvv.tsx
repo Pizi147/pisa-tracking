@@ -184,7 +184,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         <BoiCanh dong={[
           [t('Vi phạm'), v.boiCanh.viPham.length > 0 && (
             <ul className="m-0 list-none space-y-0.5 p-0">
-              {v.boiCanh.viPham.map((x) => <DongViPham key={x.id} v={x} ngay={shortDate(x.ngay, hn)} />)}
+              {v.boiCanh.viPham.map((x) => <li key={x.id} className="min-w-0"><DongViPham v={x} ngay={shortDate(x.ngay, hn)} /></li>)}
             </ul>
           )],
           [t('Ghi chú GVCN'), v.tinhHinhId == null && v.boiCanh.ghiChu && <span className="font-normal">

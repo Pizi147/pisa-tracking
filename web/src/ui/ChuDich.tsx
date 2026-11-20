@@ -75,3 +75,59 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
     </>
   );
 }
+
+/**
+ * VI-PHAM-MO (chủ SP 21/11): MỘT nút Dịch cho NHIỀU chữ cùng chỗ (vi phạm: tên + mô tả) — dùng chung bộ nhớ `daDich`, hàm băm và đường `/dich` ở trên.
+ * Chữ rỗng / không dịch được bị bỏ qua (không bao giờ gọi máy chủ với chữ rỗng). `chu(i)` = bản dịch khi đang xem dịch, không thì chữ gốc.
+ */
+export type MucDich = { chu: string | null | undefined; nguon: NguonDich };
+const LECH_CHU = () => t('Nội dung vừa đổi — tải lại trang để dịch.');
+export function useDichGop(muc: MucDich[]) {
+  const { session } = useSession();
+  const ds = muc.map((m) => ({ goc: m.chu ?? '', nguon: m.nguon }));
+  const lamDuoc = (x: { goc: string }) => x.goc.trim() !== '' && dichDu(x.goc) === x.goc && canDich(x.goc, NGON_NGU);
+  const cac = ds.filter(lamDuoc);
+  const khoa = JSON.stringify(cac.map((x) => khoaCua(x.nguon, x.goc)));
+  const [xemDich, setXemDich] = useState(false);
+  const [dang, setDang] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const khoaHienTai = useRef(khoa);
+  useEffect(() => { khoaHienTai.current = khoa; setXemDich(false); setDang(false); setLoi(null); }, [khoa]);
+  const co = !!session?.dichBat && cac.length > 0;
+  const daCo = cac.every((x) => daDich.has(khoaCua(x.nguon, x.goc)));
+  const hien = co && xemDich && daCo;
+  const goi = async () => {
+    if (daCo) { setXemDich(true); return; }
+    const k = khoa;
+    setDang(true); setLoi(null);
+    try {
+      await Promise.all(cac.filter((x) => !daDich.has(khoaCua(x.nguon, x.goc))).map(async (x) => {
+        const [r, bam] = await Promise.all([api.post<{ banDich: string; gocBam: string }>('/dich', { ...x.nguon, den: NGON_NGU }), bamChu(x.goc.trim())]);
+        if (bam && r.gocBam !== bam) throw new Error(LECH_CHU());
+        daDich.set(khoaCua(x.nguon, x.goc), r.banDich);
+      }));
+      if (khoaHienTai.current !== k) return;   // về muộn: chỗ này đã sang chữ khác
+      setXemDich(true);
+    } catch (e) {
+      if (khoaHienTai.current === k) setLoi((e as Error).message || t('Chưa dịch được. Bản gốc vẫn giữ — thử lại sau.'));
+    } finally { if (khoaHienTai.current === k) setDang(false); }
+  };
+  return {
+    co, hien, dang, loi, lech: loi === LECH_CHU(),
+    bam: dang ? undefined : hien ? () => setXemDich(false) : goi,
+    chu: (i: number) => { const x = ds[i]; return hien && lamDuoc(x) ? daDich.get(khoaCua(x.nguon, x.goc)) ?? x.goc : x.goc; },
+  };
+}
+
+/** Nút của `useDichGop` — cùng nhãn / trạng thái như `ChuDich` (một nút đổi nhãn, giữ focus). */
+export function NutDichGop({ d }: { d: ReturnType<typeof useDichGop> }) {
+  if (!d.co) return null;
+  return (
+    <span aria-live="polite" className={d.loi && !d.dang ? 'mt-1 block text-xs' : 'whitespace-nowrap'}>
+      {d.loi && !d.dang && !d.hien && <span role="alert" className="text-bad">{d.loi}</span>}
+      {!d.lech && <button type="button" className={NUT} aria-disabled={d.dang || undefined} aria-busy={d.dang || undefined} onClick={d.bam}>
+        {d.hien ? t('Xem bản gốc') : d.dang ? t('Đang dịch…') : d.loi ? t('Thử lại') : t('Dịch')}
+      </button>}
+    </span>
+  );
+}
