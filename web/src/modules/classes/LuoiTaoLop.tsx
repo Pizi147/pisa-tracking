@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate, onInvalidate } from '../../lib/api.ts';
+import { api, invalidate, khopTienTo, onInvalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
@@ -47,7 +47,7 @@ function useTheoChiNhanh<T>(goc: string, ids: (number | null)[]): Record<number,
   useEffect(() => { conMo.current = true; return () => { conMo.current = false; }; }, []);
   const [lan, setLan] = useState(0);
   useEffect(() => onInvalidate((p) => {
-    if (p === null || goc.startsWith(p)) { daGoi.current.clear(); setLan((x) => x + 1); }
+    if (p === null || khopTienTo(goc, p)) { daGoi.current.clear(); setLan((x) => x + 1); }
   }), [goc]);
   const khoa = [...new Set(ids.filter((x): x is number => x !== null))].sort().join(',');
   useEffect(() => {

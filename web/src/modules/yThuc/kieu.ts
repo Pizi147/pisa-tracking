@@ -2,7 +2,7 @@
  * KIỂU DỮ LIỆU Ý THỨC v4 phía giao diện (PR-YT4) — khớp JSON của `server/src/yThuc/xuLy.ts` (`yThucHocVien`, `xemXuLy`) và
  * `board.ts` (`bangYThucLop`). Một chỗ khai, mọi thành phần trong `modules/yThuc/` đọc từ đây.
  */
-import { invalidate } from '../../lib/api.ts';
+import { invalidate, invalidateDung } from '../../lib/api.ts';
 import type { NhomEm, TheYeuCauDto, TrangThaiVp } from '@shared/domain/index.ts';
 import type { ChuKhoa } from '@shared/i18n/index.ts';
 
@@ -20,8 +20,32 @@ export type ViPhamV4 = {
   soTep?: number;
 };
 
-/** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức. */
-export const lamMoiYThuc = () => { for (const p of ['/violations', '/measures', '/classes', '/students', '/y-thuc']) invalidate(p); };
+/** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức (`pham`: xem `lamMoiYThucTheo`). */
+export const lamMoiYThuc = (pham: PhamViYThuc = null) => lamMoiYThucTheo(['/violations', '/measures', '/classes', '/students', '/y-thuc'], pham);
+
+/**
+ * S5 (chỗ 2): đường của MỘT lớp có thể đọc Ý thức — mọi `GET /classes/:id/…` TRỪ phần điểm / người dạy (`diem-theo-luot`, `cham`, `chu-da-ghi`,
+ * `ky-vong`, `teachers`: không đọc bảng Ý thức). `xet-lai` đọc trạng thái Ý thức (`trangThaiYThuc`) — giữ. Đường lớp mới đọc Ý thức → thêm vào đây.
+ */
+const LOP_DOC_Y_THUC = ['roster', 'overview', 'ho-so', 'y-thuc', 'violations', 'xet-lai', 'phoi-hop-sos', 'viec-theo-em', 'bao-cao-ph', 'issue-board',
+  'danh-gia-dau-ra', 'can-ho-tro', 'phan-tich-lop', 'ket-qua-dau-ra', 'gop-y', 'progress', 'tong-ket', 'transition', 'xoa-ket-thuc', 'sua-ca-lop'] as const;
+/** Ý thức đổi ở đâu: `classId` = một lớp; `studentIds` = các em. Thiếu (lô nhiều lớp, không rõ lớp) → làm mới rộng như cũ. */
+export type PhamViYThuc = { classId?: number | null; studentIds?: readonly (number | null | undefined)[] } | null;
+/**
+ * Làm mới `duong` sau một thao tác Ý thức, thu hẹp `/classes` → phần đọc Ý thức của đúng lớp (+ danh sách lớp, HV & Lớp) và `/students` → hồ sơ đúng em
+ * (cả đường con của em). Không có phạm vi → đúng như cũ.
+ */
+export function lamMoiYThucTheo(duong: readonly string[], pham: PhamViYThuc) {
+  const ids = (pham?.studentIds ?? []).filter((x): x is number => !!x);
+  for (const p of duong) {
+    if (p === '/classes' && pham?.classId) {
+      invalidateDung('/classes'); invalidate('/hoc-vien-lop');
+      for (const x of LOP_DOC_Y_THUC) invalidate(`/classes/${pham.classId}/${x}`);
+    } else if (p === '/students' && ids.length) {
+      for (const s of ids) { invalidateDung(`/students/${s}`); invalidate(`/students/${s}/`); }
+    } else invalidate(p);
+  }
+}
 
 export type BacThangDong = { kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau' };
 

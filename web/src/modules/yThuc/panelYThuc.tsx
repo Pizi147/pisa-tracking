@@ -27,8 +27,10 @@ export type PanelYThuc =
  * MỘT PANEL MỘT LÚC (PR-YT4) — `RecordViolationPanel` (+ Vi phạm / Nhắc nhở / Sửa) · `XacNhanXuLyPanel` (Xác nhận xử lý + Đề xuất QL duyệt) ·
  * `KhaiBacPanel` · `DaThucHienPanel` · `XemXuLyPanel` (chỉ đọc). Xoá vi phạm: xoá thẳng + Hoàn tác (`xoaViPham`, B1-10).
  */
-export function usePanelYThuc({ onDone, roster, maLop }: {
+export function usePanelYThuc({ onDone, roster, maLop, classId }: {
   onDone: (x?: { ids: number[]; chiNhac: boolean }) => void;
+  /** S5: lớp đang mở — Ghi / Sửa vi phạm, Xác nhận xử lý chỉ làm mới phần Ý thức của lớp này. */
+  classId?: number | null;
   /** Mã lớp hiện ở đầu các ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   maLop?: string | null;
   /** Mở `+ Vi phạm / Nhắc nhở` từ trang lớp: cho chọn học viên ngay trong form (không chọn sẵn). */
@@ -46,21 +48,21 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         open={panel?.loai === 'ghi'} onClose={dong}
         studentId={panel?.loai === 'ghi' ? panel.studentId : 0}
         studentName={panel?.loai === 'ghi' ? panel.studentName : undefined}
-        lop={maLop}
+        lop={maLop} classId={classId}
         students={panel?.loai === 'ghi' ? roster : undefined}
         onDone={xong}
       />
       <RecordViolationPanel
         open={panel?.loai === 'sua'} onClose={dong}
         studentId={panel?.loai === 'sua' ? panel.v.studentId : 0}
-        violation={panel?.loai === 'sua' ? panel.v : null} lop={maLop}
+        violation={panel?.loai === 'sua' ? panel.v : null} lop={maLop} classId={classId}
         /* OV-11d (HV-22): tiêu đề "Sửa vi phạm · {tên em}" — tên từ nơi mở, không thì từ danh sách lớp. */
         studentName={panel?.loai === 'sua' ? panel.studentName ?? roster?.find((r) => r.id === panel.v.studentId)?.name : undefined}
         onDone={onDone}
         onDelete={(id) => { dong(); xoaViPham(toast, id).then(() => onDone(), (e: any) => toast.push('error', e.message)); }}
       />
       {panel?.loai === 'xu-ly' && (
-        <XacNhanXuLyPanel key={panel.tick?.join(',')} studentId={panel.studentId} cheDo={panel.cheDo} tickThem={panel.tick} lop={maLop} onClose={dong} onDone={onDone}
+        <XacNhanXuLyPanel key={panel.tick?.join(',')} studentId={panel.studentId} cheDo={panel.cheDo} tickThem={panel.tick} lop={maLop} classId={classId} onClose={dong} onDone={onDone}
           onKhai={(sid) => mo({ loai: 'khai', studentId: sid })} />
       )}
       {panel?.loai === 'khai' && <KhaiBacPanel studentId={panel.studentId} sua={panel.sua} onClose={dong} onDone={onDone} />}

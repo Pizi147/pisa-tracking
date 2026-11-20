@@ -70,8 +70,10 @@ export function nhapDiemCua(
  * viên của hồ sơ lớp. Mục nào hiện do `mucMenuDongHocVien` (shared) quyết; panel do hook này giữ, một panel một lúc (G-8).
  * "Lộ trình tiếp theo" (OV-3b): sang hồ sơ lớp › Lộ trình tiếp theo, mở sẵn hộp của em; "Chuyển lớp": `ChuyenLopPanel`.
  */
-export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, classId }: {
+export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, classId, lopYThuc = null }: {
   laLopThuong: boolean; quyen: QuyenDong; onDone: () => void;
+  /** S5: lớp đang mở (hồ sơ lớp) — Ghi vi phạm / Xác nhận xử lý tự làm mới phần Ý thức của lớp này, không gọi `onDone` (cả lớp). */
+  lopYThuc?: number | null;
   /** Lớp của dòng — đích của "Lộ trình tiếp theo". */
   classId?: number | null;
   /** Mã lớp hiện ở đầu các ngăn mở từ dòng học viên (`Tên HV · MB FOU 12`). */
@@ -133,9 +135,9 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
       <QuickReport open={mo?.viec === 'case'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       <RecordViolationPanel open={mo?.viec === 'vi-pham'} onClose={() => setMo(null)}
-        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
+        studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} classId={lopYThuc} onDone={lopYThuc ? () => setMo(null) : xong} />
       {/* OV-12e (mockup v3 §8): ⋯ → Xác nhận xử lý mở panel ngay trên trang; ✕ / Esc về đúng dòng. */}
-      {mo?.viec === 'xu-ly-y-thuc' && <XacNhanXuLyPanel studentId={mo.id} lop={maLop} onClose={() => setMo(null)} onDone={onDone} />}
+      {mo?.viec === 'xu-ly-y-thuc' && <XacNhanXuLyPanel studentId={mo.id} lop={maLop} classId={lopYThuc} onClose={() => setMo(null)} onDone={lopYThuc ? undefined : onDone} />}
       <ChuyenLopPanel open={mo?.viec === 'chuyen-lop' || mo?.viec === 'de-xuat-chuyen-lop'} cheDo={mo?.viec === 'de-xuat-chuyen-lop' ? 'de-xuat' : 'lenh'} onClose={() => setMo(null)}
         studentId={mo?.id ?? 0} studentName={mo?.ten} lop={maLop} onDone={xong} />
       {mo?.viec === 'hoc-lai' && <HocLaiPanel studentId={mo.id} studentName={mo.ten} lop={maLop} onClose={() => setMo(null)} onDone={() => daDoi(mo.id)} />}

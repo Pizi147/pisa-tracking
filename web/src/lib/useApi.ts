@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api, boLoiGoiDangBay, cachedGet, onInvalidate, theHe, xaGop } from './api.ts';
+import { ApiError, api, boLoiGoiDangBay, cachedGet, khopTienTo, onInvalidate, theHe, xaGop } from './api.ts';
 
 /*
  * PR-S6F-b (D14): GET ĐANG BAY cùng đường dẫn dùng chung MỘT lời gọi — Tổng quan có nhiều khối cùng đọc `/my-work`, `/tong-quan/quan-ly`.
@@ -25,8 +25,8 @@ const MOI_MS = 10_000;
 /* GIAM-COMPUTE: + bảng quy đổi band — hộp nhập điểm L / R đọc ở MỖI lần mở (20 ô = 20 GET); Quản trị lưu bảng thì `invalidate('/ref/bang-quy-doi')`. */
 const TINH = new Set(['/ref/branches', '/ref/periods', '/ref/bang-quy-doi']);
 onInvalidate((prefix) => {
-  for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
-  for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
+  for (const k of [...dangBay.keys()]) if (prefix === null || khopTienTo(k, prefix)) dangBay.delete(k);
+  for (const k of [...daXem.keys()]) if (prefix === null || khopTienTo(k, prefix)) daXem.delete(k);
 });
 /**
  * AUDIT-1611 BADGE-NHE (PTA 17/11, phương án C): `/my-work` (badge, Công việc, HV & Lớp, trang đầu GV, hồ sơ lớp) — bản đã nạp dùng lại 5 phút ở mọi khối
@@ -168,8 +168,8 @@ export const loiCanHien = <T,>(data: T | null, error: ApiError | null): ApiError
 /** OV-14a (F03): quên bản vừa xem theo tiền tố mà KHÔNG gọi tải lại hook đang gắn — sau khi ghi đã tự cập nhật dữ liệu tại chỗ (`setData`). */
 export function quenBanXem(prefix: string) {
   boLoiGoiDangBay(prefix);   // GET bắt đầu trước lúc lưu xong về sau → bỏ, không ghi bản cũ
-  for (const k of [...dangBay.keys()]) if (k.startsWith(prefix)) dangBay.delete(k);
-  for (const k of [...daXem.keys()]) if (k.startsWith(prefix)) daXem.delete(k);
+  for (const k of [...dangBay.keys()]) if (khopTienTo(k, prefix)) dangBay.delete(k);
+  for (const k of [...daXem.keys()]) if (khopTienTo(k, prefix)) daXem.delete(k);
 }
 
 /** OV-14a (F09): tải gặp 401 = phiên đã hết — App tải lại phiên (màn đăng nhập nếu hết thật), không coi như lỗi mạng. */
@@ -243,7 +243,7 @@ export function batDauTai<T>(path: string | null, b: {
  */
 export function canTaiLaiKhiVoHieu(path: string | null, prefix: string | null, luc: number | undefined, banTu: number): boolean {
   if (prefix === null) return true;
-  if (!path?.startsWith(prefix)) return false;
+  if (!path || !khopTienTo(path, prefix)) return false;
   return !(luc !== undefined && banTu >= luc);
 }
 

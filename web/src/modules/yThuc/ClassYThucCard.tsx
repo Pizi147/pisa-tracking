@@ -90,7 +90,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
 
   const lamMoi = () => { board.reload(); lo.reload(); };
   const { mo: moPanel, panels } = usePanelYThuc({
-    maLop: board.data?.classCode ?? null,
+    maLop: board.data?.classCode ?? null, classId,
     onDone: () => { if (dangXuLy.current) setVuaLuu({ sid: dangXuLy.current, luc: gioVnNay() }); lamMoi(); },
     roster: (roster.data ?? []).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null })),
   });

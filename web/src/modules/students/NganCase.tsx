@@ -31,7 +31,7 @@ export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
   return <ThanNganCase key={p.caseId} {...p} />;
 }
 
-function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, onDaXoa, veNguon, onTiep, kyNangTiep = null }: {
+function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, onDoiChu, onDaXoa, veNguon, onTiep, kyNangTiep = null }: {
   /** U03 A2: Case kỹ năng kế của em — Ghi kết quả có "Lưu · kỹ năng tiếp ›". */
   kyNangTiep?: { ten: string; di: () => void; /** GD-20c: chữ nút gộp riêng ("Lưu · về lưới"), mặc định "Lưu · kỹ năng tiếp ›". */ chu?: string } | null;
   /** Giữ chữ ký cũ (nơi gọi chưa đổi) — nút việc ở dòng tóm tắt cột hồ sơ HV; panel v16 không còn nút việc riêng ở chân. */
@@ -42,7 +42,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   viec?: 'ghi-ket-qua' | 'them-pa' | 'hoan-thanh' | 'tra-loi' | 'xac-nhan' | 'xac-nhan-pa' | 'ghi-nhan-xet';
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
-  onClose: () => void; onChanged?: () => void;
+  onClose: () => void; onChanged?: () => void; /** S5: lưu tại chỗ chỉ đổi chữ (xem `ThanCase`). */ onDoiChu?: () => void;
   /** P1 G2-01: nơi gọi giữ dải "Đã xoá … Hoàn tác" (cột Case hồ sơ HV — danh sách tải lại gỡ Ngăn Case của Case vừa xoá). Không truyền = dải trong Ngăn. */
   onDaXoa?: (x: DaXoaCase) => void;
   /** Nơi mở giữ view bằng state (Panel một em, panel việc) — "‹ {tên em}" về đúng nơi đó. */
@@ -167,7 +167,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
               phu={t('Việc của Case này cũng rời danh sách.')} />
           </div>
         ) : (
-          <ThanCase data={data} setData={setData} reload={reload} onChanged={onChanged} dich={dich} bao={bao} kyNangTiep={kyNangTiep}
+          <ThanCase data={data} setData={setData} reload={reload} onChanged={onChanged} onDoiChu={onDoiChu} dich={dich} bao={bao} kyNangTiep={kyNangTiep}
             onDaXoaCase={(x) => { if (onDaXoa) onDaXoa(x); else setDaXoa(x); onChanged?.(); }} />
         )}
         {laTvvCx && ph && (chuPhuHuynh(ph) || ph.parentPhone) && !daXoa && (

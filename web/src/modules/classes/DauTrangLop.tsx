@@ -10,7 +10,7 @@ import type { DongSoLieu } from '../../ui/SoLieu.tsx';
 import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate, onInvalidate } from '../../lib/api.ts';
+import { api, invalidate, khopTienTo, onInvalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { CHE_DO_NHAN, type CheDoHocVien } from './TabHocVienLop.tsx';
@@ -139,7 +139,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     const duong = duongViecLop(data.id);
     let vuaTai = false;
     return onInvalidate((x) => {
-      if (x !== null && duong.startsWith(x)) { vuaTai = true; queueMicrotask(() => { vuaTai = false; }); }
+      if (x !== null && khopTienTo(duong, x)) { vuaTai = true; queueMicrotask(() => { vuaTai = false; }); }
       else if (x === '/my-work' && !vuaTai) invalidate(duong);
     });
   }, [data.id]);

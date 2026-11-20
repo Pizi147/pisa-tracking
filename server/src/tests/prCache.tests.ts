@@ -194,6 +194,26 @@ export async function runPrCacheTests(t: YThucTestKit) {
       assert(soGoi('/cache/y') === 0, 'bản vừa xem của đường không liên quan bị bỏ');
     });
 
+    await checkAsync('S5 · invalidateDung: đúng đường + đường?…; không trúng em khác (/students/30) hay đường con; hook đúng đường tải lại', async () => {
+      const k = api.khopTienTo;
+      assert(k('/students/3', '/students/3$') && k('/students/3?cycleId=2', '/students/3$'), 'không khớp đúng đường / đường?…');
+      assert(!k('/students/30', '/students/3$') && !k('/students/3/skill-board', '/students/3$'), 'trúng em khác / đường con');
+      assert(k('/students/30', '/students/3') && k('/students/3/y-thuc', '/students'), 'tiền tố thường đổi nghĩa');
+      assert(ua.canTaiLaiKhiVoHieu('/students/3?x=1', '/students/3$', undefined, 0) && !ua.canTaiLaiKhiVoHieu('/students/30', '/students/3$', undefined, 0), 'hook khớp sai');
+      batDau();
+      for (const p of ['/students/3', '/students/30', '/students/3/skill-board']) { ua.taiTruoc(p); tra(p, { p }); }
+      await xong();
+      api.invalidateDung('/students/3');
+      for (const p of ['/students/3', '/students/30', '/students/3/skill-board']) ua.taiTruoc(p);
+      assert(soGoi('/students/3') === 1 && soGoi('/students/30') === 0 && soGoi('/students/3/skill-board') === 0, 'invalidateDung xoá sai bản vừa xem');
+      tra('/students/3', {});
+      /* Lời gọi đang bay của em khác không bị bỏ (thế hệ theo đúng đường). */
+      const y = ua.taiVaNho('/students/31');
+      api.invalidateDung('/students/3');
+      tra('/students/31', { y: 1 });
+      assert((await y) !== null, 'phản hồi em khác bị bỏ');
+    });
+
     await checkAsync('PR-CACHE · đường gần tĩnh (cachedGet): invalidate tiền tố lúc đang tải → không giữ bản cũ', async () => {
       batDau();
       const p = api.cachedGet('/ref/periods');
