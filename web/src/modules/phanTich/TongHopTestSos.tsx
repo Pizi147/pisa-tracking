@@ -291,15 +291,22 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   );
 
   /* ---------------- 375 (mockup C1, C1b): bảng 14 cột → MỘT THẺ MỖI DÒNG, mỗi nhóm cột một lưới "nhãn trên · số dưới". */
+  /* LECH-BANG (mockup v21 `phan-tich.html` thẻ tuần 375): Kết quả FT xếp 3 × 2 — Lượt MT · Thiếu điểm · (trống) / SOS 1 · 2 · 3; nhãn một dòng, không cắt "…". */
+  const kq32 = (g: { cols: CotTongHop[] }) => !laThuong && g.cols.length === 5 && g.cols[1]?.khoa === 'chuaDu';
+  const laXuLy = (g: { cols: CotTongHop[] }) => g.cols.every((c) => c.nhom === 'xu-ly');
   const phanThe = (row: DongTongHop, vach = true) => nhomThe.map((g) => (
     <div key={g.nhan} className={`px-3 pb-2.5 pt-2 ${vach ? 'border-t border-[color:var(--line)]' : ''}`}>
       <div className="mb-1 text-xs font-semibold text-[color:var(--text-faint)]">{g.nhan}</div>
-      <div className="grid gap-x-2 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${g.cols.length <= 5 ? g.cols.length : 3}, minmax(0, 1fr))` }}>
+      {/* Xử lý (4 nhãn dài, "Chưa chốt PA" > ¼ thẻ): cột theo bề rộng nhãn, phần dư chia đều; thiếu chỗ (EN) thì nhãn xuống dòng — không chồng chữ. */}
+      <div className="grid gap-x-2 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${kq32(g) ? 3 : g.cols.length <= 5 ? g.cols.length : 3}, ${laXuLy(g) ? 'auto' : 'minmax(0, 1fr)'})` }}>
         {g.cols.map((c) => (
-          <span key={c.khoa} className="grid min-w-0 gap-px">
-            <span className="truncate text-xs font-medium text-[color:var(--text-dim)]">{nhanCot(c)}</span>
-            <span className="text-[15px] font-bold tabular-nums">{oCell(row, c)}</span>
-          </span>
+          <Fragment key={c.khoa}>
+            <span className="grid min-w-0 content-start gap-px">
+              <span className={`${laXuLy(g) ? 'leading-tight' : 'whitespace-nowrap'} text-xs font-medium text-[color:var(--text-dim)]`}>{nhanCot(c)}</span>
+              <span className="text-[15px] font-bold tabular-nums">{oCell(row, c)}</span>
+            </span>
+            {kq32(g) && c.khoa === 'chuaDu' && <span aria-hidden />}
+          </Fragment>
         ))}
       </div>
     </div>

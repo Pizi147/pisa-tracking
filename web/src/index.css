@@ -1461,7 +1461,8 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 .cap-so { display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 6px; width: 100%; }
 .cap-so > :first-child, .cap-so > .contents > .so-bam { justify-self: end; }
 .cap-so > :last-child { justify-self: start; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-@media (max-width: 639px) { .cap-so { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; width: auto; } }
+@media (max-width: 639px) { .cap-so { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; width: auto; }
+  .bang td:is([data-kieu="so"], [data-kieu="phan-tram"]) .cap-so { justify-content: center; } }   /* LECH-BANG: bảng giữ dạng bảng ở 375 (Tiến bộ theo kỹ năng) — số + % giữa cột như tiêu đề */
 
 /* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
