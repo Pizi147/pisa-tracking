@@ -117,7 +117,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
   const trong = canEdit && diem === null && s?.progress !== 'upcoming'
     && s?.progress !== 'cancelled' && s?.progress !== 'absent' && !s?.khongDuThi;
   const dung = diem === null && (s?.progress === 'absent' || s?.progress === 'cancelled');
-  const chuDung = !dung ? null : s!.progress === 'absent' ? t('Đã vắng · chờ xếp lại') : t('Đã huỷ');
+  const chuDung = !dung ? null : s!.progress === 'absent' ? t('Đã vắng') : t('Đã huỷ');
   /* Quá hạn chấm của CHÍNH môn này (hạn riêng từng môn, mục 10.5), ngày dạng dd/mm. */
   const quaHan = diem === null && s?.overdue && s.deadline ? t('Quá hạn {ngay}', { ngay: ngay(s.deadline, homNay) }) : null;
   const cell = {

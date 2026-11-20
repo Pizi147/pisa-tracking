@@ -198,7 +198,6 @@ export const EN_A = {
   /* WelcomePage — gợi ý tài khoản demo */
   'Xem được: MT cũ, lớp RF, dời lần 2': 'Shows: past MT, RF class, 2nd reschedule',
   'Chờ duyệt Ý thức + Báo Head': 'Conduct approvals + Head reports',
-  'Xếp lịch MT nhiều lớp, Cần xếp lại': 'Multi-class MT scheduling, To reschedule',
   'Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)': 'Normal-class Progress Test: extra-class plan pending (MB FOU 15)',
   'Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2': 'Conduct: overdue, action required, confirm incident level, WL 2',
   'Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo PH kết quả Test (MB FOU 15)': 'Normal-class Progress Test: submit extra-class plan, report Test results to parents (MB FOU 15)',

@@ -15,7 +15,7 @@ export const EN_HSL_FT = {
   'Chờ nhận xét': 'Awaiting comment',
   'vắng lần {x}': 'absence #{x}',
   'dời {ngay}': 'moved {ngay}',
-  'Vắng lần {x} · chờ xếp lại': 'Absence #{x} · awaiting reschedule',
+  'Vắng lần {x} · chưa dời': 'Absence #{x} · not moved',
   'Lịch gốc': 'Original schedule',
   'Chờ Head duyệt dời lần {moveNo} · hạn {ngay}': 'Awaiting Head approval for move #{moveNo} · due {ngay}',
   'Chưa nhận xét': 'No comment yet',

@@ -325,7 +325,7 @@ export function DeadlinePill({ cell, mo }: { cell: Cell; mo?: boolean }) {
   if (cell.noShow) return <Info>{dich(cell.noShow.text)}</Info>;
   /* "Đã nhập" là TRẠNG THÁI CÔNG VIỆC, không phải điểm tốt — nên không tô xanh lá. */
   if (cell.band !== null) return <Status kind="done">{t('Đã nhập')}</Status>;
-  if (cell.progress === 'absent') return <Info pending>{t('Đã vắng — chờ xếp lại')}</Info>;
+  if (cell.progress === 'absent') return <Info pending>{t('Đã vắng · chưa dời')}</Info>;
   if (!cell.deadline) return <Info pending>{t('Chưa xếp tuần')}</Info>;
   /*
    * Giữ NGUYÊN NGHĨA, đổi ĐƯỜNG RENDER (PR-E Step 2): bốn nhánh chuỗi tự dựng ở đây ("Hạn
