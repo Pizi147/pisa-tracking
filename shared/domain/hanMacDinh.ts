@@ -25,6 +25,8 @@ export const HAN_MAC_DINH_GOC = {
   xu_ly_vi_pham: { ngay: 5 },
   /** Báo PH sau xử lý vi phạm (N2): `ngay` ngày lịch TÍNH CẢ ngày lưu (lưu T2 14/09 → hết T6 18/09). */
   bao_ph_vi_pham: { ngay: 5 },
+  /** TL-1 (N61): GV sửa vi phạm bị TVV trả lại — `ngay` ngày lịch TÍNH CẢ ngày trả (trả T2 14/09 → hết T4 16/09). */
+  tra_lai_vi_pham: { ngay: 3 },
   /** Chốt lộ trình lớp thường (N20): thứ `thu` của tuần lệch `tuanLech` so với tuần Final (T5 tuần trước). */
   chot_lo_trinh: { tuanLech: -1, thu: 5 },
   /** Bàn giao chuyển lớp: `ngay` ngày tính cả ngày ra lệnh (OV-13l). */
@@ -41,7 +43,7 @@ export type MaHan = keyof typeof HAN_MAC_DINH_GOC;
 export const TEN_HAN: Record<MaHan, string> = {
   cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác nhận nguyên nhân Case', ql_duyet_pa: 'Head trả lời Chờ duyệt',
   giu_pa_gv: 'Head trả lời PA khác quy chế',
-  ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm',
+  ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm', tra_lai_vi_pham: 'Vi phạm bị trả lại',
   chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
 };
 const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (còn xem)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };

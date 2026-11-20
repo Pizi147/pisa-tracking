@@ -25,7 +25,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assert(d.hanDuyetNgay() === 5 && d.hanBanGiao('2026-09-14').gvcn === d.hanTheoNgay('2026-09-14', 7), 'duyệt 5, bàn giao 7');
     assert(d.hanKyGhiKetQua('2026-09-17') === '2026-09-29', 'ghi KQ PA kỳ 1 hạn 29/09');
     assert(d.hanXetLai({ ma: 'a', tuanBatDau: '2026-09-14', moc: '2026-09-14' }) === '2026-09-27', 'xét lại CN tuần 2');
-    assert(!('meeting_cx' in d.HAN_MAC_DINH_GOC) && d.MA_HAN.length === 14, 'Meeting CX / GĐCN phải ở Case & SOS (một hạn một chỗ sửa)');
+    assert(!('meeting_cx' in d.HAN_MAC_DINH_GOC) && d.MA_HAN.length === 15, 'Meeting CX / GĐCN phải ở Case & SOS (một hạn một chỗ sửa)');
   }));
 
   check('QTV2-H-2 · lưu: chỉ Quản trị; sai → 400 nêu hạn; tuPhienBan cũ → 409; giống hệt → không thêm bản', () => thu(() => {

@@ -404,11 +404,15 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
+  const { migratePrTraLai } = await import('../migrate/prTraLai.ts');
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước GV-1: cắt ba dòng cột giao việc + khối bảng GV-1 khỏi chữ schema.sql. */
     const cat = SCHEMA
+      /* TL-1 (sau GV-1): bỏ viec_bao_ph.tra_lai_id + khối vi_pham_tra_lai trước — DB trước GV-1 cũng trước TL-1. */
+      .replace(/,( +-- GV-1[^\n]*)\n {2}tra_lai_id INTEGER[^\n]*\n\)/, '$1\n)')
+      .replace(/-- TL-1 \(N61, chủ SP 20\/11\): TRẢ LẠI VI PHẠM[\s\S]*?idx_tra_lai_xl[^\n]*\n/, '')
       .replace(/,( +--[^\n]*)?\n {2}phu_trach_id INTEGER REFERENCES users\(id\), giao_boi INTEGER[^\n]*\n\)/g, '$1\n)')
       .replace(/-- GV-1 \(N58, chủ SP 20\/11\): GIAO VIỆC[\s\S]*?idx_meeting_phan_giao[^\n]*\n/, '');
     if (/giao_boi|viec_theo_doi|meeting_phan/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm GV1-9');
@@ -421,6 +425,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(c2.length === 2, `tự lành: ${c2.join(' | ')}`);
     const c: string[] = []; migratePrGiaoViec(conn, c);
     assert(!c.some((x) => !/sinh \d+ phần Meeting/.test(x)), `DB dựng từ schema.sql vẫn bị đổi: ${c.join(' | ')}`);
+    migratePrTraLai(cu, []);   // TL-1: DB cũ đi tiếp migrate sau → so cột / chỉ mục với schema.sql hiện tại
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND (name LIKE '%giao%' OR name LIKE '%theo_doi%' OR name LIKE '%meeting_phan%') ORDER BY name`).all() as any[]));

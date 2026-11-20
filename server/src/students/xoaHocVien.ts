@@ -36,6 +36,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'tinh_hinh_hoc_tap',   // TINH-HINH: tình hình học tập GV ↔ TVV của em
   'thi_that_lich_su',   // HOC-TIEP: KQ thi thật lần trước của lộ trình Học tiếp
   'meeting_phan',   // GV-1: hai phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) của hành động phối hợp của em
+  'vi_pham_tra_lai',   // TL-1: yêu cầu trả lại vi phạm / lần xử lý của em
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -57,7 +58,8 @@ const Q = 'SELECT id FROM yeu_cau_duyet WHERE hoc_vien_id = ?1';
 /** GV-1: việc của em theo khoá mềm (loại, id) — người theo dõi, lịch sử giao, lịch sử hạn, bản ghi đảo giao việc. */
 const VIEC_CUA_EM = (loai: string, id: string) => `((${loai} = 'bao_ph' AND ${id} IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
       OR (${loai} = 'phoi_hop' AND ${id} IN (${X})) OR (${loai} = 'tinh_hinh' AND ${id} IN (SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ?1))
-      OR (${loai} = 'meeting' AND ${id} IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X}))))`;
+      OR (${loai} = 'meeting' AND ${id} IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X})))
+      OR (${loai} = 'tra_lai' AND ${id} IN (SELECT id FROM vi_pham_tra_lai WHERE student_id = ?1 OR violation_id IN (${V}) OR measure_id IN (${M}))))`;
 
 /** Tệp đính kèm theo liên kết mềm `owner_type/owner_id` (không có FK). `unit_report` không thuộc học viên. */
 const DK_TEP = `(owner_type = 'sos_case' AND owner_id IN (${C}))
@@ -121,8 +123,9 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). */
   ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
   /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
-  { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' END`, 'doi_tuong_id')}` },
+  { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' WHEN 'vi_pham_tra_lai' THEN 'tra_lai' END`, 'doi_tuong_id')}` },
   { bang: 'meeting_phan', sql: `DELETE FROM meeting_phan WHERE phoi_hop_id IN (${X})` },   // GV-1: trước sos_coordination_actions
+  { bang: 'vi_pham_tra_lai', sql: `DELETE FROM vi_pham_tra_lai WHERE student_id = ?1 OR violation_id IN (${V}) OR measure_id IN (${M})` },   // TL-1: trước vi phạm / lần xử lý
   /* SV-YT-TVV: việc Báo PH của em / của lần xử lý của em (+ lịch sử ghi) trước lần xử lý */
   { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M}))` },
   { bang: 'viec_bao_ph', sql: `DELETE FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})` },
