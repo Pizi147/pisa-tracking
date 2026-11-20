@@ -373,7 +373,9 @@ const DongMuc = ({ m, ctx, moSan }: { m: MucHd; ctx: Ctx; moSan?: boolean }) => 
     </div>
   </DongGap>
 );
-const DongCuaDong = ({ d, ctx }: { d: DongHd; ctx: Ctx }) => (d.viec ? <DongCuaThe v={d.viec} ctx={ctx} /> : <DongMuc m={d.muc} ctx={ctx} />);
+/** HD-CHI: việc có bước riêng của màn (`muc.viec`, `viecOManNay` đã gộp vào `d.muc`) — thẻ dùng bước + Chỉ cho tôi của màn này. */
+const theCuaDong = (v: ViecHd, m: MucHd): ViecHd => ({ ...v, buoc: m.buoc, loiChinh: { ...v.loiChinh, chi: m.chi } });
+const DongCuaDong = ({ d, ctx }: { d: DongHd; ctx: Ctx }) => (d.viec ? <DongCuaThe v={theCuaDong(d.viec, d.muc)} ctx={ctx} /> : <DongMuc m={d.muc} ctx={ctx} />);
 
 /* ---------------------------------------------------------------- tab Trang này */
 
@@ -393,14 +395,20 @@ function DsGioiHan({ ds }: { ds: ReactNode[] }) {
     </DsViec>
   );
 }
-/** Tầng 2 (mockup ⑭ K3): Bạn đang ở {màn} · {tab} + ≤ 5 việc của tab (việc đang có lên trước, số việc) + "+ n việc khác" + Không làm ở đây. */
+/**
+ * Tầng 2 (mockup ⑭ K3): Bạn đang ở {màn} · {tab} + ≤ 5 việc của tab (việc đang có lên trước, số việc) + "+ n việc khác" + Không làm ở đây.
+ * HD-CHI: việc có bước riêng của màn dùng bước đó; mục riêng của màn (Lọc việc, Lớp của tôi…) xếp cuối danh sách — tầng 2 không có lối lên tầng 3.
+ */
 function Tang2({ hd, manNen, tab2, soViec, ctx }: { hd: HuongDan; manNen: ManHd; tab2: NonNullable<ReturnType<typeof tabDangDung>>; soViec: (v: ViecHd) => number; ctx: Ctx }) {
-  const ds = tab2.the(hd).map((v) => ({ v, n: soViec(v) })).sort((a, b) => Number(b.n > 0) - Number(a.n > 0));
+  const dongMan = viecOManNay(hd, manNen.id);
+  const rieng = new Map(dongMan.flatMap((d) => (d.viec ? [[d.viec.id, theCuaDong(d.viec, d.muc)] as const] : [])));
+  const ds = tab2.the(hd).map((v) => ({ v: rieng.get(v.id) ?? v, n: soViec(v) })).sort((a, b) => Number(b.n > 0) - Number(a.n > 0));
+  const muc = dongMan.filter((d) => !d.viec).map((d) => <DongMuc key={d.muc.id} m={d.muc} ctx={ctx} />);
   return (
     <>
       <BanDangO man={manNen} tenRieng={`${t(manNen.ten)} · ${tab2.ten}`} cau={null} ctx={ctx} />
-      {ds.length > 0 ? <DsGioiHan ds={ds.map(({ v, n }) => <DongCuaThe key={v.id} v={v} n={n} ctx={ctx} />)} />
-        : <p className="m-0 text-sm text-slate-400">{t('Tab này chưa có thẻ việc.')}</p>}
+      {ds.length === 0 && <p className="m-0 text-sm text-slate-400">{t('Tab này chưa có thẻ việc.')}</p>}
+      {ds.length + muc.length > 0 && <DsGioiHan ds={[...ds.map(({ v, n }) => <DongCuaThe key={v.id} v={v} n={n} ctx={ctx} />), ...muc]} />}
       <KhongLam man={manNen} ctx={ctx} />
     </>
   );
