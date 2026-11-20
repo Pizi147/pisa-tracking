@@ -39,7 +39,7 @@ import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
-  LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
+  LOC_NHANH, viecKeTiepVong, chenTheoViTri, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
   NHAN_LOAI_VIEC, chenHan, demBai, type PaDangChay,
 } from '@shared/domain/index.ts';
@@ -338,9 +338,13 @@ export function HoTroHocVienTab() {
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang. `nhom` = nhóm đang vẽ (CV-05: việc kế cùng nhóm). */
-  const thuTu = useMemo(() => thuTuTab.flatMap((k) => (mucTheoTab.get(k) ?? []).flatMap((m) => m.items)
-    .flatMap((x) => (x.con && !moCaDong(x) ? x.con : [x])).map((x) => ({ ...x, nhom: k })))
-    .filter((x) => lamTaiCho(x)), [mucTheoTab, thuTuTab]);
+  /* VIEC-XONG-AN (PTA rà #1905): việc đang mở đã rời danh sách (dải hết giờ) vẫn đứng ở vị trí đã nhớ — "Việc tiếp ›" không mất. */
+  const thuTu = useMemo(() => {
+    const vt = (x: WorkItem) => thuTuCu.current?.vt.get(x.key) ?? thuTuCu.current?.vt.get(khoaGopCua(x as any) ?? '');
+    return thuTuTab.flatMap((k) => chenTheoViTri((mucTheoTab.get(k) ?? []).flatMap((m) => m.items)
+      .flatMap((x) => (x.con && !moCaDong(x) ? x.con : [x])), chon && tabCua(chon) === k ? chon : null, vt).map((x) => ({ ...x, nhom: k })))
+      .filter((x) => lamTaiCho(x));
+  }, [mucTheoTab, thuTuTab, chon]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); return x.toString(); };

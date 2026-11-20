@@ -34,6 +34,17 @@ export async function runPrUiCongViecTests(t: YThucTestKit) {
     assert(ke('d', ['a', 'c']) === null, 'cả nhóm xong → null (thẻ Hết việc)');
     assert(ke('zz') === null, 'việc đang mở không còn → null');
   });
+  check('VIEC-XONG-AN (PTA rà #1905) · việc đang mở đã rời danh sách (dải hết giờ) chèn lại đúng vị trí đã nhớ → "Việc tiếp ›" còn', () => {
+    const ds = [{ key: 'a', nhom: 'case', mine: true }, { key: 'c', nhom: 'case', mine: true }, { key: 'd', nhom: 'case', mine: true }];
+    const vt = new Map([['a', 0], ['b', 1], ['c', 2], ['d', 3]]);
+    const b = { key: 'b', nhom: 'case', mine: true };
+    const ra = d.chenTheoViTri(ds, b, (x: any) => vt.get(x.key));
+    assert(ra.map((x: any) => x.key).join(',') === 'a,b,c,d', `thứ tự: ${ra.map((x: any) => x.key)}`);
+    assert(d.viecKeTiepVong(ds, 'b', () => true) === null, 'ca lỗi: không chèn → không có việc tiếp');
+    assert(d.viecKeTiepVong(ra, 'b', (x: any) => x.key !== 'b')?.key === 'c', 'chèn → việc tiếp là c');
+    assert(d.chenTheoViTri(ra, b, (x: any) => vt.get(x.key)).length === 4, 'đã có → không chèn lần hai');
+    assert(d.chenTheoViTri(ds, { key: 'z', nhom: 'case', mine: true }, () => undefined).at(-1).key === 'z', 'không nhớ vị trí → cuối (vẫn vòng được)');
+  });
   check('UI-CONG-VIEC T14 · vạch hạn: quá hạn · đến hết CN tuần này · sau (hôm nay T2 14/09 → CN 20/09)', () => {
     const ds = [{ urgency: 'overdue', due: '2026-09-09' }, { urgency: 'normal', due: '2026-09-20' }, { urgency: 'normal', due: '2026-09-23' }];
     const r = d.chiaVachHan(ds, '2026-09-14');

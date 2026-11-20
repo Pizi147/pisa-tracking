@@ -33,7 +33,7 @@ GIỮ (không đổi): lưới Kết quả PA (`LuoiKetQuaPa`), Nhập điểm, 
 |---|---|---|
 | Xem lại việc vừa xong | "Xem lại" trên dòng gạch ở lại trong danh sách | Chip "✓ n xong hôm nay" ở đầu trang (sẵn có, U01 #7) → danh sách việc xong trong phiên, bấm dòng = mở lại panel. Panel vừa lưu vẫn đứng nguyên ở cột phải. Không mất thao tác. |
 | Hoàn tác | Chỉ ở panel (chân "✓ Đã lưu · Hoàn tác", dải việc vừa lưu) | Như cũ + ở dải dòng (cùng đường đảo, cùng 10 giây) |
-| Việc tiếp › / Lưu · việc tiếp › / Hết việc | — | Như cũ (bỏ qua việc đã xong như trước) |
+| Việc tiếp › / Lưu · việc tiếp › / Hết việc | — | Như cũ (bỏ qua việc đã xong như trước). PTA rà #1905: việc đang mở đã rời danh sách (dải hết giờ) vẫn đứng trong hàng đợi "việc tiếp" theo vị trí đã nhớ (`chenTheoViTri`) — "Tiếp: … · Việc tiếp ›" còn sau 11 giây (`cap-1440-3-sau-11-giay.png`; phép kiểm `prUiCongViec` VIEC-XONG-AN). |
 | Bỏ qua · Gia hạn · Xuất lớp · + Task · lọc | — | Như cũ |
 
 ## Đo
