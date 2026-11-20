@@ -50,7 +50,7 @@ Phân loại khi mở thật từng nhóm đúng vai (61 dòng đo lại trên s
 
 Không thêm request / câu SQL (hướng dẫn là dữ liệu tĩnh).
 
-## 4. Lệch bảng / cắt chữ — LECH-BANG (20/11): 127 → **21**
+## 4. Lệch bảng / cắt chữ — LECH-BANG (20/11): 127 → 21 → **3**
 
 Đo một mình trên seed sạch (API 4731 · web 5731), trước = main `9ae217245`, sau = 3 PR LECH-BANG. Không thêm request / câu SQL.
 
@@ -60,7 +60,7 @@ Không thêm request / câu SQL (hướng dẫn là dữ liệu tĩnh).
 | c (chữ cắt) | 30 | **0** (16 dòng tên PA Tutor 2 dòng ở 375 vào miễn `TUTOR-2-DONG` — chủ SP 17/11) |
 | f | 8 | **0** |
 | lich-panel-pa | 2 | **0** (kịch bản) |
-| Tổng | 127 | **21** (−83 %) |
+| Tổng | 127 | **21** (−83 %) → **3** sau miễn XM-1/2/3 (PTA Tutor duyệt 20/11) |
 
 Theo màn (trước → sau): bang-diem-thuong 12 → 0 · gv-bang-diem-thuong 8 → 0 · gv-diem-lop 4 → 0 · test-diem-lop 4 → 0 · test-lichTest 4 → 0 · gv-hop-diem 8 → 0 · gv-nhap-diem 8 → 0 · nhap-diem 4 → 0 · gvbm-test 6 → 3 · gv-ho-so 10 → 6 · gv-ho-so-ql 4 → 2 · sos-cx 8 → 0 · phan-tich 7 → 4 · phan-tich-thuong 4 → 2 · phan-tich-giao-vien 2 → 0 · phan-tich-hieu-qua-pa 10 → 4 · phan-tich-tong-hop 6 → 0 · lich 2 → 0 · hv-gvbm / hv-hoc-thuat / hv-menu / panel-tao-case 4 + 4 + 4 + 4 → 0 (miễn TUTOR-2-DONG). Không màn nào tăng.
 
@@ -71,8 +71,8 @@ Gốc đã sửa:
 4. **Phân tích**: hàng tổng "Theo lớp" vạch trên = bóng trong (viền 1 px làm hàng 45,5); hàng chân "S chéo chung" hai dòng có `data-phu-odiem` → 64; thẻ tuần 375 theo mockup `v21/phan-tich.html`: Kết quả FT 3 × 2 (Lượt MT · Thiếu điểm · trống / SOS 1 · 2 · 3), nhãn một dòng không "…", cột tối thiểu bằng nhãn; "Tiến bộ theo kỹ năng" 375 số + % giữa cột.
 5. **lich-panel-pa**: kịch bản sai — Case 5 nay chỉ còn PA Tutor (GV không ghi kết quả) → dùng Case 13; "Ngày ghi" chỉ mở sau "Đổi" (chủ SP 14/11) → kịch bản bấm Đổi.
 
-Còn lại 21 dòng — [XM] cho PTA Tutor (không tự sửa: cần đổi bố cục / thao tác hoặc thêm miễn):
-- **[XM-1] hồ sơ GV g2** (8 dòng: Lớp đang dạy · Lớp chủ nhiệm · Em đang bổ trợ, 1440 / 1280): mockup `v21/ho-so-gv.html` (`tong-quan.css .bang td{vertical-align:middle}`) cố ý căn giữa dọc (hộp số ngang tên lớp hai dòng — GD-15). Mockup thắng luật "chung đường cơ sở" → đề xuất miễn g2 `gv-ho-so(-ql)`.
-- **[XM-2] Phân tích `.cap-so`** (6 dòng: Theo lớp Đạt MT / Tiến bộ / Đạt Test, Tiến bộ theo kỹ năng 1440 / 1280): hộp số căn phải · phân số căn trái quanh TÂM cột (mockup v19 khung 3a — số các dòng thẳng nhau); máy đo so tâm mực nên báo ±3–6 px. Đề xuất: miễn g1 cho ô `.cap-so`, hoặc dạy `do-bang` lấy tâm khối `.cap-so`.
-- **[XM-3] `phan-tich-hieu-qua-pa` «Theo tuần»** (4 dòng): đường `?goc=hieu-qua-pa` chuyển về trang Tổng hợp — cùng bảng đã miễn `PT-BANG` ở `phan-tich-tong-hop`. Đề xuất thêm `hieu-qua-pa` vào khớp của dòng miễn `PT-BANG`.
-- **[XM-4] `gvbm-test`** (3 dòng: L / R / G+V lệch −19, hàng 61 ở 1280): vai GV bổ trợ chỉ xem — ô có MỘT thao tác nên hiện nút chữ "Lịch sử" (ẩn chờ rê, giữ chỗ ~60 px) thay ⋯ 28 px mà tiêu đề chừa (`.luoi-thuong th[data-kieu=diem-ti-le]` đệm phải 44); ở 1280 nút xuống dòng. Phương án: ô chỉ đọc dùng ⋯ chứa "Lịch sử" như vai khác (đổi thao tác → cần chủ SP), hoặc chừa theo bề rộng nút (CSS `:has`).
+21 dòng sau 3 PR — PTA Tutor quyết 20/11: XM-1, XM-2, XM-3 **miễn** (mockup đã duyệt thắng máy đo; dòng `LECH-BANG-XM1/2/3` trong `scripts/mien-do.json`, khớp hẹp đúng màn + bảng + mã lỗi); XM-4 **chờ chủ SP**. Đo lại main `0e03c40fd` + miễn (seed sạch, một mình): **3 lỗi** = 3 dòng gvbm-test (`hvl` hết giờ mở trang lần đầu khi vite vừa khởi động — chạy lại riêng: không lỗi).
+- **[XM-1] hồ sơ GV g2** (8 dòng: Lớp đang dạy · Lớp chủ nhiệm · Em đang bổ trợ, 1440 / 1280): mockup `v21/ho-so-gv.html` (`tong-quan.css .bang td{vertical-align:middle}`) cố ý căn giữa dọc (hộp số ngang tên lớp hai dòng — GD-15). **Đã miễn** g2 ba bảng này ở `gv-ho-so(-ql)`.
+- **[XM-2] Phân tích `.cap-so`** (6 dòng: Theo lớp Đạt MT / Tiến bộ / Đạt Test, Tiến bộ theo kỹ năng 1440 / 1280): hộp số căn phải · phân số căn trái quanh TÂM cột (mockup v19 khung 3a — số các dòng thẳng nhau); máy đo so tâm mực nên báo ±3–6 px. **Đã miễn** g1 đúng các cột này ở «Theo lớp» / «Tiến bộ theo kỹ năng».
+- **[XM-3] `phan-tich-hieu-qua-pa` «Theo tuần»** (4 dòng): đường `?goc=hieu-qua-pa` chuyển về trang Tổng hợp — cùng bảng đã miễn `PT-BANG` ở `phan-tich-tong-hop`. **Đã miễn** g1 / g3 «Theo tuần» ở `phan-tich-hieu-qua-pa`.
+- **[XM-4] `gvbm-test`** (3 dòng: L / R / G+V lệch −19, hàng 61 ở 1280): vai GV bổ trợ chỉ xem — ô có MỘT thao tác nên hiện nút chữ "Lịch sử" (ẩn chờ rê, giữ chỗ ~60 px) thay ⋯ 28 px mà tiêu đề chừa (`.luoi-thuong th[data-kieu=diem-ti-le]` đệm phải 44); ở 1280 nút xuống dòng. Phương án: ô chỉ đọc dùng ⋯ chứa "Lịch sử" như vai khác (đổi thao tác → cần chủ SP), hoặc chừa theo bề rộng nút (CSS `:has`). **Chờ chủ SP** — ảnh 1280: `anh-lech-bang/xm4-gvbm-1280.png`, `anh-lech-bang/xm4-gvbm-1280-re-chuot.png`.
