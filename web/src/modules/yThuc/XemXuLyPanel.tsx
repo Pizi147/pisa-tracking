@@ -12,6 +12,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_TOI_THIEU, bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
+import { DongViPham } from './DongViPham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -208,14 +209,11 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                 <>
                   <ul className="m-0 list-none space-y-0.5 p-0">
                     {dsChon.map((v) => (
-                      <li key={v.id}>
-                        <label className="flex min-h-[44px] cursor-pointer items-start gap-2 py-1 sm:min-h-0">
-                          <input type="checkbox" className="mt-1" checked={chon.includes(v.id)} onChange={() => doi(v.id)} aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} />
-                          <span className="min-w-0 flex-1 text-sm text-slate-200">
-                            {v.ten}
-                            <span className="block text-xs text-slate-500">{ngay(v.occurredOn, homNay)} · {dich(v.categoryLabel)}{dangGan.has(v.id) ? '' : t(' · chưa xử lý')}</span>
-                          </span>
-                        </label>
+                      <li key={v.id} className="min-h-[44px] py-1 text-sm text-slate-200 sm:min-h-0">
+                        {/* VI-PHAM-MO: ô tick chỉ chọn; bấm TÊN mở mô tả tại chỗ. */}
+                        <DongViPham v={v} ngay={ngay(v.occurredOn, homNay)}
+                          truoc={<label className="-m-3 shrink-0 cursor-pointer p-3 max-sm:pt-6"><input type="checkbox" className="mt-0.5 block" checked={chon.includes(v.id)} onChange={() => doi(v.id)} aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
+                          duoi={<>{dich(v.categoryLabel)}{dangGan.has(v.id) ? '' : t(' · chưa xử lý')}</>} />
                       </li>
                     ))}
                   </ul>
@@ -223,8 +221,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                   {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
                 </>
               ) : d.viPham.length === 0 ? <p className="m-0 text-xs text-slate-400">{t('Vi phạm đã bị xoá — lần xử lý vẫn giữ, bậc không lùi.')}</p> : (
-                <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400">
-                  {d.viPham.map((v) => <li key={v.id} className="break-words">{ngay(v.occurredOn, homNay)} · {dich(v.categoryLabel)} · {v.ten}</li>)}
+                <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
+                  {d.viPham.map((v) => <li key={v.id} className="min-w-0"><DongViPham v={v} nhom={dich(v.categoryLabel)} ngay={ngay(v.occurredOn, homNay)} /></li>)}
                 </ul>
               )}
             </Khoi>

@@ -6,6 +6,7 @@ import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { TenDich } from '../../ui/ChuDich.tsx';
 import { lucVn } from '../congViec/gioVn.ts';
 import type { BaoPhLan } from './kieu.ts';
 
@@ -71,7 +72,7 @@ function HopVp({ v, homNay }: { v: VpDong; homNay: string }) {
   return (
     <span role="tooltip" className="pointer-events-none invisible absolute left-0 top-full z-30 mt-2 grid w-[min(400px,80vw)] gap-2 rounded-[10px] border px-3.5 py-3 text-left opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 [@media(hover:none)]:hidden"
       style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-      <b className="flex items-start text-[15px] font-bold text-slate-100"><ChipMon skill={v.skill} />{v.ten}</b>
+      <b className="flex items-start text-[15px] font-bold text-slate-100"><ChipMon skill={v.skill} /><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></b>
       <span className="grid grid-cols-[6.5rem_minmax(0,1fr)]">
         {truong.filter(([, g]) => g).map(([n, g], i) => (
           <span key={n} className="contents">
@@ -97,7 +98,7 @@ function DsVp({ ds, homNay, moId, onMo, chiTiet }: { ds: VpDong[]; homNay: strin
             <span className="group relative min-w-0">
               <button type="button" aria-expanded={moId === v.id} onClick={() => onMo(v.id)}
                 className="flex min-w-0 appearance-none items-start border-0 bg-transparent p-0 text-left text-sm font-medium text-slate-100 hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
-                <ChipMon skill={v.skill} /><span className="min-w-0 break-words">{v.ten}</span>
+                <ChipMon skill={v.skill} /><span className="min-w-0 break-words"><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></span>
               </button>
               {moId !== v.id && <HopVp v={v} homNay={homNay} />}
             </span>
