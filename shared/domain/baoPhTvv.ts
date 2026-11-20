@@ -13,6 +13,8 @@ export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', m
 /** Cửa sổ SQL "quay lại": N lớn nhất qua mọi bản (giảm hạn không làm sót việc cũ); `hanBaoPhHieuLuc` lọc lại đúng bản. */
 export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay)) - 1;
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
+/** TL-1 (N61): hạn GV xử lý vi phạm bị trả lại — `tra_lai_vi_pham` (gốc 3) ngày tính cả ngày trả, theo bản tại ngày trả. */
+export const hanTraLai = (ngay: string): string => addDaysIso(ngay, hanTai('tra_lai_vi_pham', ngay).ngay - 1);
 
 /**
  * QTV2 (PTA): số ngày cộng của BẢN LÚC SINH việc (không phải bản tại ngày hạn). `han` = ngày sinh + N(bản tại ngày sinh) → thử từng N của các bản:

@@ -2330,7 +2330,8 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   bao_lai_cua INTEGER REFERENCES discipline_measures(id),  -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
   phoi_hop_id INTEGER,                   -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
   tinh_hinh_id INTEGER,                  -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT   -- GV-1 (N58): người được giao; NULL = theo luật
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,   -- GV-1 (N58): người được giao; NULL = theo luật
+  tra_lai_id INTEGER                     -- TL-1 (N61): yêu cầu trả lại đang mở làm việc "Chờ GV sửa" (hạn tạm dừng); NULL = không chờ
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
@@ -2414,6 +2415,39 @@ CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_giao ON viec_bao_ph(phu_trach_id) WHE
 CREATE INDEX IF NOT EXISTS idx_sca_giao ON sos_coordination_actions(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tinh_hinh_giao ON tinh_hinh_hoc_tap(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_giao ON meeting_phan(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+-- TL-1 (N61, chủ SP 20/11): TRẢ LẠI VI PHẠM — TVV của em / TVV cùng chi nhánh / CX / Head trả MỘT vi phạm (về người ghi; người ghi hết vai → GVCN → Head)
+-- hoặc cả lần xử lý (về GVCN). Đúng một trong violation_id / measure_id. nguoi_nhan = người nhận theo luật lúc trả (người phụ trách mặc định).
+-- trang_thai: mo | xong | rut (TVV rút trước khi GV trả lời). ket_qua (xong): da_sua | giu_nguyen (tra_loi ≥ 8) | da_xoa | thu_hoi | tvv_da_bao.
+-- han = ngày trả + 2 (Hạn mặc định `tra_lai_vi_pham`), han_chon = hạn sửa tay. AUTOINCREMENT: dòng xoá (Hoàn tác, xoá vi phạm) không trao id cho dòng mới.
+-- Migrate `prTraLai` chép y.
+CREATE TABLE IF NOT EXISTS vi_pham_tra_lai (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  violation_id INTEGER REFERENCES violations(id),
+  measure_id INTEGER REFERENCES discipline_measures(id),
+  ly_do TEXT NOT NULL,
+  nguoi_tra INTEGER NOT NULL REFERENCES users(id),
+  tra_luc TEXT NOT NULL,
+  han TEXT NOT NULL,
+  han_chon TEXT,
+  nguoi_nhan INTEGER REFERENCES users(id),
+  trang_thai TEXT NOT NULL DEFAULT 'mo',
+  ket_qua TEXT,
+  tra_loi TEXT,
+  xong_luc TEXT,
+  xong_boi INTEGER REFERENCES users(id),
+  phu_trach_id INTEGER REFERENCES users(id),
+  giao_boi INTEGER REFERENCES users(id),
+  giao_luc TEXT,
+  CHECK ((violation_id IS NULL) <> (measure_id IS NULL))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tra_lai_vp_mo ON vi_pham_tra_lai(violation_id) WHERE trang_thai = 'mo' AND violation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tra_lai_xl_mo ON vi_pham_tra_lai(measure_id) WHERE trang_thai = 'mo' AND measure_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tra_lai_nhan ON vi_pham_tra_lai(nguoi_nhan) WHERE trang_thai = 'mo';
+CREATE INDEX IF NOT EXISTS idx_tra_lai_giao ON vi_pham_tra_lai(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tra_lai_hv ON vi_pham_tra_lai(student_id);
+CREATE INDEX IF NOT EXISTS idx_tra_lai_vp ON vi_pham_tra_lai(violation_id);
+CREATE INDEX IF NOT EXISTS idx_tra_lai_xl ON vi_pham_tra_lai(measure_id);
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
 -- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.

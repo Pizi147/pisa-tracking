@@ -27,6 +27,7 @@ import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as giaoViecSvc from '../worklist/giaoViec.ts';
 import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
+import * as traLaiSvc from '../yThuc/traLai.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -1600,6 +1601,36 @@ api.post('/tinh-hinh/:id/tra-loi', requireAuth, wrap((req) => {
 api.post('/tinh-hinh/:id/tra-loi/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return tinhHinhSvc.hoanTacTraLoi(principalOf(req), pInt(req, 'id'));
+}));
+/*
+ * TL-1 (N61, chủ SP 20/11): TRẢ LẠI VI PHẠM. Quyền kiểm trong `traLai.ts`: trả / rút = TVV của em · TVV cùng chi nhánh · CX · Head (GV, Admin, BPXL 403) ·
+ * Hoàn tác = người trả ≤ 60 giây · gửi lại / giữ nguyên = người nhận việc, GVCN lớp em, Head. Xoá vi phạm: `DELETE /violations/:id` (tự đóng "đã xoá") ·
+ * Thu hồi cả lần: `POST /discipline-measures/:id/thu-hoi` (tự đóng "thu hồi") · hạn / người phụ trách / theo dõi: `/giao-viec/tra_lai/:id/…`.
+ */
+api.post('/y-thuc/tra-lai', requireAuth, wrap((req) => {   // { violationId | measureId, lyDo }
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return traLaiSvc.traLai(principalOf(req), { violationId: b.violationId, measureId: b.measureId, lyDo: b.lyDo });
+}));
+api.get('/y-thuc/tra-lai/:id', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return traLaiSvc.xemTraLai(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/y-thuc/tra-lai/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return traLaiSvc.hoanTacTraLai(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/y-thuc/tra-lai/:id/rut', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return traLaiSvc.rutTraLai(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/y-thuc/tra-lai/:id/gui-lai', requireAuth, wrap((req) => {   // { sua?: thân sửa vi phạm (ten, description, category, skill, occurredOn) }
+  maybeSimulateSaveFailure();
+  return traLaiSvc.guiLaiTraLai(principalOf(req), pInt(req, 'id'), { sua: yThucBody(req).sua });
+}));
+api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { traLoi ≥ 8 }
+  maybeSimulateSaveFailure();
+  return traLaiSvc.giuNguyenTraLai(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
 }));
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {

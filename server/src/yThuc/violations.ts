@@ -16,6 +16,8 @@ import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
+import { dongTheoDuongSanCo } from './traLai.ts';
+import { donViec } from '../worklist/giaoViec.ts';
 import {
   EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, lopGanNhat, requireRecordViolation, requireViewClass, requireViewStudent,
 } from './access.ts';
@@ -449,8 +451,8 @@ export function editViolation(p: Principal, id: number, patch: {
   chiNhac?: boolean;
 }): ViolationView {
   const row = loadRow(id);
-  requireViewStudent(p, row.student_id);
-  if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
+  /* TL-1 (N61): người nhận việc "Vi phạm bị trả lại" sửa / xoá được đúng vi phạm đó dù không xem được cả hồ sơ em — quyền theo việc trước, xem sau. */
+  if (!canEditViolation(p, row)) { requireViewStudent(p, row.student_id); throw forbidden(EDIT_VIOLATION_MESSAGE); }
 
   const category = patch.category === undefined ? (row.category as ViolationCategory) : checkCategory(patch.category);
   /* Form sửa gửi lại cả `ten` + `description`. Nội dung không đổi so với cái đang HIỆN (đã tách khi đọc) thì giữ nguyên cột, để vi phạm cũ
@@ -511,8 +513,8 @@ export function editViolation(p: Principal, id: number, patch: {
  */
 export function deleteViolation(p: Principal, id: number): { ok: true; removedFromMeasures: number; thungRacId: number } {
   const row = loadRow(id);
-  requireViewStudent(p, row.student_id);
-  if (!canEditViolation(p, row)) throw forbidden(EDIT_VIOLATION_MESSAGE);
+  /* TL-1 (N61): người nhận việc "Vi phạm bị trả lại" sửa / xoá được đúng vi phạm đó dù không xem được cả hồ sơ em — quyền theo việc trước, xem sau. */
+  if (!canEditViolation(p, row)) { requireViewStudent(p, row.student_id); throw forbidden(EDIT_VIOLATION_MESSAGE); }
 
   /* V4-12 (PR-YT4): không còn "Đang chuẩn bị" nên không chặn gì. Xoá vi phạm trong lần xử lý đã xong: lần xử lý còn, số vi phạm giảm,
      bậc KHÔNG lùi (bậc đọc từ `kind` của lần xử lý). */
@@ -525,6 +527,11 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
     chup.ghiGoc('students', row.student_id);
     chup.chupXoa('attachments', `owner_type = 'violation' AND owner_id = ?`, id);
     const files = purgeAttachmentsOf('violation', id, p.userId, chup.tep);
+    /* TL-1 (N61): yêu cầu trả lại đang mở → "GV đã xoá vi phạm" (Báo PH bỏ tạm dừng, TVV nhận tin); mọi yêu cầu của vi phạm vào Thùng rác cùng nó. */
+    dongTheoDuongSanCo({ violationId: id }, 'da_xoa', p.userId);
+    const traLaiIds = (db().prepare('SELECT id FROM vi_pham_tra_lai WHERE violation_id = ?').all(id) as any[]).map((r) => r.id as number);
+    chup.chay('DELETE FROM vi_pham_tra_lai WHERE violation_id = ?', id);
+    donViec('tra_lai', traLaiIds);
     chup.chay('DELETE FROM measure_violations WHERE violation_id = ?', id);
     chup.chay('DELETE FROM violation_history WHERE violation_id = ?', id);
     chup.chay('DELETE FROM violations WHERE id = ?', id);

@@ -33,6 +33,7 @@ import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
 import { donViec } from '../worklist/giaoViec.ts';
+import { dongTheoDuongSanCo, xoaTraLaiCuaXuLy } from './traLai.ts';
 import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Head trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
@@ -915,6 +916,8 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
       duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacVe: bacSauThuHoi(em, measureId), soViPham: viPhamCua(measureId).length },
     });
     if (id === null) throw badRequest('Lần xử lý này đang chờ Head duyệt thu hồi.');
+    /* TL-1 (N61): GVCN chọn Thu hồi cho lần xử lý bị trả lại — yêu cầu đang mở đóng "thu hồi" (luật duyệt N5 không đổi). */
+    dongTheoDuongSanCo({ measureId }, 'thu_hoi', p.userId);
     if (ql) {
       apDungThuHoi(p.userId, m, hv, lyDo, v.baoLai !== false);
       chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
@@ -1010,6 +1013,7 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
   db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
   /* SV-YT-TVV (rà #516): rút chỉ xoá lần CÒN chờ — câu xoá có điều kiện `cho_duyet` (không đổi dòng → lui cả giao dịch, việc Báo PH không bị đóng). */
   dongViecTheoXuLy(measureId, 'system_rut', lyDoDong, p.userId);
+  xoaTraLaiCuaXuLy(measureId);   // TL-1: lần xử lý bị xoá — yêu cầu trả lại cả lần gỡ theo
   if (!db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'cho_duyet'`).run(measureId).changes) throw conflict('Đề xuất này không còn chờ Head duyệt — mở lại.');
   chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: lyDoDong });
   chotHanXuLy([m.student_id]);
@@ -1062,6 +1066,7 @@ export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
   tx(() => {
     purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
     if (viec) { db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(viec.id); donViec('bao_ph', [viec.id]); }   // GV-1: id dùng lại — dọn người theo dõi / lịch sử
+    xoaTraLaiCuaXuLy(measureId);   // TL-1: yêu cầu trả lại cả lần (≤ 60 giây sau lưu) gỡ cùng lần xử lý
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
     db().prepare(`DELETE FROM notifications WHERE dedup_key = ?`).run(`yt-xu-ly:${measureId}`);
     db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'done'`).run(measureId);

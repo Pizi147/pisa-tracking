@@ -24,8 +24,11 @@ import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, donViec, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
+import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
+/** TL-1 (N61): việc đang có yêu cầu trả lại mở (`tra_lai_id`) — hạn tạm dừng, không quá hạn ở mọi nơi. */
+export const CHO_GV_SUA = 'Chờ GV sửa';
 /** Lý do hệ thống đóng việc theo lần xử lý (Q-D1 ①). */
 const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'Head từ chối xử lý', system_rut: 'Đề xuất đã rút', system_huy_thu_hoi: 'Head huỷ thu hồi',
   system_meeting_mo_lai: 'GVCN đưa Meeting về Cần xử lý', system_rut_tinh_hinh: 'GV đã rút' } as const;
@@ -198,6 +201,8 @@ export type ViecBaoPhView = {
   thuHoiCho: { lyDo: string | null } | null;
   /** P1 G3-2: lần xử lý còn CHỜ QL duyệt (đề xuất WL 3, Meeting…) — ô ② "Chờ QL duyệt", hạn QL trả lời; null = đã chốt. Việc vẫn sinh ngay (N1). */
   choQlDuyet: { han: string | null } | null;
+  /** TL-1 (N61): "Chờ GV sửa" (hạn tạm dừng) · yêu cầu trả lại đang mở của vi phạm / lần xử lý này · người xem trả lại được (việc còn mở). */
+  choGvSua: boolean; traLai: ReturnType<typeof traLaiDangMo>; coTheTraLai: boolean;
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
@@ -247,7 +252,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     : null;
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`, phoiHopId: v.phoi_hop_id ?? null, tinhHinhId: v.tinh_hinh_id ?? null,
-    han, quaHan: v.trang_thai === 'mo' && han < homNay, trangThai: v.trang_thai, nhanTrangThai,
+    han, quaHan: v.trang_thai === 'mo' && !v.tra_lai_id && han < homNay, trangThai: v.trang_thai, nhanTrangThai: v.trang_thai === 'mo' && v.tra_lai_id ? CHO_GV_SUA : nhanTrangThai,
     hanMacDinh, hanChon: v.han_chon ?? null, coTheSuaHan: v.trang_thai === 'mo' && xl === 'con' && coTheSuaHan(p, v), lichSuHan: lichSuHan('bao_ph', id),
     xuLy: xl, nhanXuLy: xl === 'con' ? null : LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong],
     bo: v.trang_thai === 'bo' ? { lyDo: v.bo_ly_do, nhan: nhanLyDo(v.bo_ly_do), chu: v.bo_ly_do_chu ?? null, luc: v.bo_luc } : null,
@@ -264,6 +269,10 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
       : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, ngayLam: v.m_ngay ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null, xuLyId: v.measure_id ?? v.bao_lai_cua ?? null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
     choQlDuyet: choQl,
+    /* TL-1: một câu chỉ khi việc Báo PH vi phạm (có lần xử lý). */
+    choGvSua: !!v.tra_lai_id,
+    traLai: v.measure_id ? traLaiDangMo({ violationIds: vp.map((x) => x.id), measureIds: [v.measure_id] }) : [],
+    coTheTraLai: v.trang_thai === 'mo' && !!v.measure_id && xl === 'con' && coTheTraLai(p, v),
   };
 }
 
@@ -313,6 +322,8 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
           duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }), boQua: [gvcnVp] });
       }
       db().prepare('UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ?').run(sau, id);
+      /* TL-1 (N61): TVV không bị chặn — báo PH xong khi đang "Chờ GV sửa" → yêu cầu trả lại còn mở tự đóng "TVV đã báo PH". */
+      if (sau === 'xong' && x.tra_lai_id) dongTheoDuongSanCo({ baoPhId: id }, 'tvv_da_bao', p.userId);
       if (x.tinh_hinh_id != null) {
         /* TINH-HINH: kết quả về GV đã báo (chuông khi Đã báo PH). */
         db().prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = ? WHERE id = ? AND trang_thai != 'rut'`).run(sau, x.tinh_hinh_id);
@@ -461,7 +472,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   if (!ql && !tvv && !lopCn.length) return [];   // GV không giữ việc này — khỏi tốn câu
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const giu = giuViecQl(p);
-  const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
+  const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.tra_lai_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
@@ -502,7 +513,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     else if (o.tatCa) ownerId = r.tvv;
     else continue;
     const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : [], r.han_chon);
-    const urgency = han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal';
+    /* TL-1 (N61): "Chờ GV sửa" — hạn tạm dừng (không quá hạn, không "hôm nay"), cờ cho web. */
+    const urgency = r.tra_lai_id ? 'normal' : han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal';
+    const cho = r.tra_lai_id ? { choGvSua: true as const } : {};
     if (r.phoi_hop_id != null) {
       /* PHOI-HOP-V2: việc sau Meeting CX — nhóm riêng (mục Phối hợp SOS), gộp theo lớp như việc khác; khoá `bao-ph:{id}` như Báo PH (sổ nghĩa vụ, đúng hạn). */
       items.push({
@@ -538,7 +551,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       reason: r.bao_lai_cua ? `${r.nhan} — báo lại phụ huynh và ghi kết quả` : `Đã lưu xử lý ${r.nhan} — báo phụ huynh và ghi kết quả`,
       tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
-      due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
+      due: han, statusLabel: r.tra_lai_id ? CHO_GV_SUA : r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...cho,
     });
   }
   return items;

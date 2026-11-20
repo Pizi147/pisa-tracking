@@ -9545,6 +9545,9 @@ await runPrTinhHinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY,
 // GV-1 (N58, chủ SP 20/11): giao việc liên phòng ban — phụ trách · theo dõi · hạn · Meeting ba phần · /my-work
 const { runPrGiaoViecTests } = bocTep('prGiaoViec', await import('./prGiaoViec.tests.ts'));
 await runPrGiaoViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// TL-1 (N61, chủ SP 20/11): trả lại vi phạm — quyền · ba lựa chọn · Báo PH tạm dừng · rút · Hoàn tác · /my-work · migrate (HTTP thật)
+const { runPrTraLaiTests } = bocTep('prTraLai', await import('./prTraLai.tests.ts'));
+await runPrTraLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtDeXuatTests } = bocTep('prYtDeXuat', await import('./prYtDeXuat.tests.ts'));
 await runPrYtDeXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)

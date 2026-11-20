@@ -1,0 +1,289 @@
+/**
+ * TRẢ LẠI VI PHẠM (TL-1, luật N61 — chủ SP 20/11; thiết kế `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` E; mockup `thiet-ke/v22/tra-lai-vi-pham.html`).
+ *
+ *  · Ai trả: TVV của em · TVV cùng chi nhánh · CX · Head / Quản trị (`coTheTraLai`). Lý do ≥ 8 ký tự (N50 (6)).
+ *    MỘT vi phạm → người đã ghi (`reported_by`; hết hoạt động / hết vai ở chi nhánh em → GVCN lớp em đang học → Head). Cả lần xử lý → GVCN (→ Head).
+ *  · Việc GV "Vi phạm bị trả lại" (`/my-work` nhóm `yt_tra_lai`, tab Ý thức & Phối hợp): hạn `hanTraLai` (3 ngày tính cả ngày trả, Hạn mặc định
+ *    `tra_lai_vi_pham`), sửa hạn + đổi người + theo dõi qua khung giao việc (`giaoViec.ts`, loại `tra_lai`). Quá hạn chỉ đỏ.
+ *  · GV chọn: Sửa rồi gửi lại (`guiLai` — sửa qua `editViolation`, lịch sử từng trường) · Giữ nguyên + trả lời ≥ 8 (`giuNguyen`) · Xoá vi phạm (đường
+ *    `deleteViolation` sẵn có — tự đóng "đã xoá", Thùng rác 30 ngày). Cả lần xử lý: GVCN thêm Thu hồi (đường `thuHoiXuLy` sẵn có — tự đóng "thu hồi").
+ *  · Trong lúc chờ: việc Báo PH của lần xử lý chứa vi phạm đó `tra_lai_id` ≠ NULL = "Chờ GV sửa", không quá hạn; đóng / rút → hạn Báo PH tính lại
+ *    `hanBaoPh(hôm nay)` (không rút ngắn hạn đang có), ghi `viec_han_lan`. TVV ghi "Đã báo PH" khi đang chờ → yêu cầu tự đóng "TVV đã báo PH".
+ *    Báo PH đã xong / đã bỏ → không trả lại. Vi phạm chưa có lần xử lý → trả được, không có gì tạm dừng.
+ *  · Rút (phía TVV) khi còn chờ · Hoàn tác 60 giây (người trả) xoá hẳn · một yêu cầu mở mỗi vi phạm / lần xử lý (chỉ mục UNIQUE một phần).
+ *  · Không đổi bậc, luật 3 vi phạm / 2 tuần, việc `yt_xu_ly`. Lịch sử vi phạm: `violation_history` field `tra_lai*` (reason = `tra_lai:{id}`).
+ */
+import { DS_JSON, db, tx } from '../db.ts';
+import { CHU_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, hanTraLai, nhanLoaiXuLy } from '../../../shared/domain/index.ts';
+import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
+import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
+import { demoToday } from '../demoConfig.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
+import { khoangTamDung } from '../students/tamDung.ts';
+import { canManageDiscipline, gvcnCuaEm } from './access.ts';
+import { CHI_NHANH_EM } from './baoPhTvv.ts';
+import { addHistory, editViolation, violationsByIds, type ViolationView } from './violations.ts';
+import { baoTheoDoi, conHieuLuc, docViec, donViec, laNguoiTheoDoi, ql, themTheoDoiDong } from '../worklist/giaoViec.ts';
+
+const TOI_DA = 500;
+const HOAN_TAC_MS = 60_000;
+export const KET_QUA_TRA_LAI = ['da_sua', 'giu_nguyen', 'da_xoa', 'thu_hoi', 'tvv_da_bao'] as const;
+export type KetQuaTraLai = (typeof KET_QUA_TRA_LAI)[number];
+const NHAN_KET_QUA: Record<KetQuaTraLai, string> = { da_sua: 'GV đã sửa', giu_nguyen: 'GV đã trả lời', da_xoa: 'GV đã xoá vi phạm', thu_hoi: 'GVCN đã thu hồi', tvv_da_bao: 'TVV đã báo PH' };
+const KIND = 'tra_lai_vi_pham';
+
+function kiemChu(v: unknown, ten: string): string {
+  const s = typeof v === 'string' ? v.trim() : '';
+  if (s.length < CHU_TOI_THIEU) throw badRequest(`${ten}: ít nhất ${CHU_TOI_THIEU} ký tự.`);
+  if (s.length > TOI_DA) throw badRequest(`${ten}: tối đa ${TOI_DA} ký tự.`);
+  return s;
+}
+const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+/** Phía TVV của em (N61): TVV của em · TVV / CX cùng phạm vi (`coQuyenBuocTiep`) · Head / Quản trị trong phạm vi. GV, GVCN, Admin, BPXL: không. */
+export const coTheTraLai = (p: Principal, s: { consultant_user_id: number | null; student_id: number }): boolean =>
+  s.consultant_user_id === p.userId || coQuyenBuocTiep(p, s.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: s.student_id });
+
+function load(id: number): any {
+  if (!Number.isInteger(id) || id <= 0) throw badRequest('Yêu cầu không hợp lệ.');
+  const r = db().prepare(`SELECT t.*, s.full_name, s.student_code, s.consultant_user_id, ${CHI_NHANH_EM} AS em_branch
+      FROM vi_pham_tra_lai t JOIN students s ON s.id = t.student_id WHERE t.id = ?`).get(id) as any;
+  if (!r) throw notFound('Không tìm thấy yêu cầu trả lại.');
+  return r;
+}
+
+/** Câu SQL con: lần xử lý liên quan của một yêu cầu (`?1` = measure_id, `?2` = violation_id). */
+const XU_LY_LIEN_QUAN = `SELECT ?1 WHERE ?1 IS NOT NULL UNION SELECT mv.measure_id FROM measure_violations mv WHERE mv.violation_id = ?2`;
+/** Việc Báo PH (vi phạm, không phải "báo lại") của các lần xử lý liên quan. */
+const baoPhLienQuan = (measureId: number | null, violationId: number | null) => db().prepare(
+  `SELECT id, measure_id, student_id, trang_thai, han, han_chon, tra_lai_id FROM viec_bao_ph WHERE measure_id IN (${XU_LY_LIEN_QUAN}) ORDER BY id`,
+).all(measureId, violationId) as { id: number; measure_id: number; student_id: number; trang_thai: string; han: string; han_chon: string | null; tra_lai_id: number | null }[];
+
+/**
+ * TRONG tx: bỏ tạm dừng ở các việc Báo PH mà yêu cầu `r` đang dừng — còn yêu cầu khác mở cùng lần xử lý thì trỏ sang yêu cầu đó. `tinhLai`: việc còn mở
+ * hết dừng → hạn = `hanBaoPh(hôm nay)` (N2, 5 ngày tính cả hôm nay) khi muộn hơn hạn hiệu lực đang có (`han_chon` + `viec_han_lan`).
+ */
+function boTamDung(r: { id: number; measure_id: number | null; violation_id: number | null }, boi: number | null, tinhLai: boolean): void {
+  const ds = baoPhLienQuan(r.measure_id, r.violation_id).filter((b) => b.tra_lai_id != null);
+  if (!ds.length) return;
+  const homNay = demoToday();
+  const khoang = khoangTamDung([...new Set(ds.map((b) => b.student_id))]);
+  for (const b of ds) {
+    const khac = db().prepare(`SELECT t.id FROM vi_pham_tra_lai t WHERE t.trang_thai = 'mo' AND t.id != ?1 AND (t.measure_id = ?2
+        OR t.violation_id IN (SELECT violation_id FROM measure_violations WHERE measure_id = ?2)) ORDER BY t.id DESC LIMIT 1`)
+      .get(r.id, b.measure_id) as { id: number } | undefined;
+    db().prepare('UPDATE viec_bao_ph SET tra_lai_id = ? WHERE id = ?').run(khac?.id ?? null, b.id);
+    if (khac || !tinhLai || b.trang_thai !== 'mo') continue;
+    const cu = hanBaoPhHieuLuc(b.han, khoang[b.student_id], b.han_chon);
+    const moi = hanBaoPh(homNay);
+    if (moi <= cu) continue;
+    db().prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE id = ?').run(moi, b.id);
+    db().prepare('INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc) VALUES (?,?,?,?,0,?,?)').run('bao_ph', b.id, cu, moi, boi, nowIso());
+  }
+}
+
+/** Vi phạm ghi lịch sử của yêu cầu (một vi phạm → nó; cả lần xử lý → mọi vi phạm của lần đó). */
+const viPhamCua = (r: { violation_id: number | null; measure_id: number | null }): number[] => (r.violation_id ? [r.violation_id]
+  : (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(r.measure_id) as any[]).map((x) => x.violation_id as number));
+const ghiLichSu = (r: any, field: string, moi: string | null, boi: number) => { for (const vid of viPhamCua(r)) addHistory(vid, field, null, moi, boi, `tra_lai:${r.id}`); };
+
+// ---------------------------------------------------------------- trả lại
+
+export type TraLaiView = {
+  id: number; studentId: number; tenEm: string; violationId: number | null; measureId: number | null; nhanXuLy: string | null;
+  lyDo: string; nguoiTra: { id: number; ten: string | null }; traLuc: string;
+  han: string; hanMacDinh: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut'; ketQua: KetQuaTraLai | null; nhanKetQua: string | null;
+  traLoi: string | null; xongLuc: string | null; xongBoi: string | null; phuTrach: { id: number; ten: string | null }[];
+  viPham: ViolationView[];
+  /** Phía TVV: rút (còn chờ) · Hoàn tác (người trả, ≤ 60 giây). Phía GV: gửi lại / giữ nguyên / xoá (một vi phạm) · thu hồi (cả lần, GVCN / Head). */
+  coTheRut: boolean; hoanTacDuoc: boolean; coTheLam: boolean; coTheXoa: boolean; coTheThuHoi: boolean;
+};
+
+/** Ai làm được việc GV: người đang phụ trách (người nhận / người được giao còn hiệu lực) · GVCN lớp em đang học / Head (`discipline.manage`). */
+const coTheLam = (p: Principal, v: ReturnType<typeof docViec>) => v.phuTrach.includes(p.userId) || canManageDiscipline(p, v.studentId);
+
+export function xemTraLai(p: Principal, id: number): TraLaiView {
+  const r = load(id);
+  const v = docViec('tra_lai', id);
+  const tvv = coTheTraLai(p, r);
+  if (!tvv && !v.phuTrach.includes(p.userId) && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }) && !laNguoiTheoDoi('tra_lai', id, p.userId, r.em_branch ?? null)) {
+    throw forbidden('Học viên ngoài phạm vi của bạn.');
+  }
+  const m = r.measure_id ? db().prepare('SELECT kind, custom_name, status FROM discipline_measures WHERE id = ?').get(r.measure_id) as any : null;
+  const ten = new Map<number, string>((db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`)
+    .all(JSON.stringify([r.nguoi_tra, r.xong_boi, ...v.phuTrach].filter(Boolean))) as any[]).map((u) => [u.id, u.full_name]));
+  const han = r.han_chon ?? r.han;
+  const mo = r.trang_thai === 'mo';
+  const lam = mo && coTheLam(p, v);
+  return {
+    id, studentId: r.student_id, tenEm: r.full_name, violationId: r.violation_id ?? null, measureId: r.measure_id ?? null, nhanXuLy: m ? nhanLoaiXuLy(m.kind, m.custom_name ?? null) : null,
+    lyDo: r.ly_do, nguoiTra: { id: r.nguoi_tra, ten: ten.get(r.nguoi_tra) ?? null }, traLuc: r.tra_luc,
+    han, hanMacDinh: r.han, quaHan: mo && han < demoToday(), trangThai: r.trang_thai, ketQua: r.ket_qua ?? null, nhanKetQua: r.ket_qua ? NHAN_KET_QUA[r.ket_qua as KetQuaTraLai] ?? null : null,
+    traLoi: r.tra_loi ?? null, xongLuc: r.xong_luc ?? null, xongBoi: r.xong_boi ? ten.get(r.xong_boi) ?? null : null,
+    phuTrach: v.phuTrach.map((u) => ({ id: u, ten: ten.get(u) ?? null })),
+    viPham: violationsByIds(viPhamCua(r)),
+    coTheRut: mo && tvv, hoanTacDuoc: mo && r.nguoi_tra === p.userId && Date.now() - Date.parse(r.tra_luc) <= HOAN_TAC_MS,
+    coTheLam: lam, coTheXoa: lam && r.violation_id != null, coTheThuHoi: mo && r.measure_id != null && m?.status !== 'thu_hoi' && canManageDiscipline(p, r.student_id),
+  };
+}
+
+/**
+ * Trả MỘT vi phạm (`violationId`) hoặc cả lần xử lý (`measureId`) + lý do. Bấm hai lần (cùng người, cùng lý do, còn chờ) → trả bản đã có.
+ * Đã có yêu cầu mở của người khác / lý do khác → 409.
+ */
+export function traLai(p: Principal, body: { violationId?: unknown; measureId?: unknown; lyDo?: unknown }): TraLaiView {
+  const vid = body.violationId == null || body.violationId === '' ? null : Number(body.violationId);
+  const mid = body.measureId == null || body.measureId === '' ? null : Number(body.measureId);
+  if ((vid === null) === (mid === null)) throw badRequest('Chọn một vi phạm hoặc một lần xử lý để trả lại.');
+  const id0 = (vid ?? mid)!;
+  if (!Number.isInteger(id0) || id0 <= 0) throw badRequest('Vi phạm / lần xử lý không hợp lệ.');
+  const lyDo = kiemChu(body.lyDo, 'Lý do');
+  const goc = vid ? db().prepare('SELECT id, student_id, reported_by FROM violations WHERE id = ?').get(vid) as any
+    : db().prepare('SELECT id, student_id, kind, custom_name FROM discipline_measures WHERE id = ?').get(mid) as any;
+  if (!goc) throw notFound(vid ? 'Không tìm thấy vi phạm.' : 'Không tìm thấy lần xử lý.');
+  const s = db().prepare(`SELECT s.id AS student_id, s.full_name, s.student_code, s.consultant_user_id, ${CHI_NHANH_EM} AS em_branch FROM students s WHERE s.id = ?`).get(goc.student_id) as any;
+  if (!coTheTraLai(p, s)) throw forbidden('Chỉ TVV, CX hoặc Head của em trả lại được vi phạm.');
+  /* N61 ĐÃ CHỐT: Báo PH đã xong / đã bỏ thì không trả lại. Vi phạm chưa có lần xử lý (chưa sinh Báo PH) → trả được. Cả lần xử lý: Báo PH phải còn mở. */
+  const bp = baoPhLienQuan(mid, vid);
+  const moBp = bp.filter((b) => b.trang_thai === 'mo');
+  if ((bp.length || mid) && !moBp.length) throw badRequest('Việc Báo PH của lần xử lý này đã xong hoặc đã bỏ — không trả lại được nữa.');
+  const cot = vid ? 'violation_id' : 'measure_id';
+  const dangMo = db().prepare(`SELECT id, nguoi_tra, ly_do FROM vi_pham_tra_lai WHERE ${cot} = ? AND trang_thai = 'mo'`).get(id0) as any;
+  if (dangMo) {
+    if (dangMo.nguoi_tra === p.userId && dangMo.ly_do === lyDo) return xemTraLai(p, dangMo.id);
+    throw conflict(vid ? 'Vi phạm này đang chờ GV sửa — rút yêu cầu cũ nếu muốn trả lại lần nữa.' : 'Lần xử lý này đang chờ GVCN sửa — rút yêu cầu cũ nếu muốn trả lại lần nữa.');
+  }
+  const homNay = demoToday();
+  const g = gvcnCuaEm(s.student_id, homNay);
+  const branchId: number | null = s.em_branch ?? null;
+  /* Người nhận theo luật: người ghi còn hoạt động + còn vai ở chi nhánh em → người ghi; không → GVCN lớp em đang học → Head (→ Quản trị). */
+  const nhan: number | null = (vid && conHieuLuc(goc.reported_by, s.student_id) ? goc.reported_by : null) ?? g.gvcn ?? ql(branchId)[0] ?? null;
+  const han = hanTraLai(homNay);
+  const id = tx(() => {
+    const id = Number(db().prepare(`INSERT INTO vi_pham_tra_lai (student_id, violation_id, measure_id, ly_do, nguoi_tra, tra_luc, han, nguoi_nhan, trang_thai)
+        VALUES (?,?,?,?,?,?,?,?, 'mo')`).run(s.student_id, vid, mid, lyDo, p.userId, nowIso(), han, nhan).lastInsertRowid);
+    if (moBp.length) db().prepare(`UPDATE viec_bao_ph SET tra_lai_id = ? WHERE id IN (${DS_JSON})`).run(id, JSON.stringify(moBp.map((b) => b.id)));
+    /* Theo dõi mặc định (thiết kế E): người trả + GVCN khi người nhận là GVBM. */
+    themTheoDoiDong('tra_lai', id, [p.userId], 'tay', p.userId, branchId);
+    if (g.gvcn && g.gvcn !== nhan) themTheoDoiDong('tra_lai', id, [g.gvcn], 'gvcn', null, branchId);
+    ghiLichSu({ id, violation_id: vid, measure_id: mid }, 'tra_lai', lyDo, p.userId);
+    if (nhan && nhan !== p.userId) {
+      notify({ userId: nhan, kind: KIND, title: `${vid ? 'Vi phạm' : 'Lần xử lý'} bị trả lại · ${s.full_name} · hạn ${ddmm(han)}`, body: lyDo.slice(0, 160),
+        entityType: 'student', entityId: s.student_id, dedupKey: `tra-lai:${id}`, duong: `/cong-viec?viec=${encodeURIComponent(`yt_tra_lai:${id}`)}`, han });
+    }
+    writeAudit({ actorUserId: p.userId, action: 'tra_lai.tao', entityType: 'vi_pham_tra_lai', entityId: id,
+      entityLabel: `${s.student_code} · trả lại ${vid ? 'vi phạm' : nhanLoaiXuLy(goc.kind, goc.custom_name ?? null)}`, after: { violationId: vid, measureId: mid, lyDo, nguoiNhan: nhan, han } });
+    return id;
+  });
+  return xemTraLai(p, id);
+}
+
+/** Hoàn tác (người trả, ≤ 60 giây, còn chờ) → xoá hẳn: Báo PH bỏ tạm dừng (hạn như cũ), lịch sử + tin của lần trả gỡ. */
+export function hoanTacTraLai(p: Principal, id: number): { ok: true } {
+  const r = load(id);
+  if (r.trang_thai !== 'mo' || r.nguoi_tra !== p.userId || Date.now() - Date.parse(r.tra_luc) > HOAN_TAC_MS) throw badRequest('Quá thời gian Hoàn tác — dùng Rút yêu cầu.');
+  tx(() => {
+    boTamDung(r, p.userId, false);
+    db().prepare('DELETE FROM violation_history WHERE reason = ?').run(`tra_lai:${id}`);
+    db().prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`tra-lai:${id}`);
+    if (!db().prepare(`DELETE FROM vi_pham_tra_lai WHERE id = ? AND trang_thai = 'mo'`).run(id).changes) throw conflict('Yêu cầu vừa được cập nhật — mở lại để xem.');
+    donViec('tra_lai', [id]);
+    writeAudit({ actorUserId: p.userId, action: 'tra_lai.hoan_tac', entityType: 'vi_pham_tra_lai', entityId: id, entityLabel: `${r.student_code} · hoàn tác trả lại`,
+      before: { violationId: r.violation_id, measureId: r.measure_id, lyDo: r.ly_do } });
+  });
+  return { ok: true };
+}
+
+/**
+ * TRONG tx: đóng một yêu cầu đang mở — `xong` + kết quả, hoặc `rut`. So-và-đổi (`trang_thai = 'mo'`) → hai người cùng bấm: người sau 409.
+ * Bỏ tạm dừng Báo PH + tính lại hạn · lịch sử vi phạm · tin: TVV người trả (GV đã sửa / trả lời / xoá / thu hồi) · người phụ trách (khi TVV rút / đã báo PH) ·
+ * người theo dõi (khung giao việc). Không gửi người thao tác.
+ */
+function dong(r: any, boi: number, o: { trangThai: 'xong' | 'rut'; ketQua?: KetQuaTraLai; traLoi?: string | null }): void {
+  const phuTrach = docViec('tra_lai', r.id).phuTrach;
+  if (!db().prepare(`UPDATE vi_pham_tra_lai SET trang_thai = ?, ket_qua = ?, tra_loi = ?, xong_luc = ?, xong_boi = ? WHERE id = ? AND trang_thai = 'mo'`)
+    .run(o.trangThai, o.ketQua ?? null, o.traLoi ?? null, nowIso(), boi, r.id).changes) throw conflict('Yêu cầu trả lại vừa được cập nhật — mở lại để xem.');
+  boTamDung(r, boi, true);
+  if (o.ketQua !== 'da_xoa') ghiLichSu(r, o.trangThai === 'rut' ? 'tra_lai_rut' : `tra_lai_${o.ketQua}`, o.traLoi ?? null, boi);   // đã xoá: lịch sử đi theo vi phạm vào Thùng rác
+  const tieuDe = `${r.measure_id ? 'Lần xử lý' : 'Vi phạm'} bị trả lại · ${r.full_name}`;
+  const chu = o.trangThai === 'rut' ? 'TVV đã rút yêu cầu' : NHAN_KET_QUA[o.ketQua!];
+  const aid = writeAudit({ actorUserId: boi, action: o.trangThai === 'rut' ? 'tra_lai.rut' : `tra_lai.${o.ketQua}`, entityType: 'vi_pham_tra_lai', entityId: r.id,
+    entityLabel: `${r.student_code} · ${chu}`, before: { trangThai: 'mo' }, after: { trangThai: o.trangThai, ketQua: o.ketQua ?? null, traLoi: o.traLoi ?? null } });
+  const phiaTvv = o.trangThai === 'rut' || o.ketQua === 'tvv_da_bao';
+  const daBao = baoTheoDoi('tra_lai', r.id, boi, { suKien: phiaTvv ? 'bo' : 'ket_qua', tieuDe, chiTiet: [chu, o.traLoi].filter(Boolean).join(' · '), khoa: aid,
+    studentId: r.student_id, duong: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), boQua: [phiaTvv ? null : r.nguoi_tra] });
+  const den = phiaTvv ? phuTrach : [r.nguoi_tra];
+  for (const uid of den) {
+    if (uid === boi || daBao.has(uid)) continue;
+    notify({ userId: uid, kind: KIND, title: `${chu} · ${tieuDe}`, body: o.traLoi?.slice(0, 160) ?? null, entityType: 'student', entityId: r.student_id,
+      dedupKey: `tra-lai-kq:${r.id}`, duong: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }) });
+  }
+}
+
+/** Rút (phía TVV, khi GV chưa xử lý). */
+export function rutTraLai(p: Principal, id: number): TraLaiView {
+  const r = load(id);
+  if (!coTheTraLai(p, r)) throw forbidden('Chỉ TVV, CX hoặc Head của em rút được yêu cầu.');
+  if (r.trang_thai !== 'mo') throw badRequest('GV đã xử lý hoặc yêu cầu đã rút — không rút được nữa.');
+  tx(() => dong(r, p.userId, { trangThai: 'rut' }));
+  return xemTraLai(p, id);
+}
+
+function requireLam(p: Principal, r: any): void {
+  if (r.trang_thai !== 'mo') throw badRequest(r.trang_thai === 'rut' ? 'TVV đã rút yêu cầu.' : 'Yêu cầu đã được xử lý.');
+  if (!coTheLam(p, docViec('tra_lai', r.id))) throw forbidden('Chỉ người nhận việc, GVCN lớp em đang học hoặc Head xử lý được yêu cầu trả lại.');
+}
+
+/**
+ * Sửa rồi gửi lại: một vi phạm — `sua` = thân sửa vi phạm (Vi phạm, Mô tả, nhóm, môn, NGÀY…) đi đường `editViolation` (mỗi trường đổi một dòng lịch sử; người
+ * nhận việc sửa được dù không còn là người ghi hợp lệ — `canEditViolation`); cả lần xử lý — GVCN đã sửa ở tab Ý thức, chỉ gửi lại. Lưu = xong.
+ */
+export function guiLaiTraLai(p: Principal, id: number, body: { sua?: unknown }): TraLaiView {
+  const r = load(id);
+  requireLam(p, r);
+  tx(() => {
+    const b = body.sua && typeof body.sua === 'object' ? body.sua as Record<string, any> : null;
+    /* Cùng ánh xạ với PATCH /violations/:id (không nhận `chiNhac` — đổi Vi phạm ↔ Nhắc nhở đi đường sửa thường). */
+    if (r.violation_id && b) editViolation(p, r.violation_id, { ten: 'ten' in b ? (b.ten ?? null) : undefined, description: b.description, category: b.category,
+      skill: 'skill' in b ? (b.skill ?? null) : undefined, occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined });
+    dong(r, p.userId, { trangThai: 'xong', ketQua: 'da_sua' });
+  });
+  return xemTraLai(p, id);
+}
+
+/** Giữ nguyên + trả lời ≥ 8 ký tự. */
+export function giuNguyenTraLai(p: Principal, id: number, body: { traLoi?: unknown }): TraLaiView {
+  const r = load(id);
+  requireLam(p, r);
+  const traLoi = kiemChu(body.traLoi, 'Trả lời');
+  tx(() => dong(r, p.userId, { trangThai: 'xong', ketQua: 'giu_nguyen', traLoi }));
+  return xemTraLai(p, id);
+}
+
+/**
+ * TRONG tx của đường sẵn có: vi phạm bị xoá (`deleteViolation`) → yêu cầu mở của nó đóng "đã xoá" · lần xử lý thu hồi (`thuHoiXuLy`) → yêu cầu mở cả lần
+ * đóng "thu hồi" · TVV ghi "Đã báo PH" (`ghiKetQuaBaoPh`) → mọi yêu cầu đang dừng việc đó đóng "TVV đã báo PH".
+ */
+export function dongTheoDuongSanCo(o: { violationId?: number; measureId?: number; baoPhId?: number }, ketQua: KetQuaTraLai, boi: number): void {
+  const rows = o.baoPhId
+    ? db().prepare(`SELECT t.id FROM vi_pham_tra_lai t WHERE t.trang_thai = 'mo' AND (t.measure_id IN (SELECT measure_id FROM viec_bao_ph WHERE id = ?1)
+        OR t.violation_id IN (SELECT mv.violation_id FROM measure_violations mv WHERE mv.measure_id IN (SELECT measure_id FROM viec_bao_ph WHERE id = ?1)))`).all(o.baoPhId) as any[]
+    : db().prepare(`SELECT id FROM vi_pham_tra_lai WHERE ${o.violationId ? 'violation_id' : 'measure_id'} = ? AND trang_thai = 'mo'`).all(o.violationId ?? o.measureId) as any[];
+  for (const x of rows) dong(load(x.id), boi, { trangThai: 'xong', ketQua });
+}
+
+/** TRONG tx của chỗ xoá dòng gốc (Hoàn tác xử lý, rút đề xuất): gỡ hẳn yêu cầu của lần xử lý + dọn khung giao việc (Báo PH của lần đó cũng bị gỡ). */
+export function xoaTraLaiCuaXuLy(measureId: number): void {
+  const ids = (db().prepare('SELECT id FROM vi_pham_tra_lai WHERE measure_id = ?').all(measureId) as any[]).map((r) => r.id as number);
+  if (!ids.length) return;
+  db().prepare(`DELETE FROM vi_pham_tra_lai WHERE id IN (${DS_JSON})`).run(JSON.stringify(ids));
+  donViec('tra_lai', ids);
+}
+
+/** Yêu cầu mở của các vi phạm / lần xử lý (panel Báo PH, tab Ý thức) — MỘT câu. */
+export function traLaiDangMo(o: { violationIds: readonly number[]; measureIds: readonly number[] }): { id: number; violationId: number | null; measureId: number | null; han: string; nguoiTra: number }[] {
+  if (!o.violationIds.length && !o.measureIds.length) return [];
+  return (db().prepare(`SELECT id, violation_id, measure_id, COALESCE(han_chon, han) AS han, nguoi_tra FROM vi_pham_tra_lai WHERE trang_thai = 'mo'
+      AND (violation_id IN (${DS_JSON}) OR measure_id IN (${DS_JSON})) ORDER BY id`).all(JSON.stringify(o.violationIds), JSON.stringify(o.measureIds)) as any[])
+    .map((r) => ({ id: r.id, violationId: r.violation_id ?? null, measureId: r.measure_id ?? null, han: r.han, nguoiTra: r.nguoi_tra }));
+}

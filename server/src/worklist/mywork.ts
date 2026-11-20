@@ -154,6 +154,8 @@ export type WorkItem = {
   viecId?: number;
   /** UI-CV-TVV: số lần đã ghi "Chưa liên hệ được" của việc Báo PH đang mở — dòng "⚠ Chưa liên hệ được · lần n". */
   soLanThu?: number;
+  /** TL-1 (N61): việc Báo PH có yêu cầu trả lại đang mở — "Chờ GV sửa", hạn tạm dừng (urgency luôn normal). Chỉ có khi đúng. */
+  choGvSua?: true;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
@@ -201,6 +203,8 @@ export type WorkGroupKey =
   | 'bao_ph_yt'
   /* TINH-HINH (chủ SP 12/11): TVV hỏi tình hình học tập — GVCN lớp em ghi kết quả, hạn 3 ngày. */
   | 'yt_hoi_tinh_hinh'
+  /* TL-1 (N61, chủ SP 20/11): TVV trả lại vi phạm / lần xử lý — người ghi (hết vai → GVCN → Head) / GVCN sửa, giữ nguyên + trả lời, xoá (hoặc Thu hồi); hạn 3 ngày. */
+  | 'yt_tra_lai'
   /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
   | 'xuat_bc_ph'
   /* LG-3 (chủ SP 13–14/11): GV viết Báo cáo PH — mỗi lớp × đợt một việc, hạn theo đợt (tab Vận hành, mục "Báo cáo PH"). */
@@ -345,6 +349,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
     get hint() { return chenHan('Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn {han:bao_ph_vi_pham}, tính cả ngày lưu.'); },
+  },
+  yt_tra_lai: {
+    label: 'Vi phạm bị trả lại',
+    get hint() { return chenHan('TVV trả lại vi phạm bạn ghi (hoặc lần xử lý của lớp bạn chủ nhiệm): sửa rồi gửi lại, giữ nguyên + trả lời, hoặc xoá. Hạn {han:tra_lai_vi_pham}, tính cả ngày trả.'); },
   },
   yt_hoi_tinh_hinh: {
     label: 'Tình hình học tập',
@@ -1887,7 +1895,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     items.push(...[...theoKhoa.values()].filter((it) => !chiNhomGoc || chiNhomGoc.has(it.group)));
   }
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_tra_lai', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv',
     'meeting_xep_lich', 'meeting_ket_qua', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
