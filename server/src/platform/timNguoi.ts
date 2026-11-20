@@ -64,14 +64,17 @@ type HangNguoiTho = { id: number; full_name: string; code: string; role: string 
  * riêng `roleAndBranchesOf` cho từng dòng kết quả, tốn một truy vấn mỗi dòng (~15 truy vấn mỗi lần gõ trên Turso).
  */
 /** `vaiTaiCn` (GIAO-VIEC-CN): vai đúng nhóm phải ở ĐÚNG chi nhánh này — cùng luật `laNguoiHopLe(…, branchId)` máy chủ kiểm khi lưu. */
-function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: readonly number[] | null, vaiTaiCn: number | null = null): HangNguoiTho[] {
-  const keys = ROLE_KEYS_OF[nhom];
+/** GV-2 (N58): ô giao việc liên phòng ban — MỌI vai (TVV, Admin, CX, BPXL, Head…); vai toàn hệ thống (chi nhánh trống, vd CX) tính là có ở mọi chi nhánh, như máy chủ nhận việc (`HOAT_DONG_O`). */
+const MOI_VAI = ['teacher', 'manager', 'consultant', 'office_admin', 'cx', 'scheduler', 'system_admin'] as const;
+function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: readonly number[] | null, vaiTaiCn: number | null = null, moiVai = false): HangNguoiTho[] {
+  const keys = moiVai ? MOI_VAI : ROLE_KEYS_OF[nhom];
+  const cnVai = moiVai ? '(ur.branch_id = ? OR ur.branch_id IS NULL)' : 'ur.branch_id = ?';
   const keyPlaceholders = keys.map(() => '?').join(',');
   const idClause = ids ? ` AND u.id IN (${ids.map(() => '?').join(',')})` : '';
   /* PR-Ra (Task 3), PR-Dọn Q2: chỉ người có vai đang hoạt động ở MỘT chi nhánh thuộc phạm vi người xem. */
   const branchClause = branchIds
     ? ` AND EXISTS (SELECT 1 FROM user_roles ur4 WHERE ur4.user_id = u.id AND ur4.status = 'active'
-          AND ur4.branch_id IN (${branchIds.map(() => '?').join(',')}))`
+          AND (ur4.branch_id IN (${branchIds.map(() => '?').join(',')})${moiVai ? ' OR ur4.branch_id IS NULL' : ''}))`
     : '';
   return db()
     .prepare(
@@ -84,7 +87,7 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id
-        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${vaiTaiCn ? ' AND ur.branch_id = ?' : ''}${idClause}${branchClause}${KY_NANG_S(nhom)}`,
+        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${vaiTaiCn ? ` AND ${cnVai}` : ''}${idClause}${branchClause}${moiVai ? '' : KY_NANG_S(nhom)}`,
     )
     .all(...keys, ...keys, ...(vaiTaiCn ? [vaiTaiCn] : []), ...(ids ?? []), ...(branchIds ?? [])) as HangNguoiTho[];
 }
@@ -93,7 +96,9 @@ export function timNguoi(
   p: Principal,
   opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; cungChiNhanh?: boolean;
     /** GIAO-VIEC-CN (chủ SP 10/11, B' 9): Việc quản lý — chỉ người có vai ở chi nhánh của việc (trong phạm vi người xem). */
-    chiNhanh?: number | null },
+    chiNhanh?: number | null;
+    /** GV-2: ô giao việc — mọi vai ở chi nhánh `chiNhanh` (`nhom=giao_viec` ở `/ref/nguoi`). */
+    moiVai?: boolean },
 ): HangNguoi[] {
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' || opts.nhom === 'gv_speaking' ? opts.nhom : 'giao_vien';
   const term = (opts.q ?? '').trim();
@@ -140,7 +145,7 @@ export function timNguoi(
 
   /* T14: chưa gõ → 20 người (GV cùng lớp → cùng chi nhánh → khác); có gõ (kể cả 1–2 ký tự) → 12 người khớp. */
   const needle = normalizeName(term);
-  return nguoiHopLe(nhom, null, branchIds, cnViec)
+  return nguoiHopLe(nhom, null, branchIds, cnViec, !!opts.moiVai)
     .filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle))
     .map(build)
     .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.cungCn !== b.cungCn ? (a.cungCn ? -1 : 1) : a.name.localeCompare(b.name, 'vi') || a.id - b.id))

@@ -2359,8 +2359,6 @@ await checkAsync('GV-1 (×3) · /my-work + /my-work/theo-doi có phần Meeting 
   const ghi: { sql: string; args: unknown[] }[] = [];
   doQuet.ghi = ghi;
   const so: string[] = [];
-  const gvMod = await import('../worklist/giaoViec.ts');
-  gvMod.meetingCongViec.bat = true;   // đo như sau GV-2 (cờ bật)
   try {
     for (const [vai, url] of [['TVV', '/my-work'], ['QL', '/my-work'], ['QT', '/my-work'], ['CX', '/my-work'], ['QL', '/my-work?nguoi=tat-ca'], ['QL', '/my-work/theo-doi']] as [Vai, string][]) {
       const d = await doSql(vai, 'GET', url);
@@ -2372,7 +2370,6 @@ await checkAsync('GV-1 (×3) · /my-work + /my-work/theo-doi có phần Meeting 
       if (tranDong) assert(d.dong <= tranDong * 3 + them.mp.length, `${vai} ${url}: ${d.dong} dòng > trần ×3 ${tranDong * 3} + ${them.mp.length} phần Meeting`);
     }
   } finally {
-    gvMod.meetingCongViec.bat = false;
     doQuet.ghi = null;
     conn.prepare(`DELETE FROM viec_theo_doi WHERE user_id = ? AND luc = ?`).run(qlMb, luc);
     for (const id of them.mp) conn.prepare('DELETE FROM meeting_phan WHERE id = ?').run(id);

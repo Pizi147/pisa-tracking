@@ -498,6 +498,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     studentId: qInt(req, 'studentId'),
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
     chiNhanh: qInt(req, 'chiNhanh'),
+    moiVai: nhom === 'giao_viec',   // GV-2 (N58): ô giao việc liên phòng ban — mọi vai ở chi nhánh của việc
   });
 }));
 

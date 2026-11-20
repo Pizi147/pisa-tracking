@@ -475,7 +475,9 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
         const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;
         return { ...x, noiDung: luu ?? noiDungCua(r.status === 'done' ? r.performed_on ?? null : null), noiDungLaHienTai: r.status === 'done' && !luu };
       }),
-      canAct: canManageDiscipline(p, a.student_id),
+      /* GV-2 (N58): người được giao một việc của lượt (còn hiệu lực) làm được lượt đó dù không có `discipline.manage` — máy chủ vẫn kiểm từng việc (`requireLam`).
+         ponytail: cờ theo LƯỢT, nút việc khác của lượt vẫn hiện với người được giao (bấm → 403); tách cờ theo từng việc nếu chủ SP thấy rối. */
+      canAct: canManageDiscipline(p, a.student_id) || (list.some((r) => r.phu_trach_id === p.userId && r.status === 'pending') && conHieuLuc(p.userId, a.student_id)),
     });
   }
   return out;
@@ -610,10 +612,11 @@ export function dongPhoiHopTheoViec(classIds: number[], emId?: number, giao?: an
 export function coordinationOfStudent(p: Principal, studentId: number) {
   const st = db().prepare('SELECT id FROM students WHERE id = ?').get(studentId) as any;
   if (!st) throw notFound('Không tìm thấy học viên');
-  requireViewStudent(p, studentId);
   const rows = db()
     .prepare('SELECT * FROM sos_coordination_actions WHERE student_id = ? ORDER BY attempt_id, id')
     .all(studentId) as any[];
+  /* GV-2 (N58): người được giao việc Phối hợp của em (còn hiệu lực) mở được thẻ dù vai thường không xem em. */
+  if (!rows.some((r) => r.phu_trach_id === p.userId && r.status === 'pending') || !conHieuLuc(p.userId, studentId)) requireViewStudent(p, studentId);
   const turns = turnsOf(p, rows).sort((a, b) => b.attemptNo - a.attemptNo);
   return { studentId, rows: turns, pendingCount: turns.filter((t) => !t.summary.complete).length, canAct: canManageDiscipline(p, studentId) };
 }

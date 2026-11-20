@@ -49,6 +49,10 @@ export type WorkItem = {
   chonPa?: boolean;
   /** BO-QUA-XEP-MT: QL bỏ qua được ngay trên dòng (việc `moc:` Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
+  /** GV-2 (N58): việc người khác giao cho tôi — tên người giao (thẻ "{tên} giao"). */
+  giaoBoi?: string | null;
+  /** GV-2: dòng Xếp lịch họp · Kết quả meeting — id hành động Meeting (panel `/phoi-hop-sos/:id/meeting`). */
+  phoiHopId?: number;
 };
 
 /** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */

@@ -3,7 +3,6 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
-import { DongHan } from '../../ui/DongHan.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -22,6 +21,8 @@ import {
 import { dich, t } from '@shared/i18n/index.ts';
 import { gioVnNay, lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { DaiChiXem, DongTheoDoi, KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
+import { PhanMeeting, useMeeting } from './PanelMeeting.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
 type ViecBaoPh = {
@@ -29,6 +30,8 @@ type ViecBaoPh = {
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean; nhanXuLy: string | null;
+  /** PHOI-HOP-V2: việc "Báo PH · Meeting CX/GĐCN" (sau GVCN xác nhận Meeting) — GV-2: panel hiện cả hai phần Meeting (mockup v22 G8b). */
+  phoiHopId: number | null;
   /** TINH-HINH: việc "Báo PH · Tình hình học tập" (GV báo) — bối cảnh = người gửi + nội dung, không có vi phạm. */
   tinhHinhId?: number | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
@@ -56,12 +59,18 @@ const khoiPhucBaoPh = async (id: number) => {
  * Bối cảnh chỉ đọc (lần xử lý · nội dung GVCN · PH + SĐT bấm gọi) · form 3 trường (Kết quả · Ngày · Ghi chú, nháp theo việc) · Lịch sử mọi lần ghi.
  * "Chưa liên hệ được" = một lần thử: việc vẫn mở, hạn giữ. Kết thúc ngoại lệ = ⋯ › Bỏ việc (lý do sẵn có). Lưu / Lưu · việc tiếp › — chỉ sang việc kế sau khi lưu xong.
  */
-export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
+export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null; tenTiep?: string | null;
+  /** GV-2 (mockup v22 G5): mở từ tab "Đang theo dõi" — dải "Bạn đang theo dõi · chỉ xem · Bỏ theo dõi" (bỏ xong thì đóng panel). */
+  chiXem?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const hn = homNay ?? '';
   const { data: v, error, reload } = useApi<ViecBaoPh>(`/y-thuc/bao-ph/${it.viecId}`, [it.viecId]);
+  /* GV-2 (N58): khối Phụ trách · Hạn · Theo dõi đầu thân panel — một GET song song; Meeting: thêm hai phần (một GET, chỉ khi là việc Meeting). */
+  const gv = useGiaoViec('bao_ph', it.viecId);
+  const laMeeting = it.group === 'phoi_hop_tvv' || v?.phoiHopId != null;
+  const meet = useMeeting(laMeeting ? v?.phoiHopId : null);
   const [kq, setKq] = useNhap<KetQuaBaoPh | ''>('kq', '');
   const [ngay, setNgay] = useNhap('ngay', hn);
   const [ghiChu, setGhiChu] = useNhap('ghi-chu', '');
@@ -77,7 +86,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   const khoa = useRef<{ nd: string; k: string } | null>(null);
 
   const em = { id: it.studentId!, ten: it.studentName };
-  const tieuDe = it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
+  const tieuDe = laMeeting ? t('Meeting CX/GĐCN') : it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
   /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
   const dau = dauViec({
@@ -106,7 +115,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       xoaNhap(); setTt(null);
       setDaLuu({ kq, luc: gioVnNay(), lan: v.lan.filter((l) => l.ketQua === 'chua_lien_he').length + 1 });
       for (const k of KHOA_BAO_PH) invalidate(k);
-      reload(); onDaLam();
+      reload(); gv.reload(); onDaLam();
       return true;
     } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); return false; }
   };
@@ -141,22 +150,26 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   };
 
   const ph = v.lienHe;
-  const suaHan = async (moi: string | null, hanCu: string | null) => {
-    await api.post(`/y-thuc/bao-ph/${v.id}/han`, { han: moi, hanCu });
-    toast.push('ok', t('Đã lưu hạn'));
-    for (const k of KHOA_BAO_PH) invalidate(k);
-    reload(); onDaLam();
-  };
-  /* Lịch sử: lần liên hệ + lần đổi hạn, mới nhất trước. */
+  /* Lịch sử: lần liên hệ + lần đổi người / hạn / theo dõi (GV-2: khối giao việc — gồm cả lần đổi hạn) + phần Meeting, mới nhất trước. */
+  const phan = laMeeting ? meet.phan ?? [] : [];
   const lichSu = [
     ...v.lan.map((l) => ({ luc: l.luc, tieu: l.nhan, nguoi: l.nguoi, phu: [l.ngay !== l.luc.slice(0, 10) ? t('ngày {ngay}', { ngay: shortDate(l.ngay, hn) }) : null, l.ghiChu].filter(Boolean) as string[] })),
-    ...v.lichSuHan.map((h) => ({ luc: h.luc, nguoi: h.nguoi, phu: [] as string[],
-      tieu: h.macDinh ? t('Về hạn mặc định {ngay}', { ngay: shortDate(h.moi, hn) }) : t('Đổi hạn {cu} → {moi}', { cu: h.cu ? shortDate(h.cu, hn) : '—', moi: shortDate(h.moi, hn) }) })),
+    ...dongLichSuGiao(gv.g, hn, laMeeting ? t('Báo PH') : undefined),
+    ...phan.flatMap((g) => dongLichSuGiao(g, hn, g.meeting?.ten)),
   ].sort((a, b) => b.luc.localeCompare(a.luc));
+  const daiDoi = () => { for (const k of KHOA_BAO_PH) invalidate(k); reload(); onDaLam(); };
+  const khoi = gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={daiDoi} gon={laMeeting} anTheoDoi={laMeeting} />;
   return (
     <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
       quyChe={sua && !bo ? quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
+        {chiXem && gv.g && <DaiChiXem g={gv.g} onBo={onDong} />}
+        {/* GV-2 (mockup v22 G1 / G8b): khối ba dòng ĐẦU thân panel. Meeting: hai phần (Xếp lịch họp · Kết quả meeting) trước, rồi phần "Báo PH" của TVV. */}
+        {laMeeting ? <>
+          {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
+          <h3 className="m-0 -mb-1 flex items-center gap-2 text-[15px] font-bold">{t('Báo PH')}</h3>
+          {khoi}
+        </> : khoi}
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
             <span><b className="text-slate-100">{t('GVCN đang xin thu hồi {nhan}', { nhan: v.nhan })}</b> · {t('chờ Head duyệt.')}</span>
@@ -164,31 +177,30 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
           </div>
         )}
         {/* TINH-HINH (mockup v20 C2): GV báo tình hình — đọc nội dung GV gửi trước khi báo PH. */}
-        {v.tinhHinhId != null && (
+        {(v.tinhHinhId != null || laMeeting) && (v.boiCanh.noiDung || v.boiCanh.nguoiLuu) && (
           <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400"><TheLoai loai="th" />
+            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{!laMeeting && <TheLoai loai="th" />}
               {v.boiCanh.nguoiLuu && <b className="font-semibold text-slate-200">{v.boiCanh.nguoiLuu}</b>}{v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>}</span>
             <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">{v.boiCanh.noiDung}</span>
           </div>
         )}
         {/* Mockup K5b / K8d: dải ①②③ cùng thứ tự tab Ý thức — bước TVV là việc của người ghi. */}
-        {v.tinhHinhId == null && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
+        {v.tinhHinhId == null && !laMeeting && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
             ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ Head duyệt'), v.choQlDuyet.han && t('Head trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
             : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}
-        <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
-          [t('Vi phạm'), v.boiCanh.viPham.length > 0 && (
+          [t('Vi phạm'), v.boiCanh.viPham.length > 0 ? (
             <ul className="m-0 list-none space-y-0.5 p-0">
               {v.boiCanh.viPham.map((x) => <li key={x.id} className="min-w-0"><DongViPham v={x} ngay={shortDate(x.ngay, hn)} /></li>)}
             </ul>
-          )],
-          [t('Ghi chú GVCN'), v.tinhHinhId == null && v.boiCanh.ghiChu && <span className="font-normal">
-            <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span>],
+          ) : null],
+          [t('Ghi chú GVCN'), v.tinhHinhId == null && !laMeeting && v.boiCanh.ghiChu ? <span className="font-normal">
+            <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span> : null],
           [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
           [t('Điện thoại'), ph.sdt && (
             <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
@@ -213,6 +225,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             </Truong>
           </>
         )}
+        {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
+          dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
         {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n" mở sẵn; chưa có lần ghi thì không vẽ (lời 40). */}
         <LichSuGap so={lichSu.length} moSan>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />

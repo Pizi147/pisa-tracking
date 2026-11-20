@@ -34,6 +34,9 @@ export function QuaHan({ ngay, gon, mo }: { ngay: number | null; gon?: boolean; 
  *   4 · MỨC SOS (`ChipSos`, `lopSos`): cùng họ góc 4 px với kết quả (C23); mức tách bằng độ đặc nền (rỗng · nền vừa · đặc) + chữ "SOS n".
  * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
  */
+/** GV-2 (mockup v22 G1 `.ntd`): chip NGƯỜI (theo dõi) 28 px — tên + vai nhỏ, ✕ tròn 22 px bên trong (`NUT_X_CHIP`; 375: 32 / 28). */
+export const CHIP_NGUOI = 'inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border pl-2.5 text-[13px] font-medium max-sm:h-8';
+export const NUT_X_CHIP = 'grid h-[22px] w-[22px] place-items-center rounded-full border-0 bg-transparent p-0 text-xs leading-none text-faint hover:bg-[color:var(--accent-soft)] hover:text-[color:var(--text)] max-sm:h-7 max-sm:w-7';
 export const CHIP_TRON = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border border-transparent px-2 text-xs font-semibold leading-none';
 /** Ô Trạng thái hồ sơ lượt (cột 150 px, critique 29/10): chip con trực tiếp được xuống dòng thay vì tràn — không cắt chữ ("Vắng lần 1 · chờ xếp lại"). */
 export const O_CHIP_XUONG_DONG = 'md:[&>span]:h-auto md:[&>span]:min-h-[22px] md:[&>span]:whitespace-normal md:[&>span]:rounded-[11px] md:[&>span]:py-[3px] md:[&>span]:leading-tight md:[&>span]:[text-wrap:balance]';

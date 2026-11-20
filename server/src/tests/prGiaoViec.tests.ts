@@ -200,13 +200,10 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       'sửa việc đã xong không báo lại');
   }));
 
-  const voiMeeting = async (fn: () => Promise<void>) => { gv.meetingCongViec.bat = true; try { await fn(); } finally { gv.meetingCongViec.bat = false; } };
-  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel; cờ tắt → không ở /my-work', () => thu(() => voiMeeting(async () => {
+  const voiMeeting = async (fn: () => Promise<void>) => fn();   // GV-2: hai nhóm Meeting luôn bật ở /my-work
+  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel', () => thu(() => voiMeeting(async () => {
     const sid = moiEm();
     const { aid, xep, kq, bpId } = meeting(sid);
-    gv.meetingCongViec.bat = false;
-    assert(!items(cx).some((x) => x.key === `meeting_ket_qua:${kq.id}`) && !items(ql, { nguoi: 'tat-ca' }).some((x) => /^meeting_/.test(x.key)), 'cờ tắt (chưa có GV-2): không dòng Meeting ở /my-work');
-    gv.meetingCongViec.bat = true;
     assert(xep && kq && xep.trang_thai === 'mo' && kq.trang_thai === 'mo' && bpId, 'ba phần');
     const coBpxl = nguoiVaiCuaChiNhanh(mbId, 'scheduler').length > 0;
     if (!coBpxl) assert(items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'chưa có BPXL → TVV của em xếp lịch');
@@ -351,6 +348,25 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     bp.ghiKetQuaBaoPh(tvv, { viecIds: [id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
     assert(!tin(`gv:bao_ph:${id}:ket_qua:`).includes(roi.userId), 'không nhận tin có kết quả');
     assert(await ma(() => bp.xemViecBaoPh(p2, id)) === 403, 'không đọc panel');
+  }));
+
+  await checkAsync('GV2-1 · Phối hợp giao cho Admin: thẻ Phối hợp của em có canAct (người ngoài 403); migrate sinh bù phần Meeting → có người theo dõi mặc định', () => thu(async () => {
+    const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
+    const sid = moiEm(); const x = phoiHopViec(sid);
+    assert(!ph.coordinationOfStudent(admin, sid).rows.some((r: any) => r.canAct), 'Admin (không discipline.manage) chưa được giao → không canAct');
+    giao(gvcn, 'phoi_hop', x, admin.userId);
+    const the = ph.coordinationOfStudent(admin, sid);
+    assert(the.rows.some((r: any) => r.canAct && r.actions.some((a: any) => a.id === x)), 'được giao → canAct ở lượt có việc');
+    assert(await ma(() => ph.coordinationOfStudent(ngoai, sid)) === 403, 'người ngoài vẫn 403');
+    const { aid } = meeting(moiEm());
+    const ids = hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id);
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'meeting' AND ref_id IN (${ids.join(',')})`).run();
+    conn.prepare('DELETE FROM meeting_phan WHERE phoi_hop_id = ?').run(aid);
+    const a: string[] = []; migratePrGiaoViec(conn, a);
+    const moi = hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id);
+    assert(moi.length === 2 && moi.every((id) => hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'meeting' AND ref_id = ?`, id).length > 0), `phần sinh bù có người theo dõi: ${a.join(' | ')}`);
+    const b: string[] = []; migratePrGiaoViec(conn, b);
+    assert(!b.length, `lần 2 không đổi: ${b.join(' | ')}`);
   }));
 
   const fs = await import('node:fs');

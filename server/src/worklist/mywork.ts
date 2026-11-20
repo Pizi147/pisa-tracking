@@ -163,6 +163,8 @@ export type WorkItem = {
   emTen?: string[];
   /** GV-1 (N58): việc người khác giao cho người xem — tên người giao (dòng "{tên} giao"). Không có = việc theo luật. */
   giaoBoi?: string | null;
+  /** GV-2: dòng Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) — id hành động Meeting, panel đọc `/phoi-hop-sos/:id/meeting`. */
+  phoiHopId?: number;
 };
 
 /**

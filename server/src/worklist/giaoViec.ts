@@ -386,7 +386,7 @@ export function suaHan(p: Principal, loai: LoaiGiao, id: number, body: { han?: u
 
 type Nguoi = { id: number; ten: string | null };
 export type KhoiGiaoViec = {
-  loai: LoaiGiao; id: number; tieuDe: string; studentId: number; mo: boolean;
+  loai: LoaiGiao; id: number; tieuDe: string; studentId: number; mo: boolean; branchId: number | null;
   phuTrach: Nguoi[]; macDinh: Nguoi[]; duocGiao: boolean; giaoBoi: Nguoi | null; giaoLuc: string | null;
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   theoDoi: (Nguoi & { nguon: Nguon })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
@@ -434,7 +434,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
   const doiDuoc = v.mo && coTheDoiNguoi(p, v);
   const gd = v.mo && doiDuoc ? timGhiDao(db(), LOAI_GHI_DAO, BANG[loai], id) : null;
   return {
-    loai, id, tieuDe: v.tieuDe, studentId: v.studentId, mo: v.mo,
+    loai, id, tieuDe: v.tieuDe, studentId: v.studentId, mo: v.mo, branchId: v.branchId,
     phuTrach: v.phuTrach.map(nguoi), macDinh: v.macDinh.map(nguoi), duocGiao: !!v.pt,
     giaoBoi: v.pt && r.giao_boi ? nguoi(r.giao_boi) : null, giaoLuc: v.pt ? r.giao_luc ?? null : null,
     han: h.han, hanMacDinh: h.macDinh, hanChon: h.chon, coTheSuaHan: coTheSuaHan(p, v),
@@ -466,7 +466,13 @@ export function moPhanMeeting(phoiHopId: number, studentId: number, baoPhId: num
       .run(phoiHopId, phan, branchId, luc).changes;
   }
   db().prepare(`UPDATE meeting_phan SET trang_thai = 'mo', branch_id = ? WHERE phoi_hop_id = ? AND trang_thai = 'bo'`).run(branchId, phoiHopId);   // mở lại: chi nhánh hiện tại
-  if (!moi) return;
+  if (moi) theoDoiMacDinhMeeting(phoiHopId, studentId, baoPhId);
+}
+
+/** TRONG tx: người theo dõi mặc định (TVV của em · GVCN · Head — trừ người theo luật của chính phần) cho hai phần + việc Báo PH Meeting. Migrate sinh bù gọi lại. */
+export function theoDoiMacDinhMeeting(phoiHopId: number, studentId: number, baoPhId: number | null): void {
+  const em = db().prepare(`SELECT s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id FROM students s WHERE s.id = ?`).get(studentId) as any;
+  const branchId: number | null = em?.branch_id ?? null;
   const gvcn = gvcnCuaEm(studentId, demoToday()).gvcn;
   const theoDoi: [number | null, Nguon][] = [[em?.tvv ?? null, 'tvv'], [gvcn, 'gvcn'], ...ql(branchId).map((u): [number, Nguon] => [u, 'head'])];
   const them = (loai: LoaiGiao, refId: number, boQua: readonly number[]) => {
@@ -591,11 +597,6 @@ export function theoTvvHienTai(studentId: number): void {
 // ---------------------------------------------------------------- /my-work: việc giao cho tôi (+ phần Meeting theo luật) — MỘT câu
 
 const VAI_MEETING = new Set([VAI_BPXL, 'cx', 'consultant', 'manager', 'system_admin']);
-/**
- * (G, rà PTA lần 2) Web hiện tại chưa có panel cho hai nhóm Meeting (`PanelViec` trả `null` ở nhánh `default`) → TẠM không trả hai nhóm này ở `/my-work` / hồ sơ HV
- * (không để người dùng thấy việc không làm được). Dữ liệu + API (`/giao-viec/meeting/*`, `/phoi-hop-sos/:id/meeting`) vẫn sinh đủ. PR giao diện GV-2 đặt `bat: true`.
- */
-export const meetingCongViec = { bat: process.env.PISA_GV_MEETING === '1' };   // PISA_GV_MEETING=1: đo / thử trước GV-2 (bản chép, dev)
 /** Phần Meeting còn là việc: hành động Meeting đã xác nhận, lượt chưa huỷ, lộ trình chưa có KQ thi thật (N46). Em thôi học: lọc `HV_DANG_HOC` ở câu ngoài. */
 const MEETING_SONG = `JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id AND x.status = 'done'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND NOT ${LUOT_SAU_THI_SQL('a')}`;
@@ -646,15 +647,13 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     veToi(`SELECT 'tinh_hinh', t.id, t.student_id, t.phu_trach_id, t.giao_boi, t.han, NULL, t.noi_dung, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
          FROM tinh_hinh_hoc_tap t WHERE t.phu_trach_id = ? AND t.trang_thai = 'mo' AND t.chieu = 'tvv_gvcn'`, 't'),
   ];
-  if (meetingCongViec.bat) {
-    ve.push(veToi(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE mp.phu_trach_id = ? AND mp.trang_thai = 'mo'`, 'x'));
-    if (vai.length) {
-      const loc = [`mp.trang_thai = 'mo'`, ...(toanBo ? [] : [`mp.branch_id IN (${DS_JSON})`]), o.tatCa ? '(mp.phu_trach_id IS NULL OR mp.phu_trach_id != ?)' : 'mp.phu_trach_id IS NULL'];
-      if (!toanBo) thamSo.push(JSON.stringify(cn));
-      if (o.tatCa) thamSo.push(p.userId);
-      if (o.studentId) thamSo.push(o.studentId);
-      ve.push(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE ${loc.join(' AND ')}${em('x')}`);
-    }
+  ve.push(veToi(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE mp.phu_trach_id = ? AND mp.trang_thai = 'mo'`, 'x'));
+  if (vai.length) {
+    const loc = [`mp.trang_thai = 'mo'`, ...(toanBo ? [] : [`mp.branch_id IN (${DS_JSON})`]), o.tatCa ? '(mp.phu_trach_id IS NULL OR mp.phu_trach_id != ?)' : 'mp.phu_trach_id IS NULL'];
+    if (!toanBo) thamSo.push(JSON.stringify(cn));
+    if (o.tatCa) thamSo.push(p.userId);
+    if (o.studentId) thamSo.push(o.studentId);
+    ve.push(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE ${loc.join(' AND ')}${em('x')}`);
   }
   const rows = db().prepare(
     `SELECT u.*, s.full_name, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS em_branch, g.full_name AS giao_ten FROM (
@@ -732,8 +731,8 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
   const hop = r.hop ? ` · họp ${r.hop.slice(8, 10)}/${r.hop.slice(5, 7)}${r.hop.slice(10)}` : '';
   return { ...chung, key: `${xep ? 'meeting_xep_lich' : 'meeting_ket_qua'}:${r.id}`, group: xep ? 'meeting_xep_lich' : 'meeting_ket_qua', urgency: urgencyOf(han, today),
     attemptId: null, contextLabel: tenViec(r.kind), reason: xep ? 'Xếp lịch họp rồi bấm Hoàn thành (ngày giờ họp tuỳ chọn)' : `Ghi kết quả buổi họp rồi bấm Hoàn thành${hop}`,
-    tieuDe: `${xep ? 'Xếp lịch họp' : 'Kết quả meeting'} · ${r.full_name}`, phu: xep ? null : hop.slice(3) || null, actionLabel: 'Hoàn thành',
-    href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }), due: han, statusLabel: 'Chưa xong', viecId: r.id };
+    tieuDe: `${xep ? 'Xếp lịch họp' : 'Kết quả meeting'} · ${r.full_name}`, phu: xep ? null : hop.slice(3) || null, actionLabel: xep ? 'Hoàn thành' : 'Ghi KQ',
+    href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }), due: han, statusLabel: 'Chưa xong', viecId: r.id, phoiHopId: r.ph_id };
 }
 
 // ---------------------------------------------------------------- GET /my-work/theo-doi
