@@ -264,6 +264,9 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
   const cotSuaDuoc = (k: string) => data.rows.some((r) => lichCua(r, k)?.canEdit);
+  /* LECH-BANG XM-4: cột có ô chỉ còn "Lịch sử" (nút chữ) giữ chỗ 68 thay 28 — cột rộng thêm phần đó, tiêu đề chừa đúng chỗ (`--dem-phai`). */
+  const { can } = useSession();
+  const oNut = (k: string) => (data.rows.some((r) => thaoTacO(r, k, data, can).length === 0) ? O_NUT_CHU : O_NUT_3CHAM);
 
   const plan = async () => {
     setBusy(true);
@@ -323,7 +326,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   ] : [
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
-      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
+      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: (cotSuaDuoc(k) ? COT_MON : 128) + oNut(k) - O_NUT_3CHAM,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
+      demPhai: 12 + 4 + oNut(k),
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
     ...(laCp ? [{ key: 'pt', nhan: t('% tổng'), kieu: 'phan-tram', goiY: t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.') } as const] : []),
@@ -373,6 +377,20 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   );
 }
 
+/** Thao tác của menu một ô (trước "Lịch sử"). Rỗng → `MenuDong` vẽ nút chữ "Lịch sử" bấm thẳng (S4-GD), rộng ~66 px thay ⋯ 28. */
+function thaoTacO(row: Row, k: string, sheet: ThuongSheet, can: (q: string) => boolean): ThaoTac[] {
+  const homNay = sheet.today;
+  const s = lichCua(row, k);
+  const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
+  const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
+  const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
+  return [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
+}
+/** LECH-BANG XM-4: chỗ giữ cho nút ẩn chờ rê của ô — ⋯ 28 px, nút chữ "Lịch sử" 68 px. CỐ ĐỊNH theo cột (mọi ô cùng chỗ) → chữ thẳng tiêu đề, rê chuột không xê dịch. */
+const O_NUT_3CHAM = 28;
+const O_NUT_CHU = 68;
+
 /**
  * MENU ⋯ CỦA MỘT Ô LỚP THƯỜNG + hộp thao tác + Lịch sử — dùng chung cho lưới (`DongThuong`) và màn điện thoại (`MotKyNang`, NHAP-DIEM-b: 375 có ⋯).
  */
@@ -392,18 +410,15 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
    * "Lịch sử" (không phải thao tác, ngoài ≤ 3 — Q5). Nhập/Sửa điểm làm ngay trong ô nên không lặp trong menu. Nút ⋯ đứng SAU ô nhập
    * trong DOM: Tab đi qua ô nhập trước, Enter/mũi tên của ô giữ nguyên.
    */
-  const menuO = (k: string, luon = false) => {
-    const s = lichCua(row, k);
-    const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
-    const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
-    const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
-      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
-    const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
+  /** `rong`: chỗ giữ cố định của cột (lưới ≥ 640) — `O_NUT_3CHAM` / `O_NUT_CHU`. */
+  const menuO = (k: string, luon = false, rong?: number) => {
+    const ds = thaoTacO(row, k, sheet, can);
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
        U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
        ẩn bằng `invisible` nên vẫn giữ chỗ (rê vào ô không làm chữ nhảy). */
     return (
-      <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}>
+      <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}
+        style={rong ? { width: rong } : undefined}>
         <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
           ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'huy-diem' || x === 'khoi-phuc-diem' ? huyDiem(k, x === 'huy-diem')
             : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
@@ -437,7 +452,9 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
-  const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
+  const { menuO: menuGoc, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
+  /* LECH-BANG XM-4: chỗ giữ của nút ẩn = phần cột chừa ở tiêu đề (`demPhai` − đệm 12 − khe 4); ô hai tầng (`luon`) không giữ chỗ. */
+  const menuO = (k: string, luon = false) => menuGoc(k, luon, luon || !cc[k]?.demPhai ? undefined : cc[k].demPhai! - 16);
 
   return (
     <tr className={`do-hang group/hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
@@ -475,7 +492,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           return (
             <OBang key={k} c={cc[k]} className="group relative text-slate-500" data-kn={k} tabIndex={0}
               title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
-              <span className="inline-flex items-baseline gap-1">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
+              <span className="inline-flex items-baseline gap-1 whitespace-nowrap">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
             </OBang>
           );
         }
@@ -483,7 +500,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           return (
             <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
               <span className="inline-flex items-center gap-1">
-                <span className="text-xs text-slate-500" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
+                <span className="whitespace-nowrap text-xs text-slate-500" title={`${tenMon(sheet.programme.code, k)}: ${chuDung}`}>{chuDung}</span>
                 {menuO(k)}
               </span>
             </OBang>
