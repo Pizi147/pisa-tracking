@@ -1,5 +1,5 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
-import { Children, type ReactNode, useState } from 'react';
+import { Children, type ReactNode, useEffect, useRef, useState } from 'react';
 import { LOP_DA_LUU, NutHoanTac } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -99,6 +99,18 @@ const DUONG_IC: Record<string, ReactNode> = {
   'pa-chay': <><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3.2l2 1.3" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
+/** GAP-MO (mockup v22 G6): biểu tượng đầu dải mục theo mã mục (`MUC_CV`). */
+const ICON_MUC: Record<string, string> = {
+  mock: 'cham-diem', pf: 'cham-diem', cp: 'cham-diem', 'cham-cheo': 'cham-cheo', 'mo-ta': 'case-hoc-thuat', pa: 'duyet', 'kq-pa': 'duyet',
+  'bao-ph': 'bao-ph', 'bao-ph-test': 'bao-ph', 'vi-pham': 'y-thuc', 'tinh-hinh': 'tinh-hinh', 'phoi-hop': 'y-thuc', 'phan-cong': 'van-hanh', 'ban-giao': 'van-hanh',
+  'sau-thi': 'sau-thi', 'lo-trinh': 'sau-thi', 'chot-ngay': 'chot-ngay-thi', thieu: 'bo-sung', 'bo-sung': 'bo-sung', giao: 'van-hanh', 'bc-ph': 'bo-sung',
+};
+const docGap = (k: string | null): ReadonlySet<string> => {
+  try { const v = k && JSON.parse(localStorage.getItem(k) ?? '[]'); return new Set(Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []); } catch { return new Set(); }
+};
+const ghiGap = (k: string | null, s: ReadonlySet<string>) => {
+  try { if (k) { if (s.size) localStorage.setItem(k, JSON.stringify([...s])); else localStorage.removeItem(k); } } catch { /* không lưu được: lần sau về mặc định mở */ }
+};
 export const IconNhom = ({ k }: { k: string }) => (
   <svg viewBox="0 0 16 16" aria-hidden className="h-4 w-4 shrink-0 fill-none stroke-current" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">{DUONG_IC[k] ?? DUONG_IC.lop}</svg>
 );
@@ -122,7 +134,9 @@ export const chuDau = (ten: string) => {
  * · chip "n việc" · "n quá hạn" đỏ (375 cũng ghi đủ chữ — AU-GON A1-11). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
-export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
+export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: ChungDong & {
+  /** GAP-MO (N60): khoá nhớ gập / mở ở trình duyệt = người + tab (vd `u7:bao-ph`); không có = không nhớ. Mục theo khoá mục; mặc định mở. */
+  nho?: string;
   muc: readonly MucTab<WorkItem>[];
   /** `lamThay` (AUDIT-1611 P1-03): dòng làm thay trong mục — vẽ nhưng không vào `n`. */
   dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>;
@@ -133,6 +147,24 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
   luat?: ReactNode;
 }) {
   const [them, setThem] = useState<Record<string, number>>({});
+  /* GAP-MO: tập mục đang gập — đọc lại khi đổi người / tab (đặt state ngay lúc vẽ, không nháy "mở" rồi gập). */
+  const khoaNho = nho ? `pisa.cv.gap.${nho}` : null;
+  const [gapSt, setGapSt] = useState(() => ({ k: khoaNho, s: docGap(khoaNho) }));
+  if (gapSt.k !== khoaNho) setGapSt({ k: khoaNho, s: docGap(khoaNho) });
+  const gap = gapSt.s;
+  const datGap = (mk: string, g: boolean) => {
+    const s = new Set(gap); if (g) s.add(mk); else s.delete(mk);
+    setGapSt({ k: khoaNho, s }); ghiGap(khoaNho, s);
+  };
+  /* Mở panel việc nằm trong mục đang gập (`?viec=`, "Việc tiếp ›") → mục tự mở; chỉ khi việc ĐỔI — người dùng vẫn gập được mục chứa việc đang mở. */
+  const daMo = useRef<string | null>(null);   // việc đã xử lý — dữ liệu về muộn (`muc` đổi) vẫn tìm được mục, nhưng mỗi việc chỉ tự mở một lần
+  useEffect(() => {
+    if (!dong.chon) { daMo.current = null; return; }
+    const m = muc.find((x) => x.items.some((y) => y.key === dong.chon || y.con?.some((c) => c.key === dong.chon)));
+    if (!m || daMo.current === dong.chon) return;
+    daMo.current = dong.chon;
+    if (gap.has(m.key)) datGap(m.key, false);
+  }, [dong.chon, muc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const { homNay } = useNgayNghiepVu();
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
   /* GD-4a (mockup ⑤ B1): vạch hạn trong mục — Quá hạn · Hôm nay · Hạn đến {CN} · Hạn sau {CN} · Không hạn; mục đã xếp hạn sớm trước nên vạch đi một chiều. */
@@ -144,20 +176,17 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
         const n = soHien + (them[m.key] ?? 0);
         /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
         const chung = m.key === 'cham-cheo';
+        const dongGap = gap.has(m.key), maMuc = `muc-${m.key}`;
         const d: { n: number; quaHan: number; lamThay?: number } = chung ? demBai(m.items) : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
-            <h2 className="sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
-              style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: chung ? 'var(--text-faint)' : 'var(--accent)' }}>
-              <span className="min-w-0 text-[color:var(--text)] max-sm:flex-1">{m.label}</span>
-              <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span>&nbsp;{chung ? t('bài') : t('việc')}</span></span>
-              {d.quaHan > 0 && (
-                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span> {t('quá hạn')}</span></span>
-              )}
-              {!!d.lamThay && <span className="whitespace-nowrap text-[13px] font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
-              {i === 0 && luat}
-            </h2>
+            <DaiNhom k={ICON_MUC[m.key] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
+              trungTinh={chung} chevSauTen dieuKhien={dongGap ? undefined : maMuc} luat={i === 0 ? luat : undefined}
+              phu={d.quaHan > 0 || !!d.lamThay ? <>
+                {d.quaHan > 0 && <span className="font-bold tabular-nums text-late">{d.quaHan} {t('quá hạn')}</span>}
+                {!!d.lamThay && <span className="font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
+              </> : null} />
+            {!dongGap && <div id={maMuc}>
             <ul className="m-0 list-none p-0">
               {m.items.slice(0, n).map((x, j, ds) => {
                 /* Vạch khi mục có ≥ 2 nhóm hạn (một nhóm: cột hạn đã nói đủ) — hoặc có việc không hạn: cột hạn của việc đó để trống,
@@ -180,6 +209,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
                 </button>
               </div>
             )}
+            </div>}
             {cuoi && i === muc.length - 1 && <div className="border-t px-4 py-1" style={{ borderColor: 'var(--line)' }}>{cuoi}</div>}
           </section>
         );
@@ -193,10 +223,14 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
  * tên 15 / 700, chip đếm vuông có đơn vị, phụ 13; dính khi cuộn (thẻ cha `overflow-clip`, không `overflow-hidden`). Bấm tên = gập / mở. Dùng chung cho
  * "Chờ bạn duyệt" và "Việc quản lý" rỗng ở `HoTroHocVienTab` — mọi nhóm cùng dáng.
  */
-export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false, chevPhai = false }: {
+export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false, chevPhai = false, chevSauTen = false, dieuKhien }: {
   k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; trungTinh?: boolean;
   /** TU2-4 (mockup Ⓣ1 D1, duyệt 19/11): chevron ở mép phải dải (sau ⓘ) thay vì ngay sau tên — chỉ khối "PA đang chạy". */
   chevPhai?: boolean;
+  /** GAP-MO (mockup v22 G6): chevron sát tên, TRƯỚC chip đếm — dải mục của danh sách việc. */
+  chevSauTen?: boolean;
+  /** `id` vùng được gập / mở (chỉ truyền khi vùng đang vẽ) → `aria-controls`. */
+  dieuKhien?: string;
 }) {
   const chev = (
     <svg viewBox="0 0 16 16" aria-hidden className={`h-4 w-4 shrink-0 fill-none stroke-[color:var(--text-dim)] group-hover:stroke-[color:var(--text)] motion-safe:transition-transform ${mo ? 'rotate-90' : ''}`}
@@ -208,13 +242,14 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false,
        ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
     <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
       style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
-      <button type="button" aria-expanded={mo} onClick={onMo}
+      <button type="button" aria-expanded={mo} aria-controls={dieuKhien} onClick={onMo}
         className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
         <span className={trungTinh ? 'text-faint' : 'text-[color:var(--accent)]'}><IconNhom k={k} /></span>
         <span className="min-w-0 text-[color:var(--text)]">{nhan}</span>
+        {chevSauTen && chev}
         {chip && <span className="inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{chip}</span>}
-        {!chevPhai && chev}
+        {!chevPhai && !chevSauTen && chev}
       </button>
       {luat && <span className="relative z-[1] inline-flex">{luat}</span>}
       {phu && <span className="relative z-[1] flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
