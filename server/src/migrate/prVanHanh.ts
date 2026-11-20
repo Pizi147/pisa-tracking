@@ -1,7 +1,8 @@
 /**
  * VH-1 (N59, chủ SP 20/11 — việc Vận hành), chạy lặp không đổi, khớp `schema.sql`:
  *   1. Bảng `task_groups` (nhóm tự đặt) + 4 nhóm khởi đầu (nhóm cố định cũ, `khoa` = group_key cũ) — thiếu dòng nào thì thêm.
- *   2. Cột `tasks.group_id`, `lap_kieu`, `lap_ngay`, `lap_goc_id`, `lap_ky`, `lap_dung_luc` + chỉ mục `ux_tasks_lap_ky`, `idx_tasks_lap_mo` (tự lành: thiếu thì tạo).
+ *   2. Cột `tasks.group_id`, `lap_kieu`, `lap_ngay`, `lap_goc_id`, `lap_ky`, `lap_dung_luc`, `lap_tu` + chỉ mục `ux_tasks_lap_ky`, `idx_tasks_lap_mo`,
+ *      `idx_task_giao_mo` (tự lành: thiếu thì tạo).
  *   3. ĐỔI DỮ LIỆU ĐÚNG MỘT LẦN (khoá `demo_config` — chạy lại không thêm lại người theo dõi người dùng đã bỏ / nhóm đã đổi sang "Không phân loại"):
  *      `group_key` → `group_id`; `tasks.watcher_user_id` + `task_followers` → `viec_theo_doi` (loai 'van_hanh'). Cột / bảng cũ giữ, thôi đọc.
  */
@@ -19,11 +20,12 @@ const BANG_NHOM = `CREATE TABLE IF NOT EXISTS task_groups (
 )`;
 const COT: [string, string][] = [
   ['group_id', 'INTEGER REFERENCES task_groups(id)'], ['lap_kieu', 'TEXT'], ['lap_ngay', 'TEXT'],
-  ['lap_goc_id', 'INTEGER REFERENCES tasks(id)'], ['lap_ky', 'TEXT'], ['lap_dung_luc', 'TEXT'],
+  ['lap_goc_id', 'INTEGER REFERENCES tasks(id)'], ['lap_ky', 'TEXT'], ['lap_dung_luc', 'TEXT'], ['lap_tu', 'TEXT'],
 ];
 const CHI_MUC: [string, string][] = [
   ['ux_tasks_lap_ky', 'CREATE UNIQUE INDEX IF NOT EXISTS ux_tasks_lap_ky ON tasks(lap_goc_id, lap_ky) WHERE lap_goc_id IS NOT NULL'],
   ['idx_tasks_lap_mo', 'CREATE INDEX IF NOT EXISTS idx_tasks_lap_mo ON tasks(id) WHERE lap_kieu IS NOT NULL AND lap_dung_luc IS NULL'],
+  ['idx_task_giao_mo', "CREATE INDEX IF NOT EXISTS idx_task_giao_mo ON tasks(assignee_user_id) WHERE progress NOT IN ('done','stopped')"],
 ];
 
 const co = (conn: any, ten: string) => !!conn.prepare('SELECT 1 FROM sqlite_master WHERE name = ?').get(ten);

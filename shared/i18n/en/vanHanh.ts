@@ -42,4 +42,7 @@ export const EN_VAN_HANH = {
   'Đổi tên nhóm công việc': 'Rename task group',
   'Ẩn nhóm công việc': 'Hide task group',
   'Hiện nhóm công việc': 'Show task group',
+  'Bạn không quản lý chi nhánh mới của công việc.': "You do not manage the task's new branch.",
+  'Việc con theo chi nhánh của việc cha.': "Subtasks follow the parent task's branch.",
+  'Chi nhánh không hợp lệ.': 'Invalid branch.',
 };

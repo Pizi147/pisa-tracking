@@ -485,7 +485,7 @@ export async function runCongViecTests(t: YThucTestKit) {
 
   check('PR-Ra · Dòng "mgmt" (việc quản lý được giao) có href /cong-viec?viec=mgmt:<id>', () => {
     const anyAssignee = conn.prepare(
-      `SELECT assignee_user_id AS id FROM tasks WHERE assignee_user_id IS NOT NULL AND progress NOT IN ('done','stopped') LIMIT 1`,
+      `SELECT assignee_user_id AS id FROM tasks WHERE assignee_user_id IS NOT NULL AND progress NOT IN ('done','stopped') ORDER BY tasks.id LIMIT 1`,   // VH-1: idx_task_giao_mo đổi thứ tự khi không ORDER BY
     ).get() as any;
     assert(anyAssignee, 'Không còn việc quản lý nào đang giao cho ai để đối chứng');
     const pr = permMod.loadPrincipal(anyAssignee.id);

@@ -2,12 +2,14 @@ import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
+import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
+import { nextCode } from './mgmttasks.ts';
+import { ghiLan } from './giaoViec.ts';
 
 export const DUE_SOON_DAYS = 3;
 
@@ -665,8 +667,7 @@ export function createTask(p: Principal, input: any) {
   const taoMoi = () => tx(() => {
     const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
-    const n = (conn.prepare('SELECT COUNT(*) AS n FROM tasks').get() as any).n as number;
-    const code = padCode('CV', n + 1, 4);
+    const code = nextCode(conn);   // VH-1 (PTA mục 3): COUNT(*)+1 trùng mã khi từng có dòng bị xoá
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, period_id, task_type, kind, class_id, topic, title,
@@ -753,10 +754,16 @@ function setFollowers(
   if (t?.assignee_user_id) wanted.delete(t.assignee_user_id);
 
   /* VH-1 (N59): người theo dõi ở khung chung `viec_theo_doi` (loai van_hanh; auto → nguồn 'head', manual → 'tay') — `task_followers` giữ, thôi đọc / ghi. */
-  conn.prepare("DELETE FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?").run(taskId);
+  /* PTA rà #1929 mục 11: chỉ bớt người KHÔNG còn trong danh sách (đường này gửi cả người thêm qua /mgmt-tasks — listTasks đọc cùng bảng), có lịch sử; thêm người thiếu. */
+  const cu = (conn.prepare("SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?").all(taskId) as any[]).map((r) => r.user_id as number);
+  for (const u of cu.filter((u) => !wanted.has(u))) {
+    conn.prepare("DELETE FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? AND user_id = ?").run(taskId, u);
+    ghiLan('van_hanh', taskId, 'theo_doi', u, null, actorId);
+  }
   for (const [userId, source] of wanted) {
-    conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, u.id, ?, ?, ? FROM users u WHERE u.id = ? AND u.status = 'active'
-        ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(taskId, source === 'auto' ? 'head' : 'tay', actorId, nowIso(), userId);
+    if (cu.includes(userId)) continue;
+    if (conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, u.id, ?, ?, ? FROM users u WHERE u.id = ? AND u.status = 'active'
+        ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(taskId, source === 'auto' ? 'head' : 'tay', actorId, nowIso(), userId).changes) ghiLan('van_hanh', taskId, 'theo_doi', null, userId, actorId);
   }
 }
 

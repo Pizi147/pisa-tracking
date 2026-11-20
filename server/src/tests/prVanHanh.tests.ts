@@ -193,6 +193,139 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(!gv.viecTheoDoi(bpxl).nhom.some((g: any) => g.mo.some((x: any) => x.refId === v.id)), 'việc mình phụ trách không ở Đang theo dõi');
   }));
 
+  // ---------------------------------------------------------------- rà sâu PTA #1929
+  const meetingSvc: any = await import('../worklist/meeting.ts');
+  const dcs: any = await import('../ops/doiChieuSo.ts');
+
+  await checkAsync('VH1-10 (PTA 1) · CX thuần + CX kèm GV được giao việc Vận hành → có ở /my-work (tab Vận hành CX chưa bật); Head vẫn không lặp', () => thu(async () => {
+    const cxGv = loadPrincipal(accounts.createAccount(P.admin, { email: `vanhanh.cxgv.${++soTk}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-vanhanh-cxgv', fullName: 'VANHANH CXGV',
+      roles: [{ role: 'cx', branches: ['MB'] }, { role: 'teacher', branches: ['MB'] }] }).userId as number);
+    const a = tao(ql, { assigneeUserId: cx.userId }); const b = tao(ql, { assigneeUserId: cxGv.userId });
+    xoaNho();
+    assert((myWork(loadPrincipal(cx.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${a.id}`), 'CX thuần thấy việc được giao');
+    assert((myWork(loadPrincipal(cxGv.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV thấy việc được giao');
+    const c = tao(cx, { assigneeUserId: ql.userId });
+    assert(!(myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${c.id}`), 'Head không lặp (thấy ở bảng)');
+  }));
+
+  await checkAsync('VH1-11 (PTA 2) · web cũ: thân PATCH như MgmtTasksPage — nhóm không đổi ngầm, MỘT người theo dõi = thay đúng người đó (null = bỏ), người khác giữ', () => thu(async () => {
+    const tu = mg.taoNhom(cx, { ten: 'Nhóm VH1-11', branchId: MB }).rows.find((g: any) => g.ten === 'Nhóm VH1-11');
+    const v = tao(cx, { groupId: tu.id, theoDoiIds: [tvv.userId, bpxl.userId] });
+    const d0 = mg.mgmtTaskDetail(cx, v.id);
+    const than = (watcherUserId: number | null) => ({ title: d0.title, group: d0.group ?? 'curriculum', assigneeUserId: null, assigneeName: null, watcherUserId, due: null, lyDoDoiHan: null, note: null });
+    const w0 = d0.watcherUserId;
+    assert(w0 === tvv.userId, `người web cũ thấy: ${w0}`);
+    let d = mg.editMgmtTask(cx, v.id, than(w0));
+    assert(d.groupId === tu.id, 'nhóm tự đặt giữ khi web cũ gửi mặc định curriculum');
+    const k = tao(cx, {});
+    assert(mg.editMgmtTask(cx, k.id, { ...than(null), title: k.title }).groupId === null, 'Không phân loại giữ');
+    d = mg.editMgmtTask(cx, v.id, than(gvcn.userId));
+    const ids = d.theoDoi.map((x: any) => x.id);
+    assert(!ids.includes(tvv.userId) && ids.includes(gvcn.userId) && ids.includes(bpxl.userId) && ids.includes(cx.userId), `thay người: ${ids}`);
+    const dangThay = d.watcherUserId;   // web cũ hiện người đầu tiên khác người tạo
+    d = mg.editMgmtTask(cx, v.id, than(null));
+    const con = d.theoDoi.map((x: any) => x.id);
+    assert(!con.includes(dangThay) && con.length === ids.length - 1, `null = bỏ đúng người đang thấy (${dangThay}): ${con}`);
+    assert(mg.editMgmtTask(cx, k.id, { ...than(null), title: k.title, group: 'teacher' }).group === 'teacher', 'chọn nhóm khác thì đổi');
+  }));
+
+  await checkAsync('VH1-12 (PTA 3, 6) · mã việc không trùng sau khi xoá dòng; lỗi việc lặp không hỏng đối chiếu; 5 lượt một đêm chỉ lượt đầu tạo', () => thu(async () => {
+    const a = tao(cx, {}); const b = tao(cx, {});
+    conn.prepare('DELETE FROM tasks WHERE id = ?').run(a.id); gv.donViec('van_hanh', [a.id]);
+    const c = tao(cx, {});
+    assert(c.code !== b.code && !hang('SELECT code FROM tasks GROUP BY code HAVING COUNT(*) > 1').length, 'mã không trùng');
+    tao(cx, { lap: { kieu: 'tuan', ngay: [1, 2, 3, 4, 5, 6, 7] } });
+    const dem = (ky: string) => mot(`SELECT COUNT(*) n FROM tasks WHERE lap_ky = ? AND lap_goc_id IS NOT NULL`, ky).n;
+    const ngay = addDays(TODAY, 1);
+    const kq = [0, 1, 2, 3, 4].map((l) => dcs.doiChieuSo(ngay, [], l === 0));
+    assert(kq[0].lap?.tao >= 1 && kq.slice(1).every((k: any) => k.lap === null) && dem(ngay) === kq[0].lap.tao, `5 lượt: ${JSON.stringify(kq.map((k: any) => k.lap))}`);
+    conn.exec('DROP INDEX idx_tasks_lap_mo');
+    const loi = dcs.doiChieuSo(addDays(TODAY, 2), []);
+    assert(loi.lap === null && typeof loi.bai === 'number', 'việc lặp lỗi → đối chiếu vẫn chạy');
+  }));
+
+  await checkAsync('VH1-13 (PTA 4, 8) · bản mới theo người của bản gần nhất (còn hiệu lực) → việc gốc → Chưa giao; đổi lịch / Hoàn tác không sinh kỳ đã qua; Dừng hẳn thôi lặp', () => thu(async () => {
+    const x = taiKhoan('x', 'teacher'); const y = taiKhoan('y', 'teacher');
+    const goc = tao(cx, { assigneeUserId: x.userId, lap: { kieu: 'tuan', ngay: [1, 2, 3, 4, 5, 6, 7] } });
+    mg.taoViecLap(addDays(TODAY, 1));
+    const b1 = mot('SELECT id FROM tasks WHERE lap_goc_id = ? AND lap_ky = ?', goc.id, addDays(TODAY, 1)).id;
+    mg.editMgmtTask(cx, b1, { assigneeUserId: y.userId });
+    mg.taoViecLap(addDays(TODAY, 2));
+    const nguoi = (k: number) => mot('SELECT assignee_user_id u FROM tasks WHERE lap_goc_id = ? AND lap_ky = ?', goc.id, addDays(TODAY, k)).u;
+    assert(nguoi(2) === y.userId, 'giao lại bản tuần này → bản sau theo người mới');
+    accounts.setRoles(P.admin, y.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    mg.taoViecLap(addDays(TODAY, 3));
+    assert(nguoi(3) === x.userId, 'người bản gần nhất hết vai → người của việc gốc');
+    accounts.setRoles(P.admin, x.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    mg.taoViecLap(addDays(TODAY, 4));
+    assert(nguoi(4) === null, 'cả hai hết vai → Chưa giao');
+    /* Đổi lịch / Hoàn tác Dừng lặp: kỳ đã qua (TODAY − 2) không sinh bản. */
+    const thu2 = ((new Date(`${addDays(TODAY, -2)}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    const g2 = tao(cx, { lap: { kieu: 'tuan', ngay: [1, 2, 3, 4, 5, 6, 7] } });
+    conn.prepare('UPDATE tasks SET lap_ky = ? WHERE id = ?').run(addDays(TODAY, -10), g2.id);
+    mg.editMgmtTask(cx, g2.id, { lap: { kieu: 'tuan', ngay: [thu2] } });
+    assert(mg.taoViecLap(TODAY).tao === 0, 'đổi lịch → không sinh kỳ đã qua');
+    mg.dungLap(cx, g2.id, true); mg.dungLap(cx, g2.id, false);
+    assert(mg.taoViecLap(TODAY).tao === 0, 'Hoàn tác Dừng lặp → không sinh kỳ đã qua');
+    const g3 = tao(cx, { lap: { kieu: 'tuan', ngay: [1, 2, 3, 4, 5, 6, 7] } });
+    mg.updateMgmtTask(cx, g3.id, { progress: 'stopped', reason: 'Không làm nữa' });
+    assert(!hang('SELECT 1 FROM tasks WHERE lap_goc_id = ?', g3.id).length && mg.taoViecLap(addDays(TODAY, 5)).tao >= 0 && !hang('SELECT 1 FROM tasks WHERE lap_goc_id = ?', g3.id).length, 'Dừng hẳn → thôi lặp');
+  }));
+
+  await checkAsync('VH1-14 (PTA 5, 7) · phạm vi chi nhánh: lọc chi nhánh khác 403, đổi chi nhánh cần quyền chi nhánh mới (nhóm riêng → Không phân loại), Toàn hệ thống chỉ grant toàn hệ thống; người đã rời chi nhánh mất quyền theo việc', () => thu(async () => {
+    assert(await ma(() => mg.listMgmtTasks(ql, { branchId: CP })) === 403 && await ma(() => mg.listMgmtTasks(cx, { branchId: CP })) === 403, 'lọc chi nhánh khác → 403');
+    const nhomMb = mg.taoNhom(ql, { ten: 'Riêng MB VH1-14', branchId: MB }).rows.find((g: any) => g.ten === 'Riêng MB VH1-14');
+    const v = tao(ql, { groupId: nhomMb.id });
+    const con = tao(ql, { parentTaskId: v.id, title: 'Con VH1-14' });
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { branchId: CP })) === 403, 'Head MB chuyển sang CP → 403');
+    assert(await ma(() => mg.editMgmtTask(P.admin, v.id, { branchId: 'CP' as any })) === 400, 'branchId sai kiểu → 400');
+    const d = mg.editMgmtTask(P.admin, v.id, { branchId: CP });
+    assert(d.branchId === CP && d.groupId === null && mot('SELECT branch_id, group_id FROM tasks WHERE id = ?', con.id).branch_id === CP, 'chuyển CP: nhóm riêng MB → Không phân loại, việc con theo');
+    assert(await ma(() => mg.createMgmtTask(ql, { title: 'Toàn hệ thống VH1-14' })) === 403 && await ma(() => mg.createMgmtTask(cx, { title: 'Toàn hệ thống VH1-14' })) === 403, 'Head / CX chi nhánh tạo việc Toàn hệ thống → 403');
+    const toan = mg.createMgmtTask(P.admin, { title: 'Toàn hệ thống VH1-14' });
+    assert(await ma(() => mg.editMgmtTask(ql, toan.id, { title: 'Sửa' })) === 403 && mg.mgmtTaskDetail(ql, toan.id).viewer.canEdit === false, 'Head chi nhánh xem, không sửa việc Toàn hệ thống');
+    /* Người phụ trách rời chi nhánh: không cập nhật / xem / thêm tệp. */
+    const roi = taiKhoan('roi', 'teacher');
+    const w = tao(cx, { assigneeUserId: roi.userId });
+    conn.prepare(`UPDATE user_roles SET branch_id = ? WHERE user_id = ?`).run(CP, roi.userId);
+    const r2 = loadPrincipal(roi.userId);
+    assert(await ma(() => mg.updateMgmtTask(r2, w.id, { progress: 'doing' })) === 403, 'rời chi nhánh → không cập nhật');
+    assert(await ma(() => mg.mgmtTaskDetail(r2, w.id)) === 403, 'rời chi nhánh → không xem');
+    assert(await ma(() => att.addLink(r2, { ownerType: 'task', ownerId: w.id, url: 'https://example.com/roi' })) === 403, 'rời chi nhánh → không thêm tệp');
+    /* Người được giao việc con xem được việc cha. */
+    const cha = tao(cx, {}); tao(cx, { parentTaskId: cha.id, assigneeUserId: bpxl.userId });
+    assert(mg.mgmtTaskDetail(bpxl, cha.id).id === cha.id, 'người làm việc con xem việc cha');
+  }));
+
+  await checkAsync('VH1-15 (PTA 9) · phienBan lệch → 409 (sửa + cập nhật tiến độ); không gửi → như cũ', () => thu(async () => {
+    const v = tao(cx, { assigneeUserId: gvcn.userId });
+    const d = mg.mgmtTaskDetail(cx, v.id);
+    mg.editMgmtTask(ql, v.id, { title: 'Head A sửa', phienBan: d.updatedAt });
+    assert(await ma(() => mg.editMgmtTask(cx, v.id, { title: 'Head B sửa', phienBan: d.updatedAt })) === 409, 'người sau, phiên bản cũ → 409');
+    assert(await ma(() => mg.updateMgmtTask(gvcn, v.id, { progress: 'doing', phienBan: d.updatedAt })) === 409, 'cập nhật tiến độ phiên bản cũ → 409');
+    assert(mg.editMgmtTask(cx, v.id, { title: 'Không gửi phiên bản' }).title === 'Không gửi phiên bản', 'web cũ không gửi → như cũ');
+  }));
+
+  await checkAsync('VH1-16 (PTA 11 + tệp thật) · /tasks giữ người theo dõi trong danh sách gửi, bớt có lịch sử; hết vai không gỡ người của teacher_task; tệp tải lên / tải xuống', () => thu(async () => {
+    const v = tao(ql, { theoDoiIds: [tvv.userId] });
+    meetingSvc.updateTask(ql, v.id, { followerIds: [tvv.userId] });
+    assert(hang(`SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?`, v.id).some((r) => r.user_id === tvv.userId), '/tasks giữ người trong danh sách');
+    meetingSvc.updateTask(ql, v.id, { followerIds: [] });
+    assert(!hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? AND user_id = ?`, v.id, tvv.userId).length
+      && hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'van_hanh' AND ref_id = ? AND truong = 'theo_doi' AND cu = ?`, v.id, String(tvv.userId)).length === 1, 'bớt có lịch sử');
+    const gvTam = taiKhoan('gvtam', 'teacher');
+    const tt = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, assignee_user_id, progress, created_by, created_at) VALUES (?, 'Giao GV VH1-16', 'teacher_task', ?, ?, 'not_started', ?, ?)`)
+      .run(mg.nextCode(conn), MB, gvTam.userId, ql.userId, new Date().toISOString()).lastInsertRowid);
+    accounts.setRoles(P.admin, gvTam.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    assert(mot('SELECT assignee_user_id u FROM tasks WHERE id = ?', tt).u === gvTam.userId, 'teacher_task giữ người');
+    const w = tao(cx, { assigneeUserId: gvcn.userId });
+    const duLieu = Buffer.from('%PDF-1.4 bao gia VH1-16');
+    const f = await att.addFile(gvcn, { ownerType: 'task', ownerId: w.id, fileName: 'bao-gia.pdf', data: duLieu, mimeType: 'application/pdf' });
+    const o = await att.openAttachment(cx, f.id);
+    assert(o.kind === 'file' && Buffer.compare(o.duLieu, duLieu) === 0 && o.downloadName === 'bao-gia.pdf', 'tải xuống đúng tệp');
+    assert(await ma(() => att.openAttachment(ngoai, f.id)) === 403, 'người ngoài không tải');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -203,8 +336,8 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước VH-1: cắt khối cột VH-1 của tasks, hai chỉ mục, bảng task_groups. */
     const cat = SCHEMA
-      .replace(/idempotency_key TEXT,( +--[^\n]*)\n {2}\/\*\n {3}\* VH-1[\s\S]*?lap_dung_luc TEXT\n\)/, 'idempotency_key TEXT$1\n)')
-      .replace(/CREATE UNIQUE INDEX ux_tasks_lap_ky[^\n]*\n/, '').replace(/CREATE INDEX idx_tasks_lap_mo[^\n]*\n/, '')
+      .replace(/idempotency_key TEXT,( +--[^\n]*)\n {2}\/\*\n {3}\* VH-1[\s\S]*?lap_tu TEXT\n\)/, 'idempotency_key TEXT$1\n)')
+      .replace(/CREATE UNIQUE INDEX ux_tasks_lap_ky[^\n]*\n/, '').replace(/CREATE INDEX idx_tasks_lap_mo[^\n]*\n/, '').replace(/CREATE INDEX idx_task_giao_mo[^\n]*\n/, '')
       .replace(/\/\*\n \* VH-1 \(N59\): NHÓM VIỆC[\s\S]*?tao_luc TEXT NOT NULL\n\);\n/, '');
     if (/task_groups|lap_kieu|group_id INTEGER/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm VH1-9');
     const cu = new SqliteDb(':memory:'); cu.exec(cat);
@@ -230,7 +363,7 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     for (const bang of ['tasks', 'task_groups']) assert(cot(cu, bang) === cot(moi, bang), `${bang}: ${cot(cu, bang)} ≠ ${cot(moi, bang)}`);
-    const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND name IN ('ux_tasks_lap_ky', 'idx_tasks_lap_mo') ORDER BY name`).all() as any[]));
+    const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND name IN ('ux_tasks_lap_ky', 'idx_tasks_lap_mo', 'idx_task_giao_mo') ORDER BY name`).all() as any[]));
     assert(chiMuc(cu).replace(/\s+/g, ' ').replace(/IF NOT EXISTS /g, '') === chiMuc(moi).replace(/\s+/g, ' '), `chỉ mục: ${chiMuc(cu)} ≠ ${chiMuc(moi)}`);
     /* DB dựng từ schema.sql + seed: không đổi cấu trúc. */
     const c: string[] = []; migratePrVanHanh(conn, c);

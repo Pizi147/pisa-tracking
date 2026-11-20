@@ -1676,7 +1676,8 @@ CREATE TABLE tasks (
   /*
    * VH-1 (N59, chủ SP 20/11): nhóm tự đặt `group_id` (`task_groups`; NULL = "Không phân loại" — `group_key` cũ giữ, thôi đọc).
    * LẶP LẠI: việc gốc có `lap_kieu` 'tuan' (`lap_ngay` = thứ ISO "1,3" — T2 = 1 … CN = 7) | 'thang' (`lap_ngay` = ngày "15"; tháng ngắn → ngày cuối tháng);
-   * bản tạo theo kỳ trỏ `lap_goc_id` (việc gốc), `lap_ky` = ngày của kỳ (việc gốc: ngày tạo). `lap_dung_luc` trên việc gốc = đã Dừng lặp.
+   * bản tạo theo kỳ trỏ `lap_goc_id` (việc gốc), `lap_ky` = ngày của kỳ (việc gốc: ngày tạo — mốc tính hạn bản mới). `lap_dung_luc` trên việc gốc = đã Dừng lặp.
+   * `lap_tu` (việc gốc) = chỉ tạo kỳ SAU ngày này — đổi lịch / bật lại / Hoàn tác Dừng lặp không sinh bản cho kỳ đã qua.
    * Người theo dõi: khung giao việc chung (loai 'van_hanh', GV-1) — `watcher_user_id` + `task_followers` giữ, thôi đọc.
    */
   group_id INTEGER REFERENCES task_groups(id),
@@ -1684,7 +1685,8 @@ CREATE TABLE tasks (
   lap_ngay TEXT,
   lap_goc_id INTEGER REFERENCES tasks(id),
   lap_ky TEXT,
-  lap_dung_luc TEXT
+  lap_dung_luc TEXT,
+  lap_tu TEXT
 );
 CREATE UNIQUE INDEX ux_tasks_khoa_gui ON tasks(created_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_task_period ON tasks(period_id);
@@ -1692,6 +1694,7 @@ CREATE INDEX idx_task_parent ON tasks(parent_task_id);   -- PR-DEPLOY (DEP-2c): 
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
 CREATE UNIQUE INDEX ux_tasks_lap_ky ON tasks(lap_goc_id, lap_ky) WHERE lap_goc_id IS NOT NULL;   -- VH-1: một bản mỗi kỳ (chạy lại không trùng)
 CREATE INDEX idx_tasks_lap_mo ON tasks(id) WHERE lap_kieu IS NOT NULL AND lap_dung_luc IS NULL;   -- VH-1: hàm đêm đọc việc gốc còn lặp
+CREATE INDEX idx_task_giao_mo ON tasks(assignee_user_id) WHERE progress NOT IN ('done','stopped');   -- VH-1: việc Vận hành còn mở giao cho tôi (/my-work)
 
 /*
  * VH-1 (N59): NHÓM VIỆC VẬN HÀNH tự đặt — Head / Quản trị / CX tạo, đổi tên, sắp ▲▼, ẩn (ẩn: việc giữ nhóm, nhóm rời ô chọn). `branch_id` NULL = dùng chung mọi

@@ -59,6 +59,7 @@ const LOAI_BANG: Record<string, string> = {
   sos_case: 'sos_cases', case_intervention: 'case_interventions', intervention: 'case_interventions', case_followup: 'case_followups', violation: 'violations',
   discipline_measure: 'discipline_measures', sos_coordination_action: 'sos_coordination_actions', assessment_attempt: 'assessment_attempts',
   attempt: 'assessment_attempts', student: 'students', case_signal: 'case_signals', skill_move_requests: 'skill_move_requests', yeu_cau_duyet: 'yeu_cau_duyet',
+  task: 'tasks',   // VH-1: tệp của việc Vận hành
 };
 const MEM: Record<string, { loai: string; id: string; bang: (v: unknown) => string | null }> = {
   attachments: { loai: 'owner_type', id: 'owner_id', bang: (v) => LOAI_BANG[String(v)] ?? null },

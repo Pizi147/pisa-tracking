@@ -3208,6 +3208,7 @@ api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
     progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
     on: b.on ?? null, reviewOn: b.reviewOn ?? null,
     helpUserId: b.helpUserId ? Number(b.helpUserId) : null, helpName: b.helpName ?? null,
+    ...('phienBan' in b ? { phienBan: b.phienBan ?? null } : {}),   // VH-1 (PTA mục 9)
   });
 }));
 

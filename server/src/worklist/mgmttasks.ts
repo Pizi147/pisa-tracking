@@ -100,8 +100,11 @@ function phamVi(p: Principal): Scope {
  * (`branch_id IS NULL`) thì `anyScope`, việc có chi nhánh thì phải đúng chi nhánh đó.
  */
 function coQuyenViec(p: Principal, t: { branch_id: number | null }): boolean {
-  return quanLyVanHanh(p, { branchId: t.branch_id, anyScope: !t.branch_id });
+  /* VH-1 (PTA rà #1929 mục 5): việc Toàn hệ thống chỉ người có grant toàn hệ thống SỬA (trước: Head mọi chi nhánh, `anyScope`); Head / CX chi nhánh vẫn XEM (`xemQuanLy`). */
+  return quanLyVanHanh(p, { branchId: t.branch_id ?? null });
 }
+/** Xem như quản lý: việc của chi nhánh trong phạm vi, hoặc việc Toàn hệ thống (Head / CX mọi chi nhánh đọc được — bảng Vận hành vẫn liệt kê). */
+const xemQuanLy = (p: Principal, t: { branch_id: number | null }) => quanLyVanHanh(p, { branchId: t.branch_id ?? null, anyScope: !t.branch_id });
 
 const closed = (pr: string) => (TASK_PROGRESS_CLOSED as readonly string[]).includes(pr);
 
@@ -142,12 +145,14 @@ const tenNhom = (v: unknown) => {
   if (!s) throw badRequest('Nhóm phải có tên.');
   return s;
 };
+/** Trùng tên trong cùng ô chọn: nhóm chi nhánh so với nhóm cùng chi nhánh + nhóm dùng chung; nhóm dùng chung so với mọi nhóm. */
 const trungTen = (ten: string, branchId: number | null, boId: number | null) =>
-  !!db().prepare(`SELECT 1 FROM task_groups WHERE lower(ten) = lower(?) AND branch_id IS ? AND id IS NOT ?`).get(ten, branchId, boId);
+  !!db().prepare(`SELECT 1 FROM task_groups WHERE lower(ten) = lower(?) AND (branch_id IS ? OR branch_id IS NULL OR ? IS NULL) AND id IS NOT ?`).get(ten, branchId, branchId, boId);
 
 export function taoNhom(p: Principal, input: { ten?: unknown; branchId?: number | null }): { rows: NhomViec[] } {
   const branchId = input.branchId ?? null;
   if (!quanLyVanHanh(p, { branchId })) throw forbidden(branchId ? 'Chỉ Head, Quản trị hoặc CX của chi nhánh tạo được nhóm.' : 'Nhóm dùng chung chỉ người có quyền toàn hệ thống tạo được — chọn chi nhánh.');
+  if (branchId !== null && !db().prepare('SELECT 1 FROM branches WHERE id = ?').get(branchId)) throw badRequest('Chi nhánh không hợp lệ.');
   const ten = tenNhom(input.ten);
   if (trungTen(ten, branchId, null)) throw badRequest('Đã có nhóm cùng tên.');
   tx(() => {
@@ -258,45 +263,65 @@ export function kyGanNhat(lap: LapLai, homNay: string): string | null {
 }
 
 /**
- * HÀM ĐÊM (`ops/doiChieuSo.ts`, lượt nào cũng gọi — chạy lại không đổi): mỗi việc gốc còn lặp tới kỳ mới (> kỳ của việc gốc, chưa có bản kỳ đó) → bản mới
- * kèm việc con của việc gốc (trạng thái mới, hạn = kỳ + khoảng hạn của bản gốc, cùng người phụ trách + người theo dõi), tin chuông cho người phụ trách.
- * Không tạo trùng: khoá duy nhất (`lap_goc_id`, `lap_ky`) — bản con trỏ việc con mẫu. Hai câu đọc mỗi lượt (việc gốc · bản đã có) + ghi khi tới kỳ.
+ * HÀM ĐÊM (`ops/doiChieuSo.ts`, MỘT lần mỗi đêm — lượt đầu; chạy lại không đổi): mỗi việc gốc còn lặp (chưa Dừng lặp, chưa Dừng hẳn) tới kỳ mới
+ * (> kỳ của việc gốc và > `lap_tu`, chưa có bản kỳ đó) → bản mới kèm việc con (trạng thái mới, hạn = kỳ + khoảng hạn của bản gốc, người theo dõi chép theo).
+ * Người phụ trách bản mới = người của BẢN GẦN NHẤT trong chuỗi nếu còn hiệu lực, không thì của việc gốc nếu còn hiệu lực, không thì "Chưa giao" (PTA mục 4).
+ * Không tạo trùng: khoá duy nhất (`lap_goc_id`, `lap_ky`) + `ON CONFLICT DO NOTHING` — bản con trỏ việc con mẫu. Một việc gốc lỗi không chặn việc khác.
+ * Đọc mỗi đêm: 1 câu việc gốc (chỉ mục một phần `idx_tasks_lap_mo`, dòng = số việc gốc còn lặp) + 1 câu bản đã có (chỉ khi có việc tới kỳ); ghi khi tới kỳ.
  */
-export function taoViecLap(homNay = demoToday()): { goc: number; tao: number } {
+export function taoViecLap(homNay = demoToday()): { goc: number; tao: number; loi: number } {
   const conn = db();
-  const goc = conn.prepare(`SELECT * FROM tasks WHERE lap_kieu IS NOT NULL AND lap_dung_luc IS NULL AND parent_task_id IS NULL AND lap_goc_id IS NULL`).all() as any[];
-  const toiKy = goc.map((g) => ({ g, ky: kyGanNhat(lapCua(g)!, homNay) })).filter((x) => x.ky && x.ky > (x.g.lap_ky ?? x.g.created_at.slice(0, 10)));
-  if (!toiKy.length) return { goc: goc.length, tao: 0 };
+  const goc = (conn.prepare(`SELECT * FROM tasks INDEXED BY idx_tasks_lap_mo WHERE lap_kieu IS NOT NULL AND lap_dung_luc IS NULL`).all() as any[])
+    .filter((g) => !g.parent_task_id && !g.lap_goc_id && g.progress !== 'stopped');
+  const moc = (g: any) => [g.lap_ky ?? g.created_at.slice(0, 10), g.lap_tu ?? ''].sort().pop()!;
+  const toiKy = goc.map((g) => ({ g, ky: kyGanNhat(lapCua(g)!, homNay) })).filter((x) => x.ky && x.ky > moc(x.g));
+  if (!toiKy.length) return { goc: goc.length, tao: 0, loi: 0 };
   const co = new Set((conn.prepare(`SELECT t.lap_goc_id || ':' || t.lap_ky AS k FROM json_each(?) j
       JOIN tasks t ON t.lap_goc_id = json_extract(j.value, '$[0]') AND t.lap_ky = json_extract(j.value, '$[1]')`)
     .all(JSON.stringify(toiKy.map((x) => [x.g.id, x.ky]))) as any[]).map((r) => r.k as string));
-  let tao = 0;
+  let tao = 0, loi = 0;
+  /** Người phụ trách của bản mới theo mẫu `m` (việc gốc / việc con mẫu). */
+  const nguoiCua = (m: any): { uid: number | null; ten: string | null } => {
+    const gan = conn.prepare('SELECT assignee_user_id FROM tasks WHERE lap_goc_id = ? ORDER BY lap_ky DESC LIMIT 1').get(m.id) as any;
+    for (const r of [gan, m]) if (r?.assignee_user_id && laHieuLuc(r.assignee_user_id, m.branch_id ?? null)) return { uid: r.assignee_user_id, ten: null };
+    return { uid: null, ten: m.assignee_user_id ? null : m.assignee_name ?? null };
+  };
   for (const { g, ky } of toiKy) {
     if (co.has(`${g.id}:${ky}`)) continue;
-    tx(() => {
-      const banGoc = g.lap_ky ?? g.created_at.slice(0, 10);
-      const chep = (m: any, parent: number | null): number => {
-        const han = m.due_date ? addDays(ky!, diffDays(m.due_date, banGoc)) : null;
-        const id = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, task_type, group_id, parent_task_id, branch_id, assignee_user_id, assignee_name, due_date,
-              progress, note, source_type, created_by, created_at, lap_goc_id, lap_ky)
-            VALUES (?,?, 'branch_ops', ?,?,?,?,?,?,?, 'not_started', ?, 'lap', ?,?,?,?)`)
-          .run(nextCode(conn), m.title, m.task_type, m.group_id ?? g.group_id ?? null, parent, m.branch_id, m.assignee_user_id, m.assignee_name, han,
-            m.note, m.created_by, nowIso(), m.id, ky).lastInsertRowid);
-        conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, t.user_id, t.nguon, t.them_boi, ? FROM viec_theo_doi t
-            WHERE t.loai = 'van_hanh' AND t.ref_id = ? AND ${HOAT_DONG_O('t.user_id', CN_VH('?'))} ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(id, nowIso(), m.id, m.branch_id);
-        if (m.assignee_user_id && laHieuLuc(m.assignee_user_id, m.branch_id)) {
-          notify({ userId: m.assignee_user_id, kind: 'giao_viec', title: `Việc lặp lại · ${m.title}`, body: han ? `Hạn ${han.slice(8, 10)}/${han.slice(5, 7)}` : null,
-            dedupKey: `vh:lap:${id}`, duong: `/cong-viec?viec=mgmt:${id}`, han });
-        }
-        tao += 1;
-        return id;
-      };
-      const moi = chep(g, null);
-      for (const c of conn.prepare('SELECT * FROM tasks WHERE parent_task_id = ? ORDER BY id').all(g.id) as any[]) chep(c, moi);
-      writeAudit({ actorUserId: null, action: 'mgmt_task.lap', entityType: 'task', entityId: moi, entityLabel: g.title, after: { goc: g.id, ky } });
-    });
+    try {
+      tx(() => {
+        const banGoc = g.lap_ky ?? g.created_at.slice(0, 10);
+        const chep = (m: any, parent: number | null): number | null => {
+          const han = m.due_date ? addDays(ky!, diffDays(m.due_date, banGoc)) : null;
+          const ng = nguoiCua(m);
+          const r = conn.prepare(`INSERT INTO tasks (code, title, kind, task_type, group_id, parent_task_id, branch_id, assignee_user_id, assignee_name, due_date,
+                progress, note, source_type, created_by, created_at, lap_goc_id, lap_ky)
+              VALUES (?,?, 'branch_ops', ?,?,?,?,?,?,?, 'not_started', ?, 'lap', ?,?,?,?)
+              ON CONFLICT(lap_goc_id, lap_ky) WHERE lap_goc_id IS NOT NULL DO NOTHING`)
+            .run(nextCode(conn), m.title, m.task_type, parent ? g.group_id ?? null : m.group_id ?? null, parent, m.branch_id, ng.uid, ng.ten, han,
+              m.note, m.created_by, nowIso(), m.id, ky);
+          if (!r.changes) return null;
+          const id = Number(r.lastInsertRowid);
+          conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, t.user_id, t.nguon, t.them_boi, ? FROM viec_theo_doi t
+              WHERE t.loai = 'van_hanh' AND t.ref_id = ? AND ${HOAT_DONG_O('t.user_id', CN_VH('?'))} ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(id, nowIso(), m.id, m.branch_id);
+          if (ng.uid) {
+            notify({ userId: ng.uid, kind: 'giao_viec', title: `Việc lặp lại · ${m.title}`, body: han ? `Hạn ${han.slice(8, 10)}/${han.slice(5, 7)}` : null,
+              dedupKey: `vh:lap:${id}`, duong: `/cong-viec?viec=mgmt:${id}`, han });
+          }
+          tao += 1;
+          return id;
+        };
+        const moi = chep(g, null);
+        if (moi === null) return;
+        for (const c of conn.prepare('SELECT * FROM tasks WHERE parent_task_id = ? ORDER BY id').all(g.id) as any[]) chep(c, moi);
+        writeAudit({ actorUserId: null, action: 'mgmt_task.lap', entityType: 'task', entityId: moi, entityLabel: g.title, after: { goc: g.id, ky } });
+      });
+    } catch (e) {
+      loi += 1;
+      console.error('[viec-lap] không tạo được bản lặp', g.id, ky, e);
+    }
   }
-  return { goc: goc.length, tao };
+  return { goc: goc.length, tao, loi };
 }
 
 /** Dừng lặp (`dung` true) / Hoàn tác Dừng lặp (false) — trên việc gốc (gọi từ bản nào cũng được). Bản đang mở giữ nguyên. */
@@ -308,7 +333,9 @@ export function dungLap(p: Principal, taskId: number, dung: boolean) {
   if (!coQuyenViec(p, g)) throw forbidden('Chỉ Head, Quản trị hoặc CX của chi nhánh dừng lặp được.');
   if (!!g.lap_dung_luc === dung) return mgmtTaskDetail(p, taskId);
   tx(() => {
-    if (!db().prepare(`UPDATE tasks SET lap_dung_luc = ? WHERE id = ? AND lap_dung_luc IS ?`).run(dung ? nowIso() : null, gocId, g.lap_dung_luc ?? null).changes) {
+    /* PTA mục 8: Hoàn tác Dừng lặp → kỳ kế tính từ hôm nay (`lap_tu` = hôm qua), không sinh bản cho kỳ đã qua lúc đang dừng. */
+    if (!db().prepare(`UPDATE tasks SET lap_dung_luc = ?, lap_tu = CASE WHEN ? THEN lap_tu ELSE ? END WHERE id = ? AND lap_dung_luc IS ?`)
+      .run(dung ? nowIso() : null, dung ? 1 : 0, addDays(demoToday(), -1), gocId, g.lap_dung_luc ?? null).changes) {
       throw conflict('Việc vừa được người khác sửa — mở lại để xem.');
     }
     db().prepare(`INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'lap_dung', ?, ?, ?, ?)`)
@@ -336,6 +363,8 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   const conn = db();
   const scope = phamVi(p);
   const today = demoToday();
+  /* PTA mục 5: lọc chi nhánh ngoài phạm vi → 403 (không đọc việc, người, ghi chú của chi nhánh khác). */
+  if (f.branchId && !scope.all && !scope.branchIds.includes(f.branchId)) throw forbidden('Chi nhánh này ngoài phạm vi của bạn.');
 
   const base: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'"];
   const baseParams: unknown[] = [];
@@ -365,7 +394,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
               h.full_name AS help_user_name, g.khoa AS nhom_khoa, g.ten AS nhom_ten, g.thu_tu AS nhom_thu_tu,
               COALESCE(t.lap_kieu, lg.lap_kieu) AS lap_kieu_hl, COALESCE(t.lap_ngay, lg.lap_ngay) AS lap_ngay_hl, COALESCE(t.lap_dung_luc, lg.lap_dung_luc) AS lap_dung_hl,
               (SELECT COUNT(*) FROM task_case_links l WHERE l.task_id = t.id) AS case_links,
-              (SELECT COUNT(*) FROM attachments f WHERE f.owner_type = 'task' AND f.owner_id = t.id) AS so_tep
+              ${f.chiDem ? '0' : "(SELECT COUNT(*) FROM attachments f WHERE f.owner_type = 'task' AND f.owner_id = t.id)"} AS so_tep
          FROM tasks t
          LEFT JOIN branches b ON b.id = t.branch_id
          LEFT JOIN users a ON a.id = t.assignee_user_id
@@ -539,9 +568,11 @@ const laHieuLuc = (uid: number, branchId: number | null) =>
 /** Người xem một việc: quản lý · người phụ trách · người tạo · người theo dõi (còn hiệu lực) · người phụ trách việc con. */
 function quyenXem(p: Principal, t: any) {
   const quanLy = coQuyenViec(p, t);
-  const phuTrach = t.assignee_user_id === p.userId;
-  const nguoiTao = t.created_by === p.userId;
-  const xem = quanLy || phuTrach || nguoiTao || laNguoiTheoDoi('van_hanh', t.id, p.userId, t.branch_id ?? null)
+  /* PTA mục 7: người phụ trách / người tạo chỉ còn quyền theo việc khi còn hoạt động + còn vai ở chi nhánh của việc. */
+  const conVai = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);
+  const phuTrach = conVai && t.assignee_user_id === p.userId;
+  const nguoiTao = conVai && t.created_by === p.userId;
+  const xem = quanLy || xemQuanLy(p, t) || phuTrach || nguoiTao || laNguoiTheoDoi('van_hanh', t.id, p.userId, t.branch_id ?? null)
     || !!db().prepare('SELECT 1 FROM tasks WHERE parent_task_id = ? AND assignee_user_id = ?').get(t.id, p.userId);
   return { quanLy, phuTrach, nguoiTao, xem };
 }
@@ -585,6 +616,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
 
   return {
     id: t.id, code: t.code, title: t.title, note: t.note ?? null,
+    /** VH-1 (PTA mục 9): gửi lại làm `phienBan` khi sửa / cập nhật — người khác đã sửa trước → 409. */
+    updatedAt: t.updated_at ?? null,
     group: (nhom?.khoa ?? null) as TaskGroup | null,
     groupId: t.group_id ?? null, groupName: nhom?.ten ?? null,
     taskType: t.task_type,
@@ -650,9 +683,15 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
   };
 }
 
-function nextCode(conn: any): string {
-  const n = (conn.prepare("SELECT COUNT(*) AS n FROM tasks").get() as any).n as number;
-  return padCode('CV', n + 1, 4);
+/**
+ * Mã việc kế tiếp (PTA mục 3): số lớn nhất của mã `CV…` (MỘT câu theo chỉ mục UNIQUE `code`, thứ tự chữ) + 1, rồi dò tới mã chưa có — `COUNT(*) + 1` cũ trùng mã
+ * ngay khi từng có dòng bị xoá. Thứ tự chữ sai khi vượt 9 999 (`CV10000` < `CV9999`) → vòng dò bù (mỗi bước một câu theo chỉ mục).
+ */
+export function nextCode(conn: any): string {
+  const max = (conn.prepare("SELECT code FROM tasks WHERE code >= 'CV0' AND code < 'CV:' ORDER BY code DESC LIMIT 1").get() as any)?.code as string | undefined;
+  let n = (max ? Number(max.slice(2)) || 0 : 0) + 1;
+  while (conn.prepare('SELECT 1 FROM tasks WHERE code = ?').get(padCode('CV', n, 4))) n += 1;
+  return padCode('CV', n, 4);
 }
 
 /** ID gửi lên phải là một tài khoản nhân_vien (giáo viên/quản lý) đang hoạt động, nếu có gửi — người cần hỗ trợ (Tạm ngưng). */
@@ -670,13 +709,17 @@ function kiemNguoiVh(label: string, userId: number | null | undefined, branchId:
   }
 }
 const TRAN_THEO_DOI = 20;
-function docTheoDoi(v: unknown, branchId: number | null): number[] | undefined {
+/** Người theo dõi gửi lên: người MỚI phải hợp lệ (400); người đã theo dõi (`cu`) mà nay hết hiệu lực thì lọc bỏ, không từ chối cả danh sách. */
+function docTheoDoi(v: unknown, branchId: number | null, cu: readonly number[] = []): number[] | undefined {
   if (v === undefined) return undefined;
   if (!Array.isArray(v)) throw badRequest('Danh sách người theo dõi không hợp lệ.');
   const ds = [...new Set(v.map(Number))];
   if (ds.length > TRAN_THEO_DOI) throw loi(400, 'Tối đa {n} người theo dõi.', { n: TRAN_THEO_DOI });
-  for (const u of ds) kiemNguoiVh('Người theo dõi', u, branchId);
-  return ds;
+  return ds.filter((u) => {
+    if (cu.includes(u)) return laHieuLuc(u, branchId);
+    kiemNguoiVh('Người theo dõi', u, branchId);
+    return true;
+  });
 }
 
 /**
@@ -690,6 +733,11 @@ function tenNgoai(userId: number | null | undefined, ten: unknown): string | nul
   if (s.length < 2) throw badRequest('Tên người phụ trách ngoài hệ thống cần ít nhất 2 ký tự.');
   if (s.length > 80) throw badRequest('Tên người phụ trách ngoài hệ thống tối đa 80 ký tự.');
   return s;
+}
+
+/** VH-1 (PTA mục 9): `phienBan` = `updatedAt` client đang thấy; có gửi mà lệch → 409. */
+function kiemPhienBan(t: any, phienBan: unknown) {
+  if (phienBan !== undefined && (phienBan === '' ? null : phienBan ?? null) !== (t.updated_at ?? null)) throw conflict('Công việc vừa được người khác sửa — mở lại để xem.');
 }
 
 /** Tin "Cập nhật" của việc Vận hành (người phụ trách + người theo dõi còn hiệu lực, trừ người làm). */
@@ -714,7 +762,7 @@ export function createMgmtTask(p: Principal, input: {
   /** VH-1: lặp lại (chỉ việc gốc). */
   lap?: unknown;
 }) {
-  if (!quanLyVanHanh(p, { branchId: input.branchId ?? null, anyScope: !input.branchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  if (!quanLyVanHanh(p, { branchId: input.branchId ?? null })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
   chuTuDo(input.note, 'Ghi chú', 2000);
@@ -734,7 +782,7 @@ export function createMgmtTask(p: Principal, input: {
   }
 
   const taskBranchId = input.branchId ?? parent?.branch_id ?? null;
-  if (!quanLyVanHanh(p, { branchId: taskBranchId, anyScope: !taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  if (!quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   kiemNguoiVh('Người phụ trách', input.assigneeUserId, taskBranchId);
   const theoDoi = [...(docTheoDoi(input.theoDoiIds, taskBranchId) ?? []), ...(input.watcherUserId ? [input.watcherUserId] : [])];
   kiemNguoiVh('Người theo dõi', input.watcherUserId, taskBranchId);
@@ -833,12 +881,15 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
   on?: string | null; reviewOn?: string | null;
   /** PR-Ra Q10: người cần hỗ trợ khi Tạm ngưng — một tài khoản (nhóm nhân_vien) hoặc người ngoài. */
   helpUserId?: number | null; helpName?: string | null;
+  /** VH-1 (PTA mục 9): `updatedAt` lúc mở panel — lệch → 409 (web cũ không gửi: như cũ). */
+  phienBan?: string | null;
 }) {
   const conn = db();
   const t = docTask(taskId);
+  kiemPhienBan(t, input.phienBan);
 
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
-  const isAssignee = t.assignee_user_id === p.userId;
+  const isAssignee = t.assignee_user_id === p.userId && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
   if (!coQuyenViec(p, t) && !isAssignee) {
     throw forbidden('Chỉ người được giao, Head, Quản trị hoặc CX mới cập nhật được công việc này.');
   }
@@ -921,13 +972,14 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
       .run(taskId, before, input.progress, p.userId, nowIso());
     /* RKC-3b: khép luôn việc con còn mở cùng tiến độ của việc cha (đã hỏi) — mỗi việc con một dòng tiến độ + lịch sử. */
     if (khepCon) {
-      for (const s of conn.prepare(`SELECT id, progress FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped')`).all(taskId) as any[]) {
+      for (const s of conn.prepare(`SELECT id, title, progress FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped')`).all(taskId) as any[]) {
         conn.prepare(`UPDATE tasks SET progress = ?, stop_reason = ?, completed_at = ?, updated_at = ? WHERE id = ?`)
           .run(input.progress, input.progress === 'stopped' ? (reason || 'Việc cha dừng hẳn') : null, input.progress === 'done' ? on : null, nowIso(), s.id);
         conn.prepare(`INSERT INTO task_updates (task_id, period_id, progress, note, actor_user_id, updated_on, created_at) VALUES (?,?,?,?,?,?,?)`)
           .run(s.id, ensurePeriod(on).id, input.progress, 'Khép cùng việc cha', p.userId, on, nowIso());
         conn.prepare(`INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'progress', ?, ?, ?, ?)`)
           .run(s.id, s.progress, input.progress, p.userId, nowIso());
+        bao(s, p.userId, input.progress === 'done' ? 'xong' : 'dung', 'Khép cùng việc cha', uid);   // PTA (nhỏ): người phụ trách việc con biết
       }
     }
     /* VH-1 (N59): chuông "Cập nhật" — xong / dừng hẳn / tiến độ. */
@@ -952,13 +1004,16 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   theoDoiIds?: number[];
   /** VH-1: đặt / đổi / bỏ (null) lặp lại — chỉ việc gốc. */
   lap?: unknown;
+  /** VH-1 (PTA mục 9): `updatedAt` lúc mở form — lệch → 409. */
+  phienBan?: string | null;
 }) {
   const conn = db();
   const t = docTask(taskId);
+  kiemPhienBan(t, patch.phienBan);
   const quanLy = coQuyenViec(p, t);
   if (!quanLy) {
-    const duoc = t.assignee_user_id === p.userId || t.created_by === p.userId;
-    const ngoai = Object.keys(patch).filter((k) => !['due', 'lyDoDoiHan', 'theoDoiIds'].includes(k) && (patch as any)[k] !== undefined);
+    const duoc = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
+    const ngoai = Object.keys(patch).filter((k) => !['due', 'lyDoDoiHan', 'theoDoiIds', 'phienBan'].includes(k) && (patch as any)[k] !== undefined);
     if (!duoc || ngoai.length) throw forbidden(duoc ? 'Người phụ trách chỉ sửa được hạn và người theo dõi.' : 'Chỉ Head, Quản trị hoặc CX mới sửa được công việc vận hành.');
   }
 
@@ -972,15 +1027,28 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     if (!v) throw badRequest('Công việc phải có tên.');
     put('title', v);
   }
-  if (patch.branchId !== undefined) put('branch_id', patch.branchId);
+  /* PTA mục 5: đổi chi nhánh — kiểu số / null, phải quản lý được ở chi nhánh MỚI; nhóm riêng của chi nhánh cũ → "Không phân loại"; việc con theo cha. */
+  if (patch.branchId !== undefined && patch.branchId !== null && (!Number.isInteger(patch.branchId) || (patch.branchId as number) <= 0)) throw badRequest('Chi nhánh không hợp lệ.');
   const cnMoi: number | null = patch.branchId !== undefined ? patch.branchId ?? null : t.branch_id ?? null;
-  const groupId = t.parent_task_id ? undefined : nhomChoViec(patch, cnMoi, t.group_id ?? null);
+  const doiCn = cnMoi !== (t.branch_id ?? null);
+  if (doiCn) {
+    if (t.parent_task_id) throw badRequest('Việc con theo chi nhánh của việc cha.');
+    if (!quanLyVanHanh(p, { branchId: cnMoi })) throw forbidden('Bạn không quản lý chi nhánh mới của công việc.');
+    put('branch_id', cnMoi);
+  }
+  /*
+   * Web cũ (trước VH-2) luôn gửi `group` = khoá nhóm đang thấy, mặc định 'curriculum' khi việc không có khoá (Không phân loại / nhóm tự đặt) — gửi đúng giá trị
+   * mặc định đó = KHÔNG đổi nhóm. ponytail: web cũ không chuyển được việc không khoá sang "Giáo trình"; hết khi VH-2 gửi `groupId`.
+   */
+  const khoaCu = t.group_id ? (conn.prepare('SELECT khoa, branch_id FROM task_groups WHERE id = ?').get(t.group_id) as any) : null;
+  const nhomVao = patch.groupId === undefined && patch.group !== undefined && patch.group === (khoaCu?.khoa ?? 'curriculum') ? { ...patch, group: undefined } : patch;
+  let groupId = t.parent_task_id ? undefined : nhomChoViec(nhomVao, cnMoi, t.group_id ?? null);
+  if (doiCn && groupId === undefined && khoaCu?.branch_id != null && khoaCu.branch_id !== cnMoi) groupId = null;
   if (groupId !== undefined && groupId !== (t.group_id ?? null)) {
     historyRows.push({ field: 'group_id', oldValue: t.group_id ? String(t.group_id) : null, newValue: groupId ? String(groupId) : null, reason: null });
     put('group_id', groupId);
   }
   /* GIAO-VIEC-CN: chỉ kiểm chi nhánh khi người hoặc chi nhánh ĐỔI — việc cũ đã giao ngoài chi nhánh vẫn sửa tên / hạn được (form gửi lại người cũ). */
-  const doiCn = cnMoi !== (t.branch_id ?? null);
   let doiNguoi = false;
   if (patch.assigneeUserId !== undefined) {
     if (doiCn || (patch.assigneeUserId ?? null) !== (t.assignee_user_id ?? null)) kiemNguoiVh('Người phụ trách', patch.assigneeUserId, cnMoi);
@@ -1023,12 +1091,25 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     lap = docLap(patch.lap);
     put('lap_kieu', lap?.kieu ?? null); put('lap_ngay', lap ? lap.ngay.join(',') : null);
     if (lap && !t.lap_ky) put('lap_ky', demoToday());
-    if (lap) put('lap_dung_luc', null);
+    /* PTA mục 8: đổi lịch / bật lại → kỳ kế tính từ hôm nay (không sinh bản cho kỳ đã qua). */
+    if (lap) { put('lap_dung_luc', null); put('lap_tu', addDays(demoToday(), -1)); }
     historyRows.push({ field: 'lap', oldValue: t.lap_kieu ? `${t.lap_kieu}:${t.lap_ngay}` : null, newValue: lap ? `${lap.kieu}:${lap.ngay.join(',')}` : null, reason: null });
   }
-  const theoDoi = docTheoDoi(patch.theoDoiIds, cnMoi);
-  if (patch.watcherUserId) kiemNguoiVh('Người theo dõi', patch.watcherUserId, cnMoi);
-  if (!sets.length && theoDoi === undefined && !patch.watcherUserId) return mgmtTaskDetail(p, taskId);
+  const tdCu = (conn.prepare(`SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? ORDER BY id`).all(taskId) as any[]).map((r) => r.user_id as number);
+  let theoDoi = docTheoDoi(patch.theoDoiIds, cnMoi, tdCu);
+  /*
+   * Web cũ (trước VH-2) luôn gửi MỘT `watcherUserId` (id | null) = người đang thấy (`watcherCu`) — không gửi `theoDoiIds` thì THAY đúng người đó
+   * (null = bỏ), giữ những người theo dõi khác.
+   */
+  if (theoDoi === undefined && 'watcherUserId' in patch) {
+    const cu = tdCu.find((u) => u !== t.created_by) ?? null;
+    const moi = patch.watcherUserId ? Number(patch.watcherUserId) : null;
+    if (moi !== cu) {
+      if (moi && !tdCu.includes(moi)) kiemNguoiVh('Người theo dõi', moi, cnMoi);
+      theoDoi = [...tdCu.filter((u) => u !== cu), ...(moi && !tdCu.includes(moi) ? [moi] : [])];
+    }
+  }
+  if (!sets.length && theoDoi === undefined) return mgmtTaskDetail(p, taskId);
 
   return tx(() => {
     const luc = nowIso();
@@ -1045,16 +1126,19 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
          VALUES (?,?,?,?,?,?,?)`,
       ).run(taskId, h.field, h.oldValue, h.newValue, h.reason, p.userId, luc);
     }
-    /* Người theo dõi: thay cả danh sách (bớt / thêm có lịch sử `viec_giao_lan`); web cũ gửi MỘT người → thêm. */
+    /* Nhóm / chi nhánh của việc con theo việc cha. */
+    if (!t.parent_task_id && (doiCn || (groupId !== undefined && groupId !== (t.group_id ?? null)))) {
+      conn.prepare('UPDATE tasks SET group_id = ?, branch_id = ? WHERE parent_task_id = ?').run(groupId !== undefined ? groupId : t.group_id ?? null, cnMoi, taskId);
+    }
+    /* Người theo dõi: thay cả danh sách (bớt / thêm có lịch sử `viec_giao_lan`). */
     if (theoDoi !== undefined) {
-      const cu = (conn.prepare(`SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?`).all(taskId) as any[]).map((r) => r.user_id as number);
-      for (const u of cu.filter((u) => !theoDoi.includes(u))) {
+      const ds = theoDoi;
+      for (const u of tdCu.filter((u) => !ds.includes(u))) {
         conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? AND user_id = ?`).run(taskId, u);
         ghiLan('van_hanh', taskId, 'theo_doi', u, null, p.userId);
       }
-      for (const u of theoDoi.filter((u) => !cu.includes(u))) if (themTheoDoiDong('van_hanh', taskId, [u], 'tay', p.userId, cnMoi)) ghiLan('van_hanh', taskId, 'theo_doi', null, u, p.userId);
+      for (const u of ds.filter((u) => !tdCu.includes(u))) if (themTheoDoiDong('van_hanh', taskId, [u], 'tay', p.userId, cnMoi)) ghiLan('van_hanh', taskId, 'theo_doi', null, u, p.userId);
     }
-    if (patch.watcherUserId && themTheoDoiDong('van_hanh', taskId, [patch.watcherUserId], 'tay', p.userId, cnMoi)) ghiLan('van_hanh', taskId, 'theo_doi', null, patch.watcherUserId, p.userId);
     const aid = writeAudit({ actorUserId: p.userId, action: 'mgmt_task.edit', entityType: 'task', entityId: taskId, entityLabel: t.title,
       before: { assignee: t.assignee_user_id, due: t.due_date, group: t.group_id }, after: { assignee: patch.assigneeUserId, due: patch.due, group: groupId } });
     if (doiNguoi) {
@@ -1066,38 +1150,6 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     if (doiHan) bao({ ...t, title: patch.title ?? t.title }, p.userId, 'han', `Hạn mới: ${ngayNgan(patch.due ?? null)}`, aid);
     return mgmtTaskDetail(p, taskId);
   });
-}
-
-/**
- * VH-1 (8): công việc Vận hành giao cho CHÍNH người đang xem — "Việc được giao" ở Công việc (chia theo nhóm). MỘT câu (chỉ mục `idx_task_assignee`),
- * nhóm + việc cha + người giao đọc cùng câu (không câu thêm cho vai không có việc Vận hành).
- */
-export function myMgmtTasks(p: Principal) {
-  const conn = db();
-  const today = demoToday();
-  return (conn
-    .prepare(
-      `SELECT t.id, t.title, t.due_date, t.progress, t.branch_id, t.group_id, t.parent_task_id, COALESCE(pt.group_id, t.group_id) AS nhom_id,
-              pt.title AS parent_title, g.ten AS nhom_ten, g.thu_tu AS nhom_thu_tu, g.khoa AS nhom_khoa, u.full_name AS giao_ten
-         FROM tasks t
-         LEFT JOIN tasks pt ON pt.id = t.parent_task_id
-         LEFT JOIN task_groups g ON g.id = COALESCE(pt.group_id, t.group_id)
-         LEFT JOIN users u ON u.id = t.created_by AND t.created_by != t.assignee_user_id
-        WHERE t.kind = 'branch_ops' AND t.assignee_user_id = ?
-          AND t.progress NOT IN ('done','stopped')
-        ORDER BY t.due_date IS NULL, t.due_date`,
-    )
-    .all(p.userId) as any[]).map((t) => ({
-      id: t.id, title: t.title, parentTitle: t.parent_title ?? null,
-      due: t.due_date ?? null, progress: t.progress,
-      progressLabel: TASK_PROGRESS_LABEL[t.progress as TaskProgress] ?? t.progress,
-      overdue: !closed(t.progress) && !!t.due_date && t.due_date < today,
-      group: t.nhom_khoa ?? null,
-      /** VH-1: nhóm tự đặt (null = Không phân loại) — web chia "Việc được giao" theo nhóm. */
-      nhom: t.nhom_id ? { id: t.nhom_id as number, ten: t.nhom_ten as string, thuTu: t.nhom_thu_tu as number } : null,
-      giaoBoi: (t.giao_ten ?? null) as string | null,
-      branchId: (t.branch_id ?? null) as number | null,   // RA-LOI-0711f: chi nhánh của việc — QL CN khác không thấy (`viecCuaNguoi`)
-    }));
 }
 
 /** VH-1 (7): quyền tệp đính kèm của việc — xem = người xem được việc; thêm / xoá = người phụ trách · người tạo · Head / Quản trị / CX của chi nhánh. */

@@ -30,12 +30,16 @@ export const SO_LUOT_DEM = 5;
 export const cnCuaLuot = (cns: readonly number[], luot: number): number[] =>
   luot < 0 || luot >= SO_LUOT_DEM ? [] : cns.slice(luot, luot === SO_LUOT_DEM - 1 ? undefined : luot + 1);
 
-export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { cn: number; bai: number; lechBai: number; doiViec: number; lap: { goc: number; tao: number } } {
+/** `coLap`: tạo việc Vận hành lặp lại — MỘT lần mỗi đêm (hàm định kỳ: lượt đầu). */
+export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[], coLap = true): { cn: number; bai: number; lechBai: number; doiViec: number; lap: { goc: number; tao: number; loi: number } | null } {
   const conn = db();
   xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
   quenNhoCauHinh();   // SUA-RA-1311: cấu hình Case & SOS cũng vậy
-  /* VH-1 (N59): việc Vận hành lặp lại tới kỳ → bản mới. Mọi lượt đêm (không theo chi nhánh) — chạy lại không tạo trùng (khoá việc gốc × kỳ): lượt 2–5 chỉ 1 câu đọc việc gốc. */
-  const lap = taoViecLap(homNay);
+  /* VH-1 (N59): việc Vận hành lặp lại tới kỳ → bản mới — chạy lại không tạo trùng (khoá việc gốc × kỳ). Lỗi ở đây KHÔNG làm hỏng đối chiếu sổ (PTA mục 3). */
+  let lap: { goc: number; tao: number; loi: number } | null = null;
+  if (coLap) {
+    try { lap = taoViecLap(homNay); } catch (e) { console.error('[doi-chieu-so] việc lặp lại lỗi', e); }
+  }
   const tu = addDays(homNay, -56);
   let bai = 0, lechBai = 0, doiViec = 0, cn = 0;
   for (const b of conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]) {
