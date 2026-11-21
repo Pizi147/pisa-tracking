@@ -770,6 +770,8 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/lo-trinh/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/mgmt-tasks': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/mgmt-tasks/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
+    '/mgmt-tasks/nhom': 'VH-2: ô Hạng mục của form Giao việc — chỉ khi bấm "+ Giao việc"',
+    '/tim/hoc-vien': 'VH-2: ô Học viên liên quan của form Giao việc — chỉ khi gõ',
     '/ref/nguoi': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/ref/people': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/ref/programmes': 'PanelViec (OV-13b) — chỉ khi bấm việc',

@@ -197,13 +197,18 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   const meetingSvc: any = await import('../worklist/meeting.ts');
   const dcs: any = await import('../ops/doiChieuSo.ts');
 
-  await checkAsync('VH1-10 (PTA 1) · CX thuần + CX kèm GV được giao việc Vận hành → có ở /my-work (tab Vận hành CX chưa bật); Head vẫn không lặp', () => thu(async () => {
+  /* VH-2 (N59): CX có bảng Vận hành (nav `vanHanh`) như Head → việc không hạng mục ở bảng, không lặp ở /my-work; việc tay CÓ hạng mục vẫn trong đúng mục (N62). */
+  await checkAsync('VH1-10 (PTA 1 → VH-2) · CX thuần + CX kèm GV có bảng Vận hành: việc không hạng mục không lặp ở /my-work, việc có hạng mục vẫn hiện; Head vẫn không lặp', () => thu(async () => {
+    const { navOf } = await import('../platform/nav.ts');
     const cxGv = loadPrincipal(accounts.createAccount(P.admin, { email: `vanhanh.cxgv.${++soTk}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-vanhanh-cxgv', fullName: 'VANHANH CXGV',
       roles: [{ role: 'cx', branches: ['MB'] }, { role: 'teacher', branches: ['MB'] }] }).userId as number);
     const a = tao(ql, { assigneeUserId: cx.userId }); const b = tao(ql, { assigneeUserId: cxGv.userId });
+    const am = tao(ql, { assigneeUserId: cx.userId, hangMuc: 'bao-ph' });
     xoaNho();
-    assert((myWork(loadPrincipal(cx.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${a.id}`), 'CX thuần thấy việc được giao');
-    assert((myWork(loadPrincipal(cxGv.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV thấy việc được giao');
+    assert((navOf(loadPrincipal(cx.userId) as any) as any).vanHanh && (navOf(cxGv as any) as any).vanHanh, 'CX có bảng Vận hành (nav.vanHanh)');
+    const viecCx = (myWork(loadPrincipal(cx.userId) as any) as any).items ?? [];   // không việc nào → máy chủ trả không có `items`
+    assert(!viecCx.some((x: any) => x.key === `mgmt:${a.id}`) && viecCx.some((x: any) => x.key === `mgmt:${am.id}`), 'CX thuần: không lặp việc ở bảng, việc có hạng mục vẫn hiện');
+    assert(!((myWork(loadPrincipal(cxGv.userId) as any) as any).items ?? []).some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV: việc ở bảng');
     const c = tao(cx, { assigneeUserId: ql.userId });
     assert(!(myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${c.id}`), 'Head không lặp (thấy ở bảng)');
   }));

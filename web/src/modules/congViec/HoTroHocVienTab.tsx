@@ -250,7 +250,7 @@ export function HoTroHocVienTab() {
   /* V8-CV: panel duyệt (`?the=`, mở từ tab Chờ bạn duyệt) đứng ở cột phải như panel việc — `HopChoDuyet` vẽ vào ô này. */
   const theId = session?.nav?.workApprove && !xemMotGv ? Number(params.get('the')) || null : null;
   const coDuyet = !xemMotGv && (!!demDuyet?.cho || !!theId);
-  const coVanHanh = !!session?.nav?.workOps && !chiChamDiem;
+  const coVanHanh = (!!session?.nav?.workOps || !!session?.nav?.vanHanh) && !chiChamDiem;
   const thuTuTab: readonly string[] = laTvv ? NHOM_CV_TVV : TAB_CV;
   const tabCua = (it: WorkItem) => tabCuaViec(it, laTvv);
   const dongCuaTab = (ds: readonly WorkItem[], k: string) => dongTab(ds.filter((x) => tabCua(x) === k), moCaDong);
@@ -666,6 +666,10 @@ export function HoTroHocVienTab() {
             </button>
             {/* GD-1 (mockup v21 K1, K5): "+ Task" cạnh bộ lọc — chỉ GV có lớp (K7: GV mới chưa có em để ghi). 375: nút tròn nổi (K8a). */}
             {coTask && nutTask('dau')}
+            {/* N62 (VH-2): "+ Giao việc" ngay trang Công việc (Head, Quản trị, CX) — CÙNG form giao việc của bảng Vận hành. */}
+            {session?.nav?.vanHanh && (
+              <button type="button" className={`btn btn-sm h-8 px-3 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full ${coTask ? '' : 'btn-primary'}`} onClick={() => setGiaoViec(true)}>{t('+ Giao việc')}</button>
+            )}
           </span>
         </header>
         {/* U01 #1: "Lọc thêm" mở MỘT hàng ngay dưới (cùng kiểu "Bộ lọc thêm" HV & Lớp) — không popover lồng ô chọn có popover riêng. */}

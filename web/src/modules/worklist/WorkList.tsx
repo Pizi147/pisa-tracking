@@ -53,6 +53,9 @@ export type WorkItem = {
   choGvSua?: boolean;
   /** GV-2 (N58): việc người khác giao cho tôi — tên người giao (thẻ "{tên} giao"). */
   giaoBoi?: string | null;
+  /** VH-1 / VH-1b: việc Vận hành được giao — nhóm tự đặt (vạch trong mục "Việc được giao", V5) · hạng mục chính thống (N62, mục chứa dòng). */
+  nhomViec?: { id: number; ten: string; thuTu: number } | null;
+  hangMuc?: string | null;
   /** GV-2: dòng Xếp lịch họp · Kết quả meeting — id hành động Meeting (panel `/phoi-hop-sos/:id/meeting`). */
   phoiHopId?: number;
 };
