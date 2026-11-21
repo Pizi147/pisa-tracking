@@ -14,3 +14,8 @@ export const HOAN_TAC_PA_MS = 10_000;
 export function duocHoanTacPa(taoLuc: string | null | undefined, bayGio: number, themMs = 0): boolean {
   return !!taoLuc && bayGio - Date.parse(taoLuc) <= HOAN_TAC_PA_MS + 5_000 + themMs;
 }
+
+/** TOAST-GON (chủ SP 21/11): hộp mới cùng `key` thay hộp cũ; chỉ giữ `toiDa` hộp mới nhất — làm nhanh không dồn tràn góc màn. */
+export function themToast<T extends { key?: string }>(ds: readonly T[], moi: T, toiDa = 3): T[] {
+  return [...(moi.key ? ds.filter((x) => x.key !== moi.key) : ds), moi].slice(-toiDa);
+}
