@@ -18,7 +18,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { PERMISSIONS, TASK_PROGRESS_LABEL, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayCongBaoPhLonNhat, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { demoToday, nowNghiepVu } from '../demoConfig.ts';
+import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, khoangTamDung } from '../students/tamDung.ts';
@@ -734,10 +734,9 @@ export function xongPhanMeeting(p: Principal, id: number, body: { ngayGio?: unkn
   const sua = v.row.trang_thai === 'xong';
   const nhapHo = v.phuTrach.includes(p.userId) ? null : p.userId;
   tx(() => {
-    /* A3-11 (AUDIT-2111): giờ xong theo ngày nghiệp vụ (`nowNghiepVu`) như các mốc khác — bản demo không lẫn ngày máy thật; bản chính trùng giờ thật. */
     /* So-và-đổi theo trạng thái đã đọc: hai người bấm cùng lúc → người sau 409, không ghi đè im lặng. */
     if (!db().prepare(`UPDATE meeting_phan SET trang_thai = 'xong', ngay_gio = ?, ket_qua = ?, xong_boi = ?, xong_luc = ?, nhap_ho_boi = ? WHERE id = ? AND trang_thai = ? AND xong_luc IS ?`)
-      .run(ngayGio, ketQua, p.userId, nowNghiepVu(), nhapHo, id, v.row.trang_thai, v.row.xong_luc ?? null).changes) throw conflict('Phần này vừa được cập nhật — mở lại để xem.');
+      .run(ngayGio, ketQua, p.userId, nowIso(), nhapHo, id, v.row.trang_thai, v.row.xong_luc ?? null).changes) throw conflict('Phần này vừa được cập nhật — mở lại để xem.');
     ghiLan('meeting', id, sua ? 'sua' : 'xong', sua ? JSON.stringify({ ngayGio: v.row.ngay_gio ?? null, ketQua: v.row.ket_qua ?? null }) : null, JSON.stringify({ ngayGio, ketQua }), p.userId);
     const aid = writeAudit({ actorUserId: p.userId, action: sua ? 'meeting_phan.sua' : 'meeting_phan.xong', entityType: 'meeting_phan', entityId: id, entityLabel: v.tieuDe,
       before: sua ? { ngayGio: v.row.ngay_gio, ketQua: v.row.ket_qua } : { trangThai: v.row.trang_thai }, after: { ngayGio, ketQua, nhapHo } });
@@ -920,7 +919,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     thamSo.push(p.userId, ...(o.studentId ? [o.studentId] : []));
     ve.push(`SELECT 'van_hanh', t.id, NULL, t.assignee_user_id, CASE WHEN t.created_by != t.assignee_user_id THEN t.created_by END, t.due_date, NULL, t.title, t.parent_task_id,
               COALESCE(pt.group_id, t.group_id), COALESCE(t.class_id, pt.class_id), t.progress, pt.title, NULL, t.branch_id, NULL, COALESCE(pt.hang_muc, t.hang_muc), NULL, NULL,
-              (SELECT GROUP_CONCAT(s.full_name, ', ') FROM task_students ts JOIN students s ON s.id = ts.student_id WHERE ts.task_id IN (t.id, pt.id) AND ts.case_id IS NULL), NULL
+              (SELECT GROUP_CONCAT(ten, ', ') FROM (SELECT DISTINCT s.full_name AS ten FROM task_students ts JOIN students s ON s.id = ts.student_id WHERE ts.task_id IN (t.id, pt.id) AND ts.case_id IS NULL)), NULL
          FROM tasks t LEFT JOIN tasks pt ON pt.id = t.parent_task_id
         WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'${o.vanHanh === 'hang-muc' && !o.studentId ? ' AND COALESCE(pt.hang_muc, t.hang_muc) IS NOT NULL' : ''}${o.studentId ? ` AND EXISTS (SELECT 1 ${hv} AND ts.student_id = ?)` : ''}`);
   }

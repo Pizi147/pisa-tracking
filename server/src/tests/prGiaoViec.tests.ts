@@ -217,8 +217,6 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(items(ql, { nguoi: 'tat-ca' }).some((x) => x.key === `meeting_ket_qua:${kq.id}`), 'Head "Tất cả" thấy phần Meeting của CX');
     const k = gv.xongPhanMeeting(tvv, kq.id, { ketQua: 'Gia đình đồng ý kèm em thêm' });
     assert(k.meeting.trangThai === 'xong' && k.meeting.nhapHoBoi === 'GIAOVIEC TVV', 'TVV nhập hộ');
-    const { nowNghiepVu } = await import('../demoConfig.ts');
-    assert(String(mot('SELECT xong_luc FROM meeting_phan WHERE id = ?', kq.id).xong_luc).slice(0, 10) === nowNghiepVu().slice(0, 10), 'A3-11: giờ xong theo ngày nghiệp vụ');
     assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', bpId).trang_thai === 'mo', 'Báo PH độc lập');
     assert(await ma(() => gv.xongPhanMeeting(gvbm, xep.id, {})) === 403, 'GVBM (không phụ trách) → 403');
     assert(await ma(() => gv.suaHan(gvbm, 'meeting', xep.id, { han: TODAY, hanCu: null })) === 403, 'GVBM sửa hạn phần Meeting → 403');

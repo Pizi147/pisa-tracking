@@ -107,7 +107,8 @@ export type NhomViecTvv = (typeof NHOM_CV_TVV)[number];
 export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
   'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'), 'van-hanh': t('Vận hành'),
 };
-const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
+/* PTA rà #1956: việc giao cho TVV từ nhóm Phối hợp / Vi phạm bị trả lại / Hỏi tình hình ở tab Báo PH (không rơi Vận hành). */
+const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { phoi_hop: 'bao-ph', phoi_hop_sos: 'bao-ph', yt_tra_lai: 'bao-ph', yt_hoi_tinh_hinh: 'bao-ph', bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
 /** A2-05 = B3-02 (AUDIT-2111, N62): việc Vận hành được giao (không hạng mục / hạng mục ngoài 4 tab TVV) → tab "Vận hành" như GV, không rơi "Bổ sung hồ sơ". */
 export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'van-hanh';
 

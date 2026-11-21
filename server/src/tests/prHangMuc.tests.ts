@@ -80,6 +80,22 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     const vEm = hs(emLop[0]).cuaBan.find((x: any) => x.key === `mgmt:${coHv.id}`);
     assert(vEm && vEm.loai === 'van-hanh' && (vEm.mo as any)?.loai === 'duong', `hồ sơ HV em liên quan: ${JSON.stringify(vEm)}`);
     assert(!hs(emLop[1]).cuaBan.some((x: any) => x.key === `mgmt:${coHv.id}`), 'em không liên quan: không có việc');
+    /* PTA rà #1956: việc cũ còn khoá `bao-ph-test` vẫn hiện ở bảng / chi tiết như `bao-ph` (không biến khỏi bảng, ô Hạng mục không trống). */
+    const cu = tao(ql, { assigneeUserId: gvcn.userId });
+    conn.prepare("UPDATE tasks SET hang_muc = 'bao-ph-test' WHERE id = ?").run(cu.id);
+    assert(mg.listMgmtTasks(ql, {}).rows.find((r: any) => r.id === cu.id).hangMuc === 'bao-ph' && mg.mgmtTaskDetail(ql, cu.id).hangMuc === 'bao-ph', 'bao-ph-test cũ đọc ra bao-ph');
+    for (const group of ['phoi_hop', 'phoi_hop_sos', 'yt_tra_lai', 'yt_hoi_tinh_hinh']) assert(d.tabCuaViec({ group, key: `${group}:1` }, true) === 'bao-ph', `TVV: ${group} → tab Báo PH`);
+    /* B3-12: Hoàn thành một bấm → Hoàn tác về tiến độ trước (phiên bản đúng 200; người khác vừa sửa → 409); việc cha còn việc con mở → máy chủ hỏi xác nhận (409 canXacNhan). */
+    const loiCua = async (fn: () => unknown) => { try { await fn(); return null; } catch (e: any) { return e; } };
+    const xong = mg.updateMgmtTask(gvcn, coHv.id, { progress: 'done' });
+    assert(mg.updateMgmtTask(gvcn, coHv.id, { progress: 'not_started', phienBan: xong.updatedAt }).progress === 'not_started', 'Hoàn tác đúng phiên bản');
+    const xong2 = mg.updateMgmtTask(gvcn, coHv.id, { progress: 'done' });
+    mg.editMgmtTask(ql, coHv.id, { due: addDays(TODAY, 5), phienBan: xong2.updatedAt });
+    assert((await loiCua(() => mg.updateMgmtTask(gvcn, coHv.id, { progress: 'not_started', phienBan: xong2.updatedAt })))?.status === 409, 'Hoàn tác sau khi người khác sửa → 409');
+    const cha = tao(ql, { assigneeUserId: gvcn.userId });
+    tao(ql, { parentTaskId: cha.id, title: 'Con chưa xong', assigneeUserId: gvbm.userId });
+    const e = await loiCua(() => mg.updateMgmtTask(gvcn, cha.id, { progress: 'done' }));
+    assert(e?.status === 409 && e?.details?.canXacNhan === true, `việc cha còn việc con → hỏi: ${e?.status} ${JSON.stringify(e?.details)}`);
   }));
 
   await checkAsync('VH1b-2 · /my-work: việc tay có hạng mục vào ĐÚNG mục / tab (kèm "{tên} giao"), việc con theo cha; không hạng mục → Việc được giao', () => thu(async () => {

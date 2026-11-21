@@ -500,7 +500,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
       /** VH-1: nhóm tự đặt (null = Không phân loại). */
       groupId: r.group_id ?? null, groupName: r.nhom_ten ?? null, groupOrder: r.nhom_thu_tu ?? null,
       /** VH-1b (N62): hạng mục chính thống (null = tab Vận hành) + lớp liên quan. */
-      hangMuc: r.hang_muc ?? null, classId: r.class_id ?? null, classCode: r.lop_code ?? null,
+      hangMuc: r.hang_muc ? chuanHangMuc(r.hang_muc) : null, classId: r.class_id ?? null, classCode: r.lop_code ?? null,   // A2-03: việc cũ `bao-ph-test` hiện như `bao-ph`
       taskType: r.task_type as string,
       /** Quyền sửa THẬT của dòng (PTA rà lần 2) — việc chi nhánh khác trong phạm vi đọc mà không sửa được thì false. */
       canEdit: coQuyenViec(p, r),
@@ -661,7 +661,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     ...(() => {
       const cha = t.parent_task_id ? conn.prepare('SELECT hang_muc, class_id FROM tasks WHERE id = ?').get(t.parent_task_id) as any : null;
       const lopId = t.class_id ?? cha?.class_id ?? null;
-      return { hangMuc: (cha ? cha.hang_muc : t.hang_muc) ?? null, classId: lopId,
+      const hm = (cha ? cha.hang_muc : t.hang_muc) ?? null;
+      return { hangMuc: hm ? chuanHangMuc(hm) : null, classId: lopId,
         classCode: lopId ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(lopId) as any)?.code ?? null : null };
     })(),
     hocVien: conn.prepare('SELECT s.id, s.full_name AS ten FROM task_students x JOIN students s ON s.id = x.student_id WHERE x.task_id = ? ORDER BY s.full_name').all(taskId) as { id: number; ten: string }[],
