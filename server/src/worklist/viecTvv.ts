@@ -89,9 +89,10 @@ const chiNhanhCoQl = (): { has(b: number): boolean } => nho('chi-nhanh-co-ql', (
   return { has: (b: number) => ds.has(0) || ds.has(b) };
 });
 /** Chi nhánh của một em (lớp đang học, không có → hồ sơ) — chỉ `chuViecTvv` một em (hồ sơ HV) khi em chưa có TVV. */
-const chiNhanhCuaEm = (studentId: number): number | null => (db().prepare(
+/* rà #1960 vòng 2: nhớ theo request — hồ sơ HV gọi `chuViecTvv` hai lần (Sau thi, Bổ sung hồ sơ) cho cùng em → một câu. */
+const chiNhanhCuaEm = (studentId: number): number | null => nho(`cn-em:${studentId}`, () => (db().prepare(
   `SELECT COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id) AS b
-     FROM students s WHERE s.id = ?`).get(studentId) as any)?.b ?? null;
+     FROM students s WHERE s.id = ?`).get(studentId) as any)?.b ?? null);
 
 /** TVV của nhiều em — một câu mỗi lô (Turso ≤ 900 tham số). */
 export function tvvCuaEm(ids: readonly number[]): Map<number, number | null> {
