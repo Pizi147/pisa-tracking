@@ -777,7 +777,7 @@ export const HD_QL: HuongDan = {
     { id: 'ql-lo-trinh-hv', ten: 'Lộ trình theo học viên', buoc: ['Lộ trình (LT1 · LT2 · RF) là của từng em, không theo lớp: một lớp có em LT1 lẫn LT2.', 'Luật MT theo lộ trình của em; Head, Quản trị, GVCN lớp đang học, TVV, Admin đổi được ở <b>Sửa thông tin</b>.'] },
     { id: 'ql-buoc-tiep', ten: 'Bước tiếp sau thi', buoc: ['Đã thi (từ hôm sau ngày thi) → <b>Cập nhật kết quả thi thật</b>; có kết quả → <b>Chọn bước tiếp</b>. Cùng hạn: {han:buoc_tiep_sau_thi} từ ngày thi, <b>Gia hạn</b> được.', 'Head hoặc TVV chọn; GVCN, CX chỉ xem ("Chờ Head / TVV chọn bước tiếp").', 'Lộ trình mới bắt đầu ngay: tuần này là tuần 1; lớp khác thì GV lớp cũ làm phiếu bàn giao.', 'Tạm dừng: đóng lộ trình, mọi hạn dừng; sau này <b>Quay lại học</b> mở Lộ trình mới.', 'Học tiếp: cùng lộ trình học tiếp, giữ lớp, Target, Case; đổi Target / lớp được. Lần thi sau ghi như thường, KQ lần này vào lịch sử.'] },
     { id: 'ql-y-thuc-bao', ten: 'Ý thức: Head nhận gì', buoc: ['Cần Head duyệt: WL 3, Meeting CX/GĐCN, Đình chỉ học tạm thời, Khác.', 'Để biết: GVCN xử lý WL 1, Report 4 + Meeting, WL 2.'] },
-    { id: 'ql-phoi-hop', ten: 'Phối hợp SOS: ai làm', buoc: ['Chỉ GVCN làm; Head theo dõi và làm thay (bấm dòng, không cần nút riêng).', 'TVV chỉ báo lại kết quả khi có Meeting CX / GĐCN.'] },
+    { id: 'ql-phoi-hop', ten: 'Phối hợp SOS: ai làm', buoc: ['Chỉ GVCN làm; Head theo dõi và làm thay (bấm dòng, không cần nút riêng).', 'TVV chỉ báo PH khi có Meeting CX / GĐCN.'] },
   ],
   tu: [
     ...HD_GV.tu.filter((x) => x.ten !== 'Head'),

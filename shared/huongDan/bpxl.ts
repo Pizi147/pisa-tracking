@@ -1,7 +1,7 @@
 /**
  * Hướng dẫn Chuyên viên Xếp lịch (BPXL) — BPXL-1, N57 (chủ SP 20/11). Xếp / dời lịch MT ở Kế hoạch Test + lịch lớp thường; chỉ xem Lịch Test tuần, Học viên & Lớp,
- * Lịch thi thật; không điểm, thông tin HV, Case, Ý thức, Phân tích, huỷ lượt (seed/data.ts `scheduler`, `permissions.ts`). Trang đầu = Kế hoạch Test (`nav.ts`
- * `trangDauTest`). Không bị giao việc theo luật. Mẫu: `cx.ts`, `admin.ts`; mục chung của màn GV lấy qua `mucGv`.
+ * Lịch thi thật; Xoá / Khôi phục lượt MT khi chưa có điểm (N63); không điểm, thông tin HV, Case, Ý thức, Phân tích (seed/data.ts `scheduler`, `permissions.ts`). Trang đầu = Kế hoạch Test (`nav.ts`
+ * `trangDauTest`). Việc: Xếp lịch họp (N58) + việc được giao. Mẫu: `cx.ts`, `admin.ts`; mục chung của màn GV lấy qua `mucGv`.
  */
 import { mucGv } from './tvv.ts';
 import type { HuongDan } from './kieu.ts';
@@ -10,7 +10,7 @@ const CV = '/cong-viec';
 const HV = '/hoc-vien';
 const TEST = '/test/lich';
 const KH = '/test/ke-hoach';
-const KHONG = [{ ten: 'Nhập, sửa điểm', cua: 'việc của GV' }, { ten: 'Huỷ MT, chuyển lớp', cua: 'việc của Head' }] as const;
+const KHONG = [{ ten: 'Nhập, sửa điểm', cua: 'việc của GV' }, { ten: 'Chuyển lớp, xoá MT đã có điểm', cua: 'việc của Head' }] as const;
 
 export const HD_BPXL: HuongDan = {
   viec: [],
@@ -21,6 +21,21 @@ export const HD_BPXL: HuongDan = {
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường).',
         'Một kỹ năng: bấm ô MT, chọn tuần ở <b>Dời</b>, rồi <b>Lưu</b>.', 'Thứ Sáu tới Chủ nhật máy hỏi trước khi đổi: bấm <b>Vẫn đổi lịch</b>.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'mock test', 'schedule', 'reschedule'],
+    },
+    {
+      id: 'xoa-mt', ten: 'Xoá, khôi phục lượt MT chưa có điểm', nhom: 'lich',
+      loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test › hộp MT', duong: KH },
+      buoc: ['Mở hộp MT của lớp, bấm <b>Xoá</b> ở lượt hoặc từng môn chưa có điểm.', 'Nhầm: <b>Khôi phục</b>. Đã có điểm thì không xoá được.'],
+      tuKhac: ['xoá mt', 'khôi phục', 'huỷ lượt', 'delete', 'restore'],
+    },
+    {
+      id: 'xep-lich-hop', ten: 'Xếp lịch họp Meeting CX/GĐCN', nhom: 'lich', tab: 'bao-ph',
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV },
+      khiCo: 'GVCN xác nhận Meeting CX/GĐCN của em sau lượt Mock có SOS.',
+      buoc: ['Mở <b>Công việc › Báo PH</b>, bấm <b>Hoàn thành</b> ở dòng <b>Xếp lịch họp</b>.', 'Ghi ngày giờ họp nếu muốn; Kết quả meeting do CX, Báo PH do TVV.'],
+      xong: 'Phần Xếp lịch họp Hoàn thành; Kết quả meeting (CX) và Báo PH (TVV) không chờ.',
+      sai: 'Bấm <b>Hoàn tác</b> hoặc sửa rồi lưu lại.',
+      tuKhac: ['họp', 'meeting', 'xếp lịch họp', 'cx', 'gđcn'],
     },
     {
       id: 'sua-lich-lop', ten: 'Sửa lịch lớp thường', nhom: 'hv',
@@ -43,11 +58,11 @@ export const HD_BPXL: HuongDan = {
   ],
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xep-lich', 'xem-lich-test'] },
-    { nhip: 'Khi có', viec: ['sua-lich-lop', 'xem-hv'] },
+    { nhip: 'Khi có', viec: ['xep-lich-hop', 'xoa-mt', 'sua-lich-lop', 'xem-hv'] },
   ],
   vaiKhac: [
     { ten: 'Nhập, sửa điểm', cua: 'việc của GV', tuKhac: ['điểm', 'score'] },
-    { ten: 'Huỷ MT, chuyển lớp, sửa thông tin HV', cua: 'việc của Head', tuKhac: ['huỷ', 'chuyển lớp', 'sửa thông tin'] },
+    { ten: 'Chuyển lớp, xoá MT đã có điểm, sửa thông tin HV', cua: 'việc của Head', tuKhac: ['huỷ', 'chuyển lớp', 'sửa thông tin'] },
     { ten: 'Case, Ý thức', cua: 'việc của GV', tuKhac: ['case', 'ý thức', 'vi phạm'] },
   ],
   man: [
@@ -92,7 +107,7 @@ export const HD_BPXL: HuongDan = {
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
       dangO: { cau: 'Một em: học thuật, lộ trình, lịch thi (chỉ xem).', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      muc: [{ id: 'xl-hv', ten: 'Xem hồ sơ em', buoc: ['Các tab chỉ xem; dời lịch MT của em ở Kế hoạch Test.'] }],
+      muc: [{ id: 'xl-hv', ten: 'Xem hồ sơ em', buoc: ['Các tab chỉ xem (không có Ý thức, Case); dời lịch MT của em ở Kế hoạch Test.'] }],
     },
     {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
@@ -101,8 +116,8 @@ export const HD_BPXL: HuongDan = {
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
-      dangO: { cau: 'Việc được giao cho bạn; không có việc theo luật.', truoc: { chu: 'Kế hoạch Test', duong: KH } },
-      muc: [{ id: 'xl-cv', ten: 'Danh sách việc', buoc: ['Danh sách trống là bình thường: xếp lịch làm ở Kế hoạch Test.'] }],
+      dangO: { cau: 'Xếp lịch họp và việc được giao cho bạn.', truoc: { chu: 'Kế hoạch Test', duong: KH } },
+      muc: [{ id: 'xl-cv', ten: 'Danh sách việc', buoc: ['Khi GVCN xác nhận Meeting CX/GĐCN: <b>Báo PH</b> › <b>Xếp lịch họp</b>, bấm <b>Hoàn thành</b> (ghi ngày giờ họp nếu muốn).', 'Lịch MT xếp ở Kế hoạch Test, không qua danh sách này.'] }],
     },
     {
       id: 'ho-so-ca-nhan', ten: 'Hồ sơ cá nhân', duong: ['/ho-so-ca-nhan'],
@@ -116,7 +131,7 @@ export const HD_BPXL: HuongDan = {
     },
   ],
   luat: [
-    { id: 'xl-luat-quyen', ten: 'BPXL làm / không làm', buoc: ['Làm: xếp / dời lịch MT, + MT, S Ex; sửa tuần khai giảng, Progress, Final lớp thường.', 'Chỉ xem: Lịch Test tuần, Học viên & Lớp, Lịch thi thật.', 'Không: điểm, thông tin HV, Case, Ý thức, Phân tích, huỷ / khôi phục lượt MT.'] },
+    { id: 'xl-luat-quyen', ten: 'BPXL làm / không làm', buoc: ['Làm: xếp / dời lịch MT, + MT, S Ex; sửa tuần khai giảng, Progress, Final lớp thường.', 'Chỉ xem: Lịch Test tuần, Học viên & Lớp, Lịch thi thật.', 'Xoá / Khôi phục lượt MT và kỹ năng: được khi chưa có điểm; đã có điểm thì không.', 'Không: điểm, thông tin HV, Case, Ý thức, Phân tích.'] },
   ],
   tu: [],
 };

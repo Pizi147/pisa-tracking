@@ -209,7 +209,7 @@ export const ChipKy = ({ k }: { k: string }) => (
  */
 export const chuBadgeTab = (b: BadgeTab) => {
   const phan = [b.quaHan ? t('{n} quá hạn', { n: b.quaHan }) : null, b.homNay ? t('{n} hạn hôm nay', { n: b.homNay }) : null].filter(Boolean).join(', ');
-  return t('{phan} trong {n} việc', { phan, n: b.n });
+  return b.yeuCau ? t('{phan} trong {n} yêu cầu', { phan, n: b.n }) : t('{phan} trong {n} việc', { phan, n: b.n });
 };
 /** Badge tab MỜ (mockup v21 `.bd.mo`): viên tròn chỉ đếm — nền bề mặt 2, chữ mờ; dùng ở `HangTab` (`so`) và tab Chấm Speaking. */
 export const BadgeMo = ({ so, chu }: { so: ReactNode; chu?: string }) => (

@@ -1,5 +1,5 @@
 /** TU-b · TU2-6: kiểu dữ liệu trang Tutor (khớp `server/src/tutors/trang.ts`) + nhãn dùng chung bảng / panel / hộp. */
-import { addDaysIso, mondayOfDate, type KhoangNgay } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU, addDaysIso, mondayOfDate, type KhoangNgay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 export type KetLuan = 'on' | 'can_cai_thien' | 'ngung';
@@ -42,7 +42,7 @@ export const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').r
 /** "0912 345 678" — đọc dễ. */
 export const nhanSdt = (s: string | null) => (s && s.length === 10 ? `${s.slice(0, 4)} ${s.slice(4, 7)} ${s.slice(7)}` : s ?? '');
 /** Nhận xét về người dạy: tối thiểu 8 ký tự (R2.6 / XM-7 — cùng luật máy chủ `kiemNhanXet`). */
-export const NX_TOI_THIEU = 8;
+export const NX_TOI_THIEU = CHU_TOI_THIEU;
 /** R2.3: khoảng mặc định của trang Tutor = 4 tuần gồm tuần này (URL trống = khoảng này). */
 export const khoangTutorMacDinh = (homNay: string): KhoangNgay => {
   const t2 = mondayOfDate(homNay);

@@ -3,9 +3,9 @@ import type { Dich } from '../en.ts';
 
 export const EN_GD19 = {
   'Không tính vào bậc · GVCN nhận tin ở chuông': 'Not counted toward the ladder · homeroom teacher gets an update',
-  'GVCN {gvcn} có việc Xử lý vi phạm, hạn {han}': 'Homeroom teacher {gvcn} gets a "Handle incident" task, due {han}',
+  'GVCN {gvcn} có việc Xử lý vi phạm, hạn {han}': 'Core teacher {gvcn} gets a "Handle incident" task, due {han}',
   'GVCN xác nhận xử lý, hoặc ghi "Không xử lý" kèm lý do — bạn nhận tin. Vi phạm vẫn tính vào 3 vi phạm / 2 tuần.': 'The homeroom teacher confirms an action, or records "Not handled" with a reason — you get an update. The incident still counts toward 3 incidents / 2 weeks.',
-  'GVCN nhận tin ở chuông · đủ 3 trong 2 tuần thì phải xử lý': 'Homeroom teacher gets an update · 3 within 2 weeks must be handled',
+  'GVCN nhận tin ở chuông · đủ 3 trong 2 tuần thì phải xử lý': 'Core teacher gets an update · 3 within 2 weeks must be handled',
   'Yêu cầu GVCN xử lý': 'Ask homeroom teacher to handle',
   'Yêu cầu xử lý': 'Action requested',
   'Trong 2 tuần:': 'Within 2 weeks:',

@@ -4145,7 +4145,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   }
   /* PR-DUYET (T64): câu hỏi gửi Quản lý là nội dung của thẻ Xin ý kiến — bắt buộc. */
   if (nextStep === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
-    throw badRequest('Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất 8 ký tự.');
+    throw loi(400, 'Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
   if (nextStep === 'propose' && input.newPlan?.kind === 'other_proposal') {
@@ -4845,7 +4845,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
-    throw badRequest('Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất 8 ký tự.');
+    throw loi(400, 'Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   if (x.quyetDinh === null && chinh.outcome === 'insufficient' && !decisionNote) throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && !x.the && x.chanDoi && decisionNote !== chinh.decision_note) {

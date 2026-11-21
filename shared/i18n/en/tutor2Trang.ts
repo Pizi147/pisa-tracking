@@ -27,7 +27,6 @@ export const EN_TUTOR2_TRANG = {
   'Người dạy hiện khi có kết quả PA Tutor được ghi.': 'Teachers appear once a Tutor plan result is recorded.',
   'Ngừng': 'Stopped',
   'Nhận xét cần ít nhất {n} ký tự.': (b) => `The comment needs at least ${b.n} characters.`,
-  'Nhận xét cần ít nhất 8 ký tự.': 'The comment needs at least 8 characters.',
   'Tài liệu · Không': 'Materials · No',
   'Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).': 'Total sessions recorded in the range (a combined row of 2 sessions counts 2).',
   'Xuất số buổi': 'Export sessions',

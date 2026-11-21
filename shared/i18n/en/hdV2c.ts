@@ -88,7 +88,7 @@ export const EN_HD_V2C = {
   '<b>Bước tiếp</b> do Head hoặc TVV chọn; CX chỉ xem.': 'The <b>Next step</b> is chosen by the Head or the consultant; CX can only view it.',
   'Mọi chi nhánh; phân công giáo viên do Head làm.': 'All branches; assigning teachers is done by the Head.',
   'Mở <b>Phân tích</b>; mọi chi nhánh. Chọn <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua).': 'Open <b>Analysis</b>; all branches. Choose <b>From week → To week</b> for every tab (the last 2 weeks by default).',
-  'Báo PH vi phạm, chốt ngày thi': 'Parent call for violations, set exam date',
+  'Báo PH vi phạm, chốt ngày thi': 'Parent call for incidents, set exam date',
   'việc của Head, TVV': 'task of Heads, consultants',
   'Bốn số toàn hệ thống và bảng Theo chi nhánh.': 'Four system-wide numbers and the By branch table.',
   'Mọi chi nhánh; <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.': 'All branches; <b>All time</b> · <b>Pick weeks</b>; press a number to open the list on the page.',

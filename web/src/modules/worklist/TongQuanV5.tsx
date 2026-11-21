@@ -566,7 +566,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
         <ChiSo ten={tenDen(t('HV SOS 2–3'), sos23)} ky={t('hiện tại')} giaTri={<SoDen n={sos23} to={`/hoc-vien?view=sos&muc=23${cn}`} className="so-chinh" />} />
         {/* AUDIT-UI B2 đồng bộ (PTA 08/11): tách ô hai số "Chờ KQ · Lộ trình tiếp" thành hai ô như TVV — mỗi ô một số, cùng đích đổi trang cũ. */}
         <ChiSo ten={tenDen(t('Chờ KQ thi thật'), hv.data?.dem['da-thi'] ?? 0)} ky={t('hiện tại')} giaTri={hv.data ? <SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} className="so-chinh" /> : '…'} />
-        <ChiSo ten={tenDen(t('Chưa chốt lộ trình tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} tenNgan={tenDen(t('Chưa chốt LT tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
+        <ChiSo ten={tenDen(t('Chưa chốt bước tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
           giaTri={hv.data ? <SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} className="so-chinh" /> : '…'} />
       </DaiChiSo>
       {/* GD-14 (⑧ T4, XM-3): CÙNG bảng Theo chi nhánh với Quản trị — bấm dòng, có Toàn hệ thống. */}
@@ -630,7 +630,7 @@ export function DaiChiSoTvv({ chiSo, em }: { chiSo: ChiSoTvv | undefined; em: re
       </ODai>
       <ODai nhan={t('Thi tháng này')} luat={LUAT_THI}>{chiSo ? <SoDenDai n={chiSo.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" /> : <SoTinh n="…" />}</ODai>
       <ODai nhan={t('Chờ KQ')} title={t('Chờ KQ thi thật')}>{em ? <SoDenDai n={choKq} to={den('da-thi')} /> : <SoTinh n="…" />}</ODai>
-      <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt bước tiếp')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
+      <ODai nhan={t('Chưa chốt bước tiếp')}>
         {em ? <SoDenDai n={buoc} to={den('cho-buoc-tiep')} /> : <SoTinh n="…" />}
       </ODai>
     </DaiChiSoMong>
