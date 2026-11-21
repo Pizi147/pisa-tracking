@@ -35,7 +35,7 @@ const VIEC_CX: ViecHd[] = [
   {
     id: 'meeting', ten: 'Theo dõi meeting CX/GĐCN', nhom: 'hv',
     loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Ý thức & Phối hợp' },
-    buoc: ['GVCN bấm <b>Xác nhận meeting</b> (MT3 SOS 3: có cả phụ huynh) thì BPXL xếp lịch họp, bạn ghi kết quả meeting, TVV của em báo PH; hạn 5 ngày.',
+    buoc: ['GVCN bấm <b>Xác nhận meeting</b> (MT3 SOS 3: có cả phụ huynh) thì BPXL xếp lịch họp, bạn ghi kết quả meeting, TVV của em báo PH; hạn theo Hạn mặc định.',
       'Xem tiến độ: hồ sơ em › tab <b>Ý thức & Phối hợp</b> › <b>Phối hợp SOS</b>; cột báo PH ghi “Chờ TVV” hoặc kết quả.', 'Kết quả meeting là việc của bạn: <b>Công việc › Báo PH</b>, ghi kết quả rồi <b>Hoàn thành</b> (chi nhánh chưa có CX: Head).'],
     tuKhac: ['sos 3', 'ý thức', 'gđcn', 'họp', 'report 4', 'meeting'],
   },

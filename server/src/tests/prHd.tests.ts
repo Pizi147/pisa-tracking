@@ -286,8 +286,8 @@ export async function runPrHdTests(t: any) {
       if (dau === 'Công việc' && cuoi) assert(nhom.includes(cuoi), `${vai} ${v.id}: nhóm Công việc "${cuoi}" không có ở NHOM_CV_TVV_LABEL`);
       if (dau === 'Hồ sơ HV' && cuoi && !cuoi.includes('&')) assert(nut.includes(cuoi) || cuoi === 'Ý thức & Phối hợp', `${vai} ${v.id}: nút "${cuoi}" không có ở NHAN_VIEC_QUAN_LY`);
     }
-    /* N52 (chủ SP 18/11): CX có màn Công việc (xem / làm thay) nhưng không việc nào là của CX — không lối chính nào ở đó; chọn bước tiếp là việc của QL / TVV. */
-    assert(cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec')), 'CX: màn Công việc chỉ xem, không lối chính');
+    /* N52 (chủ SP 18/11) + N58 / N63 (21/11): CX có màn Công việc (xem / làm thay); lối chính ở đó chỉ ba thẻ giao việc (trả lại, đổi người, đang theo dõi); chọn bước tiếp là việc của QL / TVV. */
+    assert(cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => ['tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi'].includes(v.id) || (v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec'))), 'CX: màn Công việc chỉ xem, lối chính chỉ ba thẻ N58 (trả lại, đổi người, đang theo dõi)');
     assert(!cx.lam.some((v: any) => v.id === 'buoc-tiep') && cx.vaiKhac.some((v: any) => v.ten === 'Chọn bước tiếp sau thi'), 'CX không chọn Bước tiếp');
     /* Head tutor: Tổng quan, Tutor (TU2-6 — mở lại), Hồ sơ cá nhân, Hướng dẫn. */
     assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,tutor,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);
