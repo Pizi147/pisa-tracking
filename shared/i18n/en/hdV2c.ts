@@ -73,7 +73,7 @@ export const EN_HD_V2C = {
   '<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> (FT) · <b>Lịch sử</b>.': '<b>Edit info</b> · <b>Pause / End study</b> · <b>Real exam result</b> (FT) · <b>History</b>.',
   'Em đang Tạm dừng: <b>Quay lại học</b> ở đầu hồ sơ.': 'A paused student: <b>Resume</b> at the top of the profile.',
   'Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ.': 'Press <b>Real exam result</b> at the top of the profile.',
-  'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.': 'Type the <b>Exam date</b> and the L R W S scores (or <b>No exam</b>), press <b>Save</b>.',
+  'Gõ <b>Ngày thi</b>, điểm L R W S, bấm <b>Lưu điểm</b>; em không thi: <b>Không thi</b> cạnh Lưu điểm.': 'Type the <b>Exam date</b> and the L R W S scores, press <b>Save score</b>; did not sit: <b>No exam</b> next to Save score.',
   'Lưu xong, mở bước tiếp ở Công việc › Sau thi.': 'After saving, set the next step in Tasks › After exam.',
   '<b>Lộ trình & lớp</b>: lưới tuần theo lớp, mọi lượt Test.': '<b>Pathways & classes</b>: the week grid by class, every Test round.',
   /* ---------------------------------------------------------------- CX */

@@ -126,6 +126,7 @@
  "web/src/modules/students/NganCaseLuoi.tsx",
  "web/src/modules/students/NganTongKet.tsx",
  "web/src/modules/students/NganXuatDs.tsx",
+ "web/src/modules/students/NutKhongThi.tsx",
  "web/src/modules/students/PanelBuocTiep.tsx",
  "web/src/modules/students/PanelLoTrinhMoi.tsx",
  "web/src/modules/students/PanelMotEm.tsx",
