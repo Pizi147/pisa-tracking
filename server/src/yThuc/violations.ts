@@ -16,7 +16,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
-import { dongTheoDuongSanCo } from './traLai.ts';
+import { dongTheoDuongSanCo, traLaiCuaViPham } from './traLai.ts';
 import { donViec } from '../worklist/giaoViec.ts';
 import {
   EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, lopGanNhat, requireRecordViolation, requireViewClass, requireViewStudent,
@@ -62,7 +62,7 @@ export type ViolationView = {
 };
 
 const SELECT = `
-  SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code, c.programme_code AS class_ct,
+  SELECT v.*, s.full_name AS student_name, s.student_code, s.consultant_user_id AS em_tvv, c.code AS class_code, c.programme_code AS class_ct,
          ru.full_name AS reported_by_name, gu.full_name AS ghi_nhan_boi_name, ku.full_name AS khong_xu_ly_boi_name
     FROM violations v
     JOIN students s ON s.id = v.student_id
@@ -608,6 +608,8 @@ export type ViolationDetail = ViolationView & {
     id: number; field: string; oldValue: string | null; newValue: string | null; reason: string | null;
     actorUserId: number | null; actorName: string | null; createdAt: string;
   }>;
+  /** TL-2 (N61): nút "Trả lại" cho người xem phía TVV · yêu cầu đang mở (dải "Chờ GV sửa"). */
+  traLai: ReturnType<typeof traLaiCuaViPham>;
 };
 
 export function violationDetail(p: Principal, id: number): ViolationDetail {
@@ -637,5 +639,6 @@ export function violationDetail(p: Principal, id: number): ViolationDetail {
   const attachmentCount = (db()
     .prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type = 'violation' AND owner_id = ?")
     .get(id) as any).n as number;
-  return { ...v, attachmentCount, canEdit: canEditViolation(p, row), measures, history };
+  return { ...v, attachmentCount, canEdit: canEditViolation(p, row), measures, history,
+    traLai: traLaiCuaViPham(p, id, { consultant_user_id: row.em_tvv ?? null, student_id: row.student_id }) };
 }

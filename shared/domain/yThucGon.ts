@@ -32,6 +32,10 @@ export function demLanSua(history: readonly LichSuViPhamRow[]): number {
   return nhom.size;
 }
 
+const NHAN_TRA_LAI: Record<string, string> = {
+  get tra_lai() { return t('Trả lại'); }, get tra_lai_da_sua() { return t('Sửa, gửi lại'); }, get tra_lai_giu_nguyen() { return t('Giữ nguyên, trả lời'); },
+  get tra_lai_thu_hoi() { return t('GVCN thu hồi'); }, get tra_lai_tvv_da_bao() { return t('TVV đã báo PH'); }, get tra_lai_rut() { return t('Rút yêu cầu trả lại'); },
+};
 const TRUONG_NHAN: Record<string, string> = {
   ten: t('Vi phạm'), description: t('Mô tả'), category: t('Nhóm'), skill: t('Môn'), occurred_on: t('Ngày xảy ra'),
 };
@@ -45,6 +49,9 @@ export function nhanLichSuViPham(h: LichSuViPhamRow, homNay?: string | null): { 
   if (h.field === 'measure') {
     return { truong: '', cu: '', moi: h.newValue === null ? t('Bỏ khỏi lần xử lý') : t('Gắn vào lần xử lý') };
   }
+  /* TL-2 (N61): dòng trả lại (`tra_lai*`, TL-1) — một câu, lý do / trả lời trong «». */
+  const tl = NHAN_TRA_LAI[h.field];
+  if (tl) return { truong: '', cu: '', moi: h.newValue ? `${tl} «${h.newValue}»` : tl };
   const dich = (v: string | null): string => {
     if (v === null) return '—';
     if (h.field === 'category') return VIOLATION_CATEGORY_LABEL[v as ViolationCategory] ?? v;

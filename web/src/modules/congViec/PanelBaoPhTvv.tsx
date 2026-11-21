@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, NUT_DONG, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -10,18 +10,18 @@ import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
 import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
-import { DongViPham } from '../yThuc/DongViPham.tsx';
+import { DaiChoGvSua, DaiDaLam, DsViPhamBaoPh, HOAN_TAC_MS, KhoiTraLai, TheChoGv, guiTraLai, hoanTacTraLai, rutTraLai, type TraLaiMo, type ViPhamBaoPh } from '../yThuc/TraLai.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacDu, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { gioVnNay, lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { DaiChiXem, DongTheoDoi, KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
+import { DaiChiXem, DongTheoDoi, HopNho, KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
 import { PhanMeeting, useMeeting } from './PanelMeeting.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
@@ -36,13 +36,15 @@ type ViecBaoPh = {
   tinhHinhId?: number | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[]; ghiChu: string | null; xuLyId?: number | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: ViPhamBaoPh[]; ghiChu: string | null; xuLyId?: number | null };
   thuHoiCho: { lyDo: string | null } | null;
   /** P1 G3-2: lần xử lý còn chờ QL duyệt → ô ② "Chờ QL duyệt" (không "✓" như đã chốt). */
   choQlDuyet: { han: string | null } | null;
   /** HAN-BAO-PH (N34): `han` = hạn hiệu lực; mặc định · đã chọn (null) · sửa được · mỗi lần đổi hạn. */
   hanMacDinh: string; hanChon: string | null; coTheSuaHan: boolean;
   lichSuHan: { cu: string | null; moi: string; macDinh: boolean; nguoi: string | null; luc: string }[];
+  /** TL-1 / TL-2 (N61): "Chờ GV sửa" · yêu cầu trả lại đang mở (một vi phạm / cả lần) · người xem trả lại được (việc còn mở, phía TVV). */
+  measureId: number | null; choGvSua?: boolean; traLai?: TraLaiMo[]; coTheTraLai?: boolean;
 };
 
 /** "0912 345 678" — chỉ để đọc; `tel:` giữ số gốc. */
@@ -80,6 +82,9 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const [daLuu, setDaLuu] = useState<{ kq: KetQuaBaoPh; luc: string; lan: number } | null>(null);
   const [bo, setBo] = useState(false);
   const [dangKp, setDangKp] = useState(false);
+  /* TL-2: dải "✓ Đã trả lại / Đã rút" + Hoàn tác 60 giây (T3a, T3c) · hộp "Trả lại cả lần xử lý" (T2b). */
+  const [vua, setVua] = useState<{ chu: string; het: number; hoanTac: (() => Promise<void>) | null } | null>(null);
+  const [hopCaLan, setHopCaLan] = useState(false);
   const toast = useToast();
   const lf = useLoiForm();
   /* X04 (audit 03/11): MỘT khoá cho mỗi ý định ghi — bấm Lưu lại sau lỗi mạng gửi cùng khoá (máy chủ đã lưu thì không ghi đôi); đổi nội dung → khoá mới. */
@@ -89,11 +94,21 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const tieuDe = laMeeting ? t('Meeting CX/GĐCN') : it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
   /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
+  /* TL-2 (N61, PTA chốt): Trả lại chỉ khi máy chủ cho (việc còn mở, phía TVV) + không đang chờ Head duyệt thu hồi + không mở từ tab theo dõi. */
+  const traLaiDuoc = !!v?.coTheTraLai && !v.thuHoiCho && !chiXem;
+  const dsMo = v?.traLai ?? [];
+  const caLanMo = dsMo.find((y) => y.measureId != null) ?? null;
+  const mucMenu = [
+    ...(traLaiDuoc && !caLanMo && v?.measureId ? [{ key: 'tra-lai', nhan: t('Trả lại cả lần xử lý'), onChon: () => setHopCaLan(true) }] : []),
+    ...(v?.coTheGhi && !bo ? [{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }] : []),
+  ];
   const dau = dauViec({
-    han: v?.coTheGhi && !bo ? <MenuDong nhan={t('Thao tác phụ')} muc={[{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }]} /> : null,
+    han: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} /> : null,
     em, lop: it.classCode,
   });
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
+  /* T3a: thẻ "Chờ GV sửa" cạnh tiêu đề (chữ + nền, không chỉ màu). */
+  if (v?.choGvSua && v.trangThai === 'mo') (dau as { tieu?: ReactNode }).tieu = <>{bacDu(tieuDe)}<TheChoGv /></>;   // cùng chữ khung tự vẽ (`bacDu`)
   if (error) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!v) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
@@ -159,12 +174,50 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     ...phan.flatMap((g) => dongLichSuGiao(g, hn, g.meeting?.ten)),
   ].sort((a, b) => b.luc.localeCompare(a.luc));
   const daiDoi = () => { for (const k of KHOA_BAO_PH) invalidate(k); reload(); onDaLam(); };
+  /* TL-2: sau trả lại / rút / Hoàn tác — panel + khối giao việc (hạn tạm dừng / chạy lại) + danh sách đọc lại. */
+  const sauTraLai = () => { reload(); gv.reload(); onDaLam(); };
+  const traLai = async (body: { violationId: number } | { measureId: number }, lyDo: string) => {
+    const r = await guiTraLai(body, lyDo);
+    sauTraLai();
+    const ten = r.phuTrach.map((x) => x.ten).filter(Boolean).join(', ') || t('GV');
+    setVua({ chu: t('Đã trả lại cho {ten}', { ten }), het: Date.now() + HOAN_TAC_MS, hoanTac: async () => { await hoanTacTraLai(r.id); setVua(null); sauTraLai(); toast.push('ok', t('Đã hoàn tác')); } });
+  };
+  /* T3c: Rút một bấm + Hoàn tác (60 giây). Máy chủ không có "bỏ rút" → Hoàn tác = trả lại lần nữa cùng lý do.
+     ponytail: đó là yêu cầu MỚI (hạn sửa tính từ hôm nay, lịch sử ghi rút rồi trả lại) — thêm đường bỏ rút ở máy chủ nếu chủ SP muốn giữ hạn cũ. */
+  const rut = async (y: TraLaiMo) => {
+    await rutTraLai(y.id);
+    sauTraLai();
+    setVua({ chu: t('Đã rút · hạn Báo PH {ngay} chạy lại', { ngay: shortDate(v.han, hn) }), het: Date.now() + HOAN_TAC_MS, hoanTac: async () => {
+      await guiTraLai(y.violationId ? { violationId: y.violationId } : { measureId: y.measureId! }, y.lyDo); setVua(null); sauTraLai();
+    } });
+  };
   const khoi = gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={daiDoi} gon={laMeeting} anTheoDoi={laMeeting} />;
   return (
     <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
-      quyChe={sua && !bo ? quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null) : null}>
-      <div className="flex flex-col gap-4 pt-4">
+      quyChe={sua && !bo ? (v.choGvSua && v.trangThai === 'mo' ? { chu: t('Hạn tạm dừng khi chờ GV · GV gửi lại → hạn mới 5 ngày') } : quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null)) : null}>
+      <div className="relative flex flex-col gap-4 pt-4">
         {chiXem && gv.g && <DaiChiXem g={gv.g} onBo={onDong} />}
+        {vua && <DaiDaLam chu={vua.chu} het={vua.het} onHet={() => setVua(null)} onHoanTac={vua.hoanTac} />}
+        {dsMo.map((y) => <DaiChoGvSua key={y.id} y={y} hn={hn} onRut={v.coTheTraLai && !chiXem ? () => rut(y) : null}
+          moTa={y.measureId ? t('Cả lần xử lý') : t('1 vi phạm')} />)}
+        {hopCaLan && v.measureId && (
+          <HopNho nhan={t('Trả lại cả lần xử lý')} tren="top-4" onDong={() => setHopCaLan(false)}>
+            <div className="grid">
+              <div className="flex items-start gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+                <div className="grid min-w-0 flex-1 gap-0.5">
+                  <b className="text-[15px] font-bold">{t('Trả lại cả lần xử lý')}</b>
+                  {/* ponytail: tên GVCN = người lưu lần xử lý (thường là GVCN hiện tại); người nhận thật theo luật hiện ở dải sau khi trả. */}
+                  <span className="text-[13px] text-dim">{[bacNgan(v.nhan), v.ten, v.boiCanh.nguoiLuu && t('về GVCN {ten}', { ten: v.boiCanh.nguoiLuu })].filter(Boolean).join(' · ')}</span>
+                </div>
+                <button type="button" className={NUT_DONG} aria-label={t('Đóng')} onClick={() => setHopCaLan(false)}>✕</button>
+              </div>
+              <div className="px-4 py-3">
+                <KhoiTraLai khoa={`ca-lan-${v.measureId}`} nhan={t('Lý do')} goiY={t('Ghi rõ cần GVCN sửa gì — PH sẽ hỏi')} veAi={null} hn={hn} onHuy={() => setHopCaLan(false)}
+                  onGui={async (lyDo) => { await traLai({ measureId: v.measureId! }, lyDo); setHopCaLan(false); }} />
+              </div>
+            </div>
+          </HopNho>
+        )}
         {/* GV-2 (mockup v22 G1 / G8b): khối ba dòng ĐẦU thân panel. Meeting: hai phần (Xếp lịch họp · Kết quả meeting) trước, rồi phần "Báo PH" của TVV. */}
         {laMeeting ? <>
           {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
@@ -193,13 +246,11 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}
+        {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
+        {v.boiCanh.viPham.length > 0 && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
+          onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
-          [t('Vi phạm'), v.boiCanh.viPham.length > 0 ? (
-            <ul className="m-0 list-none space-y-0.5 p-0">
-              {v.boiCanh.viPham.map((x) => <li key={x.id} className="min-w-0"><DongViPham v={x} ngay={shortDate(x.ngay, hn)} /></li>)}
-            </ul>
-          ) : null],
           [t('Ghi chú GVCN'), v.tinhHinhId == null && !laMeeting && v.boiCanh.ghiChu ? <span className="font-normal">
             <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span> : null],
           [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
@@ -273,13 +324,15 @@ function BoViec({ id, onDong, onDaBo }: { id: number; onDong: () => void; onDaBo
  * NHÓM NÚT RADIO (mockup V5 `.lua-chon`, bảng mẫu mục 7): radio thật (↑ ↓ đổi), mục chọn viền + nền nhấn; `disabled` = bước chưa mở.
  * Dùng chung panel Báo PH (Kết quả) và Sau thi (Bước tiếp, Lớp).
  */
-export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo }: {
+export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo, deu }: {
   ten: string; nhan: string; muc: readonly (readonly [K, string])[]; value: K | null; onChange: (k: K) => void; disabled?: boolean;
   /** Chủ SP 18/11 (Bước tiếp #1839) "khung rõ": ô nền surface-2 + viền mạnh, ô đang chọn nền nhấn nhạt. Mặc định giữ kiểu cũ. */
   khungRo?: boolean;
+  /** TL-2 (mockup v22 T4a `.cach.ba` / T8a): các ô đều bề ngang một hàng; < 640 px xếp dọc, mỗi ô ≥ 44 px. */
+  deu?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={nhan}>
+    <div className={deu ? 'grid gap-2 sm:auto-cols-fr sm:grid-flow-col' : 'flex flex-wrap gap-2'} role="radiogroup" aria-label={nhan}>
       {muc.map(([k, chu]) => (
         <label key={k} className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3.5 text-sm max-sm:min-h-[44px] ${disabled ? 'cursor-default' : 'cursor-pointer'} ${value === k ? 'font-semibold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
           style={value === k ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : khungRo ? { borderColor: 'var(--line-strong)', background: 'var(--surface-2)' } : { borderColor: 'var(--o-nhap-vien)' }}>

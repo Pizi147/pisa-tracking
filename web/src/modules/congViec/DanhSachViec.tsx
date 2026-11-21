@@ -1,10 +1,11 @@
+import { TheChoGv } from '../yThuc/TraLai.tsx';
 import { MuiChev } from '../../ui/HangNhom.tsx';
 import { Children, type ReactNode, useEffect, useRef, useState } from 'react';
 import { LOP_DA_LUU, NutHoanTac } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level } from '../../ui/ui.tsx';
-import { CHIP_TRON, ChipHan, Nhan, NhanLich } from '../../ui/Nhan.tsx';
+import { CHIP_TRON, ChipHan, Nhan, NhanChoGv, NhanLich } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -302,8 +303,8 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
         /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "quá hạn 5 ngày" (đỏ) · "hạn hôm nay"
            (vàng viền) · "hạn 23/09" (xám, kể cả sắp hạn — bỏ "còn n ngày"). Dùng `ChipHan vien` (cùng chip đầu panel, Chờ bạn duyệt, Lớp của tôi). */
         : v && it.due ? (it.choGvSua && it.urgency !== 'overdue'
-          /* GV-2 / TL-1: "Chờ GV sửa" — hạn tạm dừng, máy chủ để urgency normal; không tự so ngày ra "quá hạn". */
-          ? <span className="whitespace-nowrap tabular-nums text-dim">{t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })}</span>
+          /* GV-2 / TL-1: "Chờ GV sửa" — hạn tạm dừng, máy chủ để urgency normal; không tự so ngày ra "quá hạn". TL-2 (mockup v22 T3b): chip "tạm dừng" thay ngày. */
+          ? <NhanChoGv title={t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })}>{t('tạm dừng')}</NhanChoGv>
           : <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />)
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
@@ -451,9 +452,10 @@ const DongPhu = ({ nguoi, ds, chip, children }: { nguoi?: ReactNode; ds: readonl
 ) : null;
 };
 /** GV-2 (N58, mockup v22 G1 `.tag.giao`): việc người khác giao cho tôi — thẻ VIỀN "{tên} giao" cuối dòng phụ (khác thẻ nền nhạt em · lớp). */
-const TheGiao = ({ it }: { it: WorkItem }) => (it.giaoBoi ? (
+/* TL-2 (mockup v22 T4a `.tag.giao`): việc "Vi phạm bị trả lại" — cùng thẻ viền "{tên} trả". */
+const TheGiao = ({ it }: { it: WorkItem }) => (it.giaoBoi || it.nguoiTra ? (
   <span className="inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-md border px-1.5 text-xs font-medium leading-[18px] text-dim max-sm:h-[22px]" style={{ borderColor: 'var(--line-strong)' }}>
-    {t('{ten} giao', { ten: it.giaoBoi })}</span>
+    {it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : t('{ten} trả', { ten: it.nguoiTra! })}</span>
 ) : null);
 /* AUDIT-UI B4 (mockup `.viec .t1`): tên dòng 15 / 500. */
 const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug disabled:cursor-default';
@@ -490,7 +492,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           ...phu,
         ]}>
           {!daXong && <TheGiao it={it} />}
-          {tvv && !daXong && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
+          {it.choGvSua && !daXong && <TheChoGv />}
+          {tvv && !daXong && !it.choGvSua && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
         </DongPhu>
       </span></span>
       <CotHan it={it} daXong={daXong} />
@@ -570,13 +573,13 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
  * không khung + tên em là chip TRÒN viền mảnh (≤ 2, không đủ chỗ → 1, còn lại "+n"; tên không bao giờ cắt); hạn cột riêng; MỘT nút động từ. Không điểm,
  * không kỹ năng trượt trong ô; ô cao đều 64 px (375: ba tầng). Chip tên ở dòng gộp mở đúng việc của em đó.
  */
-const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac']);
+const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'yt_tra_lai']);
 /* Chữ qua `t` lúc vẽ (đổi ngôn ngữ không tải lại mô-đun). */
 const tenGon = (g: string): string | null => ({
   yt_xu_ly: t('Xử lý vi phạm'), yt_xem: t('Xem vi phạm mới'), yt_thuc_hien: t('Ghi đã thực hiện'), khai_bac: t('Xác nhận cấp bậc'), phoi_hop_tvv: t('Báo PH · Meeting CX/GĐCN'),
 } as Record<string, string>)[g] ?? null;
 const nutGon = (g: string): string | null => ({
-  yt_xu_ly: t('Xử lý'), yt_xem: t('Xem'), yt_thuc_hien: t('Ghi'), khai_bac: t('Xác nhận'), phoi_hop_tvv: t('Ghi KQ'), phoi_hop_sos: t('Xác nhận'),
+  yt_xu_ly: t('Xử lý'), yt_xem: t('Xem'), yt_thuc_hien: t('Ghi'), khai_bac: t('Xác nhận'), phoi_hop_tvv: t('Ghi KQ'), phoi_hop_sos: t('Xác nhận'), yt_tra_lai: t('Sửa'),
 } as Record<string, string>)[g] ?? null;
 /** ponytail: đo chữ bằng số ký tự (hai tên ≤ 26 ký tự thì hai chip) — đổi sang đo DOM khi cột danh sách đổi bề rộng. */
 const HAI_CHIP_TOI_DA = 26;
@@ -611,7 +614,8 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
             <span className={`min-w-0 font-semibold ${daXong ? 'text-dim line-through' : 'text-[color:var(--text)]'}`}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={ten} ma={dong.theCn?.(it)} /></span>
             {n > 1 && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold tabular-nums text-dim">{t('{n} em', { n })}</span>}
           </button>
-          <span className="flex h-[22px] min-w-0 items-center gap-1.5 overflow-hidden max-sm:h-auto max-sm:flex-wrap max-sm:overflow-visible">
+          {/* TL-2: dòng "Vi phạm bị trả lại" có thẻ "{tên} trả" — xuống dòng thay vì cắt tên (cột hẹp 1280). */}
+          <span className={`flex min-w-0 items-center gap-1.5 ${it.nguoiTra ? 'flex-wrap gap-y-1' : 'h-[22px] overflow-hidden max-sm:h-auto max-sm:flex-wrap max-sm:overflow-visible'}`}>
             {nguoi && !daXong && <span className="mr-1 shrink-0"><NguoiGiu ten={nguoi} /></span>}
             {hien.map((e, i) => (
               <button key={i} type="button" className={`${CHIP} cursor-pointer appearance-none bg-transparent hover:border-[color:var(--accent)] hover:text-[color:var(--text)] ${i ? 'max-sm:hidden' : ''}`}

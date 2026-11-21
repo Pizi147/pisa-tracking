@@ -170,13 +170,18 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       const m = /^(Vi phạm mới|Nhắc nhở|Không xử lý vi phạm) · (.*)$/.exec(n.title ?? '');
       if (m) return { loai: dich(m[1] === 'Không xử lý vi phạm' ? t('GVCN không xử lý') : m[1]), viPham: m[1] !== 'Nhắc nhở', chu: m[2], kq: null };
     }
+    /* TL-2 (mockup v22 T6a): tin trả lại vi phạm — kết quả ("GV đã sửa", "GV đã trả lời"…) / "Vi phạm bị trả lại" là LOẠI tin, nội dung bỏ phần đầu. */
+    if (n.kind === 'tra_lai_vi_pham') {
+      const m = /^(GV đã sửa|GV đã trả lời|GV đã xoá vi phạm|GVCN đã thu hồi|TVV đã rút yêu cầu|TVV đã báo PH|Vi phạm bị trả lại|Lần xử lý bị trả lại) · (.*)$/.exec(n.title ?? '');
+      if (m) return { loai: dich(m[1]), viPham: false, chu: m[2].replace(/^(Vi phạm|Lần xử lý) bị trả lại · /, ''), kq: null };
+    }
     const { kq, chu } = tachTin({ kind: n.kind, title: tit });
     return { loai: loaiTin(n.kind), viPham: false, chu, kq };
   };
   const tin = (n: any, day: boolean, trongGom = false) => {
     const { loai: nhanLoai, viPham, chu, kq } = nhanTin(n);
     const luc = thoiGianThongBao(n.created_at, homNay);
-    const lyDo = n.kind === 'discipline_de_biet' && n.body ? dich(n.body) : null;   // "Không xử lý": lý do hiện đủ ở dòng hai (lời 48)
+    const lyDo = (n.kind === 'discipline_de_biet' || n.kind === 'tra_lai_vi_pham') && n.body ? dich(n.body) : null;   // "Không xử lý" / TL-2 lý do trả lại, trả lời của GV: hiện đủ ở dòng hai (lời 48)
     const doc = `${n.read_at ? '' : t('Chưa đọc: ')}${nhanLoai}${n.lop ? ` · ${n.lop}` : ''}: ${kq ? `${kq.chu} · ` : ''}${chu}${lyDo ? ` · ${lyDo}` : ''}`;
     return (
       <li key={n.id} className="chv-tin-o">

@@ -13,6 +13,10 @@ const BADGE_HAN = 'inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-n
 const MUC_BADGE_HAN = { qua: 'bg-late-bg text-late', gan: 'bg-soon-bg text-soon shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' } as const;
 /** Lớp của badge hạn — cho chỗ cần dáng này trên phần tử khác `span` (badge bấm được `BadgeViec`). */
 export const lopBadgeHan = (muc: keyof typeof MUC_BADGE_HAN) => `${BADGE_HAN} ${MUC_BADGE_HAN[muc]}`;
+/** TL-2 (N61, mockup v22 `.tag.cho-gv`): thẻ nền lam "Chờ GV sửa" / "tạm dừng" — chữ + nền (không chỉ màu), một dáng mọi nơi. */
+export function NhanChoGv({ children, title }: { children: ReactNode; title?: string }) {
+  return <span title={title} className={`${CHIP_TRON} shrink-0 bg-doing-bg text-doing`}>{children}</span>;
+}
 export function BadgeHan({ muc, title, children }: { muc: keyof typeof MUC_BADGE_HAN; title?: string; children: ReactNode }) {
   return <span title={title} className={lopBadgeHan(muc)}>{children}</span>;
 }

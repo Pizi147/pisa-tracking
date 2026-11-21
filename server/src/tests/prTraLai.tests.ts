@@ -405,6 +405,35 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert((await tra(tvvCu, { violationId: vids[1] })).status === 403, 'TVV của em đã hết vai TVV → 403');
     }));
 
+    await checkAsync('TL-24 · (TL-2 giao diện) panel đọc đủ: người ghi / lúc ghi, lý do + người giữ, số vi phạm của lần; nút Trả lại ở chi tiết vi phạm theo vai; tin TVV "GV đã sửa · em · GV" + nội dung, mở đúng panel Báo PH; hạn máy tính lại không là "đã chỉnh"', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid, 2);
+      const tenEm = mot('SELECT full_name FROM students WHERE id = ?', sid).full_name as string;
+      assert((await goi(tvv, 'GET', `/violations/${vids[0]}`)).json.traLai?.coThe === true && (await goi(gvbm, 'GET', `/violations/${vids[0]}`)).json.traLai?.coThe === false, 'chi tiết vi phạm: TVV có, GV không');
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id as number;
+      const ct = (await goi(tvv, 'GET', `/violations/${vids[0]}`)).json.traLai;
+      assert(ct.coThe === false && ct.dangMo?.id === id && ct.dangMo.lyDo === LY_DO && ct.dangMo.nguoiNhan === gvbm.fullName, `đang chờ: ${JSON.stringify(ct)}`);
+      const v = (await goi(tvv, 'GET', `/y-thuc/bao-ph/${bp}`)).json;
+      const x0 = v.boiCanh.viPham.find((x: any) => x.id === vids[0]);
+      assert(x0.nguoiGhi === gvbm.fullName && !!x0.ghiLuc && x0.daSua === false, `vi phạm trong panel: ${JSON.stringify(x0)}`);
+      assert(v.choGvSua && v.traLai.length === 1 && v.traLai[0].lyDo === LY_DO && v.traLai[0].nguoiNhan === gvbm.fullName && !!v.traLai[0].traLuc, `yêu cầu mở: ${JSON.stringify(v.traLai)}`);
+      const xem = (await goi(gvbm, 'GET', `/y-thuc/tra-lai/${id}`)).json;
+      assert(xem.lanXuLy?.soViPham === 2 && /REPORT|Report/.test(xem.lanXuLy.nhan), `lần xử lý: ${JSON.stringify(xem.lanXuLy)}`);
+      conn.prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE id = ?').run(addDays(TODAY, 1), bp);   // hạn đã chỉnh sớm hơn hạn mới → máy tính lại
+      const g = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/gui-lai`, { sua: { ten: 'Nói chuyện riêng lúc cô giảng phần 2' } });
+      assert(g.status === 200, `gửi lại: ${g.status} ${g.json?.error}`);
+      const n = mot('SELECT title, body, duong FROM notifications WHERE dedup_key = ? AND user_id = ?', `tra-lai-kq:${id}`, tvv.userId);
+      assert(n?.title === `GV đã sửa · ${tenEm} · ${gvbm.fullName}` && n.body === 'Nói chuyện riêng lúc cô giảng phần 2' && n.duong === `/cong-viec?viec=${encodeURIComponent(`bao-ph:${bp}`)}`, `tin TVV: ${JSON.stringify(n)}`);
+      const kv = (await goi(tvv, 'GET', `/giao-viec/bao_ph/${bp}`)).json;
+      assert(kv.hanTinhLai === true && kv.lichSu.some((l: any) => l.truong === 'han_tinh_lai') && !kv.tamDung, `hạn máy tính lại: ${JSON.stringify({ t: kv.hanTinhLai, h: kv.han })}`);
+      assert((await goi(tvv, 'GET', `/y-thuc/bao-ph/${bp}`)).json.boiCanh.viPham.find((x: any) => x.id === vids[0]).daSua === true, '"đã sửa" trên dòng vi phạm');
+      const b = await tra(tvv, { violationId: vids[1] });
+      const gn = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${b.json.id}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
+      const n2 = mot('SELECT title, body FROM notifications WHERE dedup_key = ? AND user_id = ?', `tra-lai-kq:${b.json.id}`, tvv.userId);
+      assert(gn.status === 200 && n2?.title === `GV đã trả lời · ${tenEm} · ${gvbm.fullName}` && n2.body === 'Em nói chuyện cả buổi, cô đã nhắc ba lần', `tin trả lời: ${JSON.stringify(n2)}`);
+      conn.prepare("UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?").run(bp);
+      assert((await goi(tvv, 'GET', `/y-thuc/bao-ph/${bp}`)).json.coTheTraLai === false && (await goi(tvv, 'GET', `/violations/${vids[1]}`)).json.traLai.coThe === false, 'Báo PH đã xong → không nút Trả lại');
+    }));
+
     await checkAsync('TL-22 · (rà 4) người nhận hết vai ở chi nhánh → việc về GVCN (chuông, /my-work); người cũ không thấy, không làm được', () => thu(async () => {
       const sid = moiEm(); const { vids } = xuLy(sid);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;

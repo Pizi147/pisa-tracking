@@ -53,6 +53,8 @@ export type WorkItem = {
   choGvSua?: boolean;
   /** GV-2 (N58): việc người khác giao cho tôi — tên người giao (thẻ "{tên} giao"). */
   giaoBoi?: string | null;
+  /** TL-2 (mockup v22 T4a): việc "Vi phạm bị trả lại" — người trả (thẻ "{tên} trả"). */
+  nguoiTra?: string | null;
   /** GV-2: dòng Xếp lịch họp · Kết quả meeting — id hành động Meeting (panel `/phoi-hop-sos/:id/meeting`). */
   phoiHopId?: number;
 };
