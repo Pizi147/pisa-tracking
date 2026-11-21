@@ -8,6 +8,7 @@ import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
+import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien, quaHanBaoPh } from '../../../shared/domain/index.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
@@ -249,6 +250,15 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         ...(nhieu ? [kem('{n} bài', { n: v.soBai! })] : [])],
       kyNang: v.kn ?? null, caseId: null, paId: null, han: v.due, tone: 'info', quaHan: v.urgency === 'overdue', nguoiId: p.userId, nut: 'Nhập điểm',
       mo: v.classId && v.luot ? { loai: 'nhap-diem', classId: v.classId, luot: v.luot, kns: v.kns ?? [], tuanThi: v.tuanThi ?? null, periodId: v.periodId ?? null, kind: v.kind ?? null, soBai: v.soBai ?? null } : { loai: 'duong', href: v.href } });
+  }
+  /* AUDIT-2111 B2-10: "Nhập điểm MT cũ" (`lich-su:{lớp}`, không hạn) có em này — cùng hàm + cùng khoá với Công việc (`mtLichSuChuaNhap`, một câu, chỉ lớp em).
+     Chỉ GVCN của lớp (người giữ ở Công việc); ponytail: lớp chưa có GVCN (QL giữ) không hiện ở đây — cần thêm câu GVCN, `students/:id` QL sát trần. */
+  if (n.lopId && isCoreTeacherOf(p, n.lopId, today)) {
+    for (const l of mtLichSuChuaNhap(p, { classIds: [n.lopId] })) {
+      if (!l.emIds.includes(sid)) continue;
+      ds.push({ key: `lich-su:${l.classId}`, loai: 'nhap-diem', chu: 'Nhập điểm MT cũ', the: l.luot.map((x) => ({ chu: `MT${x.so}` })),
+        kyNang: null, caseId: null, paId: null, han: null, tone: 'info', quaHan: false, nguoiId: p.userId, nut: 'Nhập điểm ›', mo: { loai: 'duong', href: l.href } });
+    }
   }
   for (const v of viecHoiTinhHinhCuaToi(p, { today, tatCa: false, branchId: null, studentId: sid })) {
     const hoi = String(v.due ? addDays(v.due, -2) : '');   // hạn = ngày hỏi + 2 (`hanHoiTinhHinh`)

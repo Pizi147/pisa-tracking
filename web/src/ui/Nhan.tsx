@@ -224,7 +224,8 @@ export function BadgeTabSo({ b }: { b: BadgeTab }) {
   if (b.bai) {
     if (!b.bai.n) return null;
     const chu = b.bai.quaHan ? t('{n} bài, {q} quá hạn', { n: b.bai.n, q: b.bai.quaHan }) : t('{n} bài', { n: b.bai.n });
-    const so = <><span aria-hidden>{b.bai.n}</span><span className="sr-only">{chu}</span></>;
+    /* AUDIT-2111 B2-07 (N63): badge đỏ = số bài QUÁ HẠN (cùng nghĩa "cần làm ngay" như tab khác), tổng bài ở `title`; không quá hạn → viên mờ tổng bài. */
+    const so = <><span aria-hidden>{b.bai.quaHan || b.bai.n}</span><span className="sr-only">{chu}</span></>;
     return b.bai.quaHan ? <span title={chu} className={`${BADGE_TAB} ${BADGE_DO}`}>{so}</span> : <BadgeMo so={so} chu={chu} />;
   }
   if (!b.so) return null;

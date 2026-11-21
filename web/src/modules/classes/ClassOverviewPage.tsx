@@ -21,10 +21,12 @@ import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, xemYThucTheoVai, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, badgeTab, dongTab, laViecChamCheo, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, xemYThucTheoVai, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
 import { ThanhViecLop, duongViecLop, laGvThuan, useViecLop } from './ThanhViecLop.tsx';
+import { moCaDong } from '../congViec/lamTaiCho.ts';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -169,10 +171,13 @@ export default function ClassOverviewPage() {
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "… · quá hạn 2 ngày" (đỏ, V22 không biểu tượng). Không chuông, không việc. */
   /* GD-6 (cấm chữ dài trong tiêu đề — lời 35): đợt + hạn Báo cáo PH ở đầu nội dung tab (TabBaoCaoPh), tab chỉ "Báo cáo PH" + số việc của tôi. */
   const laViec = (viecLop.data?.cuaToi ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((x) => x.classId === data.id);
-  const soTab = (n: number, quaHan: number) => (n <= 0 ? {} : quaHan > 0 ? { badge: { so: n, n, quaHan, homNay: 0 } } : { so: n });
+  /* AUDIT-2111 B2-03: badge tab = `badgeTab` như Công việc (số = cần làm ngay; rê chuột "m quá hạn trong n việc"); không việc gấp → viên mờ n việc. */
+  const soTab = (ds: readonly WorkItem[]) => { if (!ds.length) return {}; const b = badgeTab(ds); return b.so ? { badge: b } : { so: b.n }; };
   const vBc = bcDu && bcDu === bc?.dot ? [] : laViec.filter((x) => x.group === 'bao_cao_ph');
-  const badgeTabLop = (k: TabHoSoLop) => (k === 'y-thuc' ? soTab(data.canhBaoYThuc ?? 0, laViec.filter((x) => tabCuaViec(x) === 'y-thuc' && x.urgency === 'overdue').length)
-    : k === 'bao-cao-ph' ? soTab(vBc.length, vBc.filter((x) => x.urgency === 'overdue').length) : {});
+  /* Ý thức: CÙNG dòng với chip "Ý thức" của dải Việc cần làm (`chipViecLop`: `dongToi` → `dongTab`, gắn lớp) — trước đếm số EM (`canhBaoYThuc`). */
+  const dongYThuc = dongTab((viecLop.data?.dongToi ?? []).filter((x) => !laViecChamCheo(x) && tabCuaViec(x) === 'y-thuc'), moCaDong)
+    .filter((x) => x.classId === data.id || !!x.con?.some((c) => c.classId === data.id));
+  const badgeTabLop = (k: TabHoSoLop) => (k === 'y-thuc' ? soTab(dongYThuc) : k === 'bao-cao-ph' ? soTab(vBc) : {});
   const dong = () => { setViec(null); setOPc(null); };
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */

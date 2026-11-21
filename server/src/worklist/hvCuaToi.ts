@@ -13,7 +13,7 @@ import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
 import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, thangKeTiep } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { boLopCu, can, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { boLopCu, can, laTvvCuaEm, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
 import { thieuThongTinHocVien } from '../classes/hocVienLop.ts';
@@ -160,6 +160,8 @@ export function emCuaTvv(p: Principal, f: { tvv?: number | null } = {}): { tvv: 
     let x = em.get(r.id);
     if (!x) {
       if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) continue;
+      /* AUDIT-2111 (sau #1948): TVV cũ (vai TVV không còn phủ chi nhánh em) không còn em đó trong "em của tôi" — quyền đã nạp ở trên, 0 câu. */
+      if (minh && !laTvvCuaEm(p, { consultant_user_id: tvv, student_id: r.id })) continue;
       x = { id: r.id, ten: r.ten, status: r.status, lop: [] };
       /* Như chip `sap-thi`: dòng đầu của em mang lịch thi; ngày > tuần > tháng. */
       if (r.status !== 'finished' && !r.thi_that_ngay) {

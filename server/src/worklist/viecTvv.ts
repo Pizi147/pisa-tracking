@@ -7,7 +7,7 @@
 import { db, theoLo } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS, nhanLichThi, soSanhLop, trangThaiLichThi } from '../../../shared/domain/index.ts';
-import { can, scopeFor, type Principal } from '../permissions.ts';
+import { can, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { missingForStudent } from '../classes/schedule.ts';
 import type { WorkItem } from './mywork.ts';
@@ -17,7 +17,8 @@ import type { WorkItem } from './mywork.ts';
  * em có TVV khác: QL xem "Của GV" (`tatCa`) thấy việc của TVV đó, còn lại không thấy. GV / GVCN không bao giờ giữ.
  */
 export function chuViecTvv(p: Principal, studentId: number, tvv: number | null, tatCa = false, branchId?: number | null): { ownerId: number | null; mine: boolean } | null {
-  if (tvv === p.userId) return { ownerId: p.userId, mine: true };
+  /* AUDIT-2111 (sau #1948): TVV của em chỉ giữ việc khi vai TVV còn phủ chi nhánh em (`laTvvCuaEm`) — TVV cũ đã chuyển chi nhánh thì không. */
+  if (laTvvCuaEm(p, { consultant_user_id: tvv, student_id: studentId, em_branch: branchId })) return { ownerId: p.userId, mine: true };
   if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return null;
   if (!tvv) return giuViecQl(p)(branchId !== undefined ? branchId : () => chiNhanhCuaEm(studentId)) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
   return tatCa ? { ownerId: tvv, mine: false } : null;
@@ -32,7 +33,7 @@ export function nguoiGiuTvv(p: Principal, today: string): (branchId: number | nu
   const ql = (b: number | null) => pv.all || (b !== null && pv.branchIds.includes(b));
   const giu = giuViecQl(p);
   return (branchId, tvv, tatCa = false) => {
-    if (tvv === p.userId) return { ownerId: p.userId, mine: true };
+    if (laTvvCuaEm(p, { consultant_user_id: tvv, student_id: 0, em_branch: branchId })) return { ownerId: p.userId, mine: true };   // chi nhánh em đã biết → không đọc
     if (!ql(branchId)) return null;
     if (!tvv) return giu(branchId) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
     return tatCa ? { ownerId: tvv, mine: false } : null;

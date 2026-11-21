@@ -73,10 +73,11 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     XLSX.writeFile(wb, `y-thuc-${ngay(demoDate).split('/').join('-')}.xlsx`);
   }
 
-  const soVoi = (x: DongLopViPham) => {
+  const soVoi = (x: Pick<DongLopViPham, 'soVoiTruoc'>) => {
     const v = nhanSoVoiTruoc(x.soVoiTruoc);
     return <span className={`font-semibold tabular-nums ${MAU_SO_VOI_TRUOC[v.tone]}`}>{v.chu}</span>;
   };
+  const gomSoVoi = { soVoiTruoc: (data?.gom?.hang ?? []).reduce((s, x) => s + (x.soVoiTruoc ?? 0), 0) };
   const oLop = (x: DongLopViPham, con: boolean) => (
     <>
       <td className="text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.nhan })} /></td>
@@ -248,7 +249,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                         <>
                           <button type="button" aria-expanded={mo.has('gom')} onClick={() => doiMo('gom')}
                             className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 border-0 border-t border-[color:var(--line)] bg-transparent px-3 py-2 text-left text-[13px] text-[color:var(--text-dim)]">
-                            {t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}<span aria-hidden className="ml-auto">{mo.has('gom') ? '▴' : '▾'}</span>
+                            {t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}<span className="ml-auto">{soVoi(gomSoVoi)}</span><span aria-hidden>{mo.has('gom') ? '▴' : '▾'}</span>
                           </button>
                           {mo.has('gom') && data.gom.hang.map(theLop)}
                         </>
@@ -276,8 +277,11 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                         ))}
                         {data.gom && (
                           <Fragment>
-                            <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('lớp khác')} soCotDau={6} className={`${DINH_TRAI} [&>td]:h-11`}
-                              tieuDe={<span className="block truncate text-slate-300">{t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}</span>} />
+                            <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('lớp khác')} soCotDau={4} className={`${DINH_TRAI} [&>td]:h-11`}
+                              tieuDe={<span className="block truncate text-slate-300">{t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}</span>}>
+                              {/* AUDIT-2111 B2-05: dòng gộp có ± (Σ các lớp gộp) — cộng cột ± ra đúng thẻ "so kỳ trước". */}
+                              <td className="text-center">{soVoi(gomSoVoi)}</td><td />
+                            </HangNhom>
                             {mo.has('gom') && data.gom.hang.map((x) => (
                               <HangCon key={x.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}><td>{tenLopCell(x)}</td>{oLop(x, false)}</HangCon>
                             ))}

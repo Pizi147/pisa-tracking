@@ -197,8 +197,8 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   const meetingSvc: any = await import('../worklist/meeting.ts');
   const dcs: any = await import('../ops/doiChieuSo.ts');
 
-  /* VH-2 (N59): CX có bảng Vận hành (nav `vanHanh`) như Head → việc không hạng mục ở bảng, không lặp ở /my-work; việc tay CÓ hạng mục vẫn trong đúng mục (N62). */
-  await checkAsync('VH1-10 (PTA 1 → VH-2) · CX thuần + CX kèm GV có bảng Vận hành: việc không hạng mục không lặp ở /my-work, việc có hạng mục vẫn hiện; Head vẫn không lặp', () => thu(async () => {
+  /* VH-2 (N59) → N63 ③: CX / Head có bảng Vận hành VÀ nhận mọi việc giao cho chính mình ở /my-work (Việc được giao); việc mình giao người khác không vào /my-work của mình. */
+  await checkAsync('VH1-10 (PTA 1 → VH-2) · CX thuần + CX kèm GV có bảng Vận hành: việc giao cho mình (có / không hạng mục) ở /my-work; việc mình giao người khác thì không (N63 ③)', () => thu(async () => {
     const { navOf } = await import('../platform/nav.ts');
     const cxGv = loadPrincipal(accounts.createAccount(P.admin, { email: `vanhanh.cxgv.${++soTk}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-vanhanh-cxgv', fullName: 'VANHANH CXGV',
       roles: [{ role: 'cx', branches: ['MB'] }, { role: 'teacher', branches: ['MB'] }] }).userId as number);
@@ -207,10 +207,12 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     xoaNho();
     assert((navOf(loadPrincipal(cx.userId) as any) as any).vanHanh && (navOf(cxGv as any) as any).vanHanh, 'CX có bảng Vận hành (nav.vanHanh)');
     const viecCx = (myWork(loadPrincipal(cx.userId) as any) as any).items ?? [];   // không việc nào → máy chủ trả không có `items`
-    assert(!viecCx.some((x: any) => x.key === `mgmt:${a.id}`) && viecCx.some((x: any) => x.key === `mgmt:${am.id}`), 'CX thuần: không lặp việc ở bảng, việc có hạng mục vẫn hiện');
-    assert(!((myWork(loadPrincipal(cxGv.userId) as any) as any).items ?? []).some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV: việc ở bảng');
+    assert(viecCx.some((x: any) => x.key === `mgmt:${a.id}`) && viecCx.some((x: any) => x.key === `mgmt:${am.id}`), 'CX thuần: việc giao cho mình (có / không hạng mục)');
+    assert(((myWork(loadPrincipal(cxGv.userId) as any) as any).items ?? []).some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV: việc giao cho mình');
     const c = tao(cx, { assigneeUserId: ql.userId });
-    assert(!(myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${c.id}`), 'Head không lặp (thấy ở bảng)');
+    assert((myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${c.id}`), 'Head: việc CX giao cho mình');
+    assert(!(myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${a.id}`), 'Head: việc mình giao CX không vào /my-work của mình');
+    assert(!(myWork(ql, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `mgmt:${c.id}`).slice(1).length, 'Head Tất cả: không hai dòng');
   }));
 
   await checkAsync('VH1-11 (PTA 2) · web cũ: thân PATCH như MgmtTasksPage — nhóm không đổi ngầm, MỘT người theo dõi = thay đúng người đó (null = bỏ), người khác giữ', () => thu(async () => {

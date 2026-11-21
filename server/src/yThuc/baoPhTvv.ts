@@ -519,7 +519,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     let ownerId: number | null;
     /* GV-1 (N58): việc đã giao rời danh sách người theo luật — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" của QL thấy tên người được giao. */
     if (r.phu_trach_id != null) { if (!o.tatCa || r.phu_trach_id === p.userId || !trongPv(r.branch_id)) continue; ownerId = r.phu_trach_id; }
-    else if (r.tvv === p.userId) ownerId = p.userId;
+    else if (laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: r.branch_id ?? null })) ownerId = p.userId;   // TVV cũ (đổi chi nhánh) không giữ — 0 câu
     else if (r.phoi_hop_id != null && !r.tvv && r.gvcn_id) {
       /* PHOI-HOP-V2: em chưa có TVV — GVCN giữ; QL "Tất cả" thấy dòng của GVCN đó. */
       if (r.gvcn_id === p.userId) ownerId = p.userId;

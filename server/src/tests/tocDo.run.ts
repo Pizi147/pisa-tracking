@@ -1537,10 +1537,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        8 băm vai khác giữ nguyên. Trước: QT toi e6ce92ac5383842d, QT tat-ca 48f85bbf269d190a, QT tat-ca cn 74fce9d8e33ac72f */
     /* HOC-TIEP (N51, 18/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý: gợi ý nhóm việc "Chọn bước tiếp" nói 3 hướng (Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới).
        Đã kiểm (trước HEAD / DEM-VIEC): trả chữ gợi ý cũ → mọi băm trùng ảnh cũ. Trước: QT tat-ca 0b4978eb4ee4b434 */
-    'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
+    /* SO-LIEU-4 (N63 ③, AUDIT-2111 B2-02): chụp lại 'QL toi' / 'QL tat-ca' — đổi CÓ CHỦ Ý: việc Vận hành KHÔNG hạng mục giao cho chính Head nay vào /my-work
+       (Việc được giao, +3 dòng `mgmt:` của seed; câu giữ 34 / 51). Trước: QL toi bae55443ea652c0f, QL tat-ca 22a8a1f30e44bec6 */
+    'QL toi': '71b11266cf6b5ad1', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': 'aae3d57d2cc9e595',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '4d85cbb2cd43b54f', 'QT tat-ca': 'aae3d57d2cc9e595',
     'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

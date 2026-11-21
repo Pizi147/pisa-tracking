@@ -6,7 +6,7 @@ import { DemViecPanel } from '../../ui/KhungPanel.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop } from '../congViec/LopCuaToi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { NHAN_LOAI_VIEC, laViecChamCheo, viecLopTuDong } from '@shared/domain/index.ts';
+import { NHAN_LOAI_VIEC, laViecChamCheo, tabCuaViec, viecLopTuDong } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { moCaDong } from '../congViec/lamTaiCho.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -16,7 +16,7 @@ const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').th
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
  * P1 G2-03: `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (dòng gộp "Cả lớp" = 1, không kèm `con`) — dải vẽ ô + đếm từ đây, cùng số `demDongViec`.
  * LOP-1-LOP: `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp (cùng lần `myWork`, cùng `demDongViec` — S11 đếm dòng); `null` = vai không có badge (TVV / CX / Admin). */
-export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; dongToi: WorkItem[]; soQuaHanLop: number | null };
+export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; dongToi: WorkItem[]; soQuaHanLop: number | null; /** B2-08: ô "Chờ chấm · n việc" (QL). */ soChoChamLop?: number | null };
 export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em?chi=toi`;
 
 /** Tài khoản CHỈ là GV (GV / Head tutor, không kiêm QL, Quản trị, Admin, TVV, CX) — máy chủ đi nhánh "việc của mình" (`viecTheoEmCuaLop`). */
@@ -52,7 +52,10 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
   const [mo, setMo] = useState<{ ds: WorkItem[]; i: number; nhan: string } | null>(null);
   const [nhapDiem, setNhapDiem] = useState(false);
   /* AUDIT-1611 P1-01: chip đếm trên DÒNG (`dongToi`, giữ `con`) như "Lớp của tôi" — cùng số ở Công việc, hồ sơ lớp, HV & Lớp. */
-  const chip = chipViecLop(data?.dongToi ?? [], classId, moCaDong);
+  /* AUDIT-2111 B2-03: chip Nhập điểm đếm BÀI (15/11) — rê chuột ghi thêm số VIỆC (cùng đơn vị "n việc" của dải) để cộng các chip không lệch đầu dải. */
+  const viecNd = (data?.dongToi ?? []).filter((x) => !laViecChamCheo(x) && tabCuaViec(x) === 'cham-diem').length;
+  const chip = chipViecLop(data?.dongToi ?? [], classId, moCaDong)
+    .map((c) => (c.tab === 'cham-diem' ? { ...c, doc: t('{b} bài · {v} việc', { b: c.so, v: viecNd }) } : c));
   const daLam = () => { invalidate('/my-work'); reload(); onDoi(); };
   const conKhoa = new Set((data?.cuaToi ?? []).map((x) => x.key));
   const keTiep = mo ? mo.ds.findIndex((x, k) => k > mo.i && conKhoa.has(x.key)) : -1;

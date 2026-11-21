@@ -602,7 +602,7 @@ export const TRAN: Record<string, number> = {
   'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,
   /* GD-7a (XM-10): hồ sơ HV thêm Nhập điểm + Trả lời tình hình của người xem (listAttempts theo em + câu tình hình): đo 66 / 66 / 74 / 72 câu → đo + 10. */
   /* AU-VIEC P1-04: thanh việc hồ sơ HV + Phối hợp SOS (1 câu) + Báo PH của em (1 câu, chỉ người giữ được — QL / TVV / GVCN): đo QL 66 → 68 · GVCN 74 → 76, trần giữ. */
-  'QL /students/{hv}': 76, 'QT /students/{hv}': 76, 'GVCN /students/{hv}': 84, 'GVBM /students/{hv}': 82,
+  'QL /students/{hv}': 76, 'QT /students/{hv}': 76, 'GVCN /students/{hv}': 84, 'GVBM /students/{hv}': 82,   // SO-LIEU-4 B2-10: GVCN +1 câu (MT cũ của lớp em, chỉ GVCN) đo 77 → 78, trần giữ
   /* GD-5 (ô chọn có tìm `ChonNguoi`): `/ref/nguoi` đo 3 câu mọi vai (chưa gõ / gõ / GV Speaking) — trần 25 câu / lần gõ (plan GD-5). */
   'QL /ref/nguoi?nhom=nhan_vien': 25, 'GVCN /ref/nguoi?nhom=nhan_vien': 25, 'GVBM /ref/nguoi?nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 25, 'QT /ref/nguoi?nhom=nhan_vien': 25,
   'QL /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 25,

@@ -99,7 +99,7 @@ export function HoSoGiaoVienPage() {
   const lopCn = data.lop.filter((l) => l.laGvcn);
   /* Badge tab Việc & Case = số việc quá hạn của "Việc đang tồn" (cùng GET): đỏ khi là việc của người xem, mờ khi xem người khác (H4 — đỏ chỉ cho việc của mình). */
   const dsViec = viec.data?.viec ?? [];
-  const quaHan = dsViec.reduce((a, x) => a + x.quaHan, 0);
+  const quaHan = dsViec.reduce((a, x) => a + x.quaHan, 0), tongViec = dsViec.reduce((a, x) => a + x.n, 0);   // AUDIT-2111 A1-02: rê chuột "m quá hạn trong {tổng} việc"
   const doiViec = () => { reload(); viec.reload(); };
   return (
     <div className="hsgv space-y-4">
@@ -156,7 +156,7 @@ export function HoSoGiaoVienPage() {
             { key: 'lop', label: t('Lớp'), so: data.lop.length },
             { key: 'hoc-thuat', label: t('Học thuật') },
             gv.laChinhMinh
-              ? { key: 'viec', label: t('Việc & Case'), badge: quaHan ? { so: quaHan, n: quaHan, quaHan, homNay: 0 } : null }
+              ? { key: 'viec', label: t('Việc & Case'), badge: quaHan ? { so: quaHan, n: tongViec, quaHan, homNay: 0 } : null }
               : { key: 'viec', label: t('Việc & Case'), so: quaHan },
           ]} />
         <div id="hsgv-vung" role="tabpanel" aria-label={tab === 'lop' ? t('Lớp') : tab === 'hoc-thuat' ? t('Học thuật') : t('Việc & Case')} className="space-y-4 pt-4">

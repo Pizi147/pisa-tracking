@@ -147,6 +147,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const bGoc = badgeLop({
     vai: laQl ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
+    soViecChoCham: laQl ? viec.data?.soChoChamLop ?? null : null,   // AUDIT-2111 B2-08: ô QL đếm việc như trang đích
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     /* GD-6 (XM-2, PTA 14/11): GV không có badge "n việc quá hạn của lớp" — máy chủ đếm việc của chính GV, trùng chip đỏ của Việc cần làm; QL giữ (cả lớp). */
     phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soViecQuaHan: laVaiQuanLy(session?.roles) ? soViecQuaHan : 0,

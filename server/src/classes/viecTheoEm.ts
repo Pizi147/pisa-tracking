@@ -5,7 +5,7 @@
  * Nguồn: QL / Admin = "Tất cả trong phạm vi" (`phamViXemViec`); GV = CHỈ việc của mình (`mine` — P11 VIEC-DUNG-VAI, chủ SP 24/10 mục 6.1);
  * vai không có khu Công việc (TVV / CX) chỉ nhóm việc của TVV của chính mình — như Tổng quan TVV.
  */
-import { PERMISSIONS, demDongViec, dongNhinThay, gopViecTheoLop, laViecChamCheo, laVaiQuanLy, vaiXemHocVien, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, demDongViec, dongNhinThay, gopViecTheoLop, laViecChamCheo, laVaiQuanLy, tabCuaViec, vaiXemHocVien, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, coVaiCx, require_, type Principal } from '../permissions.ts';
@@ -29,11 +29,13 @@ export const viecLopDayDuKhiKiem = { bat: false };
  * `cuaLop` không mất việc nào; mọi khối khác của `myWork` y như cũ. `chiToi` (`?chi=toi`, web chỉ đọc `cuaToi`) → `theoEm = {}`.
  * `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp — dòng việc quá hạn gắn lớp (`demDongViec`, S11), trên `items` của `myWork` trước lọc;
  * GV chỉ `mine`); vai không có badge `qua-han` (TVV / CX / Admin — `badgeHienTheoVai`) → `null`.
+ * AUDIT-2111 B2-08: `soChoChamLop` (chỉ QL) = ô "Chờ chấm · n việc ›" — DÒNG tab Chấm điểm gắn lớp (bỏ chấm chéo), cùng `demDongViec` với trang đích
+ * Công việc › Tất cả › Chấm điểm lớp; `null` = vai khác (ô giữ số bài, đích Lịch Test). Cùng `w`, 0 câu.
  * P1 G2-03 (rà 11/11): `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (`gopViecTheoLop` → `dongNhinThay`, bỏ chấm chéo; dòng gộp kèm `con` — AUDIT-1611 P1-01) —
  * dải "Việc của tôi" vẽ ô + đếm từ đây nên số = `demDongViec` ("Cả lớp" = 1), không lớn hơn số tổng của Công việc. Không thêm câu.
  */
 export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: boolean } = {}):
-  { theoEm: Record<number, ViecEmLop[]>; cuaToi: ViecEmLop[]; dongToi: ViecEmLop[]; soQuaHanLop: number | null } {
+  { theoEm: Record<number, ViecEmLop[]>; cuaToi: ViecEmLop[]; dongToi: ViecEmLop[]; soQuaHanLop: number | null; soChoChamLop: number | null } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
   const lop = conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as { branch_id: number | null } | undefined;
@@ -41,7 +43,7 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   const theoEm: Record<number, ViecEmLop[]> = {};
   const ql = laVaiQuanLy(p.roleKeys), coBadge = ql || vaiXemHocVien(p.roleKeys) === null;
   /* Lớp không em vẫn có badge (việc cấp lớp) — trước PR web đọc `/my-work` bất kể sĩ số. */
-  if (!lop || (!em.size && !coBadge)) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop: coBadge ? 0 : null };
+  if (!lop || (!em.size && !coBadge)) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop: coBadge ? 0 : null, soChoChamLop: ql ? 0 : null };
   const f = { branchId: lop.branch_id ?? undefined, ...(viecLopDayDuKhiKiem.bat ? {} : { classIds: [classId], chiLop: classId }) };   // TD-VIEC: `chiLop` — các khối khác cũng đọc một lớp
   const cuaLop = (it: WorkItem) => it.studentId !== null && em.has(it.studentId) && (it.classId === null || it.classId === classId);
   /* P1 G5-01: "Chốt lộ trình" (việc QL) đã có dải riêng ở đầu hồ sơ lớp (`DaiChuyenLop`, nút Cuối khoá ›) — không thêm ô trùng ở "Việc của tôi". */
@@ -55,7 +57,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   else w = itemsCua(myWork(p, f)).filter((it) => it.mine);
   /* S11 (chủ SP 05/11): đếm DÒNG việc như Công việc (`demDongViec` trên dòng gộp của chính các việc đó — "Cả lớp" = 1). */
   const soQuaHanLop = coBadge ? demDongViec(gopViecTheoLop(w.filter((it) => it.urgency === 'overdue' && it.classId === classId && (ql || it.mine)), nhanNhomViec)).n : null;
-  if (!em.size) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop };
+  const soChoChamLop = ql ? demDongViec(gopViecTheoLop(w.filter((it) => it.classId === classId && !laViecChamCheo(it) && tabCuaViec(it) === 'cham-diem'), nhanNhomViec)).n : null;
+  if (!em.size) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop, soChoChamLop };
   const items = w.filter(cuaLop), lopToi = w.filter(capLop);
   /* `sort` ổn định: trong mỗi phần giữ thứ tự của Công việc (quá hạn → hôm nay → hạn sớm). */
   const hang = (it: WorkItem) => ({ overdue: 0, today: 1, normal: 2 })[it.urgency] ?? 2;
@@ -66,7 +69,7 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   /* AUDIT-1611 P1-01: dòng gộp GIỮ `con` (lá đã gọn) — chip dải đếm DÒNG như "Lớp của tôi" (`chipViecLop` trên dòng), panel vẫn đi từng em "i / n". */
   const dongToi = dongNhinThay(gopViecTheoLop(toi, nhanNhomViec)).filter((d) => !laViecChamCheo(d))
     .map((d) => { const { emIds: _e, con, ...x } = d as WorkItem; return (con?.length ? { ...x, con: con.map(gon) } : x) as ViecEmLop; });
-  return { theoEm, cuaToi: toi.map(gon), dongToi, soQuaHanLop };
+  return { theoEm, cuaToi: toi.map(gon), dongToi, soQuaHanLop, soChoChamLop };
 }
 
 /**

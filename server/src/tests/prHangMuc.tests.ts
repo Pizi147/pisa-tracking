@@ -213,19 +213,19 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(mot('SELECT class_id FROM tasks WHERE id = ?', tt).class_id === lop, 'lớp của teacher_task giữ');
   }));
 
-  await checkAsync('VH1b-8 (PTA 3, 4, 8) · hai việc tay cùng lớp không gộp; Head nhận việc có hạng mục (không hạng mục: chỉ bảng); đếm nhóm một nguồn; TVV phoi-hop / tinh-hinh ở tab Báo PH', () => thu(async () => {
+  await checkAsync('VH1b-8 (PTA 3, 4, 8) · hai việc tay cùng lớp không gộp; Head nhận MỌI việc giao cho mình (N63 ③); đếm nhóm một nguồn; TVV phoi-hop / tinh-hinh ở tab Báo PH', () => thu(async () => {
     const a = tao(ql, { hangMuc: 'bao-ph', classId: lop, assigneeUserId: gvcn.userId });
     const b = tao(ql, { hangMuc: 'tinh-hinh', classId: lop, assigneeUserId: gvcn.userId });
     xoaNho();
     const ds = ((myWork(gvcn) as any).items as any[]).filter((x) => x.key === `mgmt:${a.id}` || x.key === `mgmt:${b.id}`);
     const dong = d.gopViecTheoLop(ds, (g: string) => g);
     assert(dong.length === 2 && dong.every((x: any) => !x.key.startsWith('gop:')), `không gộp: ${JSON.stringify(dong.map((x: any) => x.key))}`);
-    /* Head: có hạng mục → có dòng; không hạng mục → không. */
+    /* N63 ③: Head nhận cả việc không hạng mục (Việc được giao). */
     const qlCo = tao(cx, { hangMuc: 'sau-thi', assigneeUserId: ql.userId });
     const qlKhong = tao(cx, { assigneeUserId: ql.userId });
     xoaNho();
     const cuaQl = (myWork(ql) as any).items as any[];
-    assert(cuaQl.some((x) => x.key === `mgmt:${qlCo.id}`) && !cuaQl.some((x) => x.key === `mgmt:${qlKhong.id}`), 'Head: chỉ việc có hạng mục');
+    assert(cuaQl.some((x) => x.key === `mgmt:${qlCo.id}`) && cuaQl.some((x) => x.key === `mgmt:${qlKhong.id}`), 'Head: việc có + không hạng mục');
     /* Đếm nhóm (hồ sơ GV) = tab. */
     const x = ds.find((i) => i.key === `mgmt:${a.id}`);
     assert(d.demViecTheoNhom([x]).find((g: any) => g.n === 1)?.nhom === d.tabCuaViec(x), 'hồ sơ GV đếm cùng nhóm với tab');
