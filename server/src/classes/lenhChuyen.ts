@@ -100,7 +100,7 @@ export function raLenh(p: Principal, v: {
     const daCo = new Map<number, any>();
     theoLo(dongs.map((d) => d.studentId), (lo, ph) => {
       for (const r of conn.prepare(
-        `SELECT student_id, lop_nguon_id, lop_dich_id, tuan_bat_dau, huong, reset_bac FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
+        `SELECT student_id, lop_nguon_id, lop_dich_id, tuan_bat_dau, huong, reset_bac, boi_canh, nguoi_ra_lenh FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
       ).all(...lo) as any[]) daCo.set(r.student_id, r);
     });
     /* Lớp chuyển đến đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
@@ -163,6 +163,8 @@ export function raLenh(p: Principal, v: {
       }
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
+      /* N63 ① (rà PTA #1950 vòng 2): không ghi đè quyết định Cuối khoá của Head (CX) — một em: 403; lô: dòng lỗi. Kiểm TRƯỚC khi ghi. */
+      if (cu && khoaLenhNguoiKhac(p, cu)) { if (dongs.length === 1) throw forbidden(LOI_LENH_HEAD); loi(LOI_LENH_HEAD); continue; }
       const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);
       /* LCa-2 (Q2): Lên FT từ lớp thường không gửi Target → Target LTT → khoá (KCK giữ) — TRƯỚC khi kiểm; không có thì vẫn báo như cũ. */
       if (!nguonFt && d.huong === 'fast_track' && d.mucTieu == null) {
@@ -341,8 +343,13 @@ function docLenh(id: number): any {
  * Q6 + PR-S5F-a: sửa / huỷ khi lệnh còn `cho`. Lệnh đã tới tuần mà còn `cho` là lệnh CHƯA chuyển được (lớp chuyển đến bị kết thúc, lệch luật…) —
  * Quản lý phải huỷ được hoặc sửa sang tuần mới, không để kẹt. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ).
  */
-/** N63 ① (rà PTA #1950): sửa / huỷ / khôi phục quyết định Cuối khoá = chốt lộ trình — CX không (`coTheChotLoTrinh`); lệnh giữa khoá giữ `class.edit`. */
-const quyenLenh = (p: Principal, l: any): boolean => (l.boi_canh === 'cuoi-khoa' ? coTheChotLoTrinh(p, l.lop_nguon_id) : can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }));
+/**
+ * N63 ① (rà PTA #1950 vòng 2): quyết định Cuối khoá do NGƯỜI KHÁC ra (Head chốt) = chốt lộ trình — CX không sửa / huỷ / khôi phục / ghi đè (`coTheChotLoTrinh`).
+ * Lệnh CX tự ra (chuyển lớp lẻ, kể cả sát Final → `boi_canh = 'cuoi-khoa'`) và lệnh giữa khoá: `class.edit` như cũ (không khoá cứng lệnh của chính mình).
+ */
+const khoaLenhNguoiKhac = (p: Principal, l: any): boolean => l.boi_canh === 'cuoi-khoa' && l.nguoi_ra_lenh !== p.userId && !coTheChotLoTrinh(p, l.lop_nguon_id);
+const quyenLenh = (p: Principal, l: any): boolean => !khoaLenhNguoiKhac(p, l) && can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id });
+const LOI_LENH_HEAD = 'Em đã có quyết định lộ trình do Head chốt — nhờ Head sửa hoặc huỷ.';
 
 function kiemConSuaDuoc(l: any) {
   if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Quyết định chuyển lớp đã được huỷ.' : 'Quyết định chuyển lớp vừa được thi hành.');
@@ -351,7 +358,7 @@ function kiemConSuaDuoc(l: any) {
 export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
-  if (!quyenLenh(p, l)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
+  if (!quyenLenh(p, l)) throw forbidden(LOI_LENH_HEAD);
   kiemConSuaDuoc(l);
   const gop: DongLenhVao = {
     studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
@@ -392,7 +399,7 @@ function huyMotLenh(p: Principal, l: any, why: string | null): void {
 export function huyLenh(p: Principal, id: number, lyDo?: string | null): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
-  if (!quyenLenh(p, l)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
+  if (!quyenLenh(p, l)) throw forbidden(LOI_LENH_HEAD);
   /* #8 (G4-08, chủ SP 11/11): huỷ là một bấm + Hoàn tác — lý do không bắt buộc (có thì ghi vào nhật ký / chuông). */
   const why = String(lyDo ?? '').trim().slice(0, 2000) || null;
   kiemConSuaDuoc(l);

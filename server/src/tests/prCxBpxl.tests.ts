@@ -107,7 +107,7 @@ export async function runPrCxBpxlTests(t: any) {
     assert(ma(() => htcn.hoanTacChuyenNgay(cx, sid, dao2, 'students')) === null && tt() === 'active', 'CX Hoàn tác chuyển lớp một em (N52) giữ');
   }));
 
-  check('N63 ① (rà PTA #1950) · CX ra lệnh chuyển lớp lẻ thật (giữa khoá) được; sửa / huỷ / huỷ nhiều / khôi phục lệnh Cuối khoá 403, lệnh không đổi; Head huỷ được', () => thu(() => {
+  check('N63 ① (rà PTA #1950) · CX ra lệnh chuyển lớp lẻ thật (giữa khoá) được; ghi đè / sửa / huỷ / huỷ nhiều / khôi phục lệnh Cuối khoá của Head 403, lệnh không đổi; lệnh CX tự ra sửa / huỷ / khôi phục được; Head huỷ được', () => thu(() => {
     const ft = lop;
     const a = moiEm(ft).sid;
     const tuan = llt.xemChuyenLop(P.mbManager, a).tuanChon[1];
@@ -122,7 +122,18 @@ export async function runPrCxBpxlTests(t: any) {
     assert(ma(() => lenh.suaLenh(cx, ck, { huong: 'len_lop' })) === 403, 'CX sửa lệnh Cuối khoá 403');
     assert(ma(() => lenh.huyLenh(cx, ck)) === 403, 'CX huỷ lệnh Cuối khoá 403');
     assert(ma(() => lenh.huyNhieuLenh(cx, [ck], null)) === 403, 'CX huỷ nhiều lệnh Cuối khoá 403');
+    /* Vòng 2: ghi đè lệnh Cuối khoá của Head qua đường ra lệnh một em → 403, lệnh không đổi. */
+    assert(ma(() => lenh.raLenh(cx, { lopNguonId: lopThuong, boiCanh: 'cuoi-khoa', tuanChung: tuan, dongs: [lenh.dongTuBody({ studentId: b, huong: 'bao_luu', lyDo: 'CX ghi đè' })] })) === 403, 'CX ghi đè lệnh Cuối khoá của Head 403');
     assert(anh() === truoc, `lệnh đổi: ${truoc} → ${anh()}`);
+    /* Vòng 2: lệnh Cuối khoá CX TỰ ra (chuyển lẻ sát Final) — CX sửa / huỷ / khôi phục được (không khoá cứng lệnh của chính mình). */
+    const { sid: c } = moiEm(lopThuong);
+    const cua = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, ngay_xem_lai, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+        VALUES (?, ?, 'bao_luu', 'cuoi-khoa', ?, ?, ?, ?, 'cho', ?)`).run(c, lopThuong, tuan, addDays(TODAY, 60), cx.userId, TODAY, new Date().toISOString()).lastInsertRowid);
+    const loiSua = (() => { try { lenh.suaLenh(cx, cua, { lyDo: 'CX sửa lý do' }); return null; } catch (e: any) { return `${e?.status} ${e?.message}`; } })();
+    assert(loiSua === null, `CX sửa lệnh của mình: ${loiSua}`);
+    assert(ma(() => lenh.huyLenh(cx, cua)) === null && one('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', cua).trang_thai === 'huy', 'CX huỷ lệnh của mình');
+    const kp0 = lenh.khoiPhucLenh(cx, [cua]);
+    assert(kp0.ok.includes(cua), `CX khôi phục lệnh của mình: ${JSON.stringify(kp0)}`);
     lenh.huyLenh(P.mbManager, ck);
     assert(ma(() => lenh.khoiPhucLenh(cx, [ck])) === 403 && one('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', ck).trang_thai === 'huy', 'CX khôi phục lệnh Cuối khoá 403');
   }));

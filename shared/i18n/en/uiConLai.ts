@@ -27,6 +27,7 @@ export const EN_UI_CON_LAI = {
   'Điểm {skills}': 'Scores {skills}',
   'Điểm · {tuan}': 'Scores · {tuan}',
   'Sửa lịch lớp': 'Edit class schedule',   // B3-15: Kế hoạch Test › lớp thường
+  'Em đã có quyết định lộ trình do Head chốt — nhờ Head sửa hoặc huỷ.': 'This student already has a next-step decision confirmed by a Head — ask the Head to change or cancel it.',   // N63 ①
   'Chỉ Head / Quản trị chốt lộ trình của lớp.': "Only Heads / system admins can confirm the class's next steps.",   // N63 ①: CX chỉ xem Cuối khoá
   'Không thấy': 'Not found',
   'Đường dẫn có thể cũ.': 'The link may be out of date.',

@@ -149,9 +149,10 @@ export default function StudentDetailPage() {
   /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
   /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
   useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
-  /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). */
+  /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). Cờ máy chủ `xemYThuc` (theo em) khi hồ sơ đã về;
+     trước đó theo vai để vẫn gọi SONG SONG với hồ sơ (không thêm một lượt mạng cho mọi người). */
   const xemYtVai = xemYThucTheoVai(useSession().session?.roles);
-  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id && xemYtVai ? `/students/${id}/y-thuc` : null, [id, xemYtVai]);
+  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id && (data?.xemYThuc ?? xemYtVai) ? `/students/${id}/y-thuc` : null, [id, data?.xemYThuc ?? xemYtVai]);
   /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
   const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
 
