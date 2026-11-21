@@ -2,7 +2,7 @@
 export const EN_GD1 = {
   '+ Task': '+ New task',
   'Task: {ds}': 'New task: {ds}',
-  'Vi phạm / Nhắc nhở': 'Violation / Reminder',
+  'Vi phạm / Nhắc nhở': 'Incident / Reminder',
   'Gõ tên em': 'Type a student name',
   'Gõ tên em…': 'Type a student name…',
   'Không thấy em nào khớp.': 'No matching student.',

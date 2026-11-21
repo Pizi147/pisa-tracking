@@ -6,7 +6,7 @@ export const EN_BPXL2 = {
   'Chưa xếp lịch MT': 'MT not scheduled',
   'Chưa xếp lịch MT · {n} em': 'MT not scheduled · {n} students',
   'Vắng tuần này': 'Absent this week',
-  'Vắng · {n} em': 'Absent · {n} students',
+  'Vắng · {n} em': (b) => `Absent · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
   'Bài chưa có điểm': 'Papers without scores',
   'Lọc: {x}': 'Filter: {x}',
   'Bỏ lọc {x}': 'Clear filter {x}',

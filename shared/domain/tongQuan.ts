@@ -242,7 +242,7 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
 /** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — số bài; có bài quá hạn → badge ĐỎ như mọi badge (V22, chủ SP 14/11), không thì MỜ; không vào badge menu / chuông. */
-export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number } };
+export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number }; /** B2-11: tab Chờ bạn duyệt đếm "yêu cầu", không "việc". */ yeuCau?: true };
 export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
   /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */
   const tinh = dong.filter((x) => !(x.key && laViecChamCheo({ key: x.key })));

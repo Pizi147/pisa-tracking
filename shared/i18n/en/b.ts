@@ -1712,7 +1712,7 @@ const EN_B_MAY = {
   'Nhắc nhở · {full_name} · {nhom} · {fullName} ghi': 'Reminder · {full_name} · {nhom} · by {fullName}',
   'Yêu cầu xử lý · {full_name} · {nhom} · {fullName} ghi · trước {shortDate}': 'Action requested · {full_name} · {nhom} · by {fullName} · due {shortDate}',
   'Yêu cầu xử lý · {full_name} · {nhom} · {fullName} ghi': 'Action requested · {full_name} · {nhom} · by {fullName}',
-  'GVCN không xử lý · {full_name} · {ten}': 'Homeroom teacher declined · {full_name} · {ten}',
+  'GVCN không xử lý · {full_name} · {ten}': 'Core teacher declined · {full_name} · {ten}',
   '{soBatBuoc} vi phạm được yêu cầu xử lý': (b) => `${b.soBatBuoc} incident(s) flagged for action`,
   'Không xử lý': 'Not handled',
   '{x} yêu cầu · bậc kế tiếp: {ke}': 'requested by {x} · next level: {ke}',

@@ -276,7 +276,7 @@ export function HoTroHocVienTab() {
     if (!coDuyet) return ds;
     const q = demDuyet?.quaHan ?? 0, cho = demDuyet?.cho ?? 0;
     /* AUDIT-UI B3: badge = yêu cầu cần làm ngay (quá hạn) — 0 thì không vẽ (`BadgeTabSo`); tổng ở đầu tab "n yêu cầu". */
-    const bd: BadgeTab | null = cho ? { so: q, n: cho, quaHan: q, homNay: 0 } : null;
+    const bd: BadgeTab | null = cho ? { so: q, n: cho, quaHan: q, homNay: 0, yeuCau: true } : null;
     return [{ key: 'duyet', nhan: tenTab('duyet'), badge: bd }, ...ds];
   }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai, lopLoc, viec, xong]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Mở trang: tab đầu có việc quá hạn, không có thì tab đầu (`tabMacDinh`); panel duyệt đang mở → tab Chờ bạn duyệt. */

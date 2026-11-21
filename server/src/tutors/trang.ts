@@ -12,7 +12,7 @@ import { can, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { COT_TUTOR_TK, chuanTutor, tutorCuaGv } from '../cases/cases.ts';
-import { KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU, KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
 
 export type Khoang = { tu: string; den: string };
 export type KetLuan = 'on' | 'can_cai_thien' | 'ngung';
@@ -361,7 +361,7 @@ export function xoaTutor(p: Principal, id: number): { ok: true } {
 function kiemNhanXet(v: any): { ketLuan: KetLuan; noiDung: string } {
   if (!KET_LUAN.includes(v?.ketLuan)) throw badRequest('Chọn Kết luận: Ổn · Cần cải thiện · Ngừng hợp tác.');
   const noiDung = String(v?.noiDung ?? '').trim();
-  if (noiDung.length < 8) throw badRequest('Nhận xét cần ít nhất 8 ký tự.');   // TU2-6 (R2.6, XM-7): 8 ký tự như luật nhận xét nơi khác
+  if (noiDung.length < CHU_TOI_THIEU) throw loi(400, 'Nhận xét cần ít nhất {n} ký tự.', { n: CHU_TOI_THIEU });   // TU2-6 (R2.6, XM-7) + B1-12: một ngưỡng N50 (6)
   if (noiDung.length > 1000) throw badRequest('Nhận xét tối đa 1000 ký tự.');
   return { ketLuan: v.ketLuan, noiDung };
 }

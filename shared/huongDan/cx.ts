@@ -1,7 +1,8 @@
 /**
  * Hướng dẫn CX — HD-V2 (c), HD-V3-C (13/11, đối chiếu `docs/superpowers/specs/2026-11-13-huong-dan-v3/doi-chieu-tvv-cx.md`). Như TVV nhưng theo chi nhánh của
  * CX (bỏ trống = toàn hệ thống): Tổng quan V5 (5 ô + Theo chi nhánh), Học viên & Lớp, Kết quả thi thật ở Hồ sơ HV. N52 (chủ SP 18/11): xem mọi thứ như QL (Test,
- * Công việc, phần GV); sửa phía TVV (Bước tiếp, lộ trình, môn, Báo PH…) + Ý thức + lớp / chuyển lớp; không học thuật (điểm, Case / PA); KHÔNG có việc của mình.
+ * Công việc, phần GV); sửa phía TVV (Bước tiếp, lộ trình, môn, Báo PH…) + Ý thức + lớp / chuyển lớp; không học thuật (điểm, Case / PA). N58 + N63 (21/11): CX có việc riêng — Kết quả meeting
+ * và việc được giao; Cuối khoá / Xét lại: chỉ xem.
  * Việc, màn, luật dùng lại của `tvv.ts` (`lam` là MỘT nguồn — xem `ql.ts`).
  */
 import { HD_TVV, LUAT_TVV, TINH_HUONG_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
@@ -19,7 +20,7 @@ const VIEC_CX: ViecHd[] = [
     id: 'xem-so', ten: 'Xem Tổng quan mỗi sáng', nhom: 'hv',
     loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
     buoc: ['Mở <b>Tổng quan</b>: đầu trang chọn <b>Chi nhánh</b> (mặc định tất cả) và khung Fast Track / Lớp thường khi có cả hai.',
-      'Năm ô: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3 ›</b> · <b>Chờ KQ thi thật ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>; bấm ô mở danh sách (hai ô đầu chỉ Fast Track).',
+      'Năm ô: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3 ›</b> · <b>Chờ KQ thi thật ›</b> · <b>Chưa chốt bước tiếp ›</b>; bấm ô mở danh sách (hai ô đầu chỉ Fast Track).',
       'Dưới ô: bảng <b>Theo chi nhánh</b> (chọn chi nhánh ở ô <b>Chi nhánh</b>) hoặc <b>Lớp cần chú ý</b> khi đã chọn chi nhánh.'],
     tuKhac: ['sáng', 'số liệu', 'chi nhánh', 'numbers', 'branch', 'đạt target', 'sos'],
   },
@@ -34,8 +35,8 @@ const VIEC_CX: ViecHd[] = [
   {
     id: 'meeting', ten: 'Theo dõi meeting CX/GĐCN', nhom: 'hv',
     loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Ý thức & Phối hợp' },
-    buoc: ['GVCN bấm <b>Xác nhận meeting</b> (MT3 SOS 3: có cả phụ huynh) thì TVV của em báo PH, xếp họp, báo lại kết quả; hạn 5 ngày.',
-      'Xem tiến độ: hồ sơ em › tab <b>Ý thức & Phối hợp</b> › <b>Phối hợp SOS</b>; cột báo PH ghi “Chờ TVV” hoặc kết quả.', 'Ghi kết quả là việc của TVV (em chưa có TVV: GVCN); CX ghi thay được.'],
+    buoc: ['GVCN bấm <b>Xác nhận meeting</b> (MT3 SOS 3: có cả phụ huynh) thì BPXL xếp lịch họp, bạn ghi kết quả meeting, TVV của em báo PH; hạn 5 ngày.',
+      'Xem tiến độ: hồ sơ em › tab <b>Ý thức & Phối hợp</b> › <b>Phối hợp SOS</b>; cột báo PH ghi “Chờ TVV” hoặc kết quả.', 'Kết quả meeting là việc của bạn: <b>Công việc › Báo PH</b>, ghi kết quả rồi <b>Hoàn thành</b> (chi nhánh chưa có CX: Head).'],
     tuKhac: ['sos 3', 'ý thức', 'gđcn', 'họp', 'report 4', 'meeting'],
   },
   {
@@ -58,7 +59,7 @@ const VIEC_CX: ViecHd[] = [
     'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; Chi nhánh mặc định một tháng, tab khác 2 tuần.', 'Bấm số mở danh sách tại trang; <b>Xuất Excel</b> ở hàng lọc.'] },
 ];
 
-const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich', 'tutor-xem', 'tutor-xuat'];
+const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich', 'tutor-xem', 'tutor-xuat'];
 
 export const HD_CX: HuongDan = {
   viec: [],
@@ -66,7 +67,7 @@ export const HD_CX: HuongDan = {
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xem-so', 'loc-hv'] },
     { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'tutor-xuat'] },
-    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru', 'tam-dung', 'thi-that', 'tutor-xem'] },
+    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru', 'tam-dung', 'thi-that', 'tutor-xem'] },
   ],
   /* HD3-3: chỉ trường hợp CX gặp (nguồn: `docs/anh/hd3-3-tvv-cx/khop-khac.md`); N52: CX không có việc của mình. */
   tinhHuong: TINH_HUONG_CX,
@@ -83,7 +84,7 @@ export const HD_CX: HuongDan = {
       khongLam: [...KHONG],
       muc: [
         { id: 'cx-tq-so', ten: 'Theo chi nhánh', buoc: ['Bảng (cùng bảng Quản trị): Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa có PA · Thi tháng này; hàng cuối <b>Toàn hệ thống</b>.', 'Bấm dòng một chi nhánh: trang chuyển sang chi nhánh đó (như ô <b>Chi nhánh</b> đầu trang).'] },
-        { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông chỉ có khối <b>Cập nhật</b>: CX không có việc của mình nên không có <b>Việc cần làm</b>.'] },
+        { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông: khối <b>Việc cần làm</b> (Kết quả meeting, việc được giao cho bạn) và khối <b>Cập nhật</b>.'] },
       ],
     },
     { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, /* GD-8: TVV không còn Tổng quan (Trước = Công việc) — CX còn. */ dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> · <b>Ý thức</b> (Phân tích V2), như Head.',
@@ -110,9 +111,9 @@ export const HD_CX: HuongDan = {
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
-      dangO: { cau: 'Mọi việc trong phạm vi của bạn — xem, làm thay khi cần; không việc nào là của CX.', truoc: { chu: 'Tổng quan', duong: '/' } },
-      muc: [{ id: 'cx-cv', ten: 'Xem, làm thay', buoc: ['Mặc định <b>Tất cả</b>; <b>Của GV</b> chỉ việc GV giữ; một GV: <b>Lọc thêm</b>.',
-        'Bấm dòng mở việc ngay tại trang; lưu là làm thay — lịch sử ghi tên bạn, việc vẫn của người giữ.', 'CX không có hạn, không số đỏ: ô <b>Của tôi</b> luôn trống.'] }],
+      dangO: { cau: 'Mọi việc trong phạm vi của bạn — xem, làm thay khi cần; Kết quả meeting và việc được giao là của bạn.', truoc: { chu: 'Tổng quan', duong: '/' } },
+      muc: [{ id: 'cx-cv', ten: 'Xem, làm thay', buoc: ['Mặc định <b>Của tôi</b> khi bạn có việc riêng (Kết quả meeting, việc được giao), không có thì <b>Tất cả</b>; <b>Của GV</b> chỉ việc GV giữ; một GV: <b>Lọc thêm</b>.',
+        'Bấm dòng mở việc ngay tại trang; lưu là làm thay — lịch sử ghi tên bạn, việc vẫn của người giữ.', '<b>Kết quả meeting</b> (nhóm Báo PH) và việc được giao ở <b>Vận hành</b> là việc bạn làm; việc bạn giao người khác theo dõi ở bảng Vận hành.'] }],
     },
     { id: 'yeu-cau', ten: 'Yêu cầu của tôi', duong: [`${CV}/yeu-cau`], dangO: { cau: 'Đề nghị bạn đã gửi và kết quả.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-yc', ten: 'Xem yêu cầu đã gửi', buoc: ['Mỗi dòng một đề nghị: trạng thái <b>Chờ</b> · <b>Đã duyệt</b> · <b>Từ chối</b>; bấm dòng xem chi tiết.'] }] },
@@ -126,7 +127,7 @@ export const HD_CX: HuongDan = {
   luat: [
     ...LUAT_TVV.filter((m) => m.id !== 'tvv-luat-thi-that' && m.id !== 'tvv-luat-bao-ph' && m.id !== 'tvv-luat-lo-trinh'),
     { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: việc của Head hoặc TVV, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chọn thay được.'] },
-    { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, Head, CX đổi được Lộ trình đang học và Môn học.'] },
+    { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, Head, CX đổi được Lộ trình đang học và Môn học.', 'Cuối khoá: CX chỉ xem, Head chốt. Xét lại lộ trình: CX chỉ xem.'] },
   ],
   tu: [
     ...TU_TVV.filter((x) => x.ten !== 'HV của tôi'),

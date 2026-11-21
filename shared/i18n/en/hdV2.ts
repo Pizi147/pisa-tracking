@@ -71,7 +71,7 @@ export const EN_HD_V2 = {
   'Bấm Case để mở ngay trong cột.': 'Click a Case to open it in the column.',
   'Hồ sơ lớp › ⋯ dòng em': 'Class profile › student row ⋯',
   'Mở hồ sơ lớp, tab <b>Học viên</b>.': 'Open the class profile, tab <b>Students</b>.',
-  'Ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b>; hạn xử lý <b>5 ngày</b>.': 'On the student row click <b>⋯ › + Violation / Reminder</b>; handle within <b>5 days</b>.',
+  'Ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b>; hạn xử lý <b>5 ngày</b>.': 'On the student row click <b>⋯ › + Incident / Reminder</b>; handle within <b>5 days</b>.',
   'Hồ sơ HV › ⋯ › Đề xuất chuyển lớp…': 'Student profile › ⋯ › Propose class transfer…',
   'mở cùng chỗ.': 'opens the same place.',
   'Ở hồ sơ em, bấm <b>⋯ › Đề xuất chuyển lớp…</b>': 'On the student profile, click <b>⋯ › Propose class transfer…</b>',
@@ -116,7 +116,7 @@ export const EN_HD_V2 = {
   'Duyệt / chuyển lớp': 'Approve / transfer class',
   'Khôi phục thứ đã xoá': 'Restore deleted items',
   'việc của Quản trị': 'system admin’s task',
-  'Báo PH vi phạm': 'Notify parents of violations',
+  'Báo PH vi phạm': 'Notify parents of incidents',
   // ---------------------------------------------------------------- GV · màn
   'Số của bạn và các lớp bạn dạy, chủ nhiệm.': 'Your numbers and the classes you teach or lead.',
   'Mọi việc của bạn, quá hạn ở đầu.': 'All your tasks, overdue first.',

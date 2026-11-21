@@ -47,7 +47,7 @@ export const EN_OV12E = {
   'PA theo quy chế chưa được xác nhận — chưa chạy thì chưa có gì để kết thúc.': 'This rule-based PA has not been confirmed — it is not running, so there is nothing to end.',
   'Lý do tối đa 500 ký tự.': 'Reason: 500 characters at most.',
   'Case tạm — lượt Mock Test chưa chốt SOS. Lượt chốt rồi mới thêm PA.': 'Provisional case — the Mock Test round has not been finalised for SOS. Add a PA once the round is final.',
-  'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Head: "Kết thúc sớm…" ở thẻ PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Homeroom teacher / Head: "End early…" on the PA card, with a reason.',
+  'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Head: "Kết thúc sớm…" ở thẻ PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Core teacher / Head: "End early…" on the PA card, with a reason.',
   /* OV-13i: Sửa thông tin cả lớp — TVV / CX đổi Target, không sửa Tuần bắt đầu. */
   'Chỉ Head, TVV hoặc CX đổi Target': 'Only a Head, Counsellor or CX can change the Target',
   'Chỉ Head, TVV hoặc CX đổi được Target.': 'Only a Head, Counsellor or CX can change the Target.',
