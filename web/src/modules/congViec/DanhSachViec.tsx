@@ -565,7 +565,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
         </span></span>
         {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau) — ở đầu dòng phụ. */}
         <CotHan it={it} daXong={daXong} />
-        <CotNut it={it} nut={caTuan && nut ? dich(it.contextLabel!) : luoiKq && nut ? t('Ghi kết quả') : nut} trieu={caTuan} nhanNut={caTuan ? `${t('Nhập điểm')} · ${dich(it.contextLabel!)}` : undefined}
+        <CotNut it={it} nut={laVh && dong.nutPhu?.(it) ? null : caTuan && nut ? dich(it.contextLabel!) : luoiKq && nut ? t('Ghi kết quả') : nut} trieu={caTuan} nhanNut={caTuan ? `${t('Nhập điểm')} · ${dich(it.contextLabel!)}` : undefined}
           daXong={daXong} mo={con ? mo : undefined} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
       </div>
       {con && mo && (
