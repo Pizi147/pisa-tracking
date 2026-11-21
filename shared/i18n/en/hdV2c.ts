@@ -112,7 +112,6 @@ export const EN_HD_V2C = {
   /* Rà 11/11 G5-14: Hướng dẫn theo màn hiện tại */
   'Việc của tôi và bốn số của HV bạn phụ trách.': 'Your tasks and four numbers for your students.',
   'Bốn số của TVV': 'Four consultant figures',
-  'Chỉ HV của bạn: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ thi thật</b> · <b>Chưa chốt lộ trình tiếp</b>.': 'Your students only: <b>Parent call on time</b> · <b>Exam this month</b> · <b>Awaiting real exam result</b> · <b>Next path not set</b>.',
   'Ô <b>Việc của tôi ›</b> mở Công việc; số HV mở Học viên & Lớp đúng nhóm em.': 'The <b>My tasks ›</b> tile opens Tasks; student numbers open Students & Classes on the right group.',
   'Mở <b>Test › Kế hoạch Test</b>; chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>; the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',
   'Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>: <b>Schedule several MTs…</b> (FT) · <b>Schedule tests…</b> (normal class); the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',

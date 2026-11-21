@@ -8,7 +8,6 @@ export const EN_UI_TONG_QUAN = {
   "Case chưa chốt PA · {lop}": "Cases without plan · {lop}",
   "Case có PA": "Cases with plan",
   "Chi nhánh chưa có GV nào trong kỳ": "No teachers in this branch for the period",
-  "Chưa chốt lộ trình tiếp": "Next path not set",
   "Chưa có lớp nào trong khung này": "No classes in this programme",
   "Chờ KQ thi thật": "Awaiting real exam result",
   "Chờ KQ · Lộ trình tiếp": "Awaiting result · Next path",

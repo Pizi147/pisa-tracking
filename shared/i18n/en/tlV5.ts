@@ -93,8 +93,6 @@ export const EN_TL_V5 = {
   'Mở Tổng quan mỗi sáng': 'Open Home every morning',
   '<b>Tổng quan</b>: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.':
     '<b>Home</b>: <b>Parent call on time</b> · <b>Exam this month</b> · <b>Awaiting result · Next path</b>; click a number to open the list.',
-  '<b>Thi thật</b>: Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp; <b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi — mở Học viên & Lớp đúng nhóm em.':
-    '<b>Real exam</b>: Exam this month · Awaiting real exam result · Next path not set; <b>Navigate</b>: n of my tasks (Tasks) · My students — opens Students & Classes on the right group.',
   'Ba số của TVV': 'Three consultant figures',
   'Chỉ HV của bạn: <b>Báo PH đúng hạn</b> (việc Báo PH phát sinh trong kỳ, báo trước hạn) · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>.':
     'Your students only: <b>Parent call on time</b> (parent-report tasks raised in the period, reported before the due date) · <b>Exam this month</b> · <b>Awaiting result · Next path</b>.',
