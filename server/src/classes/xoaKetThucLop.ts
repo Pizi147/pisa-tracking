@@ -19,6 +19,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
 import { doiTrangThai } from '../students/trangThaiHv.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
+import { donTheoDoiCu } from '../worklist/giaoViec.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
 const CHI_QL_LOP = 'Chỉ Head của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
@@ -215,9 +216,15 @@ export function dongLopTrong(homNay = demoToday()): number[] {
   return xong;
 }
 
-/** Lượt quét MỘT lần mỗi ngày nghiệp vụ (mốc `quet:lop-trong`): đã quét hôm nay → 0 câu. Gọi cùng lượt quét lệnh chuyển lớp (`quetLenhDenHan`). */
+/**
+ * Lượt quét MỘT lần mỗi ngày nghiệp vụ (mốc `quet:lop-trong`): đã quét hôm nay → 0 câu. Gọi cùng lượt quét lệnh chuyển lớp (`quetLenhDenHan`).
+ * B2-13 (TURSO-5): cùng lượt dọn dòng theo dõi của việc đóng > 30 ngày (`donTheoDoiCu`, 1 câu đọc; ghi chỉ khi có dòng) — lỗi chỉ ghi log, không chặn lượt đóng lớp.
+ */
 export function quetLopTrong(homNay = demoToday()): boolean {
-  return quetMoiNgay('quet:lop-trong', homNay, () => { dongLopTrong(homNay); });
+  return quetMoiNgay('quet:lop-trong', homNay, () => {
+    dongLopTrong(homNay);
+    try { donTheoDoiCu(homNay); } catch (e) { console.error('[theo-doi] dọn', e); }
+  });
 }
 
 /**

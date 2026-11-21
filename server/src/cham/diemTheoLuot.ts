@@ -47,6 +47,7 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
   /* Lượt gắn lớp + MT0 em mang sang lớp FT (`MT0_THEO_EM_SQL`, chủ SP 06/11) — hai vế cùng tham số lớp. */
   const LL = (ph: string) => `WITH ll(id, lop) AS (SELECT id, class_id FROM assessment_attempts WHERE class_id IN (${ph}) UNION ${MT0_THEO_EM_SQL(ph)})`;
   theoLo(classIds, (lo, ph) => {
+    const ids: number[] = [];   // TURSO-5: lượt của lô — câu điểm / ô đọc theo id, không dựng lại `ll` (lượt lớp + MT0 theo em) hai lần nữa
     for (const a of conn.prepare(
       `${LL(ph)}
        SELECT a.id, ll.lop AS class_id, a.class_id != ll.lop AS theo_em, a.kind, a.attempt_no, a.lich_su, CASE WHEN s.status = 'inactive' THEN NULL ELSE s.archived_at END AS archived_at, rp.week_start, c.programme_code
@@ -75,22 +76,23 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
       /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
       if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
+      if (!luotCua.has(a.id)) ids.push(a.id);
       luotCua.set(a.id, [...(luotCua.get(a.id) ?? []), { g, ft: ft || a.kind === 'mt0', n: 0, thieu: 0, theoEm: !!a.theo_em }]);
     }
+    if (!ids.length) return;
+    const json = JSON.stringify(ids);
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(
-      `${LL(ph)}
-       SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
+      `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
          FROM assessment_scores sc
-         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.id IN (SELECT id FROM ll) AND a.status != 'cancelled'`,
-    ).all(...lo, ...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
+         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled'`,
+    ).all(json) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
     for (const k of conn.prepare(
-      `${LL(ph)}
-       SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
+      `SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
          JOIN assessment_attempts a ON a.id = k.attempt_id
          LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
-        WHERE a.id IN (SELECT id FROM ll) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
-    ).all(...lo, ...lo) as any[]) {
+        WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
+    ).all(json) as any[]) {
       for (const l of luotCua.get(k.attempt_id) ?? []) {
         /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
         const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
