@@ -96,6 +96,7 @@ import { migratePrHocTiep } from './migrate/prHocTiep.ts';
 import { migratePrBpxl } from './migrate/prBpxl.ts';
 import { migratePrCxN52 } from './migrate/prCxN52.ts';
 import { migratePrGiaoViec } from './migrate/prGiaoViec.ts';
+import { migratePrTraLai } from './migrate/prTraLai.ts';
 import { migratePrVanHanh } from './migrate/prVanHanh.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
@@ -561,6 +562,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrBpxl(conn, applied));
   /* GV-1 (N58, chủ SP 20/11): cột người được giao trên 3 bảng việc + bảng viec_theo_doi · viec_giao_lan · meeting_phan + chỉ mục một phần (chỉ thêm, chạy lặp được). */
   buoc(() => migratePrGiaoViec(conn, applied));
+  /* TL-1 (N61, chủ SP 20/11): bảng vi_pham_tra_lai + viec_bao_ph.tra_lai_id (chỉ thêm, chạy lặp được). */
+  buoc(() => migratePrTraLai(conn, applied));
   /* VH-1 (N59, chủ SP 20/11, SAU GV-1 — cần viec_theo_doi): task_groups + 4 nhóm khởi đầu, cột lặp lại trên tasks; group_key / watcher / task_followers → group_id / viec_theo_doi (một lần). */
   buoc(() => migratePrVanHanh(conn, applied));
 

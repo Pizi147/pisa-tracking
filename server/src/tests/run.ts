@@ -9545,6 +9545,9 @@ await runPrTinhHinhTests({ check, checkAsync, assert, assertThrows, conn, TODAY,
 // GV-1 (N58, chủ SP 20/11): giao việc liên phòng ban — phụ trách · theo dõi · hạn · Meeting ba phần · /my-work
 const { runPrGiaoViecTests } = bocTep('prGiaoViec', await import('./prGiaoViec.tests.ts'));
 await runPrGiaoViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// TL-1 (N61, chủ SP 20/11): trả lại vi phạm — quyền · ba lựa chọn · Báo PH tạm dừng · rút · Hoàn tác · /my-work · migrate (HTTP thật)
+const { runPrTraLaiTests } = bocTep('prTraLai', await import('./prTraLai.tests.ts'));
+await runPrTraLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // VH-1 (N59, chủ SP 20/11): việc Vận hành — nhóm tự đặt · CX giao · theo dõi + chuông · hạn · lặp lại · tệp
 const { runPrVanHanhTests } = bocTep('prVanHanh', await import('./prVanHanh.tests.ts'));
 await runPrVanHanhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

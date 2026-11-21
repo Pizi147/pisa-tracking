@@ -27,6 +27,7 @@ const DONG: { ma: MaHan; nhom: string; viec: string; tu: string; ai: string; hie
   { ma: 'ket_thuc_pa', nhom: t('Case & PA'), viec: t('PA quy chế "1 tháng"'), tu: t('ngày tạo PA'), ai: '—', hien: (v) => t('{n} ngày, tới CN', { n: v.ngay }) },
   { ma: 'xu_ly_vi_pham', nhom: t('Ý thức'), viec: t('Xử lý vi phạm'), tu: t('ngày Head duyệt'), ai: t('GVCN'), hien: (v) => ngay(v.ngay) },
   { ma: 'bao_ph_vi_pham', nhom: t('Ý thức'), viec: t('Báo PH sau xử lý vi phạm'), tu: t('ngày GVCN lưu'), ai: t('TVV của em'), hien: (v) => ngay(v.ngay), luat: t('N1, N2 · ngày lưu là ngày 1 · gồm T7, CN · hết 23:59.') },
+  { ma: 'tra_lai_vi_pham', nhom: t('Ý thức'), viec: t('Vi phạm bị trả lại'), tu: t('ngày TVV trả lại'), ai: t('GV ghi / GVCN'), hien: (v) => ngay(v.ngay), luat: t('N61 · ngày trả là ngày 1 · chờ GV sửa thì hạn Báo PH tạm dừng.') },
   { ma: 'chot_lo_trinh', nhom: t('Lộ trình & lớp'), viec: t('Chốt lộ trình lớp thường'), tu: t('tuần Final'), ai: t('Head'), hien: (v) => `${THU[v.thu]} ${TUAN[v.tuanLech]}`, luat: t('N20 · nhắc từ T2 tuần trước Final; bàn giao hết CN tuần Final.') },
   { ma: 'ban_giao_chuyen_lop', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao chuyển lớp'), tu: t('ngày quyết định chuyển lớp'), ai: t('GV lớp cũ'), hien: (v) => ngay(v.ngay), luat: t('Tính cả ngày quyết định.') },
   { ma: 'ban_giao_doi_gv', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao đổi GV'), tu: t('ngày đổi GV'), ai: t('GV cũ'), hien: (v) => t('{a} ngày · còn xem {b}', { a: v.ngay, b: v.xemNgay }), luat: t('N29 · GV cũ còn xem lớp cũ thêm số ngày này.') },

@@ -67,9 +67,21 @@ export function requireManageDiscipline(p: Principal, studentId: number, message
 }
 
 /** Vi phạm này sửa/hủy được không: người ghi (vi phạm của chính mình), hoặc người xử lý Ý thức của học viên (V10). */
-export function canEditViolation(p: Principal, v: { student_id: number; reported_by: number }): boolean {
+export function canEditViolation(p: Principal, v: { student_id: number; reported_by: number; id?: number }): boolean {
   if (v.reported_by === p.userId && can(p, PERMISSIONS.VIOLATION_RECORD, studentCtx(v.student_id))) return true;
-  return canManageDiscipline(p, v.student_id);
+  return canManageDiscipline(p, v.student_id) || (v.id != null && nguoiNhanTraLai(p.userId, v.id));
+}
+
+/**
+ * TL-1 (N61): quyền THEO VIỆC — người đang giữ việc "Vi phạm bị trả lại" ĐANG MỞ của đúng vi phạm này (người được giao, hoặc người nhận theo luật khi chưa
+ * giao ai) sửa / xoá được nó dù không còn là người ghi hợp lệ. Còn hoạt động + còn vai ở chi nhánh em (như `conHieuLuc`). Một câu, chỉ khi hai cửa trên đóng.
+ */
+function nguoiNhanTraLai(uid: number, violationId: number): boolean {
+  return !!db().prepare(`SELECT 1 FROM vi_pham_tra_lai t JOIN users u ON u.id = ?1 AND u.status = 'active' AND u.deleted_at IS NULL
+      WHERE t.violation_id = ?2 AND t.trang_thai = 'mo' AND (t.phu_trach_id = ?1 OR (t.phu_trach_id IS NULL AND t.nguoi_nhan = ?1))
+        AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = ?1 AND ur.status = 'active' AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE(
+          (SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = t.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1),
+          (SELECT s.branch_id FROM students s WHERE s.id = t.student_id))))`).get(uid, violationId);
 }
 
 /** Khoá gửi lại (idempotency) đã gắn với bản ghi của người khác hoặc của học viên khác — không phát lại, để khỏi lộ dữ liệu ngoài phạm vi. */
