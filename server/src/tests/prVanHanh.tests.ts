@@ -399,6 +399,59 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(doi.moi && doi.cu && !/^\d+$/.test(doi.moi), `tên người, không phải id: ${JSON.stringify(doi)}`);
   }));
 
+  await checkAsync('AU-2111 P1-01 (A2-01) · TVV được giao việc Vận hành / việc con / theo dõi mở + làm được qua HTTP (cổng khu Công việc); TVV không liên quan, hết vai 403; danh sách Vận hành vẫn 403', async () => {
+    const { createApp } = await import('../app.ts');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const ck = new Map<number, string>();
+    const vao = async (userId: number) => {
+      const res = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+      ck.set(userId, (res.headers.get('set-cookie') ?? '').split(';')[0]);
+    };
+    const goi = async (p: any, method: string, url: string, body?: unknown) => {
+      const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, { method, headers: { 'content-type': 'application/json', cookie: ck.get(p.userId)! }, body: body === undefined ? undefined : JSON.stringify(body) });
+      let json: any = null;
+      try { json = await res.json(); } catch { /* không thân */ }
+      return { status: res.status, json };
+    };
+    try {
+      const nhan = taiKhoan('tvvnhan', 'consultant'); const nhanCon = taiKhoan('tvvcon', 'consultant'); const td = taiKhoan('tvvtd', 'consultant'); const la = taiKhoan('tvvla', 'consultant');
+      for (const p of [nhan, nhanCon, td, la]) await vao(p.userId);
+      const v = tao(cx, { assigneeUserId: nhan.userId, theoDoiIds: [td.userId], due: addDays(TODAY, 3) });
+      const con = tao(cx, { title: 'Việc con của TVV', parentTaskId: v.id, assigneeUserId: nhanCon.userId, due: addDays(TODAY, 2) });
+      const kq = (r: { status: number; json: any }) => `${r.status} ${r.json?.error ?? ''}`;
+      let r = await goi(nhan, 'GET', `/mgmt-tasks/${v.id}`);
+      assert(r.status === 200 && r.json.id === v.id, `người phụ trách mở: ${kq(r)}`);
+      r = await goi(nhan, 'POST', `/mgmt-tasks/${v.id}/update`, { progress: 'doing', note: 'Đã gọi nhà cung cấp' });
+      assert(r.status === 200 && mot('SELECT progress FROM tasks WHERE id = ?', v.id).progress === 'doing', `người phụ trách cập nhật: ${kq(r)}`);
+      r = await goi(nhan, 'PATCH', `/mgmt-tasks/${v.id}`, { due: addDays(TODAY, 4) });
+      assert(r.status === 200, `người phụ trách sửa hạn: ${kq(r)}`);
+      r = await goi(nhanCon, 'GET', `/mgmt-tasks/${con.id}`);
+      assert(r.status === 200, `phụ trách việc con mở việc con: ${kq(r)}`);
+      r = await goi(nhanCon, 'GET', `/mgmt-tasks/${v.id}`);
+      assert(r.status === 200, `phụ trách việc con mở việc cha: ${kq(r)}`);
+      r = await goi(nhanCon, 'POST', `/mgmt-tasks/${con.id}/update`, { progress: 'done' });
+      assert(r.status === 200, `phụ trách việc con hoàn thành: ${kq(r)}`);
+      r = await goi(td, 'GET', `/mgmt-tasks/${v.id}`);
+      assert(r.status === 200, `người theo dõi mở: ${kq(r)}`);
+      r = await goi(td, 'POST', `/mgmt-tasks/${v.id}/update`, { progress: 'done' });
+      assert(r.status === 403, `người theo dõi cập nhật → 403: ${kq(r)}`);
+      for (const [m, u, b] of [['GET', `/mgmt-tasks/${v.id}`], ['GET', `/MGMT-TASKS/${v.id}`], ['POST', `/mgmt-tasks/${v.id}/update`, { progress: 'done' }], ['PATCH', `/mgmt-tasks/${v.id}`, { due: addDays(TODAY, 9) }],
+        ['GET', '/mgmt-tasks'], ['GET', '/mgmt-tasks/nhom'], ['POST', `/mgmt-tasks/${v.id}/lap`, { dung: true }], ['GET', `/mgmt-tasks/999999`]] as [string, string, unknown?][]) {
+        r = await goi(la, m, u, b);
+        assert(r.status === 403, `TVV không liên quan ${m} ${u} → 403: ${kq(r)}`);
+      }
+      r = await goi(nhan, 'GET', '/mgmt-tasks');
+      assert(r.status === 403, `danh sách Vận hành vẫn 403: ${kq(r)}`);
+      accounts.setRoles(P.admin, td.userId, [{ role: 'consultant', branches: ['CP'] }]);
+      await vao(td.userId);
+      r = await goi(td, 'GET', `/mgmt-tasks/${v.id}`);
+      assert(r.status === 403, `người theo dõi hết vai → 403: ${kq(r)}`);
+    } finally {
+      may.close();
+    }
+  });
+
   check('VH1-9 · migrate prVanHanh: group_key → nhóm, watcher + task_followers → viec_theo_doi; chạy hai lần không đổi; tự lành chỉ mục; khớp schema.sql', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');

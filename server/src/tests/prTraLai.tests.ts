@@ -15,7 +15,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
 
   const intake: any = await import('../classes/intake.ts');
   const accounts: any = await import('../platform/accounts.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
+  const { loadPrincipal, CHU_CHAN_NHAP_DIEM } = await import('../permissions.ts');
   const { boLichTuTao } = await import('./luotThu.ts');
   const viol: any = await import('../yThuc/violations.ts');
   const xu: any = await import('../yThuc/xuLy.ts');
@@ -242,11 +242,12 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert((await tra(tvv, { violationId: vids[0] })).status === 200, 'trả lại lần nữa');
     }));
 
-    await checkAsync('TL-11 · Hoàn tác 60 giây: người trả, xoá hẳn (tin, lịch sử, theo dõi, Báo PH hết dừng, hạn giữ); người khác / quá 60 giây → 400', () => thu(async () => {
+    await checkAsync('TL-11 · Hoàn tác 60 giây: người trả, xoá hẳn (tin, lịch sử, theo dõi, Báo PH hết dừng, hạn giữ); người khác 403 / quá 60 giây → 400', () => thu(async () => {
       const sid = moiEm(); const { vids, bp } = xuLy(sid, 2);
       const hanTruoc = mot('SELECT han, han_chon FROM viec_bao_ph WHERE id = ?', bp);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;
-      assert((await goi(tvv2, 'POST', `/y-thuc/tra-lai/${id}/hoan-tac`)).status === 400, 'người khác → 400');
+      const khac = await goi(tvv2, 'POST', `/y-thuc/tra-lai/${id}/hoan-tac`);   // AU-2111 B1-07: nói đúng lý do
+      assert(khac.status === 403 && khac.json?.error === 'Chỉ người trả lại hoàn tác được — dùng Rút yêu cầu.', `người khác: ${khac.status} ${khac.json?.error}`);
       const h = await goi(tvv, 'POST', `/y-thuc/tra-lai/${id}/hoan-tac`);
       assert(h.status === 200 && !dong(id) && !tin(`tra-lai:${id}`).length && !mot(`SELECT 1 FROM violation_history WHERE reason = ?`, `tra_lai:${id}`)
         && !hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'tra_lai' AND ref_id = ?`, id).length, `hoàn tác: ${h.status} ${h.json?.error}`);
@@ -432,6 +433,59 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(gn.status === 200 && n2?.title === `GV đã trả lời · ${tenEm} · ${gvbm.fullName}` && n2.body === 'Em nói chuyện cả buổi, cô đã nhắc ba lần', `tin trả lời: ${JSON.stringify(n2)}`);
       conn.prepare("UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?").run(bp);
       assert((await goi(tvv, 'GET', `/y-thuc/bao-ph/${bp}`)).json.coTheTraLai === false && (await goi(tvv, 'GET', `/violations/${vids[1]}`)).json.traLai.coThe === false, 'Báo PH đã xong → không nút Trả lại');
+    }));
+
+    await checkAsync('AU-2111 B1-08 · Chuyển lớp sang lớp không có: không 500 — Head / CX 404 "Không tìm thấy lớp chuyển đến", vai không quyền 403 câu "Head hoặc CX"', () => thu(async () => {
+      const sid = moiEm();
+      const than = { toClassId: 999999, tuan: TODAY, lyDo: 'Đổi lịch học theo gia đình' };
+      for (const p of [ql, cx]) {
+        const r = await goi(p, 'POST', `/students/${sid}/transfer`, than);
+        assert(r.status === 404 && r.json?.error === 'Không tìm thấy lớp chuyển đến', `${p.fullName}: ${r.status} ${r.json?.error}`);
+      }
+      const r = await goi(gvKhac, 'POST', `/students/${sid}/transfer`, than);
+      assert(r.status === 403 && r.json?.error === 'Chỉ Head hoặc CX của chi nhánh lớp này mới ra quyết định chuyển lớp.', `GV: ${r.status} ${r.json?.error}`);
+    }));
+
+    check('AU-2111 B1-09 · câu chặn nhập điểm em chi nhánh khác: Head / Admin / Quản trị nhận câu "Head chi nhánh của em", GV nhận câu kỹ năng được phân công', () => {
+      const HEAD = 'Học viên ở chi nhánh khác — Head chi nhánh của em nhập điểm.';
+      for (const p of [ql, admin, P.admin]) assert(CHU_CHAN_NHAP_DIEM(loadPrincipal(p.userId)) === HEAD, `${p.fullName}: ${CHU_CHAN_NHAP_DIEM(loadPrincipal(p.userId))}`);
+      for (const p of [gvcn, gvKhac, bpxl]) assert(CHU_CHAN_NHAP_DIEM(loadPrincipal(p.userId)) === 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.', `${p.fullName}`);
+    });
+
+    await checkAsync('AU-2111 R1 · TVV của em đã đổi vai sang chi nhánh khác: xem Báo PH (SĐT PH) · ghi KQ · sửa hạn · bỏ việc · trả lại · rút · Hoàn tác trả lại · sửa hạn trả lại → 403 và DB không đổi', () => thu(async () => {
+      const cu = taiKhoan('tvvcu', 'consultant');
+      const sid = moiEm();
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(cu.userId, sid);
+      const { vids, bp } = xuLy(sid, 2);
+      ck.set(cu.userId, await vao(cu.userId));
+      const r0 = await tra(cu, { violationId: vids[0] });
+      assert(r0.status === 200, `TVV còn vai trả lại được: ${r0.status} ${r0.json?.error}`);
+      const id = r0.json.id as number;
+      accounts.setRoles(P.admin, cu.userId, [{ role: 'consultant', branches: ['CP'] }]);
+      ck.set(cu.userId, await vao(cu.userId));
+      const anh = () => JSON.stringify([
+        hang('SELECT trang_thai, han_chon, tra_lai_id FROM viec_bao_ph WHERE id = ?', bp), hang('SELECT id FROM viec_bao_ph_lan WHERE viec_id = ?', bp),
+        hang(`SELECT id FROM viec_han_lan WHERE (loai = 'bao_ph' AND viec_id = ?1) OR (loai = 'tra_lai' AND viec_id = ?2)`, bp, id),
+        hang('SELECT id, trang_thai, han_chon FROM vi_pham_tra_lai WHERE student_id = ? ORDER BY id', sid),
+      ]);
+      const truoc = anh();
+      const han = addDays(TODAY, 9);
+      const ds: [string, string, unknown?][] = [
+        ['GET', `/y-thuc/bao-ph/${bp}`],
+        ['POST', '/y-thuc/bao-ph/ghi', { viecIds: [bp], ketQua: 'da_bao', ghiChu: 'TVV đã đổi vai ghi thử kết quả' }],
+        ['POST', `/y-thuc/bao-ph/${bp}/han`, { han, hanCu: null }],
+        ['POST', `/y-thuc/bao-ph/${bp}/bo`, { lyDo: 'not_needed' }],
+        ['POST', '/y-thuc/tra-lai', { lyDo: LY_DO, violationId: vids[1] }],
+        ['POST', `/y-thuc/tra-lai/${id}/rut`],
+        ['POST', `/y-thuc/tra-lai/${id}/hoan-tac`],
+        ['POST', `/giao-viec/tra_lai/${id}/han`, { han, hanCu: null }],
+      ];
+      for (const [m, u, b] of ds) {
+        const r = await goi(cu, m, u, b);
+        assert(r.status === 403, `${m} ${u}: ${r.status} ${r.json?.error}`);
+        assert(!JSON.stringify(r.json ?? {}).includes('lienHe'), `${u}: lộ liên hệ PH`);
+        assert(anh() === truoc, `${m} ${u}: DB đã đổi dù trả ${r.status}`);
+      }
     }));
 
     await checkAsync('TL-22 · (rà 4) người nhận hết vai ở chi nhánh → việc về GVCN (chuông, /my-work); người cũ không thấy, không làm được', () => thu(async () => {

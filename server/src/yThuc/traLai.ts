@@ -15,7 +15,7 @@
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import { CHU_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, hanTraLai, nhanLoaiXuLy, tachTenMoTa } from '../../../shared/domain/index.ts';
-import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, laTvvCuaEm, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -40,9 +40,9 @@ function kiemChu(v: unknown, ten: string): string {
 }
 
 /** Phía TVV của em (N61): TVV của em · TVV / CX cùng phạm vi (`coQuyenBuocTiep`) · Head / Quản trị trong phạm vi. GV, GVCN, Admin, BPXL: không. */
-export const coTheTraLai = (p: Principal, s: { consultant_user_id: number | null; student_id: number }): boolean =>
-  /* rà #1927 (8): "TVV của em" phải còn vai TVV (grant đang hiệu lực). */
-  (s.consultant_user_id === p.userId && p.grants.some((g) => g.roleKey === 'consultant')) || coQuyenBuocTiep(p, s.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: s.student_id });
+export const coTheTraLai = (p: Principal, s: { consultant_user_id: number | null; student_id: number; em_branch?: number | null }): boolean =>
+  /* rà #1927 (8) + AU-2111 R1: "TVV của em" phải còn vai TVV ở chi nhánh của em. */
+  laTvvCuaEm(p, s) || coQuyenBuocTiep(p, s.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: s.student_id });
 
 function load(id: number): any {
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Yêu cầu không hợp lệ.');
@@ -206,7 +206,9 @@ export function traLai(p: Principal, body: { violationId?: unknown; measureId?: 
 /** Hoàn tác (người trả, ≤ 60 giây, còn chờ) → xoá hẳn: Báo PH bỏ tạm dừng (hạn như cũ), lịch sử + tin của lần trả gỡ. */
 export function hoanTacTraLai(p: Principal, id: number): { ok: true } {
   const r = load(id);
-  if (r.trang_thai !== 'mo' || r.nguoi_tra !== p.userId || Date.now() - Date.parse(r.tra_luc) > HOAN_TAC_MS) throw badRequest('Quá thời gian Hoàn tác — dùng Rút yêu cầu.');
+  if (r.nguoi_tra !== p.userId) throw forbidden('Chỉ người trả lại hoàn tác được — dùng Rút yêu cầu.');   // AU-2111 B1-07: nói đúng lý do
+  if (!conHieuLuc(p.userId, r.student_id)) throw forbidden('Bạn không còn vai ở chi nhánh của em — nhờ Head chi nhánh của em rút yêu cầu.');   // AU-2111 R1
+  if (r.trang_thai !== 'mo' || Date.now() - Date.parse(r.tra_luc) > HOAN_TAC_MS) throw badRequest('Quá thời gian Hoàn tác — dùng Rút yêu cầu.');
   tx(() => {
     const dung = baoPhDangDung(id);
     /* rà #1927 (6): theo chỉ mục vi phạm, không quét cả bảng. */

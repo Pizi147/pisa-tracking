@@ -575,7 +575,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => xacNhanCaseW2(w1T, f), /phân công/, 'GVBM W1 xác nhận Case W2');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w1T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /phân công/, 'GVBM W1 xác nhận PA case W2');
     assertThrows(() => sosAuto.guiKhongTheoDoi(w1T, f.w2.id, { reasonCode: 'single_incident' }), /phân công/, 'GVBM W1 đóng case W2');
-    assertThrows(() => xacNhanCaseW2(P.cpManager, f), /phạm vi|phân công|quyền/, 'Head chi nhánh khác');
+    assertThrows(() => xacNhanCaseW2(P.cpManager, f), /phạm vi|phân công|quyền|chi nhánh khác — Head chi nhánh của em/, 'Head chi nhánh khác');   // AU-2111 B1-09: câu dành cho Head
     assert(get('SELECT confirmed_by FROM case_interventions WHERE id = ?', f.w2Plan.id).confirmed_by === null, 'Bị từ chối thì không đổi gì');
     xacNhanCaseW2(P.mbManager, f);
     sosAuto.xacNhanPaQuyChe(P.mbManager, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));

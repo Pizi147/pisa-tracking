@@ -39,7 +39,7 @@ const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');  
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
-const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO } = await import('./tocDoDuong.ts');
 const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -2467,6 +2467,30 @@ await checkAsync('TL-1 (×3) · /my-work có yêu cầu trả lại + Báo PH "C
     if (plan.some((d) => /^SCAN (t|vi_pham_tra_lai)$/.test(d))) loi.push(plan.join(' | '));
   }
   assert(!loi.length, loi.join(' ‖ '));
+});
+
+/*
+ * AU-2111 P1-01: TVV (vai không có khu Công việc) mở / cập nhật MỘT việc Vận hành được giao — cổng thêm `coQuyenTheoViec` (chỉ vai thiếu `work.view`, chỉ đường
+ * `/mgmt-tasks/:id`). Trước: 403 ở cổng. Việc tạo ở chi nhánh của TVV (1 việc con, 1 người theo dõi), xoá ngay sau đo — không lẫn băm / trần khác.
+ */
+await checkAsync(`AU-2111 P1-01 · TVV mở việc Vận hành được giao: GET /mgmt-tasks/:id ≤ ${TRAN_VH_DUOC_GIAO.cau} câu · ≤ ${TRAN_VH_DUOC_GIAO.dong} dòng; vai có khu Công việc không thêm câu ở cổng`, async () => {
+  const mg = await import('../worklist/mgmttasks.ts');
+  const gvSvc = await import('../worklist/giaoViec.ts');
+  const cnTvv = (conn.prepare(`SELECT ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND r.key = 'consultant' AND ur.status = 'active'`).get(USER.TVV) as any).b as number;
+  const qt = loadPrincipal(USER.QT);
+  const v = mg.createMgmtTask(qt, { title: 'Đo AU-2111 việc TVV', branchId: cnTvv, assigneeUserId: USER.TVV, theoDoiIds: [USER.QT], due: demoToday15d() } as any);
+  const con = mg.createMgmtTask(qt, { title: 'Đo AU-2111 việc con', parentTaskId: v.id, assigneeUserId: USER.TVV, due: demoToday15d() } as any);
+  try {
+    const d = await doSql('TVV', 'GET', `/mgmt-tasks/${v.id}`);
+    const q = await doSql('QT', 'GET', `/mgmt-tasks/${v.id}`);
+    console.log(`      (đo: TVV ${d.status} ${d.n} câu ${d.dong} dòng · QT ${q.status} ${q.n} câu ${q.dong} dòng)`);
+    assert(d.status === 200 && q.status === 200, `TVV ${d.status} · QT ${q.status}`);
+    assert(d.n <= TRAN_VH_DUOC_GIAO.cau && d.dong <= TRAN_VH_DUOC_GIAO.dong, `TVV: ${d.n} câu ${d.dong} dòng > trần ${TRAN_VH_DUOC_GIAO.cau} · ${TRAN_VH_DUOC_GIAO.dong}`);
+    assert(d.n <= q.n + 4, `cổng thêm quá 4 câu cho TVV: TVV ${d.n} · QT ${q.n}`);
+  } finally {
+    gvSvc.donViec('van_hanh', [v.id, con.id]);
+    conn.prepare('DELETE FROM tasks WHERE id IN (?, ?)').run(con.id, v.id);
+  }
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
