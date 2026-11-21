@@ -83,7 +83,7 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
   });
 
   /* RA-LOI-0711f (chủ SP 06/11 "QL chỉ thấy việc chi nhánh mình" — mới hơn OV-11c PT-7): việc Giao việc (`tasks`, không gắn lớp) mang chi nhánh của việc. */
-  check('CVT-4 · việc được giao (Giao việc) của GV: QL Cẩm Phả xem GV chỉ thấy việc CP; việc chi nhánh khác ẩn; GV tự xem thấy cả hai, dòng có `cn`', () => {
+  check('CVT-4 · việc được giao (Giao việc) của GV: QL Cẩm Phả xem GV chỉ thấy việc CP; việc chi nhánh khác ẩn; GV tự xem thấy việc ở chi nhánh mình còn vai (dòng có `cn`), việc ở chi nhánh không có vai không kẹt ở GV (rà #1960 mục 4)', () => {
     const conn = db();
     const cp = P.cpManager.grants.find((x: any) => x.roleKey === 'manager')?.branchId as number;
     const gv = conn.prepare(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes cl ON cl.id = ta.class_id WHERE ta.status = 'active' AND cl.branch_id = ?
@@ -101,7 +101,9 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
       assert(!xem.includes(`mgmt:${tKhac}`), `QL CP không được thấy việc chi nhánh ${khac}: ${xem.filter((k) => k.startsWith('mgmt'))}`);
       xoaNho();
       const tu = (mywork.myWork(loadPrincipal(gv.id), {}).items as any[]).filter((x) => x.group === 'mgmt');
-      assert(tu.find((x) => x.key === `mgmt:${tCp}`)?.cn === cp && tu.find((x) => x.key === `mgmt:${tKhac}`)?.cn === khac, `GV tự xem: ${JSON.stringify(tu.map((x) => [x.key, x.cn]))}`);
+      const coVaiKhac = !!conn.prepare(`SELECT 1 FROM user_roles WHERE user_id = ? AND status = 'active' AND (branch_id IS NULL OR branch_id = ?)`).get(gv.id, khac);
+      assert(tu.find((x) => x.key === `mgmt:${tCp}`)?.cn === cp && (coVaiKhac ? tu.find((x) => x.key === `mgmt:${tKhac}`)?.cn === khac : !tu.some((x) => x.key === `mgmt:${tKhac}`)),
+        `GV tự xem (còn vai ở ${khac}: ${coVaiKhac}): ${JSON.stringify(tu.map((x) => [x.key, x.cn]))}`);
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 }
