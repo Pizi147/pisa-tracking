@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongCuaToi, dongNhinThay, laViecChamCheo, nhomViecCua, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongCuaToi, dongNhinThay, laViecChamCheo, nhomCuaViec, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -330,7 +330,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     if (q.nhom != null && !(NHOM_VIEC as readonly string[]).includes(q.nhom)) throw badRequest('Nhóm việc không hợp lệ.');
     const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
     const dong = dongNhinThay(dongViecGv(p, gvId)).filter((i) => !laViecChamCheo(i)
-      && (!q.nhom || nhomViecCua(i.group) === q.nhom) && (!chiChamDiem || nhomViecCua(i.group) === 'cham-diem') && (!q.qh || i.urgency === 'overdue'));
+      && (!q.nhom || nhomCuaViec(i) === q.nhom) && (!chiChamDiem || nhomCuaViec(i) === 'cham-diem') && (!q.qh || i.urgency === 'overdue'));
     const rows: MetricRow[] = dong.map((i, k) => ({
       id: k + 1, title: i.tieuDe, sub: '', href: i.href,
       /* Dòng em: panel vẽ tên em + lớp — việc gì nằm ở ngữ cảnh ("Thêm PA R · Progress Test"). */

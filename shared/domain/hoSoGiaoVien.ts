@@ -3,7 +3,7 @@
  * Không tính số mới: số luôn đến từ hàm có sẵn ở máy chủ (`myWork`, `scoreDebtCells`, `listCases`, `phanTichLop`).
  */
 import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
-import { NHOM_VIEC, demDongViec, nhomViecCua, type DongDem, type NhomViec } from './tongQuan.ts';
+import { NHOM_VIEC, demDongViec, nhomCuaViec, type DongDem, type NhomViec } from './tongQuan.ts';
 import { mondayOfDate } from './week.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
@@ -25,9 +25,9 @@ export type ChipBanGiao = { loai: 'gvcn' | 'gvbm'; mon: string | null; maMon: st
  * Đếm việc theo 4 nhóm (Q3) — cùng `nhomViecCua` và CÙNG ĐƠN VỊ với Công việc: S11 (chủ SP 05/11) một DÒNG việc = 1 (`demDongViec`) — truyền DÒNG
  * hiển thị (`dong`, chưa mở `con`); S chấm chéo không là việc. Ô hồ sơ GV = số đầu nhóm Công việc.
  */
-export function demViecTheoNhom(dong: readonly (DongDem & { group: string })[]): { nhom: NhomViec; n: number; quaHan: number }[] {
+export function demViecTheoNhom(dong: readonly (DongDem & { group: string; hangMuc?: string | null })[]): { nhom: NhomViec; n: number; quaHan: number }[] {
   return NHOM_VIEC.map((nhom) => {
-    const d = demDongViec(dong.filter((i) => nhomViecCua(i.group) === nhom));
+    const d = demDongViec(dong.filter((i) => nhomCuaViec(i) === nhom));   // VH-1b: việc tay theo hạng mục (cùng luật tab Công việc)
     return { nhom, n: d.n, quaHan: d.quaHan };
   });
 }

@@ -1686,7 +1686,10 @@ CREATE TABLE tasks (
   lap_goc_id INTEGER REFERENCES tasks(id),
   lap_ky TEXT,
   lap_dung_luc TEXT,
-  lap_tu TEXT
+  lap_tu TEXT,
+  /* VH-1b (N62): hạng mục chính thống của Công việc (`HANG_MUC_CV`, shared/domain/tongQuan.ts) — việc tay nằm trong mục đó; NULL = tab Vận hành theo nhóm.
+     Lớp liên quan dùng `class_id`, học viên liên quan dùng `task_students` (case_id NULL). */
+  hang_muc TEXT
 );
 CREATE UNIQUE INDEX ux_tasks_khoa_gui ON tasks(created_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_task_period ON tasks(period_id);
@@ -2424,6 +2427,12 @@ CREATE TABLE IF NOT EXISTS viec_giao_lan (
   boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_viec_giao_lan ON viec_giao_lan(loai, ref_id);
+-- VH-1b (N62): MÔ TẢ tuỳ chọn của việc có khối giao việc N58 (bao_ph · phoi_hop · tinh_hinh · meeting · tra_lai) — MỘT chỗ chung theo (loai, ref_id), ≤ 500 ký tự;
+-- lịch sử ở viec_giao_lan (truong mo_ta); dọn trong donViec. Việc Vận hành dùng tasks.note (không lưu hai nơi).
+CREATE TABLE IF NOT EXISTS viec_mo_ta (
+  loai TEXT NOT NULL, ref_id INTEGER NOT NULL, noi_dung TEXT NOT NULL, sua_boi INTEGER REFERENCES users(id), sua_luc TEXT NOT NULL,
+  PRIMARY KEY (loai, ref_id)
+);
 -- Meeting CX / GĐCN (N58, thiết kế B2): hai phần độc lập của MỘT hành động Phối hợp (sos_coordination_actions), sinh cùng lúc với việc Báo PH Meeting của TVV.
 -- phan: xep_lich (BPXL chi nhánh; không có → TVV của em) | ket_qua (CX chi nhánh; không có → Head; TVV nhập hộ — nhap_ho_boi).
 -- trang_thai: mo | xong | bo (hệ thống: GVCN đưa Meeting về Cần xử lý). branch_id = chi nhánh của em lúc tạo (lọc /my-work theo chỉ mục).

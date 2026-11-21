@@ -258,11 +258,16 @@ const BG_GV = (() => {
   for (let i = 0; i < 24; i++) {
     const [nguoi, theoDoi] = [USER.BPXL, USER.ADMIN];
     const v = mg.createMgmtTask(qlP, { title: `Đo VH ${i + 1}`, branchId: CN, groupId: i % 5 === 4 ? null : nhom[i % 4], assigneeUserId: nguoi,
-      theoDoiIds: [theoDoi], due: demoToday15d(), ...(i % 6 === 0 ? { lap: { kieu: 'tuan', ngay: [1, 4] } } : {}) } as any);
+      theoDoiIds: [theoDoi], due: demoToday15d(), ...(i % 6 === 0 ? { lap: { kieu: 'tuan', ngay: [1, 4] } } : {}),
+      /* VH-1b (N62): 12 / 24 việc có hạng mục chính thống (+ lớp mẫu) — vào đúng mục ở /my-work BPXL, không thêm câu. */
+      ...(i % 2 ? { hangMuc: ['bao-ph', 'sau-thi', 'mock'][i % 3], classId: LOP_FT } : {}) } as any);
     if (i % 3 === 0) mg.createMgmtTask(qlP, { title: `Đo VH ${i + 1} · con`, parentTaskId: v.id, assigneeUserId: nguoi, due: demoToday15d() } as any);
   }
 }
 
+/** VH-1b (N62): một việc Báo PH (khối giao việc N58 + Mô tả) — đường `/giao-viec/bao_ph/{viecBaoPh}`. */
+const VIEC_BAO_PH = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE s.branch_id = ? ORDER BY v.id LIMIT 1`).get(CN) as any)?.id as number;
+assert(VIEC_BAO_PH, 'Seed thiếu việc Báo PH ở chi nhánh MB');
 const server = createApp().listen(0);
 /* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
 server.keepAliveTimeout = 120_000;
@@ -287,6 +292,7 @@ function urlFor(mau: string): string {
     .replace('{ycPa}', String(YC_PA))
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
+    .replace('{viecBaoPh}', String(VIEC_BAO_PH))
     .replace('{cn}', String(CN))
     .replace('{sos23}', SOS23)
     .replace('{gv}', String(USER.GVCN));
