@@ -347,9 +347,9 @@ function docLenh(id: number): any {
  * N63 ① (rà PTA #1950 vòng 2): quyết định Cuối khoá do NGƯỜI KHÁC ra (Head chốt) = chốt lộ trình — CX không sửa / huỷ / khôi phục / ghi đè (`coTheChotLoTrinh`).
  * Lệnh CX tự ra (chuyển lớp lẻ, kể cả sát Final → `boi_canh = 'cuoi-khoa'`) và lệnh giữa khoá: `class.edit` như cũ (không khoá cứng lệnh của chính mình).
  */
-const khoaLenhNguoiKhac = (p: Principal, l: any): boolean => l.boi_canh === 'cuoi-khoa' && l.nguoi_ra_lenh !== p.userId && !coTheChotLoTrinh(p, l.lop_nguon_id);
-const quyenLenh = (p: Principal, l: any): boolean => !khoaLenhNguoiKhac(p, l) && can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id });
-const LOI_LENH_HEAD = 'Em đã có quyết định lộ trình do Head chốt — nhờ Head sửa hoặc huỷ.';
+export const khoaLenhNguoiKhac = (p: Principal, l: any): boolean => l.boi_canh === 'cuoi-khoa' && l.nguoi_ra_lenh !== p.userId && !coTheChotLoTrinh(p, l.lop_nguon_id);
+export const quyenLenh = (p: Principal, l: any): boolean => !khoaLenhNguoiKhac(p, l) && can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id });
+export const LOI_LENH_HEAD = 'Em đã có quyết định lộ trình do Head chốt — nhờ Head sửa hoặc huỷ.';
 
 function kiemConSuaDuoc(l: any) {
   if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Quyết định chuyển lớp đã được huỷ.' : 'Quyết định chuyển lớp vừa được thi hành.');

@@ -16,7 +16,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import type { DongDao } from '../duyet/loaiYeuCau.ts';
 import { demoToday } from '../demoConfig.ts';
-import { boiCanhTheoLop, dongTuBody, raLenh } from './lenhChuyen.ts';
+import { LOI_LENH_HEAD, boiCanhTheoLop, dongTuBody, khoaLenhNguoiKhac, raLenh } from './lenhChuyen.ts';
 import { luuKyVong } from '../normal/kyVong.ts';
 import { coTheChotLoTrinh } from './quyenChuyenLop.ts';
 
@@ -122,12 +122,16 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
     const g = conn.prepare(`SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?`).get(id, LOAI, bang, sid) as BanGhiDao | undefined;
     if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
     /* Lớp nguồn = ghi danh bị đóng ("transferred") trong bản chụp — quyền kiểm theo lớp em học TRƯỚC lần chuyển. */
-    const muc = JSON.parse(g.du_lieu) as { bang: string; truoc: any[] }[];
+    const muc = JSON.parse(g.du_lieu) as { bang: string; truoc: any[]; sau?: any[] }[];
     const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
     const lopNguon = ghiDanh[0]?.class_id as number | undefined;
     if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Head phụ trách lớp cũ của em hoàn tác được lần chuyển này.');
     /* N63 ① (rà PTA #1950): Hoàn tác lần chốt cả lớp (trang Cuối khoá) = quyết định lộ trình — CX không đảo; Hoàn tác chuyển lớp một em giữ `class.edit`. */
     if (bang === 'classes' && !coTheChotLoTrinh(p, lopNguon)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
+    /* Rà PTA #1950 vòng 3: chuyển ngay MỘT em theo quyết định Cuối khoá NGƯỜI KHÁC ra (Head) — CX không đảo (`khoaLenhNguoiKhac`, cùng luật sửa / huỷ lệnh).
+       Lệnh đọc từ bản chụp (dòng tạo / sửa của `lenh_chuyen_lop`), 0 câu thêm. */
+    if (bang === 'students' && muc.filter((m) => m.bang === 'lenh_chuyen_lop').flatMap((m) => [...m.truoc, ...(m.sau ?? [])])
+      .some((l) => l?.boi_canh && !l.__mat && khoaLenhNguoiKhac(p, l))) throw forbidden(LOI_LENH_HEAD);
     return { g, ghiDanh, lopNguon };
   });
   return tx(() => {
