@@ -29,7 +29,7 @@ const NGUOI = { QL: [['QL1', 59], ['QL5', 33]], GVCN: [['GVCN', 29]], GVBM: [['G
   QT: [['QT', 6]], ADMIN: [['ADMIN', 75]], TVV: [['TVV', 68]], CX: [['CX', 72]] };
 const theoNguoi = new Map();
 const them = (ten, uid, url) => { const k = `${ten}|${uid}`; if (!theoNguoi.has(k)) theoNguoi.set(k, new Set()); theoNguoi.get(k).add(url); };
-for (const d of DUONG_DO) for (const v of d.vai) for (const [ten, uid] of NGUOI[v]) them(ten, uid, thay(d.url));
+for (const d of DUONG_DO) for (const v of d.vai) for (const [ten, uid] of NGUOI[v] ?? []) them(ten, uid, thay(d.url));   // vai mới chưa có tài khoản đo (Head, BPXL…): bỏ qua
 /* GET chưa có trong DUONG_DO — tham số như web gọi. Đo bằng mọi vai (403 vẫn ghi). */
 const vl = g(`SELECT id FROM violations WHERE student_id = ? ORDER BY id DESC LIMIT 1`, HV) ?? g(`SELECT v.id FROM violations v JOIN students s ON s.id = v.student_id WHERE s.branch_id = ? ORDER BY v.id DESC LIMIT 1`, CN);
 const dm = g(`SELECT id FROM discipline_measures ORDER BY id DESC LIMIT 1`);
