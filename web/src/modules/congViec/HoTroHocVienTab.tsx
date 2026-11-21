@@ -424,7 +424,7 @@ export function HoTroHocVienTab() {
       onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); ghiHoanTac(tu.key, null); toast.push('ok', t('Đã hoàn tác')); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
   );
   const viecVuaLuu = {
-    ten: keTiep ? [tenBoEm(keTiep), keTiep.studentId !== null ? keTiep.studentName : null].filter(Boolean).join(' · ') : null,
+    ten: keTiep ? (keTiep.studentId !== null ? keTiep.studentName : tenBoEm(keTiep)) : null,   // A1-08: "Tiếp: {tên em}" một dòng (loại việc đã ở nút chính)
     bao: (x: DaLuuPanel, oLai?: boolean) => {
       if (!chon) return;
       setVuaLuu((v) => ({ x, tu: chon, den: oLai ? chon.key : keTiep?.key ?? null, lan: (v?.lan ?? 0) + 1 }));
@@ -938,7 +938,7 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
           [it.group === 'ghi_ket_qua_pa' ? t('Hạn ghi KQ') : t('Hạn'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} chuThuong /> : null],
           [t('Phụ trách'), it.owner],
         ] }}
-        chan={{ huy: null, trai: tenTiep && onTiep ? <span className="ten-hv text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
+        chan={{ huy: null, trai: tenTiep && onTiep ? <span className="ten-hv !whitespace-nowrap text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
           phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
           chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{t('Làm thay')}</button> : undefined }}>
         <div className="pt-3">

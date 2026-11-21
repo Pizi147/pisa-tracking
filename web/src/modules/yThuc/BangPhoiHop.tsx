@@ -335,7 +335,7 @@ function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
     : a.status === 'removed' ? (khoiPhuc ? [[t('Khôi phục'), onMoLai]] : [])
     : [...(onHan ? [[t('Sửa hạn…'), onHan] as [string, () => void]] : []), [t('Bỏ việc…'), onBo]];
   /* GD-4c: một menu thả = MenuDong (trước: role="menu" tự viết, không phím ↑ ↓ / Esc). */
-  return <MenuDong lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
+  return <MenuDong giuBaCham lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
 }
 
 /** Xác nhận tại dòng (GVCN / QL): Ngày + MỘT ô Nội dung (bắt buộc; Meeting CX: "Nội dung gửi TVV" tuỳ chọn) · + Tệp · Người thực hiện. Sửa: điền sẵn. */

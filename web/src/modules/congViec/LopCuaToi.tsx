@@ -48,8 +48,10 @@ export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly Wo
     /* Cột Test: có bài của tôi → bài gần hạn nhất (loại · tuần + chip hạn); không có → Test sắp tới của lớp (LG-8), chữ mờ. */
     const bai = la.filter((x) => cuaLop(x) && x.group === 'score').sort(xepHan)[0];
     const sapToi = testSapToi?.find((x) => x.classId === d.classId)?.testKeTiep ?? null;
-    d.test = bai ? { chu: [TEN_BAI[bai.kind ?? ''] ?? bai.contextLabel, bai.tuanThi ? tuanLich(bai.tuanThi) : null].filter(Boolean).join(' · '), han: bai }
-      : sapToi ? { chu: sapToi, han: null } : null;
+    /* A1-07: MỘT tên ngắn cho cột Test — bài của tôi và Test sắp tới đều bỏ chữ "Test" sau Progress / Final. */
+    const ngan = (x: string) => x.replace(/^(Progress|Final) Test/, '$1');
+    d.test = bai ? { chu: ngan([TEN_BAI[bai.kind ?? ''] ?? bai.contextLabel, bai.tuanThi ? tuanLich(bai.tuanThi) : null].filter(Boolean).join(' · ')), han: bai }
+      : sapToi ? { chu: ngan(sapToi), han: null } : null;
   }
   const hanSom = (d: Dong) => d.chip.map((c) => c.dau).sort(xepHan)[0];
   return [...lop.values()].sort((a, b) => {
