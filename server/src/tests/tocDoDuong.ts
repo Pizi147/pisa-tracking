@@ -146,6 +146,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/highlights' },
   /* SV-TQ-GV: Tổng quan GV hai khối (cả hai khung + hồ sơ GV theo kỳ + Thi tháng này) và ô Thi tháng này của lớp chủ nhiệm. */
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day/hai-khoi' },
+  /* TURSO-5: hồ sơ GV của chính mình gọi `?gon=1` (không `chiSoHoSoGv`); URL không tham số giữ cho web đã deploy. */
+  { trang: 'Hồ sơ GV tự xem', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day/hai-khoi?gon=1' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=thi-thang-nay' },
 
   /* OV6-DOC-CHON: ô tìm thanh trên (Ctrl K) — trước `/students?q` không LIMIT (QL "ng": 544 câu / 1 063 dòng, ×3 dữ liệu 1 622 câu), web chỉ hiện 6. */
@@ -202,10 +204,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board?category=listening' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/phan-tich-lop' },
   /* BAO-CAO-PH: tab Báo cáo PH (một lớp × một đợt) + panel một phần (em + bản ghi đợt này / đợt trước + điểm gốc một câu). */
-  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'ADMIN', 'TVV'], url: '/classes/{lopFT}/bao-cao-ph', maChuDich: { TVV: 403 } },   // TVV mẫu ở chi nhánh khác lớp
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'ADMIN', 'TVV'], url: '/classes/{lopFT}/bao-cao-ph' },   // B2-14: TVV mẫu nay cùng chi nhánh lớp (MB) → 200; TVV chi nhánh khác 403 ở `tocDo.run` B2-14
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/bao-cao-ph/phan?phan=listening' },
   /* LG-13 (H1, H2): "Bạn đã ghi" cả lớp — chỉ gọi khi mở panel viết Báo cáo PH / bàn giao (4 câu, theo em của lớp). */
-  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV'], url: '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28', maChuDich: { TVV: 403 } },
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV'], url: '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28' },   // B2-14: TVV MB → 200 (TVV chi nhánh khác 403: `tocDo.run` B2-14)
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'GVCN_THUONG'], url: '/classes/{lopThuong}/chu-da-ghi?tu=2026-06-01&den=2026-09-28' },
   /* GD-20a: panel viết Báo cáo PH gọi theo đợt (`?dot=`) — máy chủ tự tính "tháng này" / "đợt này". */
   { trang: 'Hồ sơ lớp FT', vai: ['QL', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/chu-da-ghi?dot=thang:2026-08' },
@@ -379,7 +381,7 @@ export const DUONG_DO: MucDo[] = [
   /* VH-1: hộp Nhóm công việc — một câu nhóm của phạm vi. */
   { trang: 'Công việc', vai: ['QL', 'QT', 'CX'], url: '/mgmt-tasks/nhom' },
   /* VH-1b (N62): khối giao việc N58 (Phụ trách · Hạn · Theo dõi · Mô tả) — panel một việc. */
-  { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/giao-viec/bao_ph/{viecBaoPh}', maChuDich: { TVV: 403 } },
+  { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/giao-viec/bao_ph/{viecBaoPh}' },   // B2-14: TVV MB (em của TVV) → 200; TVV chi nhánh khác 403: `tocDo.run` B2-14
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/meeting/board' },
 
@@ -517,8 +519,12 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/nguong-thuong' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=band&gioi-han=8' },
   /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — các phần trang mở gọi cùng lúc, đọc chung trong một request. */
-  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases' },
-  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases' },
+  /* B2-14 (TURSO-5): đo đúng HAI lời gọi gộp trang gửi (`ClassOverviewPage` — tải trước tab Học viên · phần sau khi có `overview`; phần sau đo tập lớn nhất
+     mọi vai, vai nào trang không gửi phần nào thì trang thật nhẹ hơn) — trước đo MỘT URL gộp 7 phần trang không bao giờ gửi. */
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot' },
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc' },
   /* TD-QUET (17/11): GET còn thiếu trong bảng đo (đo toàn bộ trên bản chép thật — docs/superpowers/specs/2026-11-17-toc-do/do-toan-bo.md) — có trần để không tăng âm thầm. */
   { trang: 'Chung', vai: ['QL', 'QT', 'GVCN'], url: '/ref/period-window' },
   { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/people' },
@@ -560,6 +566,31 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  'QL /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 72,   // B2-14 (TURSO-5): URL trang gửi, đo 55
+  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 73,   // B2-14 (TURSO-5): URL trang gửi, đo 56
+  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 73,   // B2-14 (TURSO-5): URL trang gửi, đo 56
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 73,   // B2-14 (TURSO-5): URL trang gửi, đo 56
+  'QT /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 71,   // B2-14 (TURSO-5): URL trang gửi, đo 54
+  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 71,   // B2-14 (TURSO-5): URL trang gửi, đo 54
+  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 69,   // B2-14 (TURSO-5): URL trang gửi, đo 53
+  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 72,   // B2-14 (TURSO-5): URL trang gửi, đo 55
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 94,   // B2-14 (TURSO-5): URL trang gửi, đo 72
+  'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 58,   // B2-14 (TURSO-5): URL trang gửi, đo 44
+  'GVBM /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 50,   // B2-14 (TURSO-5): URL trang gửi, đo 38
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 58,   // B2-14 (TURSO-5): URL trang gửi, đo 44
+  'QT /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 94,   // B2-14 (TURSO-5): URL trang gửi, đo 72
+  'TVV /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 25,   // B2-14 (TURSO-5): URL trang gửi, đo 15
+  'CX /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 34,   // B2-14 (TURSO-5): URL trang gửi, đo 24
+  'ADMIN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 32,   // B2-14 (TURSO-5): URL trang gửi, đo 22
+  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 84,   // B2-14 (TURSO-5): URL trang gửi, đo 64
+  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 82,   // B2-14 (TURSO-5): URL trang gửi, đo 63
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 85,   // B2-14 (TURSO-5): URL trang gửi, đo 65
+  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 86,   // B2-14 (TURSO-5): URL trang gửi, đo 66
+  'QT /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 88,   // B2-14 (TURSO-5): URL trang gửi, đo 67
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 49,   // B2-14 (TURSO-5): URL trang gửi, đo 37
+  'GVCN /tong-quan/lop-toi-day/hai-khoi?gon=1': 35,   // B2-14 (TURSO-5): URL trang gửi, đo 25
+  'GVBM /tong-quan/lop-toi-day/hai-khoi?gon=1': 35,   // B2-14 (TURSO-5): URL trang gửi, đo 25
+  'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi?gon=1': 35,   // B2-14 (TURSO-5): URL trang gửi, đo 25
   /* GV-1 (N58): tab "Đang theo dõi" — đo 2–3 câu (phiên + MỘT câu theo dõi) → đo + 10. /my-work mọi vai: +1 câu (việc giao cho tôi, UNION ALL), +0 dòng — trần cũ đủ. */
   /* GV-2: ô giao việc — 1 câu tìm (+ quyền), trần 4 / lần gõ. */
   'QL /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 4, 'QL /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 4, 'QT /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 4, 'QT /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 4, 'TVV /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 4, 'TVV /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 4, 'CX /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 4, 'CX /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 4,
@@ -775,7 +806,7 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 21,
   /* LG-13 (H1, H2): "Bạn đã ghi" cả lớp — 4 câu (em · nhận xét · Case + kết quả PA · vi phạm + xử lý) + 2 câu phiên; bản chép 15/11: ≤ 210 dòng trả / lớp (CP FT 137). */
   'QL /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVBM /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
-  'GVCN_THUONG /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'QT /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'TVV /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 4,
+  'GVCN_THUONG /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'QT /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'TVV /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 16,   // B2-14: TVV MB 49 em đo 6 (trần cũ 4, TVV Cẩm Phả 4 em)
   'QL /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN_THUONG /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
   /* GD-20a: `?dot=` +3 câu (tiến độ lớp, tuỳ chỉnh đợt — tính "tháng này" / "đợt này") = 9; trần đo + 2. */
   'QL /classes/3/chu-da-ghi?dot=thang:2026-08': 11, 'GVCN /classes/3/chu-da-ghi?dot=thang:2026-08': 11, 'GVBM /classes/3/chu-da-ghi?dot=thang:2026-08': 11,
@@ -838,7 +869,7 @@ export const TRAN: Record<string, number> = {
   /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo PH kết quả Test của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
   /* TURSO-1211: danh sách + Đang SOS CÙNG request — đo QL 68 · GVCN / GVBM / GVCN_THUONG 70 · QT 69 · TVV 49 · CX 73 · Admin 52 (riêng: QL 52 + 22) → max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /hoc-vien-lop?kem=sos': 89, 'GVCN /hoc-vien-lop?kem=sos': 91, 'GVBM /hoc-vien-lop?kem=sos': 91, 'GVCN_THUONG /hoc-vien-lop?kem=sos': 91,
-  'QT /hoc-vien-lop?kem=sos': 90, 'TVV /hoc-vien-lop?kem=sos': 64, 'CX /hoc-vien-lop?kem=sos': 95, 'ADMIN /hoc-vien-lop?kem=sos': 68,
+  'QT /hoc-vien-lop?kem=sos': 90, 'TVV /hoc-vien-lop?kem=sos': 90, 'CX /hoc-vien-lop?kem=sos': 95, 'ADMIN /hoc-vien-lop?kem=sos': 68,
   'QL /hoc-vien-lop': 63,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10; TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
   'GVCN /hoc-vien-lop': 65,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71); TL-HVL: đo 50 (trước 53)
   'GVBM /hoc-vien-lop': 65,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71); TL-HVL: đo 50 (trước 53)
@@ -1227,7 +1258,7 @@ export const TRAN: Record<string, number> = {
   'GVBM /hoc-vien-lop?goc=sos': 31,   // đo 21
   'GVCN_THUONG /hoc-vien-lop?goc=sos': 31,   // đo 21
   'QT /hoc-vien-lop?goc=sos': 31,   // đo 21
-  'TVV /hoc-vien-lop?goc=sos': 19,   // đo 9
+  'TVV /hoc-vien-lop?goc=sos': 33,   // đo 9 · B2-14: TVV MB 49 em đo 23 (trần cũ 19, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop?goc=sos': 37,   // đo 27
   'QL /hoc-vien-lop?goc=sos&tuan=tat-ca': 31,   // đo 21
   'QT /hoc-vien-lop?goc=sos&tuan=tat-ca': 31,   // đo 21
@@ -1362,13 +1393,6 @@ export const TRAN: Record<string, number> = {
   'QT /admin/bang-quy-doi': 13,   // đo 3
   /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — max(đo + 10, ⌈đo × 1,3⌉). QL / QT (đo 112–122 = bảy GET lẻ trong một request) vượt trần cứng 100 của
      phép kiểm chung → không khoá ở đây; khoá bằng "gộp ≤ tổng các GET lẻ" (tocDo.run, TD-QUET hồ sơ lớp). */
-  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 114,   // đo 87
-  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 110,   // đo 84
-  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 114,   // đo 87
-  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 17,   // đo 7
-  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 94,   // đo 55 · N52: CX sửa lớp (`class.edit` — khối Xét lại / Kết thúc lớp / Lộ trình tiếp) đo 72 → max(72 + 10, ⌈72 × 1,3⌉); việc theo em không dựng (CX không có việc)
-  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 85,   // đo 65
-  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 124,   // đo 95
   /* TD-QUET (17/11): Học viên & Lớp mở với số tab Đang SOS (`kem=sos-dem`) — max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /hoc-vien-lop?kem=sos-dem': 75,   // đo 57
   'GVCN /hoc-vien-lop?kem=sos-dem': 77,   // đo 59
@@ -1393,6 +1417,31 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  'QL /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3162,   // B2-14 (TURSO-5): URL trang gửi, đo 2432
+  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3187,   // B2-14 (TURSO-5): URL trang gửi, đo 2451
+  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3187,   // B2-14 (TURSO-5): URL trang gửi, đo 2451
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3187,   // B2-14 (TURSO-5): URL trang gửi, đo 2451
+  'QT /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3136,   // B2-14 (TURSO-5): URL trang gửi, đo 2412
+  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3072,   // B2-14 (TURSO-5): URL trang gửi, đo 2363
+  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3046,   // B2-14 (TURSO-5): URL trang gửi, đo 2343
+  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 3162,   // B2-14 (TURSO-5): URL trang gửi, đo 2432
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 1040,   // B2-14 (TURSO-5): URL trang gửi, đo 800
+  'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 795,   // B2-14 (TURSO-5): URL trang gửi, đo 611
+  'GVBM /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 656,   // B2-14 (TURSO-5): URL trang gửi, đo 504
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 795,   // B2-14 (TURSO-5): URL trang gửi, đo 611
+  'QT /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 1048,   // B2-14 (TURSO-5): URL trang gửi, đo 806
+  'TVV /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 275,   // B2-14 (TURSO-5): URL trang gửi, đo 211
+  'CX /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 237,   // B2-14 (TURSO-5): URL trang gửi, đo 182
+  'ADMIN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 604,   // B2-14 (TURSO-5): URL trang gửi, đo 464
+  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 517,   // B2-14 (TURSO-5): URL trang gửi, đo 397
+  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 513,   // B2-14 (TURSO-5): URL trang gửi, đo 394
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 526,   // B2-14 (TURSO-5): URL trang gửi, đo 404
+  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 459,   // B2-14 (TURSO-5): URL trang gửi, đo 353
+  'QT /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 471,   // B2-14 (TURSO-5): URL trang gửi, đo 362
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 251,   // B2-14 (TURSO-5): URL trang gửi, đo 193
+  'GVCN /tong-quan/lop-toi-day/hai-khoi?gon=1': 1710,   // B2-14 (TURSO-5): URL trang gửi, đo 1315
+  'GVBM /tong-quan/lop-toi-day/hai-khoi?gon=1': 1943,   // B2-14 (TURSO-5): URL trang gửi, đo 1494
+  'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi?gon=1': 1710,   // B2-14 (TURSO-5): URL trang gửi, đo 1315
   /* GV-1 (N58): tab "Đang theo dõi" — đo 1–2 dòng (seed chưa có ai theo dõi) → đo + 50. ponytail: dòng tăng theo số việc từng theo dõi (đọc hết rồi lọc 7 ngày ở mã). */
   /* GV-2: ô giao việc đọc người có vai ở MỘT chi nhánh (seed MB 19), lọc tên không dấu ở JS — trần 40 (LIMIT SQL 300 cho bản chính). */
   'QL /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QL /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40,
@@ -1404,7 +1453,7 @@ export const TRAN_DONG: Record<string, number> = {
   /* MYWORK-TVV: đo 13 dòng (seed, không kèm quét nền) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 66 (109 em): 920–1 121 dòng (14–21 câu); lượt quét nền đầu ngày ~200 câu chạy một lần cho cả hệ thống, không thuộc TVV. */
   'TVV /my-work': 63,
   /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */
-  'TVV /tong-quan/tvv/em': 124,
+  'TVV /tong-quan/tvv/em': 782,   // B2-14: TVV MB 49 em đo 601 (trần cũ 124, TVV Cẩm Phả 4 em)
   /* KY-VONG-MT0 (14/11): bảng Kết quả đầu ra lớp FT — đo 14 dòng (kỹ năng Đã huỷ đọc bằng câu con, 0 câu thêm) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/{lopFT}/ket-qua-dau-ra': 64, 'GVCN /classes/{lopFT}/ket-qua-dau-ra': 64,
   /* GD-5: `/ref/nguoi` đo 12 dòng (QT 22) chưa gõ / có gõ, GV Speaking 6 (QT 10) — đọc trong phạm vi + cắt 20 / 12 ở máy chủ → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -1618,7 +1667,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /tong-quan/quan-ly': 51,   // đo 1
   'QL /highlights': 135,   // đo 85
   'QT /highlights': 174,   // đo 124
-  'TVV /tong-quan/hoc-vien': 305,   // đo 234
+  'TVV /tong-quan/hoc-vien': 1100,   // đo 234 · B2-14: TVV MB 49 em đo 846 (trần cũ 305, TVV Cẩm Phả 4 em)
   'CX /tong-quan/hoc-vien': 2771,   // đo 2131
   'QT /tong-quan/hoc-vien': 2771,   // đo 2131
   'CX /tong-quan/hoc-vien?branchId={cn}': 2112,   // đo 1624
@@ -1696,9 +1745,9 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /classes?branchId={cn}': 589,   // đo 453
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}': 3388,   // đo 2606
   'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId={cn}': 3328,   // đo 2560
-  'TVV /hoc-vien-lop/theo-vai': 324,   // đo 249
+  'TVV /hoc-vien-lop/theo-vai': 1265,   // đo 249 · B2-14: TVV MB 49 em đo 973 (trần cũ 324, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop/theo-vai': 3026,   // đo 2327
-  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 745,   // đo 573
+  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 2435,   // đo 573 · B2-14: TVV MB 49 em đo 1873 (trần cũ 745, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop/theo-vai?branchId={cn}': 2296,   // đo 1766
   'ADMIN /hoc-vien-lop': 3388,   // đo 2606
   'QL /hoc-vien-lop?goc=sos': 2274,   // đo 1749
@@ -1706,7 +1755,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /hoc-vien-lop?goc=sos': 1896,   // đo 1458
   'GVCN_THUONG /hoc-vien-lop?goc=sos': 1675,   // đo 1288
   'QT /hoc-vien-lop?goc=sos': 2213,   // đo 1702
-  'TVV /hoc-vien-lop?goc=sos': 130,   // đo 80
+  'TVV /hoc-vien-lop?goc=sos': 2144,   // đo 80 · B2-14: TVV MB 49 em đo 1649 (trần cũ 130, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop?goc=sos': 3039,   // đo 2337
   'QL /hoc-vien-lop?goc=sos&tuan=tat-ca': 2274,   // đo 1749
   'QT /hoc-vien-lop?goc=sos&tuan=tat-ca': 2213,   // đo 1702
@@ -1716,7 +1765,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /hoc-vien-lop?kem=sos': 3769,   // đo 2899
   'GVCN_THUONG /hoc-vien-lop?kem=sos': 3301,   // đo 2539
   'QT /hoc-vien-lop?kem=sos': 4375,   // đo 3365
-  'TVV /hoc-vien-lop?kem=sos': 377,   // đo 290
+  'TVV /hoc-vien-lop?kem=sos': 3318,   // đo 290 · B2-14: TVV MB 49 em đo 2552 (trần cũ 377, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop?kem=sos': 5990,   // đo 4607
   'ADMIN /hoc-vien-lop?kem=sos': 3388,   // đo 2606
   'QL /hoc-vien-lop/em/{hv}': 95,   // đo 45
@@ -1734,7 +1783,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1222,   // đo 940
   'GVCN /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 940,   // đo 723
   'GVBM /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1039,   // đo 799
-  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 102,   // đo 52
+  'TVV /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 695,   // đo 52 · B2-14: TVV MB 49 em đo 534 (trần cũ 102, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1605,   // đo 1234
   'GVCN /hoc-vien-lop/phan-cong?branchId={cn}': 51,   // đo 1
   'GVBM /hoc-vien-lop/phan-cong?branchId={cn}': 51,   // đo 1
@@ -1780,7 +1829,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 184,   // đo 134
   'GVCN_THUONG /classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 184,   // đo 134
   'QT /classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 184,   // đo 134
-  'TVV /classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 51,   // đo 1
+  'TVV /classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 184,   // đo 1 · B2-14: TVV MB 49 em đo 134 (trần cũ 51, TVV Cẩm Phả 4 em)
   'QL /classes/{lopThuong}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 63,   // đo 13
   'GVCN_THUONG /classes/{lopThuong}/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 63,   // đo 13
   'QL /classes/{lopFT}/chu-da-ghi?dot=thang:2026-08': 112,   // đo 62
@@ -2221,24 +2270,13 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /admin/chi-nhanh': 56,   // đo 6
   'QT /admin/bang-quy-doi': 51,   // đo 1
   /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — max(đo + 50, ⌈đo × 1,3⌉). */
-  'QL /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3796,   // đo 2920
-  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3569,   // đo 2745
-  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3546,   // đo 2727
-  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3569,   // đo 2745
-  'QT /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3803,   // đo 2925
-  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 118,   // đo 68
-  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3114,   // đo 2395
-  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3425,   // đo 2634
-  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 952,   // đo 732
-  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 959,   // đo 737
-  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 740,   // đo 569
   /* TD-QUET (17/11): `kem=sos-dem` — max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /hoc-vien-lop?kem=sos-dem': 3778,   // đo 2906
   'GVCN /hoc-vien-lop?kem=sos-dem': 2781,   // đo 2139
   'GVBM /hoc-vien-lop?kem=sos-dem': 3209,   // đo 2468
   'GVCN_THUONG /hoc-vien-lop?kem=sos-dem': 2781,   // đo 2139
   'QT /hoc-vien-lop?kem=sos-dem': 3725,   // đo 2865
-  'TVV /hoc-vien-lop?kem=sos-dem': 357,   // đo 274
+  'TVV /hoc-vien-lop?kem=sos-dem': 3124,   // đo 274 · B2-14: TVV MB 49 em đo 2403 (trần cũ 357, TVV Cẩm Phả 4 em)
   'CX /hoc-vien-lop?kem=sos-dem': 5145,   // đo 3957
   'ADMIN /hoc-vien-lop?kem=sos-dem': 3406,   // đo 2620
 };

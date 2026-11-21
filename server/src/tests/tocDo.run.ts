@@ -225,7 +225,7 @@ const USER: Record<Vai, number> = {
     email: `do.admin.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-admin', fullName: 'Đo Admin MB',
     roles: [{ role: 'office_admin', branches: ['MB'] }],
   }).userId as number,
-  TVV: userByRole('consultant', 'CP'),
+  TVV: userByRole('consultant', 'MB'),   // B2-14 (TURSO-5): TVV đông em nhất của seed (MB, 49 em) — trước TVV Cẩm Phả 4 em, trần TVV không bắt được tăng thật
   CX: userByRole('cx', null),
   HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
   BPXL: userByRole('scheduler', 'MB'),   // BPXL-1: tài khoản demo Chuyên viên Xếp lịch Monbay
@@ -504,6 +504,15 @@ await checkAsync('PR-TD Task1(g) · mọi đường trong DUONG_DO × vai của 
     }
   }
   assert(sai.length === 0, `Có đường sai mã:\n${sai.join('\n')}`);
+});
+
+/* B2-14 (TURSO-5): vai TVV đo bằng TVV MB (cùng chi nhánh lớp mẫu) → ba đường trước đo 403 nay 200 ở Task1(g); giữ phép kiểm TVV chi nhánh KHÁC vẫn 403. */
+await checkAsync('B2-14 · TVV Cẩm Phả (chi nhánh khác lớp mẫu MB) vẫn 403 ở Báo cáo PH · chữ đã ghi · khối giao việc Báo PH', async () => {
+  const tvvCp = userByRole('consultant', 'CP');
+  for (const mau of ['/classes/{lopFT}/bao-cao-ph', '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28', '/giao-viec/bao_ph/{viecBaoPh}']) {
+    const r = await callHttpUser(tvvCp, 'GET', urlFor(mau));
+    assert(r.status === 403, `TVV CP ${mau} → ${r.status}`);
+  }
 });
 
 // ==================================================================== Task 2 — quyền & ngày nghiệp vụ qua bộ nhớ

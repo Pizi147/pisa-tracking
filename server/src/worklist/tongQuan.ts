@@ -460,7 +460,9 @@ function thiThangNayCuaGv(p: Principal, ct: 'ft' | 'thuong') {
  * Mỗi số bấm được: cột V4 + Thi tháng này → `/tong-quan/lop-toi-day/o`; Đạt / Tiến bộ → `/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`.
  * `chiSo` (S1): bốn số đầu trang GV (`ketQua`, `tienBo`) — cùng lần `chiSoHoSoGv`, bằng `/giao-vien/:id/chi-so` kỳ mặc định.
  */
-export function lopToiDayHaiKhoi(p: Principal) {
+export function lopToiDayHaiKhoi(p: Principal, gon = false) {
+  /* TURSO-5: `gon` (hồ sơ GV của chính mình, `?gon=1`) — trang chỉ dùng `day` (dòng phụ) + `chuNhiem` và đã GET `/chi-so` riêng → không `chiSoHoSoGv`
+     (~18 câu): bỏ `chiSo`, `ky` / `ketQua` / `tienBo` = null. Không tham số = JSON cũ (web đã deploy 12/11 còn đọc `chiSo`). */
   /* Lớp thường chỉ đọc khi GV có lớp thường (`coThuong` của lần đọc FT) — GV chỉ dạy FT không tốn thêm câu. */
   /* GIAM-DOC-TQGV: khung không có lớp chủ nhiệm → không tính Dưới kỳ vọng · SOS · Case (chỉ hàng chủ nhiệm đọc). */
   const ft = lopToiDay(p, { ct: 'ft' }, true);
@@ -468,8 +470,8 @@ export function lopToiDayHaiKhoi(p: Principal) {
   /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
   const day = hang.filter((r) => r.kyNang.length || r.baiCho);
   /* S1: MỘT lần `chiSoHoSoGv` cho cả trang — thẻ "Đạt kỳ vọng Test" / "Tiến bộ" đầu trang đọc `chiSo` ở đây (trước gọi thêm `/giao-vien/:id/chi-so`, tính lại y hệt). */
-  const cs = chiSoHoSoGv(p, p.userId, {}, true);   // RA-DOC-0611: chỉ Kết quả / Tiến bộ — không tính Chấm đúng hạn, Ghi KQ PA, PA hiệu quả (không hiện ở đây)
-  const ht = new Map(day.length ? cs.hocThuatTheoLop.map((h) => [h.classId, h]) : []);
+  const cs = gon ? null : chiSoHoSoGv(p, p.userId, {}, true);   // RA-DOC-0611: chỉ Kết quả / Tiến bộ — không tính Chấm đúng hạn, Ghi KQ PA, PA hiệu quả (không hiện ở đây)
+  const ht = new Map(cs && day.length ? cs.hocThuatTheoLop.map((h) => [h.classId, h]) : []);
   const cn = hang.filter((r) => r.gvcn);
   const thi = new Map<number, number>();
   for (const khung of ['ft', 'thuong'] as const) {
@@ -477,8 +479,8 @@ export function lopToiDayHaiKhoi(p: Principal) {
     for (const x of thiThangNayCuaGv(p, khung).values()) thi.set(x.lop, (thi.get(x.lop) ?? 0) + 1);
   }
   return {
-    ky: day.length ? { tu: cs.tu, den: cs.den } : null,
-    chiSo: { tu: cs.tu, den: cs.den, ketQua: cs.ketQua, tienBo: cs.tienBo },
+    ky: cs && day.length ? { tu: cs.tu, den: cs.den } : null,
+    ...(cs ? { chiSo: { tu: cs.tu, den: cs.den, ketQua: cs.ketQua, tienBo: cs.tienBo } } : {}),
     day: day.map((r) => {
       const h = ht.get(r.classId);
       return {
