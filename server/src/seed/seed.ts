@@ -482,6 +482,9 @@ function seedMeeting(conn: any, ctx: {
   let n = 0;
   const unitOf = (code: string) => units.find((u) => u.code === code);
   const prevId = prev?.id ?? currentPeriodId;
+  /* VH-1 (N59): 4 nhóm khởi đầu (dữ liệu nền `napDuLieuNen`) — việc trỏ `group_id`; người theo dõi ở `viec_theo_doi` (loai van_hanh). */
+  const nhomId = new Map((conn.prepare('SELECT khoa, id FROM task_groups WHERE khoa IS NOT NULL').all() as any[]).map((r) => [r.khoa as string, r.id as number]));
+  const theoDoi = conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) VALUES ('van_hanh', ?, ?, 'tay', ?, ?) ON CONFLICT(loai, ref_id, user_id) DO NOTHING`);
 
   const addTask = (t: {
     title: string; unit?: any; branch?: string | null; assignee: string; due: string | null;
@@ -499,17 +502,18 @@ function seedMeeting(conn: any, ctx: {
         .prepare(
           `INSERT INTO tasks (code, period_id, task_type, title, reporting_unit_id, branch_id, assignee_user_id,
                               due_date, progress, note, source_type, created_by, created_at, completed_at,
-                              group_key, parent_task_id, watcher_user_id, stop_reason, review_on,
+                              group_id, parent_task_id, stop_reason, review_on,
                               help_user_id, help_name)
-           VALUES (?,?,?,?,?,?,?,?,?,?, 'manual', ?,?,?,?,?,?,?,?,?,?)`,
+           VALUES (?,?,?,?,?,?,?,?,?,?, 'manual', ?,?,?,?,?,?,?,?,?)`,
         )
         .run(padCode('CV', n, 4), t.periodId, t.type, t.title, t.unit?.id ?? null,
              t.branch ? branchId.get(t.branch)! : null, userId.get(t.assignee) ?? adminId,
              t.due, t.progress, t.note ?? null, adminId, NOW, t.completedAt ?? null,
-             t.group, t.parentId ?? null, t.watcher ? userId.get(t.watcher) ?? null : null,
+             nhomId.get(t.group) ?? null, t.parentId ?? null,
              t.stopReason ?? null, t.reviewOn ?? null,
              t.helpUser ? userId.get(t.helpUser) ?? null : null, t.helpName ?? null).lastInsertRowid,
     );
+    if (t.watcher && userId.get(t.watcher)) theoDoi.run(id, userId.get(t.watcher), adminId, NOW);
     for (const u of t.updates ?? []) {
       conn
         .prepare(

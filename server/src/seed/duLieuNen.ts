@@ -9,6 +9,7 @@ import { seedRoutes } from '../platform/sysconfig.ts';
 import { dienCauHinh } from '../migrate/prOv6b1.ts';
 import { chenPetKet } from '../migrate/prOv6b2.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
+import { KHOA_PR_VAN_HANH, dienNhomKhoiDau } from '../migrate/prVanHanh.ts';
 import { ngayTheoGioVN } from '../../../shared/domain/index.ts';
 import { RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 
@@ -106,6 +107,9 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ky_vong_tu_dat_da_chay', now, now);   // KY-VONG-MT0: DB mới không có "Không đạt" cũ khi MT0 đạt   // TINH-LUI-PC: DB mới — phân công khai đúng ngày từ đầu, không tính lùi
   /* LG-3: mốc bật việc GV "Viết Báo cáo PH" = ngày dựng DB (giờ VN); seed ghi đè = ngày demo. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_MOC_BC_PH_VIEC_GV, ngayTheoGioVN(now) ?? now, now);
+  /* VH-1 (N59): 4 nhóm Vận hành khởi đầu + khoá — migrate `prVanHanh` chỉ chuyển group_key / người theo dõi cũ một lần trên DB cũ. */
+  dienNhomKhoiDau(conn);
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_PR_VAN_HANH, now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };

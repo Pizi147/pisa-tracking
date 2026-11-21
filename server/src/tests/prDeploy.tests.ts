@@ -104,7 +104,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     const tr = meeting.createTask(P.mbManager, {
       kind: 'branch_ops', title: 'Việc người theo dõi 0b-1g', followerIds: [P.cpManager.userId, 999999],
     }) as any;
-    const ds = all('SELECT user_id FROM task_followers WHERE task_id = ?', tr.id).map((r) => r.user_id as number);
+    const ds = all("SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?", tr.id).map((r) => r.user_id as number);
     assert(!ds.includes(P.cpManager.userId), 'QL CP lọt vào người theo dõi việc MB');
     assert(ds.includes(P.mbManager.userId), 'QL MB phải có sẵn (tự thêm theo chi nhánh)');
   });
