@@ -146,7 +146,7 @@ export function emCuaTvv(p: Principal, f: { tvv?: number | null } = {}): { tvv: 
   const minh = tvv === p.userId;
   if (!minh && !can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true })) throw forbidden('Chỉ xem được học viên của chính mình.');
   const rows = db().prepare(
-    `SELECT s.id, s.full_name AS ten, s.status, c.id AS lop_id, c.code AS lop_ma, cy.exam_date, cy.exam_month, cy.thi_that_ngay, rp.week_start AS tuan_thi
+    `SELECT s.id, s.full_name AS ten, s.status, COALESCE(c.branch_id, s.branch_id) AS em_branch, c.id AS lop_id, c.code AS lop_ma, cy.exam_date, cy.exam_month, cy.thi_that_ngay, rp.week_start AS tuan_thi
        FROM students s
        LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
        LEFT JOIN classes c ON c.id = e.class_id
@@ -161,7 +161,7 @@ export function emCuaTvv(p: Principal, f: { tvv?: number | null } = {}): { tvv: 
     if (!x) {
       if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) continue;
       /* AUDIT-2111 (sau #1948): TVV cũ (vai TVV không còn phủ chi nhánh em) không còn em đó trong "em của tôi" — quyền đã nạp ở trên, 0 câu. */
-      if (minh && !laTvvCuaEm(p, { consultant_user_id: tvv, student_id: r.id })) continue;
+      if (minh && !laTvvCuaEm(p, { consultant_user_id: tvv, student_id: r.id, em_branch: r.em_branch ?? undefined })) continue;   // cùng cách tính với /my-work
       x = { id: r.id, ten: r.ten, status: r.status, lop: [] };
       /* Như chip `sap-thi`: dòng đầu của em mang lịch thi; ngày > tuần > tháng. */
       if (r.status !== 'finished' && !r.thi_that_ngay) {

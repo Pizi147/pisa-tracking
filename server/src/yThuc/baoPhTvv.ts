@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
-import { giuViecQl } from '../worklist/viecTvv.ts';
+import { giuViecQl, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
 import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
@@ -517,10 +517,12 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
     let ownerId: number | null;
+    /* AUDIT-2111 (rà #1960): TVV hết hiệu lực ở chi nhánh em = chưa có TVV → Head giữ (không mồ côi); chính người xem: grant đã nạp, 0 câu. */
+    const tvv = r.phu_trach_id != null ? r.tvv : tvvHieuLuc(p, r.tvv, r.student_id, r.branch_id ?? undefined, () => null);
     /* GV-1 (N58): việc đã giao rời danh sách người theo luật — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" của QL thấy tên người được giao. */
     if (r.phu_trach_id != null) { if (!o.tatCa || r.phu_trach_id === p.userId || !trongPv(r.branch_id)) continue; ownerId = r.phu_trach_id; }
-    else if (laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: r.branch_id ?? null })) ownerId = p.userId;   // TVV cũ (đổi chi nhánh) không giữ — 0 câu
-    else if (r.phoi_hop_id != null && !r.tvv && r.gvcn_id) {
+    else if (tvv !== null && tvv === p.userId) ownerId = p.userId;
+    else if (r.phoi_hop_id != null && !tvv && r.gvcn_id) {
       /* PHOI-HOP-V2: em chưa có TVV — GVCN giữ; QL "Tất cả" thấy dòng của GVCN đó. */
       if (r.gvcn_id === p.userId) ownerId = p.userId;
       else if (o.tatCa && trongPv(r.branch_id)) ownerId = r.gvcn_id;
@@ -528,8 +530,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     }
     else if (!trongPv(r.branch_id)) continue;
     /* DEM-VIEC: em chưa có TVV → QL chi nhánh giữ; Quản trị chỉ giữ khi chi nhánh không có QL (`giuViecQl`), còn lại thấy ở "Tất cả" (chưa ai giữ). */
-    else if (!r.tvv) { if (giu(r.branch_id)) ownerId = p.userId; else if (o.tatCa) ownerId = null; else continue; }
-    else if (o.tatCa) ownerId = r.tvv;
+    else if (!tvv) { if (giu(r.branch_id)) ownerId = p.userId; else if (o.tatCa) ownerId = null; else continue; }
+    else if (o.tatCa) ownerId = tvv;
     else continue;
     const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : [], r.han_chon);
     /* TL-1 (N61): "Chờ GV sửa" — hạn tạm dừng (không quá hạn, không "hôm nay"), cờ cho web. */
