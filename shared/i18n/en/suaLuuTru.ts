@@ -9,6 +9,7 @@ export const EN_SUA_LUU_TRU = {
   'Em đã chuyển sang lớp mới — đổi ở hồ sơ (Chuyển lớp / Kết thúc học).': 'The student has moved to the new class — change it on the profile (Transfer / End studies).',
   'Kết quả đã đổi — xem lại bước tiếp?': 'Result changed — review next step?',
   'Đã lưu kết quả thi thật': 'Real exam result saved',
+  'Đã lưu · Không thi': 'Saved · No exam',   // SAU-THI-GON: nút Không thi tại chỗ
   'Đã hoàn tác kết quả thi thật': 'Real exam result undone',
   'Đã khôi phục bản trước': 'Previous version restored',
   'Khôi phục bản trước': 'Restore previous version',

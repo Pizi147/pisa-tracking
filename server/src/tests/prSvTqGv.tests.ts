@@ -12,6 +12,9 @@ export async function runPrSvTqGvTests(t: any) {
   const perm: any = await import('../permissions.ts');
   const { demoToday }: any = await import('../demoConfig.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
   console.log('\nSV-TQ-GV · Tổng quan GV hai khối');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
 
@@ -177,6 +180,32 @@ export async function runPrSvTqGvTests(t: any) {
     /* `napBai` thu hẹp đi MULTI-INDEX OR (lớp · em · GV chấm qua idx_score_examiner), không quét lượt cả chi nhánh. */
     const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${hep}`).all(...Array((hep.match(/\?/g) ?? []).length).fill(1)) as any[]).map((x) => x.detail as string);
     assert(hep && plan.includes('MULTI-INDEX OR') && plan.some((d) => d.includes('idx_score_examiner')), `kế hoạch napBai thu hẹp: ${plan.join(' | ')}`);
+  });
+
+  /* TURSO-5: hồ sơ GV gọi `/hai-khoi?gon=1` — không `chiSoHoSoGv`, không `chiSo`; `day` (trừ Đạt / Tiến bộ) + `chuNhiem` y hệt bản đầy đủ. */
+  check('TURSO-5 · `/hai-khoi?gon=1`: chiSoHoSoGv chạy 0 lần, ít câu hơn; dòng phụ + Lớp chủ nhiệm = bản đầy đủ (mọi GV demo có lớp)', () => {
+    const gvs = (conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE status = 'active' ORDER BY user_id`).all() as any[]).map((r) => r.user_id as number);
+    let co = 0;
+    for (const uid of gvs) {
+      const p = perm.loadPrincipal(uid);
+      const goc = conn.prepare;
+      let n = 0;
+      conn.prepare = function (this: unknown, sql: string) {
+        if (/SELECT DISTINCT c\.branch_id, c\.is_fast_track FROM teacher_assignments ta/.test(sql)) n++;
+        return goc.call(this, sql);
+      };
+      let gon: any;
+      try { gon = nguCanh.trongBoNho(() => tq.lopToiDayHaiKhoi(p, true)); } finally { conn.prepare = goc; }
+      const du = nguCanh.trongBoNho(() => tq.lopToiDayHaiKhoi(p));
+      assert(n === 0, `${p.fullName}: chiSoHoSoGv chạy ${n} lần với gon`);
+      assert(!('chiSo' in gon) && gon.ky === null, `${p.fullName}: gon còn chiSo / ky`);
+      const bo = (d: any[]) => JSON.stringify(d.map(({ ketQua: _k, tienBo: _t, ...x }) => x));
+      assert(bo(gon.day) === bo(du.day) && gon.day.every((x: any) => x.ketQua === null && x.tienBo === null), `${p.fullName}: day khác bản đầy đủ`);
+      assert(JSON.stringify(gon.chuNhiem) === JSON.stringify(du.chuNhiem), `${p.fullName}: chuNhiem khác bản đầy đủ`);
+      if (du.day.length || du.chuNhiem.length) co++;
+    }
+    assert(co >= 3, `dữ liệu demo: ${co} GV có lớp`);
+    assert(/hai-khoi\?gon=1/.test(fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../web/src/modules/worklist/LopToiDay.tsx'), 'utf8')), 'hồ sơ GV không gửi ?gon=1');
   });
 
   /* S1: `napBai` của MỘT GV chỉ nạp lượt gán được cho GV (lớp GV phân công · em từng ghi danh lớp đó · ô GV đã chấm) — số, panel KHÔNG đổi so với đường đủ. */

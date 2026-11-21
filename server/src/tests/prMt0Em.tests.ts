@@ -82,6 +82,16 @@ export async function runPrMt0EmTests(t: YThucTestKit) {
     assert(dtl.bangTheoLuot(QL, FT101, 'mt:1').ft.rows.every((r: any) => !coId(r, mA) && !coId(r, mB)), 'bảng MT1 không lẫn MT0');
   });
 
+  /* TURSO-5 (rà PTA #1957): MT0 của A / B thuộc lớp BE (lô 1) và MB FT 101 (lô 2) — chia lô không đổi số (lô sau đọc lại lượt, mỗi lô cộng vào dòng của chính lô). */
+  check('TURSO-5 · tomTatLop chia lô 1 lớp / lô = một lô: MT0 thuộc hai lớp ở hai lô vẫn đúng duDiem / oTrong / quaHan', () => {
+    for (const ds of [[lop.id, FT101], [FT101, lop.id]]) {
+      const motLo = JSON.stringify([...dtl.tomTatLop(ds, TODAY)]), chiaLo = JSON.stringify([...dtl.tomTatLop(ds, TODAY, undefined, 1)]);
+      assert(motLo === chiaLo, `chia lô ${ds} khác:\n${motLo}\n${chiaLo}`);
+    }
+    const l0 = dtl.tomTatLop([lop.id, FT101], TODAY, undefined, 1).get(FT101)[0];
+    assert(l0?.ma === 'mt:0' && l0.duDiem === 1, `lượt MT0 lớp FT khi chia lô: ${JSON.stringify(l0)}`);
+  });
+
   check('MT0-EM-3 · GV lớp FT không có việc / nợ MT0; nợ vẫn ở lớp BE cũ', () => {
     for (const gv of [P.coreTeacher, P.w1Teacher, P.sTeacher, P.lrTeacher]) {
       assert(!coId(myWork.myWork(gv, {}), mB), `Công việc GV ${gv.userId} có MT0`);

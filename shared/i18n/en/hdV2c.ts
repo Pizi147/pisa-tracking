@@ -73,7 +73,7 @@ export const EN_HD_V2C = {
   '<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> (FT) · <b>Lịch sử</b>.': '<b>Edit info</b> · <b>Pause / End study</b> · <b>Real exam result</b> (FT) · <b>History</b>.',
   'Em đang Tạm dừng: <b>Quay lại học</b> ở đầu hồ sơ.': 'A paused student: <b>Resume</b> at the top of the profile.',
   'Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ.': 'Press <b>Real exam result</b> at the top of the profile.',
-  'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.': 'Type the <b>Exam date</b> and the L R W S scores (or <b>No exam</b>), press <b>Save</b>.',
+  'Gõ <b>Ngày thi</b>, điểm L R W S, bấm <b>Lưu điểm</b>; em không thi: <b>Không thi</b> cạnh Lưu điểm.': 'Type the <b>Exam date</b> and the L R W S scores, press <b>Save score</b>; did not sit: <b>No exam</b> next to Save score.',
   'Lưu xong, mở bước tiếp ở Công việc › Sau thi.': 'After saving, set the next step in Tasks › After exam.',
   '<b>Lộ trình & lớp</b>: lưới tuần theo lớp, mọi lượt Test.': '<b>Pathways & classes</b>: the week grid by class, every Test round.',
   /* ---------------------------------------------------------------- CX */
@@ -112,7 +112,6 @@ export const EN_HD_V2C = {
   /* Rà 11/11 G5-14: Hướng dẫn theo màn hiện tại */
   'Việc của tôi và bốn số của HV bạn phụ trách.': 'Your tasks and four numbers for your students.',
   'Bốn số của TVV': 'Four consultant figures',
-  'Chỉ HV của bạn: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ thi thật</b> · <b>Chưa chốt lộ trình tiếp</b>.': 'Your students only: <b>Parent call on time</b> · <b>Exam this month</b> · <b>Awaiting real exam result</b> · <b>Next path not set</b>.',
   'Ô <b>Việc của tôi ›</b> mở Công việc; số HV mở Học viên & Lớp đúng nhóm em.': 'The <b>My tasks ›</b> tile opens Tasks; student numbers open Students & Classes on the right group.',
   'Mở <b>Test › Kế hoạch Test</b>; chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>; the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',
   'Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>: <b>Schedule several MTs…</b> (FT) · <b>Schedule tests…</b> (normal class); the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',

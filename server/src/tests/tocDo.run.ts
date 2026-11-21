@@ -225,7 +225,7 @@ const USER: Record<Vai, number> = {
     email: `do.admin.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-admin', fullName: 'Đo Admin MB',
     roles: [{ role: 'office_admin', branches: ['MB'] }],
   }).userId as number,
-  TVV: userByRole('consultant', 'CP'),
+  TVV: userByRole('consultant', 'MB'),   // B2-14 (TURSO-5): TVV đông em nhất của seed (MB, 49 em) — trước TVV Cẩm Phả 4 em, trần TVV không bắt được tăng thật
   CX: userByRole('cx', null),
   HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
   BPXL: userByRole('scheduler', 'MB'),   // BPXL-1: tài khoản demo Chuyên viên Xếp lịch Monbay
@@ -504,6 +504,15 @@ await checkAsync('PR-TD Task1(g) · mọi đường trong DUONG_DO × vai của 
     }
   }
   assert(sai.length === 0, `Có đường sai mã:\n${sai.join('\n')}`);
+});
+
+/* B2-14 (TURSO-5): vai TVV đo bằng TVV MB (cùng chi nhánh lớp mẫu) → ba đường trước đo 403 nay 200 ở Task1(g); giữ phép kiểm TVV chi nhánh KHÁC vẫn 403. */
+await checkAsync('B2-14 · TVV Cẩm Phả (chi nhánh khác lớp mẫu MB) vẫn 403 ở Báo cáo PH · chữ đã ghi · khối giao việc Báo PH', async () => {
+  const tvvCp = userByRole('consultant', 'CP');
+  for (const mau of ['/classes/{lopFT}/bao-cao-ph', '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28', '/giao-viec/bao_ph/{viecBaoPh}']) {
+    const r = await callHttpUser(tvvCp, 'GET', urlFor(mau));
+    assert(r.status === 403, `TVV CP ${mau} → ${r.status}`);
+  }
 });
 
 // ==================================================================== Task 2 — quyền & ngày nghiệp vụ qua bộ nhớ
@@ -1356,6 +1365,7 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
  * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
  * trùng ảnh của main a4f9c00, đã kiểm.
+ * 21/11 SAU-THI-GON A3-13: chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý: phụ dòng "Chọn bước tiếp" bỏ "Đã xong · " (chỉ "OVR … · Đạt Target").
  * 15/10 OV-13m: chụp lại 'QT toi' / 'QT tat-ca' — dòng "Chọn bước tiếp" (2 lộ trình UB FT 401 của seed) đổi tiêu đề / nhãn dòng gộp / chữ / đường mở panel Bước tiếp (có chủ ý).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 17/10 EN-e: chụp lại 7 băm — đổi CÓ CHỦ Ý chỉ ở tên việc: actionLabel "Kết quả" → "Kết quả PA", Phối hợp "CX / GĐCN meeting với HV[ / PH]" →
@@ -1530,7 +1540,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '3862f5c189798284',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': 'aae3d57d2cc9e595',
     'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

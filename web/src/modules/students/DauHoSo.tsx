@@ -1,3 +1,5 @@
+import { NutKhongThi } from './NutKhongThi.tsx';
+import { soCuaKhoa } from '../congViec/lamTaiCho.ts';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { LOAI_HAN_CUA_VIEC, bacNgan, chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, ngay, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
@@ -178,6 +180,8 @@ function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; d
               className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
           : <span className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
         <ThePhu ds={the.slice(0, 2)} xuong />
+        {/* SAU-THI-GON (chủ SP 21/11): "Cập nhật kết quả thi thật" (đã thi, chưa KQ) — "Không thi" bấm tại chỗ; chỉ khi việc mở được ở đây (người xem nhập được). */}
+        {x.loai === 'thi-that' && bam && soCuaKhoa(x.key) && <span className="mt-1 flex"><NutKhongThi cycleId={soCuaKhoa(x.key)!} /></span>}
         <span className="mt-0.5 sm:hidden"><HanGap x={x} /></span>
       </span>
       <span className="max-sm:hidden"><HanGap x={x} /></span>

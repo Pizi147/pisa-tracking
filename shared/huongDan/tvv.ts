@@ -226,7 +226,7 @@ const VIEC_RIENG_TVV: ViecHd[] = [
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Sau thi', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Cập nhật kết quả thi thật</b> ở nhóm <b>Sau thi</b>.' } },
     loiTat: ['ho-so-hv', 'hoc-vien', 'p-sau-thi'], tatThem: ['⋯ dòng em'], cung: 'mở cùng chỗ.',
     khiCo: 'Hôm sau ngày thi của em FT, khi chưa đủ kết quả.',
-    buoc: ['Bấm <b>Nhập KQ thi</b> ở dòng.', 'Gõ L R W S rồi <b>Lưu điểm</b>; em không thi: <b>Không thi</b>.'],
+    buoc: ['Em không thi: <b>Không thi</b> ngay ở dòng.', 'Có điểm: <b>Nhập KQ thi</b>, gõ L R W S, <b>Lưu điểm</b> (chọn sẵn bước tiếp thì lưu cả hai).'],
     xong: 'Đủ bốn kỹ năng, hoặc đã ghi Không thi.',
     sai: 'Bấm <b>Sửa điểm</b>; panel ở hồ sơ em có <b>Hoàn tác</b>.',
     khongDuoc: ['Em chưa có TVV: Head chi nhánh làm; TVV khác, GVCN, CX nhập được từ hồ sơ em.'],
@@ -277,8 +277,8 @@ export const VAI_KHAC_TVV: ViecVaiKhac[] = [
 
 /* ---------------------------------------------------------------- Màn dùng chung TVV / CX */
 
-const THI_THAT_CX: MucHd = { id: 'cx-hv-thi-that', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET).', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.', 'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — việc của Head hoặc TVV; CX chọn thay được.'] };
-const THI_THAT_TVV: MucHd = { id: 'tvv-hv-thi-that', viec: 'thi-that', ten: 'Cập nhật kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET), hoặc <b>Cập nhật kết quả thi thật ›</b> ở thanh Việc cần làm.', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.', 'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> ngay.'] };
+const THI_THAT_CX: MucHd = { id: 'cx-hv-thi-that', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET).', 'Gõ <b>Ngày thi</b>, điểm L R W S, bấm <b>Lưu điểm</b>; em không thi: <b>Không thi</b> cạnh Lưu điểm.', 'Có kết quả: <b>Bước tiếp</b> ngay trong cùng panel — việc của Head hoặc TVV; CX chọn thay được.'] };
+const THI_THAT_TVV: MucHd = { id: 'tvv-hv-thi-that', viec: 'thi-that', ten: 'Cập nhật kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET), hoặc <b>Cập nhật kết quả thi thật ›</b> ở thanh Việc cần làm.', 'Gõ <b>Ngày thi</b>, điểm L R W S, bấm <b>Lưu điểm</b>; em không thi: <b>Không thi</b> cạnh Lưu điểm.', 'Có kết quả: <b>Bước tiếp</b> ngay trong cùng panel (Tạm dừng / Kết thúc học · Học tiếp · Lộ trình mới).'] };
 
 /** Phần CHỈ của TVV (CX không có): mảng literal được gõ theo kiểu đích — spread `cx ? [] : […]` làm chuỗi thành `string`. */
 /* ponytail: hai hàm chỉ để TypeScript gõ literal theo `ManHd` / `MucHd` (spread `cx ? [] : […]` làm chuỗi thành `string`); gộp khi vai thứ ba dùng chung. */
@@ -371,7 +371,7 @@ const TINH_HUONG_TVV: TinhHuongHd[] = [
   {
     id: 'em-thi-that', ten: 'Em thi thật xong', the: 'thi-that',
     may: ['Hôm sau ngày thi có việc Cập nhật kết quả thi thật, không hạn.', 'Có kết quả → Chọn bước tiếp trong {han:buoc_tiep_sau_thi}; thi thật không tự kết thúc lộ trình.'],
-    ban: 'Nhập điểm hoặc Không thi, rồi chọn bước tiếp ngay trong panel.',
+    ban: 'Nhập điểm, hoặc bấm Không thi ngay ở dòng việc, Lịch thi hay hồ sơ; rồi chọn bước tiếp trong cùng panel.',
     ai: ['Em chưa có TVV: Head; GVCN lớp cuối cũng nhập được kết quả.'],
     tuKhac: ['thi thật', 'ielts', 'kết quả thi', 'exam'],
   },
@@ -427,7 +427,7 @@ export const TINH_HUONG_CX: TinhHuongHd[] = [
   {
     id: 'cx-thi-that', ten: 'Em thi thật xong', the: 'thi-that',
     may: ['Thi thật không tự kết thúc lộ trình.'],
-    ban: 'Hồ sơ em: <b>Kết quả thi thật</b>, gõ ngày thi và điểm, bấm <b>Lưu</b>; được cả khi em đã Lưu trữ.',
+    ban: 'Hồ sơ em: <b>Kết quả thi thật</b>, gõ ngày thi và điểm, bấm <b>Lưu điểm</b> (hoặc <b>Không thi</b>); được cả khi em đã Lưu trữ.',
     ai: ['Head hoặc TVV chọn bước tiếp.'],
     tuKhac: ['thi thật', 'ielts', 'kết quả thi', 'exam'],
   },

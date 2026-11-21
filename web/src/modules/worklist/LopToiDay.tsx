@@ -26,7 +26,7 @@ type ApiHaiKhoi = { data: HaiKhoi | null; error: { message: string; hint?: strin
  * `day` = dòng phụ "route / tuần học · Test kế tiếp" của bảng "Lớp đang dạy" (bảng "Kỹ năng tôi dạy" cũ gom vào đó: Đạt / Tiến bộ theo lớp ở tab Học thuật,
  * Chờ chấm → cột Chưa nhập / Quá hạn). `bat = false` (QL xem GV khác) → không gọi.
  */
-export const useHaiKhoi = (bat: boolean): ApiHaiKhoi => useApi<HaiKhoi>(bat ? '/tong-quan/lop-toi-day/hai-khoi' : null, [bat]);
+export const useHaiKhoi = (bat: boolean): ApiHaiKhoi => useApi<HaiKhoi>(bat ? '/tong-quan/lop-toi-day/hai-khoi?gon=1' : null, [bat]);   // TURSO-5: không `chiSo` (trang đã GET `/chi-so`)
 /** TQ-GON (M3): FT "LT1 · MT1 · W3 SEP" (route · Test kế tiếp), lớp thường "tuần 8/8 · Final · W3 SEP" — không thêm "tuần này". */
 export const phuLopDay = (d: HaiKhoi) => new Map(d.day.map((x) => [x.classId, dich((x.khung === 'ft' ? [x.route, x.testKeTiep] : [x.tuanHoc, x.testKeTiep]).filter(Boolean).join(' · '))]));
 

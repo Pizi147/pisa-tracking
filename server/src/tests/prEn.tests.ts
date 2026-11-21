@@ -554,7 +554,7 @@ const FILE_DA_DICH = [
   ...['worklist', 'congViec', 'tongQuan', 'sapToi', 'yeuCauDuyet', 'chamDiem', 'fasttrack', 'lopThuong', 'oMt', 'lichMt', 'diemTheoLuot', 'normal',
     'thaoTacMt', 'mt0', 'nhanXet', 'vang', 'paDongBo'].map((f) => `shared/domain/${f}.ts`),
   /* Đợt c — Học viên & Lớp, hồ sơ lớp, hồ sơ HV (xem). Shared chạy ở máy chủ (`hoSoHocVien`, `hanhTrinh`, `cuoiKhoa`…) cố ý dựng câu Việt + khoá — kiểm ở E-HOSO. */
-  ...['StudentsPage', 'StudentDetailPage', 'DauHoSo', 'HanhTrinh', 'ChuongLop', 'CacLoTrinh', 'NganCase', 'NganTongKet', 'KetLuanKhoa', 'KetQuaThiThatPanel',
+  ...['StudentsPage', 'StudentDetailPage', 'DauHoSo', 'HanhTrinh', 'ChuongLop', 'CacLoTrinh', 'NganCase', 'NganTongKet', 'KetLuanKhoa',
     'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
   ...['ClassOverviewPage', 'DauTrangLop', 'TabHocVienLop', 'BangDiemLopThuong', 'BangCanHoTro', 'ClassIssueBoard', 'CanhBaoYThuc', 'PhanTichLopTab',
     'TabTongKetLop', 'DaiChuyenLop', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
@@ -587,7 +587,6 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
   { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Chờ Head duyệt)$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
-  { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
   { file: 'shared/domain/congViec.ts', text: /^Kỹ năng$/ },   // P11: so với nhãn máy chủ gửi khi Case chưa có môn (`monCuaViec`) — không hiện ra
   /* EN-SOT + DON-CHU: tên sheet bản Việt (EN là "Summary"); ghi chú phiên bản lưu DB; so với chữ máy chủ gửi. */

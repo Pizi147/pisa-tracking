@@ -8,6 +8,8 @@ import { Level } from '../../ui/ui.tsx';
 import { CHIP_TRON, ChipHan, Nhan, NhanChoGv, NhanLich } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
+import { NutKhongThi } from '../students/NutKhongThi.tsx';
+import { soCuaKhoa } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CHAM_CHEO, LOAI_HAN_CUA_VIEC, demBai, bacNgan, chiaVachHan, daysBetween, deadlineView, kyGhiKetQua, laViecChamCheo, shortDate, type MucTab,
@@ -505,7 +507,9 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
       </span></span>
       <CotHan it={it} daXong={daXong} />
       {/* GV-2 (mockup v22 G8a, [XM] đã chốt): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp — nút phụ thay nút động từ (bấm dòng vẫn mở panel). B3-12: cả việc Vận hành được giao. */}
-      <CotNut it={it} nut={(it.group === 'meeting_xep_lich' || it.group === 'mgmt') && dong.nutPhu?.(it) ? null : nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
+      <CotNut it={it} nut={(it.group === 'meeting_xep_lich' || it.group === 'mgmt') && dong.nutPhu?.(it) ? null : nut} daXong={daXong} onBam={bam}
+        /* SAU-THI-GON (chủ SP 21/11): "Cập nhật KQ thi thật" (ngày thi đã qua, chưa KQ) — "Không thi" bấm tại chỗ, cùng mẫu nút phụ (Gia hạn / Bỏ qua). */
+        nutPhu={dong.nutPhu?.(it) ?? (it.group === 'thi_that' && !daXong && (it.cycleId ?? soCuaKhoa(it.key)) ? <NutKhongThi cycleId={(it.cycleId ?? soCuaKhoa(it.key))!} className="btn btn-sm min-h-[44px] w-full justify-center whitespace-nowrap font-semibold sm:h-8 sm:min-h-8" /> : null)} />
     </div>
   );
 }
@@ -678,12 +682,12 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 
-/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
+/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã thi · chờ KQ" (lịch thi). SAU-THI-GON (A3-13): dòng Chọn bước tiếp KHÔNG nhãn tiến độ —
+ *  tên việc + hạn + nút đã nói còn việc; phụ chỉ "OVR 7.0 · Đạt Target" (đầu panel nói "Đã có kết quả · Chưa chốt bước tiếp"). */
 function BadgeViecTvv({ it }: { it: WorkItem }) {
   if (it.group === 'bao_ph_yt' && it.soLanThu) {
     return <span className={`${CHIP_TRON} bg-soon-bg text-soon`}>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
   }
-  if (it.group === 'buoc_tiep') return <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan>;
   if (it.group === 'thi_that') return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;
   return null;
 }

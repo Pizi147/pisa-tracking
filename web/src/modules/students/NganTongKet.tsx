@@ -13,7 +13,7 @@ import { PanelBuocTiep, type TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
-const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
+const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 type KyNang = { k: string; nhan: string; diem: number | null; tong: number | null; dat: boolean | null };
 type Luot = {
@@ -242,7 +242,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
   const daDoi = () => { setView(null); reload(); onDoi?.(); };
   const quayLai = { nhan: t('Tổng kết'), onClick: veTongKet };
   if (data && view?.loai === 'nhap') {
-    return <KetQuaThiThatPanel cycleId={cycleId} studentName={data.hocVien.ten} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={daDoi} />;
+    return <PanelSauThi cycleId={cycleId} em={data.hocVien} lop={data.lop} quayLai={quayLai} onDong={veTongKet} onDaLam={() => { reload(); onDoi?.(); }} onTiep={null} />;
   }
   if (data && view?.loai === 'buoc-tiep') {
     return <PanelBuocTiep cycleId={cycleId} hocVien={data.hocVien} lop={data.lop} quayLai={quayLai} onClose={veTongKet} onDone={() => { reload(); onDoi?.(); }} />;

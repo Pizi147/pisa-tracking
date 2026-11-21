@@ -74,20 +74,15 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled, nen = 
     ...(tg && tg !== bt.target ? [t('Target {cu} → {moi}', { cu: bt.target || '—', moi: tg })] : []),
     ...(lopMoi ? [t('Chuyển sang {lop} ngay · đường Chuyển lớp', { lop: lopMoi })] : []),
   ];
-  const nut = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0';
   /* Lộ trình đã đóng / em tạm dừng, đã nghỉ: không có gì để "học tiếp" — nói lý do + bước kế, không bày ô. */
   if (bt.hocTiepDuoc === false) return <p role="alert" className="m-0 text-[13px] text-soon">{CHU_KHONG_HOC_TIEP()}</p>;
   return (
     <div className="flex flex-col gap-3 rounded-[10px] border p-3.5" style={{ borderColor: 'var(--line-strong)', background: nen }}>
       <Truong nhan="Target" tuyChon as="div">
         <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
-          {v.tg !== null
-            ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={v.tg} disabled={disabled}
-                onChange={(e) => onChange({ ...v, tg: e.target.value })} />
-            : <><b className="tabular-nums text-slate-100">{bt.target || '—'}</b>{bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}</>}
-          {v.tg === null
-            ? <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: bt.target })}>{t('Sửa')}</button>
-            : <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: null })}>{t('Giữ Target')}</button>}
+          {/* Chủ SP 21/11: Target là MỘT ô điểm điền sẵn Target cũ — sửa thẳng, không nút "giữ / Sửa / Giữ Target"; để nguyên = giữ. */}
+          <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={t('Ví dụ: 6.5')} value={v.tg ?? bt.target ?? ''} disabled={disabled}
+            onChange={(e) => onChange({ ...v, tg: e.target.value === bt.target ? null : e.target.value })} />
         </div>
       </Truong>
       <Truong nhan={t('Lớp')} tuyChon as="div" loi={bamLuu && v.lopKhac && !v.lopMoiId ? t('Chọn lớp') : null}>
@@ -123,8 +118,8 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const [route, setRoute] = useState<string | null>(null);   // null = lộ trình gợi ý của máy chủ
   const [ten, setTen] = useState('');
   /* N50 (12): em đã đạt Target → ô Target mở sẵn, điền gợi ý +1.0 (sửa được, không chặn); chưa đạt → giữ Target như luật. */
-  const [suaTg, setSuaTg] = useState(!!bt.targetGoiY);
-  const [tg, setTg] = useState(bt.targetGoiY ?? '');
+  /* Chủ SP 21/11: Target là MỘT ô điểm điền sẵn (gợi ý +1.0 khi đã đạt, không thì Target cũ) — sửa thẳng; chỉ gửi khi khác Target cũ. */
+  const [tg, setTg] = useState(bt.targetGoiY ?? bt.target ?? '');
   const [boTarget, setBoTarget] = useState(false);
   /* P8: undefined = môn của lộ trình cũ (máy chủ trả ở xem trước); chỉ gửi khi người dùng đổi. */
   const [mon, setMon] = useState<string[] | null | undefined>(undefined);
@@ -136,7 +131,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const [bamLuu, setBamLuu] = useState(false);
   const lf = useLoiForm();
   const tenCham = useChamLai(ten.trim());
-  const tgMoi = suaTg && tg.trim() ? tg.trim().replace(',', '.') : null;
+  const tgMoi = !boTarget && tg.trim() && tg.trim().replace(',', '.') !== bt.target ? tg.trim().replace(',', '.') : null;
   const khac = route === ROUTE_KHAC;
   const q = new URLSearchParams({
     ...(route ? { route } : {}), ...(khac && tenCham ? { routeTen: tenCham } : {}), ...(khac && boTarget ? { boTarget: '1' } : {}),
@@ -212,13 +207,12 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
         ))}
         {buoc(3, <>Target{khac && <span className="font-normal text-slate-500">{t('(không bắt buộc)')}</span>}</>, (
           <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
-            {suaTg
-              ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />
-              : <b className="tabular-nums text-slate-100">{boTarget ? '—' : bt.target || '—'}</b>}
-            {!suaTg && !boTarget && bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}
-            {suaTg && bt.targetGoiY && tg.trim() === bt.targetGoiY && <span className="text-sm text-slate-500">{t('đã đạt {tg} · gợi ý +1.0', { tg: bt.target })}</span>}
-            {!suaTg && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => { setSuaTg(true); setBoTarget(false); setTg(bt.target); }}>{t('Sửa')}</button>}
-            {khac && !boTarget && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => { setBoTarget(true); setSuaTg(false); }}>{t('Bỏ Target')}</button>}
+            {boTarget
+              ? <b className="tabular-nums text-slate-100">—</b>
+              : <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />}
+            {!boTarget && bt.targetGoiY && tg.trim() === bt.targetGoiY && <span className="text-sm text-slate-500">{t('đã đạt {tg} · gợi ý +1.0', { tg: bt.target })}</span>}
+            {boTarget && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setBoTarget(false)}>{t('Sửa')}</button>}
+            {khac && !boTarget && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setBoTarget(true)}>{t('Bỏ Target')}</button>}
           </div>
         ))}
         {buoc(4, t('Bắt đầu'), (

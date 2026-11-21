@@ -676,4 +676,30 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     }
     assert(chiMuc(cu).replace(/\s+/g, ' ') === chiMuc(moi).replace(/\s+/g, ' '), `chỉ mục: ${chiMuc(cu)} ≠ ${chiMuc(moi)}`);
   });
+
+  /* B2-13 (TURSO-5): lượt quét ngày dọn dòng theo dõi của việc ĐÃ ĐÓNG > 30 ngày; việc mở / đóng ≤ 30 ngày / chưa rõ lúc đóng giữ; chạy lại 0 dòng. */
+  await checkAsync('B2-13 · donTheoDoiCu: việc đóng 31 ngày mất dòng theo dõi, đóng 29 ngày / còn mở giữ; lần hai 0 dòng; quetLopTrong gọi kèm', () => thu(() => {
+    const vh = hang(`SELECT id FROM tasks ORDER BY id LIMIT 3`).map((r) => r.id as number);
+    const bp2 = hang(`SELECT id FROM viec_bao_ph ORDER BY id LIMIT 3`).map((r) => r.id as number);
+    assert(vh.length === 3 && bp2.length === 3, `seed thiếu việc: ${vh} · ${bp2}`);
+    const ngay = (n: number) => `${addDays(TODAY, -n)}T03:00:00.000Z`;
+    const upVh = conn.prepare(`UPDATE tasks SET progress = ?, updated_at = ? WHERE id = ?`);
+    upVh.run('done', ngay(31), vh[0]); upVh.run('stopped', ngay(29), vh[1]); upVh.run('not_started', ngay(90), vh[2]);
+    const upBp = conn.prepare(`UPDATE viec_bao_ph SET trang_thai = ?, bo_luc = ? WHERE id = ?`);
+    upBp.run('bo', ngay(40), bp2[0]); upBp.run('mo', ngay(40), bp2[1]); upBp.run('bo', null, bp2[2]);
+    conn.prepare(`DELETE FROM viec_bao_ph_lan WHERE viec_id = ?`).run(bp2[2]);   // đã bỏ, không rõ lúc đóng → giữ
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE (loai = 'van_hanh' AND ref_id IN (${vh})) OR (loai = 'bao_ph' AND ref_id IN (${bp2}))`).run();
+    const them = conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES (?, ?, ?, 'tay', ?)`);
+    for (const id of vh) them.run('van_hanh', id, ql.userId, ngay(100));
+    for (const id of bp2) them.run('bao_ph', id, ql.userId, ngay(100));
+    const con = () => hang(`SELECT loai || ':' || ref_id AS k FROM viec_theo_doi WHERE (loai = 'van_hanh' AND ref_id IN (${vh})) OR (loai = 'bao_ph' AND ref_id IN (${bp2})) ORDER BY k`).map((r) => r.k).join(',');
+    const tong = mot(`SELECT COUNT(*) AS n FROM viec_theo_doi`).n as number;
+    const n1 = gv.donTheoDoiCu(TODAY);
+    const sau = con();
+    assert(!sau.includes(`van_hanh:${vh[0]}`) && !sau.includes(`bao_ph:${bp2[0]}`), `việc đóng > 30 ngày còn dòng: ${sau}`);
+    assert([`van_hanh:${vh[1]}`, `van_hanh:${vh[2]}`, `bao_ph:${bp2[1]}`, `bao_ph:${bp2[2]}`].every((k) => sau.includes(k)), `mất dòng phải giữ: ${sau}`);
+    assert(n1 >= 2 && tong - (mot(`SELECT COUNT(*) AS n FROM viec_theo_doi`).n as number) === n1, `số dòng xoá ${n1}`);
+    assert(gv.donTheoDoiCu(TODAY) === 0, 'lần hai còn xoá');
+    assert(/donTheoDoiCu\(homNay\)/.test(fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../server/src/classes/xoaKetThucLop.ts'), 'utf8')), 'quetLopTrong không gọi donTheoDoiCu');
+  }));
 }

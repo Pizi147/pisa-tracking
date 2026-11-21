@@ -17,7 +17,7 @@
 import { DS_JSON, db, tx } from '../db.ts';
 import { PERMISSIONS, TASK_PROGRESS_LABEL, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayCongBaoPhLonNhat, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
-import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
@@ -1048,6 +1048,32 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     attemptId: null, contextLabel: tenViec(r.kind), level: sos ? { tone: sos >= 3 ? 'danger' : sos === 2 ? 'warn' : 'info', text: `SOS ${sos}` } : null, reason: xep ? 'Xếp lịch họp rồi bấm Hoàn thành (ngày giờ họp tuỳ chọn)' : `Ghi kết quả buổi họp rồi bấm Hoàn thành${hop}`,
     tieuDe: `${xep ? 'Xếp lịch họp CX/GĐCN' : 'Kết quả meeting CX/GĐCN'} · ${r.full_name}`, phu: xep ? null : hop.slice(3) || null, actionLabel: xep ? 'Hoàn thành' : 'Ghi KQ',
     href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }), due: han, statusLabel: 'Chưa xong', viecId: r.id, phoiHopId: r.ph_id };
+}
+
+/**
+ * B2-13 (TURSO-5, AUDIT-2111): dọn dòng theo dõi của việc ĐÃ ĐÓNG quá `NGAY_GIU_THEO_DOI` ngày — tab "Đang theo dõi" đọc mọi dòng theo dõi của người xem
+ * (`idx_viec_theo_doi_nguoi`) rồi mới bỏ việc đóng > 7 ngày, nên không dọn thì dòng duyệt tăng mãi. "Đóng lúc" = cùng cột `viecTheoDoi` dùng; việc còn mở /
+ * không rõ lúc đóng (NULL) giữ nguyên. Một câu đọc mỗi ngày (+1 câu xoá khi có dòng) — lượt quét ngày `quetLopTrong`.
+ * ponytail: việc mở lại sau > 30 ngày mất người theo dõi thêm tay (theo dõi theo luật Head / CX tự thêm lại khi đồng bộ) — thêm cột "đóng lúc" chung nếu cần giữ.
+ */
+const NGAY_GIU_THEO_DOI = 30;
+export function donTheoDoiCu(homNay: string): number {
+  const moc = addDays(homNay, -NGAY_GIU_THEO_DOI);
+  /* Đọc id trước, chỉ ghi khi có dòng cần dọn — câu ghi (cả DELETE 0 dòng) làm request đó bỏ nhớ bảng tham chiếu (`coGhiTrongRequest`, +3 câu). */
+  const ids = (db().prepare(`SELECT t.id FROM viec_theo_doi t
+      LEFT JOIN viec_bao_ph b ON t.loai = 'bao_ph' AND b.id = t.ref_id
+      LEFT JOIN sos_coordination_actions x ON t.loai = 'phoi_hop' AND x.id = t.ref_id
+      LEFT JOIN tinh_hinh_hoc_tap th ON t.loai = 'tinh_hinh' AND th.id = t.ref_id
+      LEFT JOIN meeting_phan mp ON t.loai = 'meeting' AND mp.id = t.ref_id
+      LEFT JOIN vi_pham_tra_lai tl ON t.loai = 'tra_lai' AND tl.id = t.ref_id
+      LEFT JOIN tasks vh ON t.loai = 'van_hanh' AND vh.id = t.ref_id
+     WHERE (b.trang_thai != 'mo' AND COALESCE(b.bo_luc, (SELECT MAX(l.ghi_luc) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id)) < ?1)
+        OR (x.status != 'pending' AND x.updated_at < ?1)
+        OR (th.trang_thai != 'mo' AND COALESCE(th.tra_loi_luc, th.rut_luc) < ?1)
+        OR (mp.trang_thai != 'mo' AND mp.xong_luc < ?1)
+        OR (tl.trang_thai != 'mo' AND tl.xong_luc < ?1)
+        OR (vh.progress IN ('done', 'stopped') AND vh.updated_at < ?1)`).all(moc) as { id: number }[]).map((r) => r.id);
+  return ids.length ? db().prepare(`DELETE FROM viec_theo_doi WHERE id IN (SELECT value FROM json_each(?1))`).run(JSON.stringify(ids)).changes : 0;
 }
 
 // ---------------------------------------------------------------- GET /my-work/theo-doi
