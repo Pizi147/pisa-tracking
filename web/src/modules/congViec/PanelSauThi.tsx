@@ -138,7 +138,7 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
       setTtDiem('da'); setGioDiem(gioVnNay()); setSuaDiem(false); setSuaKq(false); setChup(null); cy.reload(); bt.reload(); onDaLam();
       /* SUA-LUU-TRU (việc 1): mỗi lần lưu có đổi → toast Hoàn tác (trả đúng bản trước; có người sửa sau thì máy chủ từ chối). */
       const id = r?.khoiPhucId ?? null;
-      if (id) toast.hoanTac(t('Đã lưu kết quả thi thật'), () => { khoiPhuc(id, true).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); }, { key: `thi-that:${cycleId}` });
+      if (id) toast.hoanTac((than as { khongThi?: boolean }).khongThi ? t('Đã lưu · Không thi') : t('Đã lưu kết quả thi thật'), () => { khoiPhuc(id, true).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); }, { key: `thi-that:${cycleId}` });
       return true;
     } catch (e: any) { setTtDiem('loi'); setLoiDiem(e?.message ?? null); return false; }
   };
@@ -204,6 +204,8 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : ttDiem === 'dang' || tt === 'dang' ? <ChuLuu tt="dang" />
       : ttDiem === 'da' && gioDiem ? <ChuLuu tt="da" luc={gioDiem} />
       : !diemDu && !kt ? <span className="text-slate-400">{t('Nhập đủ điểm L R W S để chọn bước tiếp')}</span> : null,
+    /* Chủ SP 21/11: chưa có KQ → "Không thi" cùng hàng, cùng cỡ nút chính (em không thi mới phát hiện chưa cập nhật — một bấm). */
+    phu: !coKq && !kt ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang' || tt === 'dang'} onClick={() => void guiDiem({ khongThi: true })}>{t('Không thi')}</button> : null,
     chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang' || tt === 'dang'} onClick={() => void luuCaHai()}>{gopChot ? t('Lưu điểm · {chon}', { chon: chuChot }) : t('Lưu điểm')}</button>,
   } : kt ? {
     huy: null, trai: gioDiem ? <ChuLuu tt="da" luc={gioDiem} /> : null, chinh: nutDong,
@@ -276,7 +278,7 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
             <span className="flex-1" />
             {moDiem ? (
               <>
-                {!c.thi_that_khong_thi && !kt && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={() => void guiDiem({ khongThi: true, ghiChu: c.outcome_note ?? '' })}>{t('Không thi')}</button>}
+                {coKq && !c.thi_that_khong_thi && !kt && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={() => void guiDiem({ khongThi: true, ghiChu: c.outcome_note ?? '' })}>{t('Không thi')}</button>}
                 {suaDiem && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setSuaDiem(false); setSuaKq(false); napDiem(c); }}>{t('Huỷ sửa')}</button>}
               </>
             ) : !chup && b.chon !== 'hoc_tiep' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaDiem(true)}>{t('Sửa điểm')}</button>}
@@ -288,7 +290,8 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
             them={coKq && !moDiem && !b.chon && !daChot && b.coTheGiaHan
               ? <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button> : null}>
             {/* Tiêu đề bước đã là "Bước tiếp" — nhóm nút không nhãn riêng; lỗi (sau khi bấm Chốt) ngay dưới. */}
-            <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none">
+            {/* PTA rà #1952: ba lựa chọn MỘT hàng khi panel đủ rộng (≥ 580 px), hẹp thì xếp dọc đều — không 2 + 1 lệch (container query, LuaChonRadio dùng chung). */}
+            <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none [container-type:inline-size] [&_[role=radiogroup]]:grid [&_[role=radiogroup]]:grid-cols-1 [@container(min-width:580px)]:[&_[role=radiogroup]]:grid-cols-3">
               <LuaChonRadio khungRo ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon ? (b.chon === 'tam_dung' || b.chon === 'ket_thuc' ? 'dung' : b.chon === 'hoc_tiep' ? 'hoc_tiep' : 'lo_trinh_moi') : chon) : chon} disabled={khoaBuoc2}
                 muc={HUONG_SAU_THI.map((k) => [k, NHAN_HUONG_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
               {lf.loiCua(loiB, 'chon') && <p role="alert" className="m-0 mt-1.5 text-[13px] text-bad">{lf.loiCua(loiB, 'chon')}</p>}

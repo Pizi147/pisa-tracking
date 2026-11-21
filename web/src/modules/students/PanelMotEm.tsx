@@ -1,3 +1,4 @@
+import { NutKhongThi } from './NutKhongThi.tsx';
 import { useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
@@ -175,6 +176,8 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                       {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: shortDate(data.sauThi.ngayThi, homNay) })}</span>}
                     </span>
                     {data.sauThi.coTheGiaHan && <button type="button" className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
+                    {/* SAU-THI-GON (chủ SP 21/11): em không thi → một bấm tại chỗ. */}
+                    {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && <NutKhongThi cycleId={data.sauThi.cycleId} className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onDone={daDoi} />}
                     {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && (
                       <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setSauThiMo('thi-that')}>{t('Nhập kết quả')}</button>
                     )}

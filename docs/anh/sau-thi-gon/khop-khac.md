@@ -10,6 +10,7 @@ Mockup: `thiet-ke/v5/tvv.html` `panelSau()` (khung đã duyệt). Ảnh: `truoc/
 | A3-13 | Dòng Chọn bước tiếp: phụ "Đinh Ngọc Quyên · OVR 7.0 · Đạt Target" — bỏ "Đã xong · " (máy chủ `viecBuocTiep`) và nhãn "Đã có kết quả · Chưa chốt bước tiếp" trên dòng (đầu panel còn nói) | `*-1-danh-sach` |
 | B3-11 | Gõ đủ 4 điểm + chọn Học tiếp → MỘT nút "Lưu điểm · Học tiếp" (PUT outcome → POST buoc-tiep; bước 2 lỗi giữ điểm đã lưu, bấm lại chỉ chốt). Lộ trình mới vẫn lưu điểm trước rồi panel mở Lộ trình mới ngay | `*-8-go-diem-hoc-tiep` |
 | RA 15 | Một bản ghi KQ thi thật: `PanelSauThi` dùng ở Công việc, Lịch thi, hồ sơ HV (Việc cần làm · `?viec=thi-that`), ngăn Tổng kết; xoá `KetQuaThiThatPanel.tsx` | `*-7-ho-so-kq` |
+| Chủ SP 21/11 "target không cần nút giữ sửa" | Target của Học tiếp và Lộ trình mới là MỘT ô điểm điền sẵn (Target cũ; Lộ trình mới khi đã đạt: gợi ý +1.0) — sửa thẳng; bỏ "giữ · Sửa · Giữ Target"; để nguyên = giữ (không gửi). "Bỏ Target" (lộ trình Khác) giữ | `*-9-hoc-tiep-target`, `*-10-lo-trinh-moi-target` |
 
 ## Thao tác TRƯỚC → SAU (bản hồ sơ `KetQuaThiThatPanel` → `PanelSauThi`)
 
