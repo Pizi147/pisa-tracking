@@ -675,12 +675,12 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 
-/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
+/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã thi · chờ KQ" (lịch thi). SAU-THI-GON (A3-13): dòng Chọn bước tiếp KHÔNG nhãn tiến độ —
+ *  tên việc + hạn + nút đã nói còn việc; phụ chỉ "OVR 7.0 · Đạt Target" (đầu panel nói "Đã có kết quả · Chưa chốt bước tiếp"). */
 function BadgeViecTvv({ it }: { it: WorkItem }) {
   if (it.group === 'bao_ph_yt' && it.soLanThu) {
     return <span className={`${CHIP_TRON} bg-soon-bg text-soon`}>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
   }
-  if (it.group === 'buoc_tiep') return <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan>;
   if (it.group === 'thi_that') return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;
   return null;
 }

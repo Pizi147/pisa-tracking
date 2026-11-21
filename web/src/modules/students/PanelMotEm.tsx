@@ -24,7 +24,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
-const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
+const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {
@@ -88,7 +88,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
   const veEm = { nhan: ten, onClick: () => { setSauThiMo(null); reload(); } };
   if (sauThiMo && data?.sauThi) {
     return sauThiMo === 'thi-that'
-      ? <KetQuaThiThatPanel cycleId={data.sauThi.cycleId} studentName={ten} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />
+      ? <PanelSauThi cycleId={data.sauThi.cycleId} em={{ id: studentId, ten }} lop={lop} quayLai={veEm} onDong={onClose} onDaLam={daDoi} onTiep={null} />
       : <PanelBuocTiep cycleId={data.sauThi.cycleId} hocVien={{ id: studentId, ten }} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />;
   }
   if (viecKhacMo) {

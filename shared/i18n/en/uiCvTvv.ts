@@ -53,6 +53,7 @@ export const EN_UI_CV_TVV = {
   'Đã có kết quả · Chưa chốt bước tiếp': 'Result in · Next step not confirmed',
   'Đã lưu lần thử {n} · việc vẫn mở, hạn giữ {ngay}': 'Saved attempt {n} · task stays open, due {ngay}',
   'Đã lưu {gio} · Việc xong': 'Saved {gio} · Task done',
+  'Đã lưu {gio} · {chon}': 'Saved {gio} · {chon}',   // SAU-THI-GON P1-07: chân sau chốt bước tiếp nói hướng đã chọn
   'Đạt Target {tg}': 'Target {tg} reached',
   'đã xong': 'done',
   'Trao đổi với HV / PH': 'Talk with the student / parent',

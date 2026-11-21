@@ -30,7 +30,7 @@ import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const ChuyenLopPanel = lazyHop(() => import('./ChuyenLopPanel.tsx').then((x) => x.ChuyenLopPanel));
-const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
+const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`MenuDong`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -79,7 +79,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     );
     /* P7: Quay lại học — máy chủ chọn hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại), cùng đường nút ở Lưu trữ. */
     case 'quay-lai': return <QuayLaiTuMenu em={{ id: student.id, ten: student.name, lop }} onClose={onClose} onDone={onDone} />;
-    case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
+    case 'outcome': return cycle && <PanelSauThi cycleId={cycle.id} em={{ id: student.id, ten: student.name }} lop={chung.lop ?? null} onDong={chung.onClose} onDaLam={onDone} onTiep={null} />;
     case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} tiep={tiep} />;
     case 'lich-su-sua': return <LichSuThayDoi loai="hv" id={student.id} dong2={[student.name, lop]} onClose={onClose} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
