@@ -1,4 +1,4 @@
-import { theoDoiMacDinhMeeting } from '../worklist/giaoViec.ts';
+import { theoDoiMacDinhMeeting, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 
 /**
  * GV-1 (N58, chủ SP 20/11 — giao việc liên phòng ban), chạy lặp không đổi, khớp `schema.sql`:
@@ -91,5 +91,11 @@ export function migratePrGiaoViec(conn: any, applied: string[]) {
     if (n) for (const r of conn.prepare(`SELECT DISTINCT mp.phoi_hop_id AS ph, x.student_id AS sid, v.id AS bp FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id
         LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = mp.phoi_hop_id WHERE mp.tao_luc = ?`).all(luc) as any[]) theoDoiMacDinhMeeting(r.ph, r.sid, r.bp ?? null);
     if (n) applied.push(`GV-1: sinh ${n} phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) cho Meeting đã xác nhận, Báo PH của TVV còn mở.`);
+  }
+  /* TD-HEAD-CX (chủ SP 21/11): Báo PH vi phạm ĐANG MỞ thêm bù Head + CX chi nhánh em theo dõi (bỏ dòng hết điều kiện). Tự lành — chạy lại chỉ đổi khi vai / dữ liệu đổi;
+     người đã bỏ theo dõi không bị thêm lại. */
+  if (co(conn, 'viec_bao_ph') && co(conn, 'viec_theo_doi') && co(conn, 'viec_giao_lan')) {
+    const n = theoDoiVaiBaoPh();
+    if (n) applied.push(`TD-HEAD-CX: ${n} dòng người theo dõi Head / CX của Báo PH vi phạm đang mở (thêm bù / bỏ dòng hết vai).`);
   }
 }

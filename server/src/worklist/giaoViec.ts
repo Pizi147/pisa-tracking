@@ -54,7 +54,7 @@ export const VAI_BPXL = 'scheduler';
 export const PHAN_MEETING = ['xep_lich', 'ket_qua'] as const;
 export type PhanMeeting = (typeof PHAN_MEETING)[number];
 const TEN_PHAN: Record<PhanMeeting, string> = { xep_lich: 'Xếp lịch họp', ket_qua: 'Kết quả meeting' };
-export type Nguon = 'gvcn' | 'tvv' | 'gv_ghi' | 'head' | 'tay';
+export type Nguon = 'gvcn' | 'tvv' | 'gv_ghi' | 'head' | 'cx' | 'tay';
 
 /** Câu SQL: tài khoản `uid` đang hoạt động + có vai đang hiệu lực ở chi nhánh `cn` (hoặc vai toàn hệ thống). */
 export const HOAT_DONG_O = (uid: string, cn: string) => `EXISTS (SELECT 1 FROM users u_ JOIN user_roles ur_ ON ur_.user_id = u_.id WHERE u_.id = ${uid}
@@ -433,6 +433,42 @@ export function sauDoiChiNhanhEm(studentIds: readonly number[], boi: number | nu
       WHERE trang_thai = 'mo' AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE student_id IN (${DS_JSON}))`).run(json);
   donGiaoHetHieuLuc({ studentIds }, boi);
   theoGvcnHienTai(studentIds);
+  theoDoiVaiBaoPh({ studentIds });
+}
+
+/**
+ * TD-HEAD-CX (N58 bổ sung, chủ SP 21/11): việc Báo PH sinh từ lần xử lý vi phạm (`measure_id`) — Head (vai `manager` ĐÚNG chi nhánh em) + CX (chi nhánh em
+ * hoặc toàn hệ thống) theo dõi mặc định: chỉ xem + tin "Cập nhật", không thành việc. Trừ người theo luật: TVV của em; em chưa có TVV → Head là người theo luật
+ * (`nguoiGiuBaoPh`) nên không thêm Head. Bí danh: `ur` `r` `u` (vai · người — `NGUOI_VAI`), `v` `s` (việc · em) truyền vào.
+ */
+export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
+  AND ((r.key = 'manager' AND ${s}.consultant_user_id IS NOT NULL AND ur.branch_id = ${CN_EM(`${v}.student_id`)})
+    OR (r.key = 'cx' AND (ur.branch_id IS NULL OR ur.branch_id = ${CN_EM(`${v}.student_id`)})))`;
+export const NGUOI_VAI = 'user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id';
+/** Người đã tự bỏ / bị bỏ theo dõi việc (`boTheoDoi` ghi lịch sử) không bị thêm lại khi đồng bộ. */
+const DA_BO_THEO_DOI = (v: string) => `NOT EXISTS (SELECT 1 FROM viec_giao_lan l_ WHERE l_.loai = 'bao_ph' AND l_.ref_id = ${v}.id AND l_.truong = 'theo_doi'
+  AND l_.cu = CAST(ur.user_id AS TEXT) AND l_.moi IS NULL)`;
+
+/**
+ * TRONG tx: đồng bộ dòng `head` / `cx` của việc Báo PH vi phạm còn mở — đổi vai / tạo / duyệt tài khoản (`userId`), em đổi chi nhánh / đổi TVV
+ * (`studentIds`), migrate (không đối số, tự lành). HAI câu cho cả tập: bỏ dòng hết điều kiện · thêm dòng còn thiếu (người giữ vai đọc ngay trong câu).
+ */
+export function theoDoiVaiBaoPh(o: { userId?: number; studentIds?: readonly number[] } = {}): number {
+  if (o.studentIds && !o.studentIds.length) return 0;
+  const ps = o.userId != null ? [o.userId] : o.studentIds ? [JSON.stringify(o.studentIds)] : [];
+  const phamVi = (uid: string, sid: string) => (o.userId != null ? `${uid} = ?` : o.studentIds ? `${sid} IN (${DS_JSON})` : '1');
+  const bo = db().prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND nguon IN ('head', 'cx')
+      AND ${phamVi('user_id', '(SELECT student_id FROM viec_bao_ph WHERE id = viec_theo_doi.ref_id)')}
+      AND ref_id IN (SELECT id FROM viec_bao_ph WHERE trang_thai = 'mo' AND measure_id IS NOT NULL)
+      AND NOT EXISTS (SELECT 1 FROM viec_bao_ph v JOIN students s ON s.id = v.student_id, ${NGUOI_VAI} WHERE v.id = viec_theo_doi.ref_id AND ur.user_id = viec_theo_doi.user_id
+        AND r.key = (CASE viec_theo_doi.nguon WHEN 'head' THEN 'manager' ELSE 'cx' END) AND ${VAI_THEO_DOI_BAO_PH('v', 's')})`).run(...ps).changes;
+  /* Một người vừa Head vừa CX → một dòng `head` (MAX). */
+  const them = db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
+      SELECT 'bao_ph', v.id, ur.user_id, MAX(CASE r.key WHEN 'manager' THEN 'head' ELSE 'cx' END), NULL, ? FROM viec_bao_ph v JOIN students s ON s.id = v.student_id, ${NGUOI_VAI}
+       WHERE v.trang_thai = 'mo' AND v.measure_id IS NOT NULL AND ${phamVi('ur.user_id', 'v.student_id')} AND ${VAI_THEO_DOI_BAO_PH('v', 's')} AND ${DA_BO_THEO_DOI('v')}
+       GROUP BY v.id, ur.user_id
+      ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(nowIso(), ...ps).changes;
+  return bo + them;
 }
 
 // ---------------------------------------------------------------- hạn
@@ -707,6 +743,7 @@ export function theoTvvHienTai(studentId: number): void {
   db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
       SELECT 'meeting', mp.id, s.consultant_user_id, 'tvv', NULL, ? FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
        WHERE x.student_id = ? AND mp.trang_thai = 'mo' AND s.consultant_user_id IS NOT NULL ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(nowIso(), studentId);
+  theoDoiVaiBaoPh({ studentIds: [studentId] });   // TD-HEAD-CX: có / hết TVV → Head thôi / thành người theo luật; TVV mới trùng Head / CX → bỏ dòng
 }
 
 // ---------------------------------------------------------------- /my-work: việc giao cho tôi (+ phần Meeting theo luật) — MỘT câu

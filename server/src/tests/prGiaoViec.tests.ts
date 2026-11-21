@@ -416,6 +416,80 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(ve.han === gk.han && ve.hanChon === null, 'Về mặc định → han_chon NULL, hạn mặc định tính lại');
   }));
 
+  await checkAsync('TD-HEAD-CX · (chủ SP 21/11) Báo PH vi phạm: Head + CX chi nhánh em theo dõi mặc định (head / cx) trong MỘT câu · trừ người theo luật · đổi vai / đổi TVV / đổi chi nhánh chuyển theo · tự bỏ không bị thêm lại · migrate hai lần không đổi', () => thu(async () => {
+    const { migratePrGiaoViec: mig } = await import('../migrate/prGiaoViec.ts');
+    const cpId = mot(`SELECT id FROM branches WHERE code = 'CP'`).id as number;
+    const headMb = nguoiVaiCuaChiNhanh(mbId, 'manager').filter((u: number) => mot('SELECT branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND r.key = ? AND ur.status = ?', u, 'manager', 'active')?.branch_id === mbId);
+    assert(headMb.includes(ql.userId), `Head MB: ${JSON.stringify(headMb)}`);
+    const sid = moiEm();
+    const { soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
+    const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+    const c0 = soCauSql(), d0 = soDongSql();
+    const { id } = xuLy(sid);
+    const cau = soCauSql() - c0, dong = soDongSql() - d0;
+    assert(cau <= TRAN_GHI_LO.xacNhanXuLy && dong <= TRAN_GHI_LO.xacNhanXuLyDong, `ghi + xác nhận xử lý: ${cau} câu / ${dong} dòng > trần ${TRAN_GHI_LO.xacNhanXuLy} / ${TRAN_GHI_LO.xacNhanXuLyDong}`);
+    const td = () => theoDoi('bao_ph', id);
+    const co = (u: number, nguon: string) => td().some((r) => r.user_id === u && r.nguon === nguon);
+    assert(co(ql.userId, 'head') && co(cx.userId, 'cx') && co(gvcn.userId, 'gvcn') && co(gvbm.userId, 'gv_ghi') && !td().some((r) => r.user_id === tvv.userId), `mặc định: ${JSON.stringify(td())}`);
+    assert(!td().some((r) => r.user_id === ngoai.userId), 'người chi nhánh khác không theo dõi');
+    /* Head chỉ xem: không thành việc của Head, có ở tab Đang theo dõi. */
+    assert(!items(ql).some((x) => x.key === `bao-ph:${id}` && x.mine), 'Head: không thành việc');
+    xoaNho();
+    assert(gv.viecTheoDoi(ql).nhom.find((g: any) => g.loai === 'bao_ph')?.mo.some((x: any) => x.refId === id), 'Head: tab Đang theo dõi');
+    /* Em chưa có TVV → Head là người theo luật: không thêm Head; CX vẫn thêm. */
+    const sid2 = moiEm(); conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid2);
+    const id2 = xuLy(sid2).id;
+    assert(!theoDoi('bao_ph', id2).some((r) => r.nguon === 'head') && theoDoi('bao_ph', id2).some((r) => r.user_id === cx.userId && r.nguon === 'cx'), `không TVV: ${JSON.stringify(theoDoi('bao_ph', id2))}`);
+    /* Đổi TVV: gán TVV cho em 2 → Head thêm; bỏ TVV em 1 → Head thôi. */
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, sid2); gv.theoTvvHienTai(sid2);
+    assert(theoDoi('bao_ph', id2).some((r) => r.user_id === ql.userId && r.nguon === 'head'), 'gán TVV → Head theo dõi');
+    conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid); gv.theoTvvHienTai(sid);
+    assert(!co(ql.userId, 'head'), 'bỏ TVV → Head là người theo luật, thôi theo dõi');
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, sid); gv.theoTvvHienTai(sid);
+    /* Đổi vai: CX thôi vai → bỏ dòng; CX lại → thêm lại. Head mới tạo → theo dõi việc đang mở. */
+    accounts.setRoles(P.admin, cx.userId, [{ role: 'consultant', branches: ['MB'] }]);
+    assert(!td().some((r) => r.user_id === cx.userId), 'CX thôi vai → bỏ dòng cx');
+    accounts.setRoles(P.admin, cx.userId, [{ role: 'cx', branches: ['MB'] }]);
+    assert(co(cx.userId, 'cx'), 'CX lại → thêm lại');
+    const head2 = taiKhoan('head2', 'manager');
+    assert(co(head2.userId, 'head'), 'Head mới tạo → theo dõi Báo PH vi phạm đang mở');
+    const cxToan = taiKhoan('cxtoan', 'cx'); accounts.setRoles(P.admin, cxToan.userId, [{ role: 'cx', branches: [] }]);
+    assert(co(cxToan.userId, 'cx'), 'CX toàn hệ thống cũng tính');
+    /* Đổi chi nhánh em (MB → CP): Head / CX MB thôi, CX CP thêm, CX toàn hệ thống giữ. */
+    const cxCp = taiKhoan('cxcp', 'cx', 'CP');
+    conn.prepare("UPDATE enrollments SET status = 'ended' WHERE student_id = ? AND status = 'active'").run(sid);
+    conn.prepare('UPDATE students SET branch_id = ? WHERE id = ?').run(cpId, sid);
+    gv.sauDoiChiNhanhEm([sid], P.admin.userId);
+    assert(!co(ql.userId, 'head') && !co(cx.userId, 'cx') && co(cxCp.userId, 'cx') && co(cxToan.userId, 'cx'), `đổi chi nhánh: ${JSON.stringify(td())}`);
+    /* Tự bỏ theo dõi → đồng bộ / migrate không thêm lại. */
+    gv.boTheoDoi(cxCp, 'bao_ph', id, cxCp.userId);
+    gv.theoDoiVaiBaoPh();
+    assert(!td().some((r) => r.user_id === cxCp.userId), 'đã tự bỏ → không thêm lại');
+    /* Migrate: dòng head / cx bị thiếu → thêm bù; chạy lần hai không đổi. */
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND nguon IN ('head', 'cx')`).run(id2);
+    const a: string[] = []; mig(conn, a);
+    const b: string[] = []; mig(conn, b);
+    assert(a.some((x) => /TD-HEAD-CX/.test(x)) && !b.some((x) => /TD-HEAD-CX/.test(x)), `migrate: ${a.join(' | ')} ‖ ${b.join(' | ')}`);
+    assert(theoDoi('bao_ph', id2).some((r) => r.user_id === ql.userId && r.nguon === 'head') && theoDoi('bao_ph', id2).some((r) => r.user_id === cx.userId && r.nguon === 'cx'), 'migrate thêm bù');
+    /* Việc đã xong không bị thêm / bỏ. */
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [id2], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em' });
+    const xong = JSON.stringify(theoDoi('bao_ph', id2));
+    accounts.setRoles(P.admin, head2.userId, [{ role: 'teacher', branches: ['MB'] }]);
+    assert(JSON.stringify(theoDoi('bao_ph', id2)) === xong, 'việc đã xong: dòng theo dõi giữ nguyên');
+  }));
+
+  await checkAsync('TD-HEAD-CX · tab Đang theo dõi của Head dài (≥ 30 việc Báo PH vi phạm): số câu không tăng theo số việc (≤ trần đường), số dòng ~ số việc', () => thu(async () => {
+    const { soCauSql, soDongSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
+    const { TRAN } = await import('./tocDoDuong.ts');
+    const doTab = () => chayTrongRequest('GET', () => { const c = soCauSql(), d = soDongSql(); const r = gv.viecTheoDoi(ql); return { cau: soCauSql() - c, dong: soDongSql() - d, n: r.nhom.reduce((a: number, g: any) => a + g.mo.length, 0) }; });
+    const truoc = doTab();
+    for (let i = 0; i < 30; i++) xuLy(moiEm());
+    const sau = doTab();
+    assert(sau.n >= truoc.n + 30, `Head theo dõi thêm 30 việc: ${truoc.n} → ${sau.n}`);
+    assert(sau.cau <= TRAN['QL /my-work/theo-doi'] && sau.cau <= truoc.cau + 1, `câu: ${truoc.cau} → ${sau.cau} (trần ${TRAN['QL /my-work/theo-doi']})`);
+    assert(sau.dong <= truoc.dong + 30 * 2, `dòng: ${truoc.dong} → ${sau.dong} — mỗi việc thêm ≤ 2 dòng`);
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
