@@ -792,9 +792,9 @@ const bao = (t: any, boi: number, suKien: SuKien, chiTiet: string | null, khoa: 
   baoTheoDoi('van_hanh', t.id, boi, { suKien, tieuDe: t.title, chiTiet, khoa });
 const ngayNgan = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : 'không hạn');
 
-/** VH-1b (N62): hạng mục chính thống (`HANG_MUC_CV`) | null (tab Vận hành) | undefined (không gửi — giữ nguyên). */
 /** A2-10 (AUDIT-2111): Mô tả việc Vận hành cùng trần với Mô tả việc của khối N58 (`TRAN_MO_TA` giaoViec). */
 const TRAN_MO_TA_VH = 500;
+/** VH-1b (N62): hạng mục chính thống (`HANG_MUC_CV`) | null (tab Vận hành) | undefined (không gửi — giữ nguyên). */
 function docHangMuc(v: unknown): string | null | undefined {
   if (v === undefined) return undefined;
   if (v === null || v === '') return null;
