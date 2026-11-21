@@ -15,7 +15,7 @@ import { t } from '@shared/i18n/index.ts';
 import { lucVn } from './gioVn.ts';
 import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
 import { LuaChonRadio } from './PanelBaoPhTvv.tsx';
-import { LichSuViPham, lamMoiTraLai, loiLyDo, type TraLaiView } from '../yThuc/TraLai.tsx';
+import { HOAN_TAC_MS, LichSuViPham, hoanTacTraLai, lamMoiTraLai, loiLyDo, type TraLaiView } from '../yThuc/TraLai.tsx';
 import { xoaViPham } from '../yThuc/DeleteViolationConfirm.tsx';
 
 type Cach = 'sua' | 'giu' | 'xoa' | 'thu_hoi';
@@ -77,6 +77,11 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
   const daGo = ngay !== null || mon !== undefined || ten !== null || moTa !== null || !!traLoi.trim() || !!lyDoTh.trim();
 
   const sau = () => { xoaNhap(); setTt(null); lf.datLai(); lamMoiTraLai(); reload(); gv.reload(); onDaLam(); };
+  /* B1-11 (AUDIT-2111): Gửi lại / Giữ nguyên có Hoàn tác 60 giây (như Trả lại) — máy chủ đảo yêu cầu về "mở", Báo PH dừng lại, tin TVV gỡ. */
+  const coHoanTac = (chu: string) => toast.hoanTac(chu, () => {
+    hoanTacTraLai(id).then(() => { reload(); gv.reload(); onDaLam(); toast.push('ok', t('Đã hoàn tác')); },
+      (e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
+  }, { ms: HOAN_TAC_MS });
   const gui = async (): Promise<boolean> => {
     lf.bam();
     if (loiO.length || tt === 'dang') return false;
@@ -85,10 +90,10 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
       if (c === 'sua') {
         const sua = vp ? { occurredOn: vNgay, skill: vMon, ten: vTen.trim(), description: vMoTa.trim() } : undefined;
         await api.post(`/y-thuc/tra-lai/${id}/gui-lai`, { sua });
-        toast.push('ok', t('Đã gửi lại · TVV nhận tin'));
+        coHoanTac(t('Đã gửi lại · TVV nhận tin'));
       } else if (c === 'giu') {
         await api.post(`/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: traLoi.trim() });
-        toast.push('ok', t('Đã gửi trả lời · TVV nhận tin'));
+        coHoanTac(t('Đã gửi trả lời · TVV nhận tin'));
       } else if (c === 'xoa' && vp) {
         await xoaViPham(toast, vp.id);   // đường xoá sẵn có: toast Hoàn tác + Đã xoá 30 ngày; máy chủ tự đóng yêu cầu "đã xoá"
       } else if (c === 'thu_hoi' && d.measureId) {

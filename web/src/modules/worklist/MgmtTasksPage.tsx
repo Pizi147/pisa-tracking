@@ -468,7 +468,6 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const [addingSub, setAddingSub] = useState(false);
   const [dangTick, setDangTick] = useState<number | null>(null);
   useEffect(() => { setUpdating(false); setEditing(false); }, [taskId]);
-  const truoc = useRef<{ id: number | null } | null>(null);
 
   if (taskId === null) return null;
   const xong = () => { invalidate('/mgmt-tasks'); onDone(); };
@@ -482,8 +481,9 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   };
   const thaoTac: ThaoTacKhoi = {
     trong: t('Chưa giao'), khongMacDinh: true,
-    doiNguoi: (_g, userId) => { truoc.current = { id: data.assigneeUserId ?? null }; return patch({ assigneeUserId: userId }); },
-    hoanTacNguoi: () => patch({ assigneeUserId: truoc.current?.id ?? null }),
+    doiNguoi: (_g, userId) => patch({ assigneeUserId: userId }),
+    /* A2-04 / A2-09: máy chủ đảo đúng lần đổi (người theo dõi như cũ, tin vừa gửi gỡ đi) — không đổi lần nữa. */
+    hoanTacNguoi: () => patch({ hoanTacGiao: true }),
     suaHan: (_g, han) => patch({ due: han }),
     themTheoDoi: (_g, ids) => patch({ theoDoiIds: [...new Set([...data.theoDoi.map((x: any) => x.id), ...ids])] }),
     boTheoDoi: (_g, id) => patch({ theoDoiIds: data.theoDoi.map((x: any) => x.id).filter((x: number) => x !== id) }),

@@ -149,7 +149,8 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(x.status === 200 && !dong(c) && !mot('SELECT 1 FROM violations WHERE id = ?', vids[2]), `xoá: ${x.status} ${x.json?.error}`);
       assert(JSON.stringify(tin(`tra-lai-kq:${c}`)) === JSON.stringify([tvv.userId]), 'TVV nhận "GV đã xoá"');
       rac.khoiPhucRac(P.admin, x.json.thungRacId);
-      assert(dong(c)?.trang_thai === 'xong' && dong(c).ket_qua === 'da_xoa', `khôi phục: ${JSON.stringify(dong(c))}`);
+      /* P1-03 (AUDIT-2111): khôi phục trả yêu cầu về đúng lúc trước khi xoá — còn "mở", GV làm tiếp được. */
+      assert(dong(c)?.trang_thai === 'mo' && dong(c).ket_qua === null, `khôi phục: ${JSON.stringify(dong(c))}`);
       const m = (await tra(tvv, { measureId: mid })).json.id;
       const th = await goi(gvcn, 'POST', `/discipline-measures/${mid}/thu-hoi`, { lyDo: 'TVV báo bậc chưa hợp lý, thu hồi để xét lại' });
       assert(th.status === 200 && dong(m).trang_thai === 'mo', `GVCN gửi thu hồi chờ Head duyệt → yêu cầu còn mở (PTA chốt): ${th.status} ${th.json?.error} ${JSON.stringify(dong(m))}`);
@@ -286,6 +287,83 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       return hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id as number);
     };
     const theoDoi = (loai: string, id: number) => hang('SELECT user_id, nguon FROM viec_theo_doi WHERE loai = ? AND ref_id = ? ORDER BY user_id', loai, id);
+
+    await checkAsync('TL-25 · (AUDIT-2111 P1-03) xoá vi phạm đang bị trả lại → Hoàn tác: yêu cầu "mở" lại, việc GV trở lại, người theo dõi + mô tả còn, Báo PH "Chờ GV sửa" + hạn như trước, TVV nhận tin "GV đã hoàn tác xoá"', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid);
+      conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), bp);   // đã quá hạn → đóng sẽ tính lại hạn
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id;
+      conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('tra_lai', ?, ?, 'tay', ?)`).run(id, admin.userId, new Date().toISOString());
+      conn.prepare(`INSERT INTO viec_mo_ta (loai, ref_id, noi_dung, sua_boi, sua_luc) VALUES ('tra_lai', ?, 'Mô tả việc trả lại', ?, ?)`).run(id, tvv.userId, new Date().toISOString());
+      const td = JSON.stringify(theoDoi('tra_lai', id));
+      const x = await goi(gvbm, 'DELETE', `/violations/${vids[0]}`);
+      assert(x.status === 200 && !dong(id), `xoá: ${x.status} ${x.json?.error}`);
+      const giua = mot('SELECT tra_lai_id, han_chon FROM viec_bao_ph WHERE id = ?', bp);
+      assert(giua.tra_lai_id === null && giua.han_chon === hanBaoPh(TODAY), `lúc xoá: Báo PH hết dừng, hạn tính lại: ${JSON.stringify(giua)}`);
+      const k = await goi(gvbm, 'POST', `/thung-rac/${x.json.thungRacId}/khoi-phuc`);
+      assert(k.status === 200, `Hoàn tác: ${k.status} ${k.json?.error}`);
+      assert(dong(id)?.trang_thai === 'mo' && dong(id).ket_qua === null && dong(id).xong_luc === null, `yêu cầu mở lại: ${JSON.stringify(dong(id))}`);
+      assert(items(gvbm).some((i) => i.key === `yt_tra_lai:${id}`), 'việc GV trở lại Công việc');
+      assert(JSON.stringify(theoDoi('tra_lai', id)) === td && mot(`SELECT noi_dung FROM viec_mo_ta WHERE loai = 'tra_lai' AND ref_id = ?`, id)?.noi_dung === 'Mô tả việc trả lại',
+        `người theo dõi + mô tả còn: ${JSON.stringify(theoDoi('tra_lai', id))}`);
+      const sau = mot('SELECT tra_lai_id, han_chon FROM viec_bao_ph WHERE id = ?', bp);
+      assert(sau.tra_lai_id === id && sau.han_chon === null && !mot(`SELECT 1 FROM viec_han_lan WHERE loai = 'bao_ph' AND viec_id = ?`, bp), `Báo PH "Chờ GV sửa", hạn như trước: ${JSON.stringify(sau)}`);
+      const kp = hang(`SELECT user_id, title FROM notifications WHERE dedup_key = ?`, `tra-lai-kp:${id}:${x.json.thungRacId}`);
+      assert(kp.length === 1 && kp[0].user_id === tvv.userId && /^GV đã hoàn tác xoá · /.test(kp[0].title), `tin TVV: ${JSON.stringify(kp)}`);
+      /* Vi phạm chưa có lần xử lý (không Báo PH): xoá → khôi phục → yêu cầu mở lại. */
+      const le = viPham(sid);
+      const id2 = (await tra(tvv, { violationId: le })).json.id;
+      const x2 = await goi(gvbm, 'DELETE', `/violations/${le}`);
+      assert(x2.status === 200 && (await goi(gvbm, 'POST', `/thung-rac/${x2.json.thungRacId}/khoi-phuc`)).status === 200 && dong(id2)?.trang_thai === 'mo', 'vi phạm lẻ: yêu cầu mở lại');
+    }));
+
+    await checkAsync('TL-26 · (AUDIT-2111 B1-11) GV "Sửa rồi gửi lại" / "Giữ nguyên" → Hoàn tác 60 giây: yêu cầu "mở", vi phạm như trước khi sửa, Báo PH dừng lại, tin TVV gỡ; người khác / quá 60 giây → 400', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid, 2);
+      conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), bp);
+      const ngayCu = mot('SELECT occurred_on FROM violations WHERE id = ?', vids[0]).occurred_on;
+      const a = (await tra(tvv, { violationId: vids[0] })).json.id;
+      const ls = hang('SELECT id FROM violation_history WHERE violation_id = ?', vids[0]).length;
+      const g = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/gui-lai`, { sua: { occurredOn: addDays(TODAY, -4) } });
+      assert(g.status === 200 && g.json.hoanTacDuoc === true && tin(`tra-lai-kq:${a}`).length === 1, `gửi lại: ${g.status} ${JSON.stringify(g.json)}`);
+      assert((await goi(gvcn, 'POST', `/y-thuc/tra-lai/${a}/hoan-tac`)).status === 400, 'người khác Hoàn tác → 400');
+      const h = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/hoan-tac`);
+      assert(h.status === 200, `Hoàn tác: ${h.status} ${h.json?.error}`);
+      assert(dong(a).trang_thai === 'mo' && dong(a).ket_qua === null && mot('SELECT occurred_on FROM violations WHERE id = ?', vids[0]).occurred_on === ngayCu,
+        `về như trước: ${JSON.stringify(dong(a))}`);
+      assert(hang('SELECT id FROM violation_history WHERE violation_id = ?', vids[0]).length === ls && !tin(`tra-lai-kq:${a}`).length, 'lịch sử sửa + tin TVV gỡ');
+      const b = mot('SELECT tra_lai_id, han_chon FROM viec_bao_ph WHERE id = ?', bp);
+      assert(b.tra_lai_id === a && b.han_chon === null && !mot(`SELECT 1 FROM viec_han_lan WHERE loai = 'bao_ph' AND viec_id = ?`, bp), `Báo PH dừng lại, hạn như cũ: ${JSON.stringify(b)}`);
+      assert(items(gvbm).some((i) => i.key === `yt_tra_lai:${a}`), 'việc GV trở lại');
+      const gn = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
+      assert(gn.status === 200 && gn.json.ketQua === 'giu_nguyen', `giữ nguyên sau Hoàn tác: ${gn.status} ${gn.json?.error}`);
+      conn.prepare('UPDATE vi_pham_tra_lai SET xong_luc = ? WHERE id = ?').run(new Date(Date.now() - 61_000).toISOString(), a);
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/hoan-tac`)).status === 400 && dong(a).trang_thai === 'xong', 'quá 60 giây → 400');
+    }));
+
+    await checkAsync('TL-27 · (AUDIT-2111 P1-04) xoá HV → việc mới nhận lại id cũ → khôi phục HV: người theo dõi / lịch sử giao / hạn / mô tả / bản đảo đi theo id MỚI, không dính sang việc của em khác', () => thu(async () => {
+      const a = moiEm(); const xa = xuLy(a);
+      assert(mot('SELECT MAX(id) AS m FROM viec_bao_ph').m === xa.bp, 'Báo PH của em A là id lớn nhất (id sẽ được dùng lại)');
+      const gi = await goi(ql, 'POST', `/giao-viec/bao_ph/${xa.bp}/phu-trach`, { userId: tvv2.userId, phuTrachCu: null });
+      assert(gi.status === 200, `giao: ${gi.status} ${gi.json?.error}`);
+      conn.prepare(`INSERT INTO viec_mo_ta (loai, ref_id, noi_dung, sua_boi, sua_luc) VALUES ('bao_ph', ?, 'MO TA CUA EM A', ?, ?)`).run(xa.bp, ql.userId, new Date().toISOString());
+      conn.prepare(`INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc) VALUES ('bao_ph', ?, NULL, ?, 0, ?, ?)`).run(xa.bp, addDays(TODAY, 9), ql.userId, new Date().toISOString());
+      const dem = (id: number) => ({
+        td: hang(`SELECT user_id FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? ORDER BY user_id`, id).map((r) => r.user_id),
+        lan: hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'bao_ph' AND ref_id = ?`, id).length, han: hang(`SELECT 1 FROM viec_han_lan WHERE loai = 'bao_ph' AND viec_id = ?`, id).length,
+        moTa: mot(`SELECT noi_dung FROM viec_mo_ta WHERE loai = 'bao_ph' AND ref_id = ?`, id)?.noi_dung ?? null,
+        dao: hang(`SELECT 1 FROM ghi_dao WHERE loai = 'giao_viec' AND bang = 'viec_bao_ph' AND doi_tuong_id = ?`, id).length });
+      const truoc = dem(xa.bp);
+      assert(truoc.td.length && truoc.lan && truoc.han && truoc.moTa && truoc.dao, `dữ liệu việc em A: ${JSON.stringify(truoc)}`);
+      const x = xoaHV.xoaHocVien(P.admin, a, { maXacNhan: mot('SELECT student_code FROM students WHERE id = ?', a).student_code });
+      const b = moiEm(); const xb = xuLy(b);
+      assert(xb.bp === xa.bp, `em B nhận lại id việc ${xa.bp}: ${xb.bp}`);
+      const rongB = JSON.stringify(dem(xb.bp));
+      const aMoi = rac.khoiPhucRac(P.admin, x.thungRacId).doiTuongId as number;   // id em cũng có thể đã được em B dùng lại
+      const bpA = mot('SELECT id FROM viec_bao_ph WHERE student_id = ?', aMoi).id as number;
+      assert(bpA !== xb.bp, 'việc em A nhận id mới');
+      assert(JSON.stringify(dem(xb.bp)) === rongB, `việc em B không dính dữ liệu em A: ${JSON.stringify(dem(xb.bp))}`);
+      assert(JSON.stringify(dem(bpA)) === JSON.stringify(truoc), `việc em A đủ như trước: ${JSON.stringify(dem(bpA))} ≠ ${JSON.stringify(truoc)}`);
+      assert(mot('SELECT phu_trach_id FROM viec_bao_ph WHERE id = ?', bpA).phu_trach_id === tvv2.userId, 'người được giao giữ');
+    }));
 
     await checkAsync('TL-15 · (rà 1) đổi GVCN thật + đổi TVV khi Meeting VÀ trả lại cùng mở: người theo dõi gvcn / tvv của CẢ HAI chuyển theo; cả lần xử lý → GVCN mới nhận việc + chuông', () => thu(async () => {
       const sid = moiEm(); const { mid } = xuLy(sid);

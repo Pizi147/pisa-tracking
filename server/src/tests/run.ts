@@ -3109,7 +3109,7 @@ console.log('\n19. Phân công giáo viên');
 
 check('Giáo viên không tự phân công mình vào lớp', () => {
   const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
-  assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
+  assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan, slots: [] }),
     /Head|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
   assert(can(P.mbManager, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Quản lý phải phân công được');
@@ -3118,7 +3118,7 @@ check('Giáo viên không tự phân công mình vào lớp', () => {
 check('Không xếp người của chi nhánh khác, và không xếp kỹ năng lớp không dạy', () => {
   const cpTeacher = teacherOfSkill('CP FT 110', 'listening');
   assertThrows(
-    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
       slots: [{ userId: cpTeacher, skill: 'listening', isCore: false }],
     }),
     /chi nhánh/, 'Xếp giáo viên CP vào lớp MB',
@@ -3126,7 +3126,7 @@ check('Không xếp người của chi nhánh khác, và không xếp kỹ năng
   const found = classId('MB FOU 12');
   const anyTeacher = classesSvc.classTeachers(P.mbManager, found).candidates[0];
   assertThrows(
-    () => classesSvc.setClassTeachers(P.mbManager, found, {
+    () => classesSvc.setClassTeachers(P.mbManager, found, { phienBan: classesSvc.classTeachers(P.admin, found).phienBan,
       slots: [{ userId: anyTeacher.id, skill: 'writing2', isCore: false }],
     }),
     /Lớp không có môn này/, 'Xếp W2 cho lớp không có W2',
@@ -3141,7 +3141,7 @@ check('Bỏ phân công KHÔNG xoá lịch sử, và dòng giữ nguyên thì kh
   const keep = before.bySkill.filter((b) => b.skill !== 'listening')
     .map((b) => ({ userId: b.userId, skill: b.skill, isCore: false }));
   const core = before.core.map((c) => ({ userId: c.userId, skill: null, isCore: true }));
-  classesSvc.setClassTeachers(P.mbManager, mbClass, { slots: [...core, ...keep] });
+  classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan, slots: [...core, ...keep] });
 
   const rows = conn
     .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill='listening'`)
@@ -3180,7 +3180,7 @@ check('Bỏ phân công thì mất luôn quyền nhập điểm kỹ năng đó'
   assert(can(gv, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }),
     `GV ${slot!.skill} chưa có quyền`);
 
-  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+  classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
     slots: [
       ...before.core.map((c: any) => ({ userId: c.userId, skill: null, isCore: true })),
       ...before.bySkill.filter((b: any) => b.skill !== slot!.skill)
@@ -3201,7 +3201,7 @@ check('GVCN phải dạy ít nhất MỘT kỹ năng ở lớp mình chủ nhi�
   const core = t.core[0];
   assert(core, 'Lớp mẫu chưa có giáo viên chủ nhiệm');
   assertThrows(
-    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
       slots: [
         { userId: core.userId, skill: null, isCore: true },
         ...t.bySkill.filter((b: any) => b.userId !== core.userId)
@@ -3239,7 +3239,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
       .map((b: any) => ({ userId: b.userId, skill: b.skill, isCore: false })),
   ];
   assertThrows(
-    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
       slots: [
         ...base,
         { userId: two[0].id, skill: 'reading', isCore: false },
@@ -3250,7 +3250,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
   );
 
   /* Một giáo viên dạy NHIỀU kỹ năng thì vẫn được — đó là quy tắc thứ hai của mục 7.7. */
-  classesSvc.setClassTeachers(P.mbManager, mbClass, {
+  classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
     slots: [
       ...base,
       { userId: two[0].id, skill: 'reading', isCore: false },
@@ -3262,7 +3262,7 @@ check('MỖI KỸ NĂNG CHỈ MỘT GIÁO VIÊN — xếp hai người vào mộ
 
   /* Và đúng MỘT giáo viên chủ nhiệm. */
   assertThrows(
-    () => classesSvc.setClassTeachers(P.mbManager, mbClass, {
+    () => classesSvc.setClassTeachers(P.mbManager, mbClass, { phienBan: classesSvc.classTeachers(P.admin, mbClass).phienBan,
       slots: [
         ...base,
         { userId: two[0].id, skill: 'reading', isCore: false },

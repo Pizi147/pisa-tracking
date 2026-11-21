@@ -399,6 +399,28 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(doi.moi && doi.cu && !/^\d+$/.test(doi.moi), `tên người, không phải id: ${JSON.stringify(doi)}`);
   }));
 
+  await checkAsync('VH2-2 · (AUDIT-2111 A2-04 / A2-09) Đổi người → Hoàn tác: người phụ trách + người theo dõi về đúng như trước (người cũ không bị thêm vào Theo dõi), tin "Đổi người" gỡ, không tin mới; có thay đổi sau → 409; form Sửa nhiều trường không có bản đảo', () => thu(async () => {
+    const v = tao(cx, { assigneeUserId: tvv.userId, theoDoiIds: [bpxl.userId] });
+    const td = () => JSON.stringify(mg.mgmtTaskDetail(cx, v.id).theoDoi.map((x: any) => x.id).sort());
+    const truoc = td();
+    const tinTruoc = [tvv, bpxl, cx].map((u) => tin(u.userId, v.id).length);
+    const d = mg.editMgmtTask(ql, v.id, { assigneeUserId: gvcn.userId, phienBan: mg.mgmtTaskDetail(cx, v.id).updatedAt });
+    assert(d.assigneeUserId === gvcn.userId && d.theoDoi.some((x: any) => x.id === tvv.userId), 'đổi: người cũ theo dõi tiếp');
+    assert(tin(tvv.userId, v.id).length > tinTruoc[0], 'người cũ nhận tin đổi người');
+    const h = mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d.updatedAt });
+    assert(h.assigneeUserId === tvv.userId && td() === truoc, `Hoàn tác: phụ trách + theo dõi như trước: ${td()} ≠ ${truoc}`);
+    assert(JSON.stringify([tvv, bpxl, cx].map((u) => tin(u.userId, v.id).length)) === JSON.stringify(tinTruoc) && !tin(gvcn.userId, v.id).length,
+      'tin "Đổi người" của lần đổi gỡ hết, không tin mới (kết quả không đổi)');
+    assert(h.lichSu.filter((l: any) => l.truong === 'assignee_user_id').length === 2, 'lịch sử: đổi + hoàn tác');
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: h.updatedAt })) === 409, 'đã hoàn tác → 409');
+    const d2 = mg.editMgmtTask(ql, v.id, { assigneeUserId: gvcn.userId, phienBan: h.updatedAt });
+    const d3 = mg.editMgmtTask(ql, v.id, { due: addDays(TODAY, 4), phienBan: d2.updatedAt });
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d3.updatedAt })) === 409, 'có thay đổi sau lần đổi → 409');
+    assert(await ma(() => mg.editMgmtTask(tvv, v.id, { hoanTacGiao: true, phienBan: d3.updatedAt })) === 403, 'không quản lý → 403');
+    const d4 = mg.editMgmtTask(ql, v.id, { assigneeUserId: tvv.userId, title: 'Đổi tên cùng lúc', phienBan: d3.updatedAt });
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d4.updatedAt })) === 409, 'form Sửa nhiều trường: không có bản đảo mới');
+  }));
+
   await checkAsync('AU-2111 P1-01 (A2-01) · TVV được giao việc Vận hành / việc con / theo dõi mở + làm được qua HTTP (cổng khu Công việc); TVV không liên quan, hết vai 403; danh sách Vận hành vẫn 403', async () => {
     const { createApp } = await import('../app.ts');
     const may = createApp().listen(0);

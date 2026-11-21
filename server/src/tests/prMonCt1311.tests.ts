@@ -128,7 +128,7 @@ export async function runPrMonCt1311Tests(t: any) {
     for (const k of ['listening', 'speaking']) {
       assert(can.has(k) === dang.some((x) => x.skill === k), `${k}: còn cần ${can.has(k)} · còn dòng ${dang.some((x) => x.skill === k)}`);
     }
-    const e = loi(() => classSvc.setClassTeachers(P.admin, A, { slots: dang.map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 })) }));
+    const e = loi(() => classSvc.setClassTeachers(P.admin, A, { slots: dang.map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 })), phienBan: classSvc.classTeachers(P.admin, A).phienBan }));
     assert(e === null, `gửi lại bức tranh có môn cũ: ${e?.status} ${e?.message}`);
   }));
 

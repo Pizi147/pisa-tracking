@@ -12,6 +12,7 @@ import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { CN_VH, HOAT_DONG_O, baoTheoDoi, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
+import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
@@ -1121,10 +1122,13 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   hangMuc?: unknown; classId?: unknown; studentIds?: unknown;
   /** VH-2: Trong kỳ │ Dài hạn (chỉ việc gốc; Head / Quản trị / CX). */
   taskType?: unknown;
+  /** A2-04 / A2-09: `true` = Hoàn tác lần đổi người gần nhất (panel, 10 giây) — đảo bản ghi, không đổi lần nữa. Web cũ gửi lại người cũ: vẫn chạy như trước. */
+  hoanTacGiao?: unknown;
 }) {
   const conn = db();
   const t = docTask(taskId);
   kiemPhienBan(t, patch.phienBan);
+  if (patch.hoanTacGiao === true) return hoanTacGiaoVh(p, t);
   const quanLy = coQuyenViec(p, t);
   if (!quanLy) {
     const duoc = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
@@ -1264,8 +1268,21 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const doiHv = hvMoi !== undefined;
   if (!sets.length && theoDoi === undefined && !doiHv) return mgmtTaskDetail(p, taskId);
 
+  /* A2-04 / A2-09: đổi người ghi bản đảo — dòng việc (trước) + người theo dõi / tin "Cập nhật" vừa thêm; Hoàn tác trả đúng như trước, gỡ tin. */
+  /* Chỉ lần đổi CHỈ người phụ trách (hộp Đổi người ở panel) — form Sửa đổi nhiều trường không có Hoàn tác này. */
+  const chiDoiNguoi = doiNguoi && Object.entries(patch).every(([k, v]) => v === undefined || ['assigneeUserId', 'assigneeName', 'phienBan'].includes(k));
+  const dao = chiDoiNguoi ? new GhiDao(conn) : null;
   return tx(() => {
+    if (!dao) return ghiSua(null);
+    /* Tin "Cập nhật" của việc: khoảng khoá `gv:van_hanh:{id}:…` theo chỉ mục `dedup_key` (không quét bảng). */
+    const kq = dao.theoDoi('viec_theo_doi', `loai = 'van_hanh' AND ref_id = ?`, [taskId], () =>
+      dao.theoDoi('notifications', 'dedup_key >= ? AND dedup_key < ?', [`gv:van_hanh:${taskId}:`, `gv:van_hanh:${taskId};`], () => ghiSua(dao)));
+    luuGhiDao(conn, { loai: LOAI_DAO_GIAO, bang: 'tasks', id: taskId, nguoi: p.userId, ghi: dao });
+    return kq;
+  });
+  function ghiSua(dao: GhiDao | null) {
     const luc = nowIso();
+    dao?.sua('tasks', 'id = ?', taskId);
     if (sets.length) {
       sets.push('updated_at = ?'); params.push(luc, taskId, t.updated_at ?? null);
       /* VH-1: so-và-đổi theo lần sửa đã đọc — hai người sửa cùng lúc: người sau 409. */
@@ -1313,6 +1330,26 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     }
     if (doiHan) bao({ ...t, title: patch.title ?? t.title }, p.userId, 'han', `Hạn mới: ${ngayNgan(patch.due ?? null)}`, aid);
     return mgmtTaskDetail(p, taskId);
+  }
+}
+
+const LOAI_DAO_GIAO = 'van_hanh.giao';
+/**
+ * A2-04 / A2-09 (AUDIT-2111): Hoàn tác "Đổi người" (panel) = ĐẢO lần đổi gần nhất, không phải đổi lần nữa: người phụ trách + người theo dõi về đúng như trước
+ * (người phụ trách cũ không bị thêm vào Theo dõi) · tin "Đổi người phụ trách" vừa gửi gỡ đi (kết quả không đổi → không tin). Sau đó đã có thay đổi → 409.
+ */
+function hoanTacGiaoVh(p: Principal, t: any) {
+  if (!coQuyenViec(p, t)) throw forbidden('Chỉ Head, Quản trị hoặc CX của chi nhánh hoàn tác được.');
+  const g = timGhiDao(db(), LOAI_DAO_GIAO, 'tasks', t.id);
+  if (!g) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
+  return tx(() => {
+    daoLai(db(), g, p.userId);
+    const sau = docTask(t.id);
+    db().prepare(`INSERT INTO task_history (task_id, field, old_value, new_value, reason, actor_user_id, created_at) VALUES (?,?,?,?,?,?,?)`)
+      .run(t.id, 'assignee_user_id', t.assignee_user_id ? String(t.assignee_user_id) : null, sau.assignee_user_id ? String(sau.assignee_user_id) : null, null, p.userId, nowIso());
+    writeAudit({ actorUserId: p.userId, action: 'mgmt_task.hoan_tac_giao', entityType: 'task', entityId: t.id, entityLabel: t.title,
+      before: { assignee: t.assignee_user_id }, after: { assignee: sau.assignee_user_id } });
+    return mgmtTaskDetail(p, t.id);
   });
 }
 

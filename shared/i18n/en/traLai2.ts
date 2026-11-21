@@ -61,4 +61,14 @@ export const EN_TRA_LAI_2 = {
   'Lần xử lý bị trả lại': 'Action sent back',
   'Hạn tính lại sau khi GV gửi lại': 'Due date recalculated after the teacher sent back',
   'Đang tải…': 'Loading…',
+  /* AUDIT-2111 gói 2 (HOAN-TAC-DUNG). */
+  'GV đã hoàn tác xoá': 'Teacher undid the deletion',
+  'Quá thời gian Hoàn tác — nhờ TVV trả lại lần nữa nếu cần sửa.': 'Undo time has passed — ask the consultant to send it back again if it needs fixing.',
+  'Không hoàn tác được': 'Could not undo',
+  'Thiếu danh sách phân công.': 'Missing assignment list.',
+  'Thiếu phiên bản phân công — mở lại phân công lớp rồi lưu.': 'Missing assignment version — reopen the class assignment, then save.',
+  'Lớp FT không có Progress / Final Test.': 'FT classes have no Progress / Final Test.',
+  'Chỉ Head, Quản trị hoặc CX của chi nhánh hoàn tác được.': 'Only the branch Head, System admin or CX can undo this.',
+  'Hoàn tác GV gửi lại / giữ nguyên vi phạm bị trả lại': 'Undo teacher resend / keep of a sent-back violation',
+  'Hoàn tác đổi người phụ trách công việc': 'Undo task reassignment',
 } as const;
