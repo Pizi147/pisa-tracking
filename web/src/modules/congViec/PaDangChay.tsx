@@ -139,7 +139,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                 ) : (
                   <DongNho k={key} chonDong={chonDong} han={x0.han} onBam={() => moPa(x0)} nut={<NutNhap x={x0} nhap={nhapCua(x0)} onBam={() => moPa(x0)} />}
                     tren={<>{g.lop ? <b className="font-semibold">{g.lop} · </b> : null}{tenLoai(x0)}</>}
-                    duoi={<><Link to={duongHoSoHocVien(x0.studentId)} onClick={(e) => e.stopPropagation()} className="ten-hv whitespace-nowrap text-dim no-underline hover:underline">{x0.studentName}</Link>{nhanKn(x0) ? ` · ${nhanKn(x0)}` : ''}</>} />
+                    duoi={<><Link to={duongHoSoHocVien(x0.studentId)} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:underline">{x0.studentName}</Link>{nhanKn(x0) ? ` · ${nhanKn(x0)}` : ''}</>} />
                 )}
                 <div data-hd="pdc-dong" data-khoa={key} className={`${DONG} max-sm:hidden ${chonDong ? 'row-active' : 'bam'}`}
                   onClick={() => (nhieu ? onMo(viecTuLop(g, uid)) : moPa(x0))}>
