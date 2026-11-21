@@ -784,6 +784,11 @@ function tenNgoai(userId: number | null | undefined, ten: unknown): string | nul
 }
 
 /** VH-1 (PTA mục 9): `phienBan` = `updatedAt` client đang thấy; có gửi mà lệch → 409. */
+/** Phiên bản mới của việc: luôn LỚN HƠN bản cũ — hai lần ghi trong cùng một ms (vd Hoàn tác ngay sau khi người khác sửa) vẫn ra hai phiên bản khác nhau. */
+const lucMoi = (cu: string | null | undefined): string => {
+  const ms = Date.parse(cu ?? '');
+  return Number.isFinite(ms) && Date.now() <= ms ? new Date(ms + 1).toISOString() : nowIso();
+};
 function kiemPhienBan(t: any, phienBan: unknown) {
   if (phienBan !== undefined && (phienBan === '' ? null : phienBan ?? null) !== (t.updated_at ?? null)) throw conflict('Công việc vừa được người khác sửa — mở lại để xem.');
 }
@@ -1069,7 +1074,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
            input.progress === 'paused' ? (input.reviewOn ?? null) : null,
            input.progress === 'paused' ? helpUserId : null,
            input.progress === 'paused' ? helpName : null,
-           input.progress === 'done' ? on : null, nowIso(), taskId, t.updated_at ?? null).changes) {
+           input.progress === 'done' ? on : null, lucMoi(t.updated_at), taskId, t.updated_at ?? null).changes) {
       throw conflict('Công việc vừa được người khác cập nhật — mở lại để xem.');
     }
     const note = [reason || null, (input.note ?? '').trim() || null].filter(Boolean).join(' — ') || null;
@@ -1087,9 +1092,9 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
       .run(taskId, before, input.progress, p.userId, nowIso());
     /* RKC-3b: khép luôn việc con còn mở cùng tiến độ của việc cha (đã hỏi) — mỗi việc con một dòng tiến độ + lịch sử. */
     if (khepCon) {
-      for (const s of conn.prepare(`SELECT id, title, progress FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped')`).all(taskId) as any[]) {
+      for (const s of conn.prepare(`SELECT id, title, progress, updated_at FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped')`).all(taskId) as any[]) {
         conn.prepare(`UPDATE tasks SET progress = ?, stop_reason = ?, completed_at = ?, updated_at = ? WHERE id = ?`)
-          .run(input.progress, input.progress === 'stopped' ? (reason || 'Việc cha dừng hẳn') : null, input.progress === 'done' ? on : null, nowIso(), s.id);
+          .run(input.progress, input.progress === 'stopped' ? (reason || 'Việc cha dừng hẳn') : null, input.progress === 'done' ? on : null, lucMoi(s.updated_at), s.id);
         conn.prepare(`INSERT INTO task_updates (task_id, period_id, progress, note, actor_user_id, updated_on, created_at) VALUES (?,?,?,?,?,?,?)`)
           .run(s.id, ensurePeriod(on).id, input.progress, 'Khép cùng việc cha', p.userId, on, nowIso());
         conn.prepare(`INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'progress', ?, ?, ?, ?)`)
@@ -1285,7 +1290,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     return kq;
   });
   function ghiSua(dao: GhiDao | null) {
-    const luc = nowIso();
+    const luc = lucMoi(t.updated_at);
     dao?.sua('tasks', 'id = ?', taskId);
     if (sets.length) {
       sets.push('updated_at = ?'); params.push(luc, taskId, t.updated_at ?? null);
