@@ -271,6 +271,16 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(/toast\.hoanTac\(/.test(src) && /xoaViPham\(toast, id, true\)/.test(src) && !/ms: 10000/.test(src) && !/api\.del/.test(src), 'Ghi vi phạm: Hoàn tác qua xoaViPham (im lặng: chỉ "Đã hoàn tác", không toast xoá thứ hai) + toast chung, không tự dựng');
   });
 
+  check('TOAST-GON · tối đa 3 hộp mới nhất, cùng khoá thay hộp cũ; hộp có ✕ Đóng, gạt, Esc', () => {
+    let ds: { id: number; key?: string }[] = [];
+    for (let i = 1; i <= 5; i++) ds = d.themToast(ds, { id: i });
+    assert(ds.map((x) => x.id).join() === '3,4,5', `giữ 3 mới nhất: ${ds.map((x) => x.id)}`);
+    ds = d.themToast([{ id: 1, key: 'a' }, { id: 2 }], { id: 3, key: 'a' });
+    assert(ds.map((x) => x.id).join() === '2,3', `cùng khoá thay: ${ds.map((x) => x.id)}`);
+    const src = docSach('web/src/ui/Toast.tsx');
+    assert(/themToast\(/.test(src) && /aria-label=\{t\('Đóng'\)\}/.test(src) && /onPointerUp/.test(src) && /'Escape'/.test(src) && /motion-reduce:transition-none/.test(src), 'Toast: themToast + ✕ Đóng + gạt + Esc + giảm chuyển động');
+  });
+
   // ==================================================================== 11. Tên PISA Tracking (PR-HK2: viết hoa PISA), chữ máy lọt ra màn hình (YC-6, A7)
   check('N1 (11) · YC-6 + A7: không còn "PISA Progress", "npm", "COUNT DISTINCT", ngày ISO trong thông báo; nhật ký có nhãn tiếng Việt', () => {
     const hien = [...tepTsx('web/src'), 'index.html', 'shared/domain/metrics.ts'];
