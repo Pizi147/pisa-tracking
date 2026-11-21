@@ -205,7 +205,8 @@ export async function runPrBpxlTests(t: any) {
       const keys = dh.khuVucHienThi(n).map((k: any) => k.key).join();
       assert(keys === 'test,hoc-vien,cong-viec', keys);
       const tq = await goi('GET', `/tong-quan/mock-test?branchId=${MB}`, ck);
-      assert(tq.status === 200 && typeof tq.json?.chuaXepLich === 'number' && tq.json.oChuaNhap.so === 0, `tong-quan/mock-test: ${tq.status} ${tq.json?.error}`);
+      /* BPXL-2: nhánh BPXL — "Bài chưa có điểm" thật (nợ điểm FT), "Chưa xếp lịch MT" cộng ở Kế hoạch Test (null ở đây). */
+      assert(tq.status === 200 && tq.json?.chuaXepLich === null && typeof tq.json.oChuaNhap.so === 'number' && !!tq.json.lopCo, `tong-quan/mock-test: ${tq.status} ${tq.json?.error}`);
       const kh = await goi('GET', '/ke-hoach-test/lop', ck);
       assert(kh.status === 200, `Kế hoạch Test: ${kh.status} ${kh.json?.error}`);
     });

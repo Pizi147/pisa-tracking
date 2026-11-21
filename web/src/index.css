@@ -1412,6 +1412,14 @@
 .dai-cs-0 { color: var(--text-faint); }
 .dai-cs-phu { font-size: 13px; color: var(--text-faint); }
 .dai-cs .dai-cs-phu .so-bam:not(.decoration-dotted) { font-size: inherit; font-weight: 500; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* BPXL-2 (N57, mockup v22 `.dai-cs.lang`): DẢI SỐ LẶNG — chữ xám, số xám gạch chân mảnh (= ô số, bấm lọc tại chỗ), không đỏ, không badge;
+   đang lọc = nền nhấn nhạt + viền (kèm chip "Lọc: … ✕" — không chỉ màu); 0 mờ, không bấm. 375: lưới 2 × 2, số căn phải ô, không chạm mép. */
+.dai-cs-lang .so-lang { appearance: none; border: 0; background: none; cursor: pointer; font: inherit; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--text-dim); text-decoration: underline 1px var(--text-faint); text-underline-offset: 4px; padding: 2px 6px; margin: -2px 0; border-radius: 6px; }
+.dai-cs-lang .so-lang:hover { color: var(--text); background: var(--surface-2); }
+.dai-cs-lang .so-lang[aria-pressed='true'] { color: var(--text); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); text-decoration: none; }
+.dai-cs-lang .so-lang:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dai-cs-lang .dai-cs-so { color: var(--text-dim); }
 @media (max-width: 639px) {
   .dai-cs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; }
   .dai-cs-o { padding: 10px 12px; border-left: 0; min-height: 44px; align-items: center; flex-wrap: wrap; white-space: normal; }
@@ -1419,6 +1427,8 @@
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
   .dai-cs-o:last-child:nth-child(odd), .dai-cs-o:nth-child(odd):not(:has(+ .dai-cs-o)) { grid-column: 1 / -1; }   /* GD-6: ô lẻ cuối (kể cả khi chip lớp đứng sau) chiếm hai cột */
+  .dai-cs-lang .dai-cs-o { justify-content: space-between; gap: 8px; font-size: 13px; flex-wrap: nowrap; }   /* BPXL-2 K5: nhãn trái, số phải */
+  .dai-cs-lang .so-lang { min-height: 36px; display: inline-flex; align-items: center; padding: 2px 4px; }
   /* GD-15 (hồ sơ GV H7): dải hai nhóm "Việc │ Chấm Test" — nhãn nhóm một hàng riêng, dưới là hai ô (nhãn trên, số dưới) thẳng cột; nhóm sau ngăn vạch ngang. */
   .dai-cs-2nhom .dai-cs-o { border: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
   .dai-cs-2nhom .dai-cs-nhom { grid-column: 1 / -1; min-height: 0; padding-bottom: 0; }

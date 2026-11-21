@@ -19,6 +19,9 @@ import { highlights } from './highlights.ts';
 import { myWork } from './mywork.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { danhSachLop } from '../keHoach/keHoachTest.ts';
+import { bangLop } from '../permissions.ts';
+import { cheDoCua } from '../normal/regular.ts';
+import { overdueScoreBai } from './metrics.ts';
 
 export type GvQuaHan = {
   key: string; ownerId: number; gv: string; kyNang: string; lop: string | null; luot: string | null; soBai: number; han: string | null;
@@ -29,8 +32,11 @@ export type TongQuanMt = {
   tuan: string;
   luotTuanNay: { so: number; soLop: number };
   oChuaNhap: { so: number; quaHan: number };
-  chuaXepLich: number;
+  /** null: BPXL — Kế hoạch Test cộng từ danh sách lớp đã nạp (không đọc `danhSachLop` lần hai trong một trang). */
+  chuaXepLich: number | null;
   gvQuaHan: GvQuaHan[];
+  /** BPXL-2 (N57): lớp của hai số dải lặng — bấm số lọc danh sách lớp trên dữ liệu này (không request thêm). */
+  lopCo?: { bai: Record<number, number>; luot: number[] };
 };
 
 /** M6 6b-4 (Q8): tập "GV chấm quá hạn" của Admin — khối Tổng quan và panel của nó (`gvTre`) lọc CÙNG hàm này trên `myWork` (Admin, tất cả).
@@ -55,7 +61,26 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
   const branchId = f.branchId ?? null;
 
   const tuanDau = highlights(p, { branchId, program: 'ft' }).weeks[0];
-  const w = (bpxl ? { items: [], dong: [] } : myWork(p, { branchId, nguoi: 'tat-ca' })) as any;
+  if (bpxl) {
+    /*
+     * BPXL-2: dải số lặng của Kế hoạch Test. "Bài chưa có điểm" = mọi bài nợ điểm (`scoreDebtCells` qua `overdueScoreBai`, bỏ lọc quá hạn — cùng tập
+     * và phạm vi quyền với "Quá hạn chấm" Lịch Test / "Bài quá hạn" Tổng quan) của lớp Fast Track; "Lượt thi tuần này" = `highlights` tuần đầu như Admin.
+     */
+    const bl = bangLop();
+    const ft = [...bl.keys()].filter((id) => cheDoCua(bl.get(id)?.ct) === 'ielts_band');
+    const no = ft.length ? overdueScoreBai(p, branchId, today, ft, true) : { ids: [], lopCua: new Map<number, number>() };
+    const bai: Record<number, number> = {};
+    for (const id of no.ids) { const c = no.lopCua.get(id)!; bai[c] = (bai[c] ?? 0) + 1; }
+    return {
+      tuan: tuanDau?.weekStart ?? mondayOf(today),
+      luotTuanNay: { so: tuanDau?.ft.mockStudents ?? 0, soLop: tuanDau?.ft.mockClasses.length ?? 0 },
+      oChuaNhap: { so: no.ids.length, quaHan: 0 },
+      chuaXepLich: null,
+      gvQuaHan: [],
+      lopCo: { bai, luot: (tuanDau?.ft.mockClasses ?? []).map((m) => m.id).filter((id): id is number => id !== null) },
+    };
+  }
+  const w = myWork(p, { branchId, nguoi: 'tat-ca' }) as any;
   const dong = (w.dong ?? []) as any[];
   const keHoach = danhSachLop(p, { branchId });
 
