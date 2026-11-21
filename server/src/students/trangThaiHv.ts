@@ -11,7 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { HttpError, badRequest, canXacNhan, forbidden, notFound, loi } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { setStudentStatus, transferStudent } from './students.ts';
-import { huyLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
+import { LOI_LENH_HEAD, huyLenh, khoaLenhNguoiKhac, khoiPhucLenh, quyenLenh } from '../classes/lenhChuyen.ts';
 import { danhSachLopDich } from '../classes/luatLoTrinh.ts';
 import { trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 
@@ -86,9 +86,12 @@ function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | 
 }
 
 /** Quyết định chuyển lớp CHỜ của em (một dòng) — RKC: Tạm dừng / Kết thúc học huỷ nó luôn (người huỷ được quyết định ở lớp nguồn). */
-function lenhChoCua(studentId: number): { id: number; tuan_bat_dau: string; lop_nguon_id: number } | null {
-  return (db().prepare(`SELECT id, tuan_bat_dau, lop_nguon_id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' LIMIT 1`).get(studentId) as any) ?? null;
+function lenhChoCua(studentId: number): { id: number; tuan_bat_dau: string; lop_nguon_id: number; boi_canh: string; nguoi_ra_lenh: number } | null {
+  return (db().prepare(`SELECT id, tuan_bat_dau, lop_nguon_id, boi_canh, nguoi_ra_lenh FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' LIMIT 1`).get(studentId) as any) ?? null;
 }
+/** Câu chặn khi người này không huỷ được quyết định chờ — CÙNG luật `huyLenh` (`quyenLenh`, N63 ①: CX không huỷ quyết định Cuối khoá của Head). null = huỷ được. */
+const chanLenh = (p: Principal, l: NonNullable<ReturnType<typeof lenhChoCua>>): string | null =>
+  quyenLenh(p, l) ? null : khoaLenhNguoiKhac(p, l) ? LOI_LENH_HEAD : cauLenhCho(l.tuan_bat_dau);
 
 /**
  * GET /students/:id/trang-thai/xem-truoc — hộp một em: tóm tắt + câu chặn (nếu có). Ai xem được em thì đọc được; quyền làm do máy chủ kiểm lúc lưu.
@@ -100,7 +103,8 @@ export function xemTruocTrangThai(p: Principal, studentId: number, ketThuc: bool
   const dong = tomTatTrangThai([studentId], ketThuc).dong;
   const l = lenhChoCua(studentId);
   if (!l) return { dong, chan: null };
-  if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) return { dong, chan: cauLenhCho(l.tuan_bat_dau) };
+  const chan = chanLenh(p, l);   // rà PTA #1950 vòng 3: hộp xem trước khớp kết quả lưu
+  if (chan) return { dong, chan };
   return { dong: [...dong, `Huỷ quyết định chuyển lớp chờ ${tuanLich(l.tuan_bat_dau, demoToday())}`], chan: null, huyLenh: true };
 }
 
@@ -118,7 +122,8 @@ export function thongBaoTrangThai(s: { status: string; archived_at: string | nul
  */
 export function doiTrangThai(p: Principal, studentId: number, b: { status: 'active' | 'inactive' | 'finished'; date?: string; reason?: string; endKind?: any; huyLenh?: boolean }) {
   const l = b.status !== 'active' ? lenhChoCua(studentId) : null;
-  if (l && !can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) throw badRequest(cauLenhCho(l.tuan_bat_dau));
+  const chan = l ? chanLenh(p, l) : null;
+  if (chan) throw l && khoaLenhNguoiKhac(p, l) ? forbidden(chan) : badRequest(chan);   // kiểm TRƯỚC khi ghi, cùng câu với hộp xem trước
   if (l && !b.huyLenh) canXacNhan('Em đang có quyết định chuyển lớp chờ {x} — huỷ quyết định rồi lưu?', { x: tuanLich(l.tuan_bat_dau, demoToday()) }, 'Huỷ quyết định và lưu');
   return tx(() => {
     if (l) huyLenh(p, l.id, LY_DO_HUY_THEO_TRANG_THAI);
