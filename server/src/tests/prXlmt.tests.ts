@@ -305,7 +305,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(ttA.speaking.trangThai === 'cho-duyet' && ttA.speaking.choDuyet, `S: ${ttA.speaking.trangThai}`);
     assert(ttB.kn.listening.trangThai === 'vang' && ttB.kn.reading.trangThai === 'da-huy' && ttB.huyPhan, `B: ${ttB.kn.listening.trangThai}/${ttB.kn.reading.trangThai}`);
     assert(ttC.listening.trangThai === 'tre', `trễ: ${ttC.listening.trangThai}`);
-    assert(/em cần xếp lại/.test(keHoach.danhSachLop(QL, {}).lop.find((l: any) => l.id === LOP2).tomTat), 'tóm tắt lớp thiếu vế cần xếp lại');
+    assert(/em vắng/.test(keHoach.danhSachLop(QL, {}).lop.find((l: any) => l.id === LOP2).tomTat), 'tóm tắt lớp thiếu vế em vắng (BPXL-2: không chữ "xếp lại")');
   });
 
   /* Ba em cho hàng loạt: MT1–MT3 ở các tuần đã qua / tuần này để MT4 tuần sau không vướng T15. */

@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM KHT-GON (chủ SP duyệt mockup `thiet-ke/v7/ke-hoach-test.html` #659, 28/10): `oGon` — nội dung MỘT ô đợt Kế hoạch Test bản gọn.
- * Thuần (không DB): dòng theo tuần thi, ô môn có khung (L ✓ · L · S trễ chấm), "không thi W S", vắng chữ thường (đủ điểm thì không ghi).
+ * Thuần (không DB): dòng theo tuần thi, ô môn có khung (L ✓ · L · S trễ chấm), "không thi W S", vắng = kết quả máy đã làm ("L vắng · dời W4 SEP", BPXL-2).
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -20,18 +20,18 @@ export async function runPrKhtGonTests(t: YThucTestKit) {
 
   check('KHT-1 · đủ điểm: xong, một dòng tuần + 4 ô "✓"; vắng VẪN ghi (chủ SP 28/10 "cái gì vắng cũng nên ghi")', () => {
     const g = d.oGon({ listening: xong('2026-10-05', { doiTu: '2026-09-28' }), reading: xong('2026-10-05'), writing: xong('2026-10-05'), speaking: xong('2026-10-05') }, HN);
-    assert(g.xong && g.tt.loai === 'xong' && g.vang === `vắng L · ${d.tuanLich('2026-09-28')}` && g.hienMon && g.dong.length === 1, JSON.stringify(g));
+    assert(g.xong && g.tt.loai === 'xong' && g.vang === `L vắng · dời ${d.tuanLich('2026-10-05')}` && g.hienMon && g.dong.length === 1, JSON.stringify(g));
     assert(monCua(g.dong[0]) === 'L:co R:co W:co S:co' && g.dong[0].tt === null, monCua(g.dong[0]));
   });
 
-  check('KHT-2 · trễ chấm: ô môn S "trễ chấm", L R W "✓"; vắng gộp chữ thường "vắng L R W S · W2 OCT" (không lặp từng môn)', () => {
+  check('KHT-2 · trễ chấm: ô môn S "trễ chấm", L R W "✓"; vắng cả đợt gộp "Vắng · dời W3 OCT" (BPXL-2, không lặp từng môn)', () => {
     const w3 = '2026-10-12', w2 = '2026-10-05';
     const g = d.oGon({
       listening: xong(w3, { doiTu: w2 }), reading: xong(w3, { doiTu: w2 }), writing: xong(w3, { doiTu: w2 }),
       speaking: o({ ...tuan(w3), doiTu: w2, hanCham: '2026-10-21' }),
     }, HN);
     assert(g.tt.loai === 'tre' && g.dong.length === 1 && monCua(g.dong[0]) === 'L:co R:co W:co S:tre', JSON.stringify(g.dong));
-    assert(g.vang === `vắng L R W S · ${d.tuanLich(w2)}`, `vắng gộp: ${g.vang}`);
+    assert(g.vang === `Vắng · dời ${d.tuanLich(w3)}`, `vắng gộp: ${g.vang}`);
   });
 
   check('KHT-3 · đợt chỉ thi L R: chỉ hai ô môn + "không thi W S" (chữ mờ, không khung)', () => {
@@ -47,11 +47,11 @@ export async function runPrKhtGonTests(t: YThucTestKit) {
     assert(!f.hienMon && f.dong.length === 1 && f.dong[0].tt.chu === 'đã xếp' && f.tt === null, JSON.stringify(f));
   });
 
-  check('KHT-5 · vắng một môn đã dời → "vắng W · W1 NOV"; đang vắng chờ xếp lại → "xếp lại S" + "vắng S · tuần"; tuần này → dòng "tuần này"', () => {
+  check('KHT-5 · vắng một môn đã dời → "W vắng · dời W2 NOV"; vắng chưa dời (trước N38) → "S vắng" (BPXL-2: không "xếp lại"); tuần này → dòng "tuần này"', () => {
     const g = d.oGon({ listening: o(tuan('2026-11-09')), reading: o(tuan('2026-11-09')), writing: o({ ...tuan('2026-11-09'), doiTu: '2026-11-02' }), speaking: o(tuan('2026-11-09')) }, HN);
-    assert(g.vang === `vắng W · ${d.tuanLich('2026-11-02')}`, `vắng một phần: ${g.vang}`);
+    assert(g.vang === `W vắng · dời ${d.tuanLich('2026-11-09')}`, `vắng một phần: ${g.vang}`);
     const v = d.oGon({ listening: xong('2026-10-19'), reading: xong('2026-10-19'), writing: xong('2026-10-19'), speaking: o({ trangThai: 'vang', sit: 'absent', ...tuan('2026-10-19') }) }, HN);
-    assert(v.tt.loai === 'vang' && v.tt.chu === 'xếp lại S' && monCua(v.dong[0]) === 'L:co R:co W:co' && v.vang === `vắng S · ${d.tuanLich('2026-10-19')}`, JSON.stringify(v));
+    assert(v.tt.loai === 'vang' && v.tt.chu === 'S vắng' && monCua(v.dong[0]) === 'L:co R:co W:co' && v.vang === null, JSON.stringify(v));
     const n = d.oGon({ listening: o(tuan('2026-10-26')), reading: o(tuan('2026-10-26')), writing: o(tuan('2026-10-26')), speaking: o(tuan('2026-10-26')) }, HN);
     assert(n.tt.loai === 'nay' && n.dong[0].tt.chu === 'tuần này' && monCua(n.dong[0]) === 'L:cho R:cho W:cho S:cho', JSON.stringify(n));
   });

@@ -771,8 +771,7 @@ function dsLop(v: unknown): number[] {
 }
 
 api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
-  keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc,
-    chiXepLai: req.body?.chiXepLai === true })));
+  keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc })));
 
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi

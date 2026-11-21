@@ -16,6 +16,7 @@ import {
 import { moLaiLuotNeuHuy, refreshOutcome, resultOf, saveScore, setSkillSkip } from './attempts.ts';
 import { banMoCuaO, catDiemO, traDiemCat } from './ketQuaHuy.ts';
 import { reportRegularNoShow } from '../normal/regular.ts';
+import { capNhatTinVang } from '../keHoach/tinVang.ts';
 
 /**
  * VẮNG MOCK TEST — nơi sở hữu DUY NHẤT của luật "-" (N38, chủ SP 05/11 — đặc tả `2026-11-04-luat-mt-thong-nhat-design.md`).
@@ -619,6 +620,8 @@ export function settleGroup(
   /* Q-A, K4-03 · N38 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH: lần 1 dời tuần sau tuần thi, lần 2 huỷ. Lớp thường không qua đây (Mock + MT0). */
   const row = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const kq = xuLyVangMotKyNang(conn, null, attempt, row, { lyDo: 'Vắng — tự dời' });
+  /* BPXL-2 (N57): tin "n em vắng" gộp lớp × tuần cho BPXL — chỉ để biết (đã dời / đã huỷ), không việc. */
+  if (attempt.kind === 'mock') capNhatTinVang(attempt.class_id, mondayOf(weekEnd.slice(0, 10)), true, today);
   if (kq.result === 'moved') {
     /* Báo GVCN + GVBM đúng kỹ năng (W1, W2 là hai người). Trùng thông báo bị chặn bởi dedupKey. Câu nêu ĐÚNG em và MT — danh sách thông báo không có ngữ cảnh. */
     const tuanMoi = tuanLich(ensureSkillRows(attemptId).find((r) => r.skill === assessed)!.week_start, today);
@@ -769,6 +772,7 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
       before: { week: row.period_code, moveCount: row.absence_move_count, sitStatus: row.sit_status, huyVang: !!row.huy_vang },
       after: { week: moi.period_code, moveCount: moi.absence_move_count, sitStatus: moi.sit_status, huyVang: !!moi.huy_vang, giuLich },
     });
+    if (a.kind === 'mock') capNhatTinVang(a.class_id, dau.goc_start, false, today);   // BPXL-2: tin gộp bớt em (hết em → xoá), không hiện lại là mới
     refreshOutcome(p, attemptId);
     const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
     return {

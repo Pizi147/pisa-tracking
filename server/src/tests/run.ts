@@ -10070,6 +10070,8 @@ await runPrHeadTests({ check, assert, conn } as any);
 // ==================================================================== BPXL-1 (N57, chủ SP 20/11: vai Chuyên viên Xếp lịch)
 const { runPrBpxlTests } = bocTep('prBpxl', await import('./prBpxl.tests.ts'));
 await runPrBpxlTests({ check, checkAsync, assert, conn, P, classId } as any);
+const { runPrBpxl2Tests } = bocTep('prBpxl2', await import('./prBpxl2.tests.ts'));
+await runPrBpxl2Tests({ check, assert, conn, P, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

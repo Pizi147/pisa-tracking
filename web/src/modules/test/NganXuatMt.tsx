@@ -119,7 +119,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
     .filter((l) => l.ft === (khung === 'ft') && (!cn.length || cn.includes(l.chiNhanhId)) && !lopChon.some((c) => c.id === l.id))
     .map((l) => ({
       id: l.id, code: l.ma, loai: l.ft ? 'ft' : 'thuong', chiNhanh: `${tenCn(l.chiNhanhId)}${l.daKetThuc ? ` · ${t('đã kết thúc')}` : ''}`,
-      chuongTrinh: null, soHv: l.soHv, chuaCoLichTiep: 0, hvChuaCoLich: 0, tomTat: '', canXepLai: 0,
+      chuongTrinh: null, soHv: l.soHv, chuaCoLichTiep: 0, hvChuaCoLich: 0, tomTat: '', vangTuanNay: 0,
     }));
   const motLop = phamVi?.lop.length === 1 ? phamVi.lop[0] : null;
   const coFt = !phamVi || phamVi.lop.some((l) => l.ft);
