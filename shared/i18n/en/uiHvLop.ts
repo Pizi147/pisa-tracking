@@ -2,7 +2,7 @@
 export const EN_UI_HV_LOP = {
   '+ Thêm học viên': '+ Add student',
   'Bộ lọc hiện tại · {n}': 'Current filter · {n}',
-  'Case · GVCN': 'Case · HRT',
+  'Case · GVCN': 'Case · Core teacher',
   'Case · PA': 'Case · Plan',
   'Chi tiết {ten}': 'Details {ten}',
   'Chưa chốt ngày — đã tới tháng': 'Date not set — month reached',
@@ -14,7 +14,7 @@ export const EN_UI_HV_LOP = {
   'Đặt lịch': 'Schedule',
   'Đặt tháng dự kiến': 'Set planned month',
   'Dời tháng thi · {ten}': 'Move exam month · {ten}',
-  'GVCN {ten}': 'HRT {ten}',
+  'GVCN {ten}': 'Core teacher {ten}',
   'Ghi vào nhật ký xuất': 'Logged in export history',
   'Không có Case': 'No case',
   'Không có HV có lịch thi trong {khoang}.': 'No students with an exam in {khoang}.',

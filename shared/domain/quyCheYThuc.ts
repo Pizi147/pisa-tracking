@@ -56,7 +56,7 @@ export const quyCheKhaiBac = (): QuyChe => ({ chu: t('Khai một lần cho chu�
 /** Q53 / Q54 / Q55 (luat/2 C-21, mục 4; luat/3 Y-19): GVCN › Phối hợp SOS theo lựa chọn. */
 export const quyChePhoiHopSos = (chon: 'xac-nhan' | 'meeting' | 'bo', han: string | null): QuyChe => ({
   chu: chon === 'bo' ? t('Bỏ: chọn lý do · em rời dòng')
-    : chon === 'meeting' ? (han ? t('Meeting: hạn {han} · xác nhận xong TVV nhận việc báo PH', { han }) : t('Meeting: xác nhận xong TVV nhận việc báo PH'))
+    : chon === 'meeting' ? (han ? t('Meeting: hạn {han} · xác nhận xong: BPXL xếp lịch · CX ghi kết quả · TVV báo PH', { han }) : t('Meeting: xác nhận xong: BPXL xếp lịch · CX ghi kết quả · TVV báo PH'))
     : t('Ghi ngày làm + nội dung · em rời dòng'),
 });
 
