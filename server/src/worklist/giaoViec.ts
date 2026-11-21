@@ -479,13 +479,14 @@ export function suaHan(p: Principal, loai: LoaiGiao, id: number, body: { han?: u
 
 const TRAN_MO_TA = 500;
 /** Sửa Mô tả: người phụ trách (người được giao còn hiệu lực / người theo luật) · người giao · Head / Quản trị / CX của chi nhánh. Người theo dõi chỉ đọc. */
-const coTheSuaMoTa = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || v.row.giao_boi === p.userId || vaiQuanLy(p, v.branchId);
+const coTheSuaMoTa = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || (v.row.giao_boi === p.userId && hoatDongO(p.userId, v.branchId)) || vaiQuanLy(p, v.branchId);   // người giao: còn hoạt động + còn vai
 /**
  * `moTa` ≤ 500 ký tự (rỗng = bỏ) · `moTaCu` BẮT BUỘC = nội dung đang thấy (null = chưa có) — khác → 409 (so-và-đổi). Lịch sử `viec_giao_lan` (truong mo_ta),
  * tin "Cập nhật" không gửi (mô tả không phải sự kiện của việc). Việc Vận hành dùng `tasks.note` (`/mgmt-tasks`), không đi đường này.
  */
 export function suaMoTa(p: Principal, loai: LoaiGiao, id: number, body: { moTa?: unknown; moTaCu?: unknown }): KhoiGiaoViec {
   if (!('moTaCu' in body)) throw badRequest('Thiếu mô tả đang xem — mở lại việc rồi sửa.');
+  if (!('moTa' in body)) throw badRequest('Thiếu mô tả mới (gửi chuỗi rỗng để bỏ).');
   const v = docViec(loai, id);
   if (!v.mo) throw badRequest('Việc đã kết thúc — không sửa mô tả.');
   if (!coTheSuaMoTa(p, v)) throw forbidden('Chỉ người phụ trách, người giao, Head, Quản trị hoặc CX sửa được mô tả.');
@@ -575,7 +576,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     theoDoi: td.map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon })), toiTheoDoi: td.some((t) => t.user_id === p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
     moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: v.mo && coTheSuaMoTa(p, v),
-    lichSu: lan.map((l) => ({ truong: l.truong, cu: l.cu ?? null, moi: l.moi ?? null, cuTen: tenSo(l.cu), moiTen: tenSo(l.moi), nguoi: l.nguoi ?? null, luc: l.luc })),
+    lichSu: lan.map((l) => ({ truong: l.truong, cu: l.cu ?? null, moi: l.moi ?? null, cuTen: l.truong === 'mo_ta' ? null : tenSo(l.cu), moiTen: l.truong === 'mo_ta' ? null : tenSo(l.moi),   /* VH-1b: mô tả "12" không phải id người */ nguoi: l.nguoi ?? null, luc: l.luc })),
     ...(loai === 'meeting' ? { meeting: {
       phan: r.phan, ten: TEN_PHAN[r.phan as PhanMeeting], phoiHopId: r.phoi_hop_id, trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, ketQua: r.ket_qua ?? null,
       xongBoi: r.xong_boi ? tenCua.get(r.xong_boi) ?? null : null, xongLuc: r.xong_luc ?? null, nhapHoBoi: r.nhap_ho_boi ? tenCua.get(r.nhap_ho_boi) ?? null : null,
@@ -785,7 +786,7 @@ const vaiTai = (phan: string, cn: number | null): number | null => vaiTaiDs(phan
  * `meeting_phan.branch_id` cập nhật khi em đổi chi nhánh (`sauDoiChiNhanhEm`); người giữ / quyền theo chi nhánh hiện tại của em.
  */
 /* VH-1 (PTA mục 10): `vanHanh` — thêm vế việc Vận hành còn mở giao cho tôi (chỉ mục một phần `idx_task_giao_mo`) vào CÙNG câu; không câu nào thêm. */
-export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: number | null; studentId?: number; tatCa?: boolean; vanHanh?: boolean }): WorkItem[] {
+export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: number | null; studentId?: number; tatCa?: boolean; vanHanh?: boolean | 'hang-muc' }): WorkItem[] {
   const vai = p.grants.filter((g) => VAI_MEETING.has(g.roleKey));
   const toanBo = vai.some((g) => g.branchId === null);
   const cn = [...new Set(vai.map((g) => g.branchId).filter((b): b is number => b !== null))];
@@ -819,7 +820,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     ve.push(`SELECT 'van_hanh', t.id, NULL, t.assignee_user_id, CASE WHEN t.created_by != t.assignee_user_id THEN t.created_by END, t.due_date, NULL, t.title, t.parent_task_id,
               COALESCE(pt.group_id, t.group_id), COALESCE(t.class_id, pt.class_id), t.progress, pt.title, NULL, t.branch_id, NULL, COALESCE(pt.hang_muc, t.hang_muc), NULL, NULL, NULL, NULL
          FROM tasks t LEFT JOIN tasks pt ON pt.id = t.parent_task_id
-        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'`);
+        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'${o.vanHanh === 'hang-muc' ? ' AND COALESCE(pt.hang_muc, t.hang_muc) IS NOT NULL' : ''}`);
   }
   /* TL-1 (rà #1927): Head / Quản trị / CX "Tất cả" — việc trả lại của người khác (đứng tên người giữ), lọc phạm vi chi nhánh ở dưới. Chỉ mục một phần `idx_tra_lai_nhan` (mở). */
   const xemTatCaTraLai = !!o.tatCa && p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx');

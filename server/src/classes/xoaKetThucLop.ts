@@ -48,7 +48,8 @@ export function tinhTrangLop(classId: number) {
   const soSapNhan = dem(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`, classId);
   const gan: string[] = [];
   for (const [bang, nhan] of BANG_DU_LIEU) {
-    const n = dem(`SELECT COUNT(*) n FROM ${bang} WHERE class_id = ?`, classId);
+    /* VH-1b (N62): việc tay (Vận hành) gắn lớp chỉ là liên kết — không làm lớp "có dữ liệu"; xoá lớp thì gỡ liên kết. */
+    const n = dem(`SELECT COUNT(*) n FROM ${bang} WHERE class_id = ?${bang === 'tasks' ? " AND kind != 'branch_ops'" : ''}`, classId);
     if (n > 0) gan.push(`${n} ${nhan}`);
   }
   const nLoTrinh = dem('SELECT COUNT(*) n FROM lo_trinh_tiep_theo WHERE class_id = ? OR lop_du_kien_id = ?', classId, classId);
@@ -117,6 +118,7 @@ export function xoaLop(p: Principal, classId: number) {
     chup.chay('DELETE FROM class_skills WHERE class_id = ?', classId);
     chup.chay('DELETE FROM ghi_chu_lich_thi WHERE class_id = ?', classId);   // OV-15c: ghi chú lớp của lớp trống
     chup.chay('DELETE FROM bao_cao_ph_dot WHERE class_id = ?', classId);   // BC-DOT-QL: đợt báo cáo PH bỏ / thêm của lớp trống (cấu hình)
+    chup.chay("UPDATE tasks SET class_id = NULL WHERE class_id = ? AND kind = 'branch_ops'", classId);   // VH-1b: việc tay gắn lớp — gỡ liên kết (Khôi phục trả lại)
     chup.chay('DELETE FROM classes WHERE id = ?', classId);
     const thungRacId = ghiThungRac(conn, { loai: 'lop', doiTuongId: classId, nhan: `${c.code} · ${c.branch_name}`, branchId: c.branch_id, nguoi: p.userId, chup });
     writeAudit({

@@ -130,6 +130,136 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(!mot('SELECT 1 FROM viec_mo_ta WHERE loai = ? AND ref_id = ?', 'bao_ph', id), 'donViec dọn mô tả (id dùng lại không thừa hưởng)');
   }));
 
+  // ---------------------------------------------------------------- rà sâu PTA #1936
+  const xoaHV: any = await import('../students/xoaHocVien.ts');
+  const ph: any = await import('../yThuc/phoiHop.ts');
+  const th: any = await import('../yThuc/tinhHinh.ts');
+  const tl: any = await import('../yThuc/traLai.ts');
+  const bp: any = await import('../yThuc/baoPhTvv.ts');
+  const { LUOT_SAU_THI_SQL } = await import('../students/tamDung.ts');
+  const ghiMoTa = (p: any, loai: string, id: number, moTa: string) => gv.suaMoTa(p, loai, id, { moTa, moTaCu: gv.xemGiaoViec(P.admin, loai, id).moTa?.noiDung ?? null });
+
+  await checkAsync('VH1b-6 (PTA 1) · xoá hẳn học viên (đường thật) → mô tả việc của em bị dọn; id dùng lại không thừa hưởng', () => thu(async () => {
+    const sid = moiEm(); const id = baoPh(sid);
+    ghiMoTa(tvv, 'bao_ph', id, 'Mô tả của em sắp xoá');
+    xoaHV.xoaHocVien(P.admin, sid, { maXacNhan: mot('SELECT student_code FROM students WHERE id = ?', sid).student_code });
+    assert(!mot('SELECT 1 FROM viec_mo_ta WHERE loai = ? AND ref_id = ?', 'bao_ph', id), 'mô tả dọn cùng xoá học viên');
+    const moi = baoPh(moiEm());
+    assert(moi !== id || gv.xemGiaoViec(P.admin, 'bao_ph', moi).moTa === null, 'việc mới (id dùng lại) không có mô tả cũ');
+  }));
+
+  await checkAsync('VH1b-7 (PTA 2, 5, 6) · lớp / HV ngoài phạm vi xem 400 kể cả việc Toàn hệ thống; đổi chi nhánh / lớp bỏ HV không hợp lệ; PATCH teacher_task 400', () => thu(async () => {
+    const toan = tao(ql, {});
+    mg.editMgmtTask(ql, toan.id, { branchId: null });
+    assert(mot('SELECT branch_id FROM tasks WHERE id = ?', toan.id).branch_id === null, 'Head đưa việc về Toàn hệ thống');
+    assert(await ma(() => mg.editMgmtTask(ql, toan.id, { classId: lopCp })) === 400, 'lớp CP (ngoài phạm vi xem) → 400');
+    assert(await ma(() => mg.editMgmtTask(ql, toan.id, { studentIds: [emCp] })) === 400, 'HV CP → 400');
+    assert(!mg.mgmtTaskDetail(ql, toan.id).hocVien.length && mg.mgmtTaskDetail(ql, toan.id).classCode === null, 'không lộ tên lớp / em chi nhánh khác');
+    /* Đổi chi nhánh có HV → HV chi nhánh cũ bỏ. */
+    const v = tao(ql, { classId: lop, studentIds: emLop });
+    const cp = mot(`SELECT id FROM branches WHERE code = 'CP'`).id;
+    const d1 = mg.editMgmtTask(P.admin, v.id, { branchId: cp });
+    assert(d1.classId === null && d1.hocVien.length === 0, `đổi chi nhánh: lớp + HV cũ bỏ (${JSON.stringify(d1.hocVien)})`);
+    assert(mg.editMgmtTask(P.admin, v.id, { branchId: MB, studentIds: [] }).branchId === MB, 'đổi chi nhánh + studentIds, không classId → không 400');
+    /* Đổi lớp không gửi HV → bỏ em không học lớp mới. */
+    const lop2 = mot(`SELECT id FROM classes WHERE branch_id = ? AND id != ? AND status = 'active' ORDER BY id LIMIT 1`, MB, lop).id;
+    const w = tao(ql, { classId: lop, studentIds: emLop });
+    assert(mg.editMgmtTask(ql, w.id, { classId: lop2 }).hocVien.length === 0, 'đổi lớp → HV không thuộc lớp mới bỏ');
+    /* teacher_task: không nhận hạng mục / lớp / HV. */
+    const tt = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, class_id, progress, created_by, created_at) VALUES (?, 'Giao GV VH1b-7', 'teacher_task', ?, ?, 'not_started', ?, ?)`)
+      .run(mg.nextCode(conn), MB, lop, ql.userId, new Date().toISOString()).lastInsertRowid);
+    for (const body of [{ classId: lop2 }, { studentIds: [emLop[0]] }, { hangMuc: 'bao-ph' }]) assert(await ma(() => mg.editMgmtTask(ql, tt, body)) === 400, `teacher_task ${JSON.stringify(body)} → 400`);
+    assert(mot('SELECT class_id FROM tasks WHERE id = ?', tt).class_id === lop, 'lớp của teacher_task giữ');
+  }));
+
+  await checkAsync('VH1b-8 (PTA 3, 4, 8) · hai việc tay cùng lớp không gộp; Head nhận việc có hạng mục (không hạng mục: chỉ bảng); đếm nhóm một nguồn; TVV phoi-hop / tinh-hinh ở tab Báo PH', () => thu(async () => {
+    const a = tao(ql, { hangMuc: 'bao-ph', classId: lop, assigneeUserId: gvcn.userId });
+    const b = tao(ql, { hangMuc: 'tinh-hinh', classId: lop, assigneeUserId: gvcn.userId });
+    xoaNho();
+    const ds = ((myWork(gvcn) as any).items as any[]).filter((x) => x.key === `mgmt:${a.id}` || x.key === `mgmt:${b.id}`);
+    const dong = d.gopViecTheoLop(ds, (g: string) => g);
+    assert(dong.length === 2 && dong.every((x: any) => !x.key.startsWith('gop:')), `không gộp: ${JSON.stringify(dong.map((x: any) => x.key))}`);
+    /* Head: có hạng mục → có dòng; không hạng mục → không. */
+    const qlCo = tao(cx, { hangMuc: 'sau-thi', assigneeUserId: ql.userId });
+    const qlKhong = tao(cx, { assigneeUserId: ql.userId });
+    xoaNho();
+    const cuaQl = (myWork(ql) as any).items as any[];
+    assert(cuaQl.some((x) => x.key === `mgmt:${qlCo.id}`) && !cuaQl.some((x) => x.key === `mgmt:${qlKhong.id}`), 'Head: chỉ việc có hạng mục');
+    /* Đếm nhóm (hồ sơ GV) = tab. */
+    const x = ds.find((i) => i.key === `mgmt:${a.id}`);
+    assert(d.demViecTheoNhom([x]).find((g: any) => g.n === 1)?.nhom === d.tabCuaViec(x), 'hồ sơ GV đếm cùng nhóm với tab');
+    assert(d.gomNhomViec([x])[0].key === 'y-thuc', 'gomNhomViec theo hạng mục');
+    for (const hm of ['phoi-hop', 'tinh-hinh']) assert(d.tabCuaViec({ group: 'mgmt', key: 'mgmt:1', hangMuc: hm }, true) === 'bao-ph', `TVV ${hm} → Báo PH`);
+  }));
+
+  await checkAsync('VH1b-9 (PTA 7, 9) · người giao sửa mô tả, mất vai thì 403; việc đã đóng 400; thiếu moTa 400; mô tả "12" không thành tên người; phoi_hop / tinh_hinh / meeting / tra_lai', () => thu(async () => {
+    const sid = moiEm(); const id = baoPh(sid);
+    gv.doiPhuTrach(tvv, 'bao_ph', id, { userId: tvv2.userId, phuTrachCu: null });
+    assert(ghiMoTa(tvv, 'bao_ph', id, '12').moTa.noiDung === '12', 'người giao (không còn là người phụ trách) sửa được');
+    const ls = gv.xemGiaoViec(P.admin, 'bao_ph', id).lichSu.filter((l: any) => l.truong === 'mo_ta');
+    assert(ls.length === 1 && ls[0].moiTen === null, `mô tả "12" không thành tên người: ${JSON.stringify(ls)}`);
+    assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id, { moTaCu: '12' })) === 400, 'thiếu moTa → 400');
+    accounts.setRoles(P.admin, tvv.userId, [{ role: 'consultant', branches: ['CP'] }]);
+    assert(await ma(() => gv.suaMoTa(loadPrincipal(tvv.userId), 'bao_ph', id, { moTa: 'x', moTaCu: '12' })) === 403, 'người giao mất vai → 403');
+    accounts.setRoles(P.admin, tvv.userId, [{ role: 'consultant', branches: ['MB'] }]);
+    /* Việc đã đóng. */
+    const sid2 = moiEm(); const id2 = baoPh(sid2);
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [id2], ketQua: 'da_bao', ghiChu: 'Đã gọi phụ huynh, mẹ em nghe máy' });
+    assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id2, { moTa: 'x', moTaCu: null })) === 400, 'việc đã đóng → 400');
+    /* phoi_hop (GVCN theo luật). */
+    const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND a.student_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'talk_family') AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;
+    const phId = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'talk_family', 1, 'pending', ?)`)
+      .run(att, sid2, new Date().toISOString()).lastInsertRowid);
+    assert(ghiMoTa(ql, 'phoi_hop', phId, 'Phối hợp: hẹn thứ Sáu').moTa.noiDung === 'Phối hợp: hẹn thứ Sáu', 'phoi_hop');
+    /* tinh_hinh (TVV gửi → GVCN trả lời). */
+    const thId = th.guiTinhHinh(tvv, { chieu: 'tvv_gvcn', studentIds: [sid2], noiDung: 'Em dạo này học thế nào ạ?' }).ids[0];
+    assert(ghiMoTa(gvcn, 'tinh_hinh', thId, 'Hỏi thêm về bài tập').moTa.noiDung === 'Hỏi thêm về bài tập', 'tinh_hinh: GVCN (người phụ trách) sửa');
+    /* meeting (phần Kết quả). */
+    const att2 = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'cx_meeting_student')
+        AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;
+    const aid = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'cx_meeting_student', 1, 'pending', ?)`)
+      .run(att2, sid2, new Date().toISOString()).lastInsertRowid);
+    ph.confirmCoordination(gvcn, aid, { performedOn: TODAY, note: 'Cần họp CX với em' });
+    const kq = mot(`SELECT id FROM meeting_phan WHERE phoi_hop_id = ? AND phan = 'ket_qua'`, aid).id;
+    assert(ghiMoTa(cx, 'meeting', kq, 'Họp cùng phụ huynh').moTa.noiDung === 'Họp cùng phụ huynh', 'meeting: CX sửa');
+    /* tra_lai (TVV trả lại một vi phạm). */
+    const sid3 = moiEm();
+    const vid = viol.recordViolation(gvbm, { studentId: sid3, category: 'conduct', ten: 'Đi học muộn nhiều lần', occurredOn: addDays(TODAY, -1) }).violation.id;
+    xu.xacNhanXuLy(gvcn, sid3, { violationIds: [vid], performedOn: TODAY, performerName: null, note: 'Nhắc nhở em sau giờ học, em hứa sửa' });
+    const r = tl.traLai(tvv, { violationId: vid, lyDo: 'Ngày vi phạm chưa đúng, nhờ GV xem lại' });
+    assert(ghiMoTa(ql, 'tra_lai', r.id, 'Phụ huynh báo em ốm hôm đó').moTa.noiDung === 'Phụ huynh báo em ốm hôm đó', 'tra_lai: Head sửa');
+  }));
+
+  check('VH1b-10 · so DÒNG /my-work của người không có việc tay: GVBM giữ nguyên tập khoá khi người khác nhận việc tay', () => {
+    xoaNho();
+    const truoc = JSON.stringify(((myWork(gvbm) as any).items as any[]).map((x) => x.key).sort());
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      tao(ql, { hangMuc: 'bao-ph', classId: lop, assigneeUserId: gvcn.userId });
+      xoaNho();
+      const sau = JSON.stringify(((myWork(gvbm) as any).items as any[]).map((x) => x.key).sort());
+      assert(truoc === sau, 'dòng của người không có việc tay không đổi');
+    } finally { conn.exec('ROLLBACK'); }
+  });
+
+  await checkAsync('VH1b-11 (PTA 9) · việc con trả hạng mục / lớp của cha; bản lặp chép HV còn hợp lệ; việc tay không làm lớp "có dữ liệu", xoá lớp gỡ liên kết', () => thu(async () => {
+    const cha = tao(ql, { hangMuc: 'sau-thi', classId: lop, studentIds: [emLop[0]], lap: { kieu: 'tuan', ngay: [1, 2, 3, 4, 5, 6, 7] } });
+    const con = tao(ql, { parentTaskId: cha.id, title: 'Con VH1b-11' });
+    const dc = mg.mgmtTaskDetail(ql, con.id);
+    assert(dc.hangMuc === 'sau-thi' && dc.classId === lop, 'chi tiết việc con theo cha (cùng luật /my-work)');
+    mg.taoViecLap(addDays(TODAY, 1));
+    const ban = mot('SELECT id FROM tasks WHERE lap_goc_id = ? AND parent_task_id IS NULL', cha.id).id;
+    assert(hang('SELECT student_id FROM task_students WHERE task_id = ?', ban).map((r) => r.student_id).join() === String(emLop[0]), 'bản lặp chép HV liên quan');
+    const xkt: any = await import('../classes/xoaKetThucLop.ts');
+    const lopTrong = Number(conn.prepare(`INSERT INTO classes (code, branch_id, kind, programme_code, status, created_at) SELECT 'VH1B-TRONG', ?, kind, programme_code, 'active', ? FROM classes WHERE id = ?`)
+      .run(MB, new Date().toISOString(), lop).lastInsertRowid);
+    const v = tao(ql, { classId: lopTrong });
+    assert(!xkt.tinhTrangLop(lopTrong).coDuLieu, 'việc tay gắn lớp không làm lớp có dữ liệu');
+    xkt.xoaLop(P.admin, lopTrong);
+    assert(mot('SELECT class_id FROM tasks WHERE id = ?', v.id).class_id === null, 'xoá lớp → gỡ liên kết việc tay');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

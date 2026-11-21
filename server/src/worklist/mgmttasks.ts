@@ -280,6 +280,8 @@ export function taoViecLap(homNay = demoToday()): { goc: number; tao: number; lo
       JOIN tasks t ON t.lap_goc_id = json_extract(j.value, '$[0]') AND t.lap_ky = json_extract(j.value, '$[1]')`)
     .all(JSON.stringify(toiKy.map((x) => [x.g.id, x.ky]))) as any[]).map((r) => r.k as string));
   let tao = 0, loi = 0;
+  /** Lớp liên quan của bản mới: lớp mẫu nếu còn hoạt động (và cùng chi nhánh), không thì bỏ. */
+  const lopCon = (m: any): number | null => (m.class_id && (conn.prepare("SELECT 1 FROM classes WHERE id = ? AND status = 'active' AND (? IS NULL OR branch_id = ?)").get(m.class_id, m.branch_id ?? null, m.branch_id ?? null)) ? m.class_id : null);
   /** Người phụ trách của bản mới theo mẫu `m` (việc gốc / việc con mẫu). */
   const nguoiCua = (m: any): { uid: number | null; ten: string | null } => {
     const gan = conn.prepare('SELECT assignee_user_id FROM tasks WHERE lap_goc_id = ? ORDER BY lap_ky DESC LIMIT 1').get(m.id) as any;
@@ -299,9 +301,12 @@ export function taoViecLap(homNay = demoToday()): { goc: number; tao: number; lo
               VALUES (?,?, 'branch_ops', ?,?,?,?,?,?,?, 'not_started', ?, 'lap', ?,?,?,?,?,?)
               ON CONFLICT(lap_goc_id, lap_ky) WHERE lap_goc_id IS NOT NULL DO NOTHING`)
             .run(nextCode(conn), m.title, m.task_type, parent ? g.group_id ?? null : m.group_id ?? null, parent, m.branch_id, ng.uid, ng.ten, han,
-              m.note, m.created_by, nowIso(), m.id, ky, m.hang_muc ?? null, m.class_id ?? null);
+              m.note, m.created_by, nowIso(), m.id, ky, m.hang_muc ?? null, lopCon(m));
           if (!r.changes) return null;
           const id = Number(r.lastInsertRowid);
+          /* VH-1b: học viên liên quan chép theo — chỉ em còn hợp lệ (chi nhánh / lớp của bản mới). */
+          const hv = (conn.prepare('SELECT student_id FROM task_students WHERE task_id = ? AND case_id IS NULL').all(m.id) as any[]).map((x) => x.student_id as number);
+          if (hv.length) { const giu = hvHopLe(hv, lopCon(m), m.branch_id ?? null); ghiHocVien(id, hv.filter((x) => giu.has(x))); }
           conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, t.user_id, t.nguon, t.them_boi, ? FROM viec_theo_doi t
               WHERE t.loai = 'van_hanh' AND t.ref_id = ? AND ${HOAT_DONG_O('t.user_id', CN_VH('?'))} ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(id, nowIso(), m.id, m.branch_id);
           if (ng.uid) {
@@ -626,8 +631,13 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     group: (nhom?.khoa ?? null) as TaskGroup | null,
     groupId: t.group_id ?? null, groupName: nhom?.ten ?? null,
     /** VH-1b (N62): hạng mục, lớp + học viên liên quan (`note` = Mô tả của việc tay). */
-    hangMuc: t.hang_muc ?? null, classId: t.class_id ?? null,
-    classCode: t.class_id ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(t.class_id) as any)?.code ?? null : null,
+    /* Việc con theo hạng mục / lớp của việc cha — cùng luật `/my-work` (COALESCE). */
+    ...(() => {
+      const cha = t.parent_task_id ? conn.prepare('SELECT hang_muc, class_id FROM tasks WHERE id = ?').get(t.parent_task_id) as any : null;
+      const lopId = t.class_id ?? cha?.class_id ?? null;
+      return { hangMuc: (cha ? cha.hang_muc : t.hang_muc) ?? null, classId: lopId,
+        classCode: lopId ? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(lopId) as any)?.code ?? null : null };
+    })(),
     hocVien: conn.prepare('SELECT s.id, s.full_name AS ten FROM task_students x JOIN students s ON s.id = x.student_id WHERE x.task_id = ? ORDER BY s.full_name').all(taskId) as { id: number; ten: string }[],
     taskType: t.task_type,
     branchId: t.branch_id,
@@ -762,32 +772,34 @@ function docHangMuc(v: unknown): string | null | undefined {
   return v;
 }
 const TRAN_HV_LIEN_QUAN = 50;
+/** Học viên hợp lệ cho việc: ở chi nhánh của việc (lớp đang học, không có → hồ sơ; việc Toàn hệ thống: mọi chi nhánh) và nếu có lớp thì đang học lớp đó. MỘT câu. */
+function hvHopLe(ds: readonly number[], lop: number | null, branchId: number | null): Set<number> {
+  if (!ds.length) return new Set();
+  const co = db().prepare(`SELECT s.id, COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active'
+      ORDER BY e.id DESC LIMIT 1), s.branch_id) AS b,
+      ${lop !== null ? `EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.class_id = ? AND e.status = 'active')` : '1'} AS trong_lop
+    FROM students s WHERE s.id IN (${DS_JSON})`).all(...(lop !== null ? [lop] : []), JSON.stringify(ds)) as any[];
+  return new Set(co.filter((r) => (branchId === null || r.b === branchId) && r.trong_lop).map((r) => r.id as number));
+}
 /**
- * VH-1b (N62): lớp + học viên liên quan (tuỳ chọn) — lớp phải cùng chi nhánh của việc; học viên phải ở chi nhánh của việc (lớp đang học, không có → hồ sơ)
- * và nếu có lớp thì đang học lớp đó. Không gửi cả hai → undefined (giữ nguyên). Một câu kiểm lớp + một câu kiểm học viên.
+ * VH-1b (N62): lớp + học viên liên quan (tuỳ chọn) — lớp cùng chi nhánh của việc; học viên hợp lệ (`hvHopLe`); ≤ 50. PTA rà #1936 (2): lớp / học viên phải
+ * nằm trong phạm vi XEM của người gọi ở MỌI trường hợp (kể cả việc Toàn hệ thống) — không lộ tên lớp / em chi nhánh khác. Không gửi cả hai → undefined.
  */
-function docLienQuan(classId: unknown, studentIds: unknown, branchId: number | null): { classId: number | null; studentIds: number[] } | undefined {
+function docLienQuan(p: Principal, classId: unknown, studentIds: unknown, branchId: number | null): { classId: number | null; studentIds: number[] } | undefined {
   if (classId === undefined && studentIds === undefined) return undefined;
   const lop = classId == null || classId === '' ? null : Number(classId);
   if (lop !== null) {
     if (!Number.isInteger(lop) || lop <= 0) throw badRequest('Lớp không hợp lệ.');
     const c = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any;
-    if (!c) throw badRequest('Không tìm thấy lớp.');
+    if (!c || !can(p, PERMISSIONS.STUDENT_VIEW, { classId: lop })) throw badRequest('Không tìm thấy lớp.');
     if (branchId !== null && c.branch_id !== branchId) throw badRequest('Lớp thuộc chi nhánh khác — chọn lớp của chi nhánh việc.');
   }
   if (studentIds !== undefined && studentIds !== null && !Array.isArray(studentIds)) throw badRequest('Danh sách học viên không hợp lệ.');
-  const ds = [...new Set(((studentIds as unknown[] | null) ?? []).map(Number))];
+  const ds = [...new Set(((studentIds as unknown[] | null | undefined) ?? []).map(Number))];
   if (ds.length > TRAN_HV_LIEN_QUAN) throw loi(400, 'Tối đa {n} học viên liên quan.', { n: TRAN_HV_LIEN_QUAN });
   if (ds.some((x) => !Number.isInteger(x) || x <= 0)) throw badRequest('Danh sách học viên không hợp lệ.');
-  if (ds.length) {
-    const co = db().prepare(`SELECT s.id, COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active'
-        ORDER BY e.id DESC LIMIT 1), s.branch_id) AS b,
-        ${lop !== null ? `EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.class_id = ${lop} AND e.status = 'active')` : '1'} AS trong_lop
-      FROM students s WHERE s.id IN (${DS_JSON})`).all(JSON.stringify(ds)) as any[];
-    if (co.length !== ds.length || co.some((r) => (branchId !== null && r.b !== branchId) || !r.trong_lop)) {
-      throw badRequest('Có học viên không thuộc chi nhánh / lớp của việc — chọn lại.');
-    }
-  }
+  const hopLe = hvHopLe(ds, lop, branchId);
+  if (ds.some((x) => !hopLe.has(x) || !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: x }))) throw badRequest('Có học viên không thuộc chi nhánh / lớp của việc — chọn lại.');
   return { classId: lop, studentIds: ds };
 }
 /** Thay tập học viên liên quan của việc (`task_students`, case_id NULL — không sinh Case / PA nào). */
@@ -846,7 +858,7 @@ export function createMgmtTask(p: Principal, input: {
   kiemNguoiVh('Người theo dõi', input.watcherUserId, taskBranchId);
   const groupId = parent ? parent.group_id ?? null : nhomChoViec(input, taskBranchId) ?? null;
   const hangMuc = parent ? null : docHangMuc(input.hangMuc) ?? null;
-  const lienQuan = docLienQuan(input.classId, input.studentIds, taskBranchId);
+  const lienQuan = docLienQuan(p, input.classId, input.studentIds, taskBranchId);
   const lap = parent ? null : docLap(input.lap);
   if (parent && input.lap != null && input.lap !== '') throw badRequest('Việc con lặp theo việc cha — đặt lặp lại ở việc cha.');
   /*
@@ -1152,13 +1164,27 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   }
   if (patch.note !== undefined) { chuTuDo(patch.note, 'Ghi chú', 2000); put('note', (patch.note ?? '').trim() || null); }
   /* VH-1b (N62): hạng mục (việc gốc; việc con theo cha) · lớp / học viên liên quan. Chuyển chi nhánh: lớp chi nhánh cũ bỏ. */
+  /* PTA rà #1936 (6): chỉ việc Vận hành — việc "Giao GV theo lớp + kỹ năng" (teacher_task) giữ lớp / em / Case của luồng đó. */
+  if (t.kind !== 'branch_ops' && (patch.hangMuc !== undefined || patch.classId !== undefined || patch.studentIds !== undefined)) {
+    throw badRequest('Chỉ việc Vận hành có hạng mục / lớp / học viên liên quan.');
+  }
   const hangMuc = t.parent_task_id ? undefined : docHangMuc(patch.hangMuc);
   if (hangMuc !== undefined && hangMuc !== (t.hang_muc ?? null)) {
     put('hang_muc', hangMuc);
     historyRows.push({ field: 'hang_muc', oldValue: t.hang_muc ?? null, newValue: hangMuc, reason: null });
   }
-  const lienQuan = docLienQuan(patch.classId !== undefined ? patch.classId : patch.studentIds !== undefined ? t.class_id : undefined, patch.studentIds, cnMoi);
-  const lopMoi = lienQuan ? lienQuan.classId : doiCn && t.class_id && (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(t.class_id) as any)?.branch_id !== cnMoi ? null : t.class_id ?? null;
+  /* Lớp cũ còn hợp lệ ở chi nhánh mới? (việc Toàn hệ thống: giữ). */
+  const lopCu: number | null = t.class_id && doiCn && cnMoi !== null && (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(t.class_id) as any)?.branch_id !== cnMoi ? null : t.class_id ?? null;
+  const lienQuan = patch.classId !== undefined || patch.studentIds !== undefined
+    ? docLienQuan(p, patch.classId !== undefined ? patch.classId : lopCu, patch.studentIds ?? [], cnMoi) : undefined;
+  const lopMoi = lienQuan ? lienQuan.classId : lopCu;
+  /* PTA rà #1936 (5): học viên liên quan — gửi danh sách thì thay; đổi chi nhánh / lớp mà không gửi → bỏ em không còn hợp lệ (không lộ tên em chi nhánh cũ). */
+  let hvMoi: number[] | undefined = patch.studentIds !== undefined ? lienQuan!.studentIds : undefined;
+  if (hvMoi === undefined && (doiCn || lopMoi !== (t.class_id ?? null))) {
+    const cuHv = (conn.prepare('SELECT student_id FROM task_students WHERE task_id = ? AND case_id IS NULL').all(taskId) as any[]).map((r) => r.student_id as number);
+    const giu = hvHopLe(cuHv, lopMoi, cnMoi);
+    if (cuHv.some((x) => !giu.has(x))) hvMoi = cuHv.filter((x) => giu.has(x));
+  }
   if (lopMoi !== (t.class_id ?? null)) {
     put('class_id', lopMoi);
     historyRows.push({ field: 'class_id', oldValue: t.class_id ? String(t.class_id) : null, newValue: lopMoi ? String(lopMoi) : null, reason: null });
@@ -1190,7 +1216,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
       theoDoi = [...tdCu.filter((u) => u !== cu), ...(moi && !tdCu.includes(moi) ? [moi] : [])];
     }
   }
-  const doiHv = patch.studentIds !== undefined && !!lienQuan;
+  const doiHv = hvMoi !== undefined;
   if (!sets.length && theoDoi === undefined && !doiHv) return mgmtTaskDetail(p, taskId);
 
   return tx(() => {
@@ -1208,7 +1234,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
          VALUES (?,?,?,?,?,?,?)`,
       ).run(taskId, h.field, h.oldValue, h.newValue, h.reason, p.userId, luc);
     }
-    if (doiHv) ghiHocVien(taskId, lienQuan!.studentIds);
+    if (doiHv) ghiHocVien(taskId, hvMoi!);
     /* Nhóm / chi nhánh của việc con theo việc cha. */
     if (!t.parent_task_id && (doiCn || (groupId !== undefined && groupId !== (t.group_id ?? null)))) {
       conn.prepare('UPDATE tasks SET group_id = ?, branch_id = ? WHERE parent_task_id = ?').run(groupId !== undefined ? groupId : t.group_id ?? null, cnMoi, taskId);

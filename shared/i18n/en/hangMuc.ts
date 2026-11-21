@@ -12,4 +12,6 @@ export const EN_HANG_MUC = {
   'Chỉ người phụ trách, người giao, Head, Quản trị hoặc CX sửa được mô tả.': 'Only the owner, the assigner, Head, Admin or CX can edit the description.',
   'Mô tả vừa được người khác sửa — mở lại việc để xem.': 'Someone just edited the description — reopen the task to see it.',
   'Sửa mô tả việc': 'Edit task description',
+  'Chỉ việc Vận hành có hạng mục / lớp / học viên liên quan.': 'Only operations tasks have a category / related class / students.',
+  'Thiếu mô tả mới (gửi chuỗi rỗng để bỏ).': 'Missing the new description (send an empty string to remove it).',
 };

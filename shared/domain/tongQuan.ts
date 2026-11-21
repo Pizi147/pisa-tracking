@@ -57,6 +57,8 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   bao_cao_ph: 'van-hanh',   // LG-3 (chủ SP 20 ý 4): GV viết Báo cáo PH — tab Vận hành, mục "Báo cáo PH"
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
+/** Nhóm của MỘT việc — việc tay có hạng mục theo việc theo luật cùng loại (VH-1b, N62); mọi số đếm theo nhóm đi qua đây (một nguồn với tab). */
+export const nhomCuaViec = (it: { group: string; hangMuc?: string | null }): NhomViec => nhomViecCua((it.hangMuc && nhomDaiDienMuc(it.hangMuc)) || it.group);
 
 /**
  * S11 (chủ SP 05/11, mockup `thiet-ke/v12/cong-viec.html` bảng D — thay SV-SO1 "Nhập điểm = số kỹ năng"): ĐƠN VỊ ĐẾM = MỘT DÒNG VIỆC NHÌN THẤY.
@@ -108,7 +110,7 @@ export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
 const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
 export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'bo-sung';
 
-export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string };
+export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string; hangMuc?: string | null };
 export type NhomViecXem<T> = {
   key: NhomViec | NhomViecTvv; label: string; items: T[];
   /** Số việc — mọi số đếm từ `items` (PR-VAI-a: không còn dòng nhắc mềm cộng tay). */
@@ -118,10 +120,11 @@ export type NhomViecXem<T> = {
 };
 export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomViecXem<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
-  const cua: (g: string) => string = tvv ? nhomViecTvvCua : nhomViecCua;
+  /* VH-1b: việc tay có hạng mục theo việc theo luật cùng loại (`nhomDaiDienMuc`) — cùng luật tab. */
+  const cua = (i: ViecGom): string => { const g = (i.hangMuc && nhomDaiDienMuc(i.hangMuc, tvv)) || i.group; return tvv ? nhomViecTvvCua(g) : nhomViecCua(g); };
   const nhan = (k: string) => (tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] : NHOM_VIEC_LABEL[k as NhomViec]);
   return (tvv ? NHOM_CV_TVV : NHOM_VIEC).map((key) => {
-    const list = items.filter((i) => cua(i.group) === key)
+    const list = items.filter((i) => cua(i) === key)
       /* OV-14c: việc "Chấm Speaking · n bài" của GV Speaking đứng đầu nhóm (chủ SP 18/10). */
       .sort((a, b) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING)
         || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));

@@ -839,7 +839,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * VH-1 (8, N59): việc Vận hành giao cho tôi ("Việc được giao", kèm nhóm) — MỌI vai được giao (TVV, BPXL / CX thuần, Admin) trừ người thấy bảng Vận hành trên web
    * (Head / Quản trị — OV-11c CV-16, không lặp; CX: tab bật ở VH-2 nên tới lúc đó vẫn ở đây — `boVaiCx`). Cùng câu việc giao cho tôi, không câu thêm.
    */
-  const coVanHanh = (!f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt')) && !canSeeBoard(boVaiCx(p));
+  /* VH-1b (PTA chốt, N62): người thấy bảng Vận hành (Head / Quản trị) vẫn nhận việc tay CÓ hạng mục trong đúng mục — việc không hạng mục chỉ ở bảng (không đếm hai lần). Cùng câu. */
+  const coVanHanh = !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt') ? (canSeeBoard(boVaiCx(p)) ? 'hang-muc' as const : true) : false;
   const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca', vanHanh: coVanHanh })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
   const chiGiao = () => {
