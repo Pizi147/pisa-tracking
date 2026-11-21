@@ -1070,11 +1070,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `action:{id}` để "đã nhắc hôm nay" của nút Nhắc khớp qua các PR (K5-12). QL chỉ thấy dòng của người khác khi đã quá hạn.
    */
   const reviewedCases = new Set<number>();
+  /*
+   * GIAM-COMPUTE-2: SQL bỏ trước đúng dòng `duocThay` (dưới) chắc chắn bỏ — trước mọi người xem đọc PA tới hạn của CẢ hệ thống. Ngoài "Tất cả" người xem chỉ giữ / làm
+   * dòng khi: dạy lớp hiện tại của em (GVCN / GVBM của `nguoiGiuKetQua`, `teachesClass` — mọi phân công, tập cha), là chủ Case, là Người dạy, hoặc PA có nhóm bổ trợ (giữ cả nhóm cho `monCuaNhom`).
+   */
+  const locGhiKq = `${f.branchId ? ' AND COALESCE(cc.branch_id, ac.branch_id) = ?' : ''}${tatCa ? '' : ` AND (COALESCE(cur.class_id, a.class_id) IN
+          (SELECT ta.class_id FROM teacher_assignments ta WHERE ta.user_id = ?) OR sc.owner_user_id = ? OR iv.performer_user_id = ? OR iv.nhom_bo_tro IS NOT NULL)`}`;
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      cauPaGhiKetQua(),   /* K3-41: em Tạm dừng dừng hạn */
+      cauPaGhiKetQua(locGhiKq),   /* K3-41: em Tạm dừng dừng hạn */
     )
-    .all(hanGhiKetQuaToi(today)) as any[];
+    .all(hanGhiKetQuaToi(today), ...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId, p.userId, p.userId])) as any[];
   /* TURSO-1211: câu đi chỉ mục hạn (`idx_iv_ghi_kq`) — xếp lại theo PA (sort ổn định) như thứ tự cũ (SCAN theo rowid), JSON không đổi. */
   ghiKetQua.sort((a, b) => a.id - b.id);
   /*
@@ -1133,9 +1139,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN assessment_attempts a ON a.id = x.attempt_id
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending'${f.branchId ? ' AND c.branch_id = ?' : ''} ORDER BY x.id`,   /* DOC-THUA: chi nhánh lọc trong SQL như X05 */
+        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending'${f.branchId ? ' AND c.branch_id = ?' : ''}${tatCa ? '' : `
+          /* GIAM-COMPUTE-2: ngoài "Tất cả" mục 3c chỉ giữ dòng chưa giao người, lớp em đang học do tôi chủ nhiệm (tập cha của isCoreTeacherOf) hoặc Final (việc QL). */
+          AND x.phu_trach_id IS NULL AND (a.kind = 'final' OR cur.class_id IN (SELECT ta.class_id FROM teacher_assignments ta WHERE ta.user_id = ? AND ta.is_core = 1))`} ORDER BY x.id`,   /* DOC-THUA: chi nhánh lọc trong SQL như X05 */
     )
-    .all(...(f.branchId ? [f.branchId] : [])) as any[];
+    .all(...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId])) as any[];
   const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
   henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
   const miniTest = !co('mini_test') ? [] : conn

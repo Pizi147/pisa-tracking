@@ -75,11 +75,11 @@ TD-HVL đã gọt) — bớt nữa phải đổi cách tính (mục 6).
 | # | việc | khuyến nghị | tiết kiệm ước | đổi gì người dùng thấy |
 |---|---|---|---|---|
 | C1 | **Lịch Test tải lưới lớp khi cuộn tới** — hàng lớp đang mở mà nằm ngoài màn hình thì chưa gọi `/classes/:id/cham`, cuộn tới mới tải (khung chờ ngắn). Phương án khác: gộp N lưới một GET (một máy, chậm hơn ~1 s khi mở nhiều lớp) — không khuyên | **Làm** | ~160 GET + ~70 khởi động lạnh / ngày ≈ **−60 s ≈ −0,17 credit** (+ −0,03 credit web request) | lưới dưới màn hình hiện khung chờ khi cuộn tới |
-| C2 | Gộp `/my-work` + `/tong-quan/lop-toi-day/hai-khoi` ở trang đầu GV (đọc chung một lần tập lượt — TURSO-1211 F, đang chờ) | **Làm** | ~−25 s ≈ −0,07 credit; −0,15 triệu dòng / ngày | không (một GET thay hai; số liệu cùng hàm) |
+| C2 | ~~Gộp `/my-work` + `/tong-quan/lop-toi-day/hai-khoi` ở trang đầu GV~~ — **không cần** (soát lại 21/11): trên main trang đầu GV chuyển thẳng sang Công việc (GD-1), `hai-khoi` chỉ còn ở hồ sơ GV của chính mình (`?gon=1`); 59 lần / ngày trong log là bản 12/11, deploy là hết | — | ~−40 s / ngày tự có khi deploy | — |
 | C3 | Ô tìm khi gõ (`/tutors/chon` 255 lần, Ctrl K, ô chọn người): chờ 400 ms thay 250 ms | Không làm | ~−5 s, −0,02 credit | gợi ý hiện chậm hơn một chút |
 | C4 | `/my-work` vẫn ~1/3 compute sau deploy (badge, Công việc, trang đầu, hồ sơ lớp; tải lại sau mỗi lần mình ghi để việc xong biến mất). Bớt thêm phải đổi luồng (vd sau khi ghi chỉ gỡ dòng tại chỗ, tải lại nền ≥ 5 phút) | **Chờ** — đo lại sau deploy (BADGE-NHE) rồi mới quyết | mỗi 10 % lần gọi ≈ −32 s | việc người khác giao hiện chậm hơn |
 
-Tổng nếu deploy + 2a + C1 + C2: **~3,9 → ~2,9–3,0 credit / ngày** (thêm BADGE-NHE thật có thể còn ~2,7). Phần còn lại là thời gian chờ Turso của các trang
+Tổng nếu deploy + 2a + C1: **~3,9 → ~2,9–3,0 credit / ngày** (thêm BADGE-NHE thật có thể còn ~2,7). Phần còn lại là thời gian chờ Turso của các trang
 người dùng mở thật — giảm tiếp là bớt tính năng / số liệu trên trang, không còn đường "miễn phí".
 
 ## Cách chạy lại
