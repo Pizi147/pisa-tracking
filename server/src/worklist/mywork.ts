@@ -156,6 +156,8 @@ export type WorkItem = {
   soLanThu?: number;
   /** TL-1 (N61): việc Báo PH có yêu cầu trả lại đang mở — "Chờ GV sửa", hạn tạm dừng (urgency luôn normal). Chỉ có khi đúng. */
   choGvSua?: true;
+  /** TL-2 (mockup v22 T4a): việc "Vi phạm bị trả lại" — tên người trả (thẻ "{tên} trả"). */
+  nguoiTra?: string | null;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */

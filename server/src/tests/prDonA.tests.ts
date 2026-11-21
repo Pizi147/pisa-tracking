@@ -781,6 +781,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/violations/similar': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/y-thuc/xu-ly/': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/y-thuc/bao-ph/': 'PanelViec (UI-CV-TVV) — panel Báo PH, chỉ khi bấm việc',
+    '/y-thuc/tra-lai/': 'PanelViec (TL-2) — panel Vi phạm bị trả lại, chỉ khi bấm việc',
     '/my-work/cham-speaking': 'PanelViec (OV-14c) — panel Chấm Speaking, chỉ khi bấm việc',
     '/tong-quan/lop-toi-day': 'LopToiDay V4 — chỉ trang Công việc GV (cùng tệp `LopToiDay.tsx`); Tổng quan GV gọi `/hai-khoi` (SV-TQ-GV, đo ở TAI_TRANG GV)',
   };

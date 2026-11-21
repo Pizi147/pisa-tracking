@@ -9,6 +9,7 @@ import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { NutDichGop, useDichGop } from '../../ui/ChuDich.tsx';
+import { DaiChoGvSua, DaiDaLam, HOAN_TAC_MS, KhoiTraLai, guiTraLai, hoanTacTraLai, type TraLaiMo } from './TraLai.tsx';
 
 export type ViolationDetail = {
   id: number; studentId: number;
@@ -17,6 +18,9 @@ export type ViolationDetail = {
   canEdit: boolean; attachmentCount: number;
   measures: { id: number; kindLabel: string; status: string; statusLabel: string }[];
   history: { id: number; field: string; oldValue: string | null; newValue: string | null; actorUserId: number | null; actorName: string | null; createdAt: string }[];
+  /** TL-2 (N61): "Trả lại" cho người xem phía TVV (máy chủ kiểm luật chặn) · yêu cầu đang mở. */
+  reportedByName?: string | null;
+  traLai?: { coThe: boolean; dangMo: TraLaiMo | null };
 };
 
 /**
@@ -35,6 +39,9 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
   const [errXoa, setErrXoa] = useState<string | null>(null);
   const [xemLichSu, setXemLichSu] = useState(false);
   const [busy, setBusy] = useState(false);
+  /* TL-2: ô lý do mở tại chỗ (như panel Báo PH T1) · dải "✓ Đã trả lại" + Hoàn tác 60 giây. */
+  const [traLai, setTraLai] = useState(false);
+  const [vua, setVua] = useState<{ chu: string; het: number; id: number } | null>(null);
   /* VI-PHAM-MO: MỘT nút Dịch cho tên + mô tả — chữ tên ở dòng cha đọc cùng bộ nhớ (`TenDich`), đổi theo nút này. */
   const dg = useDichGop([
     { chu: d?.ten, nguon: { bang: 'violations', id: violationId, cot: 'ten' } },
@@ -104,10 +111,21 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
         </div>
       )}
 
+      {d.traLai?.dangMo && <DaiChoGvSua y={d.traLai.dangMo} hn={homNay ?? ''} moTa={t('Vi phạm này')} onRut={null} />}
+      {vua && <DaiDaLam chu={vua.chu} het={vua.het} onHet={() => setVua(null)}
+        onHoanTac={async () => { await hoanTacTraLai(vua.id); setVua(null); reload(); toast.push('ok', t('Đã hoàn tác')); }} />}
+      {traLai && (
+        <KhoiTraLai khoa={`vp-${d.id}`} veAi={d.reportedByName ?? null} hn={homNay ?? ''} onHuy={() => setTraLai(false)} onGui={async (lyDo) => {
+          const r = await guiTraLai({ violationId: d.id }, lyDo);
+          setTraLai(false); reload();
+          setVua({ chu: t('Đã trả lại cho {ten}', { ten: r.phuTrach.map((x) => x.ten).filter(Boolean).join(', ') || t('GV') }), het: Date.now() + HOAN_TAC_MS, id: r.id });
+        }} />
+      )}
       <div className="flex items-center gap-2 pt-1">
         {suaDuoc && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onSua(d)}>{t('Sửa')}</button>}
         {/* B1-10: xoá thẳng + toast Hoàn tác (không hỏi lại). */}
         {xoaDuoc && <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-ghost text-rose-200" disabled={busy} onClick={xoa}>{t('Xoá')}</button>}
+        {d.traLai?.coThe && !traLai && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => setTraLai(true)}>{t('Trả lại')}</button>}
       </div>
       {errXoa && <p className="text-xs text-rose-300 m-0">{errXoa}</p>}
     </div>

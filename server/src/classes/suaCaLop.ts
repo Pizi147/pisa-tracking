@@ -15,6 +15,7 @@ import { donKhoaGuiCu, laLopThuong } from './intake.ts';
 import { lichMtCua } from './schedule.ts';
 import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
 import { apMonDangKy, duocDoiMon, type TomTatMon } from '../fasttrack/monDangKy.ts';
+import { trongLoTheoDoi } from '../worklist/giaoViec.ts';
 
 /**
  * PR-SL (Q-0310-3): SỬA THÔNG TIN CẢ LỚP — Họ tên, Ngày sinh, Email, Tuần bắt đầu, Dự kiến thi, Target, Điểm đầu vào (OV-10b: + liên hệ). Mỗi dòng chỉ gửi
@@ -283,7 +284,8 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
     if (vuaGhi) return JSON.parse(vuaGhi.value);
     let daSua = 0;
     const tu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM audit_logs').get() as any).m as number;   // OV-15i1: dòng nhật ký của lô nằm sau id này
-    for (const { r, s, c, hoSo, doiTarget, monTom } of dong) {
+    /* TD-HEAD-CX (rà PTA (3)): đổi TVV cả lớp → đồng bộ người theo dõi Head / CX MỘT lần cuối lô (không 2 câu mỗi em). */
+    trongLoTheoDoi(() => { for (const { r, s, c, hoSo, doiTarget, monTom } of dong) {
       /* Netlify cắt hàm sau 10 s, bị cắt giữa giao dịch là giữ khoá ghi Turso: sắp hết giờ thì dừng — cả lô cuộn lại, 503 "chưa lưu gì". */
       chanGiaoDichNeuSapHetGio();
       try {
@@ -300,7 +302,7 @@ export function luuSuaCaLop(p: Principal, classId: number, input: DauVao & { ide
         if (e instanceof HttpError) throw new HttpError(e.status, `${s.full_name}: ${e.message}`, { studentId: s.id });
         throw e;
       }
-    }
+    } });
     const out = { daSua };
     /* OV-15i1 (C22 "lô = một lần lưu"): MỘT mục ở Lịch sử lớp, mở ra từng em (đọc các dòng giữa `tu` và mục này). */
     if (daSua) writeAudit({ actorUserId: p.userId, action: 'class.sua_ca_lop', entityType: 'class', entityId: cls.id, entityLabel: cls.code, after: { daSua, tu } });

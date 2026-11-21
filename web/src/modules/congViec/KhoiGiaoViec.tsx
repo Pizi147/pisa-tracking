@@ -18,7 +18,7 @@ import { lucVn } from './gioVn.ts';
  * Meeting, Phối hợp SOS một việc, Báo PH kết quả Test, Hỏi tình hình, phần Meeting). Một nguồn: `GET /giao-viec/:loai/:id`; nút theo cờ máy chủ
  * (`coTheDoiNguoi` · `coTheSuaHan` · `coTheSuaTheoDoi`), không tự suy. Hạn = `DongHan` (một chỗ sửa hạn). Mỗi thao tác máy chủ trả lại khối → vẽ ngay, không GET thêm.
  */
-export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting';
+export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting' | 'tra_lai';
 type Nguoi = { id: number; ten: string | null };
 export type KhoiGv = {
   /** `van_hanh` (VH-2): việc Vận hành — thao tác đi `/mgmt-tasks` qua `thaoTac`, không qua `/giao-viec`. */
@@ -26,6 +26,7 @@ export type KhoiGv = {
   phuTrach: Nguoi[]; macDinh: Nguoi[]; duocGiao: boolean; giaoBoi: Nguoi | null; giaoLuc: string | null;
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   /** Báo PH "Chờ GV sửa" (TL-1): hạn tạm dừng — không tô quá hạn. */ tamDung?: boolean;
+  /** TL-2: hạn do máy tính lại sau khi GV gửi lại (không "đã chỉnh"). */ hanTinhLai?: boolean;
   theoDoi: (Nguoi & { nguon: string })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
@@ -64,7 +65,7 @@ export function useGiaoViec(loai: LoaiGiao, id: number | null | undefined) {
   return { g: ban ?? data, error, reload, dat: setBan };
 }
 
-const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head' };
+const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', cx: 'CX' };
 const O = 'flex min-h-[46px] min-w-0 items-center gap-2 border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
 const NHAN = `${O} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`;
 const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs text-dim';
@@ -73,13 +74,14 @@ const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border 
 type Loi = { chu: string; xungDot: boolean };
 const loiCua = (e: any): Loi => ({ chu: e?.message ?? t('Không lưu được'), xungDot: e instanceof ApiError && e.status === 409 });
 
-export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi, thaoTac = thaoTacChung }: {
+export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, onDaDoi, thaoTac = thaoTacChung }: {
   g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
   /** VH-2: đường lưu riêng (việc Vận hành). */ thaoTac?: ThaoTacKhoi;
   /** Phần Meeting (G8): ô hẹp hơn, chỉ hai dòng Phụ trách · Hạn — Theo dõi gộp một dòng cho cả việc (`DongTheoDoiChung`). */
   gon?: boolean;
   /** Không vẽ dòng Phụ trách (phần Meeting của người khác — gọn một dòng). */ chiHan?: boolean;
   anTheoDoi?: boolean;
+  /** TL-2 (mockup v22 T4a, ghi chú mục 3): việc "Vi phạm bị trả lại" về đúng người ghi — không nút "Đổi" trên web. */ anDoi?: boolean;
   /** Đổi người / hạn xong — nơi gọi báo danh sách (dòng việc rời "Của tôi"). */
   onDaDoi?: () => void;
 }) {
@@ -129,12 +131,12 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi, 
             {theGiao}
           </div>
           <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-            {g.coTheDoiNguoi && <button ref={nutDoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-haspopup="dialog" aria-expanded={hop}
+            {g.coTheDoiNguoi && !anDoi && <button ref={nutDoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-haspopup="dialog" aria-expanded={hop}
               onClick={() => setHop(true)}>{t('Đổi')}</button>}
           </div>
         </>}
         <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
-        <DongHan khoi tamDung={g.tamDung} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+        <DongHan khoi tamDung={g.tamDung} tinhLai={g.hanTinhLai} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
         {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} thaoTac={thaoTac} />}
       </div>
       {hop && (
@@ -193,7 +195,7 @@ function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: R
  * HỘP NHỎ nổi ngay dưới khối (mockup G3a / G4a): đặt tuyệt đối trong khối (không portal — danh sách đổi cao không làm hộp nhảy), mép phải thẳng nút.
  * Bấm ngoài / Esc (khi ô chọn người không tự xử lý Esc) → đóng, focus về nút mở. < 640 px: hết bề ngang khối.
  */
-function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; onDong: () => void; children: ReactNode }) {
+export function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; onDong: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const bam = useBamNgoai(true, onDong, ref);
   /* Hộp mở sát đáy vùng cuộn của panel → cuộn vừa đủ để thấy cả hộp (danh sách + chân Giao). */
@@ -405,6 +407,8 @@ export function dongLichSuGiao(g: KhoiGv | null | undefined, hn: string, ten?: s
     if (l.truong === 'phu_trach') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Đổi người phụ trách')}`, phu: [`${l.cuTen ?? md} → ${l.moiTen ?? md}`] };
     if (l.truong === 'theo_doi') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.moi ? t('Thêm theo dõi') : t('Bỏ theo dõi')}`, phu: [(l.moiTen ?? l.cuTen) ?? ''] };
     if (l.truong === 'han') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Sửa hạn')}`, phu: [`${ngay(l.cu)} → ${ngay(l.moi)}`] };
+    /* TL-2: hạn do máy tính lại khi GV gửi lại / trả lời (`mac_dinh` 2) — người = GV thao tác. */
+    if (l.truong === 'han_tinh_lai') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Hạn tính lại sau khi GV gửi lại')}`, phu: [`${ngay(l.cu)} → ${ngay(l.moi)}`] };
     const kq = (() => { try { const x = JSON.parse(l.moi ?? 'null'); return x ? [x.ngayGio ? t('họp {ngay}', { ngay: lucVn(x.ngayGio.replace(' ', 'T')) }) : null, x.ketQua].filter(Boolean) as string[] : []; } catch { return []; } })();
     return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.truong === 'xong' ? t('Hoàn thành') : l.truong === 'sua' ? t('Sửa kết quả') : t('Hoàn tác hoàn thành')}`, phu: kq };
   });
