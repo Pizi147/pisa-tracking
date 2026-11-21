@@ -64,9 +64,9 @@ const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
 /* AUDIT-UI B4 (mockup `.viec`): [tên + thẻ phụ | hạn 136 px | nút 112 px] từ 640 px — nút dài hơn ("Bàn giao môn P" 122 px, RA-GD-0711) nới cột, không cắt.
    B5 (V18): 375 [tên + phụ, hạn dưới | "›"] — chạm cả dòng, nút ẩn (trừ "n ▾", nút phụ Gia hạn / Bỏ qua / Xuất). */
 export const COT_VIEC = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_136px_minmax(112px,auto)]';
-const DONG = `grid min-h-[44px] cursor-pointer items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 sm:min-h-[50px] sm:px-4 sm:py-1.5 ${COT_VIEC}`;
-const O_HAN = 'max-sm:col-start-1 max-sm:row-start-2';
-const O_NUT = 'max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:self-center';
+export const DONG = `grid min-h-[44px] cursor-pointer items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 sm:min-h-[50px] sm:px-4 sm:py-1.5 ${COT_VIEC}`;
+export const O_HAN = 'max-sm:col-start-1 max-sm:row-start-2';
+export const O_NUT = 'max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:self-center';
 /* Nét cây (tầng 3 dưới tên em): dọc ở 30 px (375: 26), ngang 12 px vào giữa dòng; dòng cuối dừng ở giữa. */
 export const NET_CAY = "relative before:absolute before:left-[26px] sm:before:left-[30px] before:top-0 before:bottom-0 before:w-px before:bg-[color:var(--line-strong)] before:content-[''] last:before:bottom-1/2 "
   + "after:absolute after:left-[26px] sm:after:left-[30px] after:top-1/2 after:h-px after:w-3 after:bg-[color:var(--line-strong)] after:content-['']";
@@ -97,18 +97,22 @@ const DUONG_IC: Record<string, ReactNode> = {
   'yeu-cau': <><path d="M14 2L7 9" /><path d="M14 2l-4.5 12-2.5-5-5-2.5z" /></>,
   /* TU2-4: "PA đang chạy" — đồng hồ (chưa tới hạn). */
   'pa-chay': <><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3.2l2 1.3" /></>,
+  /* GV-2 (mockup v22 G5): tab "Đang theo dõi" — mắt ở dải mục / ô đầu dòng; "Vừa xong 7 ngày" — danh sách đã đánh dấu. */
+  'theo-doi': <><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" /><circle cx="8" cy="8" r="2" /></>,
+  'vua-xong': <><path d="M2.5 4.5l1.2 1.2 2.1-2.4M2.5 10.5l1.2 1.2 2.1-2.4" /><path d="M8 4.5h5.5M8 10.5h5.5" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
 /** GAP-MO (mockup v22 G6): biểu tượng đầu dải mục theo mã mục (`MUC_CV`). */
 const ICON_MUC: Record<string, string> = {
   mock: 'cham-diem', pf: 'cham-diem', cp: 'cham-diem', 'cham-cheo': 'cham-cheo', 'mo-ta': 'case-hoc-thuat', pa: 'duyet', 'kq-pa': 'duyet',
   'bao-ph': 'bao-ph', 'bao-ph-test': 'bao-ph', 'vi-pham': 'y-thuc', 'tinh-hinh': 'tinh-hinh', 'phoi-hop': 'y-thuc', 'phan-cong': 'van-hanh', 'ban-giao': 'van-hanh',
+  'xep-lich': 'chot-ngay-thi', 'kq-meeting': 'y-thuc',
   'sau-thi': 'sau-thi', 'lo-trinh': 'sau-thi', 'chot-ngay': 'chot-ngay-thi', thieu: 'bo-sung', 'bo-sung': 'bo-sung', giao: 'van-hanh', 'bc-ph': 'bo-sung',
 };
-const docGap = (k: string | null): ReadonlySet<string> => {
+export const docGap = (k: string | null): ReadonlySet<string> => {
   try { const v = k && JSON.parse(localStorage.getItem(k) ?? '[]'); return new Set(Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []); } catch { return new Set(); }
 };
-const ghiGap = (k: string | null, s: ReadonlySet<string>) => {
+export const ghiGap = (k: string | null, s: ReadonlySet<string>) => {
   try { if (k) { if (s.size) localStorage.setItem(k, JSON.stringify([...s])); else localStorage.removeItem(k); } } catch { /* không lưu được: lần sau về mặc định mở */ }
 };
 export const IconNhom = ({ k }: { k: string }) => (
@@ -297,7 +301,10 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
       {daXong ? <span className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
         /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "quá hạn 5 ngày" (đỏ) · "hạn hôm nay"
            (vàng viền) · "hạn 23/09" (xám, kể cả sắp hạn — bỏ "còn n ngày"). Dùng `ChipHan vien` (cùng chip đầu panel, Chờ bạn duyệt, Lớp của tôi). */
-        : v && it.due ? <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
+        : v && it.due ? (it.choGvSua && it.urgency !== 'overdue'
+          /* GV-2 / TL-1: "Chờ GV sửa" — hạn tạm dừng, máy chủ để urgency normal; không tự so ngày ra "quá hạn". */
+          ? <span className="whitespace-nowrap tabular-nums text-dim">{t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })}</span>
+          : <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />)
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         /* GD-4a (⑤ B1): không hạn → cột trống, vạch nhóm "Không hạn" ở đầu nhóm nói thay; trình đọc màn hình vẫn nghe. */
@@ -443,6 +450,11 @@ const DongPhu = ({ nguoi, ds, chip, children }: { nguoi?: ReactNode; ds: readonl
   </span>
 ) : null;
 };
+/** GV-2 (N58, mockup v22 G1 `.tag.giao`): việc người khác giao cho tôi — thẻ VIỀN "{tên} giao" cuối dòng phụ (khác thẻ nền nhạt em · lớp). */
+const TheGiao = ({ it }: { it: WorkItem }) => (it.giaoBoi ? (
+  <span className="inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-md border px-1.5 text-xs font-medium leading-[18px] text-dim max-sm:h-[22px]" style={{ borderColor: 'var(--line-strong)' }}>
+    {t('{ten} giao', { ten: it.giaoBoi })}</span>
+) : null);
 /* AUDIT-UI B4 (mockup `.viec .t1`): tên dòng 15 / 500. */
 const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug disabled:cursor-default';
 
@@ -456,10 +468,11 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const ten = voiLop(it, tenViec(boDongTu(it.group, tenBoEmGoc(it))));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). GD-1b: lớp đã ở tên dòng. */
-  const phu = [...thePhu([sos ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : it.contextLabel ?? it.phu,   /* AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
+  const meet = it.group.startsWith('meeting_');   // GV-2 (mockup v22 G8a): dòng Meeting — chip SOS (không thẻ chữ "SOS n")
+  const phu = [...thePhu([sos && !meet ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : it.group.startsWith('meeting_') ? it.phu : it.contextLabel ?? it.phu,   /* GV-2: dòng Meeting — tên dòng đã nói loại việc; phụ chỉ "họp {ngày giờ}". AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
      it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
     .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
-  const muc = chipMuc(it, true);
+  const muc = chipMuc(it, !meet);
   const bam = () => dong.onOpen(it);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
@@ -476,11 +489,13 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
             className="text-dim no-underline hover:text-[color:var(--accent)] hover:underline">{it.studentName}</Link>,
           ...phu,
         ]}>
+          {!daXong && <TheGiao it={it} />}
           {tvv && !daXong && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
         </DongPhu>
       </span></span>
       <CotHan it={it} daXong={daXong} />
-      <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
+      {/* GV-2 (mockup v22 G8a, [XM] đã chốt): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp — nút phụ thay nút động từ (bấm dòng vẫn mở panel). */}
+      <CotNut it={it} nut={it.group === 'meeting_xep_lich' && dong.nutPhu?.(it) ? null : nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
     </div>
   );
 }
@@ -604,6 +619,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
             ))}
             {n > hien.length && <span className={`${CHIP} border-dashed font-semibold tabular-nums text-[color:var(--accent)] ${hai ? 'max-sm:hidden' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>+{n - hien.length}</span>}
             {hai && n > 1 && <span className={`${CHIP} border-dashed font-semibold tabular-nums text-[color:var(--accent)] sm:hidden`} style={{ borderColor: 'var(--line-strong)' }}>+{n - 1}</span>}
+            {!daXong && <TheGiao it={it} />}
           </span>
         </span></span>
         <CotHan it={it} daXong={daXong} />

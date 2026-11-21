@@ -48,7 +48,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   phoi_hop: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc', yt_tra_lai: 'y-thuc',   // TL-1 (N61)
-  meeting_xep_lich: 'y-thuc', meeting_ket_qua: 'y-thuc',   // GV-1 (N58): Meeting CX / GĐCN
+  meeting_xep_lich: 'y-thuc', meeting_ket_qua: 'y-thuc',   // GV-1 (N58): Meeting CX / GĐCN — nhóm đếm (hồ sơ GV); TAB riêng ở `tabCuaViec`
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
   chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
@@ -105,7 +105,7 @@ export type NhomViecTvv = (typeof NHOM_CV_TVV)[number];
 export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
   'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'),
 };
-const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
+const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
 export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'bo-sung';
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string };
@@ -140,15 +140,17 @@ export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomVie
  * Tab = nhóm việc sẵn có (`NHOM_VIEC` / TVV `NHOM_CV_TVV`), thứ tự cố định; bài Speaking chấm chéo (T03, không là việc của ai) là tab riêng
  * "Chấm Speaking" (chủ SP 14/11, lời 19 — thay "Speaking chấm chéo") ngay sau Chấm điểm. Web thêm tab "Chờ bạn duyệt" (thẻ duyệt, không phải dòng việc) ở đầu.
  */
-export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] as const;
+export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'xep-lich', 'kq-meeting', 'van-hanh'] as const;
+/** GV-2 (mockup v22 G8a / G8e): Meeting CX / GĐCN — tab riêng "Xếp lịch họp" (BPXL) · "Kết quả meeting" (CX; Head khi chi nhánh chưa có người giữ vai). */
+const TAB_MEETING: Record<string, string> = { meeting_xep_lich: 'xep-lich', meeting_ket_qua: 'kq-meeting' };
 export const tabCuaViec = (it: { group: string; key: string; hangMuc?: string | null }, tvv = false): string => {
-  /* VH-1b (N62): việc tay có hạng mục chính thống → tab của mục đó (cùng nơi việc do luật sinh). */
-  const g = it.hangMuc ? nhomDaiDienMuc(it.hangMuc) : null;
-  if (g) return tvv ? nhomViecTvvCua(g) : nhomViecCua(g);
-  return tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group);
+  /* VH-1b (N62): việc tay có hạng mục chính thống → tab của việc theo luật cùng loại (cùng nơi việc do luật sinh). */
+  const g = it.hangMuc ? nhomDaiDienMuc(it.hangMuc, tvv) : null;
+  const nhom = g ?? it.group;
+  return tvv ? nhomViecTvvCua(nhom) : !g && laViecChamCheo(it) ? 'cham-cheo' : TAB_MEETING[nhom] ?? nhomViecCua(nhom);
 };
 export const nhanTabCv = (k: string, tvv = false): string =>
-  (k === 'cham-cheo' ? t('Chấm Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
+  (k === 'cham-cheo' ? t('Chấm Speaking') : k === 'xep-lich' ? t('Xếp lịch họp') : k === 'kq-meeting' ? t('Kết quả meeting') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
 
 /**
  * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
@@ -157,7 +159,7 @@ export const nhanTabCv = (k: string, tvv = false): string =>
  */
 const MUC_CV = [
   ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Chấm Speaking')],
-  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tra-lai', t('Vi phạm bị trả lại')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')],
+  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tra-lai', t('Vi phạm bị trả lại')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')], ['xep-lich', t('Xếp lịch họp')], ['kq-meeting', t('Kết quả meeting')],
   /* GD-4b (PTA Plan 15/11): "Báo PH kết quả Test" của GVCN (không hạn) đứng SAU Phối hợp SOS — việc có hạn lên trước. Mục riêng, cùng tên "Báo PH":
      TVV giữ mục `bao-ph` (Báo PH vi phạm · tình hình) ở chỗ cũ, thứ tự tab Báo PH của TVV không đổi. */
   ['bao-ph-test', t('Báo PH')], ['phan-cong', t('Phân công')],
@@ -168,7 +170,7 @@ type MaMuc = (typeof MUC_CV)[number][0];
 const MUC_CUA_LOAI: Record<string, MaMuc> = {
   cause: 'mo-ta', ghi_nhan_xet: 'mo-ta', xem_nx_s: 'mo-ta',
   no_plan: 'pa', xac_nhan_pa: 'pa', do_plan: 'pa', mini_test: 'pa',
-  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', meeting_xep_lich: 'phoi-hop', meeting_ket_qua: 'phoi-hop', phoi_hop: 'bao-ph-test', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
+  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', meeting_xep_lich: 'xep-lich', meeting_ket_qua: 'kq-meeting', phoi_hop: 'bao-ph-test', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
   /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
   yt_xu_ly: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh', yt_tra_lai: 'tra-lai',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
@@ -181,8 +183,11 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
  */
 export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo');
 export const laHangMucCv = (k: unknown): k is string => typeof k === 'string' && HANG_MUC_CV.some(([m]) => m === k);
-/** Loại việc đại diện của một mục — để suy tab (Mock / Progress / Checkpoint → Chấm điểm). */
-function nhomDaiDienMuc(muc: string): string | null {
+/** Loại việc đại diện của một mục — để suy tab / nhóm (Mock / Progress / Checkpoint → Chấm điểm); mọi số đếm theo nhóm đi qua hàm này cho việc tay (một nguồn). */
+/** Góc TVV: việc theo luật cùng loại của TVV (Phối hợp → Báo PH Meeting / Báo PH kết quả Test, Tình hình → Báo PH tình hình) ở tab Báo PH. */
+const DAI_DIEN_TVV: Record<string, string> = { 'phoi-hop': 'phoi_hop_tvv', 'tinh-hinh': 'bao_ph_yt', 'bao-ph-test': 'bao_ph_yt' };
+export function nhomDaiDienMuc(muc: string, tvv = false): string | null {
+  if (tvv && DAI_DIEN_TVV[muc]) return DAI_DIEN_TVV[muc];
   if (muc === 'mock' || muc === 'pf' || muc === 'cp') return 'score';
   if (muc === 'bao-ph-test') return 'phoi_hop';
   if (muc === 'chot-ngay') return 'missing_data';

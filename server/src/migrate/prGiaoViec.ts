@@ -1,9 +1,12 @@
+import { theoDoiMacDinhMeeting } from '../worklist/giaoViec.ts';
+
 /**
  * GV-1 (N58, chủ SP 20/11 — giao việc liên phòng ban), chạy lặp không đổi, khớp `schema.sql`:
  *   1. `phu_trach_id`, `giao_boi`, `giao_luc` trên viec_bao_ph · sos_coordination_actions · tinh_hinh_hoc_tap (NULL = theo luật — dữ liệu cũ giữ nguyên).
  *   2. Bảng viec_theo_doi (người theo dõi) · viec_giao_lan (lịch sử giao) · meeting_phan (Meeting CX / GĐCN: Xếp lịch họp, Kết quả meeting).
  *   3. Chỉ mục một phần `phu_trach_id IS NOT NULL` (việc giao cho tôi) — dòng cũ đều NULL nên không vào chỉ mục, câu cũ không đổi kế hoạch / thứ tự.
- *   4. ĐỔI DỮ LIỆU (chỉ thêm): Meeting CX / GĐCN đã xác nhận trước GV-1 mà việc Báo PH của TVV còn mở → sinh hai phần (chưa xong) để panel / Công việc có.
+ *   4. ĐỔI DỮ LIỆU (chỉ thêm): Meeting CX / GĐCN đã xác nhận trước GV-1 mà việc Báo PH của TVV còn mở → sinh hai phần (chưa xong) để panel / Công việc có
+ *      + người theo dõi mặc định của phần vừa sinh (GV-2).
  * Mỗi khối TỰ LÀNH: thiếu bảng HOẶC thiếu chỉ mục nào → chạy lại cả khối (`IF NOT EXISTS`). Bảng gốc chưa có (DB rất cũ ở lần đầu) → bỏ qua; lần sau làm nốt.
  */
 const BANG_MOI = `
@@ -74,6 +77,7 @@ export function migratePrGiaoViec(conn: any, applied: string[]) {
   }
   /* 4. Meeting đã xác nhận trước GV-1, việc Báo PH của TVV còn mở, chưa có hai phần → sinh (chi nhánh của em như lúc sinh việc mới). Chạy lặp: ON CONFLICT bỏ qua. */
   if (co(conn, 'viec_bao_ph') && co(conn, 'students')) {
+    const luc = new Date().toISOString();
     const n = conn.prepare(
       `INSERT INTO meeting_phan (phoi_hop_id, phan, branch_id, trang_thai, tao_luc)
        SELECT x.id, ph.phan, COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active'
@@ -82,7 +86,10 @@ export function migratePrGiaoViec(conn: any, applied: string[]) {
          CROSS JOIN (SELECT 'xep_lich' AS phan UNION ALL SELECT 'ket_qua') ph
         WHERE x.status = 'done' AND x.kind IN ('cx_meeting_student', 'cx_meeting_family')
        ON CONFLICT(phoi_hop_id, phan) DO NOTHING`,
-    ).run(new Date().toISOString()).changes;
+    ).run(luc).changes;
+    /* GV-2: phần vừa sinh bù chưa có người theo dõi mặc định (TVV · GVCN · Head, như Meeting mới — `theoDoiMacDinhMeeting`). Chạy lặp: chỉ phần sinh ở lần này. */
+    if (n) for (const r of conn.prepare(`SELECT DISTINCT mp.phoi_hop_id AS ph, x.student_id AS sid, v.id AS bp FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id
+        LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = mp.phoi_hop_id WHERE mp.tao_luc = ?`).all(luc) as any[]) theoDoiMacDinhMeeting(r.ph, r.sid, r.bp ?? null);
     if (n) applied.push(`GV-1: sinh ${n} phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) cho Meeting đã xác nhận, Báo PH của TVV còn mở.`);
   }
 }

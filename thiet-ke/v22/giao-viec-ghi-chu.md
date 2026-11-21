@@ -55,6 +55,7 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 - Xếp lịch họp: Ngày giờ họp + Kết quả, đều tuỳ chọn → Hoàn thành. Kết quả meeting: Kết quả tuỳ chọn → Hoàn thành. Báo PH: giữ nguyên form + chân Lưu / Lưu · việc tiếp ›.
 - Tự quyết: dòng **Theo dõi** dùng chung một dòng cho cả việc (theo dõi là của cuộc họp, lặp ba lần là thừa). Nếu PTA muốn đúng chữ "khối ba dòng cho từng phần" thì tách lại.
 - Tự quyết: ngày giờ họp BPXL ghi hiện trên dòng việc của CX và TVV ("họp 18/09 · 15:00").
+- **Sửa 22/11 (chủ SP, thay ghi chú 21/11):** hạn mặc định việc Meeting — Báo PH (TVV) 5 ngày · Xếp lịch họp CX/GĐCN 5 ngày · Kết quả meeting 14 ngày, tính cả ngày GVCN xác nhận Meeting; sửa được ("Sửa hạn", nhãn "mặc định"). Khung G8: xác nhận 08/09 → Xếp lịch họp hạn 12/09, Kết quả meeting 21/09.
 - Chuông BPXL (bpxl-trang-dau K3) có thanh "Xếp lịch họp 2".
 
 ## 4. [XM] — đã xử lý

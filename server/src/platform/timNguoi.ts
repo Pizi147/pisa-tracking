@@ -64,6 +64,11 @@ type HangNguoiTho = { id: number; full_name: string; code: string; role: string 
  * riêng `roleAndBranchesOf` cho từng dòng kết quả, tốn một truy vấn mỗi dòng (~15 truy vấn mỗi lần gõ trên Turso).
  */
 /** `vaiTaiCn` (GIAO-VIEC-CN): vai đúng nhóm phải ở ĐÚNG chi nhánh này — cùng luật `laNguoiHopLe(…, branchId)` máy chủ kiểm khi lưu. */
+/**
+ * GV-2 (N58): vai NHẬN được việc giao liên phòng ban — MỘT danh sách cho ô chọn (`timNguoiGiaoViec`) và máy chủ (`kiemNguoiNhan` ở `worklist/giaoViec.ts`).
+ * Bỏ `tutor` / `head_tutor` (PTA rà quyền #1930 C): không có khu Công việc. Vai toàn hệ thống (chi nhánh trống, vd CX) tính là có ở mọi chi nhánh.
+ */
+export const VAI_GIAO_VIEC = ['teacher', 'manager', 'consultant', 'office_admin', 'cx', 'scheduler', 'system_admin'] as const;
 function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: readonly number[] | null, vaiTaiCn: number | null = null): HangNguoiTho[] {
   const keys = ROLE_KEYS_OF[nhom];
   const keyPlaceholders = keys.map(() => '?').join(',');
@@ -93,8 +98,11 @@ export function timNguoi(
   p: Principal,
   opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; cungChiNhanh?: boolean;
     /** GIAO-VIEC-CN (chủ SP 10/11, B' 9): Việc quản lý — chỉ người có vai ở chi nhánh của việc (trong phạm vi người xem). */
-    chiNhanh?: number | null },
+    chiNhanh?: number | null;
+    /** GV-2: ô giao việc — mọi vai ở chi nhánh `chiNhanh` (`nhom=giao_viec` ở `/ref/nguoi`). */
+    moiVai?: boolean },
 ): HangNguoi[] {
+  if (opts.moiVai) return timNguoiGiaoViec(p, opts.q ?? '', opts.chiNhanh ?? null);
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' || opts.nhom === 'gv_speaking' ? opts.nhom : 'giao_vien';
   const term = (opts.q ?? '').trim();
   /* PR-Dọn (Q2): hỏi theo một em → phải xem được em đó, TRƯỚC khi đọc lớp / người dạy của em. */
@@ -145,4 +153,30 @@ export function timNguoi(
     .map(build)
     .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.cungCn !== b.cungCn ? (a.cungCn ? -1 : 1) : a.name.localeCompare(b.name, 'vi') || a.id - b.id))
     .slice(0, needle ? 12 : 20);
+}
+
+/** Trần dòng đọc của ô giao việc mỗi lần gõ — người ĐANG HOẠT ĐỘNG có vai ở MỘT chi nhánh (đủ cho mọi chi nhánh hiện có; lọc không dấu ở JS rồi lấy 12 / 20). */
+const TRAN_GIAO_VIEC = 300;
+/**
+ * GV-2 (N58, PTA rà quyền #1930 B): ô "Đổi người phụ trách" / "Thêm người theo dõi" — MỘT câu: người có vai trong `VAI_GIAO_VIEC` ở chi nhánh của việc (hoặc vai
+ * toàn hệ thống), đang hoạt động, chưa xoá; vai + chi nhánh gom bằng GROUP BY (không câu con theo dòng), LIMIT ở SQL. Chi nhánh ngoài phạm vi người gọi → [].
+ * Chỉ trả mã chi nhánh của VIỆC cho mọi dòng (không lộ chi nhánh khác của người đó; vai toàn hệ thống cùng nhóm). Lọc tên không dấu ở JS trên tập đã giới hạn (không có cột tên không dấu).
+ * ponytail: chi nhánh > 300 người có vai thì người cuối danh sách chữ cái không tìm được — thêm cột tên không dấu + LIKE nếu chạm trần.
+ */
+function timNguoiGiaoViec(p: Principal, q: string, cnViec: number | null): HangNguoi[] {
+  if (!cnViec) return [];
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const bang = bangLop();
+  const cnPhamVi = new Set([...scope.branchIds, ...scope.classIds.map((id) => bang.get(id)?.branchId).filter((b): b is number => b != null)]);
+  if (!scope.all && !cnPhamVi.has(cnViec)) return [];
+  const rows = db().prepare(
+    `SELECT u.id, u.full_name, u.code, MIN(r.name_vi) AS role, (SELECT b.code FROM branches b WHERE b.id = ?) AS ma
+       FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id
+      WHERE u.status = 'active' AND u.deleted_at IS NULL AND r.key IN (${VAI_GIAO_VIEC.map(() => '?').join(',')}) AND (ur.branch_id = ? OR ur.branch_id IS NULL)
+      GROUP BY u.id ORDER BY u.full_name, u.id LIMIT ${TRAN_GIAO_VIEC}`,
+  ).all(cnViec, ...VAI_GIAO_VIEC, cnViec) as { id: number; full_name: string; code: string; role: string | null; ma: string | null }[];
+  const needle = normalizeName(q.trim());
+  return rows.filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code ?? '').includes(needle))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, 'vi') || a.id - b.id).slice(0, needle ? 12 : 20)
+    .map((r) => ({ id: r.id, name: r.full_name, role: r.role, branches: r.ma ? [r.ma] : [], cungLop: false, monDay: [], cungCn: true, lopMa: null, cnMa: r.ma }));
 }

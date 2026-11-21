@@ -16,6 +16,7 @@ import { TheLoai } from './BangLan.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type TinhHinhView } from './kieu.ts';
 import { invalidate } from '../../lib/api.ts';
 import { hoanTacLo } from './hoanTacLo.ts';
+import { KhoiGiaoViec, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
 
 /**
  * TÌNH HÌNH HỌC TẬP (chủ SP 12/11, mockup `thiet-ke/v20/tinh-hinh.html` A1 · C · F) — dòng trong khối em + hộp nhỏ neo nút.
@@ -282,6 +283,8 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
+  /* GV-2 (N58): khối Phụ trách · Hạn · Theo dõi đầu thân — hạn sửa ở khối (một chỗ). */
+  const gv = useGiaoViec('tinh_hinh', id);
   const [chu, setChu] = useState('');
   const [luu, setLuu] = useState(false);
   const [xong, setXong] = useState(false);
@@ -315,8 +318,9 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
             chinh: <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void luuRoiTiep(gui, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
           } : { chinh: <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button> }) }}>
       <div className="flex flex-col gap-4 pt-4">
+        {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDaLam} />}
         <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-          <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
+          <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && !gv.g && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
           <NoiDungTinhHinh chu={cauHoi} />
         </div>
         {xong ? (
