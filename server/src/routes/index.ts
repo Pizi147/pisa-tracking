@@ -2261,7 +2261,7 @@ api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
   const bang = keHoachSvc.lichMtLoTrinh(c.id);
   const ctx = { classId: bang.classId, studentId: c.student_id };
   /* PR-OV2a: Admin xếp được lịch nhưng không khôi phục kết quả (`attempt.cancel`). */
-  return { ...bang, coTheXep: moSuaLichTestSvc.choSuaLichTest(principalOf(req), ctx), coTheKhoiPhuc: moSuaLichTestSvc.choHuyKhoiPhucLichTest(principalOf(req), ctx) };
+  return { ...bang, coTheXep: moSuaLichTestSvc.choSuaLichTest(principalOf(req), ctx), coTheKhoiPhuc: moSuaLichTestSvc.choKhoiPhucLuot(principalOf(req), ctx) };   // N63 ②
 }));
 
 /**

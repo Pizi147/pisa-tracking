@@ -27,7 +27,7 @@ import { mt0TheoLop } from '../normal/kyVong.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { boTaskCuaDong, lichGopCua, loadSkillRows, monLuotSql } from '../fasttrack/skillSchedule.ts';
 import { duocDoiLoTrinh, duocDoiMon } from '../fasttrack/monDangKy.ts';
-import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
+import { activeClassOf, canManageDiscipline, xemYThucHv } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
 import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
@@ -824,7 +824,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
    */
   /* Luôn dựng (kể cả chưa có lộ trình) — `skillSupportBoard` kiểm quyền theo lớp đang học thật (`activeClassOf`, K2-6e): GV chỉ dạy lớp cũ bị chặn cả hồ sơ. */
   const board = skillSupportBoard(p, studentId, selected?.id ?? null) as { rows: any[]; chuongTrinh: string | null };
-  const yThucEm = trangThaiYThuc([studentId], today).get(studentId) ?? null;
+  const yThucEm = xemYThucHv(p, studentId) ? trangThaiYThuc([studentId], today).get(studentId) ?? null : null;   // N63 ⑤: BPXL không thấy Ý thức
   /* OV-13m: lộ trình FT mới nhất — chỉ chạy câu Bước tiếp khi đã có kết quả thi thật / đã chọn (đa số hồ sơ không tốn thêm câu nào). */
   const cuoiFt = (() => { const c = [...allCycles].sort((a: any, b: any) => b.seq - a.seq)[0] as any; return c?.route ? c : null; })();
   /* OV-13q: "Đã thi · chờ kết quả" / "chờ bước tiếp" — chỉ hỏi khi lộ trình FT mới nhất có thể đã thi (đa số hồ sơ không tốn thêm câu nào). */
@@ -1069,6 +1069,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id),
       selected ? selected.programme_code ?? programmeCodeOfCycle(selected.id) : null),
     cases,
+    /* N63 ⑤ (rà PTA #1950 P2-d): xem Ý thức của em — cùng cổng `yThuc/access.ts` (BPXL kiêm GV lớp khác: theo vai GV). Ngoài `viewer` (cờ ghi). */
+    xemYThuc: xemYThucHv(p, studentId),
     viewer: (() => {
       /*
        * K2-6e (Q16) — MỘT NGUỒN "lớp đang học": `activeClassOf` (bảng `enrollments`, xếp theo `id DESC`), không phải

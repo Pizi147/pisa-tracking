@@ -3,7 +3,7 @@ import {
   NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, quaHanBaoPh, soTenVi,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
-import { VAI_PHIA_TVV, can, duyetYThuc, type Principal } from '../permissions.ts';
+import { VAI_PHIA_TVV, boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { requireViewClass } from './access.ts';
@@ -309,7 +309,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
       .sort((a, b) => soTenVi(a.ten, b.ten) || a.studentId - b.studentId),
     catLs: dong.length > DONG_THOI_GIAN_TOI_DA,
     tinhHinh,
-    coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+    coTheBao: can(boVaiCx(p), PERMISSIONS.VIOLATION_RECORD, { classId }),   // A3-06: CX hỏi như TVV (N52), không mẫu GV báo
     coTheHoi: p.roleKeys.some((k) => VAI_PHIA_TVV.has(k)) || coTheDuyet,   // N52: CX hỏi tình hình như TVV
   };
 }

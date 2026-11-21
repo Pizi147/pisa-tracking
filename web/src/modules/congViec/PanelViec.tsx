@@ -1,12 +1,12 @@
 import { lazyHop } from '../../ui/lazyHop.tsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { LuoiTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { HienLaiPanel, KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
+import { DauViecCongViec, HienLaiPanel, KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { dauViec } from '../../ui/KhuonViec.tsx';
 import { XemCaseViec, useXem } from '../../lib/quayLai.ts';
@@ -347,7 +347,10 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     if (!o.tong) return null;
     return { con: o.con, tong: o.tong, mt: o.mt.length === 1 ? `MT${o.mt[0]}` : null };
   }, [dsLop, it.tuanThi]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const [tieuDe] = useState(() => (motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
+  /* A3-05: người xem không nhập được (CX) — tiêu đề "Điểm …", không mời "Nhập điểm"; lưới vẫn theo quyền máy chủ từng ô (chỉ xem). */
+  const chiXem = !!useContext(DauViecCongViec)?.chiXem;
+  const [tieuDe] = useState(() => (chiXem ? (motLop && it.tieuDe ? t('Điểm {skills}', { skills: dich(it.tieuDe.replace(/^Nhập điểm /, '')) }) : t('Điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }))
+    : motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
   const periodId = lop[0].periodId ?? null;
   const dau = dauViec({
@@ -369,6 +372,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
   );
   return (
     <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
+      {chiXem && <p className="m-0 pt-2 text-[13px] text-dim">{t('Chỉ xem · GV / Head nhập')}</p>}
       {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {

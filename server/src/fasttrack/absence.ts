@@ -17,6 +17,7 @@ import { moLaiLuotNeuHuy, refreshOutcome, resultOf, saveScore, setSkillSkip } fr
 import { banMoCuaO, catDiemO, traDiemCat } from './ketQuaHuy.ts';
 import { reportRegularNoShow } from '../normal/regular.ts';
 import { capNhatTinVang } from '../keHoach/tinVang.ts';
+import { chanBpxlCoDiem } from '../platform/moSuaLichTest.ts';
 
 /**
  * VẮNG MOCK TEST — nơi sở hữu DUY NHẤT của luật "-" (N38, chủ SP 05/11 — đặc tả `2026-11-04-luat-mt-thong-nhat-design.md`).
@@ -470,6 +471,8 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   if (!canDecide(p, attempt)) {
     throw forbidden('Chỉ Head mới khôi phục được kỹ năng đã huỷ và đặt tuần mới.');
   }
+  /* N63 ② (B1-05): BPXL (`plan.week` xếp lịch) khôi phục kỹ năng khi CHƯA có điểm — cùng luật Xoá / Khôi phục lượt. */
+  chanBpxlCoDiem(p, attempt, entrySkillsOf(skill as AssessedSkill), `${skillName(skill)} đã có điểm — nhờ Head khôi phục.`);
   const rows = ensureSkillRows(attemptId);
   const row = rows.find((r) => r.skill === skill);
   if (!row) throw badRequest('Kỹ năng không hợp lệ.');

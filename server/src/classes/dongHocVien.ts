@@ -9,7 +9,7 @@
  */
 import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, nhanLoaiXuLy, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { DS_JSON, db } from '../db.ts';
-import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { activeAt, boVaiBpxl, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -24,7 +24,7 @@ import { listAttempts } from '../fasttrack/attempts.ts';
  */
 export function canhBaoTheoHocVien(p: Principal, classId: number): Map<number, NhanYThucEm> {
   const out = new Map<number, NhanYThucEm>();
-  if (!can(p, PERMISSIONS.STUDENT_VIEW, { classId })) return out;
+  if (!can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId })) return out;   // N63 ⑤: BPXL không xem Ý thức (như `yThuc/access.ts`)
   for (const [id, em] of trangThaiYThuc(emCuaLop(classId))) {
     /* PR-S3F #12: em Tạm dừng không tính (T65) — cùng tập với chỉ số `hv-can-xu-ly` (ghi danh `active`), nên huy hiệu lớp và chỉ số không lệch. */
     if (em.tamDung) continue;
@@ -115,7 +115,7 @@ export function viecHocVienTheoLop(p: Principal, o: {
     const h = hoTro.get(x.studentId) ?? { soPa: 0, quaHan: false };
     hoTro.set(x.studentId, { soPa: h.soPa + x.pas.length, quaHan: h.quaHan || x.quaHan });
   }
-  const lopXemDuoc = emIds.length ? [...o.emTheoLop.keys()].filter((l) => can(p, PERMISSIONS.STUDENT_VIEW, { classId: l })) : [];
+  const lopXemDuoc = emIds.length ? [...o.emTheoLop.keys()].filter((l) => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: l })) : [];   // N63 ⑤: bỏ grant BPXL
   const yThuc = new Map<number, NhanYThucEm>();
   const bacYThuc = new Map<number, string>();
   const yThucHop = new Map<number, { canLam: NhanYThucEm | null; viPhamCho: number; lanNay: string }>();

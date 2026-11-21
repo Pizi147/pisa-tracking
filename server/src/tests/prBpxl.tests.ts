@@ -2,7 +2,7 @@
  * PHÉP KIỂM BPXL-1 (N57, chủ SP 20/11) — vai Chuyên viên Xếp lịch (`scheduler`): xếp / dời MT và lịch lớp thường; chỉ xem phần còn lại; không bị giao việc.
  *  BX-0 seed đúng 6 quyền, không quyền cấm · BX-1 migrate prBpxl: DB chưa có vai → vai + quyền, lần hai không đổi · BX-2 phạm vi (MB / toàn hệ thống)
  *  · BX-3 xếp / dời MT (chi nhánh mình được, chi nhánh khác 403) · BX-4 lịch lớp thường được, FT 403 · BX-5 khoá cuối tuần N15 như Admin (hỏi trước)
- *  · BX-6 từng đường sửa điểm / HV / chuyển lớp / Case / Ý thức / khôi phục lượt / Phân tích → 403 · BX-7 /my-work rỗng, điều hướng, Tổng quan MT.
+ *  · BX-6 từng đường sửa điểm / HV / chuyển lớp / Case / Ý thức / khôi phục lượt đã có điểm (N63 ②) / Phân tích → 403 · BX-7 /my-work rỗng, điều hướng, Tổng quan MT.
  */
 export async function runPrBpxlTests(t: any) {
   const { check, checkAsync, assert, conn, P, classId } = t;
@@ -262,8 +262,9 @@ export async function runPrBpxlTests(t: any) {
       assert(!sai.length, sai.join(' | '));
     });
 
-    await checkAsync('BX-10 · (3) khôi phục lượt / kết quả MT: 403 cả khi công tắc "Mở sửa lịch Test" TẮT lẫn BẬT', async () => {
-      const a = em(MB_FT); const m = a.luot(1, '2026-10-19');
+    await checkAsync('BX-10 · (3) + N63 ②: khôi phục lượt MT ĐÃ CÓ ĐIỂM (cất) / kết quả MT: 403 cả khi công tắc "Mở sửa lịch Test" TẮT lẫn BẬT; lượt chưa điểm khôi phục được', async () => {
+      const a = em(MB_FT); const m = a.luot(1, '2026-09-14');
+      svc.saveScore(P.admin, m, 'listening', { rawScore: 30, rawTotal: 40 });
       svc.huyLuot(P.admin, m, {});
       const sai = await sai403([['POST', `/attempts/${m}/reopen`, {}], ['POST', `/attempts/${m}/khoi-phuc-ket-qua`, {}]]);
       const cu = getConfig(KHOA_MO_SUA_LICH_TEST);
@@ -272,6 +273,14 @@ export async function runPrBpxlTests(t: any) {
         sai.push(...(await sai403([['POST', `/attempts/${m}/reopen`, {}], ['POST', `/attempts/${m}/khoi-phuc-ket-qua`, {}]])).map((y) => `BẬT: ${y}`));
         if (ma(() => svc.reopenAttempt(loadPrincipal(idMb), m)) !== 403) sai.push('BẬT: reopenAttempt (dịch vụ) không 403');
       } finally { setConfig(KHOA_MO_SUA_LICH_TEST, cu ?? JSON.stringify({ bat: false })); xoaNho(); }
+      /* N63 ②: lượt chưa có điểm — BPXL khôi phục được; lượt lớp khác chi nhánh vẫn 403. */
+      const b = em(MB_FT); const m2 = b.luot(1, '2026-10-19');
+      svc.huyLuot(P.admin, m2, {});
+      const r = await goi('POST', `/attempts/${m2}/reopen`, ck, {});
+      if (r.status !== 200) sai.push(`khôi phục lượt chưa điểm: ${r.status} ${r.json?.error ?? ''}`);
+      const c = em(CP_FT); const m3 = c.luot(1, '2026-10-19');
+      svc.huyLuot(P.admin, m3, {});
+      sai.push(...(await sai403([['POST', `/attempts/${m3}/reopen`, {}]])).map((y) => `CP: ${y}`));
       assert(!sai.length, sai.join(' | '));
     });
 

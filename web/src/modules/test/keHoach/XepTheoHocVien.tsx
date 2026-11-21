@@ -33,7 +33,7 @@ type KetQuaKiem = { loi: string | null; canhBao: string | null };
 const suaDuoc = (o: OKyNang | undefined): o is OKyNang =>
   !!o && o.trangThai !== 'khong-yeu-cau' && o.trangThai !== 'xong' && !o.diem && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài';
 const doiThat = (o: OKyNang | undefined, t: Tuan | undefined) => !!t && (!o || t.periodId !== o.periodId || o.sit === 'cancelled');
-/** XEP-MT-NHAC (chủ SP 07/11): "Chưa xếp lịch MT" (BPXL-2: một tên) = lộ trình thiếu MT — cùng hàm máy chủ `thieuMt` với số của lưới. */
+/** XEP-MT-NHAC (chủ SP 07/11): "Chưa đủ lịch MT" (BPXL-2: một tên) = lộ trình thiếu MT — cùng hàm máy chủ `thieuMt` với số của lưới. */
 const chuaCoMtTiep = (h: Hang) => !!h.thieuMt;
 /** Em có môn vắng chưa dời (dữ liệu trước N38) — chip "Vắng"; BPXL-2: không chữ "xếp lại". */
 const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // N38 L2 + PTA 07/11: chỉ môn vắng chưa dời
@@ -44,7 +44,7 @@ type Dong = { n: number; luot: HangGoiY['luot']; goiY: HangGoiY | undefined; nha
 
 /**
  * TAB "XẾP THEO HỌC VIÊN" (PR-XTHV, mockup MT quy trình 08/10 vấn đề 4) — panel "Xếp nhiều MT", khung Fast Track, chỉ Quản lý / Quản trị.
- * Trái: lớp · tìm em · chip "Tất cả · Chưa xếp lịch MT · Vắng" · tick tối đa 3 em. Phải: mỗi em một bảng Lượt × Tuần chung × L R W S
+ * Trái: lớp · tìm em · chip "Tất cả · Chưa đủ lịch MT · Vắng" · tick tối đa 3 em. Phải: mỗi em một bảng Lượt × Tuần chung × L R W S
  * × Sẽ đổi × ⋯; "+ MT{n}" và "Điền gợi ý" (lịch đề xuất của lộ trình, chỉ điền nháp ô chưa có điểm). Lưu bằng API có sẵn: lượt có sẵn
  * `/ke-hoach-test/dot`, lượt mới `/xep-moi`, theo `thuTuLuuLuot`; lượt lỗi thì dừng em đó và báo lượt đã lưu. Không đánh số lại
  * (luật 08/10: vượt thì báo). Lưu xong panel KHÔNG đóng. 375: hai màn (danh sách → chi tiết em).
@@ -323,7 +323,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                 <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={tChu('Tìm học viên · tên hoặc mã')} />
               </label>
               <div role="group" aria-label={tChu('Lọc học viên')} className="flex flex-wrap gap-1.5">
-                {([['tat', tChu('Tất cả')], ['chua', tChu('Chưa xếp lịch MT')], ['xep-lai', tChu('Vắng')]] as const).map(([k, nhan]) => (
+                {([['tat', tChu('Tất cả')], ['chua', tChu('Chưa đủ lịch MT')], ['xep-lai', tChu('Vắng')]] as const).map(([k, nhan]) => (
                   <button key={k} type="button" aria-pressed={loc === k} onClick={() => setLoc(k)}
                     className={`nut-loc tabular-nums ${loc === k ? 'border-doing-line bg-doing-bg text-doing' : ''}`}>{nhan} {dem[k]}</button>
                 ))}

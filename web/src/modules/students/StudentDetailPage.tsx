@@ -18,7 +18,8 @@ import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
-import { CHU_DA_XONG, bacNgan, diemW12, mucQuanLyHocVien } from '@shared/domain/index.ts';
+import { CHU_DA_XONG, bacNgan, diemW12, mucQuanLyHocVien, xemYThucTheoVai } from '@shared/domain/index.ts';
+import { useSession } from '../../lib/session.tsx';
 import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, viecSangPanel, type Viec } from './DauHoSo.tsx';
 import { NutTask } from '../congViec/NutTask.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
@@ -30,7 +31,7 @@ import type { ViecQuanLy } from './StudentManagePanel.tsx';
 import { thongTinEmCua } from './thongTinEm.ts';
 import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO } from '../../ui/MenuDong.tsx';
-import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
+import { PhoiHopHocVien, StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
@@ -148,7 +149,10 @@ export default function StudentDetailPage() {
   /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
   /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
   useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
-  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
+  /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). Cờ máy chủ `xemYThuc` (theo em) khi hồ sơ đã về;
+     trước đó theo vai để vẫn gọi SONG SONG với hồ sơ (không thêm một lượt mạng cho mọi người). */
+  const xemYtVai = xemYThucTheoVai(useSession().session?.roles);
+  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id && (data?.xemYThuc ?? xemYtVai) ? `/students/${id}/y-thuc` : null, [id, data?.xemYThuc ?? xemYtVai]);
   /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
   const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
 
@@ -245,6 +249,8 @@ export default function StudentDetailPage() {
   /* A3-12 (③ K9d): ô "Ý thức" đầu hồ sơ khi em có bậc hoặc đề xuất chờ QL duyệt — đọc `/y-thuc` đã nạp, không thêm câu. */
   const yt = yThuc.data, choQl = yt?.deXuat?.status === 'cho_duyet', bacYt = yt?.bacNhan ? bacNgan(dich(yt.bacNhan)) : null;
   const oYThuc = yt && ((yt.bac ?? 0) > 0 || choQl) ? { bac: bacYt, wl: !!bacYt?.startsWith('WL'), choQl } : null;
+  const xemYt = data.xemYThuc ?? xemYtVai;   // máy chủ quyết theo em (BPXL kiêm GV lớp khác)
+  const nhanTab = (k: keyof typeof HO_SO_TAB_LABEL) => (k === 'y-thuc' && !xemYt ? (cy?.ratio ? t('Phối hợp') : t('Phối hợp SOS')) : HO_SO_TAB_LABEL[k]);   // N63 ⑤
   const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); board.reload(); yThuc.reload(); };
   /* "+ Task" (③ R3.1, K6): mục theo quyền máy chủ — Case `canReport` · Vi phạm `canRecord` · Tình hình `coTheBao` (GV báo TVV) / `coTheHoi` (TVV hỏi GVCN). */
   const mucTask = [
@@ -385,12 +391,12 @@ export default function StudentDetailPage() {
         tabs={[
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
           /* GD-7 (③ K1 / K4, V22): bỏ chấm cảnh báo ở tab — việc Ý thức của người xem đã ở "Việc cần làm" (đỏ khi quá hạn). */
-          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'] },
+          { key: 'y-thuc', label: nhanTab('y-thuc') },
           { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
         ]} />
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
-      <div id="hshv-vung" role="tabpanel" aria-label={HO_SO_TAB_LABEL[tab]} className="space-y-4">
+      <div id="hshv-vung" role="tabpanel" aria-label={nhanTab(tab)} className="space-y-4">
         {tab === 'hoc-thuat' && (!cy ? (
           <Empty title={t('Học viên chưa có lộ trình nào')} hint={t('Mở lộ trình để bắt đầu theo dõi Target và các mốc đánh giá.')} />
         ) : (
@@ -462,7 +468,8 @@ export default function StudentDetailPage() {
 
         {tab === 'y-thuc' && (
           /* UI-Y-THUC-HV: các khối của tab tự là thẻ (mockup v7) — không bọc thêm một thẻ ngoài (thẻ lồng thẻ). */
-          <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
+          xemYt ? <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
+            : <PhoiHopHocVien studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
         )}
 
         {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}

@@ -3,11 +3,11 @@ import type { Dich } from '../en.ts';
 
 export const EN_BPXL2 = {
   'Số cần xếp': 'Scheduling numbers',
-  'Chưa xếp lịch MT': 'MT not scheduled',
-  'Chưa xếp lịch MT · {n} em': 'MT not scheduled · {n} students',
+  'Chưa đủ lịch MT': 'MT schedule incomplete',   // N63 ⑥: em chưa đủ MT của lộ trình (xếp MT1 xong vẫn đếm nếu còn thiếu)
+  'Chưa đủ lịch MT · {n} em': 'MT schedule incomplete · {n} students',
   'Vắng tuần này': 'Absent this week',
   'Vắng · {n} em': (b) => `Absent · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
-  'Bài chưa có điểm': 'Papers without scores',
+  'Chỉ lớp Fast Track.': 'Fast Track classes only.',   // B2-12: ⓘ phạm vi "Bài chưa nhập điểm" ở dải BPXL
   'Lọc: {x}': 'Filter: {x}',
   'Bỏ lọc {x}': 'Clear filter {x}',
   'Không lớp nào khớp "{x}"': 'No class matches "{x}"',

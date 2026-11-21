@@ -153,7 +153,9 @@ export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; d
   /** N56 ① (PTA rà #1880): dải "Bạn đang làm thay … · Chỉ xem" — LUÔN thấy: ngay dưới đầu panel, ngoài vùng cuộn (1440), dính đầu vùng nhìn (375). */
   daiLamThay?: ReactNode;
   /** UI-CONG-VIEC (khung A3): đang làm thay — dải sự kiện thêm "Phụ trách {tên}". */
-  nguoiLam?: string | null } | null>(null);
+  nguoiLam?: string | null;
+  /** A3-05: người xem không làm được việc (CX với việc chấm chưa có người) — panel đổi tiêu đề "Điểm …" + một dòng "Chỉ xem · GV / Head nhập". */
+  chiXem?: boolean } | null>(null);
 /** UI-CONG-VIEC (mockup `.truong > .nhan` 15 / 700): panel việc ở Công việc — nhãn ô nhập đậm, sáng; nơi khác giữ nhãn nhỏ. */
 export const NhanTruongDam = createContext(false);
 /** M6 6b-3: lớp panel đang ẨN (form việc khi đang "Xem Case" trong panel việc) — cần hỏi "Bỏ chữ?" thì hiện lại lớp đó trước (hộp hỏi vẽ trong panel). */
