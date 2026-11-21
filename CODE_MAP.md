@@ -31,7 +31,7 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 | Tổng quan theo vai (QL · QT / CX · GV · TVV · Admin) | `web/src/modules/worklist/{OverviewPage,TongQuanV5,LopToiDay,MockTestAdmin,Highlights}.tsx` | `GET /tong-quan/v5` → `server/src/worklist/{tongQuanV5,tongQuan,tongQuanQl,tongQuanMt,bangChiNhanh}.ts` |
 | Panel "GV chấm quá hạn" | `web/src/modules/worklist/PanelGvTre.tsx` | `GET /tong-quan/gv-tre` → `server/src/worklist/gvTre.ts` · `tongQuanQl.ts` (`treCham`) |
 | Công việc (một danh sách, panel làm tại chỗ `?viec=`) | `web/src/modules/congViec/{CongViecPage,HoTroHocVienTab,DanhSachViec,PanelViec}.tsx` | `GET /my-work` → `server/src/worklist/mywork.ts` |
-| Công việc của TVV (Báo PH · Sau thi · Chốt ngày thi) | `web/src/modules/congViec/{PanelBaoPhTvv,PanelSauThi}.tsx` | `server/src/worklist/viecTvv.ts` · `server/src/yThuc/baoPhTvv.ts` |
+| Công việc của TVV (Báo PH · Sau thi · Chốt ngày thi; Sau thi = MỘT panel `PanelSauThi`: KQ thi thật + Bước tiếp Tạm dừng / Học tiếp / Lộ trình mới) | `web/src/modules/congViec/{PanelBaoPhTvv,PanelSauThi}.tsx` | `server/src/worklist/viecTvv.ts` · `server/src/yThuc/baoPhTvv.ts` |
 | Hộp Chờ duyệt · Yêu cầu của tôi | `web/src/modules/duyet/{HopChoDuyet,TheYeuCau,YeuCauCuaToi}.tsx` | `GET /yeu-cau` → `server/src/duyet/{yeuCau,loaiYeuCau}.ts` |
 | Học viên & Lớp (góc Tất cả · Đang SOS · Cần làm · Lịch thi, dải lớp) | `web/src/modules/students/{StudentsPage,DanhSachHvLop,BangHocVienLop}.tsx` (+ `BangSos.tsx`: chỉ kiểu `DongSos` / `TrangSos` / `CaseTomTat`, `ViecTiepDong`) | `GET /hoc-vien-lop` → `server/src/classes/hocVienLop.ts` · `hocVienSos.ts` (`dangSos`) |
 | Hỏi khi rời trang còn nháp (`useBlocker` + `beforeunload`) | `web/src/ui/chanRoiNhap.tsx` · data router ở `web/src/main.tsx` · phép kiểm `prChanRoiNhap.tests.ts` |
@@ -336,7 +336,10 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Admin: khối Mock Test | `web/src/modules/worklist/MockTestAdmin.tsx` · `server/src/worklist/tongQuanMt.ts` |
 | TVV / CX: Học viên của tôi | `server/src/worklist/hvCuaToi.ts` (`chipHocVien`) |
 | Thông báo tự động (đồng bộ khi mở chuông) | `server/src/platform/thongBaoTuDong.ts` (`dongBoThongBaoTuDong`; mốc 5 phút ở `users.chuong_dong_bo_luc` — migrate `server/src/migrate/prChuongNhe.ts`) |
-| Vận hành: giao việc, việc con, Tạm ngưng | `web/src/modules/worklist/{MgmtTasksPage,ManagerTasks}.tsx` · `server/src/worklist/mgmttasks.ts` · `shared/domain/worklist.ts` |
+| Vận hành: giao việc, việc con, Tạm ngưng (N59; bảng `tasks`, `task_groups`, `task_followers`; 4 nhóm khởi đầu chỉ Quản trị sửa / sắp / ẩn, N63 ⑧) | `web/src/modules/worklist/{MgmtTasksPage,ManagerTasks}.tsx` · `server/src/worklist/mgmttasks.ts` · `shared/domain/worklist.ts` |
+| Việc tay vào hạng mục (N62: "+ Giao việc", cột `tasks.hang_muc`, chuẩn hoá `chuanHangMuc`; hạng mục chính thống `HANG_MUC_CV`) | `web/src/modules/congViec/NutTask.tsx` · `server/src/worklist/mgmttasks.ts` · `shared/domain/tongQuan.ts` (`HANG_MUC_CV`, `laHangMucCv`) |
+| Giao việc liên phòng ban (N58: Phụ trách · Hạn · Theo dõi; bảng `viec_theo_doi`, `viec_giao_lan`, `viec_han_lan`, `viec_mo_ta`) | `server/src/worklist/giaoViec.ts` (`laNguoiGiao`, `conHieuLuc`, `donViec`, `viecTheoDoi`) · `web/src/modules/congViec/{KhoiGiaoViec,ChonPhuTrach,TabTheoDoi}.tsx` · migrate `server/src/migrate/prGiaoViec.ts` |
+| Trả lại vi phạm (N61: trả / rút / gửi lại / giữ nguyên, hạn Báo PH tạm dừng) | `server/src/yThuc/traLai.ts` (`coTheTraLai`, `traLai`, `rutTraLai`, `guiLaiTraLai`, `giuNguyenTraLai`) · `server/src/permissions.ts` (`laTvvCuaEm`) · `web/src/modules/congViec/PanelTraLai.tsx` |
 | Báo cáo đơn vị | `web/src/modules/worklist/MeetingPage.tsx` · `server/src/worklist/meeting.ts` · `shared/domain/baoCaoDonVi.ts` |
 | "Việc của tôi" khác "tôi sửa được" | `server/src/permissions.ts` (`mySkills`, `editableSkills`) |
 | Hai phạm vi công việc, mặc định theo vai | `shared/domain/people.ts` (`WORK_SCOPES`) · `server/src/permissions.ts` (`defaultWorkScope`) |
@@ -354,6 +357,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Chuyển tiếp cả lớp lớp thường (Cuối khoá) | `web/src/modules/classes/CuoiKhoaLop.tsx` · `server/src/classes/transition.ts` |
 | Lộ trình tiếp theo (nháp, Hướng) | `server/src/classes/loTrinhTiep.ts` (`luuNhap`, `xoaNhap`) |
 | Việc QL "Chốt lộ trình · lớp" | `server/src/classes/lenhChuyen.ts` (`lopChoChotLoTrinh`) · `shared/domain/chuyenLop.ts` (`chuViecChotLoTrinh`) |
+| Quyền chuyển lớp / chốt lộ trình (N52 / N63 ①: CX chuyển lớp lẻ + tạo / sửa lớp, KHÔNG chốt Cuối khoá / Xét lại; lệnh Cuối khoá của người khác chỉ người chốt được sửa) | `server/src/classes/quyenChuyenLop.ts` (`coTheRaLenh`, `coTheChotLoTrinh`) · `server/src/classes/lenhChuyen.ts` (`khoaLenhNguoiKhac`, `quyenLenh`) · `server/src/permissions.ts` (`boVaiCx`) |
 | Xét lại lộ trình (lô, Hoàn tác) | `web/src/modules/classes/PanelXetLai.tsx` · `server/src/normal/xetLai.ts` (`tapXetLai`) · `server/src/normal/cuoiKhoa.ts` (`emXetLaiLoTrinh`) |
 | FT → lớp thường (MT0, Mock chưa điểm) | `server/src/fasttrack/mt0.ts` (`keHoachVeThuong`, `huyKhiVeThuong`) |
 | Phiếu bàn giao · quyền chuyển lớp | `web/src/modules/classes/BanGiaoPanel.tsx` · `server/src/classes/banGiao.ts` (`suaBanGiao`) · `server/src/classes/quyenChuyenLop.ts` |
@@ -395,7 +399,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Tài khoản: lọc, nhóm, sửa thông tin, kỹ năng | `web/src/modules/platform/AccountsAdmin.tsx` · `shared/domain/taiKhoan.ts` (`locTaiKhoan`) · `accounts.ts` (`adminUpdateAccount`, `setUserSkills`) |
 | Xoá tài khoản (cứng / mềm) | `server/src/platform/xoaTaiKhoan.ts` · `web/src/modules/platform/XoaTaiKhoanPanel.tsx` |
 | Vai trò, quyền, nhóm quyền, cấp riêng | `shared/domain/{people,nhomQuyen}.ts` (`ROLES`, `PERMISSIONS`) · `web/src/modules/platform/CapQuyenRieng.tsx` · `accounts.ts` (`setUserPermissions`) |
-| Vai BPXL — Chuyên viên Xếp lịch (N57: xếp / dời MT + lịch lớp thường, chỉ xem phần còn lại, không bị giao việc; migrate `server/src/migrate/prBpxl.ts`) | `server/src/seed/data.ts` (`scheduler`) · `server/src/permissions.ts` (`boVaiBpxl`, `qlDiem`, `duocSuaLichLop`) · `server/src/platform/nav.ts` (`trangDauTest`) · phép kiểm `server/src/tests/prBpxl.tests.ts` |
+| Vai BPXL — Chuyên viên Xếp lịch (N57: xếp / dời MT + lịch lớp thường, chỉ xem phần còn lại, không bị giao việc; migrate `server/src/migrate/prBpxl.ts`) | `server/src/seed/data.ts` (`scheduler`) · `server/src/permissions.ts` (`boVaiBpxl` — bỏ vai BPXL khi tính quyền điểm / Case / Ý thức, N63 ⑤, `qlDiem`, `duocSuaLichLop`) · `server/src/platform/nav.ts` (`trangDauTest`) · phép kiểm `server/src/tests/prBpxl.tests.ts` |
 | Bảng quyền theo vai | `server/src/platform/sysconfig.ts` (`setRolePermission`, `maTranQuyen`) · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` (`can`, `teacherAllows`, `scoreEditPath`, `editableSkills`) |
 | Chương trình, lộ trình FT, chương trình mới | `server/src/platform/sysconfig.ts` (`saveProgramme`, `saveRoute`, `taoChuongTrinh`) · `web/src/modules/platform/CatalogAdmin.tsx` |
@@ -465,7 +469,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Lệnh `npm run …`: th
 | Ô chọn người, chọn lớp | `web/src/ui/PeoplePicker.tsx` (`ChonNguoi`) · `web/src/ui/ChonLop.tsx` |
 | Ô chọn tuần, bộ lọc chi nhánh, công tắc khung | `web/src/ui/{Filters,CongTacKhung}.tsx` (`WeekPicker`) |
 | Giữ / trả focus, phím mũi tên | `web/src/ui/giuFocus.ts` · `shared/domain/banPhim.ts` |
-| Toast + Hoàn tác 5 giây | `web/src/ui/Toast.tsx` · `shared/domain/hoanTac.ts` (`HOAN_TAC_MS`) |
+| Toast + Hoàn tác 5 giây (hộp có ✕, gạt đi, Esc; tối đa 3 hộp, không tràn mép 375) | `web/src/ui/Toast.tsx` (`useToast`) · `shared/domain/hoanTac.ts` (`HOAN_TAC_MS`) |
 | Báo lỗi form | `web/src/ui/loiForm.tsx` (`useLoiForm`) · `shared/domain/loiForm.ts` |
 | Lưu chắc chắn, không mất chữ | `web/src/lib/luuChac.ts` · `web/src/lib/useApi.ts` · `web/src/lib/api.ts` |
 | Ô số, ô chỉ số, % không đứng một mình | `web/src/ui/{OSo,SoLieu,TyLe}.tsx` |
