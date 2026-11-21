@@ -159,10 +159,10 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   /* PR-S5F-a (mockup 20): lớp đã có dải "Lộ trình tiếp theo" (OV-3b) thì bỏ chip "n HV cần xếp lớp tiếp" — hai chỗ nói cùng một việc. */
   const boXep = (ds: BadgeLop[]) => (data.dai?.loTrinh ? ds.filter((x) => x.key !== 'xep-lop') : ds);
   /*
-   * OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test không thấy. TVV / CX / Admin: `badgeHienTheoVai` (HL-8).
+   * OV-10b: badge "n bài chờ chấm" dẫn vào Test — vai không có Test không thấy. AUDIT-2111 A1-12: GV không có ô này (chip "Nhập điểm · n" của Việc cần làm đã mở panel tại chỗ); QL giữ. TVV / CX / Admin: `badgeHienTheoVai` (HL-8).
    */
   const vai = vaiXemHocVien(session?.roles);
-  const boCham = (ds: BadgeLop[]) => ds.filter((x) => (x.key !== 'cham' || !!session?.nav?.test) && badgeHienTheoVai(vai, x.key));
+  const boCham = (ds: BadgeLop[]) => ds.filter((x) => (x.key !== 'cham' || (laQl && !!session?.nav?.test)) && badgeHienTheoVai(vai, x.key));
   const b0 = { hien: boCham(boXep(bGoc.hien)), an: boCham(boXep(bGoc.an)) };
   /* DH: nhãn chặng chỉ là chữ — không vào menu "+n" (mục bấm không làm gì); nếu bị ẩn thì hiện thẳng ở hàng. */
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
@@ -237,6 +237,18 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const coSo = !!tomTat && (!!tomTat.luot || !!tomTat.dat || tomTat.sos.length > 0);
   const coBadge = bConLai.hien.length > 0 || bConLai.an.length > 0;
 
+  /* AUDIT-2111 A2-12: không có số nào để vẽ thì dải không có khung — chỉ còn hàng chip. */
+  const chipBadge = coBadge && (
+            /* GD-6 (mockup v21 ② K1 ③): badge phạm vi lớp "›" dời từ hàng 1 xuống cuối dải số (XM-5). */
+            <span className="ml-auto flex flex-wrap items-center gap-1.5 self-center pl-2.5 max-sm:col-span-2 max-sm:ml-0 max-sm:pl-0">
+              {bConLai.hien.map(nutBadge)}
+              {bConLai.an.length > 0 && (
+                <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+                  muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
+              )}
+            </span>
+  );
+
   return (
     /* GD-6 (mockup v21 ② K1, R2.1): đầu trang HAI hàng — ① ‹ nguồn · mã · chip · Nhập điểm · + Case · ⋯ │ ‹ n/N › ② GV một dòng (bấm mở đủ) —
        rồi DẢI SỐ MỎNG (Lượt mới nhất · Đạt ⓘ · SOS │ badge phạm vi lớp "›"), dải lớp chuyển, Việc cần làm. Không mất nút / số / đích nào. */
@@ -282,7 +294,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
 
             {/* GD-4 e (mockup v21 H3, ⓪ dòng 21): MỘT dải chỉ số cao 44 — Lượt mới nhất (chữ) · Đạt MT (ô số → panel em trong mẫu, tab Chưa đạt · Đạt) ·
           SOS (ô số → panel em SOS, chip mức giữ sau). Panel dựng từ roster đã nạp, không request. "0 %" có mẫu > 0 vẫn bấm ([XM-D2]). Luật lời 40: ô chưa có dữ liệu không vẽ. */}
-      {(coSo || coBadge) && (
+      {!coSo && coBadge && <div className="flex flex-wrap items-center gap-1.5 [&>span]:!ml-0 [&>span]:!pl-0">{chipBadge}</div>}
+      {coSo && (
         <DaiChiSo nhan={t('Số của lớp')}>
           {tomTat?.luot && <ODai nhan={t('Lượt mới nhất')}><SoTinh n={tomTat.luot} /></ODai>}
           {tomTat?.dat && (
@@ -303,16 +316,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
               ))}
             </ODai>
           )}
-          {coBadge && (
-            /* GD-6 (mockup v21 ② K1 ③): badge phạm vi lớp "›" dời từ hàng 1 xuống cuối dải số (XM-5). */
-            <span className="ml-auto flex flex-wrap items-center gap-1.5 self-center pl-2.5 max-sm:col-span-2 max-sm:ml-0 max-sm:pl-0">
-              {bConLai.hien.map(nutBadge)}
-              {bConLai.an.length > 0 && (
-                <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
-                  muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
-              )}
-            </span>
-          )}
+          {chipBadge}
         </DaiChiSo>
       )}
 

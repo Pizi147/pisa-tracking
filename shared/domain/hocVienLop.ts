@@ -378,7 +378,7 @@ export function badgeLop(c: {
       title: c.needsPlacement ? t('Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp') : t('Head quyết định ở Lộ trình tiếp theo'),
     };
   }
-  if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
+  if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: xepKyNang(c.chuongTrinh, c.missingSkills).map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
   const nCham = c.soViecChoCham ?? c.soBaiChoCham;
   if (nCham > 0) co.cham = { key: 'cham', nhan: c.soViecChoCham != null ? t('Chờ chấm · {n} việc', { n: nCham }) : t('Chờ chấm · {n}', { n: nCham }), so: nCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
@@ -404,13 +404,19 @@ export const chipViecTheoVai = (vai: VaiXemHocVien | null, k: LocHocVien): boole
 
 // ---------------------------------------------------------------- dòng GV bộ môn (06c §1)
 
+/** AUDIT-2111 A2-12: MỘT thứ tự kỹ năng ở mọi nơi hiện nhãn — L R W1 W2 S (như form tạo lớp); mã lạ xếp sau, giữ thứ tự cũ. */
+const THU_TU_NGAN = ['L', 'R', 'W1', 'W2', 'S'];
+export function xepKyNang(ct: string | null | undefined, ds: readonly string[]): string[] {
+  const r = (k: string) => { const i = THU_TU_NGAN.indexOf(tenMonNgan(ct, k)); return i < 0 ? 99 : i; };
+  return [...ds].sort((a, b) => r(a) - r(b));
+}
 export type NhomGiaoVien = { id: number | null; ten: string; kyNang: string[]; nhan: string; title: string };
 export function nhomGiaoVienBoMon(
   kyNangLop: readonly string[], phanCong: readonly { skill: string; id: number; name: string }[], ct: string | null = null,
 ): NhomGiaoVien[] {
   const nhom: NhomGiaoVien[] = [];
   const theoKhoa = new Map<string, NhomGiaoVien>();
-  for (const k of kyNangLop) {
+  for (const k of xepKyNang(ct, kyNangLop)) {
     const pc = phanCong.find((x) => x.skill === k) ?? null;
     const khoa = pc ? `gv-${pc.id}` : 'chua';
     let g = theoKhoa.get(khoa);

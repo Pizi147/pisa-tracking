@@ -76,7 +76,8 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
           <button key={t.key} type="button" role="tab" data-tab={t.key} aria-selected={active} aria-controls={panelId} tabIndex={active || (i === 0 && !coChon) ? 0 : -1} onClick={() => onChange(t.key)}
             className={`-mb-px inline-flex min-h-[44px] shrink-0 cursor-pointer appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-2.5 py-3 text-sm font-semibold sm:px-3.5 sm:pb-3 sm:pt-[11px] ${
               active ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
-            {t.ngan ? <><span className="sm:hidden">{t.ngan}</span><span className="max-sm:hidden">{t.label}</span></> : t.label}
+            {/* A3-18: nhãn đủ vẫn là tên truy cập (sr-only ở 375), chỉ nhãn ngắn hiện. */}
+            {t.ngan ? <><span aria-hidden className="sm:hidden">{t.ngan}</span><span className="max-sm:sr-only">{t.label}</span></> : t.label}
             {t.canhBao && <span className="text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {t.chip && (
               <span className={`${CHIP_TRON} !font-medium tabular-nums ${t.chip.xau ? 'bg-late-bg text-late' : 'surface-2 text-slate-400'}`}>{t.chip.chu}</span>

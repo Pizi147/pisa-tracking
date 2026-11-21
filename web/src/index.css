@@ -1225,6 +1225,8 @@
   .pc-o-xem .trong { color: rgb(var(--soon-rgb)); font-weight: 600; }
   .pc-o-xem .p { font-size: 12px; color: rgb(var(--soon-rgb)); font-weight: 600; }
   .pc-o-xem .p.cho-doi { color: rgb(var(--doing-rgb)); }
+  /* AUDIT-2111 A2-18: 375 tên GV xuống dòng, không cắt "…" (N55). */
+  @media (max-width: 639px) { .pc-o-xem > span, .pc-o-gv .t > span { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; } }
   .pc-so-nhap { color: var(--accent); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .pc-so0 { color: var(--text-faint); font-weight: 400; }
 

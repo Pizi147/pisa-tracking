@@ -286,7 +286,7 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   return (
     <Card bodyClass="p-0" title={<>{t('Lớp cần chú ý')}{ds.length > 0 && <DemDau n={ds.length} />}</>}>
       {/* AUDIT-1611 A2-07 (mockup ⑧ `.cap .n` 12 px): 375 nhãn thẻ 12 px — "Case chưa có PA" một dòng, số thẳng hàng. */}
-      <div data-hd="tq-lop-chu-y" className="max-sm:[&_.luoi-n]:text-xs">
+      <div data-hd="tq-lop-chu-y" className="max-sm:[&_.luoi-n]:text-xs max-sm:[&_.luoi-g]:flex max-sm:[&_.luoi-g]:min-h-7 max-sm:[&_.luoi-g]:items-center">
         <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi
           rong={{ tieuDe: t('Không lớp nào cần chú ý'), goiY: t('Không SOS, không Case chưa có PA, không HV thi tháng này.'), nut: <Link to="/hoc-vien" className="link">{t('Học viên & Lớp ›')}</Link> }} />
       </div>

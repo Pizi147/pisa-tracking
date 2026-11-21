@@ -150,7 +150,7 @@ export function Nhan({ tone, dut, title, onClick, cham = true, children }: {
 export function ChipBadgeLop({ x, nhan, onClick }: { x: { key: string; nhan: string; title?: string; tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted' }; nhan?: string; onClick?: () => void }) {
   return (
     <Nhan tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={onClick}>
-      {nhan ?? x.nhan}{onClick && <> <span aria-hidden className="font-bold">›</span></>}
+      {nhan ?? x.nhan}{onClick && <span aria-hidden className="ml-1 font-bold">›</span>}
     </Nhan>
   );
 }
