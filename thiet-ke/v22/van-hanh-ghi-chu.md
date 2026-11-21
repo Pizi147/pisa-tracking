@@ -22,7 +22,7 @@ Màn thật: `web/src/modules/worklist/MgmtTasksPage.tsx` (đã đọc: hàng s�
 | Hàng số Quá hạn · Chờ người khác · Cần quyết định · Vừa hoàn thành (7 ngày) | có | GIỮ (dải số chuẩn) |
 | + Giao việc · lọc chi nhánh / Nhóm / Trạng thái / Người phụ trách | có | GIỮ |
 | Bảng một danh sách | có | chia theo nhóm, hàng nhóm gập / mở |
-| 4 nhóm cố định | có | nhóm tự đặt (4 nhóm cũ thành nhóm khởi đầu) + "Không phân loại"; nút **Nhóm…** |
+| 4 nhóm cố định | có | nhóm tự đặt (4 nhóm cũ thành nhóm khởi đầu) + "Không phân loại"; nút **Nhóm…**. **N63 ⑧ (21/11):** 4 nhóm khởi đầu chỉ **Quản trị** sửa / sắp / ẩn, Head không |
 | Người theo dõi | MỘT | nhiều (chip) |
 | Việc con | một cấp | GIỮ một cấp; mỗi việc con thêm người + hạn |
 | Lặp lại · Dừng lặp | — | MỚI |
