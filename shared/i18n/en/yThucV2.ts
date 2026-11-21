@@ -17,7 +17,7 @@ export const EN_Y_THUC_V2 = {
     'When the homeroom teacher saves an action (including a proposal awaiting the Head), the student\'s consultant gets a parent-report task due in 5 days. The consultant writes the Content: what was told and what the parent said.',
   'Xong · 7 ngày': 'Done · 7 days',
   'Thang · {ten}': 'Ladder · {ten}',
-  'Không còn vi phạm nào cần làm': 'No violations left to handle',
+  'Không còn vi phạm nào cần làm': 'No incidents left to handle',
   'Không có mô tả thêm': 'No further description',
   'Ghi đã báo PH gì, PH nói gì': 'Write what was told and what the parent said',
   'Đã báo PH gì, PH nói gì, hẹn gì': 'What was told, what the parent said, any follow-up',

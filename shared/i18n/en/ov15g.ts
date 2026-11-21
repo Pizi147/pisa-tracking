@@ -16,7 +16,7 @@ export const EN_OV15G = {
   'Bài Progress Test chưa làm': 'Progress Tests not yet taken',
   'Bài Final Test chưa làm': 'Final Tests not yet taken',
   'Phân công GV': 'Teacher assignment',
-  'GVCN đổi GV bộ môn': 'Homeroom teacher changed subject teachers',
+  'GVCN đổi GV bộ môn': 'Core teacher changed subject teachers',
   'Tạo lớp': 'Create class',
   'Trạng thái lớp': 'Class status',
   'Mặc định': 'Default',

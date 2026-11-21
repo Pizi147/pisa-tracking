@@ -18,7 +18,7 @@ import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } fr
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon } from './baoPhTvv.ts';
-import { baoTheoDoi, conHieuLuc, dongPhanMeeting, moPhanMeeting } from '../worklist/giaoViec.ts';
+import { baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -652,7 +652,7 @@ export function suaHanPhoiHop(p: Principal, id: number, body: { han?: unknown; h
   const { han, hanCu } = docSuaHan(body);
   const r = loadAction(id);
   /* GV-1 (N58): + người được giao, người giao; việc không hạn đặt hạn được (sửa N34 ②). */
-  if (r.giao_boi == null || r.giao_boi !== p.userId) requireLam(p, r);
+  if (!laNguoiGiao(p, r)) requireLam(p, r);   // AU-2111 P0-01: người giao còn hoạt động + còn vai
   if (r.status !== 'pending') throw badRequest('Việc đã xong hoặc đã bỏ — không sửa hạn.');
   tx(() => {
     /* ponytail: bỏ hạn của việc không hạn ghi `han_moi` = '' (cột NOT NULL) — đọc lại là "không hạn"; tách cột nếu cần. */

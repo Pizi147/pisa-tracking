@@ -33,7 +33,6 @@ export const EN_TUB = {
   'Cần cải thiện': 'Needs improvement',
   'Ngừng hợp tác': 'Stopped working together',
   'Chọn Kết luận': 'Choose a conclusion',
-  'Nhận xét cần ít nhất 10 ký tự.': 'The comment needs at least 10 characters.',
   'Đã sửa nhận xét': 'Comment updated',
   'Đã lưu nhận xét': 'Comment saved',
   'Đã xoá nhận xét': 'Comment deleted',
@@ -99,8 +98,6 @@ export const EN_TUB = {
   'Ghi nhận xét về tutor': 'Comment on a tutor',
   'sau khi rà buổi dạy': 'after reviewing sessions',
   'Bấm tên tutor mở panel › khối <b>Nhận xét</b>.': 'Press the tutor name to open the panel › <b>Comments</b> block.',
-  'Chọn <b>Kết luận</b> (Ổn · Cần cải thiện · Ngừng hợp tác), ghi ít nhất 10 ký tự, <b>Lưu nhận xét</b> — tutor rời Cần chú ý.':
-    'Choose a <b>Conclusion</b> (OK · Needs improvement · Stopped working together), write at least 10 characters, <b>Save comment</b> — the tutor leaves Needs attention.',
   'Sửa / xoá nhận xét của mình trong 24 giờ.': 'Edit / delete your own comment within 24 hours.',
   'Bấm tên một tutor trong bảng bên dưới.': 'Press a tutor name in the table below.',
   'khi có tutor mới hoặc đổi thông tin': 'when there are new tutors or changed details',

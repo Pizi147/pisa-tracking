@@ -42,7 +42,7 @@ export const EN_Y_THUC_V10 = {
   'Bậc · lần này': 'Step · this time',
   'Bậc · đã tới': 'Step · reached',
   'Duyệt thu hồi': 'Approve withdrawal',
-  'GVCN đề xuất hoặc xin thu hồi': 'Homeroom teacher proposed or asked to withdraw',
+  'GVCN đề xuất hoặc xin thu hồi': 'Core teacher proposed or asked to withdraw',
   'Luật bắt buộc xử lý': 'Mandatory action rule',
   'Lần này · hạn': 'This time · due',
   'Lần {nhan}': (b) => `Step ${b.nhan}`,

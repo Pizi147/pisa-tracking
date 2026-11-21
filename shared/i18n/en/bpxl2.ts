@@ -6,7 +6,7 @@ export const EN_BPXL2 = {
   'Chưa đủ lịch MT': 'MT schedule incomplete',   // N63 ⑥: em chưa đủ MT của lộ trình (xếp MT1 xong vẫn đếm nếu còn thiếu)
   'Chưa đủ lịch MT · {n} em': 'MT schedule incomplete · {n} students',
   'Vắng tuần này': 'Absent this week',
-  'Vắng · {n} em': 'Absent · {n} students',
+  'Vắng · {n} em': (b) => `Absent · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
   'Chỉ lớp Fast Track.': 'Fast Track classes only.',   // B2-12: ⓘ phạm vi "Bài chưa nhập điểm" ở dải BPXL
   'Lọc: {x}': 'Filter: {x}',
   'Bỏ lọc {x}': 'Clear filter {x}',

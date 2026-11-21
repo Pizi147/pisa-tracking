@@ -19,7 +19,7 @@ export const EN_CHUONG_V2 = {
   'tài khoản': 'accounts',
   /* GD-19 (mockup ⑪): thanh theo tab, ✓ đã xem, Đã xem hết, gom vi phạm theo lớp. */
   'Đã xem hết {n} tin': (b) => `Marked ${so(b.n, 'update', 'updates')} as seen`,
-  'GVCN không xử lý': 'Homeroom teacher declined',
+  'GVCN không xử lý': 'Core teacher declined',
   'Đã xem: {x}': 'Seen: {x}',
   '{n} vi phạm mới · {lop}: {ten}, {luc}': (b) => `${so(b.n, 'new incident', 'new incidents')} · ${b.lop}: ${b.ten}, ${b.luc}`,
   'Thu gọn {n} vi phạm mới · {lop}': 'Collapse {n} new incidents · {lop}',
