@@ -4,7 +4,7 @@ import { ONgay } from './ONgay.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { HAN_GAN_NGAY, daysBetween, shortDate } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
-import { BadgeHan } from './Nhan.tsx';
+import { BadgeHan, NhanChoGv } from './Nhan.tsx';
 
 /**
  * DÒNG HẠN + SỬA HẠN TẠI CHỖ (HAN-BAO-PH, chủ SP 03/11 N34; mockup `thiet-ke/audit-0311/u10-y-thuc.html` K5 · K8) — dùng chung việc Báo PH và Meeting CX.
@@ -12,9 +12,11 @@ import { BadgeHan } from './Nhan.tsx';
  * không trần; ngày đã qua vẫn nhận (hiện quá hạn). 409 (người khác vừa sửa): ngày đang gõ giữ trong ô + Tải lại. Quyền kiểm ở máy chủ (`suaHanBaoPh`, `suaHanPhoiHop`).
  * GV-2 (N58, mockup v22 G1 / G2b): dòng 2 của khối Phụ trách · Hạn · Theo dõi (`khoi` — hai ô lưới: giá trị · nút "Sửa hạn"); việc không hạn → "Chưa có hạn" · "Đặt hạn".
  */
-export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc, onLuu, onTaiLai, gon, khoi, tamDung }: {
+export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, onLuu, onTaiLai, gon, khoi, tamDung, tinhLai }: {
   /** TL-1 / GV-2: hạn đang tạm dừng (Báo PH "Chờ GV sửa", cờ máy chủ) — không đếm ngày / không tô quá hạn. */
   tamDung?: boolean;
+  /** TL-2 (mockup v22 T6b): hạn đang có do MÁY tính lại sau khi GV gửi lại — ghi "tính lại sau khi GV gửi lại" thay "đã chỉnh". */
+  tinhLai?: boolean;
   /** Hạn hiệu lực (`YYYY-MM-DD`); null = việc không hạn (GV-2: đặt hạn được). */
   han: string | null;
   /** null = việc không có hạn theo luật (Meeting, việc không hạn) — không "mặc định", không "Về mặc định". */
@@ -33,6 +35,8 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc, onLuu, onTaiL
 }) {
   const { homNay } = useNgayNghiepVu();
   const hn = homNay ?? '';
+  /* TL-2 (mockup v22 T3a): hạn đang tạm dừng (chờ GV sửa) — không Sửa hạn; GV gửi lại / TVV rút thì sửa lại được. */
+  const suaDuoc = suaDuocGoc && !tamDung;
   const [sua, setSua] = useState(false);
   const [nhap, setNhap] = useState(han ?? '');
   const [dang, setDang] = useState(false);
@@ -56,12 +60,14 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc, onLuu, onTaiL
   const moSua = () => { setNhap(han ?? hn); setLoi(null); setSua(true); };
   const conNgay = han ? daysBetween(hn, han) : 0;
   /* BADGE-QUA-HAN (chủ SP 15/11): quá hạn badge đỏ · ≤ 3 ngày badge vàng (`BadgeHan`) · xa chữ thường (V22). */
-  const tinh = xong || tamDung || !hn || !han ? null
+  const tinh = tamDung && !xong ? <NhanChoGv>{t('tạm dừng')}</NhanChoGv>
+    : xong || !hn || !han ? null
     : conNgay < 0 ? <BadgeHan muc="qua">{t('quá hạn {n} ngày', { n: -conNgay })}</BadgeHan>
     : conNgay <= HAN_GAN_NGAY ? <BadgeHan muc="gan">{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</BadgeHan>
     : <span className="whitespace-nowrap text-xs text-slate-400">{t('còn {n} ngày', { n: conNgay })}</span>;
   /* Mockup v22 G1: "mặc định" là thẻ viền nhỏ trong khối; dòng hạn cũ (Phối hợp) giữ chữ thường. */
-  const nguon = !han || (!hanMacDinh && !hanChon) ? null : hanChon && hanMacDinh
+  const nguon = tamDung ? null : tinhLai && hanChon ? <span className="text-xs text-slate-500">{t('tính lại sau khi GV gửi lại')}</span>
+    : !han || (!hanMacDinh && !hanChon) ? null : hanChon && hanMacDinh
     ? <span className="text-xs text-slate-500">{t('đã chỉnh · mặc định {ngay}', { ngay: shortDate(hanMacDinh, hn) })}</span>
     : khoi ? <span className="inline-flex h-5 items-center rounded border px-1.5 text-xs text-dim" style={{ borderColor: 'var(--line-strong)' }}>{t('mặc định')}</span>
       : <span className="text-xs text-slate-500">{t('mặc định')}</span>;

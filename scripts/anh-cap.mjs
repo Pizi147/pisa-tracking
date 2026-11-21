@@ -67,6 +67,14 @@ for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
   await ((await nut.count()) ? nut : pw.getByRole('radio', { name: tenRe })).last().click();   // BAO-CAO-PH: lựa chọn dạng radio (ngăn Xuất › Mẫu)
   await pw.waitForTimeout(900);
 }
+// TL-2: MO_PANEL=1 — mở hết chiều cao panel việc (thân tự cuộn) sau các bước bấm, như `chup-panel.mjs`, để ảnh cặp thấy TOÀN panel.
+if (process.env.MO_PANEL) {
+  await pw.locator('section[tabindex]').last().evaluate((el) => {
+    for (let x = el; x && x !== document.body; x = x.parentElement) { x.style.maxHeight = 'none'; x.style.height = 'auto'; x.style.position = x === el ? x.style.position : 'static'; }
+    el.querySelectorAll('*').forEach((c) => { const s = getComputedStyle(c); if (s.overflowY === 'auto' || s.overflowY === 'scroll') { c.style.overflow = 'visible'; c.style.maxHeight = 'none'; } });
+  });
+  await pw.waitForTimeout(300);
+}
 if (!process.env.KEO_TRUOC) await keo();
 await pw.mouse.move(0, 0);   // chuột rời phần tử vừa bấm — ảnh không dính trạng thái rê (gạch chân tên)
 const anhWeb = await pw.screenshot({ fullPage: true });

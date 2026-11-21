@@ -92,6 +92,8 @@ const KICH_BAN = [
   /* RA-GD-0711c: thẻ id 6 không còn trong Chờ duyệt của QL sau seed mới — mở dòng đầu (CV-TAB: tab Chờ bạn duyệt là tab đầu của QL). */
   ['cv-duyet-panel', 2, '/cong-viec?nhom=duyet', async (p) => { await p.locator('[data-hd=cd-dong] button').first().click(); await p.waitForTimeout(800); await p.locator('summary', { hasText: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
   /* UI-CV-TVV: Công việc của TVV (23) — danh sách + panel Báo PH, panel Sau thi. */
+  /* TL-2 (N61): panel Báo PH — một dòng vi phạm mở + ô Lý do trả lại (không gửi). */
+  ['cv-tvv-tra-lai', 23, '/cong-viec?viec=bao-ph%3A8', async (p) => { await p.locator('[aria-label="Vi phạm"] button, [aria-label="Violations"] button').first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /^(Trả lại|Return)$/ }).first().click(); await p.waitForTimeout(500); }],
   ['cv-tvv', 23, '/cong-viec'], ['cv-tvv-bao-ph', 23, '/cong-viec?viec=bao-ph%3A10'], ['cv-tvv-sau-thi', 23, '/cong-viec?viec=buoc_tiep%3A23'],
   /* GV-2: tab Đang theo dõi (TVV) · Công việc BPXL (tab Xếp lịch họp, không Lớp của tôi). */
   ['cv-theo-doi', 27, '/cong-viec?nhom=theo-doi'], ['cv-bpxl', 33, '/cong-viec'],

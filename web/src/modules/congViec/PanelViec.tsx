@@ -32,6 +32,7 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 import { laLo, soCuaKhoa } from './lamTaiCho.ts';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
+import { PanelTraLai } from './PanelTraLai.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -171,6 +172,9 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       /* TINH-HINH (mockup v20 F2): TVV hỏi tình hình — GVCN ghi kết quả tại chỗ. */
       return <PanelHoiTinhHinh key={it.key} id={soCuaKhoa(it.key)!} ten={it.studentName} lop={lop} cauHoi={it.reason} han={it.due}
         onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+    case 'yt_tra_lai':
+      /* TL-2 (mockup v22 T4 / T5): Vi phạm / lần xử lý bị trả lại — GV chọn Sửa rồi gửi lại · Giữ nguyên + trả lời · Xoá (cả lần: Thu hồi) tại chỗ. */
+      return <PanelTraLai key={it.key} id={soCuaKhoa(it.key)!} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'yt_thuc_hien':
       return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} onTiep={onTiep} />;
     case 'khai_bac':

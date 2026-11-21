@@ -41,6 +41,7 @@ import { migratePrOv11e } from '../migrate/prOv11e.ts';
 import { migratePrOv12c } from '../migrate/prOv12c.ts';
 import { migratePrOv12a } from '../migrate/prOv12a.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
+import { theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 import { apMonDangKy } from '../fasttrack/monDangKy.ts';
 import { loadPrincipal } from '../permissions.ts';
@@ -344,6 +345,7 @@ function runSeedTho() {
     /* R1-PHAN-CAP-TEST: dữ liệu nghiệm thu Lịch Test (lớp 60 HV + 6 lớp W3 SEP) — CHỈ khi `SEED_LON=1`; tắt thì seed y nguyên. Cuối cùng để id cũ không đổi. */
     if (process.env.SEED_LON === '1') buildLonDemo(conn, adminId);
     buildBpxlDemo(conn);   // BPXL-1 (N57): tài khoản Chuyên viên Xếp lịch — sau mọi bộ demo để id cũ không đổi
+    theoDoiVaiBaoPh();   // TD-HEAD-CX: TVV / vai demo ghi thẳng SQL sau khi sinh việc Báo PH → đồng bộ Head / CX theo dõi một lần (cùng hàm với migrate)
     capNhatConOChoTatCa();   // TD7b: dữ liệu mẫu ghi thẳng SQL — tính cờ "còn ô chờ điểm" một lần cho mọi lượt
     conn.prepare('UPDATE demo_config SET value = ?, updated_at = ? WHERE key = ?').run(nowIso(), nowIso(), MOC_LICH_SU);   // OV-15g: bộ demo dựng thẳng SQL không có lịch sử — mốc SAU mọi dữ liệu mẫu
     return {

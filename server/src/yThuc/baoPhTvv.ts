@@ -23,7 +23,7 @@ import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
-import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, donViec, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
+import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
 import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
@@ -66,13 +66,17 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
   ).run(m.id, m.studentId, nhan, han, nowIso());
   /* GV-1 (N58): người theo dõi mặc định của Báo PH vi phạm — GVCN lớp em + GV đã ghi vi phạm (nhận tin "Cập nhật" khi có kết quả; thay tin riêng N41). */
   /* MỘT câu (lô xác nhận xử lý: +1 câu / em): GVCN đang hiệu lực của lớp em đang học (nguồn `gvcn` — đổi GVCN thì chuyển theo) + người ghi các vi phạm
-     (`gv_ghi` — giữ); GVCN cũng là người ghi → một dòng `gvcn`. Chỉ người còn hoạt động + còn vai ở chi nhánh của em. */
+     (`gv_ghi` — giữ); GVCN cũng là người ghi → một dòng `gvcn`. Chỉ người còn hoạt động + còn vai ở chi nhánh của em.
+     TD-HEAD-CX (chủ SP 21/11): + Head chi nhánh em (`head`) + CX chi nhánh em / toàn hệ thống (`cx`) — trừ người theo luật (`VAI_THEO_DOI_BAO_PH`); đổi vai / đổi
+     chi nhánh chuyển theo (`theoDoiVaiBaoPh`). Một người nhiều nguồn → nguồn bền nhất (gvcn > gv_ghi > head > cx: hạng ở chữ đầu, MIN rồi bỏ chữ đầu). Vẫn MỘT câu. */
   db().prepare(
     `INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
-     SELECT 'bao_ph', v.id, n.uid, MAX(n.nguon), NULL, ?1 FROM viec_bao_ph v JOIN students s ON s.id = v.student_id JOIN (
-       SELECT x.reported_by AS uid, 'gv_ghi' AS nguon FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id WHERE mv.measure_id = ?2
-       UNION ALL SELECT ta.user_id, 'gvcn' FROM teacher_assignments ta WHERE ta.class_id = (SELECT e.class_id FROM enrollments e WHERE e.student_id = ?3 AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
+     SELECT 'bao_ph', v.id, n.uid, substr(MIN(n.nguon), 2), NULL, ?1 FROM viec_bao_ph v JOIN students s ON s.id = v.student_id JOIN (
+       SELECT x.reported_by AS uid, '2gv_ghi' AS nguon FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id WHERE mv.measure_id = ?2
+       UNION ALL SELECT ta.user_id, '1gvcn' FROM teacher_assignments ta WHERE ta.class_id = (SELECT e.class_id FROM enrollments e WHERE e.student_id = ?3 AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
          AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?4 AND (ta.effective_to IS NULL OR ta.effective_to >= ?4)
+       UNION ALL SELECT ur.user_id, CASE r.key WHEN 'manager' THEN '3head' ELSE '4cx' END FROM viec_bao_ph v2 JOIN students s2 ON s2.id = v2.student_id, ${NGUOI_VAI}
+         WHERE v2.measure_id = ?2 AND ${VAI_THEO_DOI_BAO_PH('v2', 's2')}
      ) n WHERE v.measure_id = ?2 AND n.uid IS NOT NULL AND ${HOAT_DONG_O('n.uid', CHI_NHANH_EM)}
      GROUP BY n.uid
      ON CONFLICT(loai, ref_id, user_id) DO NOTHING`,
@@ -198,7 +202,7 @@ export type ViecBaoPhView = {
   /** G3-13: `ngayLam` = ngày THỰC HIỆN xử lý (ngày nghiệp vụ) — ô ② ghi ngày này, không giờ máy lưu. */
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null;
     /** UI-1 (mockup U10 K5): vi phạm của lần xử lý, mỗi dòng một (ngày · tên) + ghi chú GVCN riêng — panel tách trường. */
-    viPham: { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[]; ghiChu: string | null;
+    viPham: ViPhamXuLy[]; ghiChu: string | null;
     /** VI-PHAM-MO: lần xử lý nguồn của `ghiChu` (nút Dịch) — null khi ghi chú là của Meeting / tình hình. */
     xuLyId?: number | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
@@ -210,14 +214,19 @@ export type ViecBaoPhView = {
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
-function viPhamXuLy(measureId: number | null): { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[] {
+type ViPhamXuLy = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; nguoiGhi: string | null; ghiLuc: string | null; daSua: boolean };
+function viPhamXuLy(measureId: number | null): ViPhamXuLy[] {
   if (!measureId) return [];
+  /* TL-2 (mockup v22 T1 / T6b): người ghi + lúc ghi + "đã sửa" (GV sửa rồi gửi lại) đọc CÙNG câu — panel mở chi tiết vi phạm không cần request thêm. */
   return (db().prepare(
-    `SELECT x.id, x.ten, x.description, x.category, x.occurred_on, x.skill FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
+    `SELECT x.id, x.ten, x.description, x.category, x.occurred_on, x.skill, x.created_at, u.full_name AS nguoi_ghi,
+        EXISTS (SELECT 1 FROM violation_history h WHERE h.violation_id = x.id AND h.field = 'tra_lai_da_sua') AS da_sua
+      FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id LEFT JOIN users u ON u.id = x.reported_by
       WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
   ).all(measureId) as any[]).map((r) => {
     const tm = tachTenMoTa(r.ten, r.description, r.category);   // VI-PHAM-MO: cùng chữ với các danh sách vi phạm khác; mô tả mở tại chỗ, không request thêm
-    return { id: r.id as number, ngay: r.occurred_on as string, ten: tm.ten || ((VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.category] ?? String(r.category)), moTa: tm.moTa, skill: r.skill ?? null };
+    return { id: r.id as number, ngay: r.occurred_on as string, ten: tm.ten || ((VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.category] ?? String(r.category)), moTa: tm.moTa, skill: r.skill ?? null,
+      nguoiGhi: r.nguoi_ghi ?? null, ghiLuc: r.created_at ?? null, daSua: !!r.da_sua };
   });
 }
 function noiDungXuLy(vp: { ngay: string; ten: string }[], note: string | null): string | null {

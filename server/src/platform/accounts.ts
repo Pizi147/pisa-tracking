@@ -6,7 +6,7 @@ import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } f
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
-import { donGiaoHetHieuLuc } from '../worklist/giaoViec.ts';
+import { VAI_THEO_DOI, donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { duocSuaKyNang } from '../giaoVien/phamVi.ts';
 
 /**
@@ -246,6 +246,7 @@ export function approve(p: Principal, userId: number, o: {
 
   return tx(() => {
     grantRole(conn, userId, role, codes);
+    if (VAI_THEO_DOI.has(role)) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: duyệt thành Head / CX chi nhánh → theo dõi Báo PH vi phạm đang mở của chi nhánh
     conn
       .prepare(
         `UPDATE users SET approval_state = 'approved', approved_by = ?, approved_at = ?,
@@ -367,6 +368,7 @@ export function createAccount(p: Principal, input: {
       .run(nextUserCode(conn), fullName, email, input.title ?? null, input.phone ?? null, hash, salt, nowIso());
     const userId = Number(info.lastInsertRowid);
     for (const r of roles) grantRole(conn, userId, r.role, r.branches);
+    if (roles.some((r) => VAI_THEO_DOI.has(r.role))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX
     setSkills(conn, userId, input.skills ?? []);
     writeAudit({
       actorUserId: p.userId, action: 'user_created', entityType: 'users', entityId: userId, entityLabel: fullName,
@@ -413,6 +415,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
   return tx(() => {
     conn.prepare("UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'").run(userId);
     for (const r of roles) grantRole(conn, userId, r.role, r.branches ?? []);
+    if ([...cu.map((g) => g.key), ...roles.map((r) => r.role)].some((k) => VAI_THEO_DOI.has(k))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: thôi / thành Head · CX → dòng theo dõi chuyển theo; không có vai này cả trước lẫn sau → bỏ qua
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): hết vai ở chi nhánh của việc được giao → việc về người theo luật (có lịch sử)
     writeAudit({
       actorUserId: p.userId, action: 'user_roles_set', entityType: 'users', entityId: userId,

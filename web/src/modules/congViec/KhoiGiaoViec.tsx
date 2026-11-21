@@ -18,13 +18,14 @@ import { lucVn } from './gioVn.ts';
  * Meeting, Phối hợp SOS một việc, Báo PH kết quả Test, Hỏi tình hình, phần Meeting). Một nguồn: `GET /giao-viec/:loai/:id`; nút theo cờ máy chủ
  * (`coTheDoiNguoi` · `coTheSuaHan` · `coTheSuaTheoDoi`), không tự suy. Hạn = `DongHan` (một chỗ sửa hạn). Mỗi thao tác máy chủ trả lại khối → vẽ ngay, không GET thêm.
  */
-export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting';
+export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting' | 'tra_lai';
 type Nguoi = { id: number; ten: string | null };
 export type KhoiGv = {
   loai: LoaiGiao; id: number; tieuDe: string; studentId: number; mo: boolean; branchId: number | null;
   phuTrach: Nguoi[]; macDinh: Nguoi[]; duocGiao: boolean; giaoBoi: Nguoi | null; giaoLuc: string | null;
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   /** Báo PH "Chờ GV sửa" (TL-1): hạn tạm dừng — không tô quá hạn. */ tamDung?: boolean;
+  /** TL-2: hạn do máy tính lại sau khi GV gửi lại (không "đã chỉnh"). */ hanTinhLai?: boolean;
   theoDoi: (Nguoi & { nguon: string })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
   /** GV-3 (N62): Mô tả tuỳ chọn — `noiDung` gửi lại làm `moTaCu` khi sửa (so-và-đổi); người theo dõi chỉ đọc (`coTheSuaMoTa` của máy chủ). */
   moTa: { noiDung: string; suaBoi: string | null; suaLuc: string } | null; coTheSuaMoTa: boolean;
@@ -55,12 +56,13 @@ const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border 
 type Loi = { chu: string; xungDot: boolean };
 const loiCua = (e: any): Loi => ({ chu: e?.message ?? t('Không lưu được'), xungDot: e instanceof ApiError && e.status === 409 });
 
-export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi }: {
+export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, onDaDoi }: {
   g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
   /** Phần Meeting (G8): ô hẹp hơn, chỉ hai dòng Phụ trách · Hạn — Theo dõi gộp một dòng cho cả việc (`DongTheoDoiChung`). */
   gon?: boolean;
   /** Không vẽ dòng Phụ trách (phần Meeting của người khác — gọn một dòng). */ chiHan?: boolean;
   anTheoDoi?: boolean;
+  /** TL-2 (mockup v22 T4a, ghi chú mục 3): việc "Vi phạm bị trả lại" về đúng người ghi — không nút "Đổi" trên web. */ anDoi?: boolean;
   /** Đổi người / hạn xong — nơi gọi báo danh sách (dòng việc rời "Của tôi"). */
   onDaDoi?: () => void;
 }) {
@@ -110,12 +112,12 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi }
             {theGiao}
           </div>
           <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-            {g.coTheDoiNguoi && <button ref={nutDoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-haspopup="dialog" aria-expanded={hop}
+            {g.coTheDoiNguoi && !anDoi && <button ref={nutDoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-haspopup="dialog" aria-expanded={hop}
               onClick={() => setHop(true)}>{t('Đổi')}</button>}
           </div>
         </>}
         <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
-        <DongHan khoi tamDung={g.tamDung} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+        <DongHan khoi tamDung={g.tamDung} tinhLai={g.hanTinhLai} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
         {(g.moTa || (g.coTheSuaMoTa && !chiHan)) && <DongMoTa g={g} daDoi={daDoi} reload={reload} />}
         {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} />}
       </div>
@@ -249,7 +251,7 @@ function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: R
  * HỘP NHỎ nổi ngay dưới khối (mockup G3a / G4a): đặt tuyệt đối trong khối (không portal — danh sách đổi cao không làm hộp nhảy), mép phải thẳng nút.
  * Bấm ngoài / Esc (khi ô chọn người không tự xử lý Esc) → đóng, focus về nút mở. < 640 px: hết bề ngang khối.
  */
-function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; onDong: () => void; children: ReactNode }) {
+export function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; onDong: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const bam = useBamNgoai(true, onDong, ref);
   /* Hộp mở sát đáy vùng cuộn của panel → cuộn vừa đủ để thấy cả hộp (danh sách + chân Giao). */
@@ -462,6 +464,8 @@ export function dongLichSuGiao(g: KhoiGv | null | undefined, hn: string, ten?: s
     if (l.truong === 'phu_trach') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Đổi người phụ trách')}`, phu: [`${l.cuTen ?? md} → ${l.moiTen ?? md}`] };
     if (l.truong === 'theo_doi') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.moi ? t('Thêm theo dõi') : t('Bỏ theo dõi')}`, phu: [(l.moiTen ?? l.cuTen) ?? ''] };
     if (l.truong === 'han') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Sửa hạn')}`, phu: [`${ngay(l.cu)} → ${ngay(l.moi)}`] };
+    /* TL-2: hạn do máy tính lại khi GV gửi lại / trả lời (`mac_dinh` 2) — người = GV thao tác. */
+    if (l.truong === 'han_tinh_lai') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Hạn tính lại sau khi GV gửi lại')}`, phu: [`${ngay(l.cu)} → ${ngay(l.moi)}`] };
     /* GV-3 (N62): mô tả — dòng phụ là chữ mới (cắt 160 ký tự); bỏ mô tả → chữ cũ. */
     if (l.truong === 'mo_ta') {
       const chu = (l.moi ?? l.cu ?? '').replace(/\s+/g, ' ');

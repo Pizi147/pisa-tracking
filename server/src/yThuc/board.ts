@@ -186,7 +186,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     for (const r of conn.prepare(
       `SELECT m.id, COALESCE(m.performer_name, pu.full_name) AS nguoi,
               (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep,
-              b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, b.tra_lai_id AS bp_cho, m.student_id, s.consultant_user_id,
+              b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = b.id AND b.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, b.tra_lai_id AS bp_cho, m.student_id, s.consultant_user_id,
               (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id AND l.ket_qua = 'da_bao') AS bp_ngay,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id) AS bp_so,
               (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
@@ -199,7 +199,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
   for (let i = 0; i < thIds.length; i += 400) {
     const lo = thIds.slice(i, i + 400);
     for (const r of conn.prepare(
-      `SELECT v.bao_lai_cua AS id, v.id AS bp_id, v.trang_thai AS bp_tt, v.han AS bp_han, v.han_chon AS bp_han_chon, v.tra_lai_id AS bp_cho, v.student_id, s.consultant_user_id,
+      `SELECT v.bao_lai_cua AS id, v.id AS bp_id, v.trang_thai AS bp_tt, v.han AS bp_han, v.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, v.tra_lai_id AS bp_cho, v.student_id, s.consultant_user_id,
               (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS bp_ngay,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS bp_so,
               (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
@@ -213,7 +213,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     const han = r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han);
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
     phu.get(r.id)![r.laBaoLai ? 'baoLai' : 'baoPh'] = {
-      id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && quaHanBaoPh(han, homNay, r.bp_cho), daChinh: r.bp_han_chon != null, ...(r.bp_cho ? { choGvSua: true as const } : {}),
+      id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && quaHanBaoPh(han, homNay, r.bp_cho), daChinh: r.bp_han_chon != null && r.bp_han_lan !== 2,   /* TL-2: hạn máy tính lại (mac_dinh 2) không là "đã chỉnh" */ ...(r.bp_cho ? { choGvSua: true as const } : {}),
       coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       coTheSuaHan: r.bp_tt === 'mo' && !!o.p && coTheSuaHan(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
@@ -340,7 +340,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
   const khoang = khoangTamDung(ids);
   theoLo(ids, (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT v.id, v.student_id, v.nhan, v.han, v.han_chon, v.trang_thai, v.tra_lai_id, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
+      `SELECT v.id, v.student_id, v.nhan, v.han, v.han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS han_lan, v.trang_thai, v.tra_lai_id, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT l.ngay FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.id DESC LIMIT 1) AS ngay_xong
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
@@ -351,7 +351,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
         nhanTrangThai: r.trang_thai === 'mo' && r.tra_lai_id ? CHO_GV_SUA : nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && quaHanBaoPh(han, homNay, r.tra_lai_id), ngayXong: r.ngay_xong ?? null,
         coTheGhi: r.trang_thai === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
-        daChinh: r.han_chon != null,
+        daChinh: r.han_chon != null && r.han_lan !== 2,
       });
     }
   });
