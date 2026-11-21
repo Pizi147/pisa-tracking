@@ -92,6 +92,12 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     const xong2 = mg.updateMgmtTask(gvcn, coHv.id, { progress: 'done' });
     mg.editMgmtTask(ql, coHv.id, { due: addDays(TODAY, 5), phienBan: xong2.updatedAt });
     assert((await loiCua(() => mg.updateMgmtTask(gvcn, coHv.id, { progress: 'not_started', phienBan: xong2.updatedAt })))?.status === 409, 'Hoàn tác sau khi người khác sửa → 409');
+    /* Phiên bản đơn điệu (`lucMoi`): trước đây hai lần ghi cùng một ms ra cùng `updatedAt` → bỏ lọt 409 (phép trên chập chờn khi máy bận). Lặp sát nhau: luôn 409. */
+    for (let i = 0; i < 20; i++) {
+      const a = mg.updateMgmtTask(gvcn, coHv.id, { progress: i % 2 ? 'done' : 'not_started' });
+      mg.editMgmtTask(ql, coHv.id, { due: addDays(TODAY, 6 + (i % 3)), phienBan: a.updatedAt });
+      assert((await loiCua(() => mg.updateMgmtTask(gvcn, coHv.id, { progress: 'doing', phienBan: a.updatedAt })))?.status === 409, `lặp ${i}: sửa chồng → 409`);
+    }
     const cha = tao(ql, { assigneeUserId: gvcn.userId });
     tao(ql, { parentTaskId: cha.id, title: 'Con chưa xong', assigneeUserId: gvbm.userId });
     const e = await loiCua(() => mg.updateMgmtTask(gvcn, cha.id, { progress: 'done' }));
