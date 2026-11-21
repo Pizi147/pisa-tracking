@@ -2249,6 +2249,8 @@ export const TRAN_GHI_LO = {
   luuDiemFtChotLuot: 196, luuDiemFtChotLuotDong: 301,
   luuDiemThuong: 89, luuDiemThuongDong: 147,
   /** TD-HEAD-CX: ghi một vi phạm + POST /students/:id/y-thuc/xu-ly (sinh việc Báo PH + người theo dõi mặc định MỘT câu, gồm Head / CX); đo trong prGiaoViec TD-HEAD-CX. */
+  /** TD-HEAD-CX (rà PTA (3)): sửa cả lớp bỏ TVV mọi em MB FT 101 (đồng bộ Head / CX một lần cuối lô) · lưu vai một tài khoản; đo trong prGiaoViec. */
+  suaTvvCaLop: 150, luuVai: 27,   // đo 21/11 (seed): bỏ TVV 10 em 115 câu (main 113 — không đồng bộ; nếu đồng bộ từng em: 133) → max(115 + 10, ⌈115 × 1,3⌉); lưu vai 14 câu (không Head / CX — bỏ qua đồng bộ) · 17 câu (có CX) → 17 + 10
   xacNhanXuLy: 123, xacNhanXuLyDong: 103,   // đo 21/11 (seed, ngoài request): 94 câu, 79 dòng — TRƯỚC = SAU (Head / CX nằm trong câu INSERT sẵn có) → max(94 + 10, ⌈94 × 1,3⌉), ⌈79 × 1,3⌉
   /** LG-12: POST /violations/:id/khong-xu-ly — đọc vi phạm + trạng thái Ý thức em (trước + sau, trong giao dịch) + ghi cột, phản hồi, hạn, lịch sử, nhật ký, tin; đo trong prYt4 LG-12 (3). */
   khongXuLy: 37,   // đo 15/11 (seed, ngoài request — không bộ nhớ request): 27 câu → max(27 + 10, ⌈27 × 1,3⌉)

@@ -96,6 +96,6 @@ export function migratePrGiaoViec(conn: any, applied: string[]) {
      người đã bỏ theo dõi không bị thêm lại. */
   if (co(conn, 'viec_bao_ph') && co(conn, 'viec_theo_doi') && co(conn, 'viec_giao_lan')) {
     const n = theoDoiVaiBaoPh();
-    if (n) applied.push(`TD-HEAD-CX: ${n} dòng người theo dõi Head / CX của Báo PH vi phạm đang mở (thêm bù / bỏ dòng hết vai).`);
+    if (n) applied.push(`TD-HEAD-CX: ${n} dòng người theo dõi Head / CX của Báo PH vi phạm (thêm bù việc đang mở / bỏ dòng hết vai / dọn việc đóng quá 7 ngày).`);
   }
 }

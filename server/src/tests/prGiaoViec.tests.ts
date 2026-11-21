@@ -490,6 +490,70 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(sau.dong <= truoc.dong + 30 * 2, `dòng: ${truoc.dong} → ${sau.dong} — mỗi việc thêm ≤ 2 dòng`);
   }));
 
+  await checkAsync('TD-HEAD-CX (rà PTA) · (1) dòng Head tự thêm khi giao việc không bị đồng bộ / migrate xoá, Hoàn tác chạy · (2) Head kiêm CX là người theo luật → không theo dõi · (5) khôi phục tài khoản · tin "Cập nhật" tới Head / CX, không vào số việc · (4) dọn dòng việc đóng > 7 ngày', () => thu(async () => {
+    const { migratePrGiaoViec: mig } = await import('../migrate/prGiaoViec.ts');
+    /* (1) Em không TVV → Head MB là người theo luật; Head giao cho Admin → Head theo dõi (nguon head, them_boi = Head). */
+    const sid = moiEm(); conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid);
+    const { id } = xuLy(sid);
+    giao(ql, 'bao_ph', id, admin.userId);
+    const dongHead = () => mot(`SELECT nguon, them_boi FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`, id, ql.userId);
+    assert(dongHead()?.them_boi === ql.userId, `Head giao → theo dõi do Head thêm: ${JSON.stringify(dongHead())}`);
+    gv.theoDoiVaiBaoPh(); mig(conn, []); gv.theoDoiVaiBaoPh({ userId: ql.userId }); gv.theoDoiVaiBaoPh({ studentIds: [sid] });
+    assert(dongHead()?.them_boi === ql.userId, 'đồng bộ + migrate: dòng Head tự thêm còn nguyên');
+    const k = gv.hoanTacGiao(ql, 'bao_ph', id);
+    assert(!k.duocGiao, `Hoàn tác vẫn chạy: ${JSON.stringify(k.phuTrach)}`);
+    /* (2) Head kiêm CX, em không TVV → không theo dõi (lúc sinh + lúc đồng bộ). */
+    const hc = taiKhoan('headcx', 'manager');
+    accounts.setRoles(P.admin, hc.userId, [{ role: 'manager', branches: ['MB'] }, { role: 'cx', branches: ['MB'] }]);
+    const sid2 = moiEm(); conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid2);
+    const id2 = xuLy(sid2).id;
+    gv.theoDoiVaiBaoPh();
+    assert(!theoDoi('bao_ph', id2).some((r) => r.user_id === hc.userId), `Head kiêm CX (người theo luật) không theo dõi: ${JSON.stringify(theoDoi('bao_ph', id2))}`);
+    assert(theoDoi('bao_ph', id2).some((r) => r.user_id === cx.userId && r.nguon === 'cx'), 'CX thường vẫn theo dõi');
+    /* (5) Khôi phục tài khoản: việc sinh trong lúc bị xoá được theo dõi sau khôi phục. */
+    const cxXoa = taiKhoan('cxxoa', 'cx');
+    xoaTK.xoaTaiKhoan(P.admin, cxXoa.userId);
+    const sid3 = moiEm(); const id3 = xuLy(sid3).id;
+    assert(!theoDoi('bao_ph', id3).some((r) => r.user_id === cxXoa.userId), 'đang bị xoá: không theo dõi');
+    xoaTK.khoiPhucTaiKhoan(P.admin, cxXoa.userId);
+    assert(theoDoi('bao_ph', id3).some((r) => r.user_id === cxXoa.userId && r.nguon === 'cx'), 'khôi phục → theo dõi việc sinh lúc bị xoá');
+    /* Tin "Cập nhật" tới Head + CX; không thành việc, không vào số việc. */
+    const soViec = (u: any) => items(u).filter((x) => x.mine).length;
+    const truocQl = soViec(ql), truocCx = soViec(cx);
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [id3], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em' });
+    const nhan = tin(`gv:bao_ph:${id3}:ket_qua:`);
+    assert(nhan.includes(ql.userId) && nhan.includes(cx.userId), `tin Cập nhật: ${JSON.stringify(nhan)}`);
+    assert(soViec(ql) === truocQl && soViec(cx) === truocCx && !items(ql).some((x) => x.key === `bao-ph:${id3}` && x.mine), 'Head / CX: không vào số việc');
+    /* (4) Việc đóng quá 7 ngày: đồng bộ không đối số dọn dòng tự động; dòng người dùng thêm giữ. */
+    conn.prepare("UPDATE viec_bao_ph_lan SET ghi_luc = '2020-01-01T00:00:00.000Z' WHERE viec_id = ?").run(id3);
+    gv.theoDoiVaiBaoPh();
+    assert(!theoDoi('bao_ph', id3).some((r) => r.nguon === 'head' || r.nguon === 'cx'), `dọn dòng tự động việc đóng > 7 ngày: ${JSON.stringify(theoDoi('bao_ph', id3))}`);
+    assert(theoDoi('bao_ph', id3).some((r) => r.nguon === 'gvcn'), 'dòng nguồn khác giữ');
+  }));
+
+  await checkAsync('TD-HEAD-CX (rà PTA (3)) · sửa TVV cả lớp: đồng bộ Head / CX MỘT lần cho lô (≤ trần), đúng kết quả; đổi vai người không có vai Head / CX: 0 câu đồng bộ', () => thu(async () => {
+    const suaCaLop: any = await import('../classes/suaCaLop.ts');
+    const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+    const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+    const ems = [moiEm(), moiEm(), moiEm()]; const viec = ems.map((sid) => xuLy(sid).id);
+    const tatCa = [...ems, ...(hang(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id NOT IN (${ems.join(',')}) ORDER BY student_id LIMIT 7`, lop) as any[]).map((r) => r.student_id as number)];   // tối đa 10 em một lần lưu
+    const c0 = soCauSql();
+    suaCaLop.luuSuaCaLop(P.mbManager, lop, { rows: tatCa.map((studentId) => ({ studentId, consultantUserId: null })) });
+    const cau = soCauSql() - c0;
+    assert(cau <= TRAN_GHI_LO.suaTvvCaLop, `bỏ TVV ${tatCa.length} em: ${cau} câu > trần ${TRAN_GHI_LO.suaTvvCaLop}`);
+    assert(viec.every((v) => !theoDoi('bao_ph', v).some((r) => r.nguon === 'head')), 'bỏ TVV cả lớp → Head (người theo luật) thôi theo dõi');
+    suaCaLop.luuSuaCaLop(P.mbManager, lop, { rows: ems.map((studentId) => ({ studentId, consultantUserId: tvv.userId })) });
+    assert(viec.every((v) => theoDoi('bao_ph', v).some((r) => r.user_id === ql.userId && r.nguon === 'head')), 'gán lại TVV → Head theo dõi');
+    const gvThuong = taiKhoan('gvthuong', 'teacher');
+    const c1 = soCauSql();
+    accounts.setRoles(P.admin, gvThuong.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    const c2 = soCauSql();
+    accounts.setRoles(P.admin, gvThuong.userId, [{ role: 'teacher', branches: ['MB'] }, { role: 'cx', branches: ['MB'] }]);
+    const c3 = soCauSql();
+    assert(c3 - c2 >= c2 - c1 + 2, `đổi vai không có Head / CX: bỏ qua đồng bộ (${c2 - c1} câu; có CX: ${c3 - c2} câu)`);
+    assert(c2 - c1 <= TRAN_GHI_LO.luuVai && c3 - c2 <= TRAN_GHI_LO.luuVai, `lưu vai: ${c2 - c1} / ${c3 - c2} câu > trần ${TRAN_GHI_LO.luuVai}`);
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

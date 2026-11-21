@@ -438,37 +438,68 @@ export function sauDoiChiNhanhEm(studentIds: readonly number[], boi: number | nu
 
 /**
  * TD-HEAD-CX (N58 bổ sung, chủ SP 21/11): việc Báo PH sinh từ lần xử lý vi phạm (`measure_id`) — Head (vai `manager` ĐÚNG chi nhánh em) + CX (chi nhánh em
- * hoặc toàn hệ thống) theo dõi mặc định: chỉ xem + tin "Cập nhật", không thành việc. Trừ người theo luật: TVV của em; em chưa có TVV → Head là người theo luật
- * (`nguoiGiuBaoPh`) nên không thêm Head. Bí danh: `ur` `r` `u` (vai · người — `NGUOI_VAI`), `v` `s` (việc · em) truyền vào.
+ * hoặc toàn hệ thống) theo dõi mặc định: chỉ xem + tin "Cập nhật", không thành việc. Trừ người theo luật (`nguoiGiuBaoPh`): TVV của em; em chưa có TVV → Head
+ * chi nhánh em / Head toàn hệ thống là người theo luật nên không thêm — kể cả khi người đó kiêm CX (rà PTA (2)). Bí danh: `ur` `r` `u` (vai · người —
+ * `NGUOI_VAI`), `v` `s` (việc · em) truyền vào.
  */
-export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
-  AND ((r.key = 'manager' AND ${s}.consultant_user_id IS NOT NULL AND ur.branch_id = ${CN_EM(`${v}.student_id`)})
-    OR (r.key = 'cx' AND (ur.branch_id IS NULL OR ur.branch_id = ${CN_EM(`${v}.student_id`)})))`;
+export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => {
+  const cn = CN_EM(`${v}.student_id`);
+  return `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
+  AND ((r.key = 'manager' AND ${s}.consultant_user_id IS NOT NULL AND ur.branch_id = ${cn})
+    OR (r.key = 'cx' AND (ur.branch_id IS NULL OR ur.branch_id = ${cn})
+      AND NOT (${s}.consultant_user_id IS NULL AND EXISTS (SELECT 1 FROM user_roles m_ JOIN roles mr_ ON mr_.id = m_.role_id WHERE m_.user_id = ur.user_id
+        AND mr_.key = 'manager' AND m_.status = 'active' AND (m_.branch_id IS NULL OR m_.branch_id = ${cn})))))`;
+};
 export const NGUOI_VAI = 'user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id';
+/** Vai làm thay đổi người theo dõi Head / CX — đổi vai của người KHÔNG có vai này cả trước lẫn sau thì không cần đồng bộ (rà PTA (3)). */
+export const VAI_THEO_DOI = new Set(['manager', 'cx']);
 /** Người đã tự bỏ / bị bỏ theo dõi việc (`boTheoDoi` ghi lịch sử) không bị thêm lại khi đồng bộ. */
 const DA_BO_THEO_DOI = (v: string) => `NOT EXISTS (SELECT 1 FROM viec_giao_lan l_ WHERE l_.loai = 'bao_ph' AND l_.ref_id = ${v}.id AND l_.truong = 'theo_doi'
   AND l_.cu = CAST(ur.user_id AS TEXT) AND l_.moi IS NULL)`;
 
+/** Lô đang gom (sửa cả lớp gọi `updateStudent` từng em): đổi TVV chỉ ghi id em, đồng bộ MỘT lần cuối lô (rà PTA (3)). */
+let loEm: Set<number> | null = null;
+export function trongLoTheoDoi<T>(fn: () => T): T {
+  if (loEm) return fn();
+  loEm = new Set();
+  try {
+    const kq = fn();
+    const ids = [...loEm];
+    loEm = null;
+    theoDoiVaiBaoPh({ studentIds: ids });
+    return kq;
+  } finally { loEm = null; }
+}
+
 /**
- * TRONG tx: đồng bộ dòng `head` / `cx` của việc Báo PH vi phạm còn mở — đổi vai / tạo / duyệt tài khoản (`userId`), em đổi chi nhánh / đổi TVV
- * (`studentIds`), migrate (không đối số, tự lành). HAI câu cho cả tập: bỏ dòng hết điều kiện · thêm dòng còn thiếu (người giữ vai đọc ngay trong câu).
+ * TRONG tx: đồng bộ dòng `head` / `cx` TỰ ĐỘNG (`them_boi IS NULL`) của việc Báo PH vi phạm còn mở — đổi vai / tạo / duyệt / khôi phục tài khoản (`userId`),
+ * em đổi chi nhánh / đổi TVV / đổi GVCN (`studentIds`), migrate (không đối số, tự lành). HAI câu cho cả tập: bỏ dòng hết điều kiện · thêm dòng còn thiếu
+ * (người giữ vai đọc ngay trong câu). Dòng người dùng thêm (Head giao việc → theo dõi `nguon='head'`, `them_boi` = Head — `giao`) KHÔNG bị bỏ (rà PTA (1)).
+ * Không đối số: thêm câu dọn dòng tự động của việc đã đóng quá 7 ngày (tab Đang theo dõi không tích mãi — rà PTA (4)).
  */
 export function theoDoiVaiBaoPh(o: { userId?: number; studentIds?: readonly number[] } = {}): number {
   if (o.studentIds && !o.studentIds.length) return 0;
+  if (o.studentIds && loEm) { for (const id of o.studentIds) loEm.add(id); return 0; }
   const ps = o.userId != null ? [o.userId] : o.studentIds ? [JSON.stringify(o.studentIds)] : [];
-  const phamVi = (uid: string, sid: string) => (o.userId != null ? `${uid} = ?` : o.studentIds ? `${sid} IN (${DS_JSON})` : '1');
-  const bo = db().prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND nguon IN ('head', 'cx')
-      AND ${phamVi('user_id', '(SELECT student_id FROM viec_bao_ph WHERE id = viec_theo_doi.ref_id)')}
-      AND ref_id IN (SELECT id FROM viec_bao_ph WHERE trang_thai = 'mo' AND measure_id IS NOT NULL)
+  /* Phạm vi đặt TRONG câu con theo chỉ mục: em → `idx_viec_bao_ph_hv` (student_id, trang_thai); người → dòng của người đó (`idx_viec_theo_doi_nguoi`) + tra id việc. */
+  const viecMo = o.studentIds ? `SELECT id FROM viec_bao_ph WHERE student_id IN (${DS_JSON}) AND trang_thai = 'mo' AND measure_id IS NOT NULL`
+    : `SELECT id FROM viec_bao_ph WHERE trang_thai = 'mo' AND measure_id IS NOT NULL`;
+  const bo = db().prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND nguon IN ('head', 'cx') AND them_boi IS NULL
+      AND ${o.userId != null ? `user_id = ? AND EXISTS (SELECT 1 FROM viec_bao_ph b_ WHERE b_.id = viec_theo_doi.ref_id AND b_.trang_thai = 'mo' AND b_.measure_id IS NOT NULL)` : `ref_id IN (${viecMo})`}
       AND NOT EXISTS (SELECT 1 FROM viec_bao_ph v JOIN students s ON s.id = v.student_id, ${NGUOI_VAI} WHERE v.id = viec_theo_doi.ref_id AND ur.user_id = viec_theo_doi.user_id
         AND r.key = (CASE viec_theo_doi.nguon WHEN 'head' THEN 'manager' ELSE 'cx' END) AND ${VAI_THEO_DOI_BAO_PH('v', 's')})`).run(...ps).changes;
-  /* Một người vừa Head vừa CX → một dòng `head` (MAX). */
+  /* Một người vừa Head vừa CX → một dòng `head` (MAX). Người phụ trách hiện tại của việc không thành người theo dõi. */
   const them = db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
       SELECT 'bao_ph', v.id, ur.user_id, MAX(CASE r.key WHEN 'manager' THEN 'head' ELSE 'cx' END), NULL, ? FROM viec_bao_ph v JOIN students s ON s.id = v.student_id, ${NGUOI_VAI}
-       WHERE v.trang_thai = 'mo' AND v.measure_id IS NOT NULL AND ${phamVi('ur.user_id', 'v.student_id')} AND ${VAI_THEO_DOI_BAO_PH('v', 's')} AND ${DA_BO_THEO_DOI('v')}
+       WHERE v.trang_thai = 'mo' AND v.measure_id IS NOT NULL
+         AND ${o.userId != null ? 'ur.user_id = ?' : o.studentIds ? `v.student_id IN (${DS_JSON})` : '1'}
+         AND ur.user_id IS NOT v.phu_trach_id AND ${VAI_THEO_DOI_BAO_PH('v', 's')} AND ${DA_BO_THEO_DOI('v')}
        GROUP BY v.id, ur.user_id
       ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(nowIso(), ...ps).changes;
-  return bo + them;
+  const don = o.userId == null && !o.studentIds ? db().prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND nguon IN ('head', 'cx') AND them_boi IS NULL
+      AND ref_id IN (SELECT id FROM viec_bao_ph b_ WHERE b_.trang_thai != 'mo'
+        AND COALESCE(b_.bo_luc, (SELECT MAX(l.ghi_luc) FROM viec_bao_ph_lan l WHERE l.viec_id = b_.id), b_.tao_luc) < ?)`).run(new Date(Date.now() - 7 * 86_400_000).toISOString()).changes : 0;
+  return bo + them + don;
 }
 
 // ---------------------------------------------------------------- hạn
@@ -719,9 +750,11 @@ export function theoGvcnHienTai(ids: readonly number[]): void {
   capNhatNguoiNhanTraLai(ids, null);   // TL-1: cả lần xử lý / người ghi hết vai → GVCN hiện tại
   const G = `(SELECT ta.user_id FROM enrollments e JOIN teacher_assignments ta ON ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active'
       AND ta.effective_from <= '${ngay}' AND (ta.effective_to IS NULL OR ta.effective_to >= '${ngay}') WHERE e.student_id = ${SID_THEO_DOI} AND e.status = 'active' ORDER BY e.id DESC, ta.id LIMIT 1)`;
-  db().prepare(`UPDATE OR IGNORE viec_theo_doi SET user_id = ${G} WHERE id IN (${THEO_DOI_MO_CUA_EM('gvcn', EM_1)}) AND ${G} IS NOT NULL AND ${G} != user_id`).run(json);
+  const doi = db().prepare(`UPDATE OR IGNORE viec_theo_doi SET user_id = ${G} WHERE id IN (${THEO_DOI_MO_CUA_EM('gvcn', EM_1)}) AND ${G} IS NOT NULL AND ${G} != user_id`).run(json).changes;
   /* GVCN mới đã theo dõi sẵn (UPDATE OR IGNORE bỏ qua) → bỏ dòng `gvcn` của GVCN cũ. */
-  db().prepare(`DELETE FROM viec_theo_doi WHERE id IN (${THEO_DOI_MO_CUA_EM('gvcn', EM_1)}) AND ${G} IS NOT NULL AND ${G} != user_id`).run(json);
+  const bo = db().prepare(`DELETE FROM viec_theo_doi WHERE id IN (${THEO_DOI_MO_CUA_EM('gvcn', EM_1)}) AND ${G} IS NOT NULL AND ${G} != user_id`).run(json).changes;
+  /* TD-HEAD-CX (rà PTA (5)): GVCN cũ kiêm Head / CX mất dòng `gvcn` → đồng bộ lại ngay (chỉ khi có dòng đổi). */
+  if (doi + bo) theoDoiVaiBaoPh({ studentIds: ids });
 }
 /** Đổi GVCN của lớp (`ghiPhanCong`). */
 export const theoGvcnCuaLop = (classId: number) => theoGvcnCacLop([classId]);
@@ -985,6 +1018,9 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
                AND ta.effective_from <= ?2 AND (ta.effective_to IS NULL OR ta.effective_to >= ?2) ORDER BY ta.id LIMIT 1)
        LEFT JOIN users gu ON gu.id = g.user_id
       WHERE t.user_id = ?1 AND (s.id IS NOT NULL OR vh.id IS NOT NULL)
+        /* TD-HEAD-CX (rà PTA (4)): điều kiện CHỈ trên t → SQLite xét ở vòng ngoài cùng — Báo PH đã đóng quá 7 ngày bị bỏ trước ~10 phép nối / tra. */
+        AND (t.loai != 'bao_ph' OR EXISTS (SELECT 1 FROM viec_bao_ph b_ WHERE b_.id = t.ref_id
+          AND (b_.trang_thai = 'mo' OR COALESCE(b_.bo_luc, (SELECT MAX(l.ghi_luc) FROM viec_bao_ph_lan l WHERE l.viec_id = b_.id)) >= ?3)))
         AND ${HOAT_DONG_O('t.user_id', `CASE WHEN t.loai = 'van_hanh' THEN ${CN_VH('vh.branch_id')} ELSE COALESCE(c.branch_id, s.branch_id) END`)} AND (   -- (F) người đã rời chi nhánh của việc không thấy
 
            (t.loai = 'bao_ph' AND (b.trang_thai = 'mo' OR COALESCE(b.bo_luc, (SELECT MAX(l.ghi_luc) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id)) >= ?3))

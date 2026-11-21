@@ -18,7 +18,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, canXacNhan, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
-import { donGiaoHetHieuLuc } from '../worklist/giaoViec.ts';
+import { donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được tài khoản.';
 const DA_XOA = 'Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.';
@@ -305,6 +305,7 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
       }
     }
     if (!soVai) canhBao.push('Chưa có vai trò — cấp vai ở nút Sửa.');
+    else theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX (rà PTA (5)): Head / CX được khôi phục → theo dõi cả việc sinh trong lúc tài khoản bị xoá
     for (const e of truoc.emailPhu ?? []) {
       const trung = conn.prepare(`SELECT 1 FROM users WHERE lower(email) = lower(?) AND id != ? UNION ALL SELECT 1 FROM user_emails WHERE lower(email) = lower(?) AND user_id != ? LIMIT 1`)
         .get(e.email, userId, e.email, userId);

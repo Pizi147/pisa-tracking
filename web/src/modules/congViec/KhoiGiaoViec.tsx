@@ -42,7 +42,7 @@ export function useGiaoViec(loai: LoaiGiao, id: number | null | undefined) {
   return { g: ban ?? data, error, reload, dat: setBan };
 }
 
-const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head' };
+const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', cx: 'CX' };
 const O = 'flex min-h-[46px] min-w-0 items-center gap-2 border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
 const NHAN = `${O} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`;
 const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs text-dim';
