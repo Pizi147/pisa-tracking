@@ -399,6 +399,23 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', bp, { userId: tutor.userId, phuTrachCu: null })) === 400, 'máy chủ không nhận vai Tutor (400)');
   }));
 
+  await checkAsync('GV2-3 · (chủ SP 22/11) hạn mặc định phần Meeting: Xếp lịch họp 5 ngày · Kết quả meeting 14 ngày, tính cả ngày xác nhận; không ghi han_chon; /my-work + panel + tab theo dõi cùng hạn; Sửa hạn rồi Về mặc định', () => thu(async () => {
+    const { xep, kq } = meeting(moiEm());
+    const gx = gv.xemGiaoViec(ql, 'meeting', xep.id), gk = gv.xemGiaoViec(ql, 'meeting', kq.id);
+    assert(gx.han === addDays(TODAY, 4) && gx.hanMacDinh === gx.han && gx.hanChon === null, `Xếp lịch họp: ${gx.han} ≠ ${addDays(TODAY, 4)}`);
+    assert(gk.han === addDays(TODAY, 13) && gk.hanChon === null, `Kết quả meeting: ${gk.han} ≠ ${addDays(TODAY, 13)}`);
+    assert(mot('SELECT han_chon FROM meeting_phan WHERE id = ?', kq.id).han_chon === null, 'hạn mặc định không ghi vào han_chon');
+    xoaNho();
+    assert(items(cx).find((x: any) => x.key === `meeting_ket_qua:${kq.id}`)?.due === gk.han, '/my-work của CX cùng hạn');
+    xoaNho();
+    const dTd = gv.viecTheoDoi(tvv).nhom.find((g: any) => g.loai === 'meeting')?.mo.find((d: any) => d.refId === kq.id);
+    assert(dTd?.han === gk.han, `tab theo dõi cùng hạn: ${dTd?.han}`);
+    const sua = gv.suaHan(ql, 'meeting', kq.id, { han: addDays(TODAY, 20), hanCu: null });
+    assert(sua.han === addDays(TODAY, 20) && sua.hanChon === addDays(TODAY, 20) && sua.hanMacDinh === gk.han, 'Sửa hạn → han_chon');
+    const ve = gv.suaHan(ql, 'meeting', kq.id, { han: null, hanCu: addDays(TODAY, 20) });
+    assert(ve.han === gk.han && ve.hanChon === null, 'Về mặc định → han_chon NULL, hạn mặc định tính lại');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

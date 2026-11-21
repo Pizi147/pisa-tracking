@@ -27,6 +27,9 @@ export const HAN_MAC_DINH_GOC = {
   bao_ph_vi_pham: { ngay: 5 },
   /** TL-1 (N61): GV sửa vi phạm bị TVV trả lại — `ngay` ngày lịch TÍNH CẢ ngày trả (trả T2 14/09 → hết T4 16/09). */
   tra_lai_vi_pham: { ngay: 3 },
+  /** Meeting CX / GĐCN (N58, chủ SP 22/11): Xếp lịch họp (BPXL) · Kết quả meeting (CX) — `ngay` ngày lịch TÍNH CẢ ngày GVCN xác nhận Meeting (như Báo PH). */
+  meeting_xep_lich: { ngay: 5 },
+  meeting_ket_qua: { ngay: 14 },
   /** Chốt lộ trình lớp thường (N20): thứ `thu` của tuần lệch `tuanLech` so với tuần Final (T5 tuần trước). */
   chot_lo_trinh: { tuanLech: -1, thu: 5 },
   /** Bàn giao chuyển lớp: `ngay` ngày tính cả ngày ra lệnh (OV-13l). */
@@ -44,6 +47,7 @@ export const TEN_HAN: Record<MaHan, string> = {
   cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác nhận nguyên nhân Case', ql_duyet_pa: 'Head trả lời Chờ duyệt',
   giu_pa_gv: 'Head trả lời PA khác quy chế',
   ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm', tra_lai_vi_pham: 'Vi phạm bị trả lại',
+  meeting_xep_lich: 'Xếp lịch họp CX/GĐCN', meeting_ket_qua: 'Kết quả meeting CX/GĐCN',
   chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
 };
 const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (còn xem)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };
@@ -67,6 +71,17 @@ export const cacBanHan = (): readonly BanHan[] => nguon();
 /** Bản có hiệu lực tại `moc` (ngày / lúc của việc; thiếu = bây giờ = bản mới nhất). Khoá thiếu trong bản (bản cũ hơn mã) → giá trị gốc. */
 export function hanTai<K extends MaHan>(ma: K, moc?: string | null): HanMacDinh[K] {
   return ((banTaiMoc(nguon(), moc) ?? GOC).v[ma] ?? HAN_MAC_DINH_GOC[ma]) as HanMacDinh[K];
+}
+
+/**
+ * Hạn MẶC ĐỊNH của một phần Meeting CX / GĐCN (N58): ngày GVCN xác nhận Meeting (`ngay`, YYYY-MM-DD) + (`ngay` của hạn − 1) — tính cả ngày xác nhận.
+ * Không ghi vào `han_chon` (cột đó chỉ giữ hạn người dùng sửa); `/my-work`, tab Đang theo dõi, panel cùng gọi hàm này.
+ */
+export function hanPhanMeeting(phan: string, ngay: string): string {
+  const n = hanTai(phan === 'xep_lich' ? 'meeting_xep_lich' : 'meeting_ket_qua', ngay).ngay;
+  const d = new Date(`${ngay.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Ngày lệch từ thứ Hai của tuần mốc: `tuanLech` tuần + (`thu` − 2) ngày. */

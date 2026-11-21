@@ -45,6 +45,12 @@ export const EN_GIAO_VIEC_2 = {
   'Chọn ngày họp trước khi ghi giờ.': 'Pick the meeting date before the time.',
   'họp': 'meeting',
   'họp {ngay}': 'meeting {ngay}',
+  'Xếp lịch họp CX/GĐCN': 'Schedule CX / Head meeting',
+  'Kết quả meeting CX/GĐCN': 'CX / Head meeting result',
+  'ngày GVCN xác nhận Meeting': 'day the homeroom teacher confirmed the meeting',
+  'BPXL': 'Scheduler',
+  'N58 · ngày xác nhận là ngày 1 · chi nhánh chưa có BPXL thì TVV của em.': 'N58 · the confirmation day is day 1 · branch without a scheduler: the student\'s consultant.',
+  'N58 · ngày xác nhận là ngày 1 · chi nhánh chưa có CX thì Head.': 'N58 · the confirmation day is day 1 · branch without CX: the Head.',
   'Lên SOS {n}': 'Reached SOS {n}',
   'GV ghi': 'Recording teacher', 'Head': 'Head',
 } as const;
