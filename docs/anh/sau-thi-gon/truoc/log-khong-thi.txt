@@ -1,6 +1,6 @@
 1440-toi mở Công việc: 6 GET
 1440-toi mở Lịch thi: 7 GET
-1440-toi mở hồ sơ: 10 GET
+1440-toi mở hồ sơ: 11 GET
 375-sang mở Công việc: 6 GET
 375-sang mở Lịch thi: 7 GET
 375-sang mở hồ sơ: 11 GET
