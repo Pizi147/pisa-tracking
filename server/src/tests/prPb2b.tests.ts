@@ -259,7 +259,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const a = P.normalCoreTeacher.userId; const b = P.normalSubjectTeacher.userId;
     const slots = d.slotsTuO(d.oPhanCong('FOU', FOU, { tach: false }), { gvcn: a, 'gop-fou': a, speaking: b });
     await voiMayChu(async (goi) => {
-      const r = await goi(P.mbManager.userId, `/classes/${lopFouMoi}/teachers`, { method: 'PUT', body: JSON.stringify({ slots }) });
+      const r = await goi(P.mbManager.userId, `/classes/${lopFouMoi}/teachers`, { method: 'PUT', body: JSON.stringify({ slots, phienBan: (await goi(P.mbManager.userId, `/classes/${lopFouMoi}/teachers`).then((x: any) => x.json())).phienBan }) });
       assert(r.ok, `PUT ${r.status}: ${await r.text()}`);
     });
     const ds = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND effective_to IS NULL ORDER BY is_core DESC, skill`, lopFouMoi);

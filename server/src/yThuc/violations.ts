@@ -1,4 +1,4 @@
-import { db, tx } from '../db.ts';
+import { DS_JSON, db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, kiemTenViPham, tachTenMoTa, LO_GHI_VI_PHAM, VI_PHAM_TOI_DA_DONG,
   VIOLATION_SKILLS, XU_LY_STATUS_LABEL, monViPham, nhanLoaiXuLy, tenMon,
@@ -16,7 +16,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
-import { dongTheoDuongSanCo, traLaiCuaViPham } from './traLai.ts';
+import { dongKhiXoaViPham, traLaiCuaViPham } from './traLai.ts';
 import { donViec } from '../worklist/giaoViec.ts';
 import {
   EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, lopGanNhat, requireRecordViolation, requireViewClass, requireViewStudent,
@@ -527,10 +527,19 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
     chup.ghiGoc('students', row.student_id);
     chup.chupXoa('attachments', `owner_type = 'violation' AND owner_id = ?`, id);
     const files = purgeAttachmentsOf('violation', id, p.userId, chup.tep);
-    /* TL-1 (N61): yêu cầu trả lại đang mở → "GV đã xoá vi phạm" (Báo PH bỏ tạm dừng, TVV nhận tin); mọi yêu cầu của vi phạm vào Thùng rác cùng nó. */
-    dongTheoDuongSanCo({ violationId: id }, 'da_xoa', p.userId);
+    /* TL-1 (N61): yêu cầu trả lại đang mở → "GV đã xoá vi phạm" (Báo PH bỏ tạm dừng, TVV nhận tin); mọi yêu cầu của vi phạm vào Thùng rác cùng nó.
+       P1-03 (AUDIT-2111 A1-01): chụp yêu cầu (còn "mở") + khung giao việc của nó TRƯỚC khi đóng — Hoàn tác / Khôi phục trả lại như cũ (`khoiPhucTraLaiKhiXoa`). */
     const traLaiIds = (db().prepare('SELECT id FROM vi_pham_tra_lai WHERE violation_id = ?').all(id) as any[]).map((r) => r.id as number);
-    chup.chay('DELETE FROM vi_pham_tra_lai WHERE violation_id = ?', id);
+    if (traLaiIds.length) {
+      const ds = JSON.stringify(traLaiIds);
+      for (const [bang, cot] of [['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id'], ['viec_mo_ta', 'ref_id']] as const) {
+        chup.chupXoa(bang, `loai = 'tra_lai' AND ${cot} IN (${DS_JSON})`, ds);
+      }
+      chup.chupXoa('ghi_dao', `loai = 'giao_viec' AND bang = 'vi_pham_tra_lai' AND doi_tuong_id IN (${DS_JSON})`, ds);
+      chup.chupXoa('vi_pham_tra_lai', 'violation_id = ?', id);
+    }
+    const traLaiKhiXoa = dongKhiXoaViPham(id, p.userId);
+    db().prepare('DELETE FROM vi_pham_tra_lai WHERE violation_id = ?').run(id);
     donViec('tra_lai', traLaiIds);
     chup.chay('DELETE FROM measure_violations WHERE violation_id = ?', id);
     chup.chay('DELETE FROM violation_history WHERE violation_id = ?', id);
@@ -538,7 +547,7 @@ export function deleteViolation(p: Principal, id: number): { ok: true; removedFr
     chotHanXuLy([row.student_id]);
     const tenHv = (db().prepare('SELECT full_name FROM students WHERE id = ?').get(row.student_id) as any)?.full_name;
     const thungRacId = ghiThungRac(db(), { loai: 'vi_pham', doiTuongId: id, nhan: [VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory], tenHv, row.student_code].filter(Boolean).join(' · '),
-      hocVienId: row.student_id, classId: row.class_id ?? null, nguoi: p.userId, chup });
+      hocVienId: row.student_id, classId: row.class_id ?? null, nguoi: p.userId, chup, ...(traLaiKhiXoa.mo.length ? { phu: { traLai: traLaiKhiXoa } } : {}) });
     writeAudit({
       actorUserId: p.userId, action: 'violation.delete', entityType: 'violation', entityId: id,
       entityLabel: `${row.student_code} · ${VIOLATION_CATEGORY_LABEL[row.category as ViolationCategory]}`,

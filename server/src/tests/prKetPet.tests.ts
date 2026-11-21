@@ -399,17 +399,17 @@ export async function runPrKetPetTests(t: any) {
     tachMon();
     const dang = () => all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop.id);
     const slots = dang().map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 }));
-    const e = loi(() => classSvc.setClassTeachers(P.admin, lop.id, { slots }));
+    const e = loi(() => classSvc.setClassTeachers(P.admin, lop.id, { slots, phienBan: classSvc.classTeachers(P.admin, lop.id).phienBan }));
     assert(e === null, `gửi lại bức tranh có môn gộp: ${e?.status} ${e?.message}`);
     xoaNho();
     /* Bỏ hai dòng gộp: R+W của em C còn trống → giữ dòng R+W. */
     const khongGop = slots.filter((x) => x.skill !== 'listening_speaking' && x.skill !== 'reading_writing');
-    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop }); xoaNho();
+    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop, phienBan: classSvc.classTeachers(P.admin, lop.id).phienBan }); xoaNho();
     assert(dang().some((x) => x.skill === 'reading_writing' && x.user_id === GV_RW), 'dòng R+W bị kết thúc khi ô còn cần');
     /* Nhập nốt ô R+W → hết việc → kết thúc như mọi dòng. */
     nhap(cps(c)[0].id, { reading_writing: [60, 80] });
     assert(!classSvc.monGopConCan(lop.id).has('reading_writing'), 'R+W hết việc vẫn còn cần');
-    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop }); xoaNho();
+    classSvc.setClassTeachers(P.admin, lop.id, { slots: khongGop, phienBan: classSvc.classTeachers(P.admin, lop.id).phienBan }); xoaNho();
     assert(!dang().some((x) => x.skill === 'reading_writing'), 'R+W hết việc mà không kết thúc');
   }));
 

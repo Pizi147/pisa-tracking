@@ -740,6 +740,11 @@ export function setClassProgress(p: Principal, classId: number, input: {
     if (weeks && v > weeks) throw loi(400, '{label} không thể vượt quá {weeks} tuần của chương trình.', { label, weeks });
     return v;
   };
+  /* B1-13 (AUDIT-2111): lớp FT không có Progress / Final của lớp (không trần tuần → từng ghi được 999). Gửi lại đúng giá trị đang lưu (dữ liệu cũ) vẫn qua. */
+  if (code === 'FT') {
+    const doi = (k: 'progressWeek' | 'finalWeek', cu: number | null) => k in input && input[k] != null && input[k] !== cu;
+    if (doi('progressWeek', c.progress_week_override ?? null) || doi('finalWeek', c.final_week_override ?? null)) throw badRequest('Lớp FT không có Progress / Final Test.');
+  }
   const progress = 'progressWeek' in input ? checkWeek(input.progressWeek, 'Tuần Progress Test') : undefined;
   const final = 'finalWeek' in input ? checkWeek(input.finalWeek, 'Tuần Final Test') : undefined;
   if (progress && c.so_tuan !== null && c.so_tuan !== undefined && (c.tuan_giua_khoa === null || c.tuan_giua_khoa === undefined)) {

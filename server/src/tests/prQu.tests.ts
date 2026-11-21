@@ -121,7 +121,7 @@ export async function runPrQuTests(t: YThucTestKit) {
   const gvcn = () => loadPrincipal(gvMb[0]);
   check('QU-3 (1) GVCN đổi GV Reading lớp mình: được, audit via:gvcn, Quản lý MB nhận thông báo', () => {
     const moi = slotsHienTai(lopC).map((s: any) => (s.skill === 'reading' ? { ...s, userId: gvMb[3] } : s));
-    cls.setClassTeachers(gvcn(), lopC, { slots: moi });
+    cls.setClassTeachers(gvcn(), lopC, { phienBan: cls.classTeachers(P.admin, lopC).phienBan, slots: moi });
     assert(coPhanCong(lopC, gvMb[3], 'reading') && !coPhanCong(lopC, gvMb[2], 'reading'), 'chưa đổi');
     const a = get(`SELECT after_json FROM audit_logs WHERE action = 'class.assign' AND entity_id = ? ORDER BY id DESC LIMIT 1`, lopC);
     const sau = JSON.parse(a.after_json);
@@ -134,19 +134,19 @@ export async function runPrQuTests(t: YThucTestKit) {
     const thay = cu.map((s: any) => (s.isCore ? { ...s, userId: gvMb[2] } : s));
     const bo = cu.filter((s: any) => !s.isCore);
     for (const [ten, slots] of [['thay', thay], ['bỏ', bo]] as const) {
-      assert(maLoi(() => cls.setClassTeachers(gvcn(), lopC, { slots })) === 403, `${ten} GVCN phải 403`);
+      assert(maLoi(() => cls.setClassTeachers(gvcn(), lopC, { phienBan: cls.classTeachers(P.admin, lopC).phienBan, slots })) === 403, `${ten} GVCN phải 403`);
     }
     assert(JSON.stringify(slotsHienTai(lopC)) === truoc, 'DB đổi');
   });
   check('QU-3 (3)(4) GVCN sửa lớp không chủ nhiệm → 403; GV bộ môn (không core) → 403', () => {
-    assert(maLoi(() => cls.setClassTeachers(gvcn(), lopD, { slots: slotsHienTai(lopD) })) === 403, 'lớp D');
-    assert(maLoi(() => cls.setClassTeachers(loadPrincipal(gvMb[1]), lopC, { slots: slotsHienTai(lopC) })) === 403, 'GVBM');
+    assert(maLoi(() => cls.setClassTeachers(gvcn(), lopD, { phienBan: cls.classTeachers(P.admin, lopD).phienBan, slots: slotsHienTai(lopD) })) === 403, 'lớp D');
+    assert(maLoi(() => cls.setClassTeachers(loadPrincipal(gvMb[1]), lopC, { phienBan: cls.classTeachers(P.admin, lopC).phienBan, slots: slotsHienTai(lopC) })) === 403, 'GVBM');
   });
   check('QU-3 (5) luật phân công vẫn chặn GVCN: GV khác chi nhánh → 400', () => {
     const gvCp = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'teacher' AND ur.branch_id = ? AND u.id NOT IN (SELECT user_id FROM user_roles WHERE branch_id = ? OR branch_id IS NULL) LIMIT 1`, CP, MB).id;
     const slots = slotsHienTai(lopC).map((s: any) => (s.skill === 'listening' ? { ...s, userId: gvCp } : s));
-    assert(maLoi(() => cls.setClassTeachers(gvcn(), lopC, { slots })) === 400, 'khác chi nhánh');
+    assert(maLoi(() => cls.setClassTeachers(gvcn(), lopC, { phienBan: cls.classTeachers(P.admin, lopC).phienBan, slots })) === 400, 'khác chi nhánh');
   });
   check('QU-3 (6) /ref/teachers?classId=C với GVCN → GV chi nhánh C; không classId / lớp không chủ nhiệm → 403', () => {
     const ds = cls.giaoVienPhanCong(gvcn(), { classId: lopC });

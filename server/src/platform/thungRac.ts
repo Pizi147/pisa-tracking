@@ -2,6 +2,7 @@ import { db, tx } from '../db.ts';
 import { conflict, notFound, nowIso } from '../util.ts';
 import { writeAudit } from './audit.ts';
 import { xoaTepSauGiaoDich } from './attachments.ts';
+import { LOAI_CUA_BANG } from '../worklist/giaoViec.ts';
 
 /**
  * THÙNG RÁC (Q-RL2, chủ SP 29/10 N24 ② — "không khoá cứng": Hoàn tác ngắn + khôi phục được + lịch sử).
@@ -23,7 +24,8 @@ type Ban =
   | { k: 'tao'; bang: string; dong: Dong[] };
 /** Bản ghi cha NGOÀI thùng rác mà mục trỏ tới — dấu = cột nhận diện lúc xoá (`created_at`, `student_id`). */
 export type Goc = { bang: string; id: number; dau: string };
-export type DuLieuRac = { ban: Ban[]; tep: string[]; goc?: Goc[] };
+/** `phu`: dữ liệu riêng của thao tác xoá cho bước đồng bộ khi khôi phục (P1-03: yêu cầu trả lại + hạn Báo PH lúc xoá vi phạm). */
+export type DuLieuRac = { ban: Ban[]; tep: string[]; goc?: Goc[]; phu?: Record<string, unknown> };
 
 // ---------------------------------------------------------------- lược đồ (nhớ theo kết nối)
 type Fk = { con: string; cot: string; cha: string; den: string; khi: string };
@@ -61,11 +63,18 @@ const LOAI_BANG: Record<string, string> = {
   attempt: 'assessment_attempts', student: 'students', case_signal: 'case_signals', skill_move_requests: 'skill_move_requests', yeu_cau_duyet: 'yeu_cau_duyet',
   task: 'tasks',   // VH-1: tệp của việc Vận hành
 };
-const MEM: Record<string, { loai: string; id: string; bang: (v: unknown) => string | null }> = {
-  attachments: { loai: 'owner_type', id: 'owner_id', bang: (v) => LOAI_BANG[String(v)] ?? null },
-  notifications: { loai: 'entity_type', id: 'entity_id', bang: (v) => LOAI_BANG[String(v)] ?? null },
-  journey_events: { loai: 'ref_table', id: 'ref_id', bang: (v) => (typeof v === 'string' ? v : null) },
-  yeu_cau_duyet: { loai: 'doi_tuong_loai', id: 'doi_tuong_id', bang: (v) => LOAI_BANG[String(v)] ?? null },
+/* P1-04 (AUDIT-2111 B1-02): khung giao việc trỏ việc theo (loại, id) — bảng việc không AUTOINCREMENT, khôi phục cấp id mới thì người theo dõi / lịch sử giao /
+   hạn / mô tả / bản ghi đảo "giao_viec" + liên kết mềm của việc Báo PH phải theo id mới, không dính sang việc của em khác đã nhận lại id cũ. */
+const bangViec = (loai: unknown) => Object.entries(LOAI_CUA_BANG).find(([, l]) => l === loai)?.[0] ?? null;   // trong hàm: giaoViec ↔ ghiDao nạp vòng
+const VIEC = (id: string) => [{ id, bang: (d: Dong) => bangViec(d.loai) }];
+const MEM: Record<string, { id: string; bang: (d: Dong) => string | null }[]> = {
+  attachments: [{ id: 'owner_id', bang: (d) => LOAI_BANG[String(d.owner_type)] ?? null }],
+  notifications: [{ id: 'entity_id', bang: (d) => LOAI_BANG[String(d.entity_type)] ?? null }],
+  journey_events: [{ id: 'ref_id', bang: (d) => (typeof d.ref_table === 'string' ? d.ref_table : null) }],
+  yeu_cau_duyet: [{ id: 'doi_tuong_id', bang: (d) => LOAI_BANG[String(d.doi_tuong_loai)] ?? null }],
+  viec_theo_doi: VIEC('ref_id'), viec_giao_lan: VIEC('ref_id'), viec_mo_ta: VIEC('ref_id'), viec_han_lan: VIEC('viec_id'),
+  ghi_dao: [{ id: 'doi_tuong_id', bang: (d) => (d.loai === 'giao_viec' && LOAI_CUA_BANG[String(d.bang)] ? String(d.bang) : null) }],
+  viec_bao_ph: [{ id: 'phoi_hop_id', bang: () => 'sos_coordination_actions' }, { id: 'tinh_hinh_id', bang: () => 'tinh_hinh_hoc_tap' }, { id: 'tra_lai_id', bang: () => 'vi_pham_tra_lai' }],
 };
 /** Bảng đích của liên kết mềm từ `owner_type` (tệp) — dùng ở khôi phục tệp / quyền. */
 export const bangCuaLoai = (loai: string): string | null => LOAI_BANG[loai] ?? null;
@@ -151,11 +160,11 @@ function dauCua(conn: any, bang: string, id: number): string | null {
 /** Ghi mục thùng rác (trong giao dịch của thao tác xoá). Trả id để web Hoàn tác. */
 export function ghiThungRac(conn: any, o: {
   loai: LoaiRac; doiTuongId: number; nhan: string; hocVienId?: number | null; classId?: number | null; branchId?: number | null;
-  nguoi: number | null; chup: BoChup;
+  nguoi: number | null; chup: BoChup; phu?: Record<string, unknown>;
 }): number {
   return Number(conn.prepare(`INSERT INTO thung_rac (loai, doi_tuong_id, nhan, hoc_vien_id, class_id, branch_id, du_lieu, xoa_boi, xoa_luc)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(o.loai, o.doiTuongId, o.nhan, o.hocVienId ?? null, o.classId ?? null, o.branchId ?? null,
-    JSON.stringify({ ban: o.chup.ban, tep: o.chup.tep, goc: o.chup.goc } satisfies DuLieuRac), o.nguoi, nowIso()).lastInsertRowid);
+    JSON.stringify({ ban: o.chup.ban, tep: o.chup.tep, goc: o.chup.goc, ...(o.phu ? { phu: o.phu } : {}) } satisfies DuLieuRac), o.nguoi, nowIso()).lastInsertRowid);
 }
 
 /** Bảng lá có khoá chống lặp `dedup_key` — trùng khi khôi phục thì đổi khoá (không 409): dòng lịch sử / chuông, không phải luật nghiệp vụ. */
@@ -192,8 +201,7 @@ function traLai(conn: any, ban: Ban[]): Map<string, Map<unknown, unknown>> {
       else if (coTrongRac.get(dich)?.has(v)) cho.push({ cot, dich, v });
     };
     for (const fk of fkCua(conn, bang)) if (fk.cot in dong) xet(fk.cot, fk.cha);
-    const m = MEM[bang];
-    if (m && m.id in dong) xet(m.id, m.bang(dong[m.loai]));
+    for (const m of MEM[bang] ?? []) if (m.id in dong) xet(m.id, m.bang(d));
     return { dong, cho };
   };
   const capNhat = (bang: string, cot: string[], d: Dong, rowid: unknown) => {

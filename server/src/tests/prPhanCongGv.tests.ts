@@ -199,6 +199,24 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const v = classes.setClassTeachers(QL, Y, { slots: doiO(Y, 'reading', gF), phienBan: classes.classTeachers(QL, Y).phienBan });
     assert(v.bySkill.some((x: any) => x.skill === 'reading' && x.userId === gF) && v.core[0]?.userId === gA, 'PUT cũ trả bức tranh mới');
   }));
+  check('A2 · (AUDIT-2111 P1-05) PUT /teachers: thiếu / sai `slots` → 400, phân công lớp không đổi (cả POST /phan-cong/luu); thiếu phiên bản → 400 (sau quyền: CX 403); trả `lo` → Hoàn tác', () => thu(() => {
+    const truoc = JSON.stringify(slotsCua(Y));
+    for (const sai of [{}, { teachers: 'x' }, { slots: 'x' }, { slots: null }]) {
+      const e = maLoi(() => classes.setClassTeachers(QL, Y, { ...sai, phienBan: classes.classTeachers(QL, Y).phienBan }));
+      assert(e?.status === 400 && /phân công/.test(e.message), `${JSON.stringify(sai)}: ${e?.status} ${e?.message}`);
+    }
+    const e2 = maLoi(() => pc.luuPhanCong(QL, { lop: [{ classId: Y }] }));
+    assert(e2?.status === 400 && /Thiếu danh sách phân công/.test(e2.message), `luu thiếu slots: ${e2?.status} ${e2?.message}`);
+    const e3 = maLoi(() => classes.setClassTeachers(QL, Y, { slots: doiO(Y, 'reading', gF) }));
+    assert(e3?.status === 400 && /phiên bản/.test(e3.message), `thiếu phiên bản: ${e3?.status} ${e3?.message}`);
+    const cx = loadPrincipal(nguoi([{ role: 'cx', branches: [] }]));
+    assert(maLoi(() => classes.setClassTeachers(cx, Y, { slots: [] }))?.status === 403, 'CX không phiên bản → 403 (quyền trước)');
+    assert(JSON.stringify(slotsCua(Y)) === truoc, 'phân công lớp không đổi');
+    const v = classes.setClassTeachers(QL, Y, { slots: doiO(Y, 'reading', gF), phienBan: classes.classTeachers(QL, Y).phienBan });
+    assert(typeof v.lo === 'number' && ai(Y, 'reading')[0] === gF, `trả lo: ${v.lo}`);
+    pc.hoanTacLuu(QL, { lo: v.lo });
+    assert(JSON.stringify(slotsCua(Y)) === truoc, 'Hoàn tác trả lại như cũ');
+  }));
 
   /* ---------------------------------------------------------------- A3 · chuyển Case / PA sang người mới */
   const util: any = await import('../util.ts');

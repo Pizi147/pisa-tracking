@@ -95,7 +95,7 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, on
   const toast = useToast();
   const [hop, setHop] = useState(false);
   const nutDoi = useRef<HTMLButtonElement>(null);
-  const [vuaGiao, setVuaGiao] = useState<{ ten: string; het: number } | null>(null);
+  const [vuaGiao, setVuaGiao] = useState<{ chu: string; het: number } | null>(null);
   const [loi, setLoi] = useState<Loi | null>(null);
   const daDoi = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(); onDaDoi?.(); };
 
@@ -118,7 +118,7 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, on
 
   return (
     <div className="relative flex flex-col gap-2">
-      {vuaGiao && <DaiVuaGiao ten={vuaGiao.ten} het={vuaGiao.het} onHet={() => setVuaGiao(null)} onHoanTac={() => void hoanTac()} />}
+      {vuaGiao && <DaiVuaGiao chu={vuaGiao.chu} het={vuaGiao.het} onHet={() => setVuaGiao(null)} onHoanTac={() => void hoanTac()} />}
       {loi && (
         <p role="alert" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-sm">
           <b className="text-late">{t('Chưa lưu.')}</b><span className="min-w-0 flex-1">{loi.chu}</span>
@@ -150,8 +150,10 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, on
         <HopNho nhan={t('Đổi người phụ trách')} tren="top-[52px]" onDong={() => { setHop(false); nutDoi.current?.focus(); }}>
           <HopDoiNguoi g={g} thaoTac={thaoTac} onDong={() => { setHop(false); nutDoi.current?.focus(); }} onXong={(moi, tenMoi) => {
             setHop(false); daDoi(moi);
-            if (moi.duocGiao) setVuaGiao({ ten: tenMoi, het: Date.now() + 10_000 });
-            else toast.push('ok', t('Đã về người phụ trách mặc định'));
+            /* B3-04 (AUDIT-2111): Về mặc định có cùng dải "✓ … · Hoàn tác" như Giao (máy chủ đã lưu bản đảo — `hoanTacDuoc`). */
+            const chu = moi.duocGiao ? t('Đã giao cho {ten}', { ten: tenMoi }) : t('Đã về người phụ trách mặc định');
+            if (moi.duocGiao || moi.hoanTacDuoc) setVuaGiao({ chu, het: Date.now() + 10_000 });
+            else toast.push('ok', chu);
           }} onXungDot={reload} />
         </HopNho>
       )}
@@ -245,7 +247,7 @@ function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void;
 }
 
 /** Dải "✓ Đã giao cho … · Hoàn tác · n giây" (mockup G3b) — 10 giây, đếm lùi trên nút. */
-function DaiVuaGiao({ ten, het, onHet, onHoanTac }: { ten: string; het: number; onHet: () => void; onHoanTac: () => void }) {
+function DaiVuaGiao({ chu, het, onHet, onHoanTac }: { chu: string; het: number; onHet: () => void; onHoanTac: () => void }) {
   const [con, setCon] = useState(Math.ceil((het - Date.now()) / 1000));
   useEffect(() => {
     const h = setInterval(() => { const s = Math.ceil((het - Date.now()) / 1000); if (s <= 0) onHet(); else setCon(s); }, 500);
@@ -253,7 +255,7 @@ function DaiVuaGiao({ ten, het, onHet, onHoanTac }: { ten: string; het: number; 
   }, [het]);   // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div role="status" className="flex min-h-[40px] items-center gap-2.5 rounded-lg border border-ok-line bg-ok-bg py-1.5 pl-3 pr-2 text-sm">
-      <b className="font-bold text-ok" aria-hidden>✓</b><span className="min-w-0 flex-1">{t('Đã giao cho {ten}', { ten })}</span>
+      <b className="font-bold text-ok" aria-hidden>✓</b><span className="min-w-0 flex-1">{chu}</span>
       <button type="button" className="btn btn-sm min-h-[44px] tabular-nums sm:min-h-[30px]" onClick={onHoanTac}>{t('Hoàn tác · {n} giây', { n: con })}</button>
     </div>
   );

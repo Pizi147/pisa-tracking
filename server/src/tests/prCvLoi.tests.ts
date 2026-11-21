@@ -92,7 +92,7 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
   check('K3 phân công môn thiếu → cùng lần ghi Case có chủ, lịch sử ghi người phân công; QL hết dòng Phân công', () => thu(() => {
     const c = lopThieu();
     const gvMoi = c.truoc.find((x) => x.skill === c.skill)!.userId;
-    classes.setClassTeachers(P.mbManager, LOP, { slots: c.truoc });
+    classes.setClassTeachers(P.mbManager, LOP, { slots: c.truoc, phienBan: classes.classTeachers(P.admin, LOP).phienBan });
     assert(chuCua(c.id) === gvMoi, 'Case về GV vừa phân công môn');
     const ls = one(`SELECT * FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' ORDER BY id DESC LIMIT 1`, c.id);
     assert(ls?.actor_user_id === P.mbManager.userId, 'lịch sử ghi người phân công');
