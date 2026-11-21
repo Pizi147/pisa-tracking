@@ -19,7 +19,7 @@ export async function runPrCxBpxlTests(t: any) {
   const { LUOT_SAU_THI_SQL } = await import('../students/tamDung.ts');
   const ph: any = await import('../yThuc/phoiHop.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const profile: any = await import('../students/profile.ts');
   const ltt: any = await import('../classes/loTrinhTiep.ts');
   const htcn: any = await import('../classes/hoanTacChuyenNgay.ts');
@@ -31,6 +31,8 @@ export async function runPrCxBpxlTests(t: any) {
   const board: any = await import('../yThuc/board.ts');
   const viol: any = await import('../yThuc/violations.ts');
   const week: any = await import('../platform/week.ts');
+  const dongHv: any = await import('../classes/dongHocVien.ts');
+  const ss: any = await import('../fasttrack/skillSchedule.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
   let seq = 0;
@@ -89,17 +91,76 @@ export async function runPrCxBpxlTests(t: any) {
     assert(coTheRaLenh(cx, lopThuong), 'CX giữ quyền ra lệnh chuyển lớp lẻ (N52)');
   }));
 
-  check('N63 ② · BPXL Khôi phục MT / kỹ năng: lượt / kỹ năng đã có điểm 403; chưa có điểm qua cổng quyền (lỗi nghiệp vụ 400, không 403)', () => thu(() => {
+  const lenh: any = await import('../classes/lenhChuyen.ts');
+  const llt: any = await import('../classes/luatLoTrinh.ts');
+  check('N63 ① (rà PTA #1950) · CX không Hoàn tác lần chốt cả lớp (403, ghi danh không đổi); Hoàn tác chuyển một em giữ; Head Hoàn tác được', () => thu(() => {
+    const { sid } = moiEm(lopThuong);
+    const ghi = (doi: { bang: 'students' | 'classes'; id: number }) => htcn.chuyenNgayCoHoanTac(P.mbManager, [sid], [lopThuong], () => {
+      conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(sid, lopThuong);
+      return { ok: true };
+    }, () => true, doi).dao as number;
+    const tt = () => one(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ? ORDER BY id DESC LIMIT 1`, sid, lopThuong).status;
+    const dao = ghi({ bang: 'classes', id: lopThuong });
+    assert(ma(() => htcn.hoanTacChuyenNgay(cx, lopThuong, dao, 'classes')) === 403 && tt() === 'transferred', `CX Hoàn tác chốt cả lớp: ${tt()}`);
+    assert(ma(() => htcn.hoanTacChuyenNgay(P.mbManager, lopThuong, dao, 'classes')) === null && tt() === 'active', 'Head Hoàn tác được');
+    const dao2 = ghi({ bang: 'students', id: sid });
+    assert(ma(() => htcn.hoanTacChuyenNgay(cx, sid, dao2, 'students')) === null && tt() === 'active', 'CX Hoàn tác chuyển lớp một em (N52) giữ');
+  }));
+
+  check('N63 ① (rà PTA #1950) · CX ra lệnh chuyển lớp lẻ thật (giữa khoá) được; sửa / huỷ / huỷ nhiều / khôi phục lệnh Cuối khoá 403, lệnh không đổi; Head huỷ được', () => thu(() => {
+    const ft = lop;
+    const a = moiEm(ft).sid;
+    const tuan = llt.xemChuyenLop(P.mbManager, a).tuanChon[1];
+    const dich = classId('MB FT 102');
+    const r = lenh.raLenh(cx, { lopNguonId: ft, boiCanh: 'giua-khoa', tuanChung: tuan, dongs: [lenh.dongTuBody({ studentId: a, huong: 'chuyen_lop', toClassId: dich, lyDo: 'CX chuyển lẻ' })] });
+    assert(r.ok.includes(a) && !r.failed.length, `CX ra lệnh lẻ: ${JSON.stringify(r.failed)}`);
+    const { sid: b } = moiEm(lopThuong);
+    const ck = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+        VALUES (?, ?, 'hoc_lai', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(b, lopThuong, tuan, P.mbManager.userId, TODAY, new Date().toISOString()).lastInsertRowid);
+    const anh = () => JSON.stringify(one('SELECT huong, trang_thai, tuan_bat_dau FROM lenh_chuyen_lop WHERE id = ?', ck));
+    const truoc = anh();
+    assert(ma(() => lenh.suaLenh(cx, ck, { huong: 'len_lop' })) === 403, 'CX sửa lệnh Cuối khoá 403');
+    assert(ma(() => lenh.huyLenh(cx, ck)) === 403, 'CX huỷ lệnh Cuối khoá 403');
+    assert(ma(() => lenh.huyNhieuLenh(cx, [ck], null)) === 403, 'CX huỷ nhiều lệnh Cuối khoá 403');
+    assert(anh() === truoc, `lệnh đổi: ${truoc} → ${anh()}`);
+    lenh.huyLenh(P.mbManager, ck);
+    assert(ma(() => lenh.khoiPhucLenh(cx, [ck])) === 403 && one('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', ck).trang_thai === 'huy', 'CX khôi phục lệnh Cuối khoá 403');
+  }));
+
+  check('N63 ⑤ (rà PTA #1950) · bảng HV lớp: BPXL không có nhãn / số Ý thức (canhBaoTheoHocVien rỗng, soEmCanXuLyYThuc 0); GVCN vẫn có', () => thu(() => {
+    const dhv: any = dongHv;
+    const { sid } = moiEm();
+    viol.recordViolation(P.w1Teacher, { studentId: sid, category: 'conduct', ten: 'Nói chuyện riêng trong giờ', occurredOn: addDays(TODAY, -1) });
+    xoaNho();
+    assert(dhv.canhBaoTheoHocVien(bpxl, lop).size === 0 && dhv.soEmCanXuLyYThuc(bpxl, lop) === 0, 'BPXL thấy nhãn Ý thức');
+    assert(dhv.canhBaoTheoHocVien(P.coreTeacher, lop).size > 0, 'GVCN mất nhãn Ý thức');
+  }));
+
+  check('N63 ② · BPXL Xoá / Khôi phục MT / kỹ năng: có điểm (đang có hoặc đang cất) 403, DB không đổi; chưa điểm qua cổng; Xoá rồi Hoàn tác được; khôi phục môn chưa điểm không bị chặn vì môn khác có điểm', () => thu(() => {
     const pid = (w: string) => week.ensurePeriod(w).id as number;
     const a = moiEm();
     const m = svc.createAttempt(P.admin, { studentId: a.sid, cycleId: a.cy, attemptNo: 1, periodId: pid('2026-09-14') }).id as number;
+    const trongDot = () => JSON.stringify(conn.prepare('SELECT skill, required FROM attempt_skills WHERE attempt_id = ? ORDER BY skill').all(m));
+    /* Chưa điểm: BPXL Xoá MT rồi Hoàn tác (Khôi phục đúng các môn vừa xoá). */
+    const x = svc.xoaLuot(bpxl, m);
+    assert(ma(() => svc.duaLaiCaLuot(bpxl, m, x.kyNang)) === null, 'BPXL Xoá rồi Hoàn tác');
     assert(ma(() => ab.restoreCancelledSkill(bpxl, m, 'listening', pid('2026-09-21'))) === 400, 'kỹ năng chưa điểm: qua quyền, 400 "chưa bị huỷ"');
-    assert(ma(() => svc.duaLaiCaLuot(bpxl, m)) === 400, 'lượt chưa điểm: qua quyền, 400 "không có kỹ năng đã huỷ"');
+    /* Có điểm L: Xoá MT 403 (trước câu hỏi), không đổi gì. */
     svc.saveScore(P.admin, m, 'listening', { rawScore: 30, rawTotal: 40 });
-    assert(ma(() => ab.restoreCancelledSkill(bpxl, m, 'listening', pid('2026-09-21'))) === 403, 'kỹ năng đã có điểm: 403');
+    const t0 = trongDot();
+    assert(ma(() => svc.xoaLuot(bpxl, m)) === 403 && trongDot() === t0, 'Xoá MT đã có điểm: 403, không đổi');
+    assert(ma(() => ab.restoreCancelledSkill(bpxl, m, 'listening', pid('2026-09-21'))) === 403, 'khôi phục kỹ năng đã có điểm: 403');
     assert(ma(() => ab.restoreCancelledSkill(bpxl, m, 'reading', pid('2026-09-21'))) === 400, 'kỹ năng khác chưa điểm: vẫn qua quyền');
-    assert(ma(() => svc.duaLaiCaLuot(bpxl, m)) === 403, 'lượt đã có điểm: 403');
-    assert(ma(() => svc.duaLaiCaLuot(P.mbManager, m)) === 400, 'Head không bị chặn theo điểm');
+    /* Bỏ R (chưa điểm) khỏi đợt: BPXL đưa lại R được dù L có điểm (P2-a). */
+    ss.setSkillScope(P.admin, m, 'reading', false, 'Thử');
+    assert(ma(() => svc.duaLaiCaLuot(bpxl, m, ['reading'])) === null, 'đưa lại R chưa điểm bị chặn vì L có điểm');
+    /* Huỷ điểm L (cất, chờ "Khôi phục điểm") rồi bỏ L: BPXL đưa lại L 403 (điểm đang cất), Head được. */
+    voiXacNhan(() => svc.saveScore(P.admin, m, 'listening', { rawScore: null, criteria: [null, null, null, null], lyDo: 'Thử huỷ điểm' }));
+    assert(one(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND khoi_phuc_luc IS NULL`, m).n > 0, 'chưa có bản cất điểm');
+    ss.setSkillScope(P.admin, m, 'listening', false, 'Thử');
+    const t1 = trongDot();
+    assert(ma(() => svc.duaLaiCaLuot(bpxl, m, ['listening'])) === 403 && trongDot() === t1, 'đưa lại L có điểm cất: 403, không đổi');
+    assert(ma(() => svc.duaLaiCaLuot(P.mbManager, m, ['listening'])) === null, 'Head không bị chặn theo điểm');
   }));
 
   check('N63 ⑤ · BPXL không xem Ý thức (vi phạm · tab HV · tab lớp · khối hồ sơ) — 403 / null; Phối hợp của em vẫn xem; GV lớp vẫn xem', () => thu(() => {

@@ -62,14 +62,17 @@ export const laBpxlXepLich = (p: Principal, ctx: Ctx): boolean => can(p, PERMISS
 /** Khôi phục lượt đã huỷ: người huỷ / khôi phục được (`choHuyKhoiPhucLichTest`) + BPXL (điểm do `chanBpxlCoDiem` kiểm). Huỷ lượt KHÔNG đổi. */
 export const choKhoiPhucLuot = (p: Principal, ctx: Ctx): boolean => choHuyKhoiPhucLichTest(p, ctx) || laBpxlXepLich(p, ctx);
 /**
- * Chặn BPXL khi lượt / kỹ năng đã có điểm (đang có hoặc đang cất chờ "Khôi phục điểm" — `ket_qua_huy` chưa khôi phục). MỘT câu, chỉ khi người gọi là BPXL.
- * `oNhap` = ô nhập của các kỹ năng cần xem (null = cả lượt, kể cả điểm cất). Gọi TRƯỚC khi ghi.
+ * Chặn BPXL khi lượt / kỹ năng đã có điểm: điểm đang có HOẶC đang cất chờ "Khôi phục điểm" (`ket_qua_huy` chưa khôi phục — huỷ điểm, huỷ lượt, dời vượt).
+ * `oNhap` = ô nhập của các kỹ năng cần xem (null = cả lượt). MỘT câu, chỉ khi người gọi là BPXL; gọi TRƯỚC khi ghi. Xoá MT (null) chặt hơn hoặc bằng
+ * Khôi phục / Hoàn tác (kỹ năng vừa xoá) → BPXL Xoá được thì Hoàn tác được (rà PTA #1950).
  */
 export function chanBpxlCoDiem(p: Principal, a: { id: number; class_id: number | null; student_id: number }, oNhap: readonly string[] | null, cau: string): void {
   if (!laBpxlXepLich(p, { classId: a.class_id, studentId: a.student_id })) return;
+  const loc = (cot: string) => (oNhap ? ` AND ${cot} IN (SELECT value FROM json_each(?2))` : '');
   const co = db().prepare(
-    `SELECT EXISTS(SELECT 1 FROM assessment_scores WHERE attempt_id = ?1 AND (band IS NOT NULL OR raw_score IS NOT NULL)${oNhap ? ` AND skill IN (SELECT value FROM json_each(?2))` : ''})
-       ${oNhap ? '' : 'OR EXISTS(SELECT 1 FROM ket_qua_huy WHERE attempt_id = ?1 AND khoi_phuc_luc IS NULL AND so_diem > 0)'} AS co`,
+    `SELECT EXISTS(SELECT 1 FROM assessment_scores WHERE attempt_id = ?1 AND (band IS NOT NULL OR raw_score IS NOT NULL)${loc('skill')})
+         OR EXISTS(SELECT 1 FROM ket_qua_huy k, json_each(k.diem_json) d WHERE k.attempt_id = ?1 AND k.khoi_phuc_luc IS NULL
+              AND (json_extract(d.value, '$.band') IS NOT NULL OR json_extract(d.value, '$.raw_score') IS NOT NULL)${loc("json_extract(d.value, '$.skill')")}) AS co`,
   ).get(...(oNhap ? [a.id, JSON.stringify(oNhap)] : [a.id])) as { co: number };
   if (co.co) throw forbidden(cau);
 }

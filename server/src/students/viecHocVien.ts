@@ -261,7 +261,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   const coKhoa = new Set(ds.map((x) => x.key));
   const giaoToi = new Set<string>();   // P1-06: việc giao cho người xem / Kết quả meeting của CX — như `/my-work` (`mywork.ts` GV-1)
   for (const v of viecGiaoChoToi(p, { today, studentId: sid })) {
-    giaoToi.add(v.key);
+    if (v.mine) giaoToi.add(v.key);   // khớp `mywork.ts` GV-1 (`if (it.mine)`)
     const hien = ds.find((x) => x.key === v.key);
     if (hien) { hien.nguoiId = p.userId; continue; }
     if (coKhoa.has(v.key)) continue;

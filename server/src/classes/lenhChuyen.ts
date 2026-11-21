@@ -3,6 +3,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich, type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { HttpError, addDays, badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, loadPrincipal, lopDayDu, require_, type Principal } from '../permissions.ts';
+import { coTheChotLoTrinh } from './quyenChuyenLop.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
@@ -340,6 +341,9 @@ function docLenh(id: number): any {
  * Q6 + PR-S5F-a: sửa / huỷ khi lệnh còn `cho`. Lệnh đã tới tuần mà còn `cho` là lệnh CHƯA chuyển được (lớp chuyển đến bị kết thúc, lệch luật…) —
  * Quản lý phải huỷ được hoặc sửa sang tuần mới, không để kẹt. Lệnh không còn `cho` → 409 (vừa thi hành / đã huỷ).
  */
+/** N63 ① (rà PTA #1950): sửa / huỷ / khôi phục quyết định Cuối khoá = chốt lộ trình — CX không (`coTheChotLoTrinh`); lệnh giữa khoá giữ `class.edit`. */
+const quyenLenh = (p: Principal, l: any): boolean => (l.boi_canh === 'cuoi-khoa' ? coTheChotLoTrinh(p, l.lop_nguon_id) : can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }));
+
 function kiemConSuaDuoc(l: any) {
   if (l.trang_thai !== 'cho') throw conflict(l.trang_thai === 'huy' ? 'Quyết định chuyển lớp đã được huỷ.' : 'Quyết định chuyển lớp vừa được thi hành.');
 }
@@ -347,6 +351,7 @@ function kiemConSuaDuoc(l: any) {
 export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
+  if (!quyenLenh(p, l)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
   kiemConSuaDuoc(l);
   const gop: DongLenhVao = {
     studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
@@ -387,6 +392,7 @@ function huyMotLenh(p: Principal, l: any, why: string | null): void {
 export function huyLenh(p: Principal, id: number, lyDo?: string | null): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
+  if (!quyenLenh(p, l)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
   /* #8 (G4-08, chủ SP 11/11): huỷ là một bấm + Hoàn tác — lý do không bắt buộc (có thì ghi vào nhật ký / chuông). */
   const why = String(lyDo ?? '').trim().slice(0, 2000) || null;
   kiemConSuaDuoc(l);
@@ -433,7 +439,7 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
     let l: any = null;
     try {
       l = docLenh(id);
-      if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }
+      if (!quyenLenh(p, l)) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }   // N63 ①: lệnh Cuối khoá — CX không
       kiemConSuaDuoc(l);
       tx(() => huyMotLenh(p, l, why));
       kq.ok.push(id); daHuy.push(l);
@@ -489,7 +495,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
     let l: any = null;
     try {
       l = docLenh(id);
-      if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }
+      if (!quyenLenh(p, l)) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }   // N63 ①: lệnh Cuối khoá — CX không
       if (l.trang_thai === 'cho') throw conflict('Quyết định đã ở trạng thái chờ.');
       if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — em đã sang lớp mới. Muốn đổi: Chuyển lớp lại từ lớp hiện tại của em.');
       const doiTuan = l.tuan_bat_dau <= homNay ? tuanSau : null;   // đã hỏi ở trên

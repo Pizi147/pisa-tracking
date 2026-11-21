@@ -150,8 +150,8 @@ export default function StudentDetailPage() {
   /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
   useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
   /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). */
-  const xemYt = xemYThucTheoVai(useSession().session?.roles);
-  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id && xemYt ? `/students/${id}/y-thuc` : null, [id, xemYt]);
+  const xemYtVai = xemYThucTheoVai(useSession().session?.roles);
+  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id && xemYtVai ? `/students/${id}/y-thuc` : null, [id, xemYtVai]);
   /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
   const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
 
@@ -248,6 +248,7 @@ export default function StudentDetailPage() {
   /* A3-12 (③ K9d): ô "Ý thức" đầu hồ sơ khi em có bậc hoặc đề xuất chờ QL duyệt — đọc `/y-thuc` đã nạp, không thêm câu. */
   const yt = yThuc.data, choQl = yt?.deXuat?.status === 'cho_duyet', bacYt = yt?.bacNhan ? bacNgan(dich(yt.bacNhan)) : null;
   const oYThuc = yt && ((yt.bac ?? 0) > 0 || choQl) ? { bac: bacYt, wl: !!bacYt?.startsWith('WL'), choQl } : null;
+  const xemYt = data.xemYThuc ?? xemYtVai;   // máy chủ quyết theo em (BPXL kiêm GV lớp khác)
   const nhanTab = (k: keyof typeof HO_SO_TAB_LABEL) => (k === 'y-thuc' && !xemYt ? (cy?.ratio ? t('Phối hợp') : t('Phối hợp SOS')) : HO_SO_TAB_LABEL[k]);   // N63 ⑤
   const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); board.reload(); yThuc.reload(); };
   /* "+ Task" (③ R3.1, K6): mục theo quyền máy chủ — Case `canReport` · Vi phạm `canRecord` · Tình hình `coTheBao` (GV báo TVV) / `coTheHoi` (TVV hỏi GVCN). */

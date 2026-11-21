@@ -540,9 +540,9 @@ export function HoTroHocVienTab() {
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
   const chiCc = !conViec && tatCaViec.some(laViecChamCheo);
   /* brief 7: việc của người khác (QL xem GV / Tất cả) = theo dõi; `chiXem` = đang xem đúng một GV. Việc chưa có người (Phân công…) không phải của ai — làm được. */
-  /* A3-05: CX gặp việc chấm "Chưa có người" mà không nhập được (`lamThay` false — CX không sửa học thuật, N52) → chỉ xem: dòng không nút "Nhập điểm",
-     panel "Chỉ xem · …" tiêu đề "Điểm …". */
-  const chiXemCx = (it: WorkItem) => laCx && !it.mine && it.ownerId === null && it.group === 'score' && !(it as { lamThay?: boolean }).lamThay;
+  /* A3-05: CX gặp việc chấm "Chưa có người" — CX không sửa điểm (N52) → chỉ xem: dòng không nút "Nhập điểm", panel "Chỉ xem · …" tiêu đề "Điểm …".
+     Chỉ nhóm chấm: việc chưa có người khác máy chủ không gửi cờ làm được (`lamThayCua` trả false khi chưa có người) — CX làm được nhiều việc phía TVV. */
+  const chiXemCx = (it: WorkItem) => laCx && !it.mine && it.ownerId === null && it.group === 'score';
   const theoDoi = (it: WorkItem) => !!data?.chiXem || (!it.mine && it.ownerId !== null) || chiXemCx(it);
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
   /* "Em này còn" (T01): việc khác của cùng em ở danh sách (làm tại chỗ, chưa xong) — một bấm sang việc đó. */

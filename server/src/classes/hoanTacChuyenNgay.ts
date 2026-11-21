@@ -126,6 +126,8 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
     const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
     const lopNguon = ghiDanh[0]?.class_id as number | undefined;
     if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Head phụ trách lớp cũ của em hoàn tác được lần chuyển này.');
+    /* N63 ① (rà PTA #1950): Hoàn tác lần chốt cả lớp (trang Cuối khoá) = quyết định lộ trình — CX không đảo; Hoàn tác chuyển lớp một em giữ `class.edit`. */
+    if (bang === 'classes' && !coTheChotLoTrinh(p, lopNguon)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
     return { g, ghiDanh, lopNguon };
   });
   return tx(() => {

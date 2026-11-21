@@ -1069,6 +1069,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     progress: progressOf(attempts, isRatioCycle(selected ?? {}), cases.map((c: any) => c.id),
       selected ? selected.programme_code ?? programmeCodeOfCycle(selected.id) : null),
     cases,
+    /* N63 ⑤ (rà PTA #1950 P2-d): xem Ý thức của em — cùng cổng `yThuc/access.ts` (BPXL kiêm GV lớp khác: theo vai GV). Ngoài `viewer` (cờ ghi). */
+    xemYThuc: xemYThucHv(p, studentId),
     viewer: (() => {
       /*
        * K2-6e (Q16) — MỘT NGUỒN "lớp đang học": `activeClassOf` (bảng `enrollments`, xếp theo `id DESC`), không phải
