@@ -115,4 +115,14 @@ export async function runPrSuaLichLopTests(t: YThucTestKit) {
     assert(/Final/.test(th) && /→/.test(th), `chuông phải nói mốc nào đổi: ${th}`);
     assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'class.progress' AND entity_id = ? AND actor_user_id = ?`, LOP, P.normalCoreTeacher.userId).n >= 1, 'nhật ký ghi người sửa');
   });
+
+  check('SL-e · (AUDIT-2111 B1-13) lớp FT: Progress / Final khác trống → 400, DB không đổi; gửi lại giá trị đang lưu / trống → qua', () => {
+    const truoc = JSON.stringify(get('SELECT progress_week_override AS p, final_week_override AS f FROM classes WHERE id = ?', FT));
+    assertThrows(() => schedule.setClassProgress(P.mbManager, FT, { progressWeek: 999 }), /Lớp FT không có Progress/, 'Progress 999');
+    assertThrows(() => schedule.setClassProgress(P.mbManager, FT, { finalWeek: 5 }), /Lớp FT không có Progress/, 'Final 5');
+    assert(JSON.stringify(get('SELECT progress_week_override AS p, final_week_override AS f FROM classes WHERE id = ?', FT)) === truoc, 'DB không đổi');
+    const cu = JSON.parse(truoc);
+    schedule.setClassProgress(P.mbManager, FT, { progressWeek: cu.p, finalWeek: cu.f });   // web gửi lại đúng giá trị đang lưu
+    assertThrows(() => schedule.setClassProgress(P.mbManager, LOP, { progressWeek: 999 }), /vượt quá/, 'lớp thường giữ luật cũ');
+  });
 }

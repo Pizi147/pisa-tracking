@@ -432,9 +432,16 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
         ...data.bySkill.map((b) => ({ userId: b.userId, skill: b.skill, isCore: false })),
         mon ? { userId: chon, skill: mon, isCore: false } : { userId: chon, skill: null, isCore: true },
       ];
-      await api.put(`/classes/${it.classId}/teachers`, { slots, phienBan: data.phienBan });
+      const kq = await api.put<{ lo?: number | null }>(`/classes/${it.classId}/teachers`, { slots, phienBan: data.phienBan });
       invalidate('/classes'); invalidate('/cases');
-      toast.push('ok', t('Đã phân công {nhan}', { nhan }));
+      /* P1-05 (AUDIT-2111): máy chủ trả khoá `lo` → Hoàn tác như lưu phân công lớp. */
+      if (kq?.lo != null) {
+        toast.hoanTac(t('Đã phân công {nhan}', { nhan }), () => {
+          api.post('/phan-cong/hoan-tac', { lo: kq.lo })
+            .then(() => { invalidate('/classes'); invalidate('/cases'); invalidate('/my-work'); toast.push('ok', t('Đã hoàn tác')); onDaLam(); })
+            .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
+        });
+      } else toast.push('ok', t('Đã phân công {nhan}', { nhan }));
       onDaLam();
     } catch (e: any) {
       setLoi(e?.message ?? t('Không lưu được'));

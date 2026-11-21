@@ -6,6 +6,7 @@ import { dongBoTrangThaiCase } from '../cases/sosState.ts';
 import { cachXoaCase, loadCase, quyenXoaPa } from '../cases/cases.ts';
 import { EDIT_VIOLATION_MESSAGE, canEditViolation, requireViewStudent } from '../yThuc/access.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
+import { khoiPhucTraLaiKhiXoa, type TraLaiKhiXoa } from '../yThuc/traLai.ts';
 import { ownerAccess } from './attachments.ts';
 import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac } from './thungRac.ts';
 
@@ -73,6 +74,8 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
     if (m.loai === 'pa') dongBoTrangThaiCase(dongGoc(m, 'case_interventions').case_id);
     if (m.loai === 'ket_qua_pa') dongBoTrangThaiCase(dongGoc(m, 'case_followups').case_id);   // N37: Case đã hoàn thành giữ nguyên (xoá PA không chặn Case xong)
     if (m.loai === 'vi_pham') chotHanXuLy([dongGoc(m, 'violations').student_id]);
+    /* P1-03 (AUDIT-2111): yêu cầu trả lại đã về "mở" theo bản chụp → Báo PH "Chờ GV sửa", hạn như trước, TVV nhận tin. */
+    if (m.loai === 'vi_pham') khoiPhucTraLaiKhiXoa(duLieu(m).phu?.traLai as TraLaiKhiXoa | undefined, p.userId, m.id);
   });
   return { ok: true, loai: m.loai, doiTuongId: moiId };
 }

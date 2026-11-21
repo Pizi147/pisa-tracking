@@ -97,14 +97,14 @@ export async function runPrOv15gTests(t: YThucTestKit) {
       const branch = one('SELECT branch_id b FROM classes WHERE id = ?', lop).b;
       const ung = (classesSvc.teacherCandidatesBranch(branch, lop) as any[]).find((u) => u.id !== o.userId && !cu.some((x) => x.userId === u.id));
       assert(o && ung, 'thiếu GV để đổi');
-      await ghi(QL, `/classes/${lop}/teachers`, 'PUT', { slots: cu.map((x) => (x === o ? { ...x, userId: ung.id } : x)) });
+      await ghi(QL, `/classes/${lop}/teachers`, 'PUT', { phienBan: classesSvc.classTeachers(P.admin, lop).phienBan, slots: cu.map((x) => (x === o ? { ...x, userId: ung.id } : x)) });
       const ten = (id: number) => one('SELECT full_name n FROM users WHERE id = ?', id).n;
       const r = await ls('lop', lop, '&loc=phan-cong');
       const f = r.dong[0]?.truong.find((x) => x.ten.startsWith('Listening'));
       assert(f && f.cu === ten(o.userId) && f.moi === ten(ung.id), JSON.stringify(r.dong[0]));
       const r2 = await ls('phan-cong', lop);
       assert(r2.dong[0]?.id === r.dong[0].id, 'loai=phan-cong cùng mục');
-      await ghi(QL, `/classes/${lop}/teachers`, 'PUT', { slots: cu });   // trả lại như cũ cho phép kiểm sau
+      await ghi(QL, `/classes/${lop}/teachers`, 'PUT', { phienBan: classesSvc.classTeachers(P.admin, lop).phienBan, slots: cu });   // trả lại như cũ cho phép kiểm sau
     });
 
     const them = await ghi(QL, '/intake/commit', 'POST', { classId: lop, idempotencyKey: `ov15g-${Date.now()}`, rows: [

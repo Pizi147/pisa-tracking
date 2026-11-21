@@ -138,6 +138,44 @@ export async function runPrCxBpxlTests(t: any) {
     assert(ma(() => lenh.khoiPhucLenh(cx, [ck])) === 403 && one('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', ck).trang_thai === 'huy', 'CX khôi phục lệnh Cuối khoá 403');
   }));
 
+  const tthv: any = await import('../students/trangThaiHv.ts');
+  check('Rà #1950 vòng 3 · Tạm dừng em có quyết định Cuối khoá của Head: hộp xem trước của CX báo chặn (khớp lúc lưu 403, không đổi gì); lệnh CX tự ra / Head: huỷ được', () => thu(() => {
+    const tuan = llt.xemChuyenLop(P.mbManager, moiEm(lop).sid).tuanChon[1];
+    const lenhCho = (sid: number, nguoi: number) => Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, ngay_xem_lai, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+        VALUES (?, ?, 'bao_luu', 'cuoi-khoa', ?, ?, ?, ?, 'cho', ?)`).run(sid, lopThuong, tuan, addDays(TODAY, 60), nguoi, TODAY, new Date().toISOString()).lastInsertRowid);
+    const { sid: a } = moiEm(lopThuong);
+    const la = lenhCho(a, P.mbManager.userId);
+    const xt = tthv.xemTruocTrangThai(cx, a, false);
+    assert(xt.chan === lenh.LOI_LENH_HEAD && !xt.huyLenh, `xem trước CX: ${JSON.stringify(xt)}`);
+    const tt = () => JSON.stringify([one('SELECT status FROM students WHERE id = ?', a).status, one('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', la).trang_thai]);
+    const t0 = tt();
+    assert(ma(() => tthv.doiTrangThai(cx, a, { status: 'inactive', huyLenh: true, reason: 'Thử' })) === 403 && tt() === t0, `CX lưu Tạm dừng: ${tt()}`);
+    assert(tthv.xemTruocTrangThai(P.mbManager, a, false).huyLenh === true, 'Head: hộp có dòng Huỷ quyết định');
+    const { sid: b } = moiEm(lopThuong);
+    lenhCho(b, cx.userId);
+    const xb = tthv.xemTruocTrangThai(cx, b, false);
+    assert(xb.chan === null && xb.huyLenh === true, `lệnh CX tự ra: ${JSON.stringify(xb)}`);
+  }));
+
+  check('Rà #1950 vòng 3 · Hoàn tác chuyển ngay MỘT em theo quyết định Cuối khoá của Head: CX 403, ghi danh không đổi; Head được; lệnh CX tự ra: CX Hoàn tác được', () => thu(() => {
+    const thu1 = (nguoi: number) => {
+      const { sid } = moiEm(lopThuong);
+      const dao = htcn.chuyenNgayCoHoanTac(P.mbManager, sid, [lopThuong], () => {
+        conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+            VALUES (?, ?, 'bao_luu', 'cuoi-khoa', ?, ?, ?, 'da_thi_hanh', ?)`).run(sid, lopThuong, TODAY, nguoi, TODAY, new Date().toISOString());
+        conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(sid, lopThuong);
+        return { ok: true };
+      }, () => true).dao as number;
+      const tt = () => one(`SELECT status FROM enrollments WHERE student_id = ? AND class_id = ? ORDER BY id DESC LIMIT 1`, sid, lopThuong).status;
+      return { sid, dao, tt };
+    };
+    const h = thu1(P.mbManager.userId);
+    assert(ma(() => htcn.hoanTacChuyenNgay(cx, h.sid, h.dao, 'students')) === 403 && h.tt() === 'transferred', `CX đảo lệnh Head: ${h.tt()}`);
+    assert(ma(() => htcn.hoanTacChuyenNgay(P.mbManager, h.sid, h.dao, 'students')) === null && h.tt() === 'active', 'Head đảo được');
+    const c = thu1(cx.userId);
+    assert(ma(() => htcn.hoanTacChuyenNgay(cx, c.sid, c.dao, 'students')) === null && c.tt() === 'active', 'CX đảo lệnh của mình');
+  }));
+
   check('N63 ⑤ (rà PTA #1950) · bảng HV lớp: BPXL không có nhãn / số Ý thức (canhBaoTheoHocVien rỗng, soEmCanXuLyYThuc 0); GVCN vẫn có', () => thu(() => {
     const dhv: any = dongHv;
     const { sid } = moiEm();

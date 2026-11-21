@@ -1245,8 +1245,10 @@ export function monGopConCanMany(classIds: readonly number[]): Map<number, Set<s
  * Phân công GV của lớp đã có (`PUT /classes/:id/teachers`, đường cũ): PC-GV-A — đi qua lõi chung `luuPhanCong` (một lớp, hiệu lực hôm nay):
  * cùng ba luật, cùng quyền (QL mọi ô; GVCN chỉ ô bộ môn — chạm GVCN 403; GVCN đổi thì QL nhận thông báo), cùng 409 phiên bản. Trả bức tranh mới.
  */
-export function setClassTeachers(p: Principal, classId: number, input: { slots?: TeacherSlot[]; phienBan?: unknown }) {
+export function setClassTeachers(p: Principal, classId: number, input: { slots?: unknown; phienBan?: unknown }) {
   if (!db().prepare('SELECT 1 FROM classes WHERE id = ?').get(classId)) throw notFound('Không tìm thấy lớp');
-  luuPhanCong(p, { lop: [{ classId, slots: input.slots ?? [], ...(input.phienBan !== undefined ? { phienBan: String(input.phienBan) } : {}) }] });
-  return classTeachers(p, classId);
+  /* P1-05 (AUDIT-2111 B1-03): thân thiếu / sai `slots` từng là "lớp không ai dạy" (kết thúc hết phân công) → 400 ở lõi `luuPhanCong` (sau quyền). Phiên bản bắt
+     buộc ở đường này (web gửi từ SUA-NO-RA) — không gửi thì không biết người khác vừa đổi. Trả `lo` để toast có Hoàn tác (`POST /phan-cong/hoan-tac`). */
+  const kq = luuPhanCong(p, { lop: [{ classId, slots: input.slots as TeacherSlot[], phienBan: input.phienBan == null ? undefined : String(input.phienBan) }], phienBanBatBuoc: true });
+  return { ...classTeachers(p, classId), lo: kq.lo };
 }
