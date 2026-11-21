@@ -171,6 +171,17 @@ function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void;
     } finally { setDang(false); }
   };
   const o = 'flex min-h-[46px] min-w-0 items-center border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
+  const moSua = () => { setNhap(cu ?? ''); setLoi(null); setSua(true); };
+  /* Rà PTA (3): chưa có mô tả → một dòng thấp "Mô tả · + Thêm mô tả" (không ô trống cao, không nút bên phải). */
+  if (!cu && !sua) {
+    const gon = 'flex min-h-[38px] min-w-0 items-center border-t px-3 py-1 max-sm:min-h-[44px] max-sm:px-2.5';
+    return <>
+      <div className={`${gon} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`} style={{ borderColor: 'var(--line)' }}>{t('Mô tả')}</div>
+      <div className={`${gon} col-span-2`} style={{ borderColor: 'var(--line)' }}>
+        <button ref={nutSua} type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={moSua}>{t('+ Thêm mô tả')}</button>
+      </div>
+    </>;
+  }
   return <>
     <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{sua ? <label htmlFor={idO}>{t('Mô tả')}</label> : t('Mô tả')}</div>
     {sua ? (
@@ -198,11 +209,11 @@ function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void;
       </div>
     ) : <>
       <div className={`${o} text-sm`} style={{ borderColor: 'var(--line)' }}>
-        {cu ? <span className="min-w-0 whitespace-pre-wrap break-words text-[color:var(--text)]">{cu}</span> : <span className="text-faint">{t('Chưa có')}</span>}
+        <span className="min-w-0 whitespace-pre-wrap break-words text-[color:var(--text)]">{cu}</span>
       </div>
       <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
         {g.coTheSuaMoTa && <button ref={nutSua} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]"
-          onClick={() => { setNhap(cu ?? ''); setLoi(null); setSua(true); }}>{cu ? t('Sửa') : t('Thêm')}</button>}
+          onClick={moSua}>{t('Sửa')}</button>}
       </div>
     </>}
   </>;

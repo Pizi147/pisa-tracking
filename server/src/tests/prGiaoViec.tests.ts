@@ -554,6 +554,17 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(c2 - c1 <= TRAN_GHI_LO.luuVai && c3 - c2 <= TRAN_GHI_LO.luuVai, `lưu vai: ${c2 - c1} / ${c3 - c2} câu > trần ${TRAN_GHI_LO.luuVai}`);
   }));
 
+  await checkAsync('GV-3 (rà PTA) · việc về lại người theo luật (TVV): khối không liệt kê người phụ trách trong Theo dõi; giao đi lần nữa thì hiện lại', () => thu(async () => {
+    const sid = moiEm(); const id = baoPhViPham(sid);
+    giao(ql, 'bao_ph', id, admin.userId);
+    assert(gv.xemGiaoViec(ql, 'bao_ph', id).theoDoi.some((x: any) => x.id === tvv.userId), 'TVV mất việc → theo dõi');
+    const k = gv.doiPhuTrach(ql, 'bao_ph', id, { userId: null, phuTrachCu: admin.userId });
+    assert(!k.duocGiao && k.phuTrach.some((x: any) => x.id === tvv.userId), 'về mặc định → TVV phụ trách');
+    assert(!k.theoDoi.some((x: any) => x.id === tvv.userId) && !gv.xemGiaoViec(tvv, 'bao_ph', id).toiTheoDoi, 'người phụ trách không hiện ở Theo dõi: ' + JSON.stringify(k.theoDoi));
+    giao(ql, 'bao_ph', id, admin.userId);
+    assert(gv.xemGiaoViec(ql, 'bao_ph', id).theoDoi.some((x: any) => x.id === tvv.userId) && !gv.xemGiaoViec(ql, 'bao_ph', id).theoDoi.some((x: any) => x.id === admin.userId), 'giao lại → TVV hiện lại, người được giao không ở Theo dõi');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

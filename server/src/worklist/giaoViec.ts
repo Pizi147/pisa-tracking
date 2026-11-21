@@ -643,7 +643,10 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     giaoBoi: v.pt && r.giao_boi ? nguoi(r.giao_boi) : null, giaoLuc: v.pt ? r.giao_luc ?? null : null,
     han: h.han, hanMacDinh: h.macDinh, hanChon: h.chon, coTheSuaHan: coTheSuaHan(p, v), tamDung: loai === 'bao_ph' && v.mo && !!r.tra_lai_id,
     hanTinhLai: (() => { const c = lan.filter((l) => l.truong === 'han' || l.truong === 'han_tinh_lai').at(-1); return c?.truong === 'han_tinh_lai' && c.moi === h.chon; })(),
-    theoDoi: td.map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon })), toiTheoDoi: td.some((t) => t.user_id === p.userId),
+    /* GV-3 (rà PTA): người đang phụ trách (kể cả người theo luật khi việc về mặc định) không hiện là người theo dõi việc của chính mình — dòng giữ trong bảng
+       (giao đi lần nữa thì hiện lại; Hoàn tác cần dòng còn nguyên), chỉ lọc khi đọc. Tab Đang theo dõi đã bỏ việc của mình (`viecTheoDoi`). */
+    theoDoi: td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon })),
+    toiTheoDoi: td.some((t) => t.user_id === p.userId) && !v.phuTrach.includes(p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
     moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: v.mo && coTheSuaMoTa(p, v),
     lichSu: lan.map((l) => ({ truong: l.truong, cu: l.cu ?? null, moi: l.moi ?? null, cuTen: l.truong === 'mo_ta' ? null : tenSo(l.cu), moiTen: l.truong === 'mo_ta' ? null : tenSo(l.moi),   /* VH-1b: mô tả "12" không phải id người */ nguoi: l.nguoi ?? null, luc: l.luc })),
