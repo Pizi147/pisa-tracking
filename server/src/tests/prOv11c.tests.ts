@@ -86,8 +86,10 @@ export async function runPrOv11cTests(t: YThucTestKit) {
     const toi = mywork.myWork(P.mbManager, { nguoi: 'toi' });
     const la2 = (toi.items as any[]).filter((it) => it.ownerId !== null && it.ownerId !== P.mbManager.userId);
     assert(!la2.length, `"Của tôi" lẫn việc của ${la2.slice(0, 3).map((x: any) => `${x.key}→${x.ownerId}`).join(', ')}`);
-    /* CV-16: QL có tab Vận hành — không lặp việc Vận hành ở Hỗ trợ học viên. */
-    assert(!(toi.items as any[]).some((it) => it.group === 'mgmt'), 'QL "Của tôi" còn việc Vận hành');
+    /* CV-16 → N63 ③ (AUDIT-2111 B2-02): việc Vận hành ở "Của tôi" của QL chỉ là việc giao cho CHÍNH QL (Việc được giao) — việc QL giao người khác không vào. */
+    const vh = (toi.items as any[]).filter((it) => it.group === 'mgmt');
+    const vhLa = vh.filter((it) => (conn.prepare('SELECT assignee_user_id AS a FROM tasks WHERE id = ?').get(Number(String(it.key).split(':')[1])) as any)?.a !== P.mbManager.userId);
+    assert(!vhLa.length, `QL "Của tôi" có việc Vận hành không giao cho QL: ${vhLa.map((x: any) => x.key).join(', ')}`);
   }));
 
   check('OV11c-4 · PA bổ trợ (cả `bo_tro_mien_phi`) gộp MỘT dòng mỗi nhóm; Mini Test chờ chỉ thay dòng Kết quả ở LẦN GHI CUỐI — tuần giữa vẫn là việc Kết quả PA', () => thu(() => {

@@ -360,6 +360,8 @@ export function badgeLop(c: {
   needsPlacement: boolean; canXepLop: number; missingSkills: readonly string[];
   /** Số bài chờ chấm của lớp (0 = không hiện badge). */
   soBaiChoCham: number; needScoresTitle: string | null;
+  /** AUDIT-2111 B2-08: QL — số VIỆC Chấm điểm của lớp (đích = Công việc › Tất cả › Chấm điểm, cùng đơn vị); có thì thay số bài. */
+  soViecChoCham?: number | null;
   phase: string; missingCount: number; soChuaLoTrinhTiep?: number;
   soChoDuyet?: number;
   /** OV-13b: số VIỆC quá hạn của lớp — `demQuaHan` trên cùng danh sách việc với góc Cần làm (bấm badge = số dòng). */
@@ -377,7 +379,8 @@ export function badgeLop(c: {
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
-  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('Chờ chấm · {n}', { n: c.soBaiChoCham }), so: c.soBaiChoCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
+  const nCham = c.soViecChoCham ?? c.soBaiChoCham;
+  if (nCham > 0) co.cham = { key: 'cham', nhan: c.soViecChoCham != null ? t('Chờ chấm · {n} việc', { n: nCham }) : t('Chờ chấm · {n}', { n: nCham }), so: nCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu thông tin · {n}', { n: c.missingCount }), so: c.missingCount, tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('Chờ duyệt · {n}', { n: c.soChoDuyet }), so: c.soChoDuyet, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Head duyệt') };

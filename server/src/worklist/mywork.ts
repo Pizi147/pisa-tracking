@@ -19,7 +19,6 @@ import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
 import { viecBaoCaoPhGv, viecBcPhQuaHanQl, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
-import { canSeeBoard } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, PA_GV_MO, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
@@ -845,8 +844,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * VH-1 (8, N59): việc Vận hành giao cho tôi ("Việc được giao", kèm nhóm) — MỌI vai được giao (TVV, BPXL / CX thuần, Admin) trừ người thấy bảng Vận hành trên web
    * (Head / Quản trị / CX — OV-11c CV-16, không lặp; VH-2 bật bảng cho CX). Cùng câu việc giao cho tôi, không câu thêm.
    */
-  /* VH-1b (PTA chốt, N62): người thấy bảng Vận hành (Head / Quản trị) vẫn nhận việc tay CÓ hạng mục trong đúng mục — việc không hạng mục chỉ ở bảng (không đếm hai lần). Cùng câu. */
-  const coVanHanh = !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt') ? (canSeeBoard(p) ? 'hang-muc' as const : true) : false;
+  /* N63 ③ (AUDIT-2111 B2-02, thay VH-1b "chỉ việc có hạng mục"): Head / Quản trị / CX nhận MỌI việc Vận hành giao cho chính mình ("Việc quản lý › Việc được giao",
+     badge, chuông) như GV — câu chỉ đọc `assignee = tôi`, nên việc mình giao người khác vẫn chỉ ở bảng. Cùng câu. */
+  const coVanHanh = !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt');
   const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca', vanHanh: coVanHanh })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
   const chiGiao = () => {

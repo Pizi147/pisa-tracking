@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { CHU_DA_XONG, CHU_THEM_PA, HAN_GAN_NGAY, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
-import { boVaiCx, can, coVaiCx, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { bangLop, boVaiCx, can, coVaiCx, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
@@ -8,6 +8,7 @@ import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
+import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien, quaHanBaoPh } from '../../../shared/domain/index.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
@@ -91,7 +92,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* OV-13q: "Cập nhật kết quả thi thật ›" mở panel Kết quả thi thật ngay trong hồ sơ (`?viec=thi-that`); hạn = hạn sau thi (cùng việc Công việc). */
   const st = n.sauThi;
   /* SV-TVV-VIEC: việc của người giữ (TVV của em / QL khi em chưa có TVV) — GVCN vẫn nhập được ở panel nhưng không còn là việc của GVCN. */
-  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap && chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null)) {
+  /* rà #1960 vòng 2: chi nhánh em từ lớp đang học (`bangLop`, nhớ tiến trình — 0 câu) → `chuViecTvv` không đọc chi nhánh em. */
+  const cnEm = n.lopId ? bangLop().get(n.lopId)?.branchId ?? undefined : undefined;
+  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap && chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null, false, cnEm)) {
     const quaHanNgay = st.quaHan && st.han ? diffDays(today, st.han) : null;
     bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay, gap: gapCua(st.han, today),
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Cập nhật kết quả thi thật ›',
@@ -195,7 +198,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       mo: { loai: 'tab', tab: 'y-thuc', ...(tvv ? { sub: 'phoi-hop' as const } : {}) } });
   }
   /* P1-04 (B2-07): Bổ sung hồ sơ thiếu — người giữ như Công việc (`chuViecTvv`: TVV của em, chưa có TVV → QL), khoá dòng tổng của người giữ (`bo-sung-ho-so:{người}`). */
-  const chuBs = n.boSung?.thieu.length ? chuViecTvv(p, sid, n.boSung.tvv, true) : null;
+  const chuBs = n.boSung?.thieu.length ? chuViecTvv(p, sid, n.boSung.tvv, true, cnEm) : null;
   if (chuBs) {
     ds.push({ key: `bo-sung-ho-so:${chuBs.ownerId ?? 'ql'}`, loai: 'bo-sung', chu: 'Bổ sung hồ sơ', the: n.boSung!.thieu.map((chu) => ({ chu })), kyNang: null, caseId: null, paId: null,
       han: null, tone: 'info', nguoiId: chuBs.ownerId, nut: 'Bổ sung hồ sơ', mo: { loai: 'duong', href: duongHoSoHocVien(sid) } });
@@ -249,6 +252,15 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         ...(nhieu ? [kem('{n} bài', { n: v.soBai! })] : [])],
       kyNang: v.kn ?? null, caseId: null, paId: null, han: v.due, tone: 'info', quaHan: v.urgency === 'overdue', nguoiId: p.userId, nut: 'Nhập điểm',
       mo: v.classId && v.luot ? { loai: 'nhap-diem', classId: v.classId, luot: v.luot, kns: v.kns ?? [], tuanThi: v.tuanThi ?? null, periodId: v.periodId ?? null, kind: v.kind ?? null, soBai: v.soBai ?? null } : { loai: 'duong', href: v.href } });
+  }
+  /* AUDIT-2111 B2-10: "Nhập điểm MT cũ" (`lich-su:{lớp}`, không hạn) có em này — cùng hàm + cùng khoá với Công việc (`mtLichSuChuaNhap`, một câu, chỉ lớp em).
+     Chỉ GVCN của lớp (người giữ ở Công việc); ponytail: lớp chưa có GVCN (QL giữ) không hiện ở đây — cần thêm câu GVCN, `students/:id` QL sát trần. */
+  if (n.lopId && isCoreTeacherOf(p, n.lopId, today)) {
+    for (const l of mtLichSuChuaNhap(p, { classIds: [n.lopId] })) {
+      if (!l.emIds.includes(sid)) continue;
+      ds.push({ key: `lich-su:${l.classId}`, loai: 'nhap-diem', chu: 'Nhập điểm MT cũ', the: l.luot.map((x) => ({ chu: `MT${x.so}` })),
+        kyNang: null, caseId: null, paId: null, han: null, tone: 'info', quaHan: false, nguoiId: p.userId, nut: 'Nhập điểm ›', mo: { loai: 'duong', href: l.href } });
+    }
   }
   for (const v of viecHoiTinhHinhCuaToi(p, { today, tatCa: false, branchId: null, studentId: sid })) {
     const hoi = String(v.due ? addDays(v.due, -2) : '');   // hạn = ngày hỏi + 2 (`hanHoiTinhHinh`)

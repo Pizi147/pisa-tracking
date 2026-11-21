@@ -16,7 +16,7 @@
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import { PERMISSIONS, TASK_PROGRESS_LABEL, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayCongBaoPhLonNhat, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, laTvvCuaEm, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -882,7 +882,7 @@ const vaiTai = (phan: string, cn: number | null): number | null => vaiTaiDs(phan
  * `meeting_phan.branch_id` cập nhật khi em đổi chi nhánh (`sauDoiChiNhanhEm`); người giữ / quyền theo chi nhánh hiện tại của em.
  */
 /* VH-1 (PTA mục 10): `vanHanh` — thêm vế việc Vận hành còn mở giao cho tôi (chỉ mục một phần `idx_task_giao_mo`) vào CÙNG câu; không câu nào thêm. */
-export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: number | null; studentId?: number; tatCa?: boolean; vanHanh?: boolean | 'hang-muc' }): WorkItem[] {
+export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: number | null; studentId?: number; tatCa?: boolean; vanHanh?: boolean }): WorkItem[] {
   const vai = p.grants.filter((g) => VAI_MEETING.has(g.roleKey));
   const toanBo = vai.some((g) => g.branchId === null);
   const cn = [...new Set(vai.map((g) => g.branchId).filter((b): b is number => b !== null))];
@@ -921,7 +921,8 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
               COALESCE(pt.group_id, t.group_id), COALESCE(t.class_id, pt.class_id), t.progress, pt.title, NULL, t.branch_id, NULL, COALESCE(pt.hang_muc, t.hang_muc), NULL, NULL,
               (SELECT GROUP_CONCAT(ten, ', ') FROM (SELECT DISTINCT s.full_name AS ten FROM task_students ts JOIN students s ON s.id = ts.student_id WHERE ts.task_id IN (t.id, pt.id) AND ts.case_id IS NULL)), NULL
          FROM tasks t LEFT JOIN tasks pt ON pt.id = t.parent_task_id
-        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'${o.vanHanh === 'hang-muc' && !o.studentId ? ' AND COALESCE(pt.hang_muc, t.hang_muc) IS NOT NULL' : ''}${o.studentId ? ` AND EXISTS (SELECT 1 ${hv} AND ts.student_id = ?)` : ''}`);
+        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'
+          AND ${HOAT_DONG_O('t.assignee_user_id', CN_VH('t.branch_id'))}${o.studentId ? ` AND EXISTS (SELECT 1 ${hv} AND ts.student_id = ?)` : ''}`);
   }
   /* TL-1 (rà #1927): Head / Quản trị / CX "Tất cả" — việc trả lại của người khác (đứng tên người giữ), lọc phạm vi chi nhánh ở dưới. Chỉ mục một phần `idx_tra_lai_nhan` (mở). */
   const xemTatCaTraLai = !!o.tatCa && p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx');
@@ -958,7 +959,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     if (r.loai === 'meeting' && r.phu_trach_id !== p.userId) {
       /* Theo luật (N58): Xếp lịch — BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả — CX chi nhánh, không có → Head. */
       mine = r.phu_trach_id == null && (r.vai_id ? coVai(r.phan === 'xep_lich' ? VAI_BPXL : 'cx', branchId)
-        : r.phan === 'xep_lich' && r.tvv ? r.tvv === p.userId : giu(branchId));
+        : r.phan === 'xep_lich' && r.tvv ? laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: branchId ?? undefined }) : giu(branchId));   // TVV cũ (đổi chi nhánh) không giữ
       if (!mine && !o.tatCa) continue;
       ownerId = mine ? p.userId : r.phu_trach_id ?? r.vai_id ?? (r.phan === 'xep_lich' ? r.tvv : null) ?? null;
     }
@@ -1102,7 +1103,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
             mp.trang_thai AS mp_tt, mp.phan AS mp_phan, mp.han_chon AS mp_hc, mp.xong_luc AS mp_luc, COALESCE(mx.performed_on, mp.tao_luc) AS mp_ngay,
             vh.title AS vh_ten, vh.progress AS vh_tt, vh.due_date AS vh_han, vh.updated_at AS vh_luc,
             COALESCE(b.phu_trach_id, x.phu_trach_id, th.phu_trach_id, mp.phu_trach_id, tl.phu_trach_id, vh.assignee_user_id) AS pt, pu.full_name AS pt_ten,
-            s.full_name, s.consultant_user_id AS tvv, tv.full_name AS tvv_ten, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS em_branch, g.user_id AS gvcn_id, gu.full_name AS gvcn_ten
+            s.id AS student_id, s.full_name, s.consultant_user_id AS tvv, tv.full_name AS tvv_ten, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS em_branch, g.user_id AS gvcn_id, gu.full_name AS gvcn_ten
        FROM viec_theo_doi t
        LEFT JOIN viec_bao_ph b ON t.loai = 'bao_ph' AND b.id = t.ref_id
        LEFT JOIN sos_coordination_actions x ON t.loai = 'phoi_hop' AND x.id = t.ref_id
@@ -1146,7 +1147,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
       tt = r.b_tt; han = tt === 'mo' ? hanBaoPhHieuLuc(r.b_han, [], r.b_hc) : r.b_hc ?? r.b_han; luc = tt === 'bo' ? r.b_bo : r.b_xong;
       tieuDe = r.b_ph ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${r.b_nhan} · ${r.full_name}`;
       nhan = tt === 'xong' ? 'Đã báo PH' : tt === 'bo' ? 'Đã bỏ' : r.b_cho ? CHO_GV_SUA : 'Chưa báo'; ptLuat = r.tvv_ten ?? (r.b_ph && r.gvcn_ten ? r.gvcn_ten : 'Head chi nhánh');
-      luatLaToi = r.tvv ? r.tvv === p.userId : r.b_ph && r.gvcn_id ? r.gvcn_id === p.userId : giu(r.em_branch);
+      luatLaToi = r.tvv ? laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: r.em_branch ?? undefined }) : r.b_ph && r.gvcn_id ? r.gvcn_id === p.userId : giu(r.em_branch);
     } else if (loai === 'phoi_hop') {
       tt = r.x_tt === 'pending' ? 'mo' : r.x_tt === 'done' ? 'xong' : 'bo'; han = hanPhoiHop(r.x_kind, r.x_tao, r.x_hc, r.x_pb ?? null); luc = r.x_luc;
       tieuDe = `${r.x_kind === 'other' && r.x_ten ? r.x_ten : tenViec(r.x_kind, r.x_pb ?? null)} · ${r.full_name}`;
@@ -1169,7 +1170,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
       tieuDe = `${TEN_PHAN[r.mp_phan as PhanMeeting]} · Meeting CX/GĐCN · ${r.full_name}`; nhan = tt === 'xong' ? 'Hoàn thành' : tt === 'bo' ? 'Đã bỏ' : 'Chưa xong';
       ptLuat = r.mp_phan === 'xep_lich' ? (r.mp_vai ? 'BPXL chi nhánh' : r.tvv_ten ?? 'Head chi nhánh') : r.mp_vai ? 'CX chi nhánh' : 'Head chi nhánh';
       if (r.mp_vai) ptIds = vaiTaiDs(r.mp_phan, r.em_branch ?? null);
-      luatLaToi = r.mp_vai ? coVai(r.mp_phan === 'xep_lich' ? VAI_BPXL : 'cx', r.em_branch) : r.mp_phan === 'xep_lich' && r.tvv ? r.tvv === p.userId : giu(r.em_branch);
+      luatLaToi = r.mp_vai ? coVai(r.mp_phan === 'xep_lich' ? VAI_BPXL : 'cx', r.em_branch) : r.mp_phan === 'xep_lich' && r.tvv ? laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: r.em_branch ?? undefined }) : giu(r.em_branch);
     }
     /* (11) việc tôi đang phụ trách (giao cho tôi / theo luật) nằm ở "Của tôi" — không lặp ở đây. */
     if (r.pt ? r.pt === p.userId : luatLaToi) continue;

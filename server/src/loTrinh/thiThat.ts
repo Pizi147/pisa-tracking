@@ -278,7 +278,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
   for (const { c, s } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
-    const chu = giu(l?.branch_id ?? null, c.tvv ?? null, f.tatCa);
+    const chu = giu(l?.branch_id ?? null, c.tvv ?? null, f.tatCa, c.student_id);
     if (!chu) continue;
     const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
     const thi = ke.confidence === 'none' ? null : ke.label;

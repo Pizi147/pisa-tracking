@@ -13,6 +13,8 @@ export const EN_GD6_HO_SO_LOP = {
   'Cần xếp lớp tiếp · {n}': 'Need next class · {n}',
   'Chưa chốt lộ trình · {n}': 'Pathway not set · {n}',
   'Chờ chấm · {n}': 'To grade · {n}',
+  'Chờ chấm · {n} việc': 'To grade · {n} tasks',   // AUDIT-2111 B2-08
+  '{b} bài · {v} việc': '{b} papers · {v} tasks',   // AUDIT-2111 B2-03
   'Thiếu thông tin · {n}': 'Missing info · {n}',
   'Chờ duyệt · {n}': 'Awaiting approval · {n}',
   'Quá hạn · {n}': 'Overdue · {n}',
