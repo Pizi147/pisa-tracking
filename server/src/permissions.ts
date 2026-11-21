@@ -711,7 +711,7 @@ export function laAdminCua(p: Principal, ctx: Ctx): boolean {
  * DUONG-LUI-2 (B1-14): câu chặn nhập điểm theo người — QL / Admin (có quyền nhập hộ ở chi nhánh mình) gặp em chi nhánh khác thì nói đúng lý do + bước tiếp,
  * không nhận câu dành cho GV.
  */
-export const CHU_CHAN_NHAP_DIEM = (p: Principal): string => (can(p, PERMISSIONS.SCORE_OVERRIDE, { anyScope: true })
+export const CHU_CHAN_NHAP_DIEM = (p: Principal): string => (can(p, PERMISSIONS.SCORE_OVERRIDE, { anyScope: true }) || qlDiem(p, { anyScope: true })   // AU-2111 B1-09: Head nhập hộ bằng `qlDiem`
   ? 'Học viên ở chi nhánh khác — Head chi nhánh của em nhập điểm.'
   : 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
 

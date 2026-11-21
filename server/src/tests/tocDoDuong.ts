@@ -2243,6 +2243,9 @@ export const TRAN_DONG: Record<string, number> = {
   'ADMIN /hoc-vien-lop?kem=sos-dem': 3406,   // đo 2620
 };
 
+/** AU-2111 P1-01: TVV mở MỘT việc Vận hành được giao (`GET /mgmt-tasks/:id`, cổng khu Công việc + chi tiết) — đo trên seed có dữ liệu (tocDo.run.ts). */
+export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
+
 export const TRAN_GHI_LO = {
   /**
    * TD-GHI (chủ SP 18/11): lưu điểm — trần = đo + 10 câu (chặt hơn max(đo + 10, ⌈đo × 1,3⌉): giữ phần vừa giảm), dòng ⌈đo × 1,3⌉. Đo bộ demo (QL, lượt FT

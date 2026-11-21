@@ -42,7 +42,7 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
   'giua-khoa': ['chuyen_lop', 'fast_track', 'bao_luu', 'dung_hoc'],
 };
 
-const CUNG_LOP_CHI_NHANH = 'Chỉ Head chi nhánh của lớp này mới ra quyết định chuyển lớp.';
+export const CUNG_LOP_CHI_NHANH = 'Chỉ Head hoặc CX của chi nhánh lớp này mới ra quyết định chuyển lớp.';   // N52: CX chuyển lớp được (AU-2111 B1-08)
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {

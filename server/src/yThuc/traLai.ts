@@ -206,7 +206,8 @@ export function traLai(p: Principal, body: { violationId?: unknown; measureId?: 
 /** Hoàn tác (người trả, ≤ 60 giây, còn chờ) → xoá hẳn: Báo PH bỏ tạm dừng (hạn như cũ), lịch sử + tin của lần trả gỡ. */
 export function hoanTacTraLai(p: Principal, id: number): { ok: true } {
   const r = load(id);
-  if (r.trang_thai !== 'mo' || r.nguoi_tra !== p.userId || Date.now() - Date.parse(r.tra_luc) > HOAN_TAC_MS) throw badRequest('Quá thời gian Hoàn tác — dùng Rút yêu cầu.');
+  if (r.nguoi_tra !== p.userId) throw forbidden('Chỉ người trả lại hoàn tác được — dùng Rút yêu cầu.');   // AU-2111 B1-07: nói đúng lý do
+  if (r.trang_thai !== 'mo' || Date.now() - Date.parse(r.tra_luc) > HOAN_TAC_MS) throw badRequest('Quá thời gian Hoàn tác — dùng Rút yêu cầu.');
   tx(() => {
     const dung = baoPhDangDung(id);
     /* rà #1927 (6): theo chỉ mục vi phạm, không quét cả bảng. */

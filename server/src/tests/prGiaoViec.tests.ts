@@ -575,6 +575,46 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
   const { default: SqliteDb } = await import('libsql');
   const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
   const { migratePrTraLai } = await import('../migrate/prTraLai.ts');
+  await checkAsync('AU-2111 P0-01 (B1-01) · người giao mất vai ở chi nhánh → xem / sửa hạn / theo dõi / Hoàn tác / mô tả 403 và DB KHÔNG đổi (Báo PH · Phối hợp · đường riêng)', () => thu(async () => {
+    const sid = moiEm(); const id = baoPhViPham(sid); const phId = phoiHopViec(sid);
+    const cxRoi = taiKhoan('cxroi', 'cx');
+    giao(cxRoi, 'bao_ph', id, tvv2.userId);
+    giao(cxRoi, 'phoi_hop', phId, admin.userId);
+    accounts.setRoles(P.admin, cxRoi.userId, [{ role: 'cx', branches: ['CP'] }]);
+    const roi = loadPrincipal(cxRoi.userId);
+    const anh = () => JSON.stringify([
+      hang('SELECT han_chon, phu_trach_id, giao_boi FROM viec_bao_ph WHERE id = ?', id), hang('SELECT han_chon, phu_trach_id, giao_boi FROM sos_coordination_actions WHERE id = ?', phId),
+      hang(`SELECT id FROM viec_han_lan WHERE (loai = 'bao_ph' AND viec_id = ?1) OR (loai = 'phoi_hop' AND viec_id = ?2)`, id, phId),
+      hang(`SELECT id, user_id FROM viec_theo_doi WHERE (loai = 'bao_ph' AND ref_id = ?1) OR (loai = 'phoi_hop' AND ref_id = ?2) ORDER BY id`, id, phId),
+      hang(`SELECT id FROM viec_giao_lan WHERE (loai = 'bao_ph' AND ref_id = ?1) OR (loai = 'phoi_hop' AND ref_id = ?2)`, id, phId),
+      hang(`SELECT ref_id FROM viec_mo_ta WHERE loai IN ('bao_ph', 'phoi_hop') AND ref_id IN (?1, ?2)`, id, phId),
+    ]);
+    const truoc = anh();
+    const han = addDays(TODAY, 9);
+    const ds: [string, () => unknown][] = [
+      ['xem Báo PH', () => gv.xemGiaoViec(roi, 'bao_ph', id)],
+      ['sửa hạn Báo PH (giao việc)', () => gv.suaHan(roi, 'bao_ph', id, { han, hanCu: null })],
+      ['sửa hạn Báo PH (đường riêng)', () => bp.suaHanBaoPh(roi, id, { han, hanCu: null })],
+      ['sửa hạn Phối hợp (giao việc)', () => gv.suaHan(roi, 'phoi_hop', phId, { han, hanCu: null })],
+      ['sửa hạn Phối hợp (đường riêng)', () => ph.suaHanPhoiHop(roi, phId, { han, hanCu: null })],
+      ['thêm theo dõi', () => gv.themTheoDoi(roi, 'bao_ph', id, { userIds: [tvv.userId] })],
+      ['bỏ theo dõi người khác', () => gv.boTheoDoi(roi, 'bao_ph', id, gvcn.userId)],
+      ['Hoàn tác giao', () => gv.hoanTacGiao(roi, 'bao_ph', id)],
+      ['Hoàn tác giao Phối hợp', () => gv.hoanTacGiao(roi, 'phoi_hop', phId)],
+      ['mô tả', () => gv.suaMoTa(roi, 'bao_ph', id, { moTa: 'Người đã rời chi nhánh ghi thử', moTaCu: null })],
+    ];
+    for (const [ten, fn] of ds) {
+      const m = await ma(fn);
+      assert(m === 403, `${ten}: ${m}`);
+      assert(anh() === truoc, `${ten}: DB đã đổi dù trả ${m}`);
+    }
+    /* Đối chứng: người giao CÒN vai (CX MB khác) vẫn sửa được hạn. */
+    const cxCon = taiKhoan('cxcon', 'cx');
+    giao(cxCon, 'bao_ph', id, admin.userId);
+    gv.suaHan(cxCon, 'bao_ph', id, { han, hanCu: null });
+    assert(mot('SELECT han_chon FROM viec_bao_ph WHERE id = ?', id).han_chon === han, 'người giao còn vai sửa hạn được');
+  }));
+
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');

@@ -32,4 +32,7 @@ export const EN_DUONG_LUI_2 = {
   'Chưa tới tuần của lượt S Expert — chọn ngày từ tuần này trở về trước, hoặc lưu điểm giữ nguyên ngày để máy dời về tuần này.': "The Expert S week has not started — pick a date this week or earlier, or save the score keeping the date and it moves to this week.",
   'Chỉ Head của lớp này xem được lớp chuyển đến.': "Only this class's Head can see the destination classes.",
   'Danh sách hoàn tác không hợp lệ.': 'Invalid undo list.',
+  /* AU-2111 gói 1 (B1-07, B1-08). */
+  'Chỉ người trả lại hoàn tác được — dùng Rút yêu cầu.': 'Only the person who returned it can undo — use Withdraw request.',
+  'Chỉ Head hoặc CX của chi nhánh lớp này mới ra quyết định chuyển lớp.': "Only the Head or CX of this class's branch can decide a class move.",
 } satisfies Record<string, Dich>;

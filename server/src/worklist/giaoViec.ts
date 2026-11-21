@@ -101,6 +101,9 @@ export const ql = (branchId: number | null): number[] => {
 const hoatDongO = (uid: number, branchId: number | null) => (db().prepare(`SELECT ${HOAT_DONG_O('?', '?')} AS ok`).get(uid, branchId) as any).ok === 1;
 /** (2) Người được giao `uid` của việc của em `studentId` còn hiệu lực (còn hoạt động + còn vai ở chi nhánh hiện tại của em) — quyền ghi theo việc ở baoPhTvv / phoiHop / tinhHinh. */
 export const conHieuLuc = (uid: number, studentId: number) => (db().prepare(`SELECT ${HOAT_DONG_O('?', CN_EM('?'))} AS ok`).get(uid, studentId, studentId) as any).ok === 1;
+/** AU-2111 P0-01: người giao (`giao_boi`; Hoàn tác: người đã đổi) chỉ có quyền theo việc khi còn hoạt động + còn vai ở chi nhánh hiện tại của em — như người được giao. */
+export const laNguoiGiao = (p: Principal, v: { giao_boi?: number | null; student_id: number }) =>
+  v.giao_boi != null && v.giao_boi === p.userId && nho(`gv:hieu-luc:${p.userId}:${v.student_id}`, () => conHieuLuc(p.userId, v.student_id));   // GET: một câu cho cả panel
 
 /** Ngày tính hạn phần Meeting: ngày GVCN xác nhận (`performed_on`, ngày nghiệp vụ); thiếu → ngày tạo phần (giờ VN); thiếu nữa → hôm nay nghiệp vụ. */
 const ngayMeeting = (ngayXacNhan: string | null | undefined, taoLuc: string | null | undefined): string =>
@@ -160,7 +163,7 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
 const vaiQuanLy = (p: Principal, branchId: number | null) =>
   p.grants.some((g) => (g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx') && (g.branchId === null || g.branchId === branchId));
 export const coTheDoiNguoi = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId);
-const coTheSuaTheoDoi = (p: Principal, v: Viec) => coTheDoiNguoi(p, v) || v.row.giao_boi === p.userId;
+const coTheSuaTheoDoi = (p: Principal, v: Viec) => coTheDoiNguoi(p, v) || laNguoiGiao(p, v.row);
 const goc = (v: Viec) => ({ consultant_user_id: v.tvv, student_id: v.studentId, phoi_hop_id: v.row.phoi_hop_id ?? null, phu_trach_id: v.pt, giao_boi: v.row.giao_boi ?? null });
 /** Nguồn theo dõi của người theo luật: TVV / GVCN chuyển theo khi đổi người; Head giữ. */
 const nguonLuat = (v: Viec, uid: number): Nguon => (uid === v.tvv ? 'tvv' : uid === v.gvcn ? 'gvcn' : 'head');
@@ -169,10 +172,10 @@ const nguonLuat = (v: Viec, uid: number): Nguon => (uid === v.tvv ? 'tvv' : uid 
 function coTheSuaHan(p: Principal, v: Viec): boolean {
   if (!v.mo) return false;
   if (v.loai === 'bao_ph' && xuLyCon(v.row) !== 'con') return false;
-  if (v.row.giao_boi === p.userId || v.phuTrach.includes(p.userId)) return true;
+  if (v.phuTrach.includes(p.userId) || laNguoiGiao(p, v.row)) return true;
   if (v.loai === 'bao_ph') return coTheSuaHanBaoPh(p, goc(v));
   if (v.loai === 'phoi_hop') return canManageDiscipline(p, v.studentId);
-  if (v.loai === 'tra_lai') return v.row.nguoi_tra === p.userId || canManageDiscipline(p, v.studentId) || vaiQuanLy(p, v.branchId);   // N61: người trả · người nhận · GVCN · Head
+  if (v.loai === 'tra_lai') return (v.row.nguoi_tra === p.userId && conHieuLuc(p.userId, v.studentId)) || canManageDiscipline(p, v.studentId) || vaiQuanLy(p, v.branchId);   // N61: người trả · người nhận · GVCN · Head
   return canManageDiscipline(p, v.studentId) || coTheGhi(p, goc(v)) || (v.loai === 'meeting' && vaiQuanLy(p, v.branchId));
 }
 
@@ -181,7 +184,7 @@ export const laNguoiTheoDoi = (loai: LoaiTheoDoi, id: number, uid: number, branc
   !!db().prepare(`SELECT 1 FROM viec_theo_doi t WHERE t.loai = ? AND t.ref_id = ? AND t.user_id = ? AND ${HOAT_DONG_O('t.user_id', loai === 'van_hanh' ? CN_VH('?') : '?')}`).get(loai, id, uid, branchId);
 /** Người theo dõi / người giao / người phụ trách / người xem được hồ sơ em / Head-CX: đọc được khối giao việc. */
 function requireDoc(p: Principal, v: Viec): void {
-  if (v.phuTrach.includes(p.userId) || v.row.giao_boi === p.userId || vaiQuanLy(p, v.branchId)) return;
+  if (v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || laNguoiGiao(p, v.row)) return;
   if (can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.studentId }) || laNguoiTheoDoi(v.loai, v.id, p.userId, v.branchId)) return;
   throw forbidden('Việc này ngoài phạm vi của bạn.');
 }
@@ -342,7 +345,7 @@ export function hoanTacGiao(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
   const v = docViec(loai, id);
   const g = timGhiDao(db(), LOAI_GHI_DAO, BANG[loai], id);
   if (!g) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
-  if (g.nguoi !== p.userId && !coTheDoiNguoi(p, v)) throw forbidden('Chỉ người đã đổi, Head, Quản trị hoặc CX hoàn tác được.');
+  if (!coTheDoiNguoi(p, v) && !laNguoiGiao(p, { giao_boi: g.nguoi, student_id: v.studentId })) throw forbidden('Chỉ người đã đổi, Head, Quản trị hoặc CX hoàn tác được.');
   tx(() => {
     daoLai(db(), g, p.userId);
     const sau = docViec(loai, id);
@@ -518,6 +521,8 @@ export function theoDoiVaiBaoPh(o: { userId?: number; studentIds?: readonly numb
  * bao_ph / phoi_hop đi đường sẵn có (`han_chon`, `viec_han_lan`, đã mở quyền người phụ trách + người giao); tinh_hinh sửa cột `han`; meeting `han_chon`.
  */
 export function suaHan(p: Principal, loai: LoaiGiao, id: number, body: { han?: unknown; hanCu?: unknown }): KhoiGiaoViec {
+  /* AU-2111 P0-01: quyền đọc khối kiểm TRƯỚC khi ghi — không còn "403 nhưng đã ghi" (quyền ghi của đường riêng rộng hơn quyền đọc khi vai đã đổi). */
+  if (loai === 'bao_ph' || loai === 'phoi_hop') requireDoc(p, docViec(loai, id));
   if (loai === 'bao_ph') { suaHanBaoPh(p, id, body); return xemGiaoViec(p, loai, id); }
   if (loai === 'phoi_hop') { suaHanPhoiHop(p, id, body); return xemGiaoViec(p, loai, id); }
   if (!('hanCu' in body)) throw badRequest('Thiếu hạn đang xem — mở lại việc rồi sửa.');
@@ -525,6 +530,7 @@ export function suaHan(p: Principal, loai: LoaiGiao, id: number, body: { han?: u
   if (han !== null && !isIsoDate(han)) throw badRequest('Ngày hạn không hợp lệ.');
   const hanCu = body.hanCu == null || body.hanCu === '' ? null : String(body.hanCu);
   const v = docViec(loai, id);
+  requireDoc(p, v);
   if (!v.mo) throw badRequest('Việc đã kết thúc — không sửa hạn.');
   if (!coTheSuaHan(p, v)) throw forbidden('Bạn không sửa được hạn của việc này.');
   const macDinh = loai === 'tinh_hinh' ? hanHoiTinhHinh(ngayTheoGioVN(v.row.tao_luc) ?? demoToday()) : null;
@@ -554,7 +560,7 @@ export function suaHan(p: Principal, loai: LoaiGiao, id: number, body: { han?: u
 
 const TRAN_MO_TA = 500;
 /** Sửa Mô tả: người phụ trách (người được giao còn hiệu lực / người theo luật) · người giao · Head / Quản trị / CX của chi nhánh. Người theo dõi chỉ đọc. */
-const coTheSuaMoTa = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || (v.row.giao_boi === p.userId && hoatDongO(p.userId, v.branchId)) || vaiQuanLy(p, v.branchId);   // người giao: còn hoạt động + còn vai
+const coTheSuaMoTa = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || laNguoiGiao(p, v.row);
 /**
  * `moTa` ≤ 500 ký tự (rỗng = bỏ) · `moTaCu` BẮT BUỘC = nội dung đang thấy (null = chưa có) — khác → 409 (so-và-đổi). Lịch sử `viec_giao_lan` (truong mo_ta),
  * tin "Cập nhật" không gửi (mô tả không phải sự kiện của việc). Việc Vận hành dùng `tasks.note` (`/mgmt-tasks`), không đi đường này.
@@ -714,6 +720,7 @@ const NGAY_GIO = /^(\d{4}-\d{2}-\d{2})(?: (\d{2}):(\d{2}))?$/;
  */
 export function xongPhanMeeting(p: Principal, id: number, body: { ngayGio?: unknown; ketQua?: unknown }): KhoiGiaoViec {
   const v = docViec('meeting', id);
+  requireDoc(p, v);   // AU-2111 P0-01: TRƯỚC khi ghi (TVV của em đã đổi vai vẫn qua `coTheGhi`)
   if (v.row.trang_thai === 'bo') throw badRequest('Meeting đã đưa về Cần xử lý — phần này chỉ xem.');
   if (!coTheLamMeeting(p, v)) throw forbidden(v.row.phan === 'ket_qua' ? 'Chỉ CX, TVV của em hoặc Head ghi được kết quả meeting.' : 'Chỉ BPXL, người được giao hoặc Head xếp được lịch họp.');
   const ketQua = chuTuDo(body.ketQua, 'Kết quả', 2000);
@@ -743,6 +750,7 @@ export function xongPhanMeeting(p: Principal, id: number, body: { ngayGio?: unkn
 /** Hoàn tác Hoàn thành (về chưa xong, giữ chữ đã ghi để sửa) — cùng quyền. */
 export function moLaiPhanMeeting(p: Principal, id: number): KhoiGiaoViec {
   const v = docViec('meeting', id);
+  requireDoc(p, v);
   if (v.row.trang_thai !== 'xong') throw conflict('Phần này chưa hoàn thành — không có gì để hoàn tác.');
   if (!coTheLamMeeting(p, v)) throw forbidden('Bạn không hoàn tác được phần này.');
   tx(() => {
