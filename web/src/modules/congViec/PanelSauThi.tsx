@@ -29,6 +29,8 @@ const soNguyen = (v: number | null | undefined) => (v === null || v === undefine
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/lo-trinh', '/my-work', '/work', '/cycles', '/tong-quan'];
 type Chon = HuongSauThi;
 /** Lộ trình đã có kết quả thi thật (đủ 4 kỹ năng hoặc Không thi). */
+/** Ngày thi: KQ đã ghi, không thì ngày thi đã chốt (exam_date dạng ngày). */
+const ngayThiCua = (c: any): string | null => c.thi_that_ngay ?? (c.exam_date && /^\d{4}-\d{2}-\d{2}$/.test(c.exam_date) ? c.exam_date : null);
 const coKqCua = (c: any) => !!c && (!!c.thi_that_khong_thi || KN.every((k) => c[`thi_that_${k}`] !== null && c[`thi_that_${k}`] !== undefined));
 
 /**
@@ -84,13 +86,13 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
   /* P13 KET-PET: lộ trình KET / PET — điểm Cambridge (số nguyên trong thang), Overall · Grade · CEFR máy tính; không Bước tiếp. */
   const kt = c && !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
   const coKq = coKqCua(c);
-  const ngayThi = c?.thi_that_ngay ?? (c?.exam_date && /^\d{4}-\d{2}-\d{2}$/.test(c.exam_date) ? c.exam_date : null);
+  const ngayThi = c ? ngayThiCua(c) : null;
   /* Nạp điểm đang lưu MỘT lần — tải lại nền không xoá chữ đang gõ. */
   const napDiem = (x: any) => {
     const k = !x.route ? kyThiCuaChuongTrinh(x.programme_code) : null;
     const ll = k ? [] : layLaiBanDau(x);
     setLayLai(ll); setDiem(diemBanDau(x, ll, k ? soNguyen : so));
-    setNgayNhap(x.thi_that_ngay ?? (x.exam_date && /^\d{4}-\d{2}-\d{2}$/.test(x.exam_date) ? x.exam_date : ''));
+    setNgayNhap(ngayThiCua(x) ?? '');
   };
   if (c && (!diem || (napLai.current && cy.data && cy.data !== napLai.current))) { napLai.current = null; napDiem(c); }
   const target: number | null = c?.target_score ?? null;
@@ -183,7 +185,7 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
   const hoanTac = async () => {
     setTt('dang'); setLoi(null);
     /* Học tiếp: ảnh chụp giữ tới khi `/cycles/:id` tải lại có KQ (máy chủ trả về) — không chớp "chờ KQ". */
-    try { await api.del(`/cycles/${cycleId}/buoc-tiep`); LAM_MOI.forEach((k) => invalidate(k)); setTt(null); setDaChot(null); setChon(null); cy.reload(); bt.reload(); onDaLam(); }
+    try { await api.del(`/cycles/${cycleId}/buoc-tiep`); LAM_MOI.forEach((k) => invalidate(k)); setTt(null); setDaChot(null); cy.reload(); bt.reload(); onDaLam(); }
     catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;

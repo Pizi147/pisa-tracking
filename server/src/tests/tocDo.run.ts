@@ -1356,6 +1356,7 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
  * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
  * trùng ảnh của main a4f9c00, đã kiểm.
+ * 21/11 SAU-THI-GON A3-13: chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý: phụ dòng "Chọn bước tiếp" bỏ "Đã xong · " (chỉ "OVR … · Đạt Target").
  * 15/10 OV-13m: chụp lại 'QT toi' / 'QT tat-ca' — dòng "Chọn bước tiếp" (2 lộ trình UB FT 401 của seed) đổi tiêu đề / nhãn dòng gộp / chữ / đường mở panel Bước tiếp (có chủ ý).
  * 15/10: chụp lại 'QT toi' / 'QT tat-ca' sau khi Case của Task2(e) thôi lấy giờ thật (hạn Thêm PA của nó trôi theo ngày chạy → băm QT đổi mỗi ngày).
  * 17/10 EN-e: chụp lại 7 băm — đổi CÓ CHỦ Ý chỉ ở tên việc: actionLabel "Kết quả" → "Kết quả PA", Phối hợp "CX / GĐCN meeting với HV[ / PH]" →
@@ -1530,7 +1531,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '3862f5c189798284',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': 'aae3d57d2cc9e595',
     'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
