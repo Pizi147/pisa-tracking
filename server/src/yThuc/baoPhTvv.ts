@@ -26,6 +26,11 @@ import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
 import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
+/** A3-09 (AUDIT-2111): ngày giờ họp đã xếp của Meeting CX/GĐCN (phần Xếp lịch họp đã xong) — dòng Báo PH · Meeting của TVV ghi như dòng của CX.
+    Câu con theo chỉ mục duy nhất `uq_meeting_phan (phoi_hop_id, phan)`: ≤ 1 dòng, chỉ dòng có `phoi_hop_id`. */
+export const HOP_MEETING_SQL = (v: string) => `(SELECT y.ngay_gio FROM meeting_phan y WHERE y.phoi_hop_id = ${v}.phoi_hop_id AND y.phan = 'xep_lich' AND y.trang_thai = 'xong')`;
+export const chuHop = (h: string | null | undefined): string | null => (h ? `họp ${h.slice(8, 10)}/${h.slice(5, 7)}${h.slice(10)}` : null);
+
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** TL-1 (N61): việc đang có yêu cầu trả lại mở (`tra_lai_id`) — hạn tạm dừng, không quá hạn ở mọi nơi. */
 export const CHO_GV_SUA = 'Chờ GV sửa';
@@ -487,7 +492,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const giu = giuViecQl(p);
   const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.tra_lai_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
-            e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
+            e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan, ${HOP_MEETING_SQL('v')} AS hop,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
             CASE WHEN v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL THEN (SELECT ta.user_id FROM teacher_assignments ta
@@ -535,9 +540,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       items.push({
         key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', urgency,
         studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuHop(r.hop), count: null,   // A3-09: dòng phụ "họp {ngày giờ}"
         reason: `GVCN đã xác nhận ${r.nhan} — báo gia đình, sắp xếp buổi họp và ghi kết quả`,
-        tieuDe: `Báo PH · Meeting CX/GĐCN · ${r.full_name}`, phu: null, actionLabel: 'Ghi KQ',
+        tieuDe: `Báo PH · Meeting CX/GĐCN · ${r.full_name}`, phu: chuHop(r.hop), actionLabel: 'Ghi KQ',
         href: r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
         ownerId, owner: null, mine: ownerId === p.userId,
         due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,

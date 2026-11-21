@@ -147,7 +147,9 @@ export type NguoiTrongDs = { id: number; ten: string; phu?: string;
 /** GD-5 (mockup ⑤ A4): chọn nhiều — chip ✕ trong ô, đếm "n / trần", tới trần mục còn lại tắt; Backspace ở ô trống chọn rồi bỏ chip cuối. */
 export type ChonNhieu = { chon: NguoiTrongDs[]; toiDa: number; onDoi: (ds: NguoiTrongDs[]) => void;
   /** Chữ đơn vị cho câu trần / nút Xong ("em" → "Tối đa 8 em một lần", "Xong · 2 em"). */
-  donVi?: string };
+  donVi?: string;
+  /** A2-14 (mockup v22 V2): chip đứng sẵn trong ô, không ✕, không chọn lại (người giao tự theo dõi — "Tên · bạn"). */
+  coDinh?: { id: number; ten: string; phu?: string }[] };
 
 type ChonNguoiOption =
   | { kind: 'trong' }
@@ -309,7 +311,7 @@ export function ChonNguoi({
   useEffect(() => { if (khoaGiaTri && !open) setEditing(false); }, [khoaGiaTri]); // eslint-disable-line react-hooks/exhaustive-deps
   const coChuThayThe = !!value || khongDoi !== undefined || macDinhTrong !== undefined;
 
-  const daChonIds = useMemo(() => new Set((nhieu?.chon ?? []).map((x) => x.id)), [nhieu?.chon]);
+  const daChonIds = useMemo(() => new Set([...(nhieu?.chon ?? []), ...(nhieu?.coDinh ?? [])].map((x) => x.id)), [nhieu?.chon, nhieu?.coDinh]);
   const day = !!nhieu && nhieu.chon.length >= nhieu.toiDa;
   const options = useMemo<ChonNguoiOption[]>(() => {
     const out: ChonNguoiOption[] = [];
@@ -425,6 +427,7 @@ export function ChonNguoi({
   const oGo = (
     <div className={`oc${nhieu ? ' oc-nhieu' : ''}${gonLop}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ''}`} onClick={() => inputRef.current?.focus()}>
       {!nhieu && <IcTim />}
+      {nhieu?.coDinh?.map((x) => <span key={`cd-${x.id}`} className="chip-em"><span className="ten-hv">{x.ten}</span>{x.phu && <small className="text-xs text-faint">{x.phu}</small>}</span>)}
       {nhieu?.chon.map((x, k) => (
         <span key={x.id} className={`chip-em${tron && k === nhieu.chon.length - 1 ? ' tron' : ''}`}>
           <span className="ten-hv">{x.ten}</span>

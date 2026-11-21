@@ -57,4 +57,6 @@ export const EN_GIAO_VIEC_2 = {
   'Đã lưu mô tả việc': 'Task description saved', 'Đã bỏ mô tả việc': 'Task description removed', 'Mô tả việc': 'Task description', 'Lưu mô tả việc': 'Save task description', 'Cần làm gì, lưu ý gì (tuỳ chọn)': 'What to do, what to note (optional)',
   'Quá {n} ký tự — bớt chữ để lưu': '{n} characters over — shorten to save',
   'Người khác vừa sửa mô tả việc: “{chu}”. Chữ bạn gõ vẫn ở ô — bấm Lưu mô tả việc để thay.': 'Someone just edited the task description: “{chu}”. Your text is still in the box — press Save task description to replace it.', 'Thêm mô tả việc': 'Add task description', '+ Thêm mô tả việc': '+ Add task description', 'Bỏ mô tả việc': 'Remove task description',
+  /* AUDIT-2111 gói 3 */
+  'Head làm được': 'Head can do it', 'hạn tạm dừng': 'deadline paused', 'Mở tab Ý thức của em ›': 'Open the student’s Conduct tab ›', 'Bạn đang theo dõi · TVV của em vẫn ghi Báo PH được': 'You are following · as the student’s consultant you can still record the parent report',
 } as const;

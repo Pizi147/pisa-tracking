@@ -64,7 +64,8 @@ export async function runPrDonBTests(t: YThucTestKit) {
     const co = webSrc().filter((x) => x.s.includes('+ Giao việc')).map((x) => `${x.f}×${x.s.split('+ Giao việc').length - 1}`);
     /* OV-15d (mockup OV-14 số 2 mục 3): nhóm "Việc quản lý" của Công việc có "+ Giao việc" — mở CÙNG hộp `CreateTask` của Vận hành (một form). */
     /* N62 (VH-2): thêm "+ Giao việc" ở đầu trang Công việc (Head, Quản trị, CX) — vẫn CÙNG hộp `CreateTask`. */
-    assert(co.sort().join(', ') === 'web/src/modules/congViec/HoTroHocVienTab.tsx×2, web/src/modules/worklist/MgmtTasksPage.tsx×1', co.join(', '));
+    /* A2-13 (AUDIT-2111): bỏ nút cuối tab "Việc quản lý" — Công việc còn MỘT "+ Giao việc" (đầu trang). */
+    assert(co.sort().join(', ') === 'web/src/modules/congViec/HoTroHocVienTab.tsx×1, web/src/modules/worklist/MgmtTasksPage.tsx×1', co.join(', '));
     assert(doc('web/src/modules/congViec/HoTroHocVienTab.tsx').includes('<CreateTask '), 'Việc quản lý dùng chung hộp CreateTask');
     const hop = doc('web/src/modules/worklist/MeetingPage.tsx');
     assert(!hop.includes('<ManagerTasks ') && !hop.includes('<ManagerTasks\n') && hop.includes('Giao việc ở Vận hành'), 'MeetingPage');

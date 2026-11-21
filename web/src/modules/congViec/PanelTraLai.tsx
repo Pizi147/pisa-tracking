@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -10,7 +11,7 @@ import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { VI_PHAM_TEN_TOI_DA, bacDu, monViPham, shortDate, tenMonNgan } from '@shared/domain/index.ts';
+import { VI_PHAM_TEN_TOI_DA, bacDu, duongHoSoHocVien, monViPham, shortDate, tenMonNgan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { lucVn } from './gioVn.ts';
 import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
@@ -126,7 +127,7 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
   return (
     <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan} quyChe={quyChe ? { chu: quyChe } : null}>
       <div className="flex flex-col gap-4 pt-4">
-        {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} anDoi onDaDoi={() => { reload(); onDaLam(); }} />}
+        {gv.g && <KhoiGiaoViec g={gv.g} mo={mo} dat={gv.dat} reload={gv.reload} anDoi onDaDoi={() => { reload(); onDaLam(); }} />}
         {/* Lời TVV trả (mockup `.gui-gv`). */}
         <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
           <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">
@@ -163,7 +164,9 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
                 <LichSuViPham id={vp.id} hn={hn} />
               </>
             )}
-            {c === 'sua' && caLan && <p className="m-0 text-sm text-dim">{t('Sửa ghi chú GVCN / từng vi phạm ở tab Ý thức của em, rồi bấm Gửi lại.')}</p>}
+            {/* B3-08 (AUDIT-2111): link thẳng tới tab Ý thức của em (Quay lại về đúng việc này: địa chỉ giữ `?viec=`) — không tự tìm đường. */}
+            {c === 'sua' && caLan && <p className="m-0 flex flex-wrap items-center gap-x-2 text-sm text-dim">{t('Sửa ghi chú GVCN / từng vi phạm ở tab Ý thức của em, rồi bấm Gửi lại.')}
+              <Link className="link font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(d.studentId, { tab: 'y-thuc' })}>{t('Mở tab Ý thức của em ›')}</Link></p>}
             {(c === 'giu' || c === 'xoa') && vp && (
               <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-[10px] px-4 py-3 text-sm max-sm:grid-cols-1" style={{ background: 'var(--surface-2)' }}>
                 <span className="text-[13px] text-dim">{c === 'xoa' ? t('Sẽ xoá') : t('Vi phạm')}</span>

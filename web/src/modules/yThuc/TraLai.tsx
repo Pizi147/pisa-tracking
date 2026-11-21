@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Truong, useNhap } from '../../ui/KhungPanel.tsx';
@@ -102,8 +102,11 @@ export function DaiDaLam({ chu, het, onHet, onHoanTac }: { chu: string; het: num
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   useEffect(() => { const h = setTimeout(onHet, Math.max(0, het - Date.now())); return () => clearTimeout(h); }, [het]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* A3-07 (AUDIT-2111): dải nằm đầu thân panel cuộn — lưu xong (ô lý do giữa panel) cuộn dải vào tầm nhìn để thấy "Hoàn tác". */
+  const dai = useRef<HTMLDivElement>(null);
+  useEffect(() => { dai.current?.scrollIntoView({ block: 'nearest' }); }, [het]);
   return (
-    <div role="status" className="flex min-h-[40px] flex-wrap items-center gap-2.5 rounded-lg border border-ok-line bg-ok-bg py-1.5 pl-3 pr-2 text-sm">
+    <div ref={dai} role="status" className="flex min-h-[40px] flex-wrap items-center gap-2.5 rounded-lg border border-ok-line bg-ok-bg py-1.5 pl-3 pr-2 text-sm">
       <b className="font-bold text-ok" aria-hidden>✓</b><span className="min-w-0 flex-1">{chu}</span>
       {loi && <span className="w-full text-[13px] text-bad">⚠ {loi}</span>}
       {onHoanTac && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" disabled={dang} onClick={() => {

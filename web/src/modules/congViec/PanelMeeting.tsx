@@ -42,8 +42,8 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   /* Mockup G8a: em · lớp · chip SOS của lượt (đầu panel). */
   const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: bc?.sos ? <ChipSos muc={bc.sos} tinh /> : null });
   const tieuDe = t('Meeting CX/GĐCN');
-  const chan = { huy: null, chinh: <>{onTiep && <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>}
-    <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onDong}>{t('Đóng')}</button></> };
+  /* A3-08 (AUDIT-2111): chân như mọi panel — Đóng trước, "Việc tiếp ›" sau. */
+  const chan = { huy: { nhan: t('Đóng'), onClick: onDong }, chinh: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined };
   if (error) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!phan) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
   const datPhan = (g: KhoiGv) => { setBan(phan.map((x) => (x.id === g.id ? g : x))); onDaLam(); };

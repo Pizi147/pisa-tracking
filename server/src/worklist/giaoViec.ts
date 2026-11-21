@@ -24,7 +24,7 @@ import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
-import { CHI_NHANH_EM, CHO_GV_SUA, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
+import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
 import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
 import { giuViecQl } from './viecTvv.ts';
@@ -893,7 +893,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   const ve: string[] = [
     veToi(`SELECT 'bao_ph' AS loai, v.id AS id, v.student_id AS student_id, v.phu_trach_id AS phu_trach_id, v.giao_boi AS giao_boi, v.han AS han, v.han_chon AS han_chon, v.nhan AS nhan,
               v.phoi_hop_id AS ph_id, v.tinh_hinh_id AS th_id, v.bao_lai_cua AS bl, m.kind AS kind, m.custom_name AS ten, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-              NULL AS pb, NULL AS tao, NULL AS phan, NULL AS vai_id, NULL AS hop,
+              NULL AS pb, NULL AS tao, NULL AS phan, NULL AS vai_id, ${HOP_MEETING_SQL('v')} AS hop,
               (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = v.student_id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                  AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = v.student_id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
               v.tra_lai_id AS cho
@@ -909,14 +909,19 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     veToi(`${COT_TRA_LAI} WHERE t.phu_trach_id = ? AND t.trang_thai = 'mo'`, 't'),
     veToi(`${COT_TRA_LAI} WHERE t.nguoi_nhan = ? AND t.phu_trach_id IS NULL AND t.trang_thai = 'mo'`, 't'),
   ];
-  if (o.vanHanh && !o.studentId) {
+  if (o.vanHanh) {
     /* Cột như các vế: nhan = tên việc, ph_id = việc cha, th_id = nhóm (việc con theo nhóm việc cha), kind = tiến độ, ten = tên việc cha, pb = chi nhánh,
-       phan = hạng mục (VH-1b, N62; việc con theo cha), bl = lớp liên quan. */
-    thamSo.push(p.userId);
+       phan = hạng mục (VH-1b, N62; việc con theo cha), bl = lớp liên quan.
+       B2-06 (AUDIT-2111): HV liên quan (`task_students` của việc / việc cha) — quay_lai = tên các em (dòng phụ; student_id giữ NULL: dòng Vận hành không là việc
+       của một em ở các bộ lọc / gộp); hồ sơ HV (`studentId`):
+       chỉ việc có em này. Câu con chỉ chạy trên dòng Vận hành còn mở giao cho tôi (vài dòng, chỉ mục `task_id`) — CÙNG câu, không thêm câu. */
+    const hv = `FROM task_students ts WHERE ts.task_id IN (t.id, pt.id) AND ts.case_id IS NULL`;
+    thamSo.push(p.userId, ...(o.studentId ? [o.studentId] : []));
     ve.push(`SELECT 'van_hanh', t.id, NULL, t.assignee_user_id, CASE WHEN t.created_by != t.assignee_user_id THEN t.created_by END, t.due_date, NULL, t.title, t.parent_task_id,
-              COALESCE(pt.group_id, t.group_id), COALESCE(t.class_id, pt.class_id), t.progress, pt.title, NULL, t.branch_id, NULL, COALESCE(pt.hang_muc, t.hang_muc), NULL, NULL, NULL, NULL
+              COALESCE(pt.group_id, t.group_id), COALESCE(t.class_id, pt.class_id), t.progress, pt.title, NULL, t.branch_id, NULL, COALESCE(pt.hang_muc, t.hang_muc), NULL, NULL,
+              (SELECT GROUP_CONCAT(ten, ', ') FROM (SELECT DISTINCT s.full_name AS ten FROM task_students ts JOIN students s ON s.id = ts.student_id WHERE ts.task_id IN (t.id, pt.id) AND ts.case_id IS NULL)), NULL
          FROM tasks t LEFT JOIN tasks pt ON pt.id = t.parent_task_id
-        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'${o.vanHanh === 'hang-muc' ? ' AND COALESCE(pt.hang_muc, t.hang_muc) IS NOT NULL' : ''}`);
+        WHERE t.assignee_user_id = ? AND t.progress NOT IN ('done','stopped') AND t.kind = 'branch_ops'${o.vanHanh === 'hang-muc' && !o.studentId ? ' AND COALESCE(pt.hang_muc, t.hang_muc) IS NOT NULL' : ''}${o.studentId ? ` AND EXISTS (SELECT 1 ${hv} AND ts.student_id = ?)` : ''}`);
   }
   /* TL-1 (rà #1927): Head / Quản trị / CX "Tất cả" — việc trả lại của người khác (đứng tên người giữ), lọc phạm vi chi nhánh ở dưới. Chỉ mục một phần `idx_tra_lai_nhan` (mở). */
   const xemTatCaTraLai = !!o.tatCa && p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx');
@@ -976,10 +981,12 @@ function dongVanHanh(r: any, today: string, uid: number): WorkItem {
     key: `mgmt:${r.id}`, group: 'mgmt', urgency: urgencyOf(r.han, today), studentId: null, studentName: r.nhan, classId: r.bl ?? null, classCode: r.vh_lop ?? null,
     attemptId: null, attemptNo: null, caseId: null, level: null, count: null, contextLabel: r.ten ? `Việc con của: ${r.ten}` : 'Công việc quản lý',
     reason: nhan, tieuDe: r.nhan, actionLabel: 'Cập nhật', href: `/cong-viec?viec=mgmt:${r.id}`, cn: r.pb ?? null,
-    ownerId: uid, owner: null, mine: true, due: r.han ?? null, statusLabel: nhan,
+    ownerId: uid, owner: null, mine: true, due: r.han ?? null, statusLabel: nhan, tienDo: r.kind,
     nhomViec: r.th_id && r.nhom_ten ? { id: r.th_id, ten: r.nhom_ten, thuTu: r.nhom_thu_tu } : null, ...(r.giao_ten ? { giaoBoi: r.giao_ten } : {}),
     /* VH-1b (N62): hạng mục chính thống → web xếp dòng vào đúng mục / tab đó (`mucCuaViec`, `tabCuaViec`), mục tự hiện khi người nhận chưa có. */
     ...(r.phan ? { hangMuc: r.phan } : {}),
+    /* B2-06: tên HV liên quan — dòng phụ của dòng Vận hành (`DanhSachViec`). */
+    ...(r.quay_lai ? { hocVienLienQuan: String(r.quay_lai) } : {}),
   };
 }
 
@@ -997,9 +1004,9 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     const nhan = r.ph_id || r.th_id ? r.nhan : r.kind ? `${nhanLoaiXuLy(r.kind, r.ten ?? null)}${r.bl ? ' đã thu hồi' : ''}` : r.nhan;
     const meeting = r.ph_id != null;
     return {
-      ...chung, key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? null : nhan,
+      ...chung, key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? chuHop(r.hop) : nhan,
       reason: meeting ? `GVCN đã xác nhận ${nhan} — báo gia đình và ghi kết quả` : 'Báo phụ huynh và ghi kết quả',
-      tieuDe: meeting ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${nhan} · ${r.full_name}`, phu: meeting ? null : `Báo PH · ${nhan}`,
+      tieuDe: meeting ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${nhan} · ${r.full_name}`, phu: meeting ? chuHop(r.hop) : `Báo PH · ${nhan}`,   // A3-09: "họp {ngày giờ}" như dòng CX
       actionLabel: meeting ? 'Ghi KQ' : 'Ghi báo PH', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', ...(meeting ? { sub: 'phoi-hop' } : {}) }),
       due: han, statusLabel: r.cho ? CHO_GV_SUA : r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...(r.cho ? { choGvSua: true } : {}),
     };
@@ -1034,7 +1041,7 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
   }
   const xep = r.phan === 'xep_lich';
   const han = r.han_chon ?? hanPhanMeeting(r.phan, ngayMeeting(r.tao, null));   // chủ SP 22/11: mặc định 5 / 14 ngày
-  const hop = r.hop ? ` · họp ${r.hop.slice(8, 10)}/${r.hop.slice(5, 7)}${r.hop.slice(10)}` : '';
+  const hop = r.hop ? ` · ${chuHop(r.hop)}` : '';
   /* GV-2 (mockup v22 G8a / G8e): chip SOS của lượt (sos_cases, cột `so_lan` của vế Meeting) — BPXL / CX biết mức em. */
   const sos = r.so_lan == null ? null : Number(r.so_lan);
   return { ...chung, key: `${xep ? 'meeting_xep_lich' : 'meeting_ket_qua'}:${r.id}`, group: xep ? 'meeting_xep_lich' : 'meeting_ket_qua', urgency: urgencyOf(han, today),

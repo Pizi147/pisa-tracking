@@ -55,6 +55,10 @@ export type WorkItem = {
   giaoBoi?: string | null;
   /** VH-1 / VH-1b: việc Vận hành được giao — nhóm tự đặt (vạch trong mục "Việc được giao", V5) · hạng mục chính thống (N62, mục chứa dòng). */
   nhomViec?: { id: number; ten: string; thuTu: number } | null;
+  /** B3-12: việc Vận hành — tiến độ hiện tại (`TASK_PROGRESS`), cho nút "Hoàn thành" trên dòng + Hoàn tác về đúng tiến độ trước. */
+  tienDo?: string;
+  /** B2-06: việc Vận hành có HV liên quan — tên các em (dòng phụ). */
+  hocVienLienQuan?: string;
   hangMuc?: string | null;
   /** TL-2 (mockup v22 T4a): việc "Vi phạm bị trả lại" — người trả (thẻ "{tên} trả"). */
   nguoiTra?: string | null;

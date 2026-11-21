@@ -102,13 +102,15 @@ export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
  * UI-CV-TVV (mockup `thiet-ke/v5/tvv.html`): Công việc của TVV chia theo VIỆC của TVV, không theo 4 nhóm GV — Báo PH · Sau thi (KQ thi thật → bước tiếp) ·
  * Chốt ngày thi · Bổ sung hồ sơ. `missing_data` của TVV chỉ có Chốt ngày thi (máy chủ `NHOM_VIEC_TVV`).
  */
-export const NHOM_CV_TVV = ['bao-ph', 'sau-thi', 'chot-ngay-thi', 'bo-sung'] as const;
+export const NHOM_CV_TVV = ['bao-ph', 'sau-thi', 'chot-ngay-thi', 'bo-sung', 'van-hanh'] as const;
 export type NhomViecTvv = (typeof NHOM_CV_TVV)[number];
 export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
-  'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'),
+  'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'), 'van-hanh': t('Vận hành'),
 };
-const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
-export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'bo-sung';
+/* PTA rà #1956: việc giao cho TVV từ nhóm Phối hợp / Vi phạm bị trả lại / Hỏi tình hình ở tab Báo PH (không rơi Vận hành). */
+const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { phoi_hop: 'bao-ph', phoi_hop_sos: 'bao-ph', yt_tra_lai: 'bao-ph', yt_hoi_tinh_hinh: 'bao-ph', bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', meeting_xep_lich: 'bao-ph', meeting_ket_qua: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
+/** A2-05 = B3-02 (AUDIT-2111, N62): việc Vận hành được giao (không hạng mục / hạng mục ngoài 4 tab TVV) → tab "Vận hành" như GV, không rơi "Bổ sung hồ sơ". */
+export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'van-hanh';
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string; hangMuc?: string | null };
 export type NhomViecXem<T> = {
@@ -184,8 +186,11 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
  * KHÔNG có hạng mục) và "Chấm Speaking" (bài chấm chéo không là việc của ai). Việc tay có hạng mục nằm TRONG mục đó cạnh việc do luật sinh (`mucCuaViec`,
  * `tabCuaViec` đọc `hangMuc` trước); không có → "Việc được giao" tab Vận hành. Máy chủ kiểm khoá bằng danh sách này.
  */
-export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo');
-export const laHangMucCv = (k: unknown): k is string => typeof k === 'string' && HANG_MUC_CV.some(([m]) => m === k);
+export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo' && k !== 'bao-ph-test');
+/** A2-03 (AUDIT-2111): MỘT hạng mục "Báo PH" (`bao-ph`) — mục theo vai người nhận do `mucCuaViec` quy (GVCN → Báo PH kết quả Test, TVV → Báo PH).
+    Khoá cũ `bao-ph-test` (web cũ gửi) vẫn nhận, máy chủ ghi thành `bao-ph` (`chuanHangMuc`). */
+export const laHangMucCv = (k: unknown): k is string => typeof k === 'string' && (k === 'bao-ph-test' || HANG_MUC_CV.some(([m]) => m === k));
+export const chuanHangMuc = (k: string): string => (k === 'bao-ph-test' ? 'bao-ph' : k);
 /** Loại việc đại diện của một mục — để suy tab / nhóm (Mock / Progress / Checkpoint → Chấm điểm); mọi số đếm theo nhóm đi qua hàm này cho việc tay (một nguồn). */
 /** Góc TVV: việc theo luật cùng loại của TVV (Phối hợp → Báo PH Meeting / Báo PH kết quả Test, Tình hình → Báo PH tình hình) ở tab Báo PH. */
 const DAI_DIEN_TVV: Record<string, string> = { 'phoi-hop': 'phoi_hop_tvv', 'tinh-hinh': 'bao_ph_yt', 'bao-ph-test': 'bao_ph_yt' };

@@ -226,6 +226,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       gv.xongPhanMeeting(tvv, xep.id, {});
       const k2 = gv.xongPhanMeeting(tvv, xep.id, { ngayGio: `${TODAY} 15:00` });
       assert(k2.meeting.ngayGio === `${TODAY} 15:00` && k2.lichSu.some((l: any) => l.truong === 'sua'), 'sửa có lịch sử');
+      const dongBp = items(tvv, { chiNhom: NHOM_VIEC_TVV }).find((x) => x.key === `bao-ph:${bpId}`);
+      assert(dongBp?.phu === `họp ${TODAY.slice(8, 10)}/${TODAY.slice(5, 7)} 15:00`, `A3-09: dòng Báo PH · Meeting của TVV ghi giờ họp: ${dongBp?.phu}`);
       gv.moLaiPhanMeeting(tvv, xep.id);
       assert(mot('SELECT trang_thai FROM meeting_phan WHERE id = ?', xep.id).trang_thai === 'mo', 'Hoàn tác → chưa xong');
     }

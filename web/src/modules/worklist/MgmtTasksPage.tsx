@@ -20,7 +20,7 @@ import { DaiChiSo, ODai, SoTinh } from '../../ui/DaiChiSo.tsx';
 import { mauOSo } from '../../ui/SoLieu.tsx';
 import { docGap, ghiGap } from '../congViec/DanhSachViec.tsx';
 import { KhoiGiaoViec, type KhoiGv, type ThaoTacKhoi } from '../congViec/KhoiGiaoViec.tsx';
-import { HopNhomViec, KHONG_PHAN_LOAI, OHangMuc, tenHangMuc, type NhomViec, type NoiViec } from './NhomViec.tsx';
+import { HopNhomViec, KHONG_PHAN_LOAI, OHangMuc, OLocNhom, tenHangMuc, type NhomViec, type NoiViec } from './NhomViec.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
@@ -57,6 +57,8 @@ type Row = {
  * Trạng thái việc Vận hành vẽ bằng NHÃN CHUNG (`NhanTrangThai`, brainstorm C.2 — K1-35/V4): kiểu nhãn theo họ chung, chữ giữ bộ chữ riêng
  * của việc (THUAT_NGU C-069…C-073, chủ sản phẩm 02/10 — "Đã dừng" là nhãn khoá học của HV nên không dùng cho việc).
  */
+/** A2-10 (AUDIT-2111): MỘT nhãn "Mô tả việc" + MỘT trần (500, như khối N58 — máy chủ cùng số); chữ cũ dài hơn giữ nguyên tới khi sửa (N35). */
+const TRAN_MO_TA = 500;
 const NHAN: Record<string, TrangThai> = { not_started: 'can-lam', doing: 'dang-lam', paused: 'cho-duyet', stopped: 'da-huy', done: 'xong' };
 const NhanViec = ({ progress, label }: { progress: string; label: string }) => <NhanTrangThai t={NHAN[progress] ?? 'can-lam'} chu={dich(label)} />;
 const dong = (pr: string) => pr === 'done' || pr === 'stopped';
@@ -241,19 +243,11 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         </div>
         {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4) ── */}
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)' }}>
-          <label className="flex items-center gap-2 whitespace-nowrap">
-            {t('Nhóm')}
-            <select className="field" value={locNhom} onChange={(e) => setParam('nhom', e.target.value || null)}>
-              <option value="">{t('Mọi nhóm')}</option>
-              {nhom.map((g) => <option key={g.id} value={String(g.id)}>{g.ten}</option>)}
-              {hangMucCo.map(([k]) => <option key={k} value={`m:${k}`}>{tenHangMuc(k)}</option>)}
-              <option value="none">{t('Không phân loại')}</option>
-              {/* Đường dẫn cũ `?nhom=<khoá>` — giữ lựa chọn hiện được. */}
-              {locNhom && !/^\d+$/.test(locNhom) && locNhom !== 'none' && !locNhom.startsWith('m:') && (
-                <option value={locNhom}>{nhom.find((g) => g.khoa === locNhom)?.ten ?? locNhom}</option>
-              )}
-            </select>
-          </label>
+          {/* A2-06 (AUDIT-2111): ô Nhóm có tìm (N45 — danh sách dài, không cố định); Trạng thái giữ ô thường (5 mục cố định). */}
+          <div className="flex items-center gap-2 whitespace-nowrap max-sm:w-full">
+            <span>{t('Nhóm')}</span>
+            <span className="w-[220px] max-sm:min-w-0 max-sm:flex-1"><OLocNhom nhom={nhom} hangMuc={hangMucCo.map(([k]) => k)} value={locNhom} onChange={(v) => setParam('nhom', v)} /></span>
+          </div>
           <label className="flex items-center gap-2 whitespace-nowrap">
             {t('Trạng thái')}
             <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
@@ -361,7 +355,8 @@ const bamDong = (onMo: () => void) => ({
 });
 
 function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean; tatCa: boolean; homNay: string; toi: number | null; onMo: () => void }) {
-  const dongTam = t('{ly} · cần: {ten} · xem lại {ngay}', { ly: r.stopReason ?? '', ten: r.helpName ?? '—', ngay: r.reviewOn ? fmtDate(r.reviewOn) : '—' });
+  /* A2-06: phần trống không ghi "cần: —" / "xem lại —" (chữ thừa bị kẹp cắt). */
+  const dongTam = [r.stopReason, r.helpName && t('cần: {ten}', { ten: r.helpName }), r.reviewOn && t('hẹn xem lại {ngay}', { ngay: fmtDate(r.reviewOn) })].filter(Boolean).join(' · ');
   const phuTrangThai = r.progress === 'paused' ? catDongPhu(dongTam) : r.progress === 'stopped' ? r.stopReason : null;
   const td = 'border-t py-[9px] pl-3 pr-3 align-top';
   const n = soTheoDoi(r, toi);
@@ -519,7 +514,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
       dau={data ? {
         han: data.due ? <ChipHan loai="viec-van-hanh" han={data.due} /> : undefined,
         dong2: [data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ'),
-          data.createdByName ? (data.createdBy === toi ? t('bạn giao') : t('{ten} giao', { ten: data.createdByName })) : null,
+          /* B3-16 (AUDIT-2111): "{tên} giao" chỉ ở chip khối Phụ trách — không lặp ở dòng phụ đầu panel. */
           data.viewer.canEdit ? <button key="sua" type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setEditing(true)}>{t('Sửa công việc')}</button> : null,
         ].filter(Boolean) as ReactNode[],
       } : undefined}
@@ -556,7 +551,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
                 {[data.classCode, ...(data.hocVien ?? []).map((h: any) => h.ten)].filter(Boolean).join(' · ')}
               </DongBc>
             )}
-            {data.note && <DongBc k={t('Mô tả')}><span className="whitespace-pre-wrap">{data.note}</span></DongBc>}
+            {data.note && <DongBc k={t('Mô tả việc')}><span className="whitespace-pre-wrap">{data.note}</span></DongBc>}
           </div>
 
           {/* OV-11c (CV-12): cập nhật tiến độ mở NGAY trong thân panel — không ngăn kéo thứ hai đè lên. */}
@@ -680,7 +675,8 @@ function UpdateDialog({ onClose, task, onDone }: { onClose: () => void; task: an
       <b className="block text-[14px] text-slate-100">{t('Cập nhật tiến độ')}</b>
       <Field label={t('Trạng thái')} as="div">
         <div className="flex flex-wrap gap-1.5">
-          {TASK_PROGRESS.map((s) => <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>{TASK_PROGRESS_LABEL[s]}</NutChon>)}
+          {/* B3-12: nút "Hoàn thành" như Quy chế ("ghi Hoàn thành khi xong"). */}
+          {TASK_PROGRESS.map((s) => <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>{s === 'done' ? t('Hoàn thành') : TASK_PROGRESS_LABEL[s]}</NutChon>)}
         </div>
       </Field>
       {needReason && (
@@ -872,8 +868,8 @@ function SuaViec({ onClose, dongCa, task, onDone, nhom: nhomSan }: {
           </>
         )}
         {goc && <Field label={t('Lặp lại')} as="div" loi={lf.loiCua(loi, 'lap')}><OLap value={lap} onChange={setLap} id={lf.oId('lap')} /></Field>}
-        <Field label={t('Mô tả')}>
-          <textarea className="field" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Ghi chú cho người phụ trách')} />
+        <Field label={t('Mô tả việc')}>
+          <textarea className="field" name="mo-ta" autoComplete="off" rows={3} maxLength={TRAN_MO_TA} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Cần làm gì, lưu ý gì (tuỳ chọn)')} />
         </Field>
       </div>
     </KhungPanel>
@@ -1111,7 +1107,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
               )}
             </Field>
             {cls && <p className="m-0 text-xs text-slate-400">{t('Hiện ở hồ sơ {n} em lớp {lop} · em chưa có Case kỹ năng này được mở Case mới', { n: cls.studentCount, lop: cls.code })}</p>}
-            <Field label={t('Ghi chú')}><textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+            <Field label={t('Mô tả việc')}><textarea className="field" name="mo-ta" autoComplete="off" rows={2} maxLength={TRAN_MO_TA} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Cần làm gì, lưu ý gì (tuỳ chọn)')} /></Field>
           </>
         ) : (
           <fieldset disabled={!!daTao} className="m-0 min-w-0 space-y-3.5 border-0 p-0">
@@ -1129,10 +1125,10 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
             </div>
             <Field label={t('Người theo dõi')} as="div">
               <div className="grid gap-1.5">
-                {/* Người giao tự vào theo dõi (máy chủ) — hiện để biết, không bỏ được ở đây. */}
-                {toi && <span className="text-xs text-faint">{t('{ten} (bạn) tự theo dõi', { ten: toi.fullName ?? '' })}</span>}
+                {/* A2-14 (mockup v22 V2): người giao tự vào theo dõi (máy chủ) — chip "Tên · bạn" trong ô, không ✕ (thay dòng chữ tĩnh). */}
                 <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" tim={timNguoi} choToi={false} choNgoai={false}
-                  nhieu={{ chon: theoDoi, toiDa: 20, onDoi: (ds) => setTheoDoi(ds.filter((x) => x.id !== toi?.id)), donVi: t('người') }}
+                  nhieu={{ chon: theoDoi, toiDa: 20, onDoi: (ds) => setTheoDoi(ds.filter((x) => x.id !== toi?.id)), donVi: t('người'),
+                    coDinh: toi ? [{ id: toi.id, ten: toi.fullName ?? '', phu: t('bạn') }] : undefined }}
                   placeholder={t('Thêm người')} ariaLabel={t('Người theo dõi')} tieuDe={t('Người theo dõi')} />
               </div>
             </Field>
@@ -1165,7 +1161,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
                     </div>
                   ))}
                   <div className={`px-2.5 py-2 ${vc.length ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
-                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={() => setVc([...vc, { k: (seq.current += 1), ten: '', nguoi: null, han: due ? addDaysIso(due, -1) >= homNay ? addDaysIso(due, -1) : due : '' }])}>{t('+ Việc con')}</button>
+                    {/* B3-14 (AUDIT-2111): việc con mới mặc định cùng người phụ trách với việc cha (đổi được ở ô). */}
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={() => setVc([...vc, { k: (seq.current += 1), ten: '', nguoi: assignee, han: due ? addDaysIso(due, -1) >= homNay ? addDaysIso(due, -1) : due : '' }])}>{t('+ Việc con')}</button>
                   </div>
                 </div>
               </Field>
@@ -1183,8 +1180,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
         )}
         {!giaoGv && !parent && <Field label={t('Tệp')} as="div"><TepCho value={tep} onChange={setTep} khoa={busy} /></Field>}
         {!giaoGv && (
-          <Field label={t('Mô tả')}>
-            <textarea className="field" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} disabled={!!daTao} placeholder={t('Ghi chú cho người phụ trách')} />
+          <Field label={t('Mô tả việc')}>
+            <textarea className="field" name="mo-ta" autoComplete="off" rows={3} maxLength={TRAN_MO_TA} value={note} onChange={(e) => setNote(e.target.value)} disabled={!!daTao} placeholder={t('Cần làm gì, lưu ý gì (tuỳ chọn)')} />
           </Field>
         )}
       </div>
