@@ -671,7 +671,8 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
     if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
     const han = st.han ?? f.today;
-    const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
+    /* SAU-THI-GON A3-13: phụ dòng việc "OVR 7.0 · Đạt Target" — không "Đã xong · …" (đọc như việc đã xong). */
+    const kq = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua({ ...c, bc_ket_luan: c.ket_luan }) }, true);
     const ketQua = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: c.ket_luan ?? c.outcome ?? null }, true);
     const thi = c.thi_that_ngay ? `đã thi ${ngay(c.thi_that_ngay, f.today)}` : null;
     out.push({

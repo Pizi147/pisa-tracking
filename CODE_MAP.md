@@ -166,7 +166,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Tạm dừng / Kết thúc học · Quay lại học | `web/src/modules/students/{HopTamDungKetThuc,QuayLaiHoc}.tsx` · `server/src/students/trangThaiHv.ts` (`tomTatTrangThai`, `chanLenhCho`, `thongTinQuayLai`) |
 | Làm nhiều HV một lần (xem trước, lô 8) | `web/src/modules/students/{chonNhieuHocVien,XemTruocHangLoatPanel}.tsx` · `hangLoatEm.ts` · `shared/domain/hangLoatEm.ts` · `server/src/students/hangLoat.ts` |
 | Học lại, mở lộ trình mới | `server/src/students/students.ts` (`hocLai`, `moLoTrinhMoi`) · panel `web/src/modules/students/PanelLoTrinhMoi.tsx` |
-| Các lộ trình · Tổng kết · Kết quả thi thật | `web/src/modules/students/{CacLoTrinh,NganTongKet,KetQuaThiThatPanel}.tsx` · `server/src/loTrinh/{banChup,tongKet,thiThat}.ts` · `shared/domain/tongKetLoTrinh.ts` |
+| Các lộ trình · Tổng kết · Kết quả thi thật | `web/src/modules/students/{CacLoTrinh,NganTongKet}.tsx` · `congViec/PanelSauThi.tsx` (bản duy nhất ghi KQ thi thật) · `server/src/loTrinh/{banChup,tongKet,thiThat}.ts` · `shared/domain/tongKetLoTrinh.ts` |
 | Bước tiếp sau thi thật | `web/src/modules/students/PanelBuocTiep.tsx` · `server/src/loTrinh/buocTiep.ts` (`choBuocTiep`) · `shared/domain/tongKetLoTrinh.ts` (`goiYSauThi`) |
 | Hạn sau thi + Gia hạn | `web/src/modules/students/HopGiaHan.tsx` · `server/src/loTrinh/thiThat.ts` (`datHanSauThi`, `sauThiCuaEm`) · `cotSauThi.ts` (tệp lá, tránh vòng import) |
 | Kết luận khoá + Mini Test | `web/src/modules/students/KetLuanKhoa.tsx` · `server/src/normal/cuoiKhoa.ts` (`ghiMiniTest`) |

@@ -1,3 +1,4 @@
+import { NutKhongThi } from './NutKhongThi.tsx';
 import { useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
@@ -24,7 +25,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
-const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
+const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {
@@ -88,7 +89,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
   const veEm = { nhan: ten, onClick: () => { setSauThiMo(null); reload(); } };
   if (sauThiMo && data?.sauThi) {
     return sauThiMo === 'thi-that'
-      ? <KetQuaThiThatPanel cycleId={data.sauThi.cycleId} studentName={ten} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />
+      ? <PanelSauThi cycleId={data.sauThi.cycleId} em={{ id: studentId, ten }} lop={lop} quayLai={veEm} onDong={onClose} onDaLam={daDoi} onTiep={null} />
       : <PanelBuocTiep cycleId={data.sauThi.cycleId} hocVien={{ id: studentId, ten }} lop={lop} quayLai={veEm} onClose={onClose} onDone={daDoi} />;
   }
   if (viecKhacMo) {
@@ -175,6 +176,8 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                       {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: shortDate(data.sauThi.ngayThi, homNay) })}</span>}
                     </span>
                     {data.sauThi.coTheGiaHan && <button type="button" className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
+                    {/* SAU-THI-GON (chủ SP 21/11): em không thi → một bấm tại chỗ. */}
+                    {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && <NutKhongThi cycleId={data.sauThi.cycleId} className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onDone={daDoi} />}
                     {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && (
                       <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setSauThiMo('thi-that')}>{t('Nhập kết quả')}</button>
                     )}

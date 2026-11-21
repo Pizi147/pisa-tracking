@@ -9,7 +9,6 @@ export const EN_P7_SV_LO_TRINH = {
   'KQ thi vào lịch sử · chờ lần thi sau': 'Exam result goes to history · waits for the next exam',
   'Target {cu} → {moi}': 'Target changes {cu} → {moi}',
   'Chuyển sang {lop} ngay · đường Chuyển lớp': 'Moves to {lop} now · via class change',
-  'Giữ Target': 'Keep Target',
   'Đã có dữ liệu lần thi sau ({ds}) — Hoàn tác / Đổi giữ nguyên phần này.': 'The next exam already has data ({ds}) — Undo / Change keeps it.',
   'KQ thi': 'exam result',
   'lịch thi': 'exam schedule',

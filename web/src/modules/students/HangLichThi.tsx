@@ -1,3 +1,4 @@
+import { NutKhongThi } from './NutKhongThi.tsx';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -130,10 +131,11 @@ export function CotLich({ r, hanh }: { r: HangHien; hanh: Hanh }) {
     : r.tt?.kieu === 'loi' && hanh.hop?.id !== r.studentId ? <span className="lt-luu loi" role="alert">⚠ {t('Không lưu được')}<button type="button" className="btn btn-sm nut-nho lt-nut-ph" onClick={r.tt.lai}>{t('Thử lại')}</button></span>
     : null;
   if (!viec || phanHoi) return <span className={`${lop} lt-gt-chu`}>{s1}{phanHoi}</span>;
-  return (
-    /* Tên truy cập = chữ thấy + "sửa lịch thi · tên em" (WCAG 2.5.3: nhãn chứa chữ hiện trên nút). */
-    <button type="button" className={`${lop} lt-gt-nut`} aria-expanded={dangMo} onClick={() => hanh.bam(r, viec)}>{s1}<span className="sr-only"> · {t('Sửa lịch thi {ten}', { ten: r.ten })}</span></button>
-  );
+  /* Tên truy cập = chữ thấy + "sửa lịch thi · tên em" (WCAG 2.5.3: nhãn chứa chữ hiện trên nút). */
+  const nut = <button type="button" className={`${lop} lt-gt-nut`} aria-expanded={dangMo} onClick={() => hanh.bam(r, viec)}>{s1}<span className="sr-only"> · {t('Sửa lịch thi {ten}', { ten: r.ten })}</span></button>;
+  /* SAU-THI-GON (chủ SP 21/11): đã thi, chưa KQ (em Fast Track, người xem nhập được) → "Không thi" bấm ngay cạnh ô — một bấm, toast Hoàn tác. */
+  if (r.buoc !== 'cho-kq' || r.thuong || !r.cycleId) return nut;
+  return <span className="inline-flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>{nut}<NutKhongThi cycleId={r.cycleId} className="btn btn-sm nut-nho min-h-[44px] whitespace-nowrap sm:min-h-0" /></span>;
 }
 
 /** MT gần nhất: Overall ✓ / ✗ so kỳ vọng của lượt + "MT3 · W2 SEP" (lời 42: MỌI em, kể cả đã thi). */

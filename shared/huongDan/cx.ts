@@ -43,8 +43,8 @@ const VIEC_CX: ViecHd[] = [
     id: 'thi-that', ten: 'Ghi kết quả thi thật', nhom: 'hv',
     loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Kết quả thi thật' },
     loiTat: ['hoc-vien', 'p-sau-thi'], tatThem: ['⋯ dòng em'], cung: 'mở cùng chỗ.',
-    buoc: ['Ở hồ sơ em (lộ trình FT hoặc KET / PET), bấm <b>Kết quả thi thật</b>.', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>; nhập được cả khi em đã Lưu trữ.',
-      'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — việc của Head hoặc TVV; CX chọn thay được.'],
+    buoc: ['Ở hồ sơ em (lộ trình FT hoặc KET / PET), bấm <b>Kết quả thi thật</b>.', 'Gõ <b>Ngày thi</b>, điểm L R W S, bấm <b>Lưu điểm</b> (em không thi: <b>Không thi</b>); nhập được cả khi em đã Lưu trữ.',
+      'Có kết quả: <b>Bước tiếp</b> ngay trong cùng panel — việc của Head hoặc TVV; CX chọn thay được.'],
     tuKhac: ['ielts', 'điểm thi', 'kết quả thi', 'exam result', 'ket', 'pet'],
   },
   {
