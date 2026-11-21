@@ -167,6 +167,8 @@ export type WorkItem = {
   giaoBoi?: string | null;
   /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
   nhomViec?: { id: number; ten: string; thuTu: number } | null;
+  /** VH-1b (N62): việc tay có hạng mục chính thống (`HANG_MUC_CV`) — web xếp vào đúng mục / tab đó thay vì "Việc được giao". */
+  hangMuc?: string | null;
 };
 
 /**

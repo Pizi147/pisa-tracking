@@ -53,7 +53,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'tra_lai.giu_nguyen': 'Giữ nguyên vi phạm bị trả lại', 'tra_lai.da_xoa': 'Xoá vi phạm bị trả lại', 'tra_lai.thu_hoi': 'Thu hồi lần xử lý bị trả lại', 'tra_lai.tvv_da_bao': 'TVV đã báo PH — đóng yêu cầu trả lại',
   /* GV-1 (N58): giao việc liên phòng ban + phần Meeting CX / GĐCN. */
   'giao_viec.giao': 'Giao việc cho người khác', 'giao_viec.mac_dinh': 'Trả việc về người theo luật', 'giao_viec.hoan_tac': 'Hoàn tác đổi người phụ trách',
-  'giao_viec.han': 'Sửa hạn việc', 'meeting_phan.xong': 'Hoàn thành phần Meeting', 'meeting_phan.sua': 'Sửa phần Meeting', 'meeting_phan.mo_lai': 'Hoàn tác phần Meeting',
+  'giao_viec.han': 'Sửa hạn việc', 'giao_viec.mo_ta': 'Sửa mô tả việc', 'meeting_phan.xong': 'Hoàn thành phần Meeting', 'meeting_phan.sua': 'Sửa phần Meeting', 'meeting_phan.mo_lai': 'Hoàn tác phần Meeting',
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
   'discipline.bao_ph_han': 'Sửa hạn báo phụ huynh', 'sos_coordination.han': 'Sửa hạn việc phối hợp SOS',   // HAN-BAO-PH
   'ke_hoach.hang_loat': 'Xếp lịch Test hàng loạt',

@@ -141,8 +141,12 @@ export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomVie
  * "Chấm Speaking" (chủ SP 14/11, lời 19 — thay "Speaking chấm chéo") ngay sau Chấm điểm. Web thêm tab "Chờ bạn duyệt" (thẻ duyệt, không phải dòng việc) ở đầu.
  */
 export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] as const;
-export const tabCuaViec = (it: { group: string; key: string }, tvv = false): string =>
-  (tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group));
+export const tabCuaViec = (it: { group: string; key: string; hangMuc?: string | null }, tvv = false): string => {
+  /* VH-1b (N62): việc tay có hạng mục chính thống → tab của mục đó (cùng nơi việc do luật sinh). */
+  const g = it.hangMuc ? nhomDaiDienMuc(it.hangMuc) : null;
+  if (g) return tvv ? nhomViecTvvCua(g) : nhomViecCua(g);
+  return tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group);
+};
 export const nhanTabCv = (k: string, tvv = false): string =>
   (k === 'cham-cheo' ? t('Chấm Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
 
@@ -170,8 +174,25 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
   missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph', bao_cao_ph: 'bc-ph', bc_ph_qua_han: 'bc-ph',
 };
+/**
+ * VH-1b (N62, chủ SP 21/11): HẠNG MỤC CHÍNH THỐNG của việc tay = các mục đang có ở Công việc (`MUC_CV`), trừ "Việc được giao" / "Khác" (đó là chỗ của việc
+ * KHÔNG có hạng mục) và "Chấm Speaking" (bài chấm chéo không là việc của ai). Việc tay có hạng mục nằm TRONG mục đó cạnh việc do luật sinh (`mucCuaViec`,
+ * `tabCuaViec` đọc `hangMuc` trước); không có → "Việc được giao" tab Vận hành. Máy chủ kiểm khoá bằng danh sách này.
+ */
+export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo');
+export const laHangMucCv = (k: unknown): k is string => typeof k === 'string' && HANG_MUC_CV.some(([m]) => m === k);
+/** Loại việc đại diện của một mục — để suy tab (Mock / Progress / Checkpoint → Chấm điểm). */
+function nhomDaiDienMuc(muc: string): string | null {
+  if (muc === 'mock' || muc === 'pf' || muc === 'cp') return 'score';
+  if (muc === 'bao-ph-test') return 'phoi_hop';
+  if (muc === 'chot-ngay') return 'missing_data';
+  return Object.entries(MUC_CUA_LOAI).find(([, m]) => m === muc)?.[0] ?? null;
+}
+
 /** Mã mục của một việc (`MUC_CV`). */
-export function mucCuaViec(it: { group: string; key: string; kind?: string | null }, tvv = false): MaMuc {
+export function mucCuaViec(it: { group: string; key: string; kind?: string | null; hangMuc?: string | null }, tvv = false): MaMuc {
+  /* VH-1b (N62): việc tay theo hạng mục; ngoài góc TVV "Báo PH" chung mục với Báo PH kết quả Test (như S3-5). */
+  if (it.hangMuc && laHangMucCv(it.hangMuc)) return (!tvv && it.hangMuc === 'bao-ph' ? 'bao-ph-test' : it.hangMuc) as MaMuc;
   if (laViecChamCheo(it)) return 'cham-cheo';
   if (it.group === 'score') return it.kind === 'progress' || it.kind === 'final' ? 'pf' : it.kind === 'checkpoint' ? 'cp' : 'mock';
   if (tvv && it.group === 'missing_data') return 'chot-ngay';   // việc `missing_data` của TVV chỉ có Chốt ngày thi
@@ -189,7 +210,7 @@ export function dongTab<T extends { studentId: number | null; con?: readonly T[]
 }
 export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "n quá hạn"). */ quaHan: number };
 /** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4) — trừ mục chấm Test (XEP-CHAM-TEST: lớp → tuần). */
-export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false,
+export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null; hangMuc?: string | null }>(dong: readonly T[], tvv = false,
   /** XEP-CHAM-TEST: ngày nghiệp vụ — mốc vạch "Hạn đến / Hạn sau {CN}" (`DanhSachViec`); mục chấm Test xếp lớp → tuần TRONG từng vạch. */
   homNay: string | null = null): MucTab<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
