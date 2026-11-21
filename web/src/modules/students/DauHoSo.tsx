@@ -197,6 +197,8 @@ const NHOM_PANEL: Partial<Record<string, string>> = {
   'buoc-tiep': 'buoc_tiep', 'thi-that': 'thi_that',
   /* P1-04: Phối hợp SOS · Báo PH (vi phạm / sau Meeting CX) · Bổ sung hồ sơ — cùng panel Công việc, chỉ em này. */
   'phoi-hop-sos': 'phoi_hop_sos', 'phoi-hop-tvv': 'phoi_hop_tvv', 'bao-ph-yt': 'bao_ph_yt', 'bo-sung': 'bo_sung_ho_so',
+  /* B2-06 (AUDIT-2111): việc Vận hành có em này là HV liên quan — panel Vận hành tại chỗ. */
+  'van-hanh': 'mgmt',
 };
 
 /**

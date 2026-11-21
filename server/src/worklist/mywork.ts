@@ -172,6 +172,10 @@ export type WorkItem = {
   /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
   nhomViec?: { id: number; ten: string; thuTu: number } | null;
   /** VH-1b (N62): việc tay có hạng mục chính thống (`HANG_MUC_CV`) — web xếp vào đúng mục / tab đó thay vì "Việc được giao". */
+  /** B3-12: việc Vận hành — tiến độ hiện tại (`TASK_PROGRESS`), cho nút "Hoàn thành" trên dòng + Hoàn tác về đúng tiến độ trước. */
+  tienDo?: string;
+  /** B2-06: việc Vận hành có HV liên quan — tên các em (dòng phụ). */
+  hocVienLienQuan?: string;
   hangMuc?: string | null;
 };
 

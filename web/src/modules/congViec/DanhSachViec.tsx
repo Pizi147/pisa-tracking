@@ -504,8 +504,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
         </DongPhu>
       </span></span>
       <CotHan it={it} daXong={daXong} />
-      {/* GV-2 (mockup v22 G8a, [XM] đã chốt): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp — nút phụ thay nút động từ (bấm dòng vẫn mở panel). */}
-      <CotNut it={it} nut={it.group === 'meeting_xep_lich' && dong.nutPhu?.(it) ? null : nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
+      {/* GV-2 (mockup v22 G8a, [XM] đã chốt): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp — nút phụ thay nút động từ (bấm dòng vẫn mở panel). B3-12: cả việc Vận hành được giao. */}
+      <CotNut it={it} nut={(it.group === 'meeting_xep_lich' || it.group === 'mgmt') && dong.nutPhu?.(it) ? null : nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
     </div>
   );
 }
@@ -541,7 +541,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   /* GD-1b: lớp lên tên dòng ("MB FT 101 · Listening, Reading") — dòng phụ không lặp lớp. */
   const laVh = it.group === 'mgmt';
   /* VH-2: dòng Vận hành — "Việc con của: …" (máy chủ, có dấu ":") thì giữ; "Công việc quản lý" bỏ (mục đã nói). */
-  const phu = laVh ? thePhu([it.contextLabel?.includes(':') ? it.contextLabel : null]) : thePhu([
+  /* B2-06 (AUDIT-2111): việc tay có HV liên quan — tên em ở dòng phụ. */
+  const phu = laVh ? thePhu([it.hocVienLienQuan ?? null, it.contextLabel?.includes(':') ? it.contextLabel : null]) : thePhu([
     caLop || gop || viecCaLop || it.studentName === 'Lớp ' + it.classCode ? null : it.studentName,
     ngCanh,
     /* AUDIT-UI CV8: nút khay đã ghi "3 em ▾" → dòng phụ không lặp "· 3 em". */

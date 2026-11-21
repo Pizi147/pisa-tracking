@@ -25,7 +25,9 @@ export type ViecHocVien = {
   loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
     | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that' | 'nhap-diem' | 'tinh-hinh'
     /* P1-04 (B2-06, B2-07): cùng nhóm Công việc `phoi_hop_sos` · `phoi_hop_tvv` · `bao_ph_yt` · `bo_sung_ho_so`. */
-    | 'phoi-hop-sos' | 'phoi-hop-tvv' | 'bao-ph-yt' | 'bo-sung';
+    | 'phoi-hop-sos' | 'phoi-hop-tvv' | 'bao-ph-yt' | 'bo-sung'
+    /* B2-06 (AUDIT-2111): việc Vận hành / việc tay có em này là HV liên quan, giao cho người xem. */
+    | 'van-hanh';
   /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
@@ -257,17 +259,18 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
 
   /* GV-1 (N58): việc người khác giao cho NGƯỜI XEM với em này (+ phần Meeting của người xem) — cùng hàm Công việc (`viecGiaoChoToi`, một câu), cùng khoá. */
   const LOAI_GIAO_HV: Record<string, ViecHocVien['loai']> = { bao_ph_yt: 'bao-ph-yt', phoi_hop_tvv: 'phoi-hop-tvv', phoi_hop: 'bao-ph', phoi_hop_sos: 'phoi-hop-sos',
-    yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos', yt_tra_lai: 'y-thuc' };   // TL-1: Vi phạm bị trả lại — tab Ý thức
+    yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos', yt_tra_lai: 'y-thuc', mgmt: 'van-hanh' };   // TL-1: Vi phạm bị trả lại — tab Ý thức
   const coKhoa = new Set(ds.map((x) => x.key));
   const giaoToi = new Set<string>();   // P1-06: việc giao cho người xem / Kết quả meeting của CX — như `/my-work` (`mywork.ts` GV-1)
-  for (const v of viecGiaoChoToi(p, { today, studentId: sid })) {
+  for (const v of viecGiaoChoToi(p, { today, studentId: sid, vanHanh: true })) {   // B2-06: + việc Vận hành có em này (cùng câu)
     if (v.mine) giaoToi.add(v.key);   // khớp `mywork.ts` GV-1 (`if (it.mine)`)
     const hien = ds.find((x) => x.key === v.key);
     if (hien) { hien.nguoiId = p.userId; continue; }
     if (coKhoa.has(v.key)) continue;
-    ds.push({ key: v.key, loai: LOAI_GIAO_HV[v.group] ?? 'phoi-hop-sos', chu: v.phu ?? v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null, viecId: v.viecId ?? undefined,
+    ds.push({ key: v.key, loai: LOAI_GIAO_HV[v.group] ?? 'phoi-hop-sos', chu: v.group === 'mgmt' ? v.tieuDe : v.phu ?? v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null, viecId: v.viecId ?? undefined,
       han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel, tamDung: !!v.choGvSua,   // TL-1 (rà #1927 lần 2): Báo PH đã giao, đang chờ GV sửa
-      mo: v.group === 'yt_hoi_tinh_hinh' && v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') }
+      mo: v.group === 'mgmt' ? { loai: 'duong', href: v.href }
+        : v.group === 'yt_hoi_tinh_hinh' && v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') }
         : { loai: 'tab', tab: 'y-thuc', ...(v.group === 'bao_ph_yt' || v.group === 'yt_tra_lai' ? {} : { sub: 'phoi-hop' as const }) } });
   }
 

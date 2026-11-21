@@ -217,6 +217,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(items(ql, { nguoi: 'tat-ca' }).some((x) => x.key === `meeting_ket_qua:${kq.id}`), 'Head "Tất cả" thấy phần Meeting của CX');
     const k = gv.xongPhanMeeting(tvv, kq.id, { ketQua: 'Gia đình đồng ý kèm em thêm' });
     assert(k.meeting.trangThai === 'xong' && k.meeting.nhapHoBoi === 'GIAOVIEC TVV', 'TVV nhập hộ');
+    const { nowNghiepVu } = await import('../demoConfig.ts');
+    assert(String(mot('SELECT xong_luc FROM meeting_phan WHERE id = ?', kq.id).xong_luc).slice(0, 10) === nowNghiepVu().slice(0, 10), 'A3-11: giờ xong theo ngày nghiệp vụ');
     assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', bpId).trang_thai === 'mo', 'Báo PH độc lập');
     assert(await ma(() => gv.xongPhanMeeting(gvbm, xep.id, {})) === 403, 'GVBM (không phụ trách) → 403');
     assert(await ma(() => gv.suaHan(gvbm, 'meeting', xep.id, { han: TODAY, hanCu: null })) === 403, 'GVBM sửa hạn phần Meeting → 403');
@@ -226,6 +228,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       gv.xongPhanMeeting(tvv, xep.id, {});
       const k2 = gv.xongPhanMeeting(tvv, xep.id, { ngayGio: `${TODAY} 15:00` });
       assert(k2.meeting.ngayGio === `${TODAY} 15:00` && k2.lichSu.some((l: any) => l.truong === 'sua'), 'sửa có lịch sử');
+      const dongBp = items(tvv, { chiNhom: NHOM_VIEC_TVV }).find((x) => x.key === `bao-ph:${bpId}`);
+      assert(dongBp?.phu === `họp ${TODAY.slice(8, 10)}/${TODAY.slice(5, 7)} 15:00`, `A3-09: dòng Báo PH · Meeting của TVV ghi giờ họp: ${dongBp?.phu}`);
       gv.moLaiPhanMeeting(tvv, xep.id);
       assert(mot('SELECT trang_thai FROM meeting_phan WHERE id = ?', xep.id).trang_thai === 'mo', 'Hoàn tác → chưa xong');
     }

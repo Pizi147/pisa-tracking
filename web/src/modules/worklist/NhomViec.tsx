@@ -4,7 +4,7 @@ import { HopNeo } from '../../ui/HopNeo.tsx';
 import { NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { HANG_MUC_CV } from '@shared/domain/index.ts';
+import { HANG_MUC_CV, chuanHangMuc } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** VH-1: nhóm tự đặt của bảng Vận hành (`task_groups`). `n` = số việc (sau lọc) — chỉ có khi đọc từ `/mgmt-tasks`. */
@@ -14,7 +14,7 @@ export type NhomViec = { id: number; ten: string; thuTu: number; an: boolean; br
 export type NoiViec = { groupId: number | null; hangMuc: string | null };
 export const KHONG_PHAN_LOAI: NoiViec = { groupId: null, hangMuc: null };
 
-export const tenHangMuc = (k: string) => { const m = HANG_MUC_CV.find(([x]) => x === k); return m ? dich(m[1]) : k; };
+export const tenHangMuc = (k: string) => { const m = HANG_MUC_CV.find(([x]) => x === chuanHangMuc(k)); return m ? dich(m[1]) : k; };
 
 /* Ô chọn dùng `ChonNguoi ds` (ô có tìm chung, nhóm có nhãn): id dương = nhóm, âm = hạng mục (vị trí trong `HANG_MUC_CV`), KPL = Không phân loại. */
 const KPL = -100000;
@@ -44,6 +44,26 @@ export function OHangMuc({ nhom, value, onChange, id, chiTuDat }: {
         if (so === KPL) onChange(KHONG_PHAN_LOAI);
         else if (so < 0) onChange({ groupId: null, hangMuc: HANG_MUC_CV[-1 - so][0] });
         else onChange({ groupId: so, hangMuc: null });
+      }} />
+  );
+}
+
+/** A2-06 (AUDIT-2111, N45): lọc "Nhóm" của bảng Vận hành — ô có tìm như ô Hạng mục (danh sách dài, không cố định); giá trị = tham số `nhom` của địa chỉ
+    (id nhóm · `m:<hạng mục>` · `none` · khoá nhóm cũ). Trống = Mọi nhóm. */
+export function OLocNhom({ nhom, hangMuc, value, onChange }: { nhom: readonly NhomViec[]; hangMuc: readonly string[]; value: string; onChange: (v: string | null) => void }) {
+  const ds: NguoiTrongDs[] = [
+    ...nhom.map((g) => ({ id: g.id, ten: g.ten, nhom: t('Tự đặt') })),
+    { id: KPL, ten: t('Không phân loại'), nhom: t('Tự đặt') },
+    ...hangMuc.map((k) => ({ id: idHangMuc(k), ten: tenHangMuc(k), nhom: t('Chính thống') })),
+  ];
+  const so = !value ? null : value === 'none' ? KPL : value.startsWith('m:') ? idHangMuc(value.slice(2)) : /^\d+$/.test(value) ? Number(value) : nhom.find((g) => g.khoa === value)?.id ?? null;
+  const chon = so == null ? null : ds.find((x) => x.id === so) ?? null;
+  return (
+    <ChonNguoi ds={ds} nhom="nhan_vien" choToi={false} choNgoai={false} xBo gon macDinhTrong={t('Mọi nhóm')} placeholder={t('Gõ tên nhóm')} ariaLabel={t('Nhóm')} tieuDe={t('Nhóm')}
+      value={chon ? { kieu: 'tai_khoan', id: chon.id, ten: chon.ten } : null}
+      onChange={(v) => {
+        const id = v?.kieu === 'tai_khoan' ? v.id : null;
+        onChange(id == null ? null : id === KPL ? 'none' : id < 0 ? `m:${HANG_MUC_CV[-1 - id][0]}` : String(id));
       }} />
   );
 }

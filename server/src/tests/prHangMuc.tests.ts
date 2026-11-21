@@ -57,6 +57,31 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(mg.listMgmtTasks(ql, {}).rows.find((r: any) => r.id === v.id).hangMuc === 'bao-ph', 'bảng trả hạng mục');
   }));
 
+  await checkAsync('AUDIT-2111 A2-03 · A2-05: một hạng mục "Báo PH" (khoá cũ bao-ph-test ghi thành bao-ph) · việc giao TVV không hạng mục / hạng mục ngoài TVV → tab Vận hành', () => thu(async () => {
+    assert(d.HANG_MUC_CV.filter(([, ten]: any) => ten === 'Báo PH').length === 1, 'ô Hạng mục chỉ một "Báo PH"');
+    const v = tao(ql, { hangMuc: 'bao-ph-test', assigneeUserId: gvcn.userId });
+    assert(mg.listMgmtTasks(ql, {}).rows.find((r: any) => r.id === v.id).hangMuc === 'bao-ph', 'web cũ gửi bao-ph-test → lưu bao-ph');
+    for (const hangMuc of [null, 'mock']) assert(d.tabCuaViec({ group: 'mgmt', key: 'mgmt:1', hangMuc }, true) === 'van-hanh', `TVV: ${hangMuc} → tab Vận hành`);
+    assert(d.NHOM_CV_TVV.includes('van-hanh') && d.tabCuaViec({ group: 'bo_sung_ho_so', key: 'x' }, true) === 'bo-sung', 'Bổ sung hồ sơ giữ chỗ cũ');
+    /* A2-10: một trần Mô tả việc 500; chữ cũ dài (trần cũ 2000) gửi lại nguyên vẫn lưu. */
+    assert(await ma(() => tao(ql, { note: 'x'.repeat(501) })) === 400, 'mô tả > 500 → 400');
+    const dai = tao(ql, {});
+    conn.prepare('UPDATE tasks SET note = ? WHERE id = ?').run('y'.repeat(1500), dai.id);
+    assert(await ma(() => mg.editMgmtTask(ql, dai.id, { note: 'y'.repeat(1500), title: 'Đổi tên' })) === 200, 'mô tả cũ dài gửi lại nguyên → lưu được');
+    assert(await ma(() => mg.editMgmtTask(ql, dai.id, { note: 'z'.repeat(600) })) === 400, 'sửa thành > 500 → 400');
+    /* B2-06: việc tay có HV liên quan — dòng Công việc có tên em; thanh việc hồ sơ HV của em đó có việc cho người phụ trách (cùng câu UNION). */
+    const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
+    const cases: any = await import('../cases/cases.ts');
+    const coHv = tao(ql, { assigneeUserId: gvcn.userId, studentIds: [emLop[0]], due: addDays(TODAY, 3) });
+    const tenEm = mot('SELECT full_name FROM students WHERE id = ?', emLop[0]).full_name;
+    const dong = viecCua(gvcn, `mgmt:${coHv.id}`);
+    assert(dong && dong.hocVienLienQuan === tenEm && dong.studentId === null, `dòng Công việc: ${JSON.stringify(dong && [dong.hocVienLienQuan, dong.studentId])}`);
+    const hs = (sid: number) => { xoaNho(); return viecCuaHocVien(gvcn, sid, cases.skillSupportBoard(gvcn, sid), { trangThaiEm: 'active', lopId: lop, chuongTrinh: null, yThuc: null, miniTest: null, dai: null } as any); };
+    const vEm = hs(emLop[0]).cuaBan.find((x: any) => x.key === `mgmt:${coHv.id}`);
+    assert(vEm && vEm.loai === 'van-hanh' && (vEm.mo as any)?.loai === 'duong', `hồ sơ HV em liên quan: ${JSON.stringify(vEm)}`);
+    assert(!hs(emLop[1]).cuaBan.some((x: any) => x.key === `mgmt:${coHv.id}`), 'em không liên quan: không có việc');
+  }));
+
   await checkAsync('VH1b-2 · /my-work: việc tay có hạng mục vào ĐÚNG mục / tab (kèm "{tên} giao"), việc con theo cha; không hạng mục → Việc được giao', () => thu(async () => {
     const v = tao(ql, { hangMuc: 'bao-ph', classId: lop, assigneeUserId: gvcn.userId, due: addDays(TODAY, 2) });
     const con = tao(ql, { parentTaskId: v.id, title: 'Con hạng mục', assigneeUserId: gvbm.userId });

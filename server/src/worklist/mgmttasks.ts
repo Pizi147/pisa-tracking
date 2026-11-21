@@ -1,7 +1,7 @@
 import { DS_JSON, db, laTrungKhoa, theoKhoaGui, tx } from '../db.ts';
 import {
   PERMISSIONS, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, chuanKhoaGui, facetVanHanh, laHangMucCv, locVanHanh,
+  TASK_PROGRESS_NEEDS_REASON, chuanHangMuc, chuanKhoaGui, facetVanHanh, laHangMucCv, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, chuTuDo, conflict, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
@@ -792,11 +792,13 @@ const bao = (t: any, boi: number, suKien: SuKien, chiTiet: string | null, khoa: 
 const ngayNgan = (d: string | null) => (d ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : 'không hạn');
 
 /** VH-1b (N62): hạng mục chính thống (`HANG_MUC_CV`) | null (tab Vận hành) | undefined (không gửi — giữ nguyên). */
+/** A2-10 (AUDIT-2111): Mô tả việc Vận hành cùng trần với Mô tả việc của khối N58 (`TRAN_MO_TA` giaoViec). */
+const TRAN_MO_TA_VH = 500;
 function docHangMuc(v: unknown): string | null | undefined {
   if (v === undefined) return undefined;
   if (v === null || v === '') return null;
   if (!laHangMucCv(v)) throw badRequest('Hạng mục không hợp lệ — chọn một mục của Công việc hoặc để trống.');
-  return v;
+  return chuanHangMuc(v);
 }
 const TRAN_HV_LIEN_QUAN = 50;
 /** VH-2: loại việc — không gửi → undefined (giữ như cũ); giá trị lạ → 400. */
@@ -868,7 +870,7 @@ export function createMgmtTask(p: Principal, input: {
   if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
-  chuTuDo(input.note, 'Ghi chú', 2000);
+  chuTuDo(input.note, 'Mô tả việc', TRAN_MO_TA_VH);
   if (!title) throw badRequest('Công việc phải có tên.');
   if (input.due && !isIsoDate(input.due)) throw badRequest('Hạn không hợp lệ.');
   const assigneeName = tenNgoai(input.assigneeUserId, input.assigneeName);
@@ -1204,7 +1206,8 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     }
     put('due_date', patch.due ?? null);
   }
-  if (patch.note !== undefined) { chuTuDo(patch.note, 'Ghi chú', 2000); put('note', (patch.note ?? '').trim() || null); }
+  /* A2-10: trần 500 chỉ khi chữ đổi — mô tả cũ dài (trần cũ 2000) gửi lại nguyên vẫn lưu được (N35). */
+  if (patch.note !== undefined) { const nt = typeof patch.note === 'string' ? patch.note.trim() || null : patch.note; chuTuDo(patch.note, 'Mô tả việc', nt === (t.note ?? null) ? 2000 : TRAN_MO_TA_VH); put('note', (patch.note ?? '').trim() || null); }
   /* VH-1b (N62): hạng mục (việc gốc; việc con theo cha) · lớp / học viên liên quan. Chuyển chi nhánh: lớp chi nhánh cũ bỏ. */
   /* PTA rà #1936 (6): chỉ việc Vận hành — việc "Giao GV theo lớp + kỹ năng" (teacher_task) giữ lớp / em / Case của luồng đó. */
   if (t.kind !== 'branch_ops' && (patch.hangMuc !== undefined || patch.classId !== undefined || patch.studentIds !== undefined)) {
