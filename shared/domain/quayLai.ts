@@ -80,14 +80,16 @@ export function buocMoi(chong: BuocVe[], o: { tu: BuocVe | null; den: string; ki
 }
 
 /** Mở thẳng bằng link / tải lại trang: về trang cha như trước PR này. */
-export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?: string | null; nav?: { phanTichGv?: boolean; admin?: boolean } | null } = {}): TenTrang & { url: string } {
+export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?: string | null; nav?: { phanTichGv?: boolean; admin?: boolean; overview?: boolean; work?: boolean } | null } = {}): TenTrang & { url: string } {
   const hvLop = { url: '/hoc-vien', ten: t('Học viên & Lớp') };
   switch (loai) {
     case 'mt': case 'luot': case 'case':
       return o.studentId ? { url: `/hoc-vien/${o.studentId}`, ten: o.tenHv ? t('Hồ sơ {ten}', { ten: o.tenHv }) : TEN_HO_SO['hoc-vien'] } : hvLop;
     case 'gv':
       if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: t('Phân tích'), chiTiet: dich(GOC_NHIN_LABEL['giao-vien']) };
-      return o.nav?.admin ? { url: '/quan-tri', ten: t('Quản trị') } : { url: '/', ten: t('Tổng quan') };
+      if (o.nav?.admin) return { url: '/quan-tri', ten: t('Quản trị') };
+      /* A1-06: vai không có Tổng quan (GV — trang đầu là Công việc, N44) quay về Công việc. */
+      return o.nav && !o.nav.overview && o.nav.work ? { url: '/cong-viec', ten: t('Công việc') } : { url: '/', ten: t('Tổng quan') };
     case 'nhap-diem': return { url: '/test', ten: t('Test') };
     default: return hvLop;
   }

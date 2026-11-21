@@ -404,6 +404,7 @@ const chipMuc = (it: WorkItem, boSos: boolean) => (!it.level ? null : mucSosTheo
 const MA_TUAN = /\b(W[1-5] [A-Z]{3})\b/;
 const LA_SO = /^\d+ (em|việc|bài|HV|lớp)$/;
 const tachTuan = (x: string): string[] => {
+  if (x.startsWith(t('Kỳ {ky}', { ky: '' }))) return [dich(x)];   // A1-10: thẻ kỳ ("{kỳ} W4 AUG – W1 SEP") một chip, không tách mã tuần
   const m = MA_TUAN.exec(x);
   if (!m) return [dich(x)];
   const truoc = x.slice(0, m.index).trim();

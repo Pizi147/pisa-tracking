@@ -1,4 +1,4 @@
-import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { nhanCanSua, type LoiTruong } from '@shared/domain/index.ts';
 
 /** Một ô cần sửa ở chân form: `oId` để nút "n ô cần sửa ↑" nhảy tới ô đó. Chuỗi trơn (form cũ) vẫn nhận. */
@@ -29,6 +29,13 @@ export function useNoiLoi(loi: string | null | undefined) {
 export function useLoiForm() {
   const [daBam, setDaBam] = useState(false);
   const [daRoi, setDaRoi] = useState<ReadonlySet<string>>(new Set());
+  const [lanBam, setLanBam] = useState(0);
+  /* A1-04: bấm nút chính còn lỗi → ô lỗi đầu vào giữa thân panel (chân dính không che dòng lỗi dưới ô). Một panel một lúc. */
+  useEffect(() => {
+    if (!lanBam) return undefined;
+    const h = requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.scrollIntoView({ block: 'center' }));
+    return () => cancelAnimationFrame(h);
+  }, [lanBam]);
   const roi = useCallback((khoa: string) => () => setDaRoi((s) => (s.has(khoa) ? s : new Set(s).add(khoa))), []);
   const hien = (khoa: string) => daBam || daRoi.has(khoa);
   const oId = (khoa: string) => `o-${khoa}`;
@@ -36,7 +43,7 @@ export function useLoiForm() {
   const loiCua = (loi: readonly LoiTruong[], khoa: string) => (hien(khoa) ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
   return {
     daBam,
-    bam: () => setDaBam(true),
+    bam: () => { setDaBam(true); setLanBam((n) => n + 1); },
     /** Đổi tab / làm lại form: quên hết lỗi đã hiện. */
     datLai: () => { setDaBam(false); setDaRoi(new Set()); },
     roi,

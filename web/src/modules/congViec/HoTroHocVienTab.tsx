@@ -424,7 +424,7 @@ export function HoTroHocVienTab() {
       onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); ghiHoanTac(tu.key, null); toast.push('ok', t('Đã hoàn tác')); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
   );
   const viecVuaLuu = {
-    ten: keTiep ? [tenBoEm(keTiep), keTiep.studentId !== null ? keTiep.studentName : null].filter(Boolean).join(' · ') : null,
+    ten: keTiep ? (keTiep.studentId !== null ? keTiep.studentName : tenBoEm(keTiep)) : null,   // A1-08: "Tiếp: {tên em}" một dòng (loại việc đã ở nút chính)
     bao: (x: DaLuuPanel, oLai?: boolean) => {
       if (!chon) return;
       setVuaLuu((v) => ({ x, tu: chon, den: oLai ? chon.key : keTiep?.key ?? null, lan: (v?.lan ?? 0) + 1 }));

@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { caseTopicLabel, duongHoSoHocVien, kyGhiKetQua, type PaDangChay } from '@shared/domain/index.ts';
-import { dich, dichDu, t } from '@shared/i18n/index.ts';
+import { INTERVENTION_KIND_LABEL, caseTopicLabel, duongHoSoHocVien, kyGhiKetQua, type InterventionKind, type PaDangChay } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { useNhapPaMoi, type NhapPaMoi } from '../../lib/nhapPa.ts';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -70,6 +70,8 @@ function NutNhap({ x, nhap, onBam }: { x: PaDangChay; nhap: NhapPaMoi; onBam: ()
   return <button type="button" className={NHAN_NHAP} aria-label={t('Mở nháp: {ten}', { ten: x.studentName })} onClick={(e) => { e.stopPropagation(); onBam(); }}>{chu}</button>;
 }
 
+/** A1-05: tên dòng = loại PA ("Bổ trợ"), mô tả dài của PA nằm ở panel — như mockup v21 D1; không thì tên dài xuống 4 dòng. */
+const tenLoai = (x: PaDangChay) => dich(INTERVENTION_KIND_LABEL[x.kind as InterventionKind] ?? x.kind);
 const nhanKn = (x: PaDangChay) => [x.topic ? dich(caseTopicLabel(x.topic)) : null, x.dot].filter(Boolean).join(' · ');
 const THE = 'h-5 truncate rounded-md px-1.5 text-xs font-medium leading-5 text-dim';
 const The = ({ c }: { c: string }) => <span className={THE} style={{ background: 'var(--surface-2)' }} title={c}>{c}</span>;
@@ -87,9 +89,9 @@ const TEN = 'min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-
 function DongNho({ k, chonDong, tren, duoi, han, nut, onBam }: { k: string; chonDong: boolean; tren: ReactNode; duoi: ReactNode; han: string; nut: ReactNode; onBam: () => void }) {
   return (
     <div data-hd="pdc-dong-nho" data-khoa={k} onClick={onBam} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3.5 sm:hidden ${chonDong ? 'row-active' : 'bam'}`}>
-      <span className="min-w-0 truncate text-[15px] text-[color:var(--text)]" title={typeof tren === 'string' ? tren : undefined}>{tren}</span>
+      <span className="min-w-0 break-words text-[15px] text-[color:var(--text)]" title={typeof tren === 'string' ? tren : undefined}>{tren}</span>
       <span className="justify-self-end"><ChipHan vien loai="cap-nhat-pa" han={han} /></span>
-      <span className="min-w-0 truncate text-[13px] text-dim" title={typeof duoi === 'string' ? duoi : undefined}>{duoi}</span>
+      <span className="min-w-0 break-words text-[13px] text-dim" title={typeof duoi === 'string' ? duoi : undefined}>{duoi}</span>
       <span className="justify-self-end" onClick={(e) => e.stopPropagation()}>{nut}</span>
     </div>
   );
@@ -121,7 +123,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
             const key = nhieu ? `pdc-lop:${g.classId}` : `action:${x0.paId}`;
             const chonDong = chon === key;
             const tenDong = nhieu ? <><b className="font-semibold">{g.lop}</b> · {t('PA đang chạy')}</>
-              : <>{g.lop ? <><b className="font-semibold">{g.lop}</b> · </> : null}{dichDu(x0.tenPa)}</>;
+              : <>{g.lop ? <><b className="font-semibold">{g.lop}</b> · </> : null}{tenLoai(x0)}</>;
             return (
               <li key={g.khoa} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
                 {/* 375 (mockup D5, R1.23): dải lớp cao 44 "MB FT 101 · 4 PA · hạn 24/11 ⌄" · thẻ hai dòng (tên · hạn │ kỹ năng · PA · nhãn nháp). */}
@@ -136,7 +138,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                   </div>
                 ) : (
                   <DongNho k={key} chonDong={chonDong} han={x0.han} onBam={() => moPa(x0)} nut={<NutNhap x={x0} nhap={nhapCua(x0)} onBam={() => moPa(x0)} />}
-                    tren={<>{g.lop ? <b className="font-semibold">{g.lop} · </b> : null}{dichDu(x0.tenPa)}</>}
+                    tren={<>{g.lop ? <b className="font-semibold">{g.lop} · </b> : null}{tenLoai(x0)}</>}
                     duoi={<><Link to={duongHoSoHocVien(x0.studentId)} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:underline">{x0.studentName}</Link>{nhanKn(x0) ? ` · ${nhanKn(x0)}` : ''}</>} />
                 )}
                 <div data-hd="pdc-dong" data-khoa={key} className={`${DONG} max-sm:hidden ${chonDong ? 'row-active' : 'bam'}`}
@@ -168,14 +170,14 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                         <li key={x.paId} className={`${NET_CAY} max-sm:before:hidden max-sm:after:hidden ${j ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
                           <DongNho k={k2} chonDong={chon === k2} han={x.han} onBam={() => moPa(x)} nut={<NutNhap x={x} nhap={nhapCua(x)} onBam={() => moPa(x)} />}
                             tren={<Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="ten-hv inline-flex min-h-[44px] items-center font-semibold text-[color:var(--text)] no-underline hover:underline">{x.studentName}</Link>}
-                            duoi={[nhanKn(x), dichDu(x.tenPa)].filter(Boolean).join(' · ')} />
+                            duoi={[nhanKn(x), tenLoai(x)].filter(Boolean).join(' · ')} />
                           <div data-hd="pdc-em" data-khoa={k2} className={`${DONG} min-h-[48px] pl-8 max-sm:hidden sm:pl-8 ${chon === k2 ? 'row-active' : 'bam'}`} onClick={() => moPa(x)}>
                             <span className="grid min-w-0 gap-0.5">
                               <span className="flex min-w-0 items-baseline gap-2 text-[15px] leading-snug max-sm:items-center">
                                 <Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="shrink-0 font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{x.studentName}</Link>
-                                <span className="min-w-0 truncate font-normal text-dim max-sm:hidden">{dichDu(x.tenPa)}</span>
+                                <span className="min-w-0 truncate font-normal text-dim max-sm:hidden">{tenLoai(x)}</span>
                               </span>
-                              <span className="flex min-w-0 flex-wrap items-center gap-[3px] sm:mt-[3px]">{nhanKn(x) && <The c={nhanKn(x)} />}<span className="sm:hidden"><The c={dichDu(x.tenPa)} /></span></span>
+                              <span className="flex min-w-0 flex-wrap items-center gap-[3px] sm:mt-[3px]">{nhanKn(x) && <The c={nhanKn(x)} />}<span className="sm:hidden"><The c={tenLoai(x)} /></span></span>
                             </span>
                             <span className={`flex min-w-0 text-[13px] ${O_HAN}`}><ChipHan vien loai="cap-nhat-pa" han={x.han} /></span>
                             <span className={`flex flex-col items-stretch ${O_NUT}`} onClick={(e) => e.stopPropagation()}><NutNhap x={x} nhap={nhapCua(x)} onBam={() => moPa(x)} /></span>
