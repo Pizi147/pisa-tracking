@@ -316,6 +316,31 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(x2.status === 200 && (await goi(gvbm, 'POST', `/thung-rac/${x2.json.thungRacId}/khoi-phuc`)).status === 200 && dong(id2)?.trang_thai === 'mo', 'vi phạm lẻ: yêu cầu mở lại');
     }));
 
+    await checkAsync('TL-28 · (rà PTA #1954 ①) xoá vi phạm bị trả lại → TVV đã đọc tin "GV đã xoá" → khôi phục: tin đó gỡ; GV gửi lại → TVV có tin "GV đã sửa" CHƯA đọc', () => thu(async () => {
+      const sid = moiEm(); const { vids } = xuLy(sid, 2);
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id;
+      const x = await goi(gvbm, 'DELETE', `/violations/${vids[0]}`);
+      assert(tin(`tra-lai-kq:${id}`).length === 1, 'TVV có tin "GV đã xoá vi phạm"');
+      conn.prepare('UPDATE notifications SET read_at = ? WHERE dedup_key = ?').run(new Date().toISOString(), `tra-lai-kq:${id}`);
+      assert((await goi(gvbm, 'POST', `/thung-rac/${x.json.thungRacId}/khoi-phuc`)).status === 200, 'khôi phục');
+      assert(!tin(`tra-lai-kq:${id}`).length && !mot(`SELECT 1 FROM notifications WHERE dedup_key >= ? AND dedup_key < ?`, `gv:tra_lai:${id}:ket_qua:`, `gv:tra_lai:${id}:ket_qua;`),
+        'tin kết quả "GV đã xoá" (TVV + người theo dõi) gỡ');
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/gui-lai`, {})).status === 200, 'GV gửi lại');
+      const t = mot('SELECT title, read_at FROM notifications WHERE dedup_key = ? AND user_id = ?', `tra-lai-kq:${id}`, tvv.userId);
+      assert(t && t.read_at === null && /^GV đã sửa/.test(t.title), `tin mới chưa đọc: ${JSON.stringify(t)}`);
+    }));
+
+    await checkAsync('TL-29 · (rà PTA #1954 ②, N61) vi phạm ở Thùng rác, TVV báo PH xong → khôi phục: yêu cầu đóng "TVV đã báo PH" (không mở lại), GV không còn việc', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid, 2);
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id;
+      const x = await goi(gvbm, 'DELETE', `/violations/${vids[0]}`);
+      const b = await goi(tvv, 'POST', '/y-thuc/bao-ph/ghi', { viecIds: [bp], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
+      assert(b.status === 200 && mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', bp).trang_thai === 'xong', `TVV báo PH xong: ${b.status} ${b.json?.error}`);
+      assert((await goi(gvbm, 'POST', `/thung-rac/${x.json.thungRacId}/khoi-phuc`)).status === 200, 'khôi phục');
+      assert(dong(id)?.trang_thai === 'xong' && dong(id).ket_qua === 'tvv_da_bao', `đóng TVV đã báo PH: ${JSON.stringify(dong(id))}`);
+      assert(!items(gvbm).some((i) => i.key === `yt_tra_lai:${id}`) && !hang('SELECT 1 FROM notifications WHERE dedup_key LIKE ?', `tra-lai-kp:${id}:%`).length, 'GV không còn việc, TVV không tin "hoàn tác xoá"');
+    }));
+
     await checkAsync('TL-26 · (AUDIT-2111 B1-11) GV "Sửa rồi gửi lại" / "Giữ nguyên" → Hoàn tác 60 giây: yêu cầu "mở", vi phạm như trước khi sửa, Báo PH dừng lại, tin TVV gỡ; người khác / quá 60 giây → 400', () => thu(async () => {
       const sid = moiEm(); const { vids, bp } = xuLy(sid, 2);
       conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), bp);
@@ -335,6 +360,11 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(items(gvbm).some((i) => i.key === `yt_tra_lai:${a}`), 'việc GV trở lại');
       const gn = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
       assert(gn.status === 200 && gn.json.ketQua === 'giu_nguyen', `giữ nguyên sau Hoàn tác: ${gn.status} ${gn.json?.error}`);
+      /* Rà PTA #1954 (3): TVV trả lại lần nữa (yêu cầu mới mở) → Hoàn tác lần cũ 409, không hai yêu cầu cùng mở. */
+      const moi = (await tra(tvv, { violationId: vids[0] })).json.id;
+      const h2 = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/hoan-tac`);
+      assert(h2.status === 409 && /trả lại lần nữa/.test(h2.json?.error ?? '') && dong(a).trang_thai === 'xong' && dong(moi).trang_thai === 'mo', `yêu cầu mới đang mở: ${h2.status} ${h2.json?.error}`);
+      await goi(tvv, 'POST', `/y-thuc/tra-lai/${moi}/hoan-tac`);
       conn.prepare('UPDATE vi_pham_tra_lai SET xong_luc = ? WHERE id = ?').run(new Date(Date.now() - 61_000).toISOString(), a);
       assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/hoan-tac`)).status === 400 && dong(a).trang_thai === 'xong', 'quá 60 giây → 400');
     }));

@@ -414,11 +414,15 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(h.lichSu.filter((l: any) => l.truong === 'assignee_user_id').length === 2, 'lịch sử: đổi + hoàn tác');
     assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: h.updatedAt })) === 409, 'đã hoàn tác → 409');
     const d2 = mg.editMgmtTask(ql, v.id, { assigneeUserId: gvcn.userId, phienBan: h.updatedAt });
+    assert(await ma(() => mg.editMgmtTask(P.admin, v.id, { hoanTacGiao: true, phienBan: d2.updatedAt })) === 403, 'Quản trị không phải người đổi → 403 (rà PTA #1954 ④)');
     const d3 = mg.editMgmtTask(ql, v.id, { due: addDays(TODAY, 4), phienBan: d2.updatedAt });
     assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d3.updatedAt })) === 409, 'có thay đổi sau lần đổi → 409');
     assert(await ma(() => mg.editMgmtTask(tvv, v.id, { hoanTacGiao: true, phienBan: d3.updatedAt })) === 403, 'không quản lý → 403');
     const d4 = mg.editMgmtTask(ql, v.id, { assigneeUserId: tvv.userId, title: 'Đổi tên cùng lúc', phienBan: d3.updatedAt });
     assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d4.updatedAt })) === 409, 'form Sửa nhiều trường: không có bản đảo mới');
+    const d5 = mg.editMgmtTask(ql, v.id, { assigneeUserId: gvcn.userId, phienBan: d4.updatedAt });
+    conn.prepare(`UPDATE ghi_dao SET luc = ? WHERE loai = 'van_hanh.giao' AND doi_tuong_id = ?`).run(new Date(Date.now() - 61_000).toISOString(), v.id);
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { hoanTacGiao: true, phienBan: d5.updatedAt })) === 400, 'quá 60 giây → 400');
   }));
 
   await checkAsync('AU-2111 P1-01 (A2-01) · TVV được giao việc Vận hành / việc con / theo dõi mở + làm được qua HTTP (cổng khu Công việc); TVV không liên quan, hết vai 403; danh sách Vận hành vẫn 403', async () => {

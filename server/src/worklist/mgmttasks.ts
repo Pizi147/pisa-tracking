@@ -12,7 +12,7 @@ import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { CN_VH, HOAT_DONG_O, baoTheoDoi, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
-import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
+import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
@@ -1275,8 +1275,8 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   return tx(() => {
     if (!dao) return ghiSua(null);
     /* Tin "Cập nhật" của việc: khoảng khoá `gv:van_hanh:{id}:…` theo chỉ mục `dedup_key` (không quét bảng). */
-    const kq = dao.theoDoi('viec_theo_doi', `loai = 'van_hanh' AND ref_id = ?`, [taskId], () =>
-      dao.theoDoi('notifications', 'dedup_key >= ? AND dedup_key < ?', [`gv:van_hanh:${taskId}:`, `gv:van_hanh:${taskId};`], () => ghiSua(dao)));
+    const kq = dao.theoDoi('viec_theo_doi', `loai = 'van_hanh' AND ref_id = ?`, [taskId], () => dao.theoDoi('viec_giao_lan', `loai = 'van_hanh' AND ref_id = ?`, [taskId], () =>
+      dao.theoDoi('notifications', 'dedup_key >= ? AND dedup_key < ?', [`gv:van_hanh:${taskId}:`, `gv:van_hanh:${taskId};`], () => ghiSua(dao))));
     luuGhiDao(conn, { loai: LOAI_DAO_GIAO, bang: 'tasks', id: taskId, nguoi: p.userId, ghi: dao });
     return kq;
   });
@@ -1334,14 +1334,17 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
 }
 
 const LOAI_DAO_GIAO = 'van_hanh.giao';
+const HOAN_TAC_GIAO_MS = 60_000;
 /**
  * A2-04 / A2-09 (AUDIT-2111): Hoàn tác "Đổi người" (panel) = ĐẢO lần đổi gần nhất, không phải đổi lần nữa: người phụ trách + người theo dõi về đúng như trước
  * (người phụ trách cũ không bị thêm vào Theo dõi) · tin "Đổi người phụ trách" vừa gửi gỡ đi (kết quả không đổi → không tin). Sau đó đã có thay đổi → 409.
  */
 function hoanTacGiaoVh(p: Principal, t: any) {
-  if (!coQuyenViec(p, t)) throw forbidden('Chỉ Head, Quản trị hoặc CX của chi nhánh hoàn tác được.');
-  const g = timGhiDao(db(), LOAI_DAO_GIAO, 'tasks', t.id);
-  if (!g) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
+  /* Rà PTA #1954 (4): chỉ lần đổi GẦN NHẤT (đã hoàn tác thì thôi — không đảo tiếp chuỗi lần cũ hơn), của chính người đổi còn hiệu lực, trong 60 giây. */
+  const g = db().prepare(`SELECT * FROM ghi_dao WHERE loai = ? AND bang = 'tasks' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`).get(LOAI_DAO_GIAO, t.id) as BanGhiDao | undefined;
+  if (!g || g.dao_luc) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
+  if (g.nguoi !== p.userId || !coQuyenViec(p, t) || !laHieuLuc(p.userId, t.branch_id ?? null)) throw forbidden('Chỉ người vừa đổi người phụ trách hoàn tác được.');
+  if (Date.now() - Date.parse(g.luc) > HOAN_TAC_GIAO_MS) throw badRequest('Quá thời gian Hoàn tác — đổi lại người phụ trách bằng nút Đổi.');
   return tx(() => {
     daoLai(db(), g, p.userId);
     const sau = docTask(t.id);

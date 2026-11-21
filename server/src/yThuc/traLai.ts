@@ -256,6 +256,11 @@ function hoanTacGv(p: Principal, r: any): { ok: true } {
   if (!gvHoanTacDuoc(p, r)) throw badRequest('Quá thời gian Hoàn tác — nhờ TVV trả lại lần nữa nếu cần sửa.');
   const g = timGhiDao(db(), LOAI_DAO_GV, 'vi_pham_tra_lai', r.id);
   if (!g) throw conflict(DA_DOI);
+  /* Rà PTA #1954 (3): TVV đã trả lại lần nữa (yêu cầu mới đang mở cho cùng vi phạm / lần xử lý) → không để hai yêu cầu cùng mở. */
+  const cot = r.violation_id ? 'violation_id' : 'measure_id';
+  if (db().prepare(`SELECT 1 FROM vi_pham_tra_lai WHERE ${cot} = ? AND trang_thai = 'mo' AND id != ?`).get(r.violation_id ?? r.measure_id, r.id)) {
+    throw conflict('TVV vừa trả lại lần nữa — xử lý yêu cầu mới ở Công việc thay vì Hoàn tác.');
+  }
   tx(() => {
     daoLai(db(), g, p.userId);
     chotHanXuLy([r.student_id]);   // vi phạm về như trước khi sửa → hạn xử lý tính lại
@@ -292,15 +297,27 @@ export function khoiPhucTraLaiKhiXoa(k: TraLaiKhiXoa | undefined, nguoi: number,
   const mo = db().prepare(`SELECT t.id, t.student_id, t.nguoi_tra, s.full_name FROM vi_pham_tra_lai t JOIN students s ON s.id = t.student_id
       WHERE t.id IN (${DS_JSON}) AND t.trang_thai = 'mo'`).all(JSON.stringify(ids)) as any[];
   if (!mo.length) return;
+  /* Rà PTA #1954 (1): tin kết quả của lần đóng "GV đã xoá vi phạm" (TVV `tra-lai-kq` + người theo dõi `gv:tra_lai:{id}:ket_qua:…`) gỡ — yêu cầu mở lại;
+     lần đóng sau gửi tin MỚI (notify trùng khoá chỉ sửa chữ, không đặt lại "chưa đọc"). Khoảng khoá theo chỉ mục `dedup_key`. */
+  for (const r of mo) {
+    db().prepare('DELETE FROM notifications WHERE dedup_key = ? OR (dedup_key >= ? AND dedup_key < ?)').run(`tra-lai-kq:${r.id}`, `gv:tra_lai:${r.id}:ket_qua:`, `gv:tra_lai:${r.id}:ket_qua;`);
+  }
   const con = new Map((db().prepare(`SELECT id, student_id, trang_thai FROM viec_bao_ph WHERE id IN (${DS_JSON})`).all(JSON.stringify(k.baoPh.map((b) => b.id))) as any[])
     .map((b) => [b.id as number, b]));
   const dung: number[] = [];
+  let baoXong = false;
   for (const b of k.baoPh) {
     const r = con.get(b.id);
+    if (r && r.student_id === b.sid && r.trang_thai === 'xong') baoXong = true;
     if (!r || r.student_id !== b.sid || r.trang_thai !== 'mo') continue;   // id việc đã thuộc em khác / Báo PH đã xong → không đụng
     dung.push(b.id);
     if (b.truoc === b.sau || !db().prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE id = ? AND han_chon IS ?').run(b.truoc, b.id, b.sau).changes) continue;
     if (b.lan.length) db().prepare(`DELETE FROM viec_han_lan WHERE loai = 'bao_ph' AND viec_id = ? AND id IN (${DS_JSON})`).run(b.id, JSON.stringify(b.lan));
+  }
+  /* Rà PTA #1954 (2), N61: trong lúc vi phạm nằm ở Thùng rác, TVV đã báo PH xong → yêu cầu không mở lại mà đóng "TVV đã báo PH" (GV nhận tin như đường cũ). */
+  if (!dung.length && baoXong) {
+    for (const r of mo) dong(load(r.id), nguoi, { trangThai: 'xong', ketQua: 'tvv_da_bao' });
+    return;
   }
   dongBoTamDung(dung, nguoi, false);
   const ten = (db().prepare('SELECT full_name FROM users WHERE id = ?').get(nguoi) as any)?.full_name ?? null;

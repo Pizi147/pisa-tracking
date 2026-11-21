@@ -134,7 +134,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
     if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Head hoặc GVCN của lớp mới phân công giáo viên.');
     /* P1-05 (AUDIT-2111 B1-03): thiếu / sai danh sách → 400 — không coi là "lớp không ai dạy" (từng kết thúc hết phân công của lớp). */
-    if (!Array.isArray(l.slots)) throw badRequest('Thiếu danh sách phân công.');
+    if (!Array.isArray(l.slots)) throw badRequest('Thiếu danh sách phân công — tải lại phân công lớp rồi lưu.');
     const prog = progCua(classId);
     const ct = prog?.code ?? null;
     const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
