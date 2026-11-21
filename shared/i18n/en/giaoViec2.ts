@@ -53,4 +53,8 @@ export const EN_GIAO_VIEC_2 = {
   'N58 · ngày xác nhận là ngày 1 · chi nhánh chưa có CX thì Head.': 'N58 · the confirmation day is day 1 · branch without CX: the Head.',
   'Lên SOS {n}': 'Reached SOS {n}',
   'GV ghi': 'Recording teacher', 'Head': 'Head',
+  /* GV-3 (N62): dòng Mô tả trong khối giao việc. */
+  'Đã lưu mô tả': 'Description saved', 'Đã bỏ mô tả': 'Description removed', 'Cần làm gì, lưu ý gì (tuỳ chọn)': 'What to do, what to note (optional)',
+  'Quá {n} ký tự — bớt chữ để lưu': '{n} characters over — shorten to save',
+  'Người khác vừa sửa mô tả: “{chu}”. Chữ bạn gõ vẫn ở ô — bấm Lưu mô tả để thay.': 'Someone just edited the description: “{chu}”. Your text is still in the box — press Save description to replace it.', 'Thêm mô tả': 'Add description', 'Bỏ mô tả': 'Remove description',
 } as const;

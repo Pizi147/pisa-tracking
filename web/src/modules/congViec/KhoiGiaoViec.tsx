@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -26,6 +26,8 @@ export type KhoiGv = {
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   /** Báo PH "Chờ GV sửa" (TL-1): hạn tạm dừng — không tô quá hạn. */ tamDung?: boolean;
   theoDoi: (Nguoi & { nguon: string })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
+  /** GV-3 (N62): Mô tả tuỳ chọn — `noiDung` gửi lại làm `moTaCu` khi sửa (so-và-đổi); người theo dõi chỉ đọc (`coTheSuaMoTa` của máy chủ). */
+  moTa: { noiDung: string; suaBoi: string | null; suaLuc: string } | null; coTheSuaMoTa: boolean;
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
     xongBoi: string | null; xongLuc: string | null; nhapHoBoi: string | null; coTheLam: boolean };
@@ -42,7 +44,9 @@ export function useGiaoViec(loai: LoaiGiao, id: number | null | undefined) {
   return { g: ban ?? data, error, reload, dat: setBan };
 }
 
-const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head' };
+const NHAN_NGUON: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', cx: 'CX' };
+/** Trần chữ Mô tả — cùng số với máy chủ (`TRAN_MO_TA`, đếm sau khi bỏ khoảng trắng hai đầu). */
+const TRAN_MO_TA = 500;
 const O = 'flex min-h-[46px] min-w-0 items-center gap-2 border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
 const NHAN = `${O} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`;
 const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs text-dim';
@@ -112,6 +116,7 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi }
         </>}
         <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
         <DongHan khoi tamDung={g.tamDung} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+        {(g.moTa || (g.coTheSuaMoTa && !chiHan)) && <DongMoTa g={g} daDoi={daDoi} reload={reload} />}
         {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} />}
       </div>
       {hop && (
@@ -125,6 +130,80 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi }
       )}
     </div>
   );
+}
+
+/**
+ * GV-3 (N62): dòng "Mô tả" — xem: chữ (giữ xuống dòng) hoặc "Chưa có"; nút "Thêm" / "Sửa" theo cờ `coTheSuaMoTa`. Sửa TẠI CHỖ như "Sửa hạn" (ô chiếm hai cột):
+ * ô chữ + bộ đếm "n / 500" · Lưu mô tả · Huỷ sửa · Esc (Ctrl + Enter = Lưu). Quá 500 → không lưu, báo tại ô, chữ giữ nguyên. Xoá hết chữ rồi lưu = bỏ mô tả.
+ * 409 (người khác vừa sửa) → báo tại ô + tải lại khối; chữ đang gõ giữ trong ô, lần Lưu sau so với bản mới.
+ */
+function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void; reload: () => void }) {
+  const toast = useToast();
+  const [sua, setSua] = useState(false);
+  const [nhap, setNhap] = useState('');
+  const [dang, setDang] = useState(false);
+  const [loi, setLoi] = useState<Loi | null>(null);
+  const idO = useId();
+  const nutSua = useRef<HTMLButtonElement>(null);
+  const daMo = useRef(false);
+  useEffect(() => {
+    if (sua) document.getElementById(idO)?.focus();
+    else if (daMo.current) nutSua.current?.focus();
+    daMo.current = sua;
+  }, [sua, idO]);
+  const cu = g.moTa?.noiDung ?? null;
+  const dai = nhap.trim().length;
+  const qua = dai > TRAN_MO_TA;
+  const khongDoi = nhap.trim() === (cu ?? '');
+  const luu = async () => {
+    if (qua || khongDoi || dang) return;
+    setDang(true); setLoi(null);
+    try {
+      const moi = await api.put<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/mo-ta`, { moTa: nhap.trim(), moTaCu: cu });
+      setSua(false); daDoi(moi);
+      toast.push('ok', nhap.trim() ? t('Đã lưu mô tả') : t('Đã bỏ mô tả'));
+    } catch (e: any) {
+      const l = loiCua(e); setLoi(l);
+      if (l.xungDot) reload();
+      document.getElementById(idO)?.focus();
+    } finally { setDang(false); }
+  };
+  const o = 'flex min-h-[46px] min-w-0 items-center border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
+  return <>
+    <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{sua ? <label htmlFor={idO}>{t('Mô tả')}</label> : t('Mô tả')}</div>
+    {sua ? (
+      /* Esc chỉ đóng ô sửa (giữ panel) — KhungPanel bỏ qua Esc đã `preventDefault`. */
+      <div className={`${o} col-span-2 flex-col items-stretch gap-2`} style={{ borderColor: 'var(--line)' }}
+        onKeyDown={(e) => { if (e.key === 'Escape' && !dang) { e.preventDefault(); setSua(false); } }}>
+        <textarea id={idO} className="field min-h-[72px] w-full resize-y py-2 text-sm" rows={3} name="mo-ta" autoComplete="off" value={nhap} readOnly={dang}
+          aria-invalid={qua || undefined} aria-describedby={`${idO}-dem`} placeholder={t('Cần làm gì, lưu ý gì (tuỳ chọn)')}
+          onChange={(e) => setNhap(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void luu(); } }} />
+        <span className="flex flex-wrap items-center gap-2">
+          <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-[36px] max-sm:flex-1" disabled={dang || qua || khongDoi} onClick={() => void luu()}>{dang ? t('Đang lưu…') : t('Lưu mô tả')}</button>
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[36px] max-sm:flex-1" disabled={dang} onClick={() => setSua(false)}>{t('Huỷ sửa')}</button>
+          <span id={`${idO}-dem`} aria-live="polite" className={`ml-auto text-xs tabular-nums ${qua ? 'font-semibold text-late' : 'text-faint'}`}>
+            {qua && <>{t('Quá {n} ký tự — bớt chữ để lưu', { n: dai - TRAN_MO_TA })} · </>}<span className="whitespace-nowrap">{dai} / {TRAN_MO_TA}</span>
+          </span>
+        </span>
+        {loi && (
+          <span role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-sm">
+            <b className="text-late">{t('Chưa lưu.')}</b><span className="min-w-0 flex-1">{loi.xungDot
+              ? t('Người khác vừa sửa mô tả: “{chu}”. Chữ bạn gõ vẫn ở ô — bấm Lưu mô tả để thay.', { chu: cu ?? t('Chưa có') })
+              : loi.chu}</span>
+          </span>
+        )}
+      </div>
+    ) : <>
+      <div className={`${o} text-sm`} style={{ borderColor: 'var(--line)' }}>
+        {cu ? <span className="min-w-0 whitespace-pre-wrap break-words text-[color:var(--text)]">{cu}</span> : <span className="text-faint">{t('Chưa có')}</span>}
+      </div>
+      <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
+        {g.coTheSuaMoTa && <button ref={nutSua} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]"
+          onClick={() => { setNhap(cu ?? ''); setLoi(null); setSua(true); }}>{cu ? t('Sửa') : t('Thêm')}</button>}
+      </div>
+    </>}
+  </>;
 }
 
 /** Dải "✓ Đã giao cho … · Hoàn tác · n giây" (mockup G3b) — 10 giây, đếm lùi trên nút. */
@@ -383,6 +462,11 @@ export function dongLichSuGiao(g: KhoiGv | null | undefined, hn: string, ten?: s
     if (l.truong === 'phu_trach') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Đổi người phụ trách')}`, phu: [`${l.cuTen ?? md} → ${l.moiTen ?? md}`] };
     if (l.truong === 'theo_doi') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.moi ? t('Thêm theo dõi') : t('Bỏ theo dõi')}`, phu: [(l.moiTen ?? l.cuTen) ?? ''] };
     if (l.truong === 'han') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${t('Sửa hạn')}`, phu: [`${ngay(l.cu)} → ${ngay(l.moi)}`] };
+    /* GV-3 (N62): mô tả — dòng phụ là chữ mới (cắt 160 ký tự); bỏ mô tả → chữ cũ. */
+    if (l.truong === 'mo_ta') {
+      const chu = (l.moi ?? l.cu ?? '').replace(/\s+/g, ' ');
+      return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${!l.cu ? t('Thêm mô tả') : l.moi ? t('Sửa mô tả') : t('Bỏ mô tả')}`, phu: [chu.length > 160 ? `${chu.slice(0, 160)}…` : chu] };
+    }
     const kq = (() => { try { const x = JSON.parse(l.moi ?? 'null'); return x ? [x.ngayGio ? t('họp {ngay}', { ngay: lucVn(x.ngayGio.replace(' ', 'T')) }) : null, x.ketQua].filter(Boolean) as string[] : []; } catch { return []; } })();
     return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.truong === 'xong' ? t('Hoàn thành') : l.truong === 'sua' ? t('Sửa kết quả') : t('Hoàn tác hoàn thành')}`, phu: kq };
   });
