@@ -179,9 +179,9 @@ function LoXacNhan({ ds, onXong }: { ds: Dong[]; onXong: (ids: number[]) => void
 }
 
 /* Lưới 4 cột ① ② ③ ⋯ (mockup `.pht`) — div lưới (danh sách việc có form tại dòng, không phải bảng số liệu). 375: xếp dọc. */
-const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
+const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_92px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
 /** YT-b: panel Công việc vai GVCN — Học viên · Cần làm (Kết quả gộp vào ô Cần làm) · ⋯. */
-const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
+const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_92px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
 
 /** Hạn dưới tên em: quá hạn badge đỏ + ngày (`BadgeHan`, 15/11); còn ≤ 3 ngày badge vàng; xa mờ. */
@@ -335,7 +335,7 @@ function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
     : a.status === 'removed' ? (khoiPhuc ? [[t('Khôi phục'), onMoLai]] : [])
     : [...(onHan ? [[t('Sửa hạn…'), onHan] as [string, () => void]] : []), [t('Bỏ việc…'), onBo]];
   /* GD-4c: một menu thả = MenuDong (trước: role="menu" tự viết, không phím ↑ ↓ / Esc). */
-  return <MenuDong giuBaCham lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
+  return <MenuDong lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
 }
 
 /** Xác nhận tại dòng (GVCN / QL): Ngày + MỘT ô Nội dung (bắt buộc; Meeting CX: "Nội dung gửi TVV" tuỳ chọn) · + Tệp · Người thực hiện. Sửa: điền sẵn. */

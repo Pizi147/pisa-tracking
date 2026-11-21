@@ -48,7 +48,7 @@ const dongPhu = (m: MucMenu) => m.goi ?? (m.tat ? m.title : undefined);
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut, chu, canhTrai = false, tieuDeDay, giuBaCham = false }: {
+export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut, chu, canhTrai = false, tieuDeDay }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
   /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */
@@ -61,8 +61,6 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
   canhTrai?: boolean;
   /** GD-4a (mockup ⑤ F4): < 640 px menu NEO ĐÁY màn (tấm dưới có tiêu đề này, nền mờ phía sau, mục cao 48) thay vì thả cạnh nút. */
   tieuDeDay?: string;
-  /** B3-06: cột hẹp (ô ⋯ 40 px): một mục vẫn vẽ ⋯, không đổi thành nút chữ (chữ bị cắt ở mép). */
-  giuBaCham?: boolean;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -124,7 +122,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
   /* S4-GD (Tutor 20/11, đề xuất 1): chỉ MỘT mục bấm được (tiêu đề nhóm không tính), nút ⋯ trơn (không chữ riêng `chu` / `mat`, không chip) → nút chữ
      bấm thẳng, đỡ 1 bấm. Mục tắt: nút mờ, `title` ghi lý do. Mục nguy hiểm giữ màu đỏ. Cao 36 nơi ⋯ cao 36 (đầu trang, chân hộp), còn lại nút phụ nhỏ;
      điện thoại ≥ 44. Tên đọc màn = chữ nút + ngữ cảnh của ⋯ (ô nào, em nào). */
-  const don = !giuBaCham && bam.length === 1 && !chu && !mat && kieu !== 'chip' && bam[0].chon === undefined ? bam[0] : null;
+  const don = bam.length === 1 && !chu && !mat && kieu !== 'chip' && bam[0].chon === undefined ? bam[0] : null;
   if (don) return (
     <button type="button" title={don.title ?? don.goi} aria-disabled={don.tat ? 'true' : undefined} aria-label={nhan === t('Thao tác khác') ? undefined : `${don.nhan} · ${nhan}`}
       className={`btn shrink-0 justify-center ${/(^|\s)h-9(\s|$)/.test(lopNut ?? '') ? 'h-9 max-sm:h-11' : 'btn-sm min-h-[44px] sm:min-h-0'}${don.nguyHiem ? ' btn-danger' : ''}${don.tat ? ' opacity-45 cursor-not-allowed' : ''}`}
