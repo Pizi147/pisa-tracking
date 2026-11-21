@@ -7,12 +7,14 @@ import { MuiTenMo } from '../../../ui/HangNhom.tsx';
 import { CHIP_TRON } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
+import { KhungPanel } from '../../../ui/KhungPanel.tsx';
+import { PhanLichTest } from '../../classes/ClassProgressPanel.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData, SoLoc } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST — hàng lớp TÁCH TRƯỜNG (U05, mockup V11 `.hl-kh`, 10.2 #9): ▸ · mã (→ hồ sơ lớp) · n HV · GVCN · đợt đang chạy
- * ("MT3 đang làm bài" / lớp thường "đang tuần 8/8") · ô số "Chưa xếp lịch MT · n em" + "Vắng · n em" (BPXL-2, mockup v22; bấm = lọc lớp đó) hoặc
+ * ("MT3 đang làm bài" / lớp thường "đang tuần 8/8") · ô số "Chưa đủ lịch MT · n em" + "Vắng · n em" (BPXL-2, mockup v22; bấm = lọc lớp đó) hoặc
  * "Chỉ xem"; đang lọc theo một số thì chỉ còn ô số đó; rồi lưới HV × đợt khi mở
  * (tải khi mở). Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
@@ -20,7 +22,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, loc = null, hvChon =
   lop: LopKH; mo: boolean; onToggle: () => void; onHienDien: (open: boolean) => void;
   /** Số đang lọc (`?so=`): lưới chỉ còn em khớp ("chua-xep" thiếu MT · "vang" vắng tuần này). */
   loc?: SoLoc | null;
-  /** Ô số "Chưa xếp lịch MT · n em" / "Vắng · n em" — bật lọc số đó cho lớp này. */
+  /** Ô số "Chưa đủ lịch MT · n em" / "Vắng · n em" — bật lọc số đó cho lớp này. */
   onLocLop?: (so: 'chua-xep' | 'vang') => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm (thuộc lớp này) — lưới cuộn tới hàng em. */
   hvChon?: number | null;
@@ -59,7 +61,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, loc = null, hvChon =
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           {lop.chiXem ? <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>
             : lop.loai === 'ft' && lop.chuaCoLichTiep > 0 && (!loc || loc === 'chua-xep') ? (
-              <button type="button" className="o-so" onClick={(e) => { e.stopPropagation(); onLocLop?.('chua-xep'); }}>{t('Chưa xếp lịch MT · {n} em', { n: lop.chuaCoLichTiep })}</button>
+              <button type="button" className="o-so" onClick={(e) => { e.stopPropagation(); onLocLop?.('chua-xep'); }}>{t('Chưa đủ lịch MT · {n} em', { n: lop.chuaCoLichTiep })}</button>
             ) : null}
           {lop.loai === 'ft' && lop.vangTuanNay > 0 && (!loc || loc === 'vang') && (
             /* BPXL-2 (N38): em vắng tuần này — chỉ thông tin (đã dời / đã huỷ); bấm = lọc em vắng của lớp. */
@@ -76,8 +78,25 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, loc = null, hvChon =
 function NoiDungLop({ lop, onHienDien, loc, hvChon }: { lop: LopKH; onHienDien: (open: boolean) => void; loc: SoLoc | null; hvChon: number | null }) {
   const ft = useApi<LuoiFTData>(lop.loai === 'ft' ? `/ke-hoach-test/ft/${lop.id}` : null);
   const th = useApi<LuoiThuongData>(lop.loai === 'thuong' ? `/ke-hoach-test/thuong/${lop.id}` : null);
+  /* B3-15: lớp thường — "Sửa lịch lớp" (tuần khai giảng / Progress / Final) mở panel tại chỗ (cùng phần Lịch Test của Thông tin lớp), không đổi trang. */
+  const [suaLich, setSuaLich] = useState(false);
   const s = lop.loai === 'ft' ? ft : th;
   if (s.error) return <div className="p-3"><ErrorState message={s.error.message} hint={s.error.hint} status={s.error.status} onRetry={s.reload} /></div>;
   if (s.loading || !s.data) return <div className="p-3"><Skeleton rows={4} /></div>;
-  return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} loc={loc} hvChon={hvChon} />;
+  const coSua = lop.loai === 'thuong' && !lop.chiXem;
+  return (
+    <>
+      {coSua && (
+        <div className="flex justify-end px-3 pt-2">
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setSuaLich(true)}>{t('Sửa lịch lớp')}</button>
+        </div>
+      )}
+      <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} loc={loc} hvChon={hvChon} />
+      {coSua && suaLich && (
+        <KhungPanel tieuDe={t('Lịch Test của lớp')} lop={lop.code} onDong={() => setSuaLich(false)}>
+          <PhanLichTest classId={lop.id} tieuDe={t('Lịch Test của lớp')} suaDuoc onDone={() => { invalidate('/ke-hoach-test'); s.reload(); }} />
+        </KhungPanel>
+      )}
+    </>
+  );
 }

@@ -11,7 +11,7 @@ import {
   CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
-import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
@@ -458,7 +458,7 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   /* RKC: quyền khôi phục lượt / dời lịch hỏi MỘT lần mỗi lớp trong request (bảng lớp vẽ hàng trăm ô — không một câu mỗi lượt). Chỉ hỏi khi cần. */
-  const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}`, () => choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id }));
+  const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}`, () => choKhoiPhucLuot(p, { classId: attempt.class_id, studentId: attempt.student_id }));   // N63 ②: + BPXL (điểm kiểm lúc ghi)
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
@@ -1665,6 +1665,7 @@ export function xoaLuot(p: Principal, attemptId: number) {
 export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly string[] | null) {
   const a = loadAttempt(attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Head mới khôi phục được MT.');
+  chanBpxlCoDiem(p, a, null, `MT${a.attempt_no} đã có điểm — nhờ Head khôi phục.`);   // N63 ②
   if (a.status === 'cancelled') throw loi(400, 'MT{attempt_no} đã huỷ — mở lại lượt trước.', { attempt_no: a.attempt_no });
   /* Môn em không học (môn đăng ký P8) không phải "đã xoá" — chỉ đổi ở Sửa thông tin, không đưa lại ở đây.
      RA-LOI-0711c: MT đã "Xoá MT" → Khôi phục (Hoàn tác lẫn nút ô / hồ sơ) chỉ đưa lại đúng các môn lần xoá đó, về trạng thái trước xoá
@@ -1909,12 +1910,15 @@ export function moLaiLuotNeuHuy(p: Principal, a: any): void {
  */
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
   const truoc = loadAttempt(attemptId);
-  if (!choHuyKhoiPhucLichTest(p, { classId: truoc.class_id, studentId: truoc.student_id })) {
-    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Head khôi phục được lượt đã huỷ.');
-  }
   /* LUOT-KHOI-PHUC: lượt lớp thường (Progress / Final / Checkpoint) đi cùng đường — tên theo bài, chặn riêng (`chanKhoiPhucThuong`). */
   const thuong = LOAI_THUONG.includes(truoc.kind);
   const nhan = thuong ? nhanBai(khoaBai(truoc.kind, truoc.attempt_no)) : `MT${truoc.attempt_no}`;
+  const ctxQ = { classId: truoc.class_id, studentId: truoc.student_id };
+  /* N63 ②: BPXL khôi phục lượt MT (không bài lớp thường — điểm bài thường đã xoá, không biết "chưa có điểm") khi lượt chưa có điểm (kể cả điểm cất). */
+  if (!choHuyKhoiPhucLichTest(p, ctxQ) && !(choKhoiPhucLuot(p, ctxQ) && !thuong)) {
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, ctxQ, 'Chỉ Head khôi phục được lượt đã huỷ.');
+  }
+  chanBpxlCoDiem(p, truoc, null, `${nhan} đã có điểm — nhờ Head khôi phục.`);
   const lyDo = `Khôi phục ${nhan}`;
   chanCuoiTuan(p, truoc, tuanCacKyNang(truoc));
   return tx(() => {

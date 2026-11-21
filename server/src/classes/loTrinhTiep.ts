@@ -11,7 +11,7 @@ import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { classProgress } from './schedule.ts';
 import { standingFor } from '../students/standing.ts';
-import { coTheRaLenh } from './quyenChuyenLop.ts';
+import { coTheChotLoTrinh, coTheRaLenh } from './quyenChuyenLop.ts';
 import { cuoiKhoaTheoHocVien } from '../normal/cuoiKhoa.ts';
 import { dongBoMt0, mt0TheoHocVien } from '../fasttrack/mt0.ts';
 
@@ -68,7 +68,7 @@ export function layLoTrinhTiep(p: Principal, studentId: number) {
     conn.prepare('SELECT * FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id),
   );
   /* OV-3b: GVCN thôi ghi Hướng — chỉ Quản lý (`coTheRaLenh`). */
-  const coTheGhi = laLopThuong && coTheRaLenh(p, enr.class_id);
+  const coTheGhi = laLopThuong && coTheChotLoTrinh(p, enr.class_id);
 
   const lopDuKien: LopDuKien[] = laLopThuong
     ? (conn
@@ -242,7 +242,7 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (!s) throw notFound('Không tìm thấy học viên');
   const enr = enrollmentDangHoc(studentId);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
-  if (!coTheRaLenh(p, enr.class_id)) throw forbidden(CHI_QL);
+  if (!coTheChotLoTrinh(p, enr.class_id)) throw forbidden(CHI_QL);
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
   if (laLienTuc(enr)) throw badRequest(CAU_LIEN_TUC.loTrinhTiep);
   const cu = conn.prepare('SELECT ngay_xem_lai, lop_du_kien_id FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
@@ -289,7 +289,7 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
   return {
     /** PR-MT0: `tuanFinal` cho thanh đầu `{lớp} · {n} em · Final W4 OCT`. */
     lop: { id: classId, code: cls.code as string, ma, maKe, tuanFinal: classProgress(classId).finalWeekStart ?? null },
-    coTheGhi: coTheRaLenh(p, classId),
+    coTheGhi: coTheChotLoTrinh(p, classId),
     toiDa: GHI_CA_LOP_TOI_DA,
     hocVien: em.map((r) => ({
       id: r.id as number, ten: r.full_name as string, ma: r.student_code as string,
@@ -306,7 +306,7 @@ export function layLoTrinhTiepCaLop(p: Principal, classId: number) {
 export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items?: unknown }): { daLuu: number } {
   const conn = db();
   lopThuongCua(classId);
-  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL);
+  if (!coTheChotLoTrinh(p, classId)) throw forbidden(CHI_QL);
   const items = body?.items;
   if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
   if (items.length > GHI_CA_LOP_TOI_DA) throw loi(400, 'Mỗi lần lưu tối đa {GHI_CA_LOP_TOI_DA} em.', { GHI_CA_LOP_TOI_DA });
@@ -404,7 +404,7 @@ export function lopHocCua(p: Principal, studentId: number, current: any): {
     tiepTheo, chiXem: false,
     quyen: {
       /* OV-3b: mở hộp Lộ trình của em ở bảng lớp — chỉ Quản lý (`coTheRaLenh`). */
-      ghiLoTrinhTiep: laLopThuong && coTheRaLenh(p, current.class_id),
+      ghiLoTrinhTiep: laLopThuong && coTheChotLoTrinh(p, current.class_id),
       /* PR-CT: Quản lý ra lệnh (`Chuyển lớp…`); GVCN đề xuất (`Đề xuất chuyển lớp…`). */
       chuyenLop: !!current && coTheRaLenh(p, current.class_id),
       deXuatChuyenLop: coTheChuyenLop && !coTheRaLenh(p, current.class_id),
@@ -440,7 +440,7 @@ const CHI_QL_NHAP = 'Chỉ Head lưu nháp lộ trình.';
 export function luuNhap(p: Principal, classId: number, body: { items?: unknown }): { ok: number[]; failed: { studentId: number; message: string }[] } {
   const conn = db();
   const cls = lopThuongCua(classId);
-  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL_NHAP);
+  if (!coTheChotLoTrinh(p, classId)) throw forbidden(CHI_QL_NHAP);
   const items = body?.items;
   if (!Array.isArray(items) || !items.length) throw badRequest('Chưa có em nào để lưu.');
   if (items.length > GHI_CA_LOP_TOI_DA) throw loi(400, 'Mỗi lần lưu tối đa {GHI_CA_LOP_TOI_DA} em.', { GHI_CA_LOP_TOI_DA });
@@ -505,7 +505,7 @@ export function luuNhap(p: Principal, classId: number, body: { items?: unknown }
 /** DELETE /classes/:id/lo-trinh-nhap/:studentId — Xoá nháp của một em (chỉ Quản lý). Không có nháp → vẫn ok (bấm hai lần không lỗi). */
 export function xoaNhap(p: Principal, classId: number, studentId: number): { ok: true } {
   lopThuongCua(classId);
-  if (!coTheRaLenh(p, classId)) throw forbidden(CHI_QL_NHAP);
+  if (!coTheChotLoTrinh(p, classId)) throw forbidden(CHI_QL_NHAP);
   db().prepare('DELETE FROM lo_trinh_nhap WHERE class_id = ? AND student_id = ?').run(classId, studentId);
   return { ok: true };
 }

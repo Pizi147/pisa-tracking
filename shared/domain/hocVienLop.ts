@@ -79,6 +79,8 @@ export function vaiXemHocVien(roles: readonly string[] | null | undefined): VaiX
   if (laVaiQuanLy(r) || r.includes('teacher')) return null;
   return r.includes('consultant') ? 'tvv' : r.includes('cx') ? 'cx' : r.includes('office_admin') ? 'admin' : null;
 }
+/** N63 ⑤ (chủ SP 21/11): BPXL không xem Ý thức (như Case). Tài khoản CHỈ vai BPXL → ẩn; kiêm vai khác → theo vai kia — cùng cổng máy chủ (`yThuc/access.ts` bỏ grant BPXL). */
+export const xemYThucTheoVai = (roles: readonly string[] | null | undefined): boolean => !(roles?.length && roles.every((r) => r === 'scheduler'));
 /** OV-11e (Q8 chủ SP): tích / bỏ KCK chỉ Quản lý / Quản trị (`cycle.edit`) và TVV — CX sửa được Target số, không đổi dấu KCK. Máy chủ + web cùng hàm. */
 export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTrinh: boolean): boolean => suaLoTrinh || (roles ?? []).some((r) => r === 'consultant' || r === 'cx');   // N52: CX như TVV
 /** OV-10b: ô nhập Liên hệ hiện cho QL, Quản trị, TVV, CX, Admin — GV (GVCN, GVBM) không thấy. LIEN-HE-TVV (chủ SP 31/10): kiêm GV + TVV → vai TVV thắng. */
@@ -751,12 +753,12 @@ export const TAB_HO_SO_LOP_NHAN: Record<TabHoSoLop, string> = {
   'tong-ket': t('Tổng kết'), 'hoc-vien': t('Học viên'), 'y-thuc': t('Ý thức & Phối hợp'), 'phan-tich': t('Phân tích lớp'), 'bao-cao-ph': t('Báo cáo PH'),
 };
 /** Tab hiện của hồ sơ lớp: lớp đã kết thúc có thêm "Tổng kết"; BAO-CAO-PH: "Báo cáo PH" cạnh Phân tích lớp khi chương trình có mẫu + người xem có quyền (`coBaoCaoPh`). */
-export const tabHienCuaLop = (daKetThuc: boolean, coBaoCaoPh = false): readonly TabHoSoLop[] =>
-  TAB_HO_SO_LOP.filter((k) => (k !== 'tong-ket' || daKetThuc) && (k !== 'bao-cao-ph' || coBaoCaoPh));
+export const tabHienCuaLop = (daKetThuc: boolean, coBaoCaoPh = false, coYThuc = true): readonly TabHoSoLop[] =>   // N63 ⑤: `coYThuc` false = BPXL
+  TAB_HO_SO_LOP.filter((k) => (k !== 'tong-ket' || daKetThuc) && (k !== 'bao-cao-ph' || coBaoCaoPh) && (k !== 'y-thuc' || coYThuc));
 /** Tab mở mặc định: lớp đã kết thúc → "Tổng kết", còn lại "Học viên". Tab lạ / không hiện với lớp này → mặc định. */
-export function tabMacDinhLop(s: string | null | undefined, daKetThuc: boolean, coBaoCaoPh = false): TabHoSoLop {
+export function tabMacDinhLop(s: string | null | undefined, daKetThuc: boolean, coBaoCaoPh = false, coYThuc = true): TabHoSoLop {
   const t = (TAB_HO_SO_LOP as readonly string[]).includes(s ?? '') ? (s as TabHoSoLop) : null;
-  return t && tabHienCuaLop(daKetThuc, coBaoCaoPh).includes(t) ? t : daKetThuc ? 'tong-ket' : 'hoc-vien';
+  return t && tabHienCuaLop(daKetThuc, coBaoCaoPh, coYThuc).includes(t) ? t : daKetThuc ? 'tong-ket' : 'hoc-vien';
 }
 export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
   return (TAB_HO_SO_LOP as readonly string[]).includes(s ?? '') ? (s as TabHoSoLop) : 'hoc-vien';

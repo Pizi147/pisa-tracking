@@ -11,8 +11,8 @@ import { getConfig, setConfig } from '../demoConfig.ts';
 import { nhoCaRequest, quenNhoCaRequest } from './nguCanhRequest.ts';
 import { db, tx } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { boVaiBpxl, can, isCoreTeacherOf, require_, type Ctx, type Principal } from '../permissions.ts';
-import { badRequest, nowIso } from '../util.ts';
+import { boVaiBpxl, can, isCoreTeacherOf, qlDiem, require_, type Ctx, type Principal } from '../permissions.ts';
+import { badRequest, forbidden, nowIso } from '../util.ts';
 import { writeAudit } from './audit.ts';
 
 export const KHOA_MO_SUA_LICH_TEST = 'mo_sua_lich_test';
@@ -51,6 +51,27 @@ export function choSuaLichTest(p: Principal, ctx: Ctx): boolean {
 export function choHuyKhoiPhucLichTest(p: Principal, ctx: Ctx): boolean {
   /* BPXL-1 (N57, PTA rà #1923): BPXL không huỷ / khôi phục lượt kể cả khi công tắc BẬT — bỏ grant BPXL ở nhánh công tắc. */
   return can(p, PERMISSIONS.ATTEMPT_CANCEL, ctx) || (dangMoSuaLichTest() && choSuaLichTest(boVaiBpxl(p), ctx));
+}
+
+/**
+ * N63 ② (chủ SP 21/11): BPXL Xoá / Khôi phục lượt MT và kỹ năng KHI CHƯA CÓ ĐIỂM (việc xếp lịch, có Khôi phục); đã có điểm → Head / Quản trị.
+ * `laBpxlXepLich` = người có quyền ở đây CHỈ nhờ vai BPXL (`plan.week` không kèm quyền điểm). Ba đường (Xoá MT `xoaLuot`, Khôi phục lượt
+ * `reopenAttempt` / `duaLaiCaLuot`, Khôi phục kỹ năng `restoreCancelledSkill`) cùng gọi `chanBpxlCoDiem`.
+ */
+export const laBpxlXepLich = (p: Principal, ctx: Ctx): boolean => can(p, PERMISSIONS.PLAN_WEEK, ctx) && !qlDiem(p, ctx);
+/** Khôi phục lượt đã huỷ: người huỷ / khôi phục được (`choHuyKhoiPhucLichTest`) + BPXL (điểm do `chanBpxlCoDiem` kiểm). Huỷ lượt KHÔNG đổi. */
+export const choKhoiPhucLuot = (p: Principal, ctx: Ctx): boolean => choHuyKhoiPhucLichTest(p, ctx) || laBpxlXepLich(p, ctx);
+/**
+ * Chặn BPXL khi lượt / kỹ năng đã có điểm (đang có hoặc đang cất chờ "Khôi phục điểm" — `ket_qua_huy` chưa khôi phục). MỘT câu, chỉ khi người gọi là BPXL.
+ * `oNhap` = ô nhập của các kỹ năng cần xem (null = cả lượt, kể cả điểm cất). Gọi TRƯỚC khi ghi.
+ */
+export function chanBpxlCoDiem(p: Principal, a: { id: number; class_id: number | null; student_id: number }, oNhap: readonly string[] | null, cau: string): void {
+  if (!laBpxlXepLich(p, { classId: a.class_id, studentId: a.student_id })) return;
+  const co = db().prepare(
+    `SELECT EXISTS(SELECT 1 FROM assessment_scores WHERE attempt_id = ?1 AND (band IS NOT NULL OR raw_score IS NOT NULL)${oNhap ? ` AND skill IN (SELECT value FROM json_each(?2))` : ''})
+       ${oNhap ? '' : 'OR EXISTS(SELECT 1 FROM ket_qua_huy WHERE attempt_id = ?1 AND khoi_phuc_luc IS NULL AND so_diem > 0)'} AS co`,
+  ).get(...(oNhap ? [a.id, JSON.stringify(oNhap)] : [a.id])) as { co: number };
+  if (co.co) throw forbidden(cau);
 }
 
 /** `require_` của đường ghi lịch Test (thay `require_(PLAN_WEEK)`). */

@@ -102,7 +102,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
     && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // vắng chưa dời (dữ liệu trước N38) — huỷ vắng 2 lần / QL tự huỷ không tính
   const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
     && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
-  /* "Chưa xếp lịch MT" (G5, BPXL-2 một tên) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số) —
+  /* "Chưa đủ lịch MT" (G5, BPXL-2 một tên) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số) —
      lọc + ô "Xếp MTn" viền nhấn đậm. "Vắng tuần này": cờ máy chủ `vangTuan` (cùng luật số "Vắng · n em"). */
   const thieu = (h: HangFT | HangThuong) => loai === 'ft' && !!(h as HangFT).thieuMt;
   const locEm = loc === 'chua-xep' ? thieu : loc === 'vang' ? (h: HangFT | HangThuong) => !!(h as HangFT).vangTuan : null;

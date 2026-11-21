@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, theHe } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useSoViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
@@ -115,11 +116,14 @@ export function HoTroHocVienTab() {
   const branchId = params.get('cn') === 'tat-ca' ? null : params.get('cn') ? Number(params.get('cn')) : macDinh;
   /* PR-OV2a: Admin (`nav.workChamDiem`) xem việc Chấm điểm của GV như Quản lý, chỉ nhóm đó (OV-12h bỏ Nhắc). */
   const chiChamDiem = !!session?.nav?.workChamDiem;
-  /* N52: CX xem mọi việc trong phạm vi như QL (Của tôi / Của GV / Tất cả) nhưng không có việc của mình → mặc định "Tất cả". */
+  /* N52: CX xem mọi việc trong phạm vi như QL (Của tôi / Của GV / Tất cả). N63 ④: CX có việc riêng (Kết quả meeting, việc được giao) → mặc định "Của tôi";
+     không có → "Tất cả". Số = `summary` badge App đã nạp (cùng đường "Của tôi" — chưa về thì mở "Của tôi", GET gộp với badge, không request thêm). */
   const laCx = !!session?.nav?.workCx && !session?.nav?.workOps;
   const laQuanLy = !!session?.nav?.workOps || chiChamDiem || laCx;
   const uid = session?.user?.id;
-  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : laCx ? nguoiDaNho(uid) ?? 'tat-ca' : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
+  const soCuaToi = useSoViecCuaToi();
+  const macDinhCx = soCuaToi && !soCuaToi.viec ? 'tat-ca' : 'toi';
+  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : laCx ? nguoiDaNho(uid) ?? macDinhCx : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
   const hep = useManHinh('(max-width: 639px)');
@@ -536,7 +540,10 @@ export function HoTroHocVienTab() {
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
   const chiCc = !conViec && tatCaViec.some(laViecChamCheo);
   /* brief 7: việc của người khác (QL xem GV / Tất cả) = theo dõi; `chiXem` = đang xem đúng một GV. Việc chưa có người (Phân công…) không phải của ai — làm được. */
-  const theoDoi = (it: WorkItem) => !!data?.chiXem || (!it.mine && it.ownerId !== null);
+  /* A3-05: CX gặp việc chấm "Chưa có người" mà không nhập được (`lamThay` false — CX không sửa học thuật, N52) → chỉ xem: dòng không nút "Nhập điểm",
+     panel "Chỉ xem · …" tiêu đề "Điểm …". */
+  const chiXemCx = (it: WorkItem) => laCx && !it.mine && it.ownerId === null && it.group === 'score' && !(it as { lamThay?: boolean }).lamThay;
+  const theoDoi = (it: WorkItem) => !!data?.chiXem || (!it.mine && it.ownerId !== null) || chiXemCx(it);
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
   /* "Em này còn" (T01): việc khác của cùng em ở danh sách (làm tại chỗ, chưa xong) — một bấm sang việc đó. */
   const emNayCon = chon && chon.studentId !== null
@@ -557,7 +564,7 @@ export function HoTroHocVienTab() {
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking') : /^(meeting_|phoi_hop_tvv$)/.test(chon.group) ? t('Meeting CX/GĐCN')   // GV-2 (mockup v22 G8): "Việc · Meeting CX/GĐCN"
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
-    loai: `${dangLamThay ? t('Làm thay') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null,
+    loai: `${dangLamThay ? t('Làm thay') : chiXemCx(chon) ? t('Chỉ xem') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null, chiXem: chiXemCx(chon),
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
     /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
     daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} /> : undefined,
