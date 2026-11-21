@@ -2970,7 +2970,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     require_(principalOf(req), PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, lenhSvc.CUNG_LOP_CHI_NHANH);
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
     if (!dich) {
-      throw db().prepare('SELECT 1 FROM classes WHERE id = ?').get(Number(toClassId)) ? badRequest('Lớp chuyển đến không hợp lệ.') : notFound('Không tìm thấy lớp chuyển đến');
+      throw db().prepare('SELECT 1 FROM classes WHERE id = ?').get(Number(toClassId)) ? badRequest('Lớp chuyển đến không hợp lệ (đã kết thúc hoặc là lớp em đang học) — chọn lớp khác đang hoạt động.') : notFound('Không tìm thấy lớp chuyển đến');
     }
     /* Q4 (chủ SP 29/10): tuần trước Final → hết tuần Final, Quản lý chọn có theo luồng chuyển tiếp lộ trình (Test đi kèm) hay không — mặc định có. */
     const theo = coTheoCuoiKhoa(req.body?.theoCuoiKhoa);

@@ -14,7 +14,7 @@ import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
   GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
-import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -165,14 +165,14 @@ function loadViec(id: number): any {
  * Ghi được = TVV của em · TVV cùng chi nhánh làm thay (chủ SP 22/10 — như Chọn bước tiếp, `coQuyenBuocTiep`; lịch sử ghi người làm) · QL / Quản trị trong
  * phạm vi em. CX, GV, GVCN: không. Người GIỮ việc (việc của tôi, chuông) vẫn chỉ một: TVV của em / QL khi em chưa có TVV.
  */
-export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null; phu_trach_id?: number | null }): boolean =>
+export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; student_id: number; em_branch?: number | null; phoi_hop_id?: number | null; phu_trach_id?: number | null }): boolean =>
   /* GV-1 (N58): người được giao làm được đúng việc này dù vai thường không có quyền. */
   (v.phu_trach_id != null && v.phu_trach_id === p.userId && conHieuLuc(p.userId, v.student_id))
-  || v.consultant_user_id === p.userId || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id })
+  || laTvvCuaEm(p, v) || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id })
   /* PHOI-HOP-V2 (PTA chốt 11/11): việc sau Meeting CX, em chưa có TVV → GVCN lớp em (cùng quyền xác nhận Phối hợp) báo. */
   || (v.phoi_hop_id != null && !v.consultant_user_id && canManageDiscipline(p, v.student_id));
 /** HAN-BAO-PH (chủ SP 03/11, 17.1): sửa hạn = người ghi được + GVCN lớp em đang học / QL (`discipline.manage`). Tách quyền ghi — GVCN sửa hạn, không ghi kết quả. */
-export const coTheSuaHan = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null; phu_trach_id?: number | null; giao_boi?: number | null }): boolean =>
+export const coTheSuaHan = (p: Principal, v: { consultant_user_id: number | null; student_id: number; em_branch?: number | null; phoi_hop_id?: number | null; phu_trach_id?: number | null; giao_boi?: number | null }): boolean =>
   coTheGhi(p, v) || canManageDiscipline(p, v.student_id) || laNguoiGiao(p, v);   // GV-1: + người giao (AU-2111 P0-01: còn hoạt động + còn vai)
 function requireGhi(p: Principal, v: any): void {
   if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Head chi nhánh của em ghi được kết quả báo phụ huynh.');

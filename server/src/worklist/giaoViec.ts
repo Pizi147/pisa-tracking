@@ -164,7 +164,7 @@ const vaiQuanLy = (p: Principal, branchId: number | null) =>
   p.grants.some((g) => (g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx') && (g.branchId === null || g.branchId === branchId));
 export const coTheDoiNguoi = (p: Principal, v: Viec) => v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId);
 const coTheSuaTheoDoi = (p: Principal, v: Viec) => coTheDoiNguoi(p, v) || laNguoiGiao(p, v.row);
-const goc = (v: Viec) => ({ consultant_user_id: v.tvv, student_id: v.studentId, phoi_hop_id: v.row.phoi_hop_id ?? null, phu_trach_id: v.pt, giao_boi: v.row.giao_boi ?? null });
+const goc = (v: Viec) => ({ consultant_user_id: v.tvv, student_id: v.studentId, em_branch: v.row.em_branch ?? null, phoi_hop_id: v.row.phoi_hop_id ?? null, phu_trach_id: v.pt, giao_boi: v.row.giao_boi ?? null });
 /** Nguồn theo dõi của người theo luật: TVV / GVCN chuyển theo khi đổi người; Head giữ. */
 const nguonLuat = (v: Viec, uid: number): Nguon => (uid === v.tvv ? 'tvv' : uid === v.gvcn ? 'gvcn' : 'head');
 
@@ -186,7 +186,7 @@ export const laNguoiTheoDoi = (loai: LoaiTheoDoi, id: number, uid: number, branc
 function requireDoc(p: Principal, v: Viec): void {
   if (v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || laNguoiGiao(p, v.row)) return;
   if (can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.studentId }) || laNguoiTheoDoi(v.loai, v.id, p.userId, v.branchId)) return;
-  throw forbidden('Việc này ngoài phạm vi của bạn.');
+  throw forbidden('Việc này ngoài phạm vi của bạn — nhờ Head chi nhánh của em.');
 }
 
 /** Tài khoản đang hoạt động có vai NHẬN được việc (`VAI_GIAO_VIEC` — cùng danh sách ô chọn) ở chi nhánh của việc hoặc toàn hệ thống. */
@@ -341,7 +341,7 @@ export function doiPhuTrach(p: Principal, loai: LoaiGiao, id: number, body: { us
 }
 
 /** Hoàn tác lần đổi người gần nhất (người đã đổi, hoặc người đổi được) — 409 khi sau đó đã có thay đổi. */
-export function hoanTacGiao(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoViec {
+export function hoanTacGiao(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoViec | { ok: true } {
   const v = docViec(loai, id);
   const g = timGhiDao(db(), LOAI_GHI_DAO, BANG[loai], id);
   if (!g) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
@@ -356,7 +356,8 @@ export function hoanTacGiao(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     tinRieng(sau.phuTrach.filter((u) => !v.phuTrach.includes(u)), p.userId, v, 'Việc về lại bạn', aid);
     tinRieng(v.phuTrach.filter((u) => !sau.phuTrach.includes(u)), p.userId, v, 'Đã hoàn tác giao việc', aid);
   });
-  return xemGiaoViec(p, loai, id);
+  /* AU-2111 R1: đã đảo xong mà người làm không còn quyền xem khối → không trả 403 ngay sau thao tác thành công (như `boTheoDoi`). */
+  try { return xemGiaoViec(p, loai, id); } catch { return { ok: true }; }
 }
 
 /**
@@ -630,7 +631,7 @@ function hanCua(v: Viec): { han: string | null; macDinh: string | null; chon: st
 
 /** Phần Meeting làm được: người phụ trách · Head / Quản trị / CX · TVV của em / TVV cùng chi nhánh (nhập hộ — Kết quả meeting; Xếp lịch khi chưa BPXL đã là TVV). */
 const coTheLamMeeting = (p: Principal, v: Viec) =>
-  v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || (v.row.phan === 'ket_qua' && coTheGhi(p, { consultant_user_id: v.tvv, student_id: v.studentId }));
+  v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || (v.row.phan === 'ket_qua' && coTheGhi(p, { consultant_user_id: v.tvv, student_id: v.studentId, em_branch: v.row.em_branch ?? null }));
 
 export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoViec {
   const v = docViec(loai, id);

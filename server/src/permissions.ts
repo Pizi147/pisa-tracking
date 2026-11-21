@@ -908,6 +908,14 @@ export function permissionSummary(p: Principal) {
  * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC phía TVV của chi nhánh em (`student.edit_more` của vai TVV / CX — N52).
  * Một hàm cho `loTrinh/buocTiep.ts` (chọn / bỏ / việc / nút) và danh sách lớp của panel Học lại mở từ Bước tiếp.
  */
+/**
+ * AU-2111 R1: "TVV của em" (`students.consultant_user_id`) chỉ có hiệu lực khi người đó còn vai TVV đang hiệu lực ở chi nhánh của em — cột không xoá khi đổi
+ * vai (giữ lịch sử). `em_branch` (chi nhánh hiện tại của em, hàng việc đã đọc kèm) → 0 câu; thiếu → chi nhánh em như `can` (nhớ theo request GET).
+ */
+export const laTvvCuaEm = (p: Principal, s: { consultant_user_id: number | null; student_id: number; em_branch?: number | null }): boolean =>
+  s.consultant_user_id === p.userId && p.grants.some((g) => g.roleKey === 'consultant'
+    && (s.em_branch !== undefined ? g.branchId === null || g.branchId === s.em_branch : grantCovers(g, { studentId: s.student_id })));
+
 export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
   return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
     || can({ ...p, grants: p.grants.filter(grantPhiaTvv) }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });

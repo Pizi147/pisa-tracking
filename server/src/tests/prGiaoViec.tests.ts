@@ -615,6 +615,36 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(mot('SELECT han_chon FROM viec_bao_ph WHERE id = ?', id).han_chon === han, 'người giao còn vai sửa hạn được');
   }));
 
+  await checkAsync('AU-2111 R1 · TVV của em đã đổi vai: Kết quả meeting (xong / mở lại) · sửa hạn meeting / tình hình → 403 và DB không đổi (quyền đọc kiểm TRƯỚC khi ghi)', () => thu(async () => {
+    const cu = taiKhoan('tvvcu', 'consultant');
+    const sid = moiEm();
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(cu.userId, sid);
+    const thId = th.guiTinhHinh(cu, { chieu: 'tvv_gvcn', studentIds: [sid], noiDung: 'Em dạo này học thế nào ạ?' }).ids[0];
+    const m = meeting(sid);
+    const mo = m.kq;
+    gv.xongPhanMeeting(ql, m.xep.id, { ngayGio: `${TODAY} 15:00` });   // phần đã xong để thử "mở lại"
+    accounts.setRoles(P.admin, cu.userId, [{ role: 'consultant', branches: ['CP'] }]);
+    const roi = loadPrincipal(cu.userId);
+    const anh = () => JSON.stringify([
+      hang('SELECT id, trang_thai, han_chon, ket_qua, xong_boi FROM meeting_phan WHERE phoi_hop_id = ? ORDER BY id', m.aid), hang('SELECT han, trang_thai FROM tinh_hinh_hoc_tap WHERE id = ?', thId),
+      hang(`SELECT id FROM viec_han_lan WHERE loai IN ('meeting', 'tinh_hinh') AND viec_id IN (?1, ?2, ?3)`, mo.id, m.xep.id, thId),
+      hang(`SELECT id FROM viec_giao_lan WHERE loai = 'meeting' AND ref_id IN (?1, ?2)`, mo.id, m.xep.id),
+    ]);
+    const truoc = anh();
+    const hanTh = mot('SELECT han FROM tinh_hinh_hoc_tap WHERE id = ?', thId).han;
+    const ds: [string, () => unknown][] = [
+      ['Kết quả meeting', () => gv.xongPhanMeeting(roi, mo.id, { ketQua: 'TVV đã đổi vai nhập thử' })],
+      ['mở lại phần đã xong', () => gv.moLaiPhanMeeting(roi, m.xep.id)],
+      ['sửa hạn meeting', () => gv.suaHan(roi, 'meeting', mo.id, { han: addDays(TODAY, 9), hanCu: null })],
+      ['sửa hạn tình hình', () => gv.suaHan(roi, 'tinh_hinh', thId, { han: addDays(TODAY, 9), hanCu: hanTh })],
+    ];
+    for (const [ten, fn] of ds) {
+      const k = await ma(fn);
+      assert(k === 403, `${ten}: ${k}`);
+      assert(anh() === truoc, `${ten}: DB đã đổi dù trả ${k}`);
+    }
+  }));
+
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');

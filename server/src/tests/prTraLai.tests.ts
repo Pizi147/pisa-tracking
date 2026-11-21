@@ -452,6 +452,42 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       for (const p of [gvcn, gvKhac, bpxl]) assert(CHU_CHAN_NHAP_DIEM(loadPrincipal(p.userId)) === 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.', `${p.fullName}`);
     });
 
+    await checkAsync('AU-2111 R1 · TVV của em đã đổi vai sang chi nhánh khác: xem Báo PH (SĐT PH) · ghi KQ · sửa hạn · bỏ việc · trả lại · rút · Hoàn tác trả lại · sửa hạn trả lại → 403 và DB không đổi', () => thu(async () => {
+      const cu = taiKhoan('tvvcu', 'consultant');
+      const sid = moiEm();
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(cu.userId, sid);
+      const { vids, bp } = xuLy(sid, 2);
+      ck.set(cu.userId, await vao(cu.userId));
+      const r0 = await tra(cu, { violationId: vids[0] });
+      assert(r0.status === 200, `TVV còn vai trả lại được: ${r0.status} ${r0.json?.error}`);
+      const id = r0.json.id as number;
+      accounts.setRoles(P.admin, cu.userId, [{ role: 'consultant', branches: ['CP'] }]);
+      ck.set(cu.userId, await vao(cu.userId));
+      const anh = () => JSON.stringify([
+        hang('SELECT trang_thai, han_chon, tra_lai_id FROM viec_bao_ph WHERE id = ?', bp), hang('SELECT id FROM viec_bao_ph_lan WHERE viec_id = ?', bp),
+        hang(`SELECT id FROM viec_han_lan WHERE (loai = 'bao_ph' AND viec_id = ?1) OR (loai = 'tra_lai' AND viec_id = ?2)`, bp, id),
+        hang('SELECT id, trang_thai, han_chon FROM vi_pham_tra_lai WHERE student_id = ? ORDER BY id', sid),
+      ]);
+      const truoc = anh();
+      const han = addDays(TODAY, 9);
+      const ds: [string, string, unknown?][] = [
+        ['GET', `/y-thuc/bao-ph/${bp}`],
+        ['POST', '/y-thuc/bao-ph/ghi', { viecIds: [bp], ketQua: 'da_bao', ghiChu: 'TVV đã đổi vai ghi thử kết quả' }],
+        ['POST', `/y-thuc/bao-ph/${bp}/han`, { han, hanCu: null }],
+        ['POST', `/y-thuc/bao-ph/${bp}/bo`, { lyDo: 'not_needed' }],
+        ['POST', '/y-thuc/tra-lai', { lyDo: LY_DO, violationId: vids[1] }],
+        ['POST', `/y-thuc/tra-lai/${id}/rut`],
+        ['POST', `/y-thuc/tra-lai/${id}/hoan-tac`],
+        ['POST', `/giao-viec/tra_lai/${id}/han`, { han, hanCu: null }],
+      ];
+      for (const [m, u, b] of ds) {
+        const r = await goi(cu, m, u, b);
+        assert(r.status === 403, `${m} ${u}: ${r.status} ${r.json?.error}`);
+        assert(!JSON.stringify(r.json ?? {}).includes('lienHe'), `${u}: lộ liên hệ PH`);
+        assert(anh() === truoc, `${m} ${u}: DB đã đổi dù trả ${r.status}`);
+      }
+    }));
+
     await checkAsync('TL-22 · (rà 4) người nhận hết vai ở chi nhánh → việc về GVCN (chuông, /my-work); người cũ không thấy, không làm được', () => thu(async () => {
       const sid = moiEm(); const { vids } = xuLy(sid);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;

@@ -35,4 +35,7 @@ export const EN_DUONG_LUI_2 = {
   /* AU-2111 gói 1 (B1-07, B1-08). */
   'Chỉ người trả lại hoàn tác được — dùng Rút yêu cầu.': 'Only the person who returned it can undo — use Withdraw request.',
   'Chỉ Head hoặc CX của chi nhánh lớp này mới ra quyết định chuyển lớp.': "Only the Head or CX of this class's branch can decide a class move.",
+  'Lớp chuyển đến không hợp lệ (đã kết thúc hoặc là lớp em đang học) — chọn lớp khác đang hoạt động.': "The destination class is not valid (ended, or the student's current class) — pick another active class.",
+  'Việc này ngoài phạm vi của bạn — nhờ Head chi nhánh của em.': "This task is outside your scope — ask the student's branch Head.",
+  'Bạn không còn vai ở chi nhánh của em — nhờ Head chi nhánh của em rút yêu cầu.': "You no longer have a role in the student's branch — ask that branch's Head to withdraw the request.",
 } satisfies Record<string, Dich>;

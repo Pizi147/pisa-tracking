@@ -193,7 +193,9 @@ export async function runPrOv12hTests(t: any) {
   const bp: any = await import('../yThuc/baoPhTvv.ts');
   const viecTvv = (id: number) => conn.prepare('SELECT * FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as any;
   const tvvMoi = (() => { let p: any = null; return () => p ??= (() => {
-    const acc: any = conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles ro ON ro.id = ur.role_id WHERE ro.key = 'consultant' AND u.status = 'active' ORDER BY u.id LIMIT 1`).get();
+    /* AU-2111 R1: "TVV của em" phải có vai TVV ở chi nhánh của em (lớp LOP) — trước lấy TVV bất kỳ chi nhánh. */
+    const acc: any = conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles ro ON ro.id = ur.role_id WHERE ro.key = 'consultant' AND u.status = 'active'
+      AND (ur.branch_id IS NULL OR ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?)) ORDER BY u.id LIMIT 1`).get(LOP);
     return loadPrincipal(acc.id);
   })(); })();
 
