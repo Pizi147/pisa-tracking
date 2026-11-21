@@ -85,6 +85,14 @@ type Viec = {
 };
 
 const ten = (r: any) => r.full_name as string;
+/** GV-3 (PTA chốt): nhãn vai của người theo dõi — vai cao nhất LIÊN QUAN tới việc: Head · CX (vai ở chi nhánh việc / toàn hệ thống) > GVCN · TVV của em > GV ghi vi phạm > vai TVV
+ * > Admin · Quản trị > GV. Không vai nào → null (web không gắn nhãn). `t.vai` = các khoá vai (group_concat) đọc cùng câu theo dõi. */
+export type VaiTheoDoi = 'head' | 'cx' | 'gvcn' | 'tvv' | 'gv_ghi' | 'admin' | 'qt' | 'gv';
+const vaiTheoDoi = (v: Viec, t: { user_id: number; nguon: string; vai: string | null }): VaiTheoDoi | null => {
+  const k = new Set((t.vai ?? '').split(',').filter(Boolean));
+  return k.has('manager') ? 'head' : k.has('cx') ? 'cx' : t.user_id === v.gvcn ? 'gvcn' : t.user_id === v.tvv ? 'tvv' : t.nguon === 'gv_ghi' ? 'gv_ghi' : k.has('consultant') ? 'tvv'
+    : k.has('office_admin') ? 'admin' : k.has('system_admin') ? 'qt' : k.has('teacher') ? 'gv' : null;
+};
 /** Head chi nhánh (chi nhánh NULL → Head toàn hệ thống); không có ai → Quản trị. */
 export const ql = (branchId: number | null): number[] => {
   const h = quanLyCuaChiNhanh(branchId ?? 0);
@@ -587,7 +595,7 @@ export type KhoiGiaoViec = {
   tamDung: boolean;
   /** TL-2: hạn đang có do MÁY tính lại khi hết "Chờ GV sửa" (dòng hạn cuối `mac_dinh` = 2, còn đúng hạn chọn) — không hiện như "đã chỉnh". */
   hanTinhLai: boolean;
-  theoDoi: (Nguoi & { nguon: Nguon })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
+  theoDoi: (Nguoi & { nguon: Nguon; vai: VaiTheoDoi | null })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
   /** VH-1b (N62): Mô tả tuỳ chọn (một chỗ chung theo loai × id) — `noiDung` gửi lại làm `moTaCu` khi sửa; người theo dõi chỉ đọc. */
   moTa: { noiDung: string; suaBoi: string | null; suaLuc: string } | null; coTheSuaMoTa: boolean;
   /** Mỗi lần đổi người / theo dõi / hạn / phần Meeting, cũ trước: `truong` phu_trach | theo_doi | han | xong | sua | mo_lai. */
@@ -622,7 +630,10 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
   const v = docViec(loai, id);
   requireDoc(p, v);
   const r = v.row;
-  const td = db().prepare(`SELECT t.user_id, t.nguon, u.full_name FROM viec_theo_doi t LEFT JOIN users u ON u.id = t.user_id WHERE t.loai = ? AND t.ref_id = ? ORDER BY t.id`).all(loai, id) as any[];
+  /* GV-3 (PTA chốt): nhãn chip theo VAI ở chi nhánh của việc (không theo nguồn) — vai đọc TRONG cùng câu (một câu con mỗi dòng theo dõi, đi chỉ mục user_roles). */
+  const td = db().prepare(`SELECT t.user_id, t.nguon, u.full_name,
+      (SELECT group_concat(r.key) FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = t.user_id AND ur.status = 'active' AND (ur.branch_id IS NULL OR ur.branch_id IS ?3)) AS vai
+    FROM viec_theo_doi t LEFT JOIN users u ON u.id = t.user_id WHERE t.loai = ?1 AND t.ref_id = ?2 ORDER BY t.id`).all(loai, id, v.branchId) as any[];
   const mt = db().prepare('SELECT m.noi_dung, m.sua_luc, u.full_name FROM viec_mo_ta m LEFT JOIN users u ON u.id = m.sua_boi WHERE m.loai = ? AND m.ref_id = ?').get(loai, id) as any;
   const lan = db().prepare(
     `SELECT l.truong AS truong, l.cu AS cu, l.moi AS moi, l.luc AS luc, u.full_name AS nguoi FROM viec_giao_lan l LEFT JOIN users u ON u.id = l.boi WHERE l.loai = ?1 AND l.ref_id = ?2
@@ -645,7 +656,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     hanTinhLai: (() => { const c = lan.filter((l) => l.truong === 'han' || l.truong === 'han_tinh_lai').at(-1); return c?.truong === 'han_tinh_lai' && c.moi === h.chon; })(),
     /* GV-3 (rà PTA): người đang phụ trách (kể cả người theo luật khi việc về mặc định) không hiện là người theo dõi việc của chính mình — dòng giữ trong bảng
        (giao đi lần nữa thì hiện lại; Hoàn tác cần dòng còn nguyên), chỉ lọc khi đọc. Tab Đang theo dõi đã bỏ việc của mình (`viecTheoDoi`). */
-    theoDoi: td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon })),
+    theoDoi: td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon, vai: vaiTheoDoi(v, t) })),
     toiTheoDoi: td.some((t) => t.user_id === p.userId) && !v.phuTrach.includes(p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
     moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: v.mo && coTheSuaMoTa(p, v),

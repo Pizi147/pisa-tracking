@@ -54,7 +54,7 @@ export const EN_GIAO_VIEC_2 = {
   'Lên SOS {n}': 'Reached SOS {n}',
   'GV ghi': 'Recording teacher', 'Head': 'Head',
   /* GV-3 (N62): dòng Mô tả trong khối giao việc. */
-  'Đã lưu mô tả': 'Description saved', 'Đã bỏ mô tả': 'Description removed', 'Cần làm gì, lưu ý gì (tuỳ chọn)': 'What to do, what to note (optional)',
+  'Đã lưu mô tả việc': 'Task description saved', 'Đã bỏ mô tả việc': 'Task description removed', 'Mô tả việc': 'Task description', 'Lưu mô tả việc': 'Save task description', 'Cần làm gì, lưu ý gì (tuỳ chọn)': 'What to do, what to note (optional)',
   'Quá {n} ký tự — bớt chữ để lưu': '{n} characters over — shorten to save',
-  'Người khác vừa sửa mô tả: “{chu}”. Chữ bạn gõ vẫn ở ô — bấm Lưu mô tả để thay.': 'Someone just edited the description: “{chu}”. Your text is still in the box — press Save description to replace it.', 'Thêm mô tả': 'Add description', '+ Thêm mô tả': '+ Add description', 'Bỏ mô tả': 'Remove description',
+  'Người khác vừa sửa mô tả việc: “{chu}”. Chữ bạn gõ vẫn ở ô — bấm Lưu mô tả việc để thay.': 'Someone just edited the task description: “{chu}”. Your text is still in the box — press Save task description to replace it.', 'Thêm mô tả việc': 'Add task description', '+ Thêm mô tả việc': '+ Add task description', 'Bỏ mô tả việc': 'Remove task description',
 } as const;
