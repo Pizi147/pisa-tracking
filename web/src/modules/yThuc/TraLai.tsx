@@ -26,6 +26,8 @@ export type TraLaiView = {
   han: string; hanMacDinh: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut'; ketQua: string | null; nhanKetQua: string | null;
   traLoi: string | null; xongLuc: string | null; xongBoi: string | null; phuTrach: { id: number; ten: string | null }[];
   viPham: { id: number; ten: string; moTa: string; skill: string | null; occurredOn: string; classCode: string | null }[];
+  /** Lần xử lý chứa vi phạm (một vi phạm) / chính lần đó + số vi phạm của lần (T4c "Còn lại n vi phạm trong …"). */
+  lanXuLy: { id: number; nhan: string; soViPham: number } | null;
   coTheRut: boolean; hoanTacDuoc: boolean; coTheLam: boolean; coTheXoa: boolean; coTheThuHoi: boolean;
 };
 export type ViPhamBaoPh = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; nguoiGhi?: string | null; ghiLuc?: string | null; daSua?: boolean };

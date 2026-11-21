@@ -14,7 +14,7 @@
  *  · Không đổi bậc, luật 3 vi phạm / 2 tuần, việc `yt_xu_ly`. Lịch sử vi phạm: `violation_history` field `tra_lai*` (reason = `tra_lai:{id}`).
  */
 import { DS_JSON, db, tx } from '../db.ts';
-import { CHU_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, hanTraLai, nhanLoaiXuLy } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, hanTraLai, nhanLoaiXuLy, tachTenMoTa } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -101,6 +101,8 @@ export type TraLaiView = {
   han: string; hanMacDinh: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut'; ketQua: KetQuaTraLai | null; nhanKetQua: string | null;
   traLoi: string | null; xongLuc: string | null; xongBoi: string | null; phuTrach: { id: number; ten: string | null }[];
   viPham: ViolationView[];
+  /** TL-2 (mockup v22 T4c "Còn lại n vi phạm trong REPORT 1"): lần xử lý chứa vi phạm (một vi phạm) / chính lần đó (cả lần) + số vi phạm của lần. null = chưa có lần xử lý. */
+  lanXuLy: { id: number; nhan: string; soViPham: number } | null;
   /** Phía TVV: rút (còn chờ) · Hoàn tác (người trả, ≤ 60 giây). Phía GV: gửi lại / giữ nguyên / xoá (một vi phạm) · thu hồi (cả lần, GVCN / Head). */
   coTheRut: boolean; hoanTacDuoc: boolean; coTheLam: boolean; coTheXoa: boolean; coTheThuHoi: boolean;
 };
@@ -117,6 +119,10 @@ export function xemTraLai(p: Principal, id: number): TraLaiView {
     throw forbidden('Học viên ngoài phạm vi của bạn.');
   }
   const m = r.measure_id ? db().prepare('SELECT kind, custom_name, status FROM discipline_measures WHERE id = ?').get(r.measure_id) as any : null;
+  /* TL-2: một câu — lần xử lý mới nhất (không nháp) chứa vi phạm / chính lần đó + số vi phạm của lần. */
+  const lan = db().prepare(`SELECT x.id, x.kind, x.custom_name, (SELECT COUNT(*) FROM measure_violations c WHERE c.measure_id = x.id) AS so FROM discipline_measures x
+      WHERE x.status != 'nhap' AND (x.id = ?1 OR x.id IN (SELECT mv.measure_id FROM measure_violations mv WHERE mv.violation_id = ?2)) ORDER BY x.id DESC LIMIT 1`)
+    .get(r.measure_id ?? null, r.violation_id ?? null) as any;
   const ten = new Map<number, string>((db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`)
     .all(JSON.stringify([r.nguoi_tra, r.xong_boi, ...v.phuTrach].filter(Boolean))) as any[]).map((u) => [u.id, u.full_name]));
   const han = r.han_chon ?? r.han;
@@ -129,6 +135,7 @@ export function xemTraLai(p: Principal, id: number): TraLaiView {
     traLoi: r.tra_loi ?? null, xongLuc: r.xong_luc ?? null, xongBoi: r.xong_boi ? ten.get(r.xong_boi) ?? null : null,
     phuTrach: v.phuTrach.map((u) => ({ id: u, ten: ten.get(u) ?? null })),
     viPham: violationsByIds(viPhamCua(r)),
+    lanXuLy: lan ? { id: lan.id, nhan: nhanLoaiXuLy(lan.kind, lan.custom_name ?? null), soViPham: lan.so } : null,
     coTheRut: mo && tvv, hoanTacDuoc: mo && r.nguoi_tra === p.userId && Date.now() - Date.parse(r.tra_luc) <= HOAN_TAC_MS,
     coTheLam: lam, coTheXoa: lam && r.violation_id != null, coTheThuHoi: mo && r.measure_id != null && m?.status !== 'thu_hoi' && canManageDiscipline(p, r.student_id),
   };
@@ -221,10 +228,11 @@ export function hoanTacTraLai(p: Principal, id: number): { ok: true } {
  */
 function dong(r: any, boi: number | null, o: { trangThai: 'xong' | 'rut'; ketQua?: KetQuaTraLai; traLoi?: string | null }): void {
   const phuTrach = docViec('tra_lai', r.id).phuTrach;
+  const dungBp = baoPhDangDung(r.id);   // TL-2: đọc TRƯỚC khi gỡ tạm dừng — tin TVV mở đúng panel Báo PH
   if (!db().prepare(`UPDATE vi_pham_tra_lai SET trang_thai = ?, ket_qua = ?, tra_loi = ?, xong_luc = ?, xong_boi = ? WHERE id = ? AND trang_thai = 'mo'`)
     .run(o.trangThai, o.ketQua ?? null, o.traLoi ?? null, nowIso(), boi, r.id).changes) throw conflict(DA_DOI);
   /* PTA chốt (rà #1927): TVV RÚT → chỉ gỡ tạm dừng, giữ hạn cũ (không kéo hạn bằng trả lại rồi rút); còn lại tính lại hạn. */
-  dongBoTamDung(baoPhDangDung(r.id), boi, o.trangThai !== 'rut');
+  dongBoTamDung(dungBp, boi, o.trangThai !== 'rut');
   if (o.ketQua !== 'da_xoa') ghiLichSu(r, o.trangThai === 'rut' ? 'tra_lai_rut' : `tra_lai_${o.ketQua}`, o.traLoi ?? null, boi);   // đã xoá: lịch sử đi theo vi phạm vào Thùng rác
   const tieuDe = `${r.measure_id ? 'Lần xử lý' : 'Vi phạm'} bị trả lại · ${r.full_name}`;
   const chu = o.trangThai === 'rut' ? 'TVV đã rút yêu cầu' : NHAN_KET_QUA[o.ketQua!];
@@ -235,10 +243,17 @@ function dong(r: any, boi: number | null, o: { trangThai: 'xong' | 'rut'; ketQua
     studentId: r.student_id, duong: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), boQua: [phiaTvv ? null : r.nguoi_tra] });
   /* rà #1927 (8): người trả chỉ nhận tin khi còn hoạt động + còn vai ở chi nhánh em. */
   const den = phiaTvv ? phuTrach : conHieuLuc(r.nguoi_tra, r.student_id) ? [r.nguoi_tra] : [];
+  /* TL-2 (mockup v22 T6a): tin TVV = "{kết quả} · {em} · {người làm}" + nội dung (vi phạm sau sửa / lời trả lời); bấm tin mở đúng panel Báo PH đang chờ.
+     Tin phía GV (TVV rút / đã báo PH) giữ chữ cũ, mở hồ sơ HV › Ý thức. */
+  const tenBoi = !phiaTvv && boi ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(boi) as any)?.full_name ?? null : null;
+  const sau = o.ketQua === 'da_sua' && r.violation_id ? db().prepare('SELECT ten, description, category FROM violations WHERE id = ?').get(r.violation_id) as any : null;
+  const tm = sau ? tachTenMoTa(sau.ten, sau.description, sau.category) : null;
+  const noiDung = o.traLoi ?? (tm ? [tm.ten, tm.moTa].filter(Boolean).join(' · ') || null : null);
   for (const uid of den) {
     if (uid === boi || daBao.has(uid)) continue;
-    notify({ userId: uid, kind: KIND, title: `${chu} · ${tieuDe}`, body: o.traLoi?.slice(0, 160) ?? null, entityType: 'student', entityId: r.student_id,
-      dedupKey: `tra-lai-kq:${r.id}`, duong: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }) });
+    notify({ userId: uid, kind: KIND, title: phiaTvv ? `${chu} · ${tieuDe}` : [chu, r.full_name, tenBoi].filter(Boolean).join(' · '), body: noiDung?.slice(0, 160) ?? null,
+      entityType: 'student', entityId: r.student_id, dedupKey: `tra-lai-kq:${r.id}`,
+      duong: !phiaTvv && dungBp.length ? `/cong-viec?viec=${encodeURIComponent(`bao-ph:${dungBp[0]}`)}` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }) });
   }
 }
 

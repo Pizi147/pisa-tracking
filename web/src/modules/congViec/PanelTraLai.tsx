@@ -10,7 +10,7 @@ import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { VI_PHAM_TEN_TOI_DA, monViPham, shortDate, tenMonNgan } from '@shared/domain/index.ts';
+import { VI_PHAM_TEN_TOI_DA, bacDu, monViPham, shortDate, tenMonNgan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { lucVn } from './gioVn.ts';
 import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
@@ -51,7 +51,7 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
 
   const tieuDe = caLan && d ? t('Lần xử lý bị trả lại · {nhan}', { nhan: d.nhanXuLy ?? '' }) : t('Vi phạm bị trả lại');
   const dau = dauViec({ han: d && d.trangThai === 'mo' ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : null, em: d ? { id: d.studentId, ten: d.tenEm } : null, lop,
-    ngCanh: caLan ? null : d?.nhanXuLy ?? null });
+    ngCanh: caLan ? null : d?.lanXuLy ? bacDu(d.lanXuLy.nhan) : null });
   dau.loai = `${t('Việc')} · ${t('Ý thức')}`;
   if (error) return <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
@@ -163,6 +163,10 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
               <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 rounded-[10px] px-4 py-3 text-sm max-sm:grid-cols-1" style={{ background: 'var(--surface-2)' }}>
                 <span className="text-[13px] text-dim">{c === 'xoa' ? t('Sẽ xoá') : t('Vi phạm')}</span>
                 <span className="min-w-0 break-words">{[shortDate(vp.occurredOn, hn), vp.skill && tenMonNgan(ct, vp.skill), vp.ten].filter(Boolean).join(' · ')}</span>
+                {c === 'xoa' && d.lanXuLy && <>
+                  <span className="text-[13px] text-dim">{t('Còn')}</span>
+                  <span className="min-w-0">{t('{n} vi phạm trong {lan}', { n: d.lanXuLy.soViPham - 1, lan: bacDu(d.lanXuLy.nhan) })}</span>
+                </>}
               </div>
             )}
             {c === 'giu' && (

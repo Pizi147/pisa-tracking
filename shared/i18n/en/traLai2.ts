@@ -52,6 +52,7 @@ export const EN_TRA_LAI_2 = {
   'Rút': 'Withdraw',
   'tạm dừng': 'paused',
   'đã sửa': 'edited',
+  '{n} vi phạm trong {lan}': '{n} violations in {lan}',
   'GV đã sửa': 'Teacher edited',
   'GV đã trả lời': 'Teacher replied',
   'GV đã xoá vi phạm': 'Teacher deleted the violation',
