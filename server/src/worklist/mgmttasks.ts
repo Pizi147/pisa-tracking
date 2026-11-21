@@ -587,6 +587,15 @@ function quyenXem(p: Principal, t: any) {
   return { quanLy, phuTrach, nguoiTao, xem };
 }
 
+/**
+ * AU-2111 P1-01 (cổng khu Công việc, `routes/index.ts`): người gọi có quyền theo MỘT việc Vận hành — cùng `quyenXem` của chi tiết (người phụ trách / phụ trách
+ * việc con / người theo dõi / người tạo, còn hoạt động + còn vai). Không có việc → false (cổng trả 403, không lộ id). Quyền ghi vẫn do hàm dịch vụ kiểm.
+ */
+export function coQuyenTheoViec(p: Principal, taskId: number): boolean {
+  const t = db().prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
+  return !!t && quyenXem(p, t).xem;
+}
+
 /** Một công việc, kèm việc con, lịch sử cập nhật, lịch sử dời hạn, các Case làm căn cứ, người theo dõi, nhóm, lặp lại, tệp. */
 export function mgmtTaskDetail(p: Principal, taskId: number) {
   const conn = db();

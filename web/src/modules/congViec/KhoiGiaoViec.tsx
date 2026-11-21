@@ -51,7 +51,7 @@ export type ThaoTacKhoi = {
 };
 const thaoTacChung: ThaoTacKhoi = {
   doiNguoi: (g, userId) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach`, { userId, phuTrachCu: g.duocGiao ? g.phuTrach[0]?.id ?? null : null }),
-  hoanTacNguoi: (g) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach/hoan-tac`),
+  hoanTacNguoi: async (g) => { const r = await api.post<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/phu-trach/hoan-tac`); return r && 'loai' in r ? r : g; },   // AU-2111: đã đảo, không còn quyền xem
   suaHan: (g, han) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/han`, { han, hanCu: g.loai === 'tinh_hinh' ? g.han : g.hanChon }),
   themTheoDoi: (g, ids) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }),
   boTheoDoi: async (g, userId) => { const r = await api.del<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${userId}`); return r && 'loai' in r ? r : g; },

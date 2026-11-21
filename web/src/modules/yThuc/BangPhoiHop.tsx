@@ -384,7 +384,6 @@ function FormXacNhan({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void;
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-[30px]" disabled={busy || !ngay} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
       </span>
-      {meeting && a.status !== 'done' && <span className="text-[13px] text-dim">{t('Lưu xong: việc cho TVV của em báo gia đình, sắp xếp họp (em chưa có TVV: bạn báo).')}</span>}
     </div>
   );
 }

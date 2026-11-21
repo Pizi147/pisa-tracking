@@ -63,7 +63,7 @@ export const EN_HD3_ADMIN = {
   'Mock: "-" lần 1 dời sang tuần sau, lần 2 huỷ; lớp thường dời, không tự huỷ.': 'Mock: "-" 1st time moves to next week, 2nd time cancels; regular classes move, never auto-cancel.',
   'Mở <b>Phân tích</b>, chọn tab: <b>Chi nhánh</b> (mặc định một tháng) · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> (mặc định 2 tuần); bạn không có tab Ý thức.': 'Open <b>Analysis</b>, pick a tab: <b>Branch</b> (one month by default) · <b>Real exam</b> · <b>SOS</b> · <b>Teachers</b> (2 weeks by default); you have no Conduct tab.',
   'Mục không làm được hiện mờ kèm lý do, như Dời hạn chấm: Chỉ Head.': 'Items you cannot do are dimmed with a reason, like Extend marking due: Heads only.',
-  'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì TVV báo PH, xếp họp, ghi kết quả; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.': 'Exception: after the core teacher confirms a CX/Head meeting, the consultant calls the parents, arranges it and records the result; deadline from Case & SOS settings. No consultant: the core teacher calls.',
+  'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì BPXL xếp lịch họp, CX ghi kết quả meeting, TVV báo PH — ba phần không chờ nhau; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.': 'Exception: after the core teacher confirms a CX/Head meeting, the Scheduler sets the meeting, CX records the meeting result and the consultant calls the parents — three parts that do not wait on each other; deadline from Case & SOS settings. No consultant: the core teacher calls.',
   'Mọi ô có điểm hoặc "-"; dòng rời ở cả hai bên.': 'As for teachers: every cell has a score or "-"; the row leaves both lists.',
   'Nhập sai, muốn sửa': 'Wrong entry, want to edit',
   'Nhập điểm hộ GV': 'Entering scores for a teacher',

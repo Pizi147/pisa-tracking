@@ -15,8 +15,8 @@ export const EN_QUY_CHE = {
   'Lưu nháp không chốt, việc và hạn không đổi. Đã lưu thì sửa ở thẻ PA › Sửa kết quả.': 'A draft is not final; task and due date stay. Once saved, edit via the plan card › Edit result.',
   'Không tính vào bậc, không sinh việc': 'Not counted towards levels, no task',
   'GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý': 'Homeroom gets a review task · 3 within 2 weeks must be handled',
-  'Đủ 3 vi phạm trong 2 tuần: GVCN phải xử lý theo bậc.': '3 violations within 2 weeks: the homeroom teacher must act by level.',
-  'Lưu vi phạm': 'Save violation',
+  'Đủ 3 vi phạm trong 2 tuần: GVCN phải xử lý theo bậc.': '3 incidents within 2 weeks: the homeroom teacher must act by level.',
+  'Lưu vi phạm': 'Save incident',
   'Ghi ngày {ngay}': 'Recorded {ngay}',
   'còn {con} / {tong} bài': '{con} / {tong} left',
 } as const;

@@ -164,6 +164,15 @@ const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
   method === 'GET' && ((/^\/my-work\/?$/.test(duong) && p.roleKeys.includes('consultant'))
     /* GV-1 (N58): tab "Đang theo dõi" mọi vai — chỉ đọc dòng theo dõi của chính người gọi. */
     || /^\/my-work\/theo-doi\/?$/.test(duong));
+/**
+ * AU-2111 P1-01 (N59 / N62: giao việc Vận hành cho bất kỳ ai có tài khoản ở chi nhánh): vai không có khu Công việc (TVV…) vẫn mở / làm MỘT việc được giao —
+ * chi tiết (GET), cập nhật tiến độ (POST …/update), sửa hạn / theo dõi (PATCH) — khi là người phụ trách / phụ trách việc con / người theo dõi đúng việc đó
+ * (`coQuyenTheoViec`). Danh sách, nhóm, Dừng lặp, tạo việc: vẫn chặn. Tệp đi `/attachments` (quyền của việc, không qua cổng này).
+ */
+const laViecVhCuaToi = (p: Principal, duong: string, method: string) => {
+  const m = (method === 'GET' || method === 'PATCH' ? /^\/mgmt-tasks\/(\d+)\/?$/ : method === 'POST' ? /^\/mgmt-tasks\/(\d+)\/update\/?$/ : null)?.exec(duong);
+  return !!m && mgmtSvc.coQuyenTheoViec(p, Number(m[1]));
+};
 api.use((req, _res, next) => {
   const p = req.principal;
   if (!p) { next(); return; }
@@ -171,7 +180,7 @@ api.use((req, _res, next) => {
   const duong = req.path.toLowerCase();
   const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
   const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
-  if (quyen && !can(p, quyen, { anyScope: true }) && !(laMyWorkTvv(p, duong, req.method))) {
+  if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method))) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
@@ -2957,7 +2966,12 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
   const sid = pInt(req, 'id');
   const enr = luatLoTrinhSvc.lopHienTaiCua(sid);
   if (enr) {
+    /* AU-2111 B1-08: kiểm quyền TRƯỚC khi đọc lớp đích (như `raLenh`); lớp đích không có → 404, không 500 ở `dich.id`. */
+    require_(principalOf(req), PERMISSIONS.CLASS_EDIT, { classId: enr.class_id }, lenhSvc.CUNG_LOP_CHI_NHANH);
     const dich = luatLoTrinhSvc.lopDichHopLe(Number(toClassId), enr.class_id);
+    if (!dich) {
+      throw db().prepare('SELECT 1 FROM classes WHERE id = ?').get(Number(toClassId)) ? badRequest('Lớp chuyển đến không hợp lệ (đã kết thúc hoặc là lớp em đang học) — chọn lớp khác đang hoạt động.') : notFound('Không tìm thấy lớp chuyển đến');
+    }
     /* Q4 (chủ SP 29/10): tuần trước Final → hết tuần Final, Quản lý chọn có theo luồng chuyển tiếp lộ trình (Test đi kèm) hay không — mặc định có. */
     const theo = coTheoCuoiKhoa(req.body?.theoCuoiKhoa);
     const { boiCanh, huong } = luatLoTrinhSvc.huongChuyenMotEm(enr, dich, demoToday(), luatLoTrinhSvc.tuCuoiKhoaCua(enr, demoToday(), theo));

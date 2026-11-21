@@ -173,6 +173,7 @@ export function KeHoachTestTab() {
   const chonHv = (h: KetQuaTim['hocVien'][number]) => { setChu(h.ten); moLop(h.classId, h.loai, h.studentId); };
 
   /* MO-TAT-CA (2D, mockup v13 D1): một nút "Mở tất cả lớp" ↔ "Thu gọn tất cả" — lớp đang hiện trong khung; chỉ QL / QT (`testPlan`). Mặc định vẫn gập. */
+  const tongHv = danhSach.reduce((n, l) => n + (locSo === 'vang' ? l.vangTuanNay : locSo === 'chua-xep' ? l.chuaCoLichTiep : l.soHv), 0);
   const moHet = danhSach.length > 0 && danhSach.every((l) => moList.includes(l.id));
   const nutMoHet = !!session?.nav?.testPlan && danhSach.length > 0 && (
     /* GD-11b (mockup ⑦ B1, G2 "nút là nút"): nút nhỏ, không chữ link. */
@@ -289,7 +290,7 @@ export function KeHoachTestTab() {
         </NutLuat></span>
         <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:ml-auto">
           {/* BPXL-2 (mockup v22 K2): đang lọc em (Vắng / Chưa xếp lịch MT) → số em khớp; còn lại → HV của các lớp đang hiện. */}
-          <span><b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + (locSo === 'vang' ? l.vangTuanNay : locSo === 'chua-xep' ? l.chuaCoLichTiep : l.soHv), 0)}</b> HV</span>
+          <span><b className="tabular-nums text-slate-100">{tongHv}</b> {t('{n} HV', { n: tongHv }).replace(/^\d+\s*/, '')}</span>
           {nutMoHet}
         </span>
       </div>

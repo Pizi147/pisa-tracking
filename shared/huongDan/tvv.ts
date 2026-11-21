@@ -32,7 +32,7 @@ export const VIEC_TVV: ViecHd[] = [
     id: 'xem-thi-thang', ten: 'Xem em thi tháng này', nhom: 'hv',
     loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV },
     loiTat: ['hoc-vien'], cung: 'mở cùng danh sách.',
-    buoc: ['Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.',
+    buoc: ['Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt bước tiếp ›</b>.',
       'Bấm số: <b>Báo PH đúng hạn</b> mở panel tại trang; ba số HV mở <b>Học viên & Lớp</b> đúng nhóm em. Khung <b>HV của tôi</b> bên phải ghi tình trạng từng em.'],
     tuKhac: ['sắp thi', 'ngày thi', 'exam month', 'thi', 'chờ kết quả'],
   },
@@ -85,6 +85,36 @@ export const VIEC_TVV: ViecHd[] = [
     buoc: ['Trong panel Báo PH vi phạm, bấm <b>Sửa hạn</b> › chọn <b>Hạn mới</b> › <b>Lưu hạn</b>; <b>Về mặc định</b> được, không trần, không xin duyệt.',
       'Không cần báo nữa: <b>Thao tác phụ</b> › <b>Bỏ việc…</b>, chọn lý do; <b>Hoàn tác</b> hoặc <b>Khôi phục</b> được.'],
     tuKhac: ['hạn', 'gia hạn', 'bỏ việc', 'deadline', 'extend'],
+  },
+  {
+    /* A3-14 (N61): TVV / CX / Head trả lại; GV nhận việc "Vi phạm bị trả lại". */
+    id: 'tra-lai-vi-pham', ten: 'Trả lại vi phạm', nhom: 'hv', tab: 'bao-ph',
+    loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV },
+    khiCo: 'Vi phạm GVCN ghi chưa đúng, em chưa thể báo PH.',
+    buoc: ['Ở panel Báo PH vi phạm, bấm <b>Trả lại</b> ở vi phạm đó (cả lần xử lý: <b>Thao tác phụ</b> › <b>Trả lại cả lần xử lý</b>), gõ <b>Lý do trả lại</b>.',
+      'Lấy lại: <b>Rút</b>; bấm nhầm: <b>Hoàn tác</b>.'],
+    xong: 'GV nhận việc Vi phạm bị trả lại; hạn Báo PH tạm dừng.',
+    khongDuoc: ['Báo PH đã xong thì không trả lại.'],
+    tuKhac: ['trả lại', 'vi phạm', 'rút', 'return', 'violation', 'withdraw'],
+  },
+  {
+    id: 'doi-nguoi-han', ten: 'Đổi người, hạn, theo dõi', nhom: 'hv',
+    loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV },
+    cung: 'mở cùng panel.',
+    khiCo: 'Việc Báo PH, Meeting, Hỏi tình hình cần người khác làm, hoặc đổi hạn.',
+    buoc: ['Đầu panel việc, ở <b>Phụ trách</b> bấm <b>Đổi</b>, chọn người có tài khoản ở chi nhánh → <b>Giao</b>; <b>Về mặc định</b> trả lại người theo luật.',
+      'Ở <b>Hạn</b> đặt hạn mới; ở <b>Theo dõi</b> bấm <b>+</b> thêm người, ✕ bỏ người.'],
+    xong: 'Người nhận làm đúng việc đó; mọi thay đổi có Lịch sử.',
+    sai: 'Bấm <b>Hoàn tác</b> ngay; hoặc <b>Về mặc định</b>.',
+    khongDuoc: ['Không bắt lý do; người theo dõi chỉ xem.'],
+    tuKhac: ['giao việc', 'đổi người', 'phụ trách', 'hạn', 'theo dõi', 'assign', 'owner', 'follower'],
+  },
+  {
+    id: 'dang-theo-doi', ten: 'Xem việc đang theo dõi', nhom: 'khac', tab: 'theo-doi',
+    loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV },
+    buoc: ['Mở <b>Công việc</b> › tab <b>Đang theo dõi</b>: việc bạn được thêm vào <b>Theo dõi</b>; bấm dòng xem, chỉ xem.',
+      'Tin <b>Cập nhật</b> ở chuông báo khi việc đổi người, đổi hạn, có kết quả.'],
+    tuKhac: ['theo dõi', 'follow', 'followed', 'watching'],
   },
   {
     id: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', nhom: 'hv', tab: 'bo-sung', viecWeb: ['bo_sung_ho_so'],
@@ -389,7 +419,7 @@ const TINH_HUONG_TVV: TinhHuongHd[] = [
 export const TINH_HUONG_CX: TinhHuongHd[] = [
   {
     id: 'cx-chi-xem', ten: 'Không thấy nút / chỉ xem',
-    may: ['CX không có việc của mình; học thuật (điểm, Case, PA) chỉ xem.'],
+    may: ['Học thuật (điểm, Case, PA) và Cuối khoá: CX chỉ xem, Head chốt.'],
     ban: 'Việc của người khác thì nhờ TVV, GV, GVCN hoặc Head.',
     ai: ['Chọn bước tiếp sau thi: Head hoặc TVV.'],
     tuKhac: ['quyền', 'chỉ xem', 'permission'],
@@ -485,7 +515,7 @@ export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-bao-ph', ten: 'Báo PH vi phạm', buoc: ['GVCN lưu xử lý Nâng 1 bậc là có việc ngay cho TVV của em; cách khác có việc khi Head duyệt hoặc máy chốt; hạn {han:bao_ph_vi_pham}, tính cả ngày lưu.',
     'Chưa liên hệ được: việc vẫn mở, giữ hạn. Sửa hạn: TVV, GVCN lớp em, Head; không trần, không xin duyệt.', 'GVCN thu hồi lần xử lý: lần báo của bạn giữ trong lịch sử; Head nhờ báo lại thì có việc mới.'] },
   { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['Phối hợp SOS chỉ GVCN làm; Head theo dõi và làm thay. TVV chỉ xem; CX làm thay phần TVV.',
-    'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì TVV báo PH, xếp họp, ghi kết quả; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.'] },
+    'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì BPXL xếp lịch họp, CX ghi kết quả meeting, TVV báo PH — ba phần không chờ nhau; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.'] },
   { id: 'tvv-luat-lo-trinh', ten: 'Đổi lộ trình đang học', buoc: ['TVV, GVCN, Head, CX đổi. MT đã có điểm giữ nguyên, MT chưa thi xếp lại theo lộ trình mới.', 'Có nhật ký ở <b>Lịch sử</b>.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và Head ghi; TVV xem.'] },
 ];
@@ -497,10 +527,10 @@ export const TU_TVV: TuHd[] = [
   { ten: 'Sắp thi', nghia: 'Em thi IELTS trong 6 tuần tới.' },
   { ten: 'Thiếu thông tin', nghia: 'Hồ sơ chưa đủ để theo dõi; điền đủ là hết.' },
   { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Tạm dừng / Kết thúc học · Học tiếp · Lộ trình mới.' },
-  { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo lại kết quả meeting CX/GĐCN.' },
+  { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo PH sau meeting CX/GĐCN.' },
 ];
 
-const THU_TU = ['xem-viec', 'xem-thi-thang', 'bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'chot-ngay-thi', 'bo-sung', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'lich-su',
+const THU_TU = ['xem-viec', 'xem-thi-thang', 'bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'chot-ngay-thi', 'bo-sung', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'lich-su',
   'loc-hv', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'bao-cao-ph-lop', 'phan-tich'];
 
 export const HD_TVV: HuongDan = {
@@ -509,7 +539,7 @@ export const HD_TVV: HuongDan = {
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xem-viec', 'xem-thi-thang', 'loc-hv'] },
     { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'bao-cao-ph-lop'] },
-    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
+    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
   ],
   /* HD3-3: tab "Trường hợp" của TVV (15 mục 4.7) — nguồn từng câu ở `docs/anh/hd3-3-tvv-cx/khop-khac.md`. */
   tinhHuong: TINH_HUONG_TVV,
