@@ -507,7 +507,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:shrink-0 [&>.doan:only-child]:flex-1">{oXem}{chonKhung}</div>}
 
       {/* PTA rà #1690: 375 nhãn "Phân công" gọn. PTA rà #1704: "Đang SOS" một tên ở mọi cỡ màn (mockup K8b "Đang SOS 10"); hàng tab cuộn ngang khi chật. */}
-      <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
+      <HangTab className="max-sm:[&>[role=tab]]:flex-1 max-sm:[&>[role=tab]]:justify-center" panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
         ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: soSos }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },

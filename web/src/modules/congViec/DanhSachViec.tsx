@@ -57,8 +57,12 @@ export function DaiXongDong({ it, hoanTac, hoan, onHoanTac }: { it: WorkItem; ho
 }
 
 /** Tên việc + thẻ mã chi nhánh nhỏ (mockup v17 `.cn`): thẻ dính chữ cuối của tên (không rơi một mình xuống dòng ở 375). */
+/** AUDIT-2111 A2-07: cụm "Final Test 45%" / "Progress Test" không bị xuống dòng giữa chừng — chỉ ngắt ở " · ". */
+const CUM_TEST = /((?:Progress|Final) Test(?: \d+ ?%)?)/;
+const giuCum = (ten: string): ReactNode => (CUM_TEST.test(ten)
+  ? ten.split(CUM_TEST).map((x, i) => (i % 2 ? <span key={i} className="whitespace-nowrap">{x}</span> : x)) : ten);
 const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
-  if (!ma) return <>{ten}</>;
+  if (!ma) return <>{giuCum(ten)}</>;
   const i = ten.lastIndexOf(' ');
   return <>{ten.slice(0, i + 1)}<span className="whitespace-nowrap">{ten.slice(i + 1)}
     <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[2px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{ma}</span></span></>;

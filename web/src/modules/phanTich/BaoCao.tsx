@@ -217,7 +217,7 @@ export function BaoCao(pv: PhamViPhanTich) {
     return (
       <div className="grid gap-2.5">
         <div className="text-[15px]">{oCua(h, cot[0])}</div>
-        <div className="grid grid-cols-3 gap-x-2.5 [&_.cap-so]:!grid [&_.cap-so]:![grid-template-columns:auto] [&_.cap-so]:justify-items-start [&_.cap-so]:gap-0.5 [&_.cap-so>*]:!justify-self-start [&_.cap-so_.so-bam]:!justify-self-start [&_.cap-so>span:last-child]:text-xs [&_.cap-so>span:last-child]:font-normal">
+        <div className={`grid grid-cols-3 gap-x-2.5 ${CAP_SO_DOC}`}>
           {o3.map((c) => (
             <div key={c.key} className="grid content-start gap-y-px">
               <span className="whitespace-nowrap text-xs font-medium text-slate-400">{c.nhan}</span>
@@ -229,12 +229,32 @@ export function BaoCao(pv: PhamViPhanTich) {
       </div>
     );
   };
+  /* AUDIT-2111 A2-11: thẻ 375 lớp thường — hàng 1 HV đang học · Đạt Test, hàng 2 "Cuối khoá" bốn ô Đạt · 60–69 · 50–59 · < 50 (nhãn trên số, không xen). */
+  const theThuong = (h: DongChiNhanhV2) => {
+    const o = (k: string) => cot.find((c) => c.key === k)!;
+    const mot = (c: CotBang) => (
+      <div key={c.key} className="grid content-start gap-y-px">
+        <span className="whitespace-nowrap text-xs font-medium text-slate-400">{c.nhan}</span>
+        <span className="text-[17px] font-bold tabular-nums">{oCua(h, c)}</span>
+      </div>
+    );
+    return (
+      <div className="grid gap-2.5">
+        <div className="text-[15px]">{oCua(h, cot[0])}</div>
+        <div className={`grid grid-cols-2 gap-x-2.5 ${CAP_SO_DOC}`}>{mot(o('hv'))}{mot(o('datTest'))}</div>
+        <div className="grid gap-y-px">
+          <span className="text-xs font-medium text-slate-400">{t('Cuối khoá')}</span>
+          <div className="grid grid-cols-4 gap-x-2.5">{CK.map(([, k]) => mot(o(k)))}</div>
+        </div>
+      </div>
+    );
+  };
   const bang = !d.hang.length ? <RongDau chu={lop ? t('Chi nhánh chưa có lớp đang học ở khung này') : t('Chưa có chi nhánh nào trong phạm vi')} nut={<NutXemToanBo />} /> : (
     <>
       {/* PTA rà #1681 (⑨ A6): 375 nhãn ô thẻ một dòng ("HV đang học" không gãy). */}
       <div className="contents max-sm:[&_.luoi-n]:whitespace-nowrap max-sm:[&_.luoi-n]:text-xs">
       <Bang ten={lop ? t('Theo lớp') : t('Theo chi nhánh')} cot={cot} hang={[...trang, tong]} khoa={(h) => h.khoa} oCua={oCua} khung={false} deu theLuoi
-        lopHang={(h) => (h.khoa === 'tong' ? 'tong' : '')} theRieng={ft ? theFt : undefined} />
+        lopHang={(h) => (h.khoa === 'tong' ? 'tong' : '')} theRieng={ft ? theFt : theThuong} />
       </div>
       {lop && <div className="border-t px-3" style={{ borderColor: 'var(--line)' }}><PhanTrang {...pt6.thanh} /></div>}
     </>
@@ -259,6 +279,9 @@ export function BaoCao(pv: PhamViPhanTich) {
     </div>
   );
 }
+
+/** Ô "số + phân số" xếp dọc, căn trái (thẻ 375). */
+const CAP_SO_DOC = '[&_.cap-so]:!grid [&_.cap-so]:![grid-template-columns:auto] [&_.cap-so]:justify-items-start [&_.cap-so]:gap-0.5 [&_.cap-so>*]:!justify-self-start [&_.cap-so_.so-bam]:!justify-self-start [&_.cap-so>span:last-child]:text-xs [&_.cap-so>span:last-child]:font-normal';
 
 const COT_TB: readonly CotBang[] = [
   { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 64 },
