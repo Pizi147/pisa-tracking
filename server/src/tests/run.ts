@@ -525,8 +525,8 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
       one(`SELECT COUNT(*) n FROM tasks WHERE progress='stopped' AND stop_reason IS NOT NULL`)],
     ['công việc con', one(`SELECT COUNT(*) n FROM tasks WHERE parent_task_id IS NOT NULL`)],
     ['người theo dõi khác người phụ trách',
-      one(`SELECT COUNT(*) n FROM tasks
-            WHERE watcher_user_id IS NOT NULL AND watcher_user_id != assignee_user_id`)],
+      one(`SELECT COUNT(*) n FROM tasks t JOIN viec_theo_doi f ON f.loai = 'van_hanh' AND f.ref_id = t.id
+            WHERE f.user_id != t.assignee_user_id`)],   // VH-1: người theo dõi ở viec_theo_doi
     ['công việc gắn case làm căn cứ', one(`SELECT COUNT(*) n FROM task_case_links`)],
   ];
   const missing = need.filter(([, n]) => n === 0).map(([label]) => label);
@@ -1904,8 +1904,8 @@ check('§13.8 · Chọn một tuần chưa có hàng thì luôn resolve được
 check('Người theo dõi mặc định là Quản lý của chính chi nhánh đó', () => {
   const unit = conn.prepare(`SELECT * FROM reporting_units WHERE kind='branch' AND branch_id IS NOT NULL LIMIT 1`).get() as any;
   const t = meeting.createTask(P.admin, { title: 'Việc thử người theo dõi', unitId: unit.id }) as any;
-  const fol = conn.prepare('SELECT * FROM task_followers WHERE task_id = ?').all(t.id) as any[];
-  assert(fol.length > 0 && fol.every((f) => f.source === 'auto'), 'Không tự thêm Quản lý chi nhánh làm người theo dõi');
+  const fol = conn.prepare("SELECT * FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?").all(t.id) as any[];   // VH-1
+  assert(fol.length > 0 && fol.every((f) => f.nguon === 'head'), 'Không tự thêm Quản lý chi nhánh làm người theo dõi');
   const isManager = conn
     .prepare(`SELECT COUNT(*) n FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                WHERE ur.user_id = ? AND r.key='manager' AND (ur.branch_id = ? OR ur.branch_id IS NULL)`)
@@ -1919,7 +1919,7 @@ check('Người theo dõi không trùng với người phụ trách', () => {
                WHERE r.key='manager' AND ur.branch_id = ? LIMIT 1`)
     .get(unit.branch_id) as any;
   const t = meeting.createTask(P.admin, { title: 'Việc giao cho chính Head', unitId: unit.id, assigneeUserId: mgr.user_id }) as any;
-  const fol = conn.prepare('SELECT * FROM task_followers WHERE task_id = ? AND user_id = ?').all(t.id, mgr.user_id) as any[];
+  const fol = conn.prepare("SELECT * FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? AND user_id = ?").all(t.id, mgr.user_id) as any[];   // VH-1
   assert(fol.length === 0, 'Người phụ trách bị thêm luôn vào danh sách theo dõi');
 });
 check('Ô chọn người tìm được theo tên và kèm ngữ cảnh để không chọn nhầm', () => {
@@ -5402,9 +5402,9 @@ check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
     .get(row.assigneeUserId, row.branchId ?? null, row.branchId ?? null) as any).id;   // GIAO-VIEC-CN: người có vai ở chi nhánh của việc
   mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
   const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
-  assert(detail.watcherUserId === other, 'Không gán được người theo dõi');
+  assert(detail.theoDoi.some((x: any) => x.id === other), 'Không gán được người theo dõi');   // VH-1: nhiều người theo dõi
   /* Người theo dõi không phải người phụ trách — bảng phải nói rõ hai vai khác nhau. */
-  assert(detail.watcherUserId !== detail.assigneeUserId,
+  assert(!detail.theoDoi.some((x: any) => x.id === detail.assigneeUserId),
     'Người theo dõi và người phụ trách đang bị trộn làm một');
 });
 
@@ -9548,6 +9548,9 @@ await runPrGiaoViecTests({ check, checkAsync, assert, assertThrows, conn, TODAY,
 // TL-1 (N61, chủ SP 20/11): trả lại vi phạm — quyền · ba lựa chọn · Báo PH tạm dừng · rút · Hoàn tác · /my-work · migrate (HTTP thật)
 const { runPrTraLaiTests } = bocTep('prTraLai', await import('./prTraLai.tests.ts'));
 await runPrTraLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// VH-1 (N59, chủ SP 20/11): việc Vận hành — nhóm tự đặt · CX giao · theo dõi + chuông · hạn · lặp lại · tệp
+const { runPrVanHanhTests } = bocTep('prVanHanh', await import('./prVanHanh.tests.ts'));
+await runPrVanHanhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtDeXuatTests } = bocTep('prYtDeXuat', await import('./prYtDeXuat.tests.ts'));
 await runPrYtDeXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)

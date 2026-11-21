@@ -3189,11 +3189,25 @@ api.post('/notifications/:id/read', requireAuth, wrap((req) => {
 api.get('/mgmt-tasks', requireAuth, wrap((req) => mgmtSvc.listMgmtTasks(principalOf(req), {
   branchId: qInt(req, 'branchId'),
   group: qStr(req, 'group'),
+  groupId: qStr(req, 'groupId') === 'none' ? 'none' : qInt(req, 'groupId'),   // VH-1: nhóm tự đặt ('none' = Không phân loại)
   progress: qStr(req, 'progress') ?? 'mo',
   hang: qStr(req, 'hang'),
   assigneeUserId: qInt(req, 'assigneeUserId'),
   periodId: qInt(req, 'periodId'),
 })));
+
+/* VH-1 (N59): nhóm tự đặt — Head / Quản trị / CX (phạm vi chi nhánh). ĐẶT TRƯỚC `/mgmt-tasks/:id`. */
+api.get('/mgmt-tasks/nhom', requireAuth, wrap((req) => mgmtSvc.listNhom(principalOf(req), qInt(req, 'branchId'))));
+api.post('/mgmt-tasks/nhom', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return mgmtSvc.taoNhom(principalOf(req), { ten: b.ten, branchId: b.branchId ? Number(b.branchId) : null });
+}));
+api.patch('/mgmt-tasks/nhom/:id', requireAuth, wrap((req) => {
+  const b = req.body ?? {};
+  return mgmtSvc.suaNhom(principalOf(req), pInt(req, 'id'), { ten: b.ten, an: b.an, doi: b.doi, branchId: b.branchId ? Number(b.branchId) : null });
+}));
+/* VH-1: Dừng lặp (`dung: true`) / Hoàn tác (`dung: false`). */
+api.post('/mgmt-tasks/:id/lap', requireAuth, wrap((req) => mgmtSvc.dungLap(principalOf(req), pInt(req, 'id'), (req.body ?? {}).dung !== false)));
 
 api.get('/mgmt-tasks/:id', requireAuth, wrap((req) =>
   mgmtSvc.mgmtTaskDetail(principalOf(req), pInt(req, 'id'))));
@@ -3202,7 +3216,10 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = req.body ?? {};
   return mgmtSvc.createMgmtTask(principalOf(req), {
-    title: String(b.title ?? ''), group: String(b.group ?? ''),
+    title: String(b.title ?? ''), group: b.group ? String(b.group) : null,
+    groupId: b.groupId === undefined ? undefined : b.groupId === null || b.groupId === '' ? null : Number(b.groupId),
+    theoDoiIds: Array.isArray(b.theoDoiIds) ? b.theoDoiIds.map(Number) : undefined,
+    lap: b.lap ?? null,
     branchId: b.branchId ? Number(b.branchId) : null,
     assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
     assigneeName: typeof b.assigneeName === 'string' ? b.assigneeName : null,
@@ -3222,6 +3239,7 @@ api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
     progress: String(b.progress ?? ''), note: b.note ?? null, reason: b.reason ?? null,
     on: b.on ?? null, reviewOn: b.reviewOn ?? null,
     helpUserId: b.helpUserId ? Number(b.helpUserId) : null, helpName: b.helpName ?? null,
+    ...('phienBan' in b ? { phienBan: b.phienBan ?? null } : {}),   // VH-1 (PTA mục 9)
   });
 }));
 

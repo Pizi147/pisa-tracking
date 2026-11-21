@@ -50,7 +50,7 @@ export async function runPrGvaTests(t: AnToanTestKit) {
     const a = mg.createMgmtTask(P.admin, { ...goc, group: 'curriculum', note: 'A', idempotencyKey: 'gva-khac-0001' });
     const b = mg.createMgmtTask(P.admin, { ...goc, group: 'teacher', note: 'B', watcherUserId: P.mbManager.userId, idempotencyKey: 'gva-khac-0002' });
     assert(a.id !== b.id, 'khác khoá phải là hai việc');
-    const rb = conn.prepare('SELECT group_key, note, watcher_user_id FROM tasks WHERE id = ?').get(b.id) as any;
+    const rb = conn.prepare("SELECT g.khoa AS group_key, t.note, (SELECT user_id FROM viec_theo_doi f WHERE f.loai = 'van_hanh' AND f.ref_id = t.id AND f.user_id = ?) AS watcher_user_id FROM tasks t LEFT JOIN task_groups g ON g.id = t.group_id WHERE t.id = ?").get(P.mbManager.userId, b.id) as any;   // VH-1
     assert(rb.group_key === 'teacher' && rb.note === 'B' && rb.watcher_user_id === P.mbManager.userId, 'group/note/watcher của việc thứ hai không được mất');
     /* Không gửi khoá (client cũ) → luôn là việc mới, không còn gộp theo tiêu đề. */
     const c = mg.createMgmtTask(P.admin, { ...goc, group: 'curriculum', note: 'A' });

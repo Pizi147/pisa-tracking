@@ -7,6 +7,7 @@ import { can, khongQuyenTam, require_, type Principal } from '../permissions.ts'
 import { caseAccess } from '../cases/cases.ts';
 import { coordinationOwner, measureOwner, violationOwner } from '../yThuc/access.ts';
 import { writeAudit } from './audit.ts';
+import { taskOwnerAccess } from '../worklist/mgmttasks.ts';
 import { BoChup, bangCuaLoai, ghiThungRac, tepConTrongRac } from './thungRac.ts';
 import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
 
@@ -29,7 +30,7 @@ import { ghiNhanViecNenKhoTep, khoTepHienTai } from './khoTep.ts';
  * phục vụ dạng tải về. Liên kết chỉ nhận http/https — không `javascript:`, `data:`, `file:`.
  */
 
-export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure', 'sos_coordination_action', 'unit_report'] as const;
+export const OWNER_TYPES = ['sos_case', 'case_intervention', 'violation', 'discipline_measure', 'sos_coordination_action', 'unit_report', 'task'] as const;
 export type AttachmentOwnerType = (typeof OWNER_TYPES)[number];
 
 /** Dung lượng và đuôi tệp được nhận nằm ở `shared/domain/attachments.ts` — giao diện đọc cùng danh sách. */
@@ -70,6 +71,7 @@ export function ownerAccess(ownerType: string, ownerId: number): OwnerAccess {
   if (ownerType === 'discipline_measure') return measureOwner(ownerId);
   if (ownerType === 'sos_coordination_action') return coordinationOwner(ownerId);
   if (ownerType === 'unit_report') return unitReportOwner(ownerId);
+  if (ownerType === 'task') return taskOwnerAccess(ownerId);   // VH-1 (N59): tệp của việc Vận hành — quyền ở mgmttasks.ts
   throw loi(400, 'Loại bản ghi "{ownerType}" chưa hỗ trợ đính kèm.', { ownerType });
 }
 

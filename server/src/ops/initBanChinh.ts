@@ -22,7 +22,7 @@ export type ChiNhanh = { code: string; name: string };
  */
 export const BANG_NEN_INIT: readonly string[] = ['permissions', 'roles', 'role_permissions', 'routes', 'programmes', 'programme_skills',
   'programme_checkpoints', 'branches', 'reporting_units', 'users', 'user_roles', 'student_code_seq', 'demo_config',
-  'moc_he_thong'];   // TL-NEN: 4 dòng mốc hệ thống do schema.sql tạo — không phải dữ liệu demo
+  'moc_he_thong', 'task_groups'];   // TL-NEN: 4 dòng mốc hệ thống do schema.sql tạo — không phải dữ liệu demo
 
 /** Mã của đơn vị báo cáo "Tutor part-time" (như `seed.ts`). `reporting_units.code` là UNIQUE nên chi nhánh không được dùng mã này. */
 const MA_TUTOR = 'TUTOR';

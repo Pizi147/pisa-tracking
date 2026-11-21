@@ -247,6 +247,22 @@ const BG_GV = (() => {
   return id;
 })();
 
+/*
+ * VH-1 (N59): ĐO TRÊN SEED CÓ DỮ LIỆU — 24 việc Vận hành ở chi nhánh mẫu (4 nhóm khởi đầu + "Không phân loại", 8 việc con, 2 người theo dõi mỗi việc, 4 việc lặp),
+ * giao BPXL, Admin MB theo dõi (đo `/mgmt-tasks` QL · QT · CX, `/my-work` BPXL — vai có việc Vận hành; `/my-work/theo-doi` Admin). Không giao GV / Admin (trần + băm `/my-work` giữ).
+ */
+{
+  const mg = await import('../worklist/mgmttasks.ts');
+  const qlP = loadPrincipal(USER.QL);
+  const nhom = (conn.prepare('SELECT id FROM task_groups WHERE khoa IS NOT NULL ORDER BY thu_tu').all() as any[]).map((r) => r.id as number);
+  for (let i = 0; i < 24; i++) {
+    const [nguoi, theoDoi] = [USER.BPXL, USER.ADMIN];
+    const v = mg.createMgmtTask(qlP, { title: `Đo VH ${i + 1}`, branchId: CN, groupId: i % 5 === 4 ? null : nhom[i % 4], assigneeUserId: nguoi,
+      theoDoiIds: [theoDoi], due: demoToday15d(), ...(i % 6 === 0 ? { lap: { kieu: 'tuan', ngay: [1, 4] } } : {}) } as any);
+    if (i % 3 === 0) mg.createMgmtTask(qlP, { title: `Đo VH ${i + 1} · con`, parentTaskId: v.id, assigneeUserId: nguoi, due: demoToday15d() } as any);
+  }
+}
+
 const server = createApp().listen(0);
 /* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
 server.keepAliveTimeout = 120_000;

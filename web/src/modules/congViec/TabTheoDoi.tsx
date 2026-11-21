@@ -14,13 +14,16 @@ import { PhanMeeting } from './PanelMeeting.tsx';
 import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
 import { lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 
 /** `GET /my-work/theo-doi` (máy chủ `viecTheoDoi`). */
-export type DongTd = { loai: LoaiGiao; refId: number; tieuDe: string; studentId: number; studentName: string; classCode: string | null;
+/** VH-1: việc Vận hành (`van_hanh`) cũng có người theo dõi — không gắn học viên (`studentId` null), panel = panel Vận hành sẵn có. */
+type LoaiTd = LoaiGiao | 'tra_lai' | 'van_hanh';
+export type DongTd = { loai: LoaiTd; refId: number; tieuDe: string; studentId: number | null; studentName: string | null; classCode: string | null;
   phuTrach: string | null; han: string | null; quaHan: boolean; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; xongLuc: string | null };
-type TheoDoi = { nhom: { loai: LoaiGiao; ten: string; mo: DongTd[]; vuaXong: DongTd[] }[] };
+type TheoDoi = { nhom: { loai: LoaiTd; ten: string; mo: DongTd[]; vuaXong: DongTd[] }[] };
 export const khoaTd = (d: Pick<DongTd, 'loai' | 'refId'>) => `${d.loai}:${d.refId}`;
-const ICON: Record<LoaiGiao, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc' };
+const ICON: Record<LoaiTd, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc', tra_lai: 'y-thuc', van_hanh: 'van-hanh' };
 
 /**
  * TAB "ĐANG THEO DÕI" (GV-2, N58; mockup v22 G5 / G6 / G7a) — mọi vai có Công việc. GỌI `/my-work/theo-doi` CHỈ khi tab đang mở (không lúc mở trang, tab không số).
@@ -81,7 +84,7 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
 }
 
 /** Mã lớp · tên việc (bỏ tên em ở cuối — em đã ở dòng phụ). */
-const tenDong = (d: DongTd) => [d.classCode, d.tieuDe.replace(new RegExp(` · ${d.studentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), '')].filter(Boolean).join(' · ');
+const tenDong = (d: DongTd) => [d.classCode, d.studentName ? d.tieuDe.slice(0, d.tieuDe.endsWith(` · ${d.studentName}`) ? -(d.studentName.length + 3) : undefined) : d.tieuDe].filter(Boolean).join(" · ");
 
 function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: () => void }) {
   const ten = tenDong(d);
@@ -94,7 +97,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
           <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug text-[color:var(--text)]"
             aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>{dich(ten)}</button>
           <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px]">
-            <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>
+            {d.studentId != null && <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>}
             {d.phuTrach && <span className="whitespace-nowrap sm:h-5 sm:rounded-md sm:border sm:px-1.5 sm:text-xs sm:font-medium sm:leading-[18px]" style={{ borderColor: 'var(--line-strong)' }}>
               <span aria-hidden className="sm:hidden">· </span>{t('Phụ trách {ten}', { ten: dich(d.phuTrach) })}</span>}
           </span>
@@ -116,6 +119,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
  * loại khác → khối Phụ trách · Hạn · Theo dõi (nút theo quyền máy chủ — GVCN vẫn "Sửa hạn" theo N34) · phần Meeting · Lịch sử.
  */
 export function PanelTheoDoi({ d, onDong }: { d: DongTd; onDong: () => void }) {
+  if (d.loai === 'van_hanh') return <NganViecVanHanh key={khoaTd(d)} taskId={d.refId} onClose={onDong} onDone={() => {}} />;
   if (d.loai === 'bao_ph') {
     const it = { key: `td:${khoaTd(d)}`, group: 'bao_ph_yt', viecId: d.refId, studentId: d.studentId, studentName: d.studentName, classCode: d.classCode,
       classId: null, contextLabel: d.tieuDe.match(/^Báo PH · (?!Meeting)(.+) · /)?.[1] ?? null, urgency: 'normal', due: d.han } as unknown as WorkItem;
@@ -126,9 +130,9 @@ export function PanelTheoDoi({ d, onDong }: { d: DongTd; onDong: () => void }) {
 
 function PanelTheoDoiChung({ d, onDong }: { d: DongTd; onDong: () => void }) {
   const hn = useHn();
-  const { g, error, reload, dat } = useGiaoViec(d.loai, d.refId);
-  const dau = { ...dauViec({ em: { id: d.studentId, ten: d.studentName }, lop: d.classCode }), loai: t('Đang theo dõi') };
-  const tieuDe = dich(d.tieuDe.replace(` · ${d.studentName}`, ''));
+  const { g, error, reload, dat } = useGiaoViec(d.loai as LoaiGiao, d.refId);
+  const dau = { ...dauViec({ em: d.studentId != null ? { id: d.studentId, ten: d.studentName ?? '' } : null, lop: d.classCode }), loai: t('Đang theo dõi') };
+  const tieuDe = dich(d.studentName ? d.tieuDe.replace(` · ${d.studentName}`, '') : d.tieuDe);
   const chan = { huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onDong}>{t('Đóng')}</button> };
   const lichSu = dongLichSuGiao(g, hn).sort((a, b) => b.luc.localeCompare(a.luc));
   return (

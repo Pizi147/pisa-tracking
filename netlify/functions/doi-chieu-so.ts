@@ -10,9 +10,10 @@ process.env.BAN_CHINH = '1';
 
 export const handler = async () => {
   try {
-    /* 5 lần mỗi đêm (19:20 – 23:20 UTC): bài + việc của chi nhánh thứ (giờ UTC − 19), lượt cuối mọi chi nhánh còn lại (`cnCuaLuot`). */
+    /* 5 lần mỗi đêm (19:20 – 23:20 UTC): bài + việc của chi nhánh thứ (giờ UTC − 19), lượt cuối mọi chi nhánh còn lại (`cnCuaLuot`); việc Vận hành lặp lại: lượt đầu. */
     const cns = (db().prepare('SELECT id FROM branches ORDER BY id').all() as any[]).map((r) => r.id as number);
-    const kq = doiChieuSo(undefined, cnCuaLuot(cns, new Date().getUTCHours() - 19));
+    const luot = new Date().getUTCHours() - 19;
+    const kq = doiChieuSo(undefined, cnCuaLuot(cns, luot), luot === 0);   // VH-1: việc lặp lại chỉ lượt đầu
     console.log('[doi-chieu-so]', JSON.stringify(kq));
     return { statusCode: 200, body: JSON.stringify(kq) };
   } catch (e) {

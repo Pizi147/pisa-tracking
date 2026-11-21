@@ -10,6 +10,7 @@ import { ghiSoLuot, ghiSoViecChiNhanh } from '../phanTich/soNghiaVu.ts';
 import { xoaNhoHan } from '../platform/cauHinh.ts';
 /* SUA-RA-1311: nạp nguồn cấu hình Case & SOS (`datNguonCauHinh` khi nạp module) — thiếu thì gói hàm đêm luôn đọc bản gốc. */
 import { quenNhoCauHinh } from '../platform/cauHinhCaseSos.ts';
+import { taoViecLap } from '../worklist/mgmttasks.ts';
 
 const COT = 'khoa, loai, kieu, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_nhap_sau, han_goc, han, tuan, xong_luc, nguoi_lam, khong_tinh';
 const BAI_CUA = `SELECT ${COT} FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';'`;
@@ -29,10 +30,16 @@ export const SO_LUOT_DEM = 5;
 export const cnCuaLuot = (cns: readonly number[], luot: number): number[] =>
   luot < 0 || luot >= SO_LUOT_DEM ? [] : cns.slice(luot, luot === SO_LUOT_DEM - 1 ? undefined : luot + 1);
 
-export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { cn: number; bai: number; lechBai: number; doiViec: number } {
+/** `coLap`: tạo việc Vận hành lặp lại — MỘT lần mỗi đêm (hàm định kỳ: lượt đầu). */
+export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[], coLap = true): { cn: number; bai: number; lechBai: number; doiViec: number; lap: { goc: number; tao: number; loi: number } | null } {
   const conn = db();
   xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
   quenNhoCauHinh();   // SUA-RA-1311: cấu hình Case & SOS cũng vậy
+  /* VH-1 (N59): việc Vận hành lặp lại tới kỳ → bản mới — chạy lại không tạo trùng (khoá việc gốc × kỳ). Lỗi ở đây KHÔNG làm hỏng đối chiếu sổ (PTA mục 3). */
+  let lap: { goc: number; tao: number; loi: number } | null = null;
+  if (coLap) {
+    try { lap = taoViecLap(homNay); } catch (e) { console.error('[doi-chieu-so] việc lặp lại lỗi', e); }
+  }
   const tu = addDays(homNay, -56);
   let bai = 0, lechBai = 0, doiViec = 0, cn = 0;
   for (const b of conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]) {
@@ -58,5 +65,5 @@ export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { 
     }
     for (const [k, v] of chup(`SELECT ${COT} FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`, b.id)) if (viecTruoc.get(k) !== v) doiViec += 1;
   }
-  return { cn, bai, lechBai, doiViec };
+  return { cn, bai, lechBai, doiViec, lap };
 }

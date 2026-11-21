@@ -30,7 +30,8 @@ export async function runDonMaTests(t: any) {
       assert(!/mo-viec/.test(s), `${f} còn mo-viec`);
     }
     assert(/\/cong-viec\/van-hanh\?open=\$\{r\.id\}/.test(doc('server/src/worklist/metrics.ts')), 'metrics: href chưa là van-hanh?open=<id>');
-    assert(/\/cong-viec\?viec=mgmt:\$\{t\.id\}/.test(doc('server/src/worklist/mywork.ts')), 'myWork: href chưa là viec=mgmt:<id>');
+    /* VH-1: dòng "Việc được giao" Vận hành dựng ở `viecGiaoChoToi` (giaoViec.ts, cùng câu việc giao cho tôi). */
+    assert(/\/cong-viec\?viec=mgmt:\$\{r\.id\}/.test(doc('server/src/worklist/giaoViec.ts')), 'myWork: href chưa là viec=mgmt:<id>');
   });
 
   check('DON-MA · web: lối cũ ?mo-viec= (chuông đã lưu) chuyển hướng sang ?viec=mgmt:<id>, không còn panel phủ trang NganViecVanHanh ở Công việc', () => {

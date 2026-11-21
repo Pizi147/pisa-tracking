@@ -19,7 +19,7 @@ import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
 import { viecBaoCaoPhGv, viecBcPhQuaHanQl, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
-import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
+import { canSeeBoard } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, PA_GV_MO, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
@@ -167,6 +167,8 @@ export type WorkItem = {
   giaoBoi?: string | null;
   /** GV-2: dòng Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) — id hành động Meeting, panel đọc `/phoi-hop-sos/:id/meeting`. */
   phoiHopId?: number;
+  /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
+  nhomViec?: { id: number; ten: string; thuTu: number } | null;
 };
 
 /**
@@ -831,7 +833,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * GV-1 (N58): việc người khác giao cho tôi + phần Meeting CX (BPXL / CX / TVV / Head) — MỘT câu, đọc trước mọi nhánh sớm (CX thuần, ngoài phạm vi lượt cũng có).
    * Ghép vào danh sách sau lọc nhóm (Admin: việc giao không bị cắt về nhóm Chấm điểm); việc trùng khoá với việc theo luật giữ một. TVV (`NHOM_VIEC_TVV`): mọi việc giao.
    */
-  const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca' })
+  /*
+   * VH-1 (8, N59): việc Vận hành giao cho tôi ("Việc được giao", kèm nhóm) — MỌI vai được giao (TVV, BPXL / CX thuần, Admin) trừ người thấy bảng Vận hành trên web
+   * (Head / Quản trị — OV-11c CV-16, không lặp; CX: tab bật ở VH-2 nên tới lúc đó vẫn ở đây — `boVaiCx`). Cùng câu việc giao cho tôi, không câu thêm.
+   */
+  const coVanHanh = (!f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt')) && !canSeeBoard(boVaiCx(p));
+  const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca', vanHanh: coVanHanh })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
   const chiGiao = () => {
     const dong = dungDong(giao);
@@ -1839,31 +1846,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 5g. TVV hỏi tình hình học tập (TINH-HINH) — GVCN lớp em / QL khi lớp chưa có GVCN
   if (co('yt_hoi_tinh_hinh')) items.push(...viecHoiTinhHinhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
 
-  // ------------------------------------------------- 6. công việc quản lý được giao
-  /*
-   * VIỆC Ở BẢNG "TIẾN ĐỘ CÔNG VIỆC" CŨNG LÀ VIỆC CỦA NGƯỜI NÀY (mục 3.2).
-   *
-   * Giáo viên không nhìn thấy cả bảng đó, nhưng việc con giao cho họ thì vẫn phải hiện ở
-   * đây — nếu không, giao việc xong là việc biến mất khỏi tầm mắt người nhận.
-   */
-  /* OV-11c (CV-16): người có tab Vận hành (QL, Quản trị) không lặp việc Vận hành ở Hỗ trợ học viên. */
-  for (const t of co('mgmt') && !canSeeBoard(p) ? myMgmtTasks(p) : []) {
-    const u = urgencyOf(t.due, today);
-    items.push({
-      key: `mgmt:${t.id}`, group: 'mgmt', urgency: u,
-      studentId: null, studentName: t.title,
-      classId: null, classCode: null,
-      attemptId: null, attemptNo: null, caseId: null, level: null,
-      contextLabel: t.parentTitle ? `Việc con của: ${t.parentTitle}` : 'Công việc quản lý',
-      count: null,
-      reason: t.progressLabel,
-      tieuDe: t.title,
-      actionLabel: 'Cập nhật',
-      href: `/cong-viec?viec=mgmt:${t.id}`, cn: t.branchId,
-      ownerId: p.userId, owner: null, mine: true,
-      due: t.due, statusLabel: t.progressLabel,
-    });
-  }
+  // ------------------------------------------------- 6. công việc quản lý được giao — VH-1: đọc cùng việc được giao (`giao`, đầu hàm)
 
   /*
    * XẾP NHÓM.
