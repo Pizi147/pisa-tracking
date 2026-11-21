@@ -93,6 +93,8 @@ const KICH_BAN = [
   ['cv-duyet-panel', 2, '/cong-viec?nhom=duyet', async (p) => { await p.locator('[data-hd=cd-dong] button').first().click(); await p.waitForTimeout(800); await p.locator('summary', { hasText: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
   /* UI-CV-TVV: Công việc của TVV (23) — danh sách + panel Báo PH, panel Sau thi. */
   ['cv-tvv', 23, '/cong-viec'], ['cv-tvv-bao-ph', 23, '/cong-viec?viec=bao-ph%3A10'], ['cv-tvv-sau-thi', 23, '/cong-viec?viec=buoc_tiep%3A23'],
+  /* GV-2: tab Đang theo dõi (TVV) · Công việc BPXL (tab Xếp lịch họp, không Lớp của tôi). */
+  ['cv-theo-doi', 27, '/cong-viec?nhom=theo-doi'], ['cv-bpxl', 33, '/cong-viec'],
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
   ['lop-ft-y-thuc', 7, '/hoc-vien/lop/3?tab=y-thuc'], ['lop-thuong', 2, '/hoc-vien/lop/6?tab=hoc-vien'],
   ['lop-thuong-phan-tich', 2, '/hoc-vien/lop/6?tab=phan-tich'],

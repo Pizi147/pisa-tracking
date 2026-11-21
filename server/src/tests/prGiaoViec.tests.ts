@@ -200,13 +200,10 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       'sửa việc đã xong không báo lại');
   }));
 
-  const voiMeeting = async (fn: () => Promise<void>) => { gv.meetingCongViec.bat = true; try { await fn(); } finally { gv.meetingCongViec.bat = false; } };
-  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel; cờ tắt → không ở /my-work', () => thu(() => voiMeeting(async () => {
+  const voiMeeting = async (fn: () => Promise<void>) => fn();   // GV-2: hai nhóm Meeting luôn bật ở /my-work
+  await checkAsync('GV1-6 · Meeting CX/GĐCN: ba phần độc lập, TVV nhập hộ, người theo dõi 403, Hoàn tác, sửa có lịch sử, CX thuần summary khớp, IDOR panel', () => thu(() => voiMeeting(async () => {
     const sid = moiEm();
     const { aid, xep, kq, bpId } = meeting(sid);
-    gv.meetingCongViec.bat = false;
-    assert(!items(cx).some((x) => x.key === `meeting_ket_qua:${kq.id}`) && !items(ql, { nguoi: 'tat-ca' }).some((x) => /^meeting_/.test(x.key)), 'cờ tắt (chưa có GV-2): không dòng Meeting ở /my-work');
-    gv.meetingCongViec.bat = true;
     assert(xep && kq && xep.trang_thai === 'mo' && kq.trang_thai === 'mo' && bpId, 'ba phần');
     const coBpxl = nguoiVaiCuaChiNhanh(mbId, 'scheduler').length > 0;
     if (!coBpxl) assert(items(tvv, { chiNhom: NHOM_VIEC_TVV }).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'chưa có BPXL → TVV của em xếp lịch');
@@ -351,6 +348,72 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     bp.ghiKetQuaBaoPh(tvv, { viecIds: [id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
     assert(!tin(`gv:bao_ph:${id}:ket_qua:`).includes(roi.userId), 'không nhận tin có kết quả');
     assert(await ma(() => bp.xemViecBaoPh(p2, id)) === 403, 'không đọc panel');
+  }));
+
+  await checkAsync('GV2-1 · Phối hợp giao cho Admin: cờ lamDuoc đúng TỪNG việc (việc khác của lượt không; canAct lượt vẫn chỉ người quản lý), người ngoài 403; Meeting: bối cảnh + SĐT PH chỉ người làm được; tab theo dõi ghi tên người theo luật; migrate sinh bù phần Meeting → có người theo dõi mặc định', () => thu(async () => {
+    const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
+    const sid = moiEm(); const x = phoiHopViec(sid);
+    const y = phoiHopViec(sid, 'talk_student');
+    assert(!ph.coordinationOfStudent(admin, sid).rows.some((r: any) => r.canAct || r.actions.some((a: any) => a.lamDuoc)), 'Admin (không discipline.manage) chưa được giao → không làm được gì');
+    giao(gvcn, 'phoi_hop', x, admin.userId);
+    const the = ph.coordinationOfStudent(admin, sid);
+    const ds = the.rows.flatMap((r: any) => r.actions);
+    assert(ds.find((a: any) => a.id === x)?.lamDuoc === true, 'được giao → lamDuoc ở việc đó');
+    assert(ds.find((a: any) => a.id === y)?.lamDuoc === false && !the.rows.some((r: any) => r.canAct), 'việc khác của em / thêm việc: không');
+    assert(ph.coordinationOfStudent(gvcn, sid).rows.flatMap((r: any) => r.actions).every((a: any) => a.lamDuoc), 'GVCN làm được mọi việc');
+    assert(await ma(() => ph.coordinationOfStudent(ngoai, sid)) === 403, 'người ngoài vẫn 403');
+    const mt = meeting(moiEm());
+    const { aid } = mt;
+    const bcCx = gv.xemMeeting(cx, aid).boiCanh;
+    assert(bcCx.phuHuynh !== null && bcCx.gvcn, `CX (làm Kết quả meeting) thấy PH + GVCN: ${JSON.stringify(bcCx)}`);
+    assert(gv.xemMeeting(gvbm, aid).boiCanh.phuHuynh === null, 'GVBM chỉ xem (không làm phần nào) → không SĐT PH');
+    xoaNho();
+    const dTd = gv.viecTheoDoi(tvv).nhom.find((g: any) => g.loai === 'meeting')?.mo.find((d: any) => d.refId === mt.kq.id);
+    assert(dTd && dTd.phuTrach && !/chi nhánh/.test(dTd.phuTrach), `tab theo dõi: tên người theo luật, không ghi vai: ${dTd?.phuTrach}`);
+    const ids = hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id);
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'meeting' AND ref_id IN (${ids.join(',')})`).run();
+    conn.prepare('DELETE FROM meeting_phan WHERE phoi_hop_id = ?').run(aid);
+    const a: string[] = []; migratePrGiaoViec(conn, a);
+    const moi = hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id);
+    assert(moi.length === 2 && moi.every((id) => hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'meeting' AND ref_id = ?`, id).length > 0), `phần sinh bù có người theo dõi: ${a.join(' | ')}`);
+    const b: string[] = []; migratePrGiaoViec(conn, b);
+    assert(!b.length, `lần 2 không đổi: ${b.join(' | ')}`);
+  }));
+
+  await checkAsync('GV2-2 · (PTA rà quyền #1930) người được giao không xem được em → thẻ Phối hợp CHỈ việc của mình · ô giao việc một chi nhánh, ngoài phạm vi [] · vai Tutor không nhận việc (ô chọn + máy chủ cùng danh sách)', () => thu(async () => {
+    const tn: any = await import('../platform/timNguoi.ts');
+    const gvk = taiKhoan('gvkhac', 'teacher');   // GV ở MB, không dạy lớp em → không student.view
+    const sid = moiEm(); const x = phoiHopViec(sid); const y = phoiHopViec(sid, 'talk_student');
+    assert(await ma(() => ph.coordinationOfStudent(gvk, sid)) === 403, 'chưa được giao → 403');
+    giao(gvcn, 'phoi_hop', x, gvk.userId);
+    const ds = ph.coordinationOfStudent(gvk, sid).rows.flatMap((r: any) => r.actions);
+    assert(ds.length === 1 && ds[0].id === x && ds[0].lamDuoc, `chỉ việc được giao: ${ds.map((a: any) => a.id)} (y = ${y})`);
+    const cnMb = tn.timNguoi(ql, { moiVai: true, chiNhanh: mbId, q: '' }) as any[];
+    assert(cnMb.length > 0 && cnMb.every((r) => r.branches.length <= 1), 'một chi nhánh — không lộ chi nhánh khác của người đó');
+    const cp = mot(`SELECT id FROM branches WHERE code = 'CP'`).id;
+    assert(tn.timNguoi(ql, { moiVai: true, chiNhanh: cp, q: '' }).length === 0, 'chi nhánh ngoài phạm vi (Head MB hỏi CP) → []');
+    assert(tn.timNguoi(ql, { moiVai: true, chiNhanh: null, q: '' }).length === 0, 'không chi nhánh → []');
+    const tutor = taiKhoan('tutor', 'head_tutor');
+    assert(!tn.timNguoi(ql, { moiVai: true, chiNhanh: mbId, q: 'GIAOVIEC TUTOR' }).some((r: any) => r.id === tutor.userId), 'ô chọn không có vai Tutor');
+    const bp = baoPhViPham(moiEm());
+    assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', bp, { userId: tutor.userId, phuTrachCu: null })) === 400, 'máy chủ không nhận vai Tutor (400)');
+  }));
+
+  await checkAsync('GV2-3 · (chủ SP 22/11) hạn mặc định phần Meeting: Xếp lịch họp 5 ngày · Kết quả meeting 14 ngày, tính cả ngày xác nhận; không ghi han_chon; /my-work + panel + tab theo dõi cùng hạn; Sửa hạn rồi Về mặc định', () => thu(async () => {
+    const { xep, kq } = meeting(moiEm());
+    const gx = gv.xemGiaoViec(ql, 'meeting', xep.id), gk = gv.xemGiaoViec(ql, 'meeting', kq.id);
+    assert(gx.han === addDays(TODAY, 4) && gx.hanMacDinh === gx.han && gx.hanChon === null, `Xếp lịch họp: ${gx.han} ≠ ${addDays(TODAY, 4)}`);
+    assert(gk.han === addDays(TODAY, 13) && gk.hanChon === null, `Kết quả meeting: ${gk.han} ≠ ${addDays(TODAY, 13)}`);
+    assert(mot('SELECT han_chon FROM meeting_phan WHERE id = ?', kq.id).han_chon === null, 'hạn mặc định không ghi vào han_chon');
+    xoaNho();
+    assert(items(cx).find((x: any) => x.key === `meeting_ket_qua:${kq.id}`)?.due === gk.han, '/my-work của CX cùng hạn');
+    xoaNho();
+    const dTd = gv.viecTheoDoi(tvv).nhom.find((g: any) => g.loai === 'meeting')?.mo.find((d: any) => d.refId === kq.id);
+    assert(dTd?.han === gk.han, `tab theo dõi cùng hạn: ${dTd?.han}`);
+    const sua = gv.suaHan(ql, 'meeting', kq.id, { han: addDays(TODAY, 20), hanCu: null });
+    assert(sua.han === addDays(TODAY, 20) && sua.hanChon === addDays(TODAY, 20) && sua.hanMacDinh === gk.han, 'Sửa hạn → han_chon');
+    const ve = gv.suaHan(ql, 'meeting', kq.id, { han: null, hanCu: addDays(TODAY, 20) });
+    assert(ve.han === gk.han && ve.hanChon === null, 'Về mặc định → han_chon NULL, hạn mặc định tính lại');
   }));
 
   const fs = await import('node:fs');

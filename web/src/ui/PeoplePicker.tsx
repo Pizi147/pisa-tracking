@@ -140,7 +140,9 @@ export type NguoiTrongDs = { id: number; ten: string; phu?: string;
   /** TU-a: dòng là một tutor (`/tutors/chon`), không phải tài khoản. */
   tutor?: TutorChon;
   /** SUA-NHO-UI U4: dòng hiện mờ, không chọn được (bấm, ↑ ↓, Enter, rời ô bỏ qua); chữ = lý do ngắn, đứng bên phải (mockup ⑤ `.ben`). */
-  tat?: string };
+  tat?: string;
+  /** GV-2: nhóm của dòng là phần đã tải (LIMIT) — nhãn nhóm không ghi số (số đó không phải tổng). */
+  anSoNhom?: true };
 
 /** GD-5 (mockup ⑤ A4): chọn nhiều — chip ✕ trong ô, đếm "n / trần", tới trần mục còn lại tắt; Backspace ở ô trống chọn rồi bỏ chip cuối. */
 export type ChonNhieu = { chon: NguoiTrongDs[]; toiDa: number; onDoi: (ds: NguoiTrongDs[]) => void;
@@ -498,7 +500,7 @@ export function ChonNguoi({
           <Fragment key={opt.kind === 'nguoi' ? `${opt.row.tutor ? 't' : 'u'}${opt.row.id}` : opt.kind}>
             {(opt.kind === 'ngoai' || (opt.kind === 'them' && !choNgoai)) && trangThai}
             {/* TU-a · GD-5: nhãn nhóm + số trước dòng đầu của mỗi nhóm (không bấm, mũi tên bỏ qua; dính đầu khi cuộn). */}
-            {dauNhom[i] !== undefined && <div role="presentation" className="oc-nhom">{nhomCua(opt)} <span className="so">{dauNhom[i]}</span></div>}
+            {dauNhom[i] !== undefined && <div role="presentation" className="oc-nhom">{nhomCua(opt)} {!(opt.kind === 'nguoi' && opt.row.anSoNhom) && <span className="so">{dauNhom[i]}</span>}</div>}
             <button
               id={`${uid}-opt-${i}`}
               role="option"

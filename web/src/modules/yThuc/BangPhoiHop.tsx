@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -61,7 +61,11 @@ export function DiemMotDong({ th, anLuot = false }: { th: CoordTurn['the']; anLu
   );
 }
 
-export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
+/** GV-2: panel một việc có khối Phụ trách · Hạn · Theo dõi — "Sửa hạn" ở ⋯ của dòng ẩn (một chỗ sửa hạn). */
+const AnHan = createContext(false);
+export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false }: {
+  /** GV-2: hạn sửa ở khối giao việc đầu panel — bỏ "Sửa hạn" của dòng. */
+  anHan?: boolean;
   turns: CoordTurn[]; che: { loai: 'gvcn'; khoa: string } | { loai: 'tvv' };
   onChanged: () => void;
   /** Mã lớp — câu "Xong việc này ở {lớp}" khi hết em cần làm. */
@@ -96,7 +100,7 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
   const daLuuLo = (ids: number[]) => setVuaLuu((x) => new Set([...x, ...ids]));
   /* GVCN: hai cột Học viên · Cần làm (Nội dung ghi ngay trong form Xác nhận — mockup B1). TVV: Học viên · GVCN gửi · Báo PH (B2). */
   return (
-    <>
+    <AnHan.Provider value={anHan}>
     {choLo.length >= 2 && <LoXacNhan ds={choLo} onXong={(ids) => { daLuuLo(ids); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged(); }} />}
     <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Cần làm')}>
       <div role="row" className={`${tvv ? HANG : HANG_GOP} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
@@ -108,7 +112,7 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
       {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} gop={!tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
         onVua={(co) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(d.a.id); else n.delete(d.a.id); return n; })} />)}
     </div>
-    </>
+    </AnHan.Provider>
   );
 }
 
@@ -200,6 +204,8 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
 }) {
   const { luot, a } = d;
   const toast = useToast();
+  const anHan = useContext(AnHan);
+  const lam = a.lamDuoc ?? luot.canAct;   // GV-2: cờ theo từng việc (người được giao)
   const [mo, setMo] = useState<null | 'xac-nhan' | 'ghi' | 'bo' | 'han'>(null);
   const { homNay } = useNgayNghiepVu();
   const [du, setDu] = useState(false);
@@ -252,9 +258,9 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
                 <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ok">✓ {a.performedOn ? shortDate(a.performedOn, homNay) : ''}{vua && !tvv ? ` · ${t('Bạn')}` : ''}</span>
                 {ngoiLam && <span className="text-[13px] text-dim">{ngoiLam}</span>}
                 {tvv && a.note && <span className="line-clamp-2 text-[13px] text-dim">{a.note}</span>}
-                {!tvv && luot.canAct && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
+                {!tvv && lam && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
               </span>
-            ) : luot.canAct ? (
+            ) : lam ? (
               <button type="button" className={`btn btn-primary btn-sm min-h-[44px] max-sm:w-full sm:min-h-[30px] ${gop ? 'w-full justify-center' : ''}`} onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>
             ) : <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
             {gop && <span className="mt-1.5 block empty:hidden"><OKetQua a={a} tvv={false} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
@@ -265,8 +271,8 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
             <>
               {!gop && <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
               <span role="cell" className="relative py-2.5 text-right max-sm:col-start-2 max-sm:row-start-1 max-sm:pb-1">
-                <Menu3 a={a} tvv={tvv} canAct={luot.canAct} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
-                  onHan={a.status === 'pending' && a.hanMacDinh && luot.canAct ? () => setMo('han') : undefined} />
+                <Menu3 a={a} tvv={tvv} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
+                  onHan={a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />
               </span>
             </>
           )}
