@@ -36,3 +36,13 @@ Một màn một PR; ≤ 2 PR giao diện song song, khác màn. PR quyền / mi
 
 - Rà chữ "xếp lại" / số `canXepLai` trên web thật ở Kế hoạch Test có trái N38 không.
 - Ảnh "trước" của web thật cho 4 màn (session giao diện tự chụp khi làm ảnh cặp).
+
+## N62 — Giao việc tay vào hạng mục + Mô tả (chủ SP duyệt 21/11)
+
+Luật: `plan.md` 1.6 **N62**. Một cơ chế: việc tay = việc Vận hành (`tasks`) có thêm ô "Hạng mục". Không mockup riêng — thêm ô theo mẫu `thiet-ke/v22/van-hanh.html` (form V2) và `giao-viec.html` (khối G1).
+
+| PR | Việc | Phụ thuộc |
+|---|---|---|
+| **VH-1b** máy chủ | `tasks.hang_muc` (khoá mục chính thống của Công việc, NULL = theo nhóm / Vận hành; danh sách khoá lấy từ `shared/domain/tongQuan.ts` `MUC_CV`, kiểm ở máy chủ) + `tasks.class_id` / học viên liên quan tuỳ chọn (dùng cột / bảng sẵn có nếu được) · `/my-work`: việc tay có `hang_muc` trả về đúng nhóm / mục đó kèm `giaoBoi`, mục tự hiện cho người nhận chưa có mục; không thêm câu · Mô tả tuỳ chọn cho việc N58: MỘT chỗ lưu chung theo (loai, ref_id) trong khung `giaoViec.ts` (≤ 500 ký tự, người phụ trách / người giao / Head / CX sửa, lịch sử ở `viec_giao_lan`), trả kèm khối giao việc, dọn trong `donViec` · phép kiểm + trần `tocDoDuong.ts` | VH-1 #1929 merge |
+| **VH-2** giao diện (đang chờ) | thêm vào phạm vi: ô "Hạng mục" trong form giao việc (hai nhóm lựa chọn: Chính thống │ Tự đặt), ô lớp / HV liên quan, nút "+ Giao việc" ở trang Công việc cạnh "+ Task" (Head, Quản trị, CX), việc tay hiện trong đúng mục với nhãn "{tên} giao" | VH-1 + VH-1b merge |
+| **GV-3** giao diện | dòng "Mô tả" (tuỳ chọn, sửa tại chỗ) trong khối Phụ trách · Hạn · Theo dõi của `KhoiGiaoViec` | GV-2 #1930 + VH-1b merge |
