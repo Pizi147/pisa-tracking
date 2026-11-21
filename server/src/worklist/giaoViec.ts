@@ -483,6 +483,8 @@ export type KhoiGiaoViec = {
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   /** TL-1 / GV-2: Báo PH "Chờ GV sửa" — hạn tạm dừng, giao diện không tô quá hạn (`quaHanBaoPh`). */
   tamDung: boolean;
+  /** TL-2: hạn đang có do MÁY tính lại khi hết "Chờ GV sửa" (dòng hạn cuối `mac_dinh` = 2, còn đúng hạn chọn) — không hiện như "đã chỉnh". */
+  hanTinhLai: boolean;
   theoDoi: (Nguoi & { nguon: Nguon })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
   /** Mỗi lần đổi người / theo dõi / hạn / phần Meeting, cũ trước: `truong` phu_trach | theo_doi | han | xong | sua | mo_lai. */
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
@@ -519,7 +521,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
   const td = db().prepare(`SELECT t.user_id, t.nguon, u.full_name FROM viec_theo_doi t LEFT JOIN users u ON u.id = t.user_id WHERE t.loai = ? AND t.ref_id = ? ORDER BY t.id`).all(loai, id) as any[];
   const lan = db().prepare(
     `SELECT l.truong AS truong, l.cu AS cu, l.moi AS moi, l.luc AS luc, u.full_name AS nguoi FROM viec_giao_lan l LEFT JOIN users u ON u.id = l.boi WHERE l.loai = ?1 AND l.ref_id = ?2
-     UNION ALL SELECT 'han', h.han_cu, NULLIF(h.han_moi, ''), h.luc, u.full_name FROM viec_han_lan h LEFT JOIN users u ON u.id = h.boi WHERE h.loai = ?1 AND h.viec_id = ?2
+     UNION ALL SELECT CASE h.mac_dinh WHEN 2 THEN 'han_tinh_lai' ELSE 'han' END, h.han_cu, NULLIF(h.han_moi, ''), h.luc, u.full_name FROM viec_han_lan h LEFT JOIN users u ON u.id = h.boi WHERE h.loai = ?1 AND h.viec_id = ?2
      ORDER BY 4`,
   ).all(loai, id) as any[];
   const ids = new Set<number>([...v.phuTrach, ...v.macDinh, ...(r.giao_boi ? [r.giao_boi] : []), ...(r.xong_boi ? [r.xong_boi] : []), ...(r.nhap_ho_boi ? [r.nhap_ho_boi] : []),
@@ -535,6 +537,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     phuTrach: v.phuTrach.map(nguoi), macDinh: v.macDinh.map(nguoi), duocGiao: !!v.pt,
     giaoBoi: v.pt && r.giao_boi ? nguoi(r.giao_boi) : null, giaoLuc: v.pt ? r.giao_luc ?? null : null,
     han: h.han, hanMacDinh: h.macDinh, hanChon: h.chon, coTheSuaHan: coTheSuaHan(p, v), tamDung: loai === 'bao_ph' && v.mo && !!r.tra_lai_id,
+    hanTinhLai: (() => { const c = lan.filter((l) => l.truong === 'han' || l.truong === 'han_tinh_lai').at(-1); return c?.truong === 'han_tinh_lai' && c.moi === h.chon; })(),
     theoDoi: td.map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon })), toiTheoDoi: td.some((t) => t.user_id === p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
     lichSu: lan.map((l) => ({ truong: l.truong, cu: l.cu ?? null, moi: l.moi ?? null, cuTen: tenSo(l.cu), moiTen: tenSo(l.moi), nguoi: l.nguoi ?? null, luc: l.luc })),
@@ -871,7 +874,8 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     const ten = caLan ? (r.kind ? nhanLoaiXuLy(r.kind, r.ten ?? null) : 'Lần xử lý') : r.kind ?? 'Vi phạm';
     return { ...chung, key: `yt_tra_lai:${r.id}`, group: 'yt_tra_lai', urgency: urgencyOf(r.han, today), contextLabel: ten,
       reason: `${r.pb ?? 'TVV'} trả lại: ${r.nhan}`, tieuDe: `${caLan ? 'Lần xử lý' : 'Vi phạm'} bị trả lại · ${r.full_name}`, phu: ten,
-      actionLabel: 'Xử lý', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), due: r.han, statusLabel: 'Chờ GV sửa', viecId: r.id };
+      actionLabel: 'Xử lý', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), due: r.han, statusLabel: 'Chờ GV sửa', viecId: r.id,
+      nguoiTra: r.pb ?? null };   // TL-2 (mockup v22 T4a): thẻ "{tên} trả" trên dòng
   }
   if (r.loai === 'phoi_hop') {
     const han = hanPhoiHop(r.kind, r.tao, r.han_chon, r.pb ?? null);

@@ -58,7 +58,7 @@ const XU_LY_LIEN_QUAN = `SELECT m.id AS measure_id FROM discipline_measures m WH
 const baoPhLienQuan = (measureId: number | null, violationId: number | null) => db().prepare(
   `SELECT v.id, v.trang_thai, v.measure_id, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, m.status AS xu_ly_status FROM viec_bao_ph v
      LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.measure_id IN (${XU_LY_LIEN_QUAN}) ORDER BY v.id`,
-).all(measureId, violationId) as { id: number; trang_thai: string; xu_ly_status: string | null }[];
+).all(measureId, violationId) as { id: number; trang_thai: string; measure_id: number; xu_ly_status: string | null }[];
 
 /**
  * TRONG tx: đặt lại "Chờ GV sửa" của các việc Báo PH `ids` theo yêu cầu trả lại ĐANG MỞ của lần xử lý của việc đó (cả lần, hoặc một vi phạm còn trong lần đó).
@@ -82,7 +82,7 @@ export function dongBoTamDung(ids: readonly number[], boi: number | null, tinhLa
     const moi = hanBaoPh(homNay);
     if (moi <= cu) continue;
     db().prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE id = ?').run(moi, b.id);
-    db().prepare('INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc) VALUES (?,?,?,?,0,?,?)').run('bao_ph', b.id, cu, moi, boi, nowIso());
+    db().prepare('INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc) VALUES (?,?,?,?,2,?,?)').run('bao_ph', b.id, cu, moi, boi, nowIso());   // TL-2: 2 = máy tính lại (không phải người chỉnh)
   }
 }
 /** Việc Báo PH đang dừng vì yêu cầu `id` (chỉ mục một phần `idx_viec_bao_ph_tra_lai`). */
@@ -304,9 +304,28 @@ export function xoaTraLaiCuaXuLy(measureId: number): void {
 }
 
 /** Yêu cầu mở của các vi phạm / lần xử lý (panel Báo PH, tab Ý thức) — MỘT câu. */
-export function traLaiDangMo(o: { violationIds: readonly number[]; measureIds: readonly number[] }): { id: number; violationId: number | null; measureId: number | null; han: string; nguoiTra: number }[] {
+export type TraLaiMo = { id: number; violationId: number | null; measureId: number | null; han: string; nguoiTra: number; lyDo: string; traLuc: string; nguoiNhan: string | null };
+/* TL-2 (mockup v22 T3a / T7b): dải "Chờ GV sửa" cần lý do + người đang giữ việc — đọc CÙNG câu (người được giao trước, không thì người nhận theo luật). */
+export function traLaiDangMo(o: { violationIds: readonly number[]; measureIds: readonly number[] }): TraLaiMo[] {
   if (!o.violationIds.length && !o.measureIds.length) return [];
-  return (db().prepare(`SELECT id, violation_id, measure_id, COALESCE(han_chon, han) AS han, nguoi_tra FROM vi_pham_tra_lai WHERE trang_thai = 'mo'
-      AND (violation_id IN (${DS_JSON}) OR measure_id IN (${DS_JSON})) ORDER BY id`).all(JSON.stringify(o.violationIds), JSON.stringify(o.measureIds)) as any[])
-    .map((r) => ({ id: r.id, violationId: r.violation_id ?? null, measureId: r.measure_id ?? null, han: r.han, nguoiTra: r.nguoi_tra }));
+  return (db().prepare(`SELECT t.id, t.violation_id, t.measure_id, COALESCE(t.han_chon, t.han) AS han, t.nguoi_tra, t.ly_do, t.tra_luc, u.full_name AS nguoi_nhan
+      FROM vi_pham_tra_lai t LEFT JOIN users u ON u.id = COALESCE(t.phu_trach_id, t.nguoi_nhan) WHERE t.trang_thai = 'mo'
+      AND (t.violation_id IN (${DS_JSON}) OR t.measure_id IN (${DS_JSON})) ORDER BY t.id`).all(JSON.stringify(o.violationIds), JSON.stringify(o.measureIds)) as any[])
+    .map((r) => ({ id: r.id, violationId: r.violation_id ?? null, measureId: r.measure_id ?? null, han: r.han, nguoiTra: r.nguoi_tra, lyDo: r.ly_do, traLuc: r.tra_luc, nguoiNhan: r.nguoi_nhan ?? null }));
+}
+
+/**
+ * TL-2: nút "Trả lại" ở chi tiết vi phạm (tab Ý thức lớp / HV) — người xem phía TVV + đúng luật chặn của `traLai` (Báo PH của lần xử lý còn mở; chưa có lần xử lý
+ * thì trả được) + yêu cầu đang mở (dải "Chờ GV sửa"). Phía TVV mới đọc Báo PH (một câu); yêu cầu mở một câu.
+ */
+export function traLaiCuaViPham(p: Principal, violationId: number, s: { consultant_user_id: number | null; student_id: number }): { coThe: boolean; dangMo: TraLaiMo | null } {
+  const dangMo = traLaiDangMo({ violationIds: [violationId], measureIds: [] })[0] ?? null;
+  if (dangMo || !coTheTraLai(p, s)) return { coThe: false, dangMo };
+  const bp = baoPhLienQuan(null, violationId);
+  if (!bp.length) return { coThe: true, dangMo };
+  const mo = bp.filter((b) => b.trang_thai === 'mo' && xuLyCon(b) === 'con');
+  /* PTA chốt (TL-2): lần xử lý đang chờ Head duyệt thu hồi → không trả lại (như panel Báo PH ẩn nút khi có thẻ "GVCN đang xin thu hồi"). */
+  const choThuHoi = mo.length ? db().prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND trang_thai = 'cho' AND doi_tuong_id IN (${DS_JSON}) LIMIT 1`)
+    .get(JSON.stringify(mo.map((b) => b.measure_id))) : null;
+  return { coThe: mo.length > 0 && !choThuHoi, dangMo };
 }
