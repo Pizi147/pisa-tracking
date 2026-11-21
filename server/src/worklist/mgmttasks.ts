@@ -785,10 +785,12 @@ function hvHopLe(ds: readonly number[], lop: number | null, branchId: number | n
  * VH-1b (N62): lớp + học viên liên quan (tuỳ chọn) — lớp cùng chi nhánh của việc; học viên hợp lệ (`hvHopLe`); ≤ 50. PTA rà #1936 (2): lớp / học viên phải
  * nằm trong phạm vi XEM của người gọi ở MỌI trường hợp (kể cả việc Toàn hệ thống) — không lộ tên lớp / em chi nhánh khác. Không gửi cả hai → undefined.
  */
-function docLienQuan(p: Principal, classId: unknown, studentIds: unknown, branchId: number | null): { classId: number | null; studentIds: number[] } | undefined {
+function docLienQuan(p: Principal, classId: unknown, studentIds: unknown, branchId: number | null,
+  /** PTA rà lần 2 #1936 (3): lớp / HV ĐANG CÓ của việc (chi nhánh + lớp không đổi) — gửi lại không kiểm lại (em đã chuyển lớp vẫn giữ tới khi người dùng bỏ). */
+  daCo?: { classId: number | null; studentIds: readonly number[] }): { classId: number | null; studentIds: number[] } | undefined {
   if (classId === undefined && studentIds === undefined) return undefined;
   const lop = classId == null || classId === '' ? null : Number(classId);
-  if (lop !== null) {
+  if (lop !== null && !(daCo && lop === daCo.classId)) {
     if (!Number.isInteger(lop) || lop <= 0) throw badRequest('Lớp không hợp lệ.');
     const c = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(lop) as any;
     if (!c || !can(p, PERMISSIONS.STUDENT_VIEW, { classId: lop })) throw badRequest('Không tìm thấy lớp.');
@@ -798,8 +800,9 @@ function docLienQuan(p: Principal, classId: unknown, studentIds: unknown, branch
   const ds = [...new Set(((studentIds as unknown[] | null | undefined) ?? []).map(Number))];
   if (ds.length > TRAN_HV_LIEN_QUAN) throw loi(400, 'Tối đa {n} học viên liên quan.', { n: TRAN_HV_LIEN_QUAN });
   if (ds.some((x) => !Number.isInteger(x) || x <= 0)) throw badRequest('Danh sách học viên không hợp lệ.');
-  const hopLe = hvHopLe(ds, lop, branchId);
-  if (ds.some((x) => !hopLe.has(x) || !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: x }))) throw badRequest('Có học viên không thuộc chi nhánh / lớp của việc — chọn lại.');
+  const moi = daCo && lop === daCo.classId ? ds.filter((x) => !daCo.studentIds.includes(x)) : ds;
+  const hopLe = hvHopLe(moi, lop, branchId);
+  if (moi.some((x) => !hopLe.has(x) || !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: x }))) throw badRequest('Có học viên không thuộc chi nhánh / lớp của việc — chọn lại.');
   return { classId: lop, studentIds: ds };
 }
 /** Thay tập học viên liên quan của việc (`task_students`, case_id NULL — không sinh Case / PA nào). */
@@ -1173,15 +1176,18 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     put('hang_muc', hangMuc);
     historyRows.push({ field: 'hang_muc', oldValue: t.hang_muc ?? null, newValue: hangMuc, reason: null });
   }
+  /* PTA rà lần 2 #1936 (1): chỉ việc Vận hành có lớp / HV liên quan — việc "Giao GV theo lớp + kỹ năng" đổi chi nhánh giữ nguyên lớp + em như trước. */
+  const laVh = t.kind === 'branch_ops';
   /* Lớp cũ còn hợp lệ ở chi nhánh mới? (việc Toàn hệ thống: giữ). */
-  const lopCu: number | null = t.class_id && doiCn && cnMoi !== null && (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(t.class_id) as any)?.branch_id !== cnMoi ? null : t.class_id ?? null;
+  const lopCu: number | null = laVh && t.class_id && doiCn && cnMoi !== null && (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(t.class_id) as any)?.branch_id !== cnMoi ? null : t.class_id ?? null;
+  const cuHv = laVh ? (conn.prepare('SELECT student_id FROM task_students WHERE task_id = ? AND case_id IS NULL').all(taskId) as any[]).map((r) => r.student_id as number) : [];
+  const lopGui = patch.classId !== undefined ? (patch.classId == null || patch.classId === '' ? null : Number(patch.classId)) : lopCu;
   const lienQuan = patch.classId !== undefined || patch.studentIds !== undefined
-    ? docLienQuan(p, patch.classId !== undefined ? patch.classId : lopCu, patch.studentIds ?? [], cnMoi) : undefined;
+    ? docLienQuan(p, lopGui, patch.studentIds ?? [], cnMoi, !doiCn && lopGui === (t.class_id ?? null) ? { classId: t.class_id ?? null, studentIds: cuHv } : undefined) : undefined;
   const lopMoi = lienQuan ? lienQuan.classId : lopCu;
   /* PTA rà #1936 (5): học viên liên quan — gửi danh sách thì thay; đổi chi nhánh / lớp mà không gửi → bỏ em không còn hợp lệ (không lộ tên em chi nhánh cũ). */
   let hvMoi: number[] | undefined = patch.studentIds !== undefined ? lienQuan!.studentIds : undefined;
-  if (hvMoi === undefined && (doiCn || lopMoi !== (t.class_id ?? null))) {
-    const cuHv = (conn.prepare('SELECT student_id FROM task_students WHERE task_id = ? AND case_id IS NULL').all(taskId) as any[]).map((r) => r.student_id as number);
+  if (laVh && hvMoi === undefined && (doiCn || lopMoi !== (t.class_id ?? null))) {
     const giu = hvHopLe(cuHv, lopMoi, cnMoi);
     if (cuHv.some((x) => !giu.has(x))) hvMoi = cuHv.filter((x) => giu.has(x));
   }
@@ -1238,6 +1244,16 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     /* Nhóm / chi nhánh của việc con theo việc cha. */
     if (!t.parent_task_id && (doiCn || (groupId !== undefined && groupId !== (t.group_id ?? null)))) {
       conn.prepare('UPDATE tasks SET group_id = ?, branch_id = ? WHERE parent_task_id = ?').run(groupId !== undefined ? groupId : t.group_id ?? null, cnMoi, taskId);
+      /* PTA rà lần 2 #1936 (2): việc con ở chi nhánh mới — lớp / HV riêng của việc con không còn hợp lệ thì bỏ (không lộ mã lớp / tên em chi nhánh cũ). */
+      if (doiCn && laVh && cnMoi !== null) {
+        for (const c of conn.prepare(`SELECT t.id, t.class_id, c.branch_id AS lop_cn FROM tasks t LEFT JOIN classes c ON c.id = t.class_id WHERE t.parent_task_id = ?`).all(taskId) as any[]) {
+          const lop = c.class_id && c.lop_cn === cnMoi ? c.class_id : null;
+          if (lop !== (c.class_id ?? null)) conn.prepare('UPDATE tasks SET class_id = NULL WHERE id = ?').run(c.id);
+          const hv = (conn.prepare('SELECT student_id FROM task_students WHERE task_id = ? AND case_id IS NULL').all(c.id) as any[]).map((r) => r.student_id as number);
+          const giu = hvHopLe(hv, lop, cnMoi);
+          if (hv.some((x) => !giu.has(x))) ghiHocVien(c.id, hv.filter((x) => giu.has(x)));
+        }
+      }
     }
     /* Người theo dõi: thay cả danh sách (bớt / thêm có lịch sử `viec_giao_lan`). */
     if (theoDoi !== undefined) {

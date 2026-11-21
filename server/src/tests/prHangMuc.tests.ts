@@ -260,6 +260,27 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(mot('SELECT class_id FROM tasks WHERE id = ?', v.id).class_id === null, 'xoá lớp → gỡ liên kết việc tay');
   }));
 
+  await checkAsync('VH1b-12 (PTA rà lần 2) · đổi chi nhánh teacher_task giữ lớp + em; việc con theo cha bỏ lớp / HV chi nhánh cũ; gửi lại HV đang có không kiểm lại', () => thu(async () => {
+    const cp = mot(`SELECT id FROM branches WHERE code = 'CP'`).id;
+    /* (1) teacher_task: đổi chi nhánh chỉ đổi branch_id. */
+    const tt = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, class_id, progress, created_by, created_at) VALUES (?, 'Giao GV VH1b-12', 'teacher_task', ?, ?, 'not_started', ?, ?)`)
+      .run(mg.nextCode(conn), MB, lop, ql.userId, new Date().toISOString()).lastInsertRowid);
+    conn.prepare('INSERT INTO task_students (task_id, student_id, created_at) VALUES (?,?,?)').run(tt, emLop[0], new Date().toISOString());
+    mg.editMgmtTask(P.admin, tt, { branchId: cp });
+    assert(mot('SELECT class_id FROM tasks WHERE id = ?', tt).class_id === lop && hang('SELECT 1 FROM task_students WHERE task_id = ?', tt).length === 1, 'teacher_task giữ lớp + em');
+    /* (2) việc con có lớp / HV riêng → cha đổi chi nhánh → bỏ. */
+    const cha = tao(ql, {});
+    const con = tao(ql, { parentTaskId: cha.id, title: 'Con VH1b-12', classId: lop, studentIds: [emLop[0]] });
+    mg.editMgmtTask(P.admin, cha.id, { branchId: cp });
+    const c = mot('SELECT branch_id, class_id FROM tasks WHERE id = ?', con.id);
+    assert(c.branch_id === cp && c.class_id === null && !hang('SELECT 1 FROM task_students WHERE task_id = ?', con.id).length, `việc con: ${JSON.stringify(c)}`);
+    /* (3) HV đang có đã chuyển lớp — gửi lại danh sách cũ (vd chỉ sửa hạn) không 400; thêm em mới sai vẫn 400. */
+    const v = tao(ql, { classId: lop, studentIds: [emLop[0]] });
+    conn.prepare(`UPDATE enrollments SET status = 'ended' WHERE student_id = ? AND class_id = ?`).run(emLop[0], lop);
+    assert(mg.editMgmtTask(ql, v.id, { due: addDays(TODAY, 3), classId: lop, studentIds: [emLop[0]] }).hocVien.length === 1, 'gửi lại em đang có → giữ, không 400');
+    assert(await ma(() => mg.editMgmtTask(ql, v.id, { classId: lop, studentIds: [emLop[0], emCp] })) === 400, 'thêm em mới sai → 400');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
