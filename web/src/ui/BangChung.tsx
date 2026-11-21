@@ -32,7 +32,7 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
  *   3. Gỡ tệp là hành động có xác nhận và có audit, không phải một dấu X im lặng.
  */
 export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng chứng'), onChanged }: {
-  ownerType: 'sos_case' | 'case_intervention' | 'violation' | 'discipline_measure' | 'sos_coordination_action' | 'unit_report';
+  ownerType: 'sos_case' | 'case_intervention' | 'violation' | 'discipline_measure' | 'sos_coordination_action' | 'unit_report' | /** VH-2: việc Vận hành. */ 'task';
   ownerId: number;
   /** Được thêm/gỡ không (máy chủ vẫn kiểm lại). */
   canEdit: boolean;

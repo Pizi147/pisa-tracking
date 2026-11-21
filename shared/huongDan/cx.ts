@@ -116,6 +116,8 @@ export const HD_CX: HuongDan = {
     },
     { id: 'yeu-cau', ten: 'Yêu cầu của tôi', duong: [`${CV}/yeu-cau`], dangO: { cau: 'Đề nghị bạn đã gửi và kết quả.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-yc', ten: 'Xem yêu cầu đã gửi', buoc: ['Mỗi dòng một đề nghị: trạng thái <b>Chờ</b> · <b>Đã duyệt</b> · <b>Từ chối</b>; bấm dòng xem chi tiết.'] }] },
+    { id: 'van-hanh', ten: 'Vận hành', duong: [`${CV}/van-hanh`], dangO: { cau: 'Việc ngoài học viên, chia theo nhóm: người phụ trách, hạn, việc con.', truoc: { chu: 'Công việc', duong: CV } },
+      muc: [{ id: 'cx-vh', ten: 'Giao việc, theo dõi', buoc: ['<b>+ Giao việc</b>: chọn <b>Hạng mục</b>, người phụ trách, hạn; thêm việc con, <b>Lặp lại</b>, tệp khi cần.', 'Bấm hàng nhóm để gập / mở; bấm dòng mở chi tiết, <b>Cập nhật tiến độ</b>.', '<b>Nhóm…</b>: tạo, đổi tên, sắp ▲▼, ẩn nhóm của chi nhánh.'] }] },
     { id: 'bao-cao', ten: 'Họp đơn vị', duong: [`${CV}/bao-cao`], dangO: { cau: 'Báo cáo tuần / tháng của các đơn vị (chỉ xem).', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-bc', ten: 'Xem báo cáo đơn vị', buoc: ['Chọn kỳ và chi nhánh ở hàng lọc; bấm số mở danh sách ngay tại trang.'] }] },
     ...manHoSoVai(true),

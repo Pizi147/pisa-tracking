@@ -173,12 +173,19 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: Chu
   const { homNay } = useNgayNghiepVu();
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
   /* GD-4a (mockup ⑤ B1): vạch hạn trong mục — Quá hạn · Hôm nay · Hạn đến {CN} · Hạn sau {CN} · Không hạn; mục đã xếp hạn sớm trước nên vạch đi một chiều. */
-  const vach = (x: WorkItem) => (!x.due ? t('Không hạn') : x.urgency === 'overdue' ? t('Quá hạn') : x.urgency === 'today' ? t('Hôm nay')
+  /* VH-2 (V5): mục "Việc được giao" — vạch = NHÓM của việc Vận hành (thứ tự Head sắp), "Không phân loại" cuối; trong nhóm giữ thứ tự hạn. */
+  const vachNhom = (x: WorkItem) => x.nhomViec?.ten ?? t('Không phân loại');
+  const theoNhom = (ds: WorkItem[]) => ds.map((x, i) => [x, i] as const)
+    .sort(([a, i], [b, j]) => (a.nhomViec?.thuTu ?? Infinity) - (b.nhomViec?.thuTu ?? Infinity) || (a.nhomViec?.id ?? 0) - (b.nhomViec?.id ?? 0) || i - j).map(([x]) => x);
+  const vachHan = (x: WorkItem) => (!x.due ? t('Không hạn') : x.urgency === 'overdue' ? t('Quá hạn') : x.urgency === 'today' ? t('Hôm nay')
     : x.due.slice(0, 10) <= cuoiTuan ? t('Hạn đến {ngay}', { ngay: shortDate(cuoiTuan, homNay) }) : t('Hạn sau {ngay}', { ngay: shortDate(cuoiTuan, homNay) }));
   return (
     <div className="flex flex-col gap-3.5">
       {muc.map((m, i) => {
         const n = soHien + (them[m.key] ?? 0);
+        const giao = m.key === 'giao';
+        const vach = giao ? vachNhom : vachHan;
+        const items = giao ? theoNhom(m.items) : m.items;
         /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
         const chung = m.key === 'cham-cheo';
         const dongGap = gap.has(m.key), maMuc = `muc-${m.key}`;
@@ -193,10 +200,10 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: Chu
               </> : null} />
             {!dongGap && <div id={maMuc}>
             <ul className="m-0 list-none p-0">
-              {m.items.slice(0, n).map((x, j, ds) => {
+              {items.slice(0, n).map((x, j, ds) => {
                 /* Vạch khi mục có ≥ 2 nhóm hạn (một nhóm: cột hạn đã nói đủ) — hoặc có việc không hạn: cột hạn của việc đó để trống,
                    vạch "Không hạn" nói thay (⑤ B1; rà đồng bộ 15/11 mục B). Mục Chấm Speaking không vạch. */
-                const coVach = !chung && (new Set(ds.map(vach)).size > 1 || ds.some((x) => !x.due));
+                const coVach = !chung && (giao ? ds.some((x) => x.nhomViec) : new Set(ds.map(vach)).size > 1 || ds.some((x) => !x.due));
                 const vachMoi = coVach && (j === 0 || vach(ds[j - 1]) !== vach(x));
                 return [
                   vachMoi && <li key={`v:${vach(x)}`} className={`flex min-h-9 items-center px-4 text-[13px] font-semibold text-dim max-sm:min-h-10 max-sm:px-3.5 ${j ? 'border-t' : ''}`}
@@ -532,7 +539,9 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   /* 06/11: số em chỉ ghi MỘT lần — tên việc đã có "n em", hoặc việc cả lớp có thẻ ngữ cảnh "n em chưa chọn" thì không thêm "n HV". */
   const daCoSoEm = phan.some((x) => /^\d+ (em|HV)$/.test(x)) || (viecCaLop && !!ngCanh && /^\d+ em/.test(ngCanh));
   /* GD-1b: lớp lên tên dòng ("MB FT 101 · Listening, Reading") — dòng phụ không lặp lớp. */
-  const phu = thePhu([
+  const laVh = it.group === 'mgmt';
+  /* VH-2: dòng Vận hành — "Việc con của: …" (máy chủ, có dấu ":") thì giữ; "Công việc quản lý" bỏ (mục đã nói). */
+  const phu = laVh ? thePhu([it.contextLabel?.includes(':') ? it.contextLabel : null]) : thePhu([
     caLop || gop || viecCaLop || it.studentName === 'Lớp ' + it.classCode ? null : it.studentName,
     ngCanh,
     /* AUDIT-UI CV8: nút khay đã ghi "3 em ▾" → dòng phụ không lặp "· 3 em". */
@@ -551,7 +560,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
             <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={caTuan ? t('Cả lớp') : luoiKq ? voiLop(it, t('Ghi kết quả PA')) : voiLop(it, tenViec(boDongTu(it.group, tenGoc)))} ma={dong.theCn?.(it)} /></span>
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
           </button>
-          <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} chip={muc} ds={phu} />
+          <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} chip={muc} ds={phu}>{laVh && <TheGiao it={it} />}</DongPhu>
         </span></span>
         {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau) — ở đầu dòng phụ. */}
         <CotHan it={it} daXong={daXong} />

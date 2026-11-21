@@ -1428,6 +1428,7 @@
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
   .dai-cs-o:last-child:nth-child(odd), .dai-cs-o:nth-child(odd):not(:has(+ .dai-cs-o)) { grid-column: 1 / -1; }   /* GD-6: ô lẻ cuối (kể cả khi chip lớp đứng sau) chiếm hai cột */
   .dai-cs-lang .dai-cs-o { justify-content: space-between; gap: 8px; font-size: 13px; flex-wrap: nowrap; }   /* BPXL-2 K5: nhãn trái, số phải */
+  .dai-vh .dai-cs-o { justify-content: space-between; gap: 8px; font-size: 13px; flex-wrap: nowrap; }   /* VH-2 (V6c): dải 4 số Vận hành — nhãn một dòng, số phải */
   .dai-cs-lang .so-lang { min-height: 36px; display: inline-flex; align-items: center; padding: 2px 4px; }
   /* GD-15 (hồ sơ GV H7): dải hai nhóm "Việc │ Chấm Test" — nhãn nhóm một hàng riêng, dưới là hai ô (nhãn trên, số dưới) thẳng cột; nhóm sau ngăn vạch ngang. */
   .dai-cs-2nhom .dai-cs-o { border: 0; flex-direction: column; align-items: flex-start; gap: 4px; }

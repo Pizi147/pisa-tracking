@@ -22,7 +22,7 @@ export const EN_QUY_CHE_VANHANH = {
   'Một câu mỗi em': 'One line per student',
   'quá hạn em vẫn chuyển': 'overdue, the student still moves',
   'Hạn {han:ban_giao_doi_gv} · xác nhận xong GV mới nhận tin': 'Due in {han:ban_giao_doi_gv} · the new teacher is notified on confirm',
-  'Hạn do Head đặt · ghi Hoàn thành khi xong': 'Deadline set by the Head · mark Done when finished',
+  'Người giao đặt hạn · người phụ trách sửa được · ghi Hoàn thành khi xong': 'Assigner sets the deadline · the owner can change it · mark Done when finished',
   'Head phụ trách lớp nguồn quyết định · duyệt xong bạn nhận việc bàn giao': 'Source-class Head decides · once approved you get a handover task',
   'Ngay hôm nay: em sang lớp mới từ hôm nay': 'Today: the student joins the new class today',
   'Bắt đầu {tuan} · Case, PA mở sang GV lớp mới': (b) => `Starts ${b.tuan} · open Cases and plans pass to the new class teachers`,
