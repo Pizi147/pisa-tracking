@@ -11,7 +11,7 @@ import {
   CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
-import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
@@ -458,7 +458,9 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   /* RKC: quyền khôi phục lượt / dời lịch hỏi MỘT lần mỗi lớp trong request (bảng lớp vẽ hàng trăm ô — không một câu mỗi lượt). Chỉ hỏi khi cần. */
-  const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}`, () => choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id }));
+  /* N63 ②: + BPXL với lượt MT (bài lớp thường BPXL không khôi phục — rà PTA #1950 P2-b); có điểm thì máy chủ chặn lúc ghi, kèm câu lý do. */
+  const thuongO = LOAI_THUONG.includes(attempt.kind);
+  const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}:${thuongO}`, () => (thuongO ? choHuyKhoiPhucLichTest : choKhoiPhucLuot)(p, { classId: attempt.class_id, studentId: attempt.student_id }));
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
@@ -1649,6 +1651,7 @@ export function xoaLuot(p: Principal, attemptId: number) {
     && ds.some((r) => r.skill === assessedSkillOf(s.skill) && r.bo_task !== s.skill));
   /* BPXL-1 (N57, PTA rà #1923): xoá MT đã có điểm = huỷ điểm — người không sửa được điểm (BPXL) chặn TRƯỚC câu hỏi, không 403 giữa chừng. */
   if (coDiem.some((s) => !scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind }))) throw loi(403, '{nhan} đã có điểm — nhờ Head xoá.', { nhan });
+  chanBpxlCoDiem(p, a, null, `${nhan} đã có điểm — nhờ Head xoá.`);   // N63 ② (rà PTA #1950): cùng luật với Khôi phục — kể cả điểm đang cất
   if (coDiem.length) canXacNhan('{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)', { nhan }, 'Huỷ điểm và xoá');
   return tx(() => {
     for (const s of coDiem) saveScore(p, attemptId, s.skill, { rawScore: null, criteria: [null, null, null, null], lyDo: LY_DO_XOA_MT });
@@ -1675,6 +1678,8 @@ export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly 
   const ds = rows.filter((r) => (coXoaMt ? laXoaMt(r) : (!r.required || r.sit_status === 'cancelled') && r.scope_reason !== LY_DO_KHONG_HOC)
     && (!kyNang || kyNang.includes(r.skill)));
   if (!ds.length) throw badRequest('Không có kỹ năng nào đã huỷ.');
+  /* N63 ② (rà PTA #1950 P2-a): chỉ xét điểm của các kỹ năng đưa lại — khôi phục S vắng không bị chặn vì L / R có điểm. */
+  chanBpxlCoDiem(p, a, ds.flatMap((r) => entrySkillsOf(r.skill as AssessedSkill)), `MT${a.attempt_no} đã có điểm — nhờ Head khôi phục.`);
   return tx(() => {
     for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null, { daKiemQuyen: true, giuHuy: coXoaMt });
     refreshOutcome(p, attemptId);
@@ -1909,12 +1914,15 @@ export function moLaiLuotNeuHuy(p: Principal, a: any): void {
  */
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
   const truoc = loadAttempt(attemptId);
-  if (!choHuyKhoiPhucLichTest(p, { classId: truoc.class_id, studentId: truoc.student_id })) {
-    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Head khôi phục được lượt đã huỷ.');
-  }
   /* LUOT-KHOI-PHUC: lượt lớp thường (Progress / Final / Checkpoint) đi cùng đường — tên theo bài, chặn riêng (`chanKhoiPhucThuong`). */
   const thuong = LOAI_THUONG.includes(truoc.kind);
   const nhan = thuong ? nhanBai(khoaBai(truoc.kind, truoc.attempt_no)) : `MT${truoc.attempt_no}`;
+  const ctxQ = { classId: truoc.class_id, studentId: truoc.student_id };
+  /* N63 ②: BPXL khôi phục lượt MT (không bài lớp thường — điểm bài thường đã xoá, không biết "chưa có điểm") khi lượt chưa có điểm (kể cả điểm cất). */
+  if (!choHuyKhoiPhucLichTest(p, ctxQ) && !(choKhoiPhucLuot(p, ctxQ) && !thuong)) {
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, ctxQ, 'Chỉ Head khôi phục được lượt đã huỷ.');
+  }
+  chanBpxlCoDiem(p, truoc, null, `${nhan} đã có điểm — nhờ Head khôi phục.`);
   const lyDo = `Khôi phục ${nhan}`;
   chanCuoiTuan(p, truoc, tuanCacKyNang(truoc));
   return tx(() => {

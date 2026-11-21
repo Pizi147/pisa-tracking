@@ -41,6 +41,18 @@ const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text
  *   Lịch sử: Đã xem · Đã xử lý · Đã thu hồi (chủ SP 11/11) · phạm vi Lộ trình | Cả lịch sử · nhóm vi phạm. Phối hợp SOS: mọi lượt (không đổi).
  * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → panel Xác nhận xử lý; `&sub=phoi-hop` → mở phân đoạn Phối hợp.
  */
+/** N63 ⑤: BPXL không xem Ý thức — tab hồ sơ chỉ còn Phối hợp (việc Xếp lịch họp Meeting của BPXL ở đây). Cùng đường + cùng bảng phân đoạn Phối hợp. */
+export function PhoiHopHocVien({ studentId, thuong, onGoAcademic }: { studentId: number; thuong: boolean; onGoAcademic?: () => void }) {
+  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
+  return (
+    <section className="card overflow-clip pb-1" aria-label={thuong ? t('Phối hợp') : t('Phối hợp SOS')}>
+      {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
+        : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
+        : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic} onChanged={() => { coord.reload(); }} />}
+    </section>
+  );
+}
+
 export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao }: {
   studentId: number;
   /** Lớp thường: "Phối hợp" (không có chữ SOS); FT: "Phối hợp SOS". Không truyền thì tự biết từ chuỗi em đang học (panel Công việc). */

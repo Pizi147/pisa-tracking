@@ -259,7 +259,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   const LOAI_GIAO_HV: Record<string, ViecHocVien['loai']> = { bao_ph_yt: 'bao-ph-yt', phoi_hop_tvv: 'phoi-hop-tvv', phoi_hop: 'bao-ph', phoi_hop_sos: 'phoi-hop-sos',
     yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos', yt_tra_lai: 'y-thuc' };   // TL-1: Vi phạm bị trả lại — tab Ý thức
   const coKhoa = new Set(ds.map((x) => x.key));
+  const giaoToi = new Set<string>();   // P1-06: việc giao cho người xem / Kết quả meeting của CX — như `/my-work` (`mywork.ts` GV-1)
   for (const v of viecGiaoChoToi(p, { today, studentId: sid })) {
+    if (v.mine) giaoToi.add(v.key);   // khớp `mywork.ts` GV-1 (`if (it.mine)`)
     const hien = ds.find((x) => x.key === v.key);
     if (hien) { hien.nguoiId = p.userId; continue; }
     if (coKhoa.has(v.key)) continue;
@@ -310,6 +312,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* N52: CX không là chủ việc — "của bạn" chỉ khi vai KHÁC của tài khoản giữ việc; còn lại sang "người khác" (CX làm thay được, không hạn của CX). */
   const chu = boVaiCx(p);
   const that = new Set(chu.grants.length ? viecCuaHocVien(chu, sid, board, n).cuaBan.map((x) => x.key) : []);
+  for (const k of giaoToi) that.add(k);
   const lamThay = kq.cuaBan.filter((x) => !that.has(x.key))
     .map((x) => ({ ...x, cuaBan: false, nguoi: x.nguoi.id === p.userId ? { id: null, ten: 'Chưa có người phụ trách', vai: null } : x.nguoi }));
   return { cuaBan: kq.cuaBan.filter((x) => that.has(x.key)), nguoiKhac: [...lamThay, ...kq.nguoiKhac] };

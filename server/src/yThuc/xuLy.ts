@@ -20,7 +20,7 @@ import {
   bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
-import { can, duyetYThuc, type Principal } from '../permissions.ts';
+import { boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
 import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -519,7 +519,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     tinhHinh: tinhHinhCuaEm(p, [studentId], homNay),
     /** Mockup v20 D1 "Lưu xong: TVV … nhận việc báo PH": TVV phụ trách em (cùng câu đọc học viên, không thêm câu). */
     tvv: hv.tvv ?? null,
-    coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
+    coTheBao: can(boVaiCx(p), PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),   // A3-06: CX là phía TVV — mẫu "Hỏi tình hình", không "GV báo TVV"
     coTheHoi: coTheGhi(p, { consultant_user_id: hv.consultant_user_id ?? null, student_id: studentId }),
     demCuoi: {
       tong: viPham.length,

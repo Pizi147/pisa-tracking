@@ -18,6 +18,7 @@ import type { DongDao } from '../duyet/loaiYeuCau.ts';
 import { demoToday } from '../demoConfig.ts';
 import { boiCanhTheoLop, dongTuBody, raLenh } from './lenhChuyen.ts';
 import { luuKyVong } from '../normal/kyVong.ts';
+import { coTheChotLoTrinh } from './quyenChuyenLop.ts';
 
 const LOAI = 'lenh.chuyen_ngay';
 const q = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -91,6 +92,7 @@ export function chuyenNgayCoHoanTac<T>(p: Principal, sids: number | readonly num
  * Rà PTA ②: `kyVong` (dòng Kỳ vọng FT của các em chuyển ngay) lưu TRONG cùng giao dịch + ảnh chụp — Hoàn tác đảo cả Case Kỳ vọng trên lộ trình FT mới.
  */
 export function chotCaLop(p: Principal, lopId: number, b: { tuanChung?: string | null; dongs?: unknown; kyVong?: unknown }) {
+  if (!coTheChotLoTrinh(p, lopId)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');   // N63 ①: CX chỉ xem (kiểm TRƯỚC khi ghi)
   const dongs = Array.isArray(b.dongs) ? b.dongs.map(dongTuBody) : [];
   const kyVong = Array.isArray(b.kyVong) ? b.kyVong : [];
   const ra = () => {
@@ -124,6 +126,8 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
     const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
     const lopNguon = ghiDanh[0]?.class_id as number | undefined;
     if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Head phụ trách lớp cũ của em hoàn tác được lần chuyển này.');
+    /* N63 ① (rà PTA #1950): Hoàn tác lần chốt cả lớp (trang Cuối khoá) = quyết định lộ trình — CX không đảo; Hoàn tác chuyển lớp một em giữ `class.edit`. */
+    if (bang === 'classes' && !coTheChotLoTrinh(p, lopNguon)) throw forbidden('Chỉ Head / Quản trị chốt lộ trình của lớp.');
     return { g, ghiDanh, lopNguon };
   });
   return tx(() => {

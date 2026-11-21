@@ -8,7 +8,7 @@ import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
-import { coTheRaLenh } from '../classes/quyenChuyenLop.ts';
+import { coTheChotLoTrinh, coTheRaLenh } from '../classes/quyenChuyenLop.ts';
 import { huongChuyenMotEm, lopDichHopLe, lopHienTaiCua, danhSachLopDich } from '../classes/luatLoTrinh.ts';
 import { huyLenh, khoiPhucLenh as khoiPhucLenhHuy, raLenh, soHoacKck, thongBaoSapNhan } from '../classes/lenhChuyen.ts';
 import { hoanTacKetThuc, hoanTacTamDung, setStudentStatus } from '../students/students.ts';
@@ -226,7 +226,7 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
 
 /** Quyết được: QL / Quản trị chi nhánh lớp em ĐANG học (`class.edit` lớp đó — cùng quyền ra lệnh). */
 /* N52: CX có `class.edit` (sửa lớp) nhưng KHÔNG quyết Xét lại lộ trình (học thuật) — chỉ xem như Head (`xemXetLai`). */
-const quyetDuoc = (p: Principal, lopId: number) => coTheRaLenh(boVaiCx(p), lopId);
+const quyetDuoc = (p: Principal, lopId: number) => coTheChotLoTrinh(p, lopId);
 const CHI_QL = 'Chỉ Head chi nhánh của lớp em đang học mới xét lại lộ trình.';
 
 /** Việc QL: một dòng mỗi lớp em đang học (chỉ dòng CHƯA quyết), hạn sớm nhất. Cùng tập với GET panel. */

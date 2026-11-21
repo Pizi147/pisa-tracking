@@ -21,7 +21,7 @@ import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, xemYThucTheoVai, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
 import { ThanhViecLop, duongViecLop, laGvThuan, useViecLop } from './ThanhViecLop.tsx';
@@ -145,7 +145,8 @@ export default function ClassOverviewPage() {
   const daKetThuc = data.status === 'finished';
   const thuong = data.programme?.scoringMode === 'ratio';
   const bc = data.baoCaoPh ?? null;
-  const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc, !!bc);
+  const coYThuc = xemYThucTheoVai(session?.roles);   // N63 ⑤: BPXL không có tab Ý thức (máy chủ 403)
+  const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc, !!bc, coYThuc);
   /*
    * TAI-NHANH-0711c: các đường chỉ biết điều kiện sau `/overview` — `/xet-lai` (hook `xl` trên), việc của tôi (`ThanhViecLop`), Xoá / Kết thúc lớp
    * (`DauTrangLop`), Case cả lớp (bảng FT `BangHoSoLop`, tab Học viên · cách xem Tổng hợp) — trước chỉ gọi khi effect của lần dựng đầu chạy, sau khi
@@ -163,8 +164,8 @@ export default function ClassOverviewPage() {
       ...(trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem' ? { cases: `/cases?classId=${data.id}` } : {}),
     });
   }
-  const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
-  const dsTab = tabHienCuaLop(daKetThuc, !!bc);
+  const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc, coYThuc);
+  const dsTab = tabHienCuaLop(daKetThuc, !!bc, coYThuc);
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "… · quá hạn 2 ngày" (đỏ, V22 không biểu tượng). Không chuông, không việc. */
   /* GD-6 (cấm chữ dài trong tiêu đề — lời 35): đợt + hạn Báo cáo PH ở đầu nội dung tab (TabBaoCaoPh), tab chỉ "Báo cáo PH" + số việc của tôi. */
   const laViec = (viecLop.data?.cuaToi ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((x) => x.classId === data.id);

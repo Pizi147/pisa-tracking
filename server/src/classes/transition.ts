@@ -9,7 +9,7 @@ import { classProgress, classProgressMany } from './schedule.ts';
 import { setStudentStatus } from '../students/students.ts';
 import { apDungBaoLuuCaLop, apDungCaLop, dongLopNeuHet, type DongCaLop } from './luatLoTrinh.ts';
 import { nhapRowToView, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
-import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
+import { coTheChotLoTrinh, coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { boMonCt } from '../normal/regular.ts';
@@ -88,7 +88,7 @@ function maUngVien(cls: any): { from: ProgrammeCode | null; steps: ProgrammeCode
 export function lopKhacChiNhanh(p: Principal, classId: number) {
   const cls = db().prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  if (!coTheRaLenh(p, classId)) throw forbidden('Chỉ Head của lớp này xem được lớp chuyển đến.');
+  if (!coTheChotLoTrinh(p, classId)) throw forbidden('Chỉ Head của lớp này xem được lớp chuyển đến.');
   if (cls.is_fast_track) return [];
   const { optionCodes } = maUngVien(cls);
   return optionCodes.length ? ungVienLop(classId, cls.branch_id, optionCodes, false, true) : [];
@@ -119,7 +119,7 @@ export function transitionPlan(p: Principal, classId: number) {
   /* OV-3b: Học lại được xuống lộ trình dưới (BE → FOU) — lớp chuyển đến gồm cả chương trình thấp hơn. */
   const optionCodes = ft ? ['FT'] : [...new Set([...options.map((o) => o.code), ...maHocLai(from)])];
   /* PR-LCa (LCa-7): panel gộp — GVCN (không ra lệnh) không nhận ứng viên / lớp mới / tuần, và không tính chúng (`goiYLopMoi` ghi kỳ). */
-  const raLenhDuoc = coTheRaLenh(p, classId);
+  const raLenhDuoc = coTheChotLoTrinh(p, classId);   // N63 ①: CX xem Cuối khoá, không chốt
 
   const students = conn
     .prepare(

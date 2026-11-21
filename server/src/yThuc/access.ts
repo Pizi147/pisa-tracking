@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, require_, type Principal } from '../permissions.ts';
 import { forbidden, notFound } from '../util.ts';
 
 /**
@@ -10,7 +10,7 @@ import { forbidden, notFound } from '../util.ts';
  * Áp ở MÁY CHỦ trước; giao diện chỉ ẩn nút cho gọn mắt. Module khác (kho tệp) hỏi quyền qua đây thay vì tự dựng lại
  * ngữ cảnh — đúng bài học AUTH-01: mỗi nơi tự viết `can(...)` một kiểu là cách sinh ra lỗi quyền.
  *
- *   Xem            mọi giáo viên dạy lớp đó · Quản lý trong phạm vi · Quản trị       → `student.view`
+ *   Xem            mọi giáo viên dạy lớp đó · Quản lý trong phạm vi · Quản trị       → `student.view` (trừ vai BPXL — N63 ⑤, như Case)
  *   Ghi vi phạm    mọi giáo viên dạy lớp đó (kể cả trái môn — C02 KHÔNG áp cho Ý thức)  → `violation.record`
  *   Sửa/hủy của mình   người đã ghi (nếu còn được ghi vi phạm của lớp đó)
  *   Xử lý          GVCN của lớp · Quản lý trong phạm vi · Quản trị                     → `discipline.manage`
@@ -48,14 +48,17 @@ export function canManageDiscipline(p: Principal, studentId: number): boolean {
   return can(p, PERMISSIONS.DISCIPLINE_MANAGE, studentCtx(studentId));
 }
 
-/** Xem một LỚP: giáo viên dạy lớp đó, Quản lý trong phạm vi, Quản trị. */
+/** Xem một LỚP: giáo viên dạy lớp đó, Quản lý trong phạm vi, Quản trị. N63 ⑤: BPXL không xem Ý thức (grant BPXL bỏ ra — như Case). */
 export function requireViewClass(p: Principal, classId: number) {
-  require_(p, PERMISSIONS.STUDENT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
 }
 
 export function requireViewStudent(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.STUDENT_VIEW, studentCtx(studentId), VIEW_MESSAGE);
+  require_(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, studentCtx(studentId), VIEW_MESSAGE);
 }
+
+/** N63 ⑤: người xem thấy Ý thức của em (hồ sơ HV gửi khối Ý thức chỉ khi có) — cùng cổng `requireViewStudent`. */
+export const xemYThucHv = (p: Principal, studentId: number): boolean => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, studentCtx(studentId));
 
 export function requireRecordViolation(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopGanNhat(studentId), studentId },   // RKC-3b: GV lớp ghi danh gần nhất của em Tạm dừng / đã học xong
