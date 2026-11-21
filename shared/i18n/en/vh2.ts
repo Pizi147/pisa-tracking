@@ -70,4 +70,10 @@ export const EN_VH2 = {
   'Bấm hàng nhóm để gập / mở; bấm dòng mở chi tiết, <b>Cập nhật tiến độ</b>.': 'Click a group row to collapse / expand; click a row for details, <b>Update progress</b>.',
   '<b>Nhóm…</b>: tạo, đổi tên, sắp ▲▼, ẩn nhóm của chi nhánh.': '<b>Groups…</b>: create, rename, reorder ▲▼, hide branch groups.',
   'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>, <b>Dừng lặp</b>; <b>Sửa hạn</b> không bắt lý do, hạn cũ còn ở <b>Lịch sử</b>.': 'Click a row for details: <b>Update progress</b>, <b>+ Subtask</b>, <b>Stop repeat</b>; <b>Edit deadline</b> needs no reason, the old deadline stays in <b>History</b>.',
+  'Tạo bản lặp': 'Repeat copy created',
+  'Máy': 'System',
+  'Đổi nhóm': 'Group changed',
+  'Đổi hạng mục': 'Category changed',
+  'Đổi lặp lại': 'Repeat changed',
+  'Loại việc không hợp lệ (Trong kỳ / Dài hạn).': 'Invalid task type (In period / Long term).',
 } as const;

@@ -21,17 +21,18 @@ const KPL = -100000;
 const idHangMuc = (k: string) => -1 - HANG_MUC_CV.findIndex(([x]) => x === k);
 
 /**
- * Ô "HẠNG MỤC" của form giao việc (N62 + V2b): hai nhóm lựa chọn — Chính thống (mục của Công việc → việc nằm trong mục đó ở Công việc người nhận)
- * │ Tự đặt (nhóm Vận hành, "Không phân loại" cuối). Nhóm ẩn không còn trong ô (V4); việc cũ đang ở nhóm ẩn vẫn hiện tên nhóm đó.
+ * Ô "HẠNG MỤC" của form giao việc (N62 + V2b): hai nhóm lựa chọn có tiêu đề — Tự đặt (nhóm Vận hành, "Không phân loại" cuối nhóm)
+ * │ Chính thống (mục của Công việc → việc nằm trong mục đó ở Công việc người nhận). Nhóm ẩn không còn trong ô (V4); việc cũ đang ở nhóm ẩn vẫn hiện tên nhóm đó.
  */
 export function OHangMuc({ nhom, value, onChange, id, chiTuDat }: {
   nhom: readonly NhomViec[]; value: NoiViec; onChange: (v: NoiViec) => void; id?: string;
   /** Việc con theo hạng mục của việc cha — chỉ chọn nhóm (máy chủ bỏ qua hạng mục của việc con). */ chiTuDat?: boolean;
 }) {
+  /* Tự đặt (nhóm Vận hành, "Không phân loại" cuối nhóm — V2b) trước: lựa chọn thường dùng ở bảng Vận hành; Chính thống (N62) sau, cùng ô có tìm. */
   const ds: NguoiTrongDs[] = [
-    ...(chiTuDat ? [] : HANG_MUC_CV.map(([k, ten]) => ({ id: idHangMuc(k), ten: dich(ten), nhom: t('Chính thống') }))),
     ...nhom.filter((g) => !g.an || g.id === value.groupId).map((g) => ({ id: g.id, ten: g.ten, nhom: t('Tự đặt'), phu: g.n != null ? t('{n} việc', { n: g.n }) : undefined })),
     { id: KPL, ten: t('Không phân loại'), nhom: t('Tự đặt') },
+    ...(chiTuDat ? [] : HANG_MUC_CV.map(([k, ten]) => ({ id: idHangMuc(k), ten: dich(ten), nhom: t('Chính thống') }))),
   ];
   const chon = value.hangMuc ? ds.find((x) => x.id === idHangMuc(value.hangMuc!)) : value.groupId ? ds.find((x) => x.id === value.groupId) : null;
   return (

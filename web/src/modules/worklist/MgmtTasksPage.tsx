@@ -9,7 +9,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BranchFilter, resolveWeek, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
+import { ChonNguoi, type NguoiTrongDs, type TimXa } from '../../ui/PeoplePicker.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -421,6 +421,21 @@ function khoiCua(d: any): KhoiGv {
   };
 }
 
+/** VH-2 (V3): một dòng lịch sử máy chủ (`lichSu`) → chữ hiện. */
+function dongLichSu(l: { truong: string; cu: string | null; moi: string | null; nguoi: string | null }): { tieu: string; phu: string | null; nguoi: string | null } {
+  const doi = (a: string | null, b: string | null, chuTrong: string) => `${a ?? chuTrong} → ${b ?? chuTrong}`;
+  switch (l.truong) {
+    case 'giao': return { tieu: t('Giao việc'), phu: l.moi, nguoi: l.nguoi };
+    case 'tao_ban_lap': return { tieu: t('Tạo bản lặp'), phu: l.moi, nguoi: t('Máy') };
+    case 'assignee_user_id': return { tieu: t('Đổi người phụ trách'), phu: doi(l.cu, l.moi, t('chưa giao')), nguoi: l.nguoi };
+    case 'group_id': return { tieu: t('Đổi nhóm'), phu: doi(l.cu, l.moi, t('Không phân loại')), nguoi: l.nguoi };
+    case 'hang_muc': return { tieu: t('Đổi hạng mục'), phu: doi(l.cu && tenHangMuc(l.cu), l.moi && tenHangMuc(l.moi), t('Không phân loại')), nguoi: l.nguoi };
+    case 'lap': return { tieu: t('Đổi lặp lại'), phu: null, nguoi: l.nguoi };
+    case 'lap_dung': return { tieu: l.moi ? t('Dừng lặp') : t('Lặp lại tiếp'), phu: null, nguoi: l.nguoi };
+    default: return { tieu: l.moi ? t('Thêm theo dõi') : t('Bỏ theo dõi'), phu: l.moi ?? l.cu, nguoi: l.nguoi };
+  }
+}
+
 /** Một dòng nhãn · giá trị của khối thông tin panel (V3 `.bc`). */
 const DongBc = ({ k, children }: { k: string; children: ReactNode }) => (
   <><span className="pt-0.5 text-[13px] font-medium text-dim">{k}</span><div className="flex min-w-0 flex-wrap items-center gap-2.5 text-sm">{children}</div></>
@@ -493,6 +508,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
     ...data.updates.map((u: any) => ({ luc: u.on, tieu: dich(u.progressLabel), phu: u.note, nguoi: u.by })),
     ...data.dueHistory.map((h: any) => ({ luc: (h.at ?? '').slice(0, 10), tieu: h.old ? t('Sửa hạn') : t('Đặt hạn'),
       phu: [h.old ? `${fmtDate(h.old)} → ${h.new ? fmtDate(h.new) : t('không hạn')}` : h.new ? fmtDate(h.new) : null, h.reason ? `"${h.reason}"` : null].filter(Boolean).join(' · '), nguoi: h.by })),
+    ...(data.lichSu ?? []).map((l: any) => ({ luc: (l.luc ?? '').slice(0, 10), ...dongLichSu(l) })),
   ].sort((a, b) => (a.luc < b.luc ? 1 : a.luc > b.luc ? -1 : 0)) : [];
   const conXong = data?.subtasks.filter((x: any) => x.progress === 'done').length ?? 0;
 
@@ -697,6 +713,14 @@ function UpdateDialog({ onClose, task, onDone }: { onClose: () => void; task: an
 
 /* ─────────────────────────────────────────────────────────────── form */
 
+/** Ô "Loại việc" (V2): Trong kỳ │ Dài hạn — chip, chọn một. */
+const OLoaiViec = ({ value, onChange }: { value: string; onChange: (v: 'in_period' | 'long_term') => void }) => (
+  <div role="group" aria-label={t('Loại việc')} className="flex flex-wrap gap-1.5">
+    <NutChon nho chon={value === 'in_period'} onClick={() => onChange('in_period')}>{t('Trong kỳ')}</NutChon>
+    <NutChon nho chon={value === 'long_term'} onClick={() => onChange('long_term')}>{t('Dài hạn')}</NutChon>
+  </div>
+);
+
 type LapForm = { kieu: 'khong' | 'tuan' | 'thang'; thu: number[]; ngay: string };
 const lapGui = (l: LapForm) => (l.kieu === 'tuan' ? { kieu: 'tuan', ngay: l.thu } : l.kieu === 'thang' ? { kieu: 'thang', ngay: [Number(l.ngay)] } : null);
 const lapTu = (l: Lap | null): LapForm => (l && !l.dung ? { kieu: l.kieu, thu: l.kieu === 'tuan' ? l.ngay : [1], ngay: l.kieu === 'thang' ? String(l.ngay[0]) : '1' } : { kieu: 'khong', thu: [1], ngay: '1' });
@@ -735,6 +759,25 @@ function OLap({ value, onChange, id }: { value: LapForm; onChange: (v: LapForm) 
   );
 }
 
+/**
+ * Nguồn ô chọn người của form (N59: giao cho BẤT KỲ ai có tài khoản ở chi nhánh của việc — mọi vai, không chỉ GV / Head): `/ref/nguoi?nhom=giao_viec`
+ * như khối giao việc GV-2. Một câu mỗi lần gõ (trần ở `tocDoDuong.ts`). `cn` null = chi nhánh duy nhất của người giao (máy chủ cũng gán vậy khi tạo).
+ */
+function useTimNguoi(cn: number | null): TimXa {
+  const ref = useRef(cn);
+  ref.current = cn;
+  const [tim] = useState<TimXa>(() => ({
+    toiThieu: 0,
+    goi: async (q) => {
+      const qs = new URLSearchParams({ q: q.trim(), nhom: 'giao_viec' });
+      if (ref.current) qs.set('chiNhanh', String(ref.current));
+      const ds: { id: number; name: string; role: string | null; branches: string[] }[] = await api.get(`/ref/nguoi?${qs}`);
+      return ds.map((r) => ({ id: r.id, ten: r.name, phu: [r.role, r.branches.join('/')].filter(Boolean).join(' · ') }));
+    },
+  }));
+  return tim;
+}
+
 type Em = { id: number; ten: string; lop: string; lopId: number };
 /** Ô học viên liên quan (N62, tuỳ chọn): chọn nhiều, tìm em trong phạm vi (`/tim/hoc-vien`, một câu mỗi lần gõ ≥ 2 chữ). Có lớp → chỉ em lớp đó. */
 function OHocVien({ value, onChange, lopId, disabled }: { value: NguoiTrongDs[]; onChange: (v: NguoiTrongDs[]) => void; lopId: number | null; disabled?: boolean }) {
@@ -763,6 +806,7 @@ function SuaViec({ onClose, dongCa, task, onDone, nhom: nhomSan }: {
   const goc = !con && (!task.lap || task.lap.gocId === task.id);
   const noiDau: NoiViec = { groupId: task.groupId ?? null, hangMuc: task.hangMuc ?? null };
   const [title, setTitle] = useState(task.title);
+  const [loaiViec, setLoaiViec] = useState<string>(task.taskType);
   const [noi, setNoi] = useState<NoiViec>(noiDau);
   const [note, setNote] = useState(task.note ?? '');
   const [lopId, setLopId] = useState<number | null>(task.classId ?? null);
@@ -786,6 +830,7 @@ function SuaViec({ onClose, dongCa, task, onDone, nhom: nhomSan }: {
       /* Hợp đồng VH-1b: `classId` / `studentIds` chỉ gửi khi ĐỔI (gửi lại danh sách cũ không bị kiểm lại; không gửi = giữ). `phienBan` chống đè → 409. */
       const moi = await api.patch<any>(`/mgmt-tasks/${task.id}`, {
         ...(title !== task.title ? { title } : {}),
+        ...(!con && loaiViec !== task.taskType ? { taskType: loaiViec } : {}),
         ...(note !== (task.note ?? '') ? { note: note || null } : {}),
         ...(!con && doiNoi ? { groupId: noi.groupId, hangMuc: noi.hangMuc } : {}),
         ...(!con && lopId !== (task.classId ?? null) ? { classId: lopId } : {}),
@@ -801,7 +846,7 @@ function SuaViec({ onClose, dongCa, task, onDone, nhom: nhomSan }: {
   return (
     <KhungPanel tieuDe={t('Sửa công việc')} hocVien={task.title} rong="rong" quayLai={{ nhan: task.title, onClick: onClose }} onDong={dongCa}
       chan={{
-        daSua: title !== task.title || note !== (task.note ?? '') || doiNoi || doiHv || doiLap || lopId !== (task.classId ?? null),
+        daSua: title !== task.title || loaiViec !== task.taskType || note !== (task.note ?? '') || doiNoi || doiHv || doiLap || lopId !== (task.classId ?? null),
         huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
@@ -812,7 +857,10 @@ function SuaViec({ onClose, dongCa, task, onDone, nhom: nhomSan }: {
         </Field>
         {!con && (
           <>
-            <Field label={t('Hạng mục')} as="div"><OHangMuc nhom={nhom} value={noi} onChange={setNoi} /></Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t('Hạng mục')} as="div"><OHangMuc nhom={nhom} value={noi} onChange={setNoi} /></Field>
+              <Field label={t('Loại việc')} as="div"><OLoaiViec value={loaiViec} onChange={setLoaiViec} /></Field>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t('Lớp liên quan')} as="div">
                 <ChonLop ariaLabel={t('Lớp liên quan')} placeholder={t('Không gắn lớp')} value={lopId} onChange={setLopId} macDinhTrong={t('Không gắn lớp')}
@@ -901,6 +949,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const [branch, setBranch] = useState(dau.branch);
   /* GIAO-VIEC-CN (B' 9): ô người phụ trách / theo dõi chỉ hiện người có vai ở chi nhánh của việc ('' = Toàn hệ thống → mọi người trong phạm vi). */
   const cnViec = branch ? Number(branch) : null;
+  const cnGrant = [...new Set((session?.grants ?? []).map((g) => g.branchId))];
+  const timNguoi = useTimNguoi(cnViec ?? (cnGrant.length === 1 ? cnGrant[0] : null));
   const nhom = useNhom(parent ? [] : nhomSan, cnViec);
   /* Nhóm đầu: id (bảng đang lọc) hoặc khoá nhóm khởi đầu (Báo cáo đơn vị) → id khi danh sách nhóm đã có; không có = Không phân loại (N62). */
   const nhomDau = (ds: readonly NhomViec[]): NoiViec => {
@@ -910,6 +960,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const [noi, setNoi] = useState<NoiViec | null>(null);
   const noiHl = noi ?? nhomDau(nhom);
   const [assignee, setAssignee] = useState<NguoiChon | null>(null);
+  const [loaiViec, setLoaiViec] = useState<'in_period' | 'long_term'>('long_term');   // máy chủ mặc định Dài hạn (như trước)
   const [theoDoi, setTheoDoi] = useState<NguoiTrongDs[]>([]);
   const [due, setDue] = useState(dau.due);
   const [classId, setClassId] = useState('');
@@ -929,7 +980,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const khoa = useRef(moiKhoaGui('cv'));
   const seq = useRef(0);
   const daSua = !!(title || note || classId || topic || assignee || theoDoi.length || hv.length || vc.length || tep.length || noi) || loai !== 'chi-nhanh'
-    || due !== dau.due || branch !== dau.branch || lap.kieu !== 'khong';
+    || due !== dau.due || branch !== dau.branch || lap.kieu !== 'khong' || loaiViec !== 'long_term';
 
   const cls = classes.data?.rows.find((c) => String(c.id) === classId);
   const loi: LoiTruong[] = [
@@ -968,7 +1019,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
       if (id === null) {
         const r = await api.post<{ id: number }>('/mgmt-tasks', {
           title,
-          ...(parent ? {} : { groupId: noiHl.groupId, hangMuc: noiHl.hangMuc, lap: lapGui(lap),
+          ...(parent ? {} : { groupId: noiHl.groupId, hangMuc: noiHl.hangMuc, lap: lapGui(lap), taskType: loaiViec,
             ...(classId ? { classId: Number(classId) } : {}), ...(hv.length ? { studentIds: hv.map((x) => x.id) } : {}) }),
           assigneeUserId: idCua(assignee),
           theoDoiIds: theoDoi.map((x) => x.id),
@@ -1063,10 +1114,15 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
           </>
         ) : (
           <fieldset disabled={!!daTao} className="m-0 min-w-0 space-y-3.5 border-0 p-0">
-            {!parent && <Field label={t('Hạng mục')} as="div"><OHangMuc nhom={nhom} value={noiHl} onChange={setNoi} /></Field>}
+            {!parent && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t('Hạng mục')} as="div"><OHangMuc nhom={nhom} value={noiHl} onChange={setNoi} /></Field>
+                <Field label={t('Loại việc')} as="div"><OLoaiViec value={loaiViec} onChange={setLoaiViec} /></Field>
+              </div>
+            )}
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t('Người phụ trách')} as="div">
-                <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" chiNhanh={cnViec} choToi choNgoai={false} macDinhTrong={t('Chưa giao')} ariaLabel={t('Người phụ trách')} />
+                <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" tim={timNguoi} choToi choNgoai={false} macDinhTrong={t('Chưa giao')} ariaLabel={t('Người phụ trách')} />
               </Field>
               <Field label={t('Hạn')}><ONgay kieu="ngay" value={due} onChange={setDue} /></Field>
             </div>
@@ -1074,7 +1130,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
               <div className="grid gap-1.5">
                 {/* Người giao tự vào theo dõi (máy chủ) — hiện để biết, không bỏ được ở đây. */}
                 {toi && <span className="text-xs text-faint">{t('{ten} (bạn) tự theo dõi', { ten: toi.fullName ?? '' })}</span>}
-                <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" chiNhanh={cnViec} choToi={false} choNgoai={false}
+                <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" tim={timNguoi} choToi={false} choNgoai={false}
                   nhieu={{ chon: theoDoi, toiDa: 20, onDoi: (ds) => setTheoDoi(ds.filter((x) => x.id !== toi?.id)), donVi: t('người') }}
                   placeholder={t('Thêm người')} ariaLabel={t('Người theo dõi')} tieuDe={t('Người theo dõi')} />
               </div>
@@ -1099,7 +1155,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
                       <input className="field h-9 min-h-0" maxLength={200} value={x.ten} placeholder={t('Tên việc con')} autoFocus aria-label={t('Tên việc con {n}', { n: i + 1 })}
                         {...lf.o(loi, `vc-${x.k}`)} onChange={(e) => setVc(vc.map((y) => (y.k === x.k ? { ...y, ten: e.target.value } : y)))} />
                       <div className="max-sm:col-span-2 max-sm:row-start-2">
-                        <ChonNguoi value={x.nguoi} onChange={(v) => setVc(vc.map((y) => (y.k === x.k ? { ...y, nguoi: v } : y)))} nhom="nhan_vien" chiNhanh={cnViec} choToi choNgoai={false}
+                        <ChonNguoi value={x.nguoi} onChange={(v) => setVc(vc.map((y) => (y.k === x.k ? { ...y, nguoi: v } : y)))} nhom="nhan_vien" tim={timNguoi} choToi choNgoai={false}
                           macDinhTrong={t('Chưa giao')} ariaLabel={t('Người phụ trách việc con {n}', { n: i + 1 })} gon />
                       </div>
                       <div className="max-sm:col-span-2 max-sm:row-start-3"><ONgay kieu="ngay" value={x.han} onChange={(v) => setVc(vc.map((y) => (y.k === x.k ? { ...y, han: v } : y)))} /></div>

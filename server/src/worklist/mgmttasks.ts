@@ -604,7 +604,15 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     .all(taskId) as any[];
   const td = conn.prepare(`SELECT t.user_id, t.nguon, u.full_name FROM viec_theo_doi t LEFT JOIN users u ON u.id = t.user_id
       WHERE t.loai = 'van_hanh' AND t.ref_id = ? ORDER BY t.id`).all(taskId) as any[];
-  const ids = [...new Set([t.assignee_user_id, t.help_user_id, t.created_by, ...subs.map((x) => x.assignee_user_id)].filter((x): x is number => !!x))];
+  /* VH-2 (V3): lịch sử đổi người · nhóm · hạng mục · lặp (`task_history`, cùng câu với lịch sử hạn) + theo dõi (`viec_giao_lan`) — +1 câu. */
+  const hist = conn.prepare(`SELECT h.*, us.full_name AS actor_name FROM task_history h LEFT JOIN users us ON us.id = h.actor_user_id
+      WHERE h.task_id = ? ORDER BY h.id ASC`).all(taskId) as any[];
+  const lanTd = conn.prepare(`SELECT l.truong, l.cu, l.moi, l.luc, u.full_name AS nguoi FROM viec_giao_lan l LEFT JOIN users u ON u.id = l.boi
+      WHERE l.loai = 'van_hanh' AND l.ref_id = ? ORDER BY l.id`).all(taskId) as any[];
+  const soNguoi = (v: unknown) => (v != null && /^\d+$/.test(String(v)) ? Number(v) : null);
+  const ids = [...new Set([t.assignee_user_id, t.help_user_id, t.created_by, ...subs.map((x) => x.assignee_user_id),
+    ...hist.filter((h) => h.field === 'assignee_user_id').flatMap((h) => [soNguoi(h.old_value), soNguoi(h.new_value)]),
+    ...lanTd.flatMap((l) => [soNguoi(l.cu), soNguoi(l.moi)])].filter((x): x is number => !!x))];
   const names = new Map<number, string>((conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(JSON.stringify(ids)) as any[])
     .map((r) => [r.id, r.full_name]));
   const today = demoToday();
@@ -612,17 +620,25 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
   const nhom = t.group_id ? conn.prepare(`SELECT id, ten, khoa FROM task_groups WHERE id = ?`).get(t.group_id) as any : null;
   const goc = t.lap_goc_id && !t.parent_task_id ? conn.prepare('SELECT id, branch_id, lap_kieu, lap_ngay, lap_dung_luc FROM tasks WHERE id = ?').get(t.lap_goc_id) as any : t;
 
-  const dueHistory = (conn
-    .prepare(
-      `SELECT h.*, us.full_name AS actor_name FROM task_history h
-         LEFT JOIN users us ON us.id = h.actor_user_id
-        WHERE h.task_id = ? AND h.field = 'due_date' ORDER BY h.id ASC`,
-    )
-    .all(taskId) as any[]).map((h) => ({
+  const dueHistory = hist.filter((h) => h.field === 'due_date').map((h) => ({
       old: h.old_value ?? null, new: h.new_value ?? null, reason: h.reason ?? null,
       by: names.get(h.actor_user_id) ?? h.actor_name ?? null, at: h.created_at,
     }));
   const theoDoi = td.map((x) => ({ id: x.user_id as number, ten: x.full_name ?? null, nguon: x.nguon as string }));
+  const tenNg = (v: unknown) => { const n = soNguoi(v); return n ? names.get(n) ?? null : null; };
+  /* Nhóm cũ / mới của lịch sử: tên nhóm (một câu, chỉ khi có lần đổi nhóm). */
+  const nhomIds = [...new Set(hist.filter((h) => h.field === 'group_id').flatMap((h) => [soNguoi(h.old_value), soNguoi(h.new_value)]).filter((x): x is number => !!x))];
+  const tenNhomLs = new Map<number, string>(nhomIds.length ? (conn.prepare(`SELECT id, ten FROM task_groups WHERE id IN (${DS_JSON})`).all(JSON.stringify(nhomIds)) as any[]).map((r) => [r.id, r.ten]) : []);
+  const lichSu: { luc: string; truong: string; cu: string | null; moi: string | null; nguoi: string | null }[] = [
+    { luc: t.created_at, truong: t.lap_goc_id ? 'tao_ban_lap' : 'giao', cu: null, moi: t.lap_goc_id ? t.lap_ky ?? null : names.get(t.assignee_user_id) ?? null,
+      nguoi: t.lap_goc_id ? null : names.get(t.created_by) ?? null },
+    ...hist.filter((h) => ['assignee_user_id', 'group_id', 'hang_muc', 'lap', 'lap_dung'].includes(h.field)).map((h) => ({
+      luc: h.created_at, truong: h.field, nguoi: names.get(h.actor_user_id) ?? h.actor_name ?? null,
+      cu: h.field === 'assignee_user_id' ? tenNg(h.old_value) : h.field === 'group_id' ? tenNhomLs.get(soNguoi(h.old_value) ?? 0) ?? null : h.old_value ?? null,
+      moi: h.field === 'assignee_user_id' ? tenNg(h.new_value) : h.field === 'group_id' ? tenNhomLs.get(soNguoi(h.new_value) ?? 0) ?? null : h.new_value ?? null,
+    })),
+    ...lanTd.filter((l) => l.truong === 'theo_doi').map((l) => ({ luc: l.luc, truong: 'theo_doi', cu: tenNg(l.cu), moi: tenNg(l.moi), nguoi: l.nguoi ?? null })),
+  ];
 
   return {
     id: t.id, code: t.code, title: t.title, note: t.note ?? null,
@@ -656,6 +672,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
     /* PR-UXF-a Q16 (G-10): chi tiết trả CÙNG `hanGoc` với danh sách (web đang đọc `data.hanGoc` mà trước đây không có). */
     ...hanGocCua(dueHistory),
     dueHistory,
+    /** VH-2 (V3): giao / bản lặp · đổi người · nhóm · hạng mục · lặp · dừng lặp · theo dõi (tên đã đọc sẵn). */
+    lichSu,
     /** VH-1: lặp lại của việc gốc (bản theo kỳ đọc việc gốc) — `ky` = kỳ của bản này. */
     lap: goc?.lap_kieu ? { ...lapCua(goc)!, dung: !!goc.lap_dung_luc, gocId: goc.id, ky: t.lap_ky ?? null } : null,
     tep: (conn.prepare(`SELECT a.id, a.kind, a.display_name, a.url, a.mime_type, a.size_bytes, a.uploaded_by, u.full_name AS uploader_name, a.created_at
@@ -772,6 +790,12 @@ function docHangMuc(v: unknown): string | null | undefined {
   return v;
 }
 const TRAN_HV_LIEN_QUAN = 50;
+/** VH-2: loại việc — không gửi → undefined (giữ như cũ); giá trị lạ → 400. */
+function loaiViec(v: unknown): 'in_period' | 'long_term' | undefined {
+  if (v === undefined || v === null || v === '') return undefined;
+  if (v === 'in_period' || v === 'long_term') return v;
+  throw badRequest('Loại việc không hợp lệ (Trong kỳ / Dài hạn).');
+}
 /** Học viên hợp lệ cho việc: ở chi nhánh của việc (lớp đang học, không có → hồ sơ; việc Toàn hệ thống: mọi chi nhánh) và nếu có lớp thì đang học lớp đó. MỘT câu. */
 function hvHopLe(ds: readonly number[], lop: number | null, branchId: number | null): Set<number> {
   if (!ds.length) return new Set();
@@ -829,6 +853,8 @@ export function createMgmtTask(p: Principal, input: {
   lap?: unknown;
   /** VH-1b (N62): hạng mục chính thống (`HANG_MUC_CV`) · lớp · học viên liên quan (tuỳ chọn). Web cũ không gửi → như trước. */
   hangMuc?: unknown; classId?: unknown; studentIds?: unknown;
+  /** VH-2 (V2): Trong kỳ (`in_period`) │ Dài hạn (`long_term`, mặc định — như trước). Việc con theo việc cha. */
+  taskType?: unknown;
 }) {
   if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
@@ -907,9 +933,9 @@ export function createMgmtTask(p: Principal, input: {
                             branch_id, assignee_user_id, assignee_name, due_date,
                             progress, note, source_type, source_unit_report_id, created_by, created_at, idempotency_key,
                             lap_kieu, lap_ngay, lap_ky, hang_muc, class_id)
-         VALUES (?,?, 'branch_ops', 'long_term', ?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?, ?,?,?,?,?)`,
+         VALUES (?,?, 'branch_ops', ?, ?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?, ?,?,?,?,?)`,
       )
-      .run(nextCode(conn), title, groupId, input.parentTaskId ?? null,
+      .run(nextCode(conn), title, parent?.task_type ?? loaiViec(input.taskType) ?? 'long_term', groupId, input.parentTaskId ?? null,
            taskBranchId,
            input.assigneeUserId ?? null, assigneeName,
            input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso(), khoa,
@@ -1084,6 +1110,8 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   phienBan?: string | null;
   /** VH-1b (N62): hạng mục (null = tab Vận hành) · lớp · học viên liên quan (thay cả danh sách). */
   hangMuc?: unknown; classId?: unknown; studentIds?: unknown;
+  /** VH-2: Trong kỳ │ Dài hạn (chỉ việc gốc; Head / Quản trị / CX). */
+  taskType?: unknown;
 }) {
   const conn = db();
   const t = docTask(taskId);
@@ -1100,6 +1128,8 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const put = (col: string, v: unknown) => { sets.push(`${col} = ?`); params.push(v); };
   const historyRows: { field: string; oldValue: string | null; newValue: string | null; reason: string | null }[] = [];
 
+  const loai = t.parent_task_id ? undefined : loaiViec(patch.taskType);
+  if (loai !== undefined && loai !== t.task_type) put('task_type', loai);
   if (patch.title !== undefined) {
     const v = chuTuDo(patch.title, 'Tên công việc', 200) ?? '';
     if (!v) throw badRequest('Công việc phải có tên.');

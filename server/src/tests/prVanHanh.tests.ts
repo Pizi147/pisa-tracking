@@ -381,6 +381,24 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrVanHanh, KHOA_PR_VAN_HANH } = await import('../migrate/prVanHanh.ts');
+  await checkAsync('VH2-1 · Loại việc Trong kỳ / Dài hạn (tạo + sửa, việc con theo cha, giá trị lạ 400) · chi tiết có lịch sử giao / đổi người / theo dõi', () => thu(async () => {
+    const v = tao(cx, { taskType: 'in_period', assigneeUserId: tvv.userId });
+    assert(mg.mgmtTaskDetail(cx, v.id).taskType === 'in_period', 'tạo Trong kỳ');
+    assert(mg.mgmtTaskDetail(cx, tao(cx, {}).id).taskType === 'long_term', 'không gửi = Dài hạn như cũ');
+    const con = tao(cx, { parentTaskId: v.id, taskType: 'long_term' });
+    assert(mg.mgmtTaskDetail(cx, con.id).taskType === 'in_period', 'việc con theo việc cha');
+    let loi = '';
+    try { tao(cx, { taskType: 'tuan' }); } catch (e: any) { loi = e?.message ?? ''; }
+    assert(/Loại việc/.test(loi), `giá trị lạ phải 400: ${loi}`);
+    let d = mg.editMgmtTask(cx, v.id, { taskType: 'long_term', phienBan: mg.mgmtTaskDetail(cx, v.id).updatedAt });
+    assert(d.taskType === 'long_term', 'sửa loại việc');
+    d = mg.editMgmtTask(cx, v.id, { assigneeUserId: bpxl.userId, theoDoiIds: [gvcn.userId] });
+    const truong = d.lichSu.map((l: any) => l.truong);
+    assert(truong[0] === 'giao' && truong.includes('assignee_user_id') && truong.includes('theo_doi'), `lịch sử: ${truong.join(',')}`);
+    const doi = d.lichSu.find((l: any) => l.truong === 'assignee_user_id');
+    assert(doi.moi && doi.cu && !/^\d+$/.test(doi.moi), `tên người, không phải id: ${JSON.stringify(doi)}`);
+  }));
+
   check('VH1-9 · migrate prVanHanh: group_key → nhóm, watcher + task_followers → viec_theo_doi; chạy hai lần không đổi; tự lành chỉ mục; khớp schema.sql', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
