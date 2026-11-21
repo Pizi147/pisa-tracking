@@ -70,8 +70,8 @@ export const giaiDoanThi = (r: Hang): GiaiDoanThi => (r.buoc === 'cho-kq' ? 'cho
 /** Lọc trạng thái thi ([XM-1] chủ SP duyệt lời 37): "Chưa chốt ngày" = có tháng, chưa ngày; "Có KQ" = chờ bước tiếp + xong.
  * AUDIT-2111 B2-04 (N63): em chưa có lịch cũng vào "Chưa chốt ngày" (chưa có ngày) — tổng các chip = "Tất cả". */
 export type LocThi = 'chua-chot' | 'da-chot' | 'cho-kq' | 'co-kq';
-export const locThiCua = (r: Hang): LocThi | null => (!r.buoc || r.buoc === 'chua-co' || r.buoc === 'du-kien' || r.buoc === 'chua-chot-ngay' ? 'chua-chot'
-  : r.buoc === 'da-chot-ngay' ? 'da-chot' : r.buoc === 'cho-kq' ? 'cho-kq' : r.buoc === 'cho-buoc-tiep' || r.buoc === 'xong' ? 'co-kq' : null);
+export const locThiCua = (r: Hang): LocThi => (r.buoc === 'da-chot-ngay' ? 'da-chot' : r.buoc === 'cho-kq' ? 'cho-kq'
+  : r.buoc === 'cho-buoc-tiep' || r.buoc === 'xong' ? 'co-kq' : 'chua-chot');
 
 const MO_HOP: ThaoTacLichThi[] = ['chot-ngay', 'doi-thang', 'dat-thang', 'sua-ngay'];
 export const laHop = (nut: ThaoTacLichThi) => MO_HOP.includes(nut);

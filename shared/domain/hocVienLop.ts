@@ -379,9 +379,8 @@ export function badgeLop(c: {
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
-  if (c.soViecChoCham != null) {
-    if (c.soViecChoCham > 0) co.cham = { key: 'cham', nhan: t('Chờ chấm · {n} việc', { n: c.soViecChoCham }), so: c.soViecChoCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
-  } else if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('Chờ chấm · {n}', { n: c.soBaiChoCham }), so: c.soBaiChoCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
+  const nCham = c.soViecChoCham ?? c.soBaiChoCham;
+  if (nCham > 0) co.cham = { key: 'cham', nhan: c.soViecChoCham != null ? t('Chờ chấm · {n} việc', { n: nCham }) : t('Chờ chấm · {n}', { n: nCham }), so: nCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu thông tin · {n}', { n: c.missingCount }), so: c.missingCount, tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('Chờ duyệt · {n}', { n: c.soChoDuyet }), so: c.soChoDuyet, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Head duyệt') };
