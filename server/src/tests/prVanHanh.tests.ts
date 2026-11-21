@@ -197,13 +197,18 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   const meetingSvc: any = await import('../worklist/meeting.ts');
   const dcs: any = await import('../ops/doiChieuSo.ts');
 
-  await checkAsync('VH1-10 (PTA 1) · CX thuần + CX kèm GV được giao việc Vận hành → có ở /my-work (tab Vận hành CX chưa bật); Head vẫn không lặp', () => thu(async () => {
+  /* VH-2 (N59): CX có bảng Vận hành (nav `vanHanh`) như Head → việc không hạng mục ở bảng, không lặp ở /my-work; việc tay CÓ hạng mục vẫn trong đúng mục (N62). */
+  await checkAsync('VH1-10 (PTA 1 → VH-2) · CX thuần + CX kèm GV có bảng Vận hành: việc không hạng mục không lặp ở /my-work, việc có hạng mục vẫn hiện; Head vẫn không lặp', () => thu(async () => {
+    const { navOf } = await import('../platform/nav.ts');
     const cxGv = loadPrincipal(accounts.createAccount(P.admin, { email: `vanhanh.cxgv.${++soTk}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-vanhanh-cxgv', fullName: 'VANHANH CXGV',
       roles: [{ role: 'cx', branches: ['MB'] }, { role: 'teacher', branches: ['MB'] }] }).userId as number);
     const a = tao(ql, { assigneeUserId: cx.userId }); const b = tao(ql, { assigneeUserId: cxGv.userId });
+    const am = tao(ql, { assigneeUserId: cx.userId, hangMuc: 'bao-ph' });
     xoaNho();
-    assert((myWork(loadPrincipal(cx.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${a.id}`), 'CX thuần thấy việc được giao');
-    assert((myWork(loadPrincipal(cxGv.userId) as any) as any).items.some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV thấy việc được giao');
+    assert((navOf(loadPrincipal(cx.userId) as any) as any).vanHanh && (navOf(cxGv as any) as any).vanHanh, 'CX có bảng Vận hành (nav.vanHanh)');
+    const viecCx = (myWork(loadPrincipal(cx.userId) as any) as any).items ?? [];   // không việc nào → máy chủ trả không có `items`
+    assert(!viecCx.some((x: any) => x.key === `mgmt:${a.id}`) && viecCx.some((x: any) => x.key === `mgmt:${am.id}`), 'CX thuần: không lặp việc ở bảng, việc có hạng mục vẫn hiện');
+    assert(!((myWork(loadPrincipal(cxGv.userId) as any) as any).items ?? []).some((x: any) => x.key === `mgmt:${b.id}`), 'CX kèm GV: việc ở bảng');
     const c = tao(cx, { assigneeUserId: ql.userId });
     assert(!(myWork(ql) as any).items.some((x: any) => x.key === `mgmt:${c.id}`), 'Head không lặp (thấy ở bảng)');
   }));
@@ -376,6 +381,24 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrVanHanh, KHOA_PR_VAN_HANH } = await import('../migrate/prVanHanh.ts');
+  await checkAsync('VH2-1 · Loại việc Trong kỳ / Dài hạn (tạo + sửa, việc con theo cha, giá trị lạ 400) · chi tiết có lịch sử giao / đổi người / theo dõi', () => thu(async () => {
+    const v = tao(cx, { taskType: 'in_period', assigneeUserId: tvv.userId });
+    assert(mg.mgmtTaskDetail(cx, v.id).taskType === 'in_period', 'tạo Trong kỳ');
+    assert(mg.mgmtTaskDetail(cx, tao(cx, {}).id).taskType === 'long_term', 'không gửi = Dài hạn như cũ');
+    const con = tao(cx, { parentTaskId: v.id, taskType: 'long_term' });
+    assert(mg.mgmtTaskDetail(cx, con.id).taskType === 'in_period', 'việc con theo việc cha');
+    let loi = '';
+    try { tao(cx, { taskType: 'tuan' }); } catch (e: any) { loi = e?.message ?? ''; }
+    assert(/Loại việc/.test(loi), `giá trị lạ phải 400: ${loi}`);
+    let d = mg.editMgmtTask(cx, v.id, { taskType: 'long_term', phienBan: mg.mgmtTaskDetail(cx, v.id).updatedAt });
+    assert(d.taskType === 'long_term', 'sửa loại việc');
+    d = mg.editMgmtTask(cx, v.id, { assigneeUserId: bpxl.userId, theoDoiIds: [gvcn.userId] });
+    const truong = d.lichSu.map((l: any) => l.truong);
+    assert(truong[0] === 'giao' && truong.includes('assignee_user_id') && truong.includes('theo_doi'), `lịch sử: ${truong.join(',')}`);
+    const doi = d.lichSu.find((l: any) => l.truong === 'assignee_user_id');
+    assert(doi.moi && doi.cu && !/^\d+$/.test(doi.moi), `tên người, không phải id: ${JSON.stringify(doi)}`);
+  }));
+
   check('VH1-9 · migrate prVanHanh: group_key → nhóm, watcher + task_followers → viec_theo_doi; chạy hai lần không đổi; tự lành chỉ mục; khớp schema.sql', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');

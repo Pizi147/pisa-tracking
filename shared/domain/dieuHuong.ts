@@ -24,6 +24,8 @@ export type NavQuyen = {
   /** Chủ SP 28/10: tab Kế hoạch Test CHỈ XEM cho GV (lớp mình dạy) — không thay `testPlan` (tab Chấm Test vẫn theo `testPlan`). */
   testPlanXem?: boolean;
   work: boolean; workSupport: boolean; workOps: boolean; workReports: boolean;
+  /** VH-2 (N59): bảng Vận hành + "+ Giao việc" — Head, Quản trị, CX (`canSeeBoard`). `workOps` giữ nghĩa cũ (vai quản lý, không gồm CX) cho mọi chỗ khác. */
+  vanHanh?: boolean;
   /** PR-DUYET: hộp Chờ duyệt (`request.approve` — QL, Quản trị) · Yêu cầu của tôi (mọi người có việc học viên). */
   workApprove: boolean; workRequests: boolean;
   /** PR-OV2a: Công việc chỉ nhóm Chấm điểm + Nhắc (vai Admin). */
@@ -199,7 +201,7 @@ export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
 /** Người duyệt không có tab Yêu cầu của tôi (họ tự gửi thì tự duyệt ngay trong hộp, Q-D). */
 const HIEN_CONG_VIEC: Record<TabCongViec, (n: NavQuyen) => boolean> = {
   'cho-duyet': (n) => n.workApprove, 'ho-tro': (n) => n.workSupport, 'yeu-cau': (n) => n.workRequests && !n.workApprove,
-  'van-hanh': (n) => n.workOps, 'bao-cao': (n) => n.workReports,
+  'van-hanh': (n) => n.workOps || !!n.vanHanh, 'bao-cao': (n) => n.workReports,
 };
 
 export function tabCongViecHienThi(nav: NavQuyen): TabCongViec[] {

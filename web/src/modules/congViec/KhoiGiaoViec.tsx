@@ -21,7 +21,8 @@ import { lucVn } from './gioVn.ts';
 export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting' | 'tra_lai';
 type Nguoi = { id: number; ten: string | null };
 export type KhoiGv = {
-  loai: LoaiGiao; id: number; tieuDe: string; studentId: number; mo: boolean; branchId: number | null;
+  /** `van_hanh` (VH-2): việc Vận hành — thao tác đi `/mgmt-tasks` qua `thaoTac`, không qua `/giao-viec`. */
+  loai: LoaiGiao | 'van_hanh'; id: number; tieuDe: string; studentId: number; mo: boolean; branchId: number | null;
   phuTrach: Nguoi[]; macDinh: Nguoi[]; duocGiao: boolean; giaoBoi: Nguoi | null; giaoLuc: string | null;
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
   /** Báo PH "Chờ GV sửa" (TL-1): hạn tạm dừng — không tô quá hạn. */ tamDung?: boolean;
@@ -33,7 +34,28 @@ export type KhoiGv = {
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
     xongBoi: string | null; xongLuc: string | null; nhapHoBoi: string | null; coTheLam: boolean };
 };
-export const duongGiaoViec = (loai: LoaiGiao, id: number) => `/giao-viec/${loai}/${id}`;
+export const duongGiaoViec = (loai: KhoiGv['loai'], id: number) => `/giao-viec/${loai}/${id}`;
+
+/**
+ * VH-2: thao tác của khối cho loại việc có đường riêng (việc Vận hành: `PATCH /mgmt-tasks/:id`). Không truyền → đường chung `/giao-viec` (GV-2).
+ * Mỗi hàm trả lại khối mới (máy chủ trả bản ghi sau khi lưu → vẽ ngay).
+ */
+export type ThaoTacKhoi = {
+  doiNguoi: (g: KhoiGv, userId: number | null) => Promise<KhoiGv>;
+  hoanTacNguoi: (g: KhoiGv) => Promise<KhoiGv>;
+  suaHan: (g: KhoiGv, han: string | null) => Promise<KhoiGv>;
+  themTheoDoi: (g: KhoiGv, ids: number[]) => Promise<KhoiGv>;
+  boTheoDoi: (g: KhoiGv, userId: number) => Promise<KhoiGv>;
+  /** Chữ khi chưa có người phụ trách (mặc định "Head chi nhánh" — người theo luật). */ trong?: string;
+  /** Loại việc không có người phụ trách theo luật → hộp Đổi người không có "Về mặc định". */ khongMacDinh?: boolean;
+};
+const thaoTacChung: ThaoTacKhoi = {
+  doiNguoi: (g, userId) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach`, { userId, phuTrachCu: g.duocGiao ? g.phuTrach[0]?.id ?? null : null }),
+  hoanTacNguoi: (g) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach/hoan-tac`),
+  suaHan: (g, han) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/han`, { han, hanCu: g.loai === 'tinh_hinh' ? g.han : g.hanChon }),
+  themTheoDoi: (g, ids) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }),
+  boTheoDoi: async (g, userId) => { const r = await api.del<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${userId}`); return r && 'loai' in r ? r : g; },
+};
 /** Sau mọi thao tác giao việc: danh sách việc + tab Đang theo dõi + hồ sơ HV đọc lại. */
 export const lamMoiGiaoViec = () => { for (const k of ['/my-work', '/students', '/y-thuc', '/classes']) invalidate(k); };
 
@@ -57,8 +79,9 @@ const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border 
 type Loi = { chu: string; xungDot: boolean };
 const loiCua = (e: any): Loi => ({ chu: e?.message ?? t('Không lưu được'), xungDot: e instanceof ApiError && e.status === 409 });
 
-export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, onDaDoi }: {
+export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, onDaDoi, thaoTac = thaoTacChung }: {
   g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
+  /** VH-2: đường lưu riêng (việc Vận hành). */ thaoTac?: ThaoTacKhoi;
   /** Phần Meeting (G8): ô hẹp hơn, chỉ hai dòng Phụ trách · Hạn — Theo dõi gộp một dòng cho cả việc (`DongTheoDoiChung`). */
   gon?: boolean;
   /** Không vẽ dòng Phụ trách (phần Meeting của người khác — gọn một dòng). */ chiHan?: boolean;
@@ -77,19 +100,19 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, on
   const daDoi = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(); onDaDoi?.(); };
 
   const ten = (n: Nguoi) => n.ten ?? t('(đã xoá)');
-  const nguoiPt = g.phuTrach.length ? g.phuTrach.map(ten).join(', ') : t('Head chi nhánh');
+  const nguoiPt = g.phuTrach.length ? g.phuTrach.map(ten).join(', ') : thaoTac.trong ?? t('Head chi nhánh');
   const laToi = toi != null && g.phuTrach.some((x) => x.id === toi);
   const theGiao = g.duocGiao
     ? <span className={THE_VIEN} style={{ borderColor: 'var(--line-strong)' }}>{g.giaoBoi?.id === toi ? t('bạn giao') : t('{ten} giao', { ten: g.giaoBoi?.ten ?? '—' })}</span>
     : <span className={THE_VIEN} style={{ borderColor: 'var(--line-strong)' }}>{t('mặc định')}</span>;
   const suaHan = async (han: string | null) => {
-    const moi = await api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/han`, { han, hanCu: g.loai === 'tinh_hinh' ? g.han : g.hanChon });
+    const moi = await thaoTac.suaHan(g, han);
     toast.push('ok', t('Đã lưu hạn'));
     daDoi(moi);
   };
   const hoanTac = async () => {
     setVuaGiao(null);
-    try { daDoi(await api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach/hoan-tac`)); toast.push('ok', t('Đã hoàn tác')); }
+    try { daDoi(await thaoTac.hoanTacNguoi(g)); toast.push('ok', t('Đã hoàn tác')); }
     catch (e: any) { setLoi(loiCua(e)); if (loiCua(e).xungDot) reload(); }
   };
 
@@ -119,12 +142,13 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, anDoi, on
         </>}
         <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
         <DongHan khoi tamDung={g.tamDung} tinhLai={g.hanTinhLai} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
-        {(g.moTa || (g.coTheSuaMoTa && !chiHan)) && <DongMoTa g={g} daDoi={daDoi} reload={reload} />}
-        {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} />}
+        {/* Việc Vận hành (VH-2) có ghi chú riêng (`tasks.note`) — không thêm dòng Mô tả việc của khối. */}
+        {g.loai !== 'van_hanh' && (g.moTa || (g.coTheSuaMoTa && !chiHan)) && <DongMoTa g={g} daDoi={daDoi} reload={reload} />}
+        {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} thaoTac={thaoTac} />}
       </div>
       {hop && (
         <HopNho nhan={t('Đổi người phụ trách')} tren="top-[52px]" onDong={() => { setHop(false); nutDoi.current?.focus(); }}>
-          <HopDoiNguoi g={g} onDong={() => { setHop(false); nutDoi.current?.focus(); }} onXong={(moi, tenMoi) => {
+          <HopDoiNguoi g={g} thaoTac={thaoTac} onDong={() => { setHop(false); nutDoi.current?.focus(); }} onXong={(moi, tenMoi) => {
             setHop(false); daDoi(moi);
             if (moi.duocGiao) setVuaGiao({ ten: tenMoi, het: Date.now() + 10_000 });
             else toast.push('ok', t('Đã về người phụ trách mặc định'));
@@ -246,7 +270,7 @@ function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: R
     x.macDinh.forEach((n) => them(n, t('mặc định')));
     x.phuTrach.forEach((n) => them(n, t('đang phụ trách')));
     them(x.giaoBoi, t('người giao'));
-    x.theoDoi.forEach((n) => them(n, n.vai && NHAN_VAI[n.vai] ? dich(NHAN_VAI[n.vai]) : t('đang theo dõi')));
+    x.theoDoi.forEach((n) => them(n, NHAN_VAI[n.vai ?? n.nguon] ? dich(NHAN_VAI[n.vai ?? n.nguon]) : t('đang theo dõi')));
   }
   const cn = g[0]?.branchId ?? null;
   return async (q) => {
@@ -306,7 +330,7 @@ function useTenCn(): () => ReadonlyMap<string, string> {
 }
 
 /** HỘP NHỎ "Đổi người phụ trách" (mockup G3a / G3c): ô tìm + chọn, Liên quan trước, "Về mặc định · {tên}", không lý do. */
-function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () => void; onXong: (g: KhoiGv, ten: string) => void; onXungDot: () => void }) {
+function HopDoiNguoi({ g, thaoTac, onDong, onXong, onXungDot }: { g: KhoiGv; thaoTac: ThaoTacKhoi; onDong: () => void; onXong: (g: KhoiGv, ten: string) => void; onXungDot: () => void }) {
   const [chon, setChon] = useState<NguoiChon | null>(null);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<Loi | null>(null);
@@ -317,8 +341,7 @@ function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () =
   const gui = async (userId: number | null, ten: string) => {
     setDang(true); setLoi(null);
     try {
-      const moi = await api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach`, { userId, phuTrachCu: g.duocGiao ? g.phuTrach[0]?.id ?? null : null });
-      onXong(moi, ten);
+      onXong(await thaoTac.doiNguoi(g, userId), ten);
     } catch (e: any) { const l = loiCua(e); setLoi(l); if (l.xungDot) onXungDot(); } finally { setDang(false); }
   };
   const id = chon?.kieu === 'tai_khoan' ? chon.id : null;
@@ -339,8 +362,8 @@ function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () =
       </div>
       {/* Nhấn nút chân không làm ô tìm mất focus — danh sách không co lại, nút không dời chỗ dưới con trỏ (cú bấm trượt). */}
       <div onMouseDown={(e) => e.preventDefault()} className="flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" disabled={!lechMacDinh || dang} onClick={() => void gui(null, tenMd)}>
-          {lechMacDinh ? t('Về mặc định · {ten}', { ten: tenMd }) : t('Về mặc định')}</button>
+        {!thaoTac.khongMacDinh && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" disabled={!lechMacDinh || dang} onClick={() => void gui(null, tenMd)}>
+          {lechMacDinh ? t('Về mặc định · {ten}', { ten: tenMd }) : t('Về mặc định')}</button>}
         <span className="ml-auto flex gap-2">
           <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" disabled={dang} onClick={onDong}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={!id || dang || g.phuTrach.some((x) => x.id === id)}
@@ -355,7 +378,7 @@ function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () =
  * DÒNG THEO DÕI (mockup G1 / G4; G8: một dòng cho cả việc Meeting — `ds` nhiều phần, "+" thêm cho mọi phần, ✕ bỏ ở mọi phần có người đó).
  * Chip tên + vai; ✕ khi được sửa theo dõi (hoặc chính mình — tự bỏ); "+" mở hộp chọn nhiều. Bỏ → toast Hoàn tác (thêm lại).
  */
-export function DongTheoDoi({ ds, dat, reload, rieng }: { ds: KhoiGv[]; dat: (ds: KhoiGv[]) => void; reload: () => void;
+export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: { ds: KhoiGv[]; dat: (ds: KhoiGv[]) => void; reload: () => void; thaoTac?: ThaoTacKhoi;
   /** Dòng đứng riêng (G8, dưới các phần Meeting) — tự vẽ khung. */ rieng?: boolean }) {
   const { session } = useSession();
   const toi = session?.user?.id;
@@ -365,21 +388,21 @@ export function DongTheoDoi({ ds, dat, reload, rieng }: { ds: KhoiGv[]; dat: (ds
   const nguoi = new Map<number, Nguoi & { nguon: string; vai: string | null }>();
   for (const g of ds) for (const n of g.theoDoi) if (!nguoi.has(n.id)) nguoi.set(n.id, n);
   const suaDuoc = ds.some((g) => g.coTheSuaTheoDoi);
-  const goi = async (f: (g: KhoiGv) => Promise<KhoiGv | { ok: true }> | null) => {
-    const moi = await Promise.all(ds.map(async (g) => { const r = await f(g); return r && 'loai' in r ? r : g; }));
+  const goi = async (f: (g: KhoiGv) => Promise<KhoiGv> | null) => {
+    const moi = await Promise.all(ds.map(async (g) => (await f(g)) ?? g));
     dat(moi); lamMoiGiaoViec();
   };
   const bo = async (n: Nguoi) => {
     try {
-      await goi((g) => (g.theoDoi.some((x) => x.id === n.id) ? api.del<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${n.id}`) : null));
+      await goi((g) => (g.theoDoi.some((x) => x.id === n.id) ? thaoTac.boTheoDoi(g, n.id) : null));
       toast.hoanTac(n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' }), () => {
-        void goi((g) => (g.coTheSuaTheoDoi && g.mo ? api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: [n.id] }) : null)).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+        void goi((g) => (g.coTheSuaTheoDoi && g.mo ? thaoTac.themTheoDoi(g, [n.id]) : null)).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
       }, { key: `bo-theo-doi:${n.id}` });
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); if (loiCua(e).xungDot) reload(); }
   };
   const chip = (n: Nguoi & { nguon: string; vai: string | null }) => {
     const xBo = suaDuoc || n.id === toi;
-    const vai = n.id === toi ? t('bạn') : n.vai && NHAN_VAI[n.vai] ? dich(NHAN_VAI[n.vai]) : null;
+    const vai = n.id === toi ? t('bạn') : NHAN_VAI[n.vai ?? n.nguon] ? dich(NHAN_VAI[n.vai ?? n.nguon]) : null;   /* đường không trả vai (Vận hành /mgmt-tasks) → nhãn theo nguồn như trước */
     return (
       <span key={n.id} className={`${CHIP_NGUOI} ${xBo ? 'pr-[3px]' : 'pr-2.5'}`}
         style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
@@ -401,7 +424,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng }: { ds: KhoiGv[]; dat: (ds
     {hop && (
       <HopNho nhan={t('Thêm người theo dõi')} tren="top-full" onDong={() => { setHop(false); nut.current?.focus(); }}>
         <HopThemTheoDoi ds={ds} da={new Set(nguoi.keys())} onDong={() => { setHop(false); nut.current?.focus(); }}
-          onThem={async (ids) => { await goi((g) => (g.coTheSuaTheoDoi && g.mo ? api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }) : null)); setHop(false); nut.current?.focus(); }} />
+          onThem={async (ids) => { await goi((g) => (g.coTheSuaTheoDoi && g.mo ? thaoTac.themTheoDoi(g, ids) : null)); setHop(false); nut.current?.focus(); }} />
       </HopNho>
     )}
   </>;

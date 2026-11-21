@@ -20,7 +20,7 @@ export function navOf(p: Principal): NavQuyen {
   const attempt = coPhamVi(PERMISSIONS.ATTEMPT_VIEW) || gvS(PERMISSIONS.ATTEMPT_VIEW);
   const meeting = coPhamVi(PERMISSIONS.MEETING_VIEW);
   const plan = coPhamVi(PERMISSIONS.PLAN_WEEK);
-  /* VH-1 (N59): CX quản lý việc Vận hành qua API; tab Vận hành của CX bật ở PR giao diện VH-2 (hướng dẫn + màn mới) — nav giữ như trước. */
+  /* VH-1 (N59): `workOps` giữ nghĩa "vai quản lý" (không gồm CX); CX thấy bảng Vận hành qua cờ `vanHanh` (VH-2). */
   const board = canSeeBoard(boVaiCx(p));
   /* PR-OV2a: Test và Công việc có quyền vào riêng — TVV, CX xem điểm / Case trong hồ sơ (`attempt.view`) mà không có hai khu này. */
   const test = attempt && (coPhamVi(PERMISSIONS.TEST_VIEW) || gvS(PERMISSIONS.TEST_VIEW));
@@ -56,6 +56,8 @@ export function navOf(p: Principal): NavQuyen {
     testPlanXem: test && (plan || p.assignments.some((a) => activeAt(a, demoToday())) || lopFtChoGvSpeaking(p).length > 0),
     work,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
+    /* VH-2 (N59): CX tạo / giao việc Vận hành như Head — bảng + "+ Giao việc" (cờ riêng: `workOps` vẫn là "vai quản lý" ở mọi chỗ khác). */
+    vanHanh: viec && canSeeBoard(p),
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`), BPXL (N57) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
     /* N52: hộp Chờ bạn duyệt + badge là việc của QL — CX duyệt / làm thay ở hồ sơ em, không có hộp (vai CX không là chủ việc). */
     workApprove: viec && can(boVaiCx(p), PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !trangDauTest && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)

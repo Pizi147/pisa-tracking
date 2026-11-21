@@ -41,14 +41,17 @@ export default function CongViecPage() {
   }
 
   const cn = params.get('cn');
+  const lui = tabs.includes('ho-tro') && <Link to={`/cong-viec${cn ? `?cn=${cn}` : ''}`} className="link w-fit text-[13px] max-sm:py-2">{t('‹ Công việc')}</Link>;
+  const tieuDe = <h1 className="m-0 text-xl font-bold text-slate-100">{nhanTabCongViec(tab, session?.nav ?? NAV_RONG)}</h1>;
+  /* VH-2 (V1): bảng Vận hành vẽ tiêu đề cùng hàng "Nhóm…" · "+ Giao việc". */
+  if (tab === 'van-hanh') return <div className="page space-y-4">{lui}<TasksBoard dau={tieuDe} /></div>;
   return (
     <div className="page space-y-4">
       <div className="flex flex-col gap-1">
-        {tabs.includes('ho-tro') && <Link to={`/cong-viec${cn ? `?cn=${cn}` : ''}`} className="link w-fit text-[13px] max-sm:py-2">{t('‹ Công việc')}</Link>}
-        <h1 className="m-0 text-xl font-bold text-slate-100">{nhanTabCongViec(tab, session?.nav ?? NAV_RONG)}</h1>
+        {lui}
+        {tieuDe}
       </div>
       {tab === 'yeu-cau' && <YeuCauCuaToi />}
-      {tab === 'van-hanh' && <TasksBoard />}
       {tab === 'bao-cao' && <MeetingBoard />}
     </div>
   );

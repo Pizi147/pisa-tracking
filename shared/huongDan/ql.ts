@@ -352,7 +352,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'van-hanh', ten: 'Giao việc, theo dõi vận hành', nhom: 'khac',
       loiChinh: { man: 'van-hanh', chu: 'Công việc › Việc quản lý › Vận hành ›', duong: '/cong-viec/van-hanh', chi: { hd: 'vh-so', duong: '/cong-viec/van-hanh', chu: 'Bấm một số để lọc việc.' } },
-      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Vận hành ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có <b>Người phụ trách</b>, <b>Hạn</b>; <b>Giao GV theo lớp + kỹ năng</b> hiện ở hồ sơ từng em lớp đó.', 'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>; dời hạn ghi <b>Lý do dời hạn</b>, hạn cũ còn ở <b>Lịch sử hạn</b>.'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Vận hành ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có <b>Người phụ trách</b>, <b>Hạn</b>; <b>Giao GV theo lớp + kỹ năng</b> hiện ở hồ sơ từng em lớp đó.', 'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>, <b>Dừng lặp</b>; <b>Sửa hạn</b> không bắt lý do, hạn cũ còn ở <b>Lịch sử</b>.'],
       tuKhac: ['giao việc', 'giáo trình', 'tutor', 'task', 'operations'],
     },
     {

@@ -83,8 +83,12 @@ export const quyCheBanGiao = (gvcn: boolean, han: string | null, homNay: string 
 /** Q42 Bàn giao khi đổi GV (luat/4 L-18). */
 export const quyCheBanGiaoGv = (): QuyChe => ({ chu: chenHan(t('Hạn {han:ban_giao_doi_gv} · xác nhận xong GV mới nhận tin')) });
 
-/** Q43 Việc được giao (việc mgmt). */
-export const quyCheViecGiao = (): QuyChe => ({ chu: t('Hạn do Head đặt · ghi Hoàn thành khi xong') });
+/** Q43 Việc được giao (việc mgmt). VH-2 (N59): người phụ trách cũng sửa hạn, lý do tuỳ chọn. */
+export const quyCheViecGiao = (): QuyChe => ({ chu: t('Người giao đặt hạn · người phụ trách sửa được · ghi Hoàn thành khi xong') });
+/** VH-2 (N59, V2 / V3): việc lặp lại — máy tạo bản mới mỗi kỳ (hàm đêm), hạn bản mới = kỳ + khoảng hạn của bản gốc. */
+export const quyCheViecLap = (o: { ky: string; khoang: number | null }): QuyChe => ({
+  chu: o.khoang == null ? t('Tạo bản mới {ky} · kèm việc con', { ky: o.ky }) : t('Tạo bản mới {ky} · hạn bản mới = ngày tạo + {n} ngày', { ky: o.ky, n: Math.max(0, o.khoang) }),
+});
 
 /** Q59 Đề xuất chuyển lớp (GVCN) · Q78 / Q79 Chuyển lớp (QL) — luat/4 L-15, L-17; luat/2 C-07. */
 export const quyCheChuyenLop = (o: { deXuat: boolean; ngayNay: boolean; tuan: string | null; homNay: string | null }): QuyChe => (

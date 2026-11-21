@@ -3226,6 +3226,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     theoDoiIds: Array.isArray(b.theoDoiIds) ? b.theoDoiIds.map(Number) : undefined,
     lap: b.lap ?? null,
     hangMuc: b.hangMuc, classId: b.classId, studentIds: b.studentIds,   // VH-1b (N62): không gửi → như cũ
+    taskType: b.taskType,   // VH-2: Trong kỳ │ Dài hạn — không gửi → Dài hạn như cũ
     branchId: b.branchId ? Number(b.branchId) : null,
     assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
     assigneeName: typeof b.assigneeName === 'string' ? b.assigneeName : null,
