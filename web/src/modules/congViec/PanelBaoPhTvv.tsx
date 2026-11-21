@@ -102,10 +102,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     ...(traLaiDuoc && !caLanMo && v?.measureId ? [{ key: 'tra-lai', nhan: t('Trả lại cả lần xử lý'), onChon: () => setHopCaLan(true) }] : []),
     ...(v?.coTheGhi && !bo ? [{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }] : []),
   ];
-  const dau = dauViec({
-    han: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} /> : null,
-    em, lop: it.classCode,
-  });
+  const dau = {
+    ...dauViec({ em, lop: it.classCode }),
+    ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng
+  };
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
   /* T3a: thẻ "Chờ GV sửa" cạnh tiêu đề (chữ + nền, không chỉ màu). */
   if (v?.choGvSua && v.trangThai === 'mo') (dau as { tieu?: ReactNode }).tieu = <>{bacDu(tieuDe)}<TheChoGv /></>;   // cùng chữ khung tự vẽ (`bacDu`)

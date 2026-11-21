@@ -10,7 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
-import { BoLocDoan } from '../../ui/ui.tsx';
+import { BoLocDoan, NutChon } from '../../ui/ui.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
   GOI_Y_VI_PHAM, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
@@ -360,11 +360,11 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
       <Hang2>
         {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
         {dsMon.length > 0 && (
-          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)}>
-            <select className="field w-full" {...lf.o(loi, `mon-${n}`)} value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
-              <option value="">{t('Chưa chọn')}</option>
-              {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
-            </select>
+          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)} as="div">
+            {/* A1-09: chip môn một bấm, cùng dáng panel "Vi phạm bị trả lại" (danh sách ngắn cố định — N45). */}
+            <div className="flex flex-wrap gap-1.5" {...lf.o(loi, `mon-${n}`)}>
+              {dsMon.map((s) => <NutChon key={s} nho chon={displaySkill === s} onClick={() => onSua({ mon: displaySkill === s ? '' : s, daChonMon: true })}>{tenMon(ct, s)}</NutChon>)}
+            </div>
           </Truong>
         )}
 

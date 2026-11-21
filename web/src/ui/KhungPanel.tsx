@@ -195,7 +195,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link) · lớp · ngữ cảnh.
    *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
-  dau?: { han?: ReactNode; dong2: ReactNode[]; loai?: string;
+  dau?: { han?: ReactNode; /** A3-16: nút ⋯ ghim cạnh ✕ (không xuống dòng khi tiêu đề dài — EN 375). */ ghim?: ReactNode; dong2: ReactNode[]; loai?: string;
     /** U01 #6 (audit 03/11, mockup `.facts`): DẢI SỰ KIỆN thay dòng 2 — nhãn nhỏ trên, giá trị đậm dưới (Học viên · Lớp · Lượt · Mức · Hạn · Phụ trách). */
     su?: [string, ReactNode][];
     /** PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): nội dung dòng tiêu đề thay chữ `tieuDe` — tên em là link + chip SOS, hay tên số liệu + số + đơn vị + ⓘ. */
@@ -402,6 +402,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
                 <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
                 {dau.han}
               </>}
+              {dau.ghim}
               {!xHangLoai && oDem}
               {!lui && !xHangLoai && nutDong}
             </div>
