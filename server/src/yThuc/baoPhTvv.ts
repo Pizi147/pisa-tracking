@@ -540,7 +540,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       items.push({
         key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', urgency,
         studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuHop(r.hop), count: null,   // A3-09: dòng phụ "họp {ngày giờ}"
         reason: `GVCN đã xác nhận ${r.nhan} — báo gia đình, sắp xếp buổi họp và ghi kết quả`,
         tieuDe: `Báo PH · Meeting CX/GĐCN · ${r.full_name}`, phu: chuHop(r.hop), actionLabel: 'Ghi KQ',
         href: r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),

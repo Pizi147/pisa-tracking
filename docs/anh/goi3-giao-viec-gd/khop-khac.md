@@ -44,4 +44,13 @@ Không mất thao tác nào.
 ## Khác / [XM]
 
 - 375 tab TVV: hàng tab cuộn ngang tới tab đang chọn (đã có từ trước) — chữ "Báo PH" khuất một phần bên trái là hành vi cuộn sẵn có, không đổi.
-- Chưa chụp / bấm thử trên web: Meeting (A3-08, A3-09, A3-10), Trả lại (A3-07, B3-08, A1-03), dải theo dõi TVV (N63 ⑨) — dữ liệu demo cần dựng nhiều bước. A3-09, A3-11 có phép kiểm máy chủ; còn lại kiểm bằng `tsc` + đọc mã.
+- Bấm thử thêm (theo PTA, dữ liệu dựng qua chính luồng: GVCN 7 xác nhận Meeting CX cho Kiều Thảo Nhi, BPXL 33 Hoàn thành xếp lịch 18/09 15:00; TVV 27 Trả lại vi phạm rồi Rút, Trả lại cả lần xử lý; GVCN 19 Giữ nguyên; Head giao Báo PH cho Admin 26):
+  - A3-08 chân panel Meeting: Đóng (x 693) · Việc tiếp › (x 1298) — `a3-08-meeting-cx-chan-1440-toi.png`.
+  - A3-09 dòng TVV "MB FT 101 · Báo PH · Meeting CX/GĐCN · Kiều Thảo Nhi · **họp 18/09 15:00**" — `a3-09-tvv-dong-hop-1440-toi.png`. (Lúc bấm thử thấy dòng gọn `DongGon` không đọc dòng phụ → thêm thẻ; máy chủ đưa chữ vào `contextLabel`.)
+  - A3-10 Theo dõi chung (TVV và CX xem): "Trần Ngọc Hà GVCN · Nguyễn Khánh Vy Head" — không còn Phan Mai — `a3-10-tvv-theo-doi-1440-toi.png`.
+  - A3-11 phần xếp lịch xong ghi "Lương Thu Trang · **14/09 10:00**" (ngày demo, không 21/11).
+  - A3-07 dải "✓ Đã trả lại cho Lâm Quang Vinh · Hoàn tác" nằm ở y 399–443 (khung 900) sau lưu; thẻ ③ "TVV báo PH · Chờ GV sửa · **hạn tạm dừng**" — `a3-07-tra-lai-dai-1440-toi.png`.
+  - B3-08 GVCN "Sửa rồi gửi lại" cả lần: link "Mở tab Ý thức của em ›" → `/hoc-vien/117?tab=y-thuc` — `b3-08-gvcn-link-1440-toi.png`.
+  - A1-03 GVCN "Giữ nguyên" xong: khối không còn Đổi / Sửa hạn / + Thêm mô tả / ✕ / +, không "còn n ngày" — `a1-03-khoi-chi-doc-1440-toi.png`.
+  - N63 ⑨ TVV 27 mở Báo PH (đã giao Phạm Thanh Xuân) từ Đang theo dõi: "Bạn đang theo dõi · TVV của em vẫn ghi Báo PH được" — `n63-9-tvv-theo-doi-1440-toi.png`.
+- Thấy thêm, NGOÀI phạm vi (chưa sửa): giờ "Phan Mai trả lại cả lần xử lý 21/11 18:11" / "GV đã trả lời 21/11 18:12" ghi giờ máy thật (`traLai.ts` `nowIso`) như A3-11 — đề xuất gói sau.

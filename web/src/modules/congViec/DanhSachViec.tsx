@@ -633,6 +633,8 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
             ))}
             {n > hien.length && <span className={`${CHIP} border-dashed font-semibold tabular-nums text-[color:var(--accent)] ${hai ? 'max-sm:hidden' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>+{n - hien.length}</span>}
             {hai && n > 1 && <span className={`${CHIP} border-dashed font-semibold tabular-nums text-[color:var(--accent)] sm:hidden`} style={{ borderColor: 'var(--line-strong)' }}>+{n - 1}</span>}
+            {/* A3-09 (AUDIT-2111): Báo PH · Meeting của TVV ghi ngày giờ họp như dòng CX (máy chủ `contextLabel` "họp …"). */}
+            {!con && it.group === 'phoi_hop_tvv' && it.contextLabel && <span className={`whitespace-nowrap ${THE_PHU}`}>{it.contextLabel}</span>}
             {!daXong && <TheGiao it={it} />}
           </span>
         </span></span>
