@@ -10,8 +10,9 @@ import { t } from '@shared/i18n/index.ts';
 /**
  * Ô MỘT ĐỢT của lưới Kế hoạch Test (U05, mockup `thiet-ke/v11/ke-hoach-test.html` khu A — chủ SP 03/11 khuya, 14-ra-ux-b 11.2) — dùng chung FT và lớp thường.
  * Mỗi DÒNG một tuần thi: tuần + 4 vị trí badge môn cố định (L R W S): môn thi tuần đó sáng, môn khác MỜ HẲN (giữ chỗ, đọc màn "không thi").
- * Môn dời vì vắng → dòng "Vắng → W2 NOV". Dòng cuối = trạng thái CHỮ: điểm "✓ 6.5" (ODiem) · "Đang làm bài" · "Chờ chấm" (badge môn chờ viền vàng) ·
- * "Quá hạn chấm" (badge môn nền đỏ đặc; V22 không biểu tượng) · "Vắng · xếp lại S" (vàng rõ — 30-pr-giao-dien U05). Nội dung do `oGon` quyết — ở đây chỉ vẽ.
+ * Môn dời vì vắng đứng ở tuần vắng. Dòng cuối = trạng thái CHỮ: điểm "✓ 6.5" (ODiem) · "Quá hạn chấm" (badge môn nền đỏ đặc; V22 không biểu tượng) ·
+ * BPXL-2 (mockup v22 K1, N38): "L R vắng · dời W4 SEP" / "Đã huỷ · vắng 2 lần" (khung đứt) — chỉ để biết · "Chờ chấm" (badge môn chờ viền vàng) ·
+ * "Đang làm bài". Nội dung do `oGon` quyết — ở đây chỉ vẽ.
  */
 const CHU_MON: Record<MonGon['loai'], string> = { co: t('có điểm'), cho: t('chưa có điểm'), tre: t('trễ chấm') };
 
@@ -37,10 +38,11 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
   const nhanKhoa = khoa ? nhanTuanKhoa(khoa.tuan, khoa.khaiGiang, khoa.tongTuan) : null;
   const mon = O_KE_HOACH.filter((k) => kn[k]);
   const choCham = o.dong.some((d) => d.tt?.loai === 'cho');
-  /* Một chữ trạng thái cho cả ô, theo mức cần làm: trễ chấm > vắng chờ xếp > chờ chấm > đang làm bài > chưa xếp tuần. */
+  /* Một chữ trạng thái cho cả ô: trễ chấm > vắng chưa dời (dữ liệu trước N38) > kết quả vắng máy đã làm > chờ chấm > đang làm bài > chưa xếp tuần. */
   const tt: { chu: string; lop: string } | null = kq ? null
     : o.tt?.loai === 'tre' ? { chu: t('Quá hạn chấm'), lop: 'text-bad' }
-    : o.tt?.loai === 'vang' ? { chu: `${t('Vắng')} · ${o.tt.chu}`, lop: 'text-soon' }
+    : o.tt?.loai === 'vang' ? { chu: o.tt.chu, lop: 'text-soon' }
+    : o.vang ? { chu: o.vang, lop: o.huyHet ? 'text-faint' : '' }
     : choCham ? { chu: t('Chờ chấm'), lop: 'text-soon' }
     : o.tt?.loai === 'nay' || o.dong.some((d) => d.tt?.loai === 'nay') ? { chu: t('Đang làm bài'), lop: 'text-doing' }
     : o.dong.some((d) => d.tt?.loai === 'chua') ? { chu: t('Chưa xếp tuần'), lop: 'text-dim' } : null;
@@ -48,18 +50,18 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
     nhan,
     ...o.dong.map((d) => [d.tuanDu ?? t('chưa xếp'), ...d.mon.map((m) => `${m.ten} ${CHU_MON[m.loai]}`)].join(' ')),
     kq ? `${kq.dat === null ? '' : kq.dat ? '✓ ' : '✗ '}${t('Overall')} ${fmtBand(kq.ovr)}${kq.kyVong != null ? ` · ${t('kỳ vọng')} ${fmtBand(kq.kyVong)}` : ''}` : tt?.chu,
-    o.khongThi, o.vang,
+    o.khongThi, tt?.chu === o.vang ? null : o.vang,
   ].filter(Boolean).join(', ');
   const vien = o.tt?.loai === 'tre' ? 'o-kh-tre' : tt?.lop === 'text-doing' ? 'o-kh-dang' : '';
-  const lop = `o-kh ${vien} ${chon ? 'o-kh-chon' : ''}`;
+  const lop = `o-kh ${vien} ${o.huyHet ? 'o-kh-huy' : ''} ${chon ? 'o-kh-chon' : ''}`;
   const noi = (
     <>
+      {o.huyHet && <span className="o-kh-hang"><span className="o-kh-tuan text-faint">{o.tuan ?? '—'}</span></span>}
       {o.dong.map((d, i) => {
         const coMat = new Map(d.mon.map((m) => [m.k, m]));
-        const vang = d.mon.length > 0 && d.mon.every((m) => !!kn[m.k]?.doiTu);
         return (
           <span key={d.tuanDu ?? `chua-${i}`} className="o-kh-hang">
-            <span className="o-kh-tuan">{vang ? `${t('Vắng')} → ` : ''}{d.tuan ?? '—'}</span>
+            <span className="o-kh-tuan">{d.tuan ?? '—'}</span>
             <span className="o-kh-mon">
               {mon.map((k) => {
                 const m = coMat.get(k);

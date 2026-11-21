@@ -105,6 +105,8 @@ const KICH_BAN = [
   ['test-lichTest', 2, '/test/lich'], ['test-diem-lop', 2, '/test/diem-lop'], ['test-ke-hoach', 2, '/test/ke-hoach'],
   /* UI-CHAM-TEST: Chấm Test (GV L R · GV S chấm chéo) + Kế hoạch Test mở một lớp FT (cột S Ex, Overall). */
   ['cham-test-gv', 7, '/test/cham'], ['cham-test-s', 9, '/test/cham'], ['cham-test-kh-lop', 2, '/test/ke-hoach?classId=3'],
+  /* BPXL-2 (N57): trang đầu BPXL (vai 33 · Lương Thu Trang) — dải số lặng, đang lọc Vắng tuần này. */
+  ['test-ke-hoach-bpxl', 33, '/test/ke-hoach', undefined, [1440, 1280, 375]], ['test-ke-hoach-bpxl-vang', 33, '/test/ke-hoach?so=vang&loai=ft', undefined, [1440, 1280, 375]],
   ['nhap-diem', 2, '/nhap-diem/3'], ['bang-diem-thuong', 2, '/bang-diem-thuong/6'], ['mock', 2, '/mock-test/5'],
   ['quan-tri', 1, '/quan-tri'], ['quan-tri-quyen', 1, '/quan-tri', async (p) => { await p.getByRole('tab', { name: /Quyền/ }).click(); await p.waitForTimeout(800); }], ['ho-so-ca-nhan', 7, '/ho-so-ca-nhan'],
   ['gvbm', 9, '/'], ['gvbm-test', 9, '/test/lich'], ['hvl-gvbm', 9, '/hoc-vien'], ['hv-gvbm', 9, '/hoc-vien/3'],

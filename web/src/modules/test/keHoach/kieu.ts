@@ -9,16 +9,18 @@ export type KnO = Partial<Record<KyNangKH, OKyNang>>;
 export type LopKH = {
   id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; chuongTrinh: string | null; soHv: number;
   chuaCoLichTiep: number; hvChuaCoLich: number; tomTat: string;
+  /** BPXL-2 (N57): em vắng tuần thi này (đã dời / đã huỷ — `tinVang.ts`), chỉ thông tin. */
+  vangTuanNay: number;
   /** U05 (mockup V11 hàng lớp tách trường): GVCN · đợt đang chạy ("MT3 đang làm bài" / "MT1 đã xong"; lớp thường = tiến độ khoá). */
   gvcn?: string | null; dotChay?: string | null;
-  /** PR-XLMT (Q7): số em lớp FT cần Quản lý xếp lại (vắng chưa có đề nghị + phần thi đã huỷ). */
-  canXepLai: number;
   /** Chủ SP 28/10: lớp GV dạy mà không xếp được (không `plan.week`) — chỉ xem. */
   chiXem?: boolean;
   /** KIEM-TAY-1011: người xem mở được hồ sơ lớp (máy chủ `attempt.view` theo lớp) — không thì mã lớp là chữ thường. */
   xemHoSo?: boolean;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
+/** BPXL-2: số đang lọc danh sách lớp (`?so=`) — dải số lặng của BPXL; "chua-xep" cũng là chip của vai khác. */
+export type SoLoc = 'chua-xep' | 'vang' | 'bai' | 'luot';
 
 /** `do`: có kỹ năng xong và còn kỹ năng phải thi (◐) · `huyPhan`: có phần thi đã huỷ (PR-XLMT). */
 /** `huy` (PR-OV4a): số MT chỉ có lượt đã huỷ (id) — ô "MT2 · Đã huỷ"; `attemptId` vẫn null. */
@@ -39,6 +41,8 @@ export type HangFT = {
   studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number;
   /** XEP-MT-NHAC (chủ SP 07/11): lộ trình thiếu MT (`thieuMt` máy chủ) — lọc "Chưa đủ MT". */
   thieuMt?: boolean;
+  /** BPXL-2: em vắng tuần thi này — lọc "Vắng tuần này" (cùng luật số "Vắng · n em"). */
+  vangTuan?: boolean;
   /** MT0-THEO-EM (chủ SP 06/11): MT0 em mang từ lớp thường — ô chỉ xem trước MT1. */
   mt0?: { attemptId: number; kn: KnO; khongDung: boolean } | null;
   ghiChu?: Record<string, GhiChuLich>;

@@ -16,7 +16,11 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { Data as LichSapToiData } from '../worklist/Highlights.tsx';
 import { TimKeHoach, type KetQuaTim } from './keHoach/TimKeHoach.tsx';
 import { NganXuatTest } from './NganXuatTest.tsx';
-import type { DanhSachLop } from './keHoach/kieu.ts';
+import type { DanhSachLop, LopKH, SoLoc } from './keHoach/kieu.ts';
+import { DaiChiSo, ODai, SoTinh } from '../../ui/DaiChiSo.tsx';
+
+/** Phần dải BPXL của `GET /tong-quan/mock-test` (`server/src/worklist/tongQuanMt.ts`, nhánh BPXL). */
+type TongQuanMt = { luotTuanNay: { so: number }; oChuaNhap: { so: number }; lopCo?: { bai: Record<number, number>; luot: number[] } };
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -45,10 +49,16 @@ export function KeHoachTestTab() {
   const [hopMo, setHopMo] = useState(false);
   /* PR-XLMT (M9): ngăn Xếp lịch — khung FT (nhiều lớp) hoặc Lớp thường (một lớp); không cần mở lớp trước. */
   const [xep, setXep] = useState<'ft' | 'thuong' | null>(null);
-  /* U05 (G5, N32 ⑤): chip "Chưa đủ MT · n" thay "Cần xếp lại" — vắng lần 1 tự dời (N4) và ô ghi "Vắng · xếp lại S" (vàng); chỉ lớp / em
-     chưa có lượt MT kế tiếp. `lopLoc`: lớp chọn ở ô tìm (hoặc ô số của hàng lớp) → chip "Lớp: … ✕". */
-  const [chiChuaCoKe, setChiChuaCoKe] = useState(false);
-  const [lopLoc, setLopLoc] = useState<number | null>(null);
+  /* BPXL-2 (N57, mockup v22): số đang lọc danh sách lớp ở URL `?so=` — "chua-xep" (chip "Chưa xếp lịch MT" của vai khác / số đầu dải BPXL) ·
+     "vang" · "bai" · "luot" (dải BPXL). `lopLoc`: lớp chọn ở ô tìm, ô số của hàng lớp hoặc tin chuông (`?lop=`) → chip "Lớp: … ✕". */
+  const so = (['chua-xep', 'vang', 'bai', 'luot'] as const).find((k) => k === params.get('so')) ?? null;
+  const lopParam = params.get('lop') ? Number(params.get('lop')) : null;
+  const [lopLoc, setLopLoc] = useState<number | null>(lopParam);
+  /* Tin chuông khi đang ở sẵn trang: lọc + mở đúng lớp đó (lần đầu vào trang thì `?classId=` tự mở như cũ). */
+  useEffect(() => { if (lopParam) { setLopLoc(lopParam); setMoList((m) => (m.includes(lopParam) ? m : [...m, lopParam])); } }, [lopParam]);
+  const bpxl = !!session?.nav?.trangDauTest;
+  /* Dải số BPXL: hai số từ `GET /tong-quan/mock-test` (một request, chỉ BPXL); hai số kia cộng từ danh sách lớp đã nạp. Lưu ở lưới không gọi lại. */
+  const tq = useApi<TongQuanMt>(bpxl ? `/tong-quan/mock-test${branchId ? `?branchId=${branchId}` : ''}` : null, [bpxl, branchId]);
   const dienThoai = useDienThoai();
   const { homNay } = useNgayNghiepVu();
   /* Đầu trang (mockup U05; G1-08): Xuất Excel… · Xếp nhiều MT… cạnh tiêu đề "Test" — TestPage chừa chỗ `#test-nut-trang`. Điện thoại cùng chỗ
@@ -76,7 +86,9 @@ export function KeHoachTestTab() {
     if (!data || daMoSan || !data.lop.length) return;
     const theoUrl = classIdParam ? data.lop.find((l) => l.id === classIdParam) : undefined;
     const trongLoai = loai === 'ft' ? lopFT : lopThuong;
-    const chon = theoUrl ?? (trongLoai.length === 1 ? trongLoai[0] : undefined);
+    /* BPXL-2: vào trang đang lọc theo số (`?so=`, tải lại / dán đường dẫn) → mở lớp đầu khớp như khi bấm số. */
+    const theoSo = so === 'chua-xep' || so === 'vang' ? lopFT.find((l) => khopSo[so](l)) : undefined;
+    const chon = theoUrl ?? theoSo ?? (trongLoai.length === 1 ? trongLoai[0] : undefined);
     if (chon) setMoList([chon.id]);
     setDaMoSan(true);
   }, [data, daMoSan]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -84,7 +96,7 @@ export function KeHoachTestTab() {
   const setLoai = (k: 'ft' | 'thuong') => {
     setChu('');      // chữ tìm của loại lớp này không có nghĩa với loại kia
     const next = new URLSearchParams(params);
-    next.set('loai', k); next.delete('classId');
+    next.set('loai', k); next.delete('classId'); next.delete('so'); next.delete('lop');   // số lọc chỉ của Fast Track
     setParams(next, { replace: true });
     const trongLoai = k === 'ft' ? lopFT : lopThuong;
     if (trongLoai.length === 1 && !moList.includes(trongLoai[0].id)) {
@@ -105,17 +117,48 @@ export function KeHoachTestTab() {
     ? tuanXem.ft.mockClasses.map((m) => m.id)
     : [...tuanXem.normal.progressClasses, ...tuanXem.normal.finalClasses].map((r) => r.id)) : null;
   const boTuan = () => { const next = new URLSearchParams(params); next.delete('tuan'); setParams(next, { replace: true }); };
-  /* Chủ SP 28/10: GV chỉ xem lớp mình dạy — không có lớp xếp được thì bỏ Cần xếp lại, Xuất, Xếp (máy chủ vẫn chặn ghi). */
+  /* Chủ SP 28/10: GV chỉ xem lớp mình dạy — không có lớp xếp được thì bỏ Chưa xếp lịch MT, Xuất, Xếp (máy chủ vẫn chặn ghi). */
   const coXep = (data?.lop ?? []).some((l) => !l.chiXem);
   const soChuaCoKe = coXep ? lopFT.reduce((n, l) => n + (l.chiXem ? 0 : l.chuaCoLichTiep), 0) : 0;
-  const locChuaCoKe = loai === 'ft' && chiChuaCoKe && soChuaCoKe > 0;
+  /* Lớp khớp một số — cùng tập với chính số đó (bấm số ra đúng các lớp đã đếm). */
+  const lopCo = tq.data?.lopCo;
+  const khopSo: Record<SoLoc, (l: LopKH) => boolean> = {
+    'chua-xep': (l) => !l.chiXem && l.chuaCoLichTiep > 0,
+    vang: (l) => l.vangTuanNay > 0,
+    bai: (l) => (lopCo?.bai[l.id] ?? 0) > 0,
+    luot: (l) => !!lopCo?.luot.includes(l.id),
+  };
+  const locSo = loai === 'ft' && so ? so : null;
   /* Chữ ở ô tìm lọc danh sách lớp chỉ khi khớp mã lớp nào đó — gõ tên / email học viên thì danh sách giữ nguyên (chọn em ở gợi ý). */
   const khopMa = chu.trim() ? (loai === 'ft' ? lopFT : lopThuong).filter((l) => chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu))) : [];
   const danhSach = (loai === 'ft' ? lopFT : lopThuong)
     .filter((l) => !khopMa.length || khopMa.includes(l))
     .filter((l) => lopLoc === null || l.id === lopLoc)
-    .filter((l) => !locChuaCoKe || (!l.chiXem && l.chuaCoLichTiep > 0))
+    .filter((l) => !locSo || khopSo[locSo](l))
     .filter((l) => !lopTrongTuan || lopTrongTuan.has(l.id));
+  /** Bật / bỏ một số lọc (`?so=`, một số một lúc): bật thì về Fast Track và mở lớp đầu khớp (`moHet` = mở mọi lớp khớp — chip cũ của vai khác). */
+  const doiSo = (k: SoLoc | null, opts: { lop?: number; moHet?: boolean } = {}) => {
+    const next = new URLSearchParams(params);
+    if (k) { next.set('so', k); next.set('loai', 'ft'); } else next.delete('so');
+    if (k && opts.lop !== undefined) next.set('lop', String(opts.lop)); else next.delete('lop');
+    setParams(next, { replace: true });
+    setLopLoc(opts.lop ?? null);
+    if (!k) return;
+    const khop = lopFT.filter((l) => (opts.lop === undefined || l.id === opts.lop) && khopSo[k](l));
+    const mo = opts.moHet ? khop : khop.slice(0, 1);
+    setMoList((m) => [...m.filter((id) => !mo.some((l) => l.id === id)), ...mo.map((l) => l.id)]);
+  };
+  const boLopLoc = () => {
+    setLopLoc(null);
+    if (params.has('lop')) { const next = new URLSearchParams(params); next.delete('lop'); setParams(next, { replace: true }); }
+  };
+  const NHAN_SO: Record<SoLoc, string> = { 'chua-xep': t('Chưa xếp lịch MT'), vang: t('Vắng tuần này'), bai: t('Bài chưa có điểm'), luot: t('Lượt MT tuần này') };
+  const soDai: Array<{ k: SoLoc; n: number | null }> = [
+    { k: 'chua-xep', n: soChuaCoKe },
+    { k: 'vang', n: lopFT.reduce((n, l) => n + l.vangTuanNay, 0) },
+    { k: 'bai', n: tq.data ? tq.data.oChuaNhap.so : null },
+    { k: 'luot', n: tq.data ? tq.data.luotTuanNay.so : null },
+  ];
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   /* C18: chọn lớp → mở lớp đó (lớp khung kia thì tự đổi khung, không hỏi); chọn em → mở lớp của em, cuộn tới hàng em. */
   const moLop = (id: number, loaiLop: 'ft' | 'thuong', hv: number | null) => {
@@ -145,6 +188,20 @@ export function KeHoachTestTab() {
 
   return (
     <div className="space-y-3">
+      {/* BPXL-2 (N57, mockup v22 K1–K5): dải 4 số LẶNG chỉ BPXL — chữ xám, không đỏ, không badge, không cộng vào số menu. Bấm số = lọc danh sách lớp
+          ngay dưới (ô số = mở tại chỗ), bấm lại / "Lọc: … ✕" = bỏ; số 0 mờ, không bấm. */}
+      {bpxl && lopFT.length > 0 && (
+        <DaiChiSo nhan={t('Số cần xếp')} className="dai-cs-lang">
+          {soDai.map(({ k, n }) => (
+            <ODai key={k} nhan={NHAN_SO[k]}>
+              {n ? (
+                <button type="button" className="so-lang" aria-pressed={locSo === k} aria-label={`${NHAN_SO[k]} ${n}`}
+                  onClick={() => doiSo(locSo === k ? null : k)}>{n}</button>
+              ) : <SoTinh n={n === null ? (tq.error ? '—' : '…') : 0} />}
+            </ODai>
+          ))}
+        </DaiChiSo>
+      )}
       {/* U05 (mockup V11 `.thanh-cu`): Fast Track / Lớp thường · chip "Chưa đủ MT" · Chi nhánh · ô tìm · chip "Lớp: … ✕" · ⓘ · phải: n HV.
           375 (khu E): ô tìm + "Lọc" + ⋯ (Xuất, Xếp nhiều MT…); chip, Chi nhánh trong "Lọc". */}
       <div className="loc-hv flex flex-wrap items-center gap-2" data-hd="kht-loc">
@@ -156,19 +213,28 @@ export function KeHoachTestTab() {
           </NutChon>
         )}
         {(() => {
-          const chipKe = loai === 'ft' && soChuaCoKe > 0 ? (
-            <button type="button" className="nut-loc" aria-pressed={locChuaCoKe} onClick={() => {
-              const bat = !locChuaCoKe;
-              setChiChuaCoKe(bat);
-              if (bat) setMoList(lopFT.filter((l) => !l.chiXem && l.chuaCoLichTiep > 0).map((l) => l.id));
-            }} title={t('Lộ trình chưa đủ MT (3 · RF 2) — Head xếp tiếp')}>
-              {t('Chưa đủ MT')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaCoKe && <span aria-label={t('Bỏ lọc')}> ✕</span>}
-            </button>
-          ) : null;
+          /* Vai khác: chip "Chưa xếp lịch MT n" (BPXL-2: một tên với ô số hàng lớp). BPXL: số này nằm ở dải → chip "Lọc: … ✕" khi đang lọc. */
+          const locChuaXep = locSo === 'chua-xep';
+          const coChipKe = !bpxl && loai === 'ft' && soChuaCoKe > 0;
+          const chipKe = !coChipKe && !(locSo && (bpxl || !locChuaXep)) ? null : (
+            <>
+              {coChipKe && (
+                <button type="button" className="nut-loc" aria-pressed={locChuaXep} onClick={() => doiSo(locChuaXep ? null : 'chua-xep', { moHet: true })}
+                  title={t('Lộ trình chưa đủ MT (3 · RF 2) — Head xếp tiếp')}>
+                  {t('Chưa xếp lịch MT')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaXep && <span aria-label={t('Bỏ lọc')}> ✕</span>}
+                </button>
+              )}
+              {locSo && (bpxl || !locChuaXep) && (
+                <button type="button" className="nut-loc nut-loc-dang max-sm:min-h-[44px]" onClick={() => doiSo(null)} aria-label={t('Bỏ lọc {x}', { x: NHAN_SO[locSo] })}>
+                  {t('Lọc: {x}', { x: NHAN_SO[locSo] })} <span aria-hidden>✕</span>
+                </button>
+              )}
+            </>
+          );
           const doiCn = (id: number | null) => {
             const next = new URLSearchParams(params);
             next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-            next.delete('classId'); setLopLoc(null);
+            next.delete('classId'); next.delete('lop'); setLopLoc(null);
             setParams(next, { replace: true });
           };
           return dienThoai ? (
@@ -198,7 +264,7 @@ export function KeHoachTestTab() {
           );
         })()}
         {lopLoc !== null && (
-          <button type="button" className="nut-loc nut-loc-dang" onClick={() => setLopLoc(null)} aria-label={t('Bỏ lọc lớp')}>
+          <button type="button" className="nut-loc nut-loc-dang" onClick={boLopLoc} aria-label={t('Bỏ lọc lớp')}>
             {t('Lớp: {ma}', { ma: data.lop.find((l) => l.id === lopLoc)?.code ?? '' })} ✕
           </button>
         )}
@@ -222,7 +288,8 @@ export function KeHoachTestTab() {
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
         </NutLuat></span>
         <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:ml-auto">
-          <span><b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + l.soHv, 0)}</b> HV</span>
+          {/* BPXL-2 (mockup v22 K2): đang lọc em (Vắng / Chưa xếp lịch MT) → số em khớp; còn lại → HV của các lớp đang hiện. */}
+          <span><b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + (locSo === 'vang' ? l.vangTuanNay : locSo === 'chua-xep' ? l.chuaCoLichTiep : l.soHv), 0)}</b> HV</span>
           {nutMoHet}
         </span>
       </div>
@@ -238,14 +305,14 @@ export function KeHoachTestTab() {
         </span>, choNut)}
 
       {danhSach.length === 0 ? (
-        <div className="card"><Empty title={locChuaCoKe ? t('Không lớp nào chưa đủ MT') : chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')}
-          action={locChuaCoKe || lopLoc !== null ? <button type="button" className="btn btn-sm" onClick={() => { setChiChuaCoKe(false); setLopLoc(null); }}>{t('Bỏ lọc')}</button> : undefined} /></div>
+        <div className="card"><Empty title={locSo ? t('Không lớp nào khớp "{x}"', { x: NHAN_SO[locSo] }) : chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')}
+          action={locSo || lopLoc !== null ? <button type="button" className="btn btn-sm" onClick={() => doiSo(null)}>{t('Bỏ lọc')}</button> : undefined} /></div>
       ) : (
         <div className="bang-kh">
           {danhSach.map((l) => (
-            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiChuaCoKe={locChuaCoKe}
+            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} loc={locSo}
               hvChon={l.id === classIdParam ? hvParam : null}
-              onLocLop={() => { setChiChuaCoKe(true); setLopLoc(l.id); setMoList((m) => [...m.filter((x) => x !== l.id), l.id]); }} />
+              onLocLop={(k) => doiSo(k, { lop: l.id })} />
           ))}
         </div>
       )}

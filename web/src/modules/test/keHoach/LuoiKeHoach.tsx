@@ -18,7 +18,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { oGon, tuanLich } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
-  type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
+  type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData, type SoLoc,
 } from './kieu.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const HopKyNang = lazyHop(() => import('./HopKyNang.tsx').then((x) => x.HopKyNang));
@@ -39,12 +39,12 @@ const HANG_GON = 10;
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT: chưa có đợt = `OMt` (`MT3 · chưa xếp`),
  * đã có đợt = `ChipDotFT` (chip theo nhóm kỹ năng, PR-OMT C6); ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
-export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = false, hvChon = null }: {
+export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvChon = null }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
   hvChon?: number | null;
-  /** U05 (G5, chip "Chưa đủ MT"): chỉ còn em có lộ trình thiếu MT (`thieuMt`). */
-  chiChuaCoKe?: boolean;
+  /** Số đang lọc: "chua-xep" chỉ còn em lộ trình thiếu MT (`thieuMt`) · "vang" em vắng tuần này (`vangTuan`); "bai" / "luot" chỉ lọc lớp. */
+  loc?: SoLoc | null;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
   /** PR-OV4a: ô "Đã huỷ" đang mở hộp Khôi phục (`anchor` giữ để "Xếp MT{n} mới" mở hộp xếp đúng ô). */
@@ -98,20 +98,21 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
 
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
-  const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
-    && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // N38 L2 + PTA 07/11: huỷ (vắng 2 lần / QL tự huỷ) không nhắc — cùng `emCanXepLai`
+  const vangChuaDoi = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
+    && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // vắng chưa dời (dữ liệu trước N38) — huỷ vắng 2 lần / QL tự huỷ không tính
   const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
     && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
-  /* "Chưa đủ MT" (G5) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số trên chip) —
-     lọc chip + ô "Xếp MTn" viền nhấn đậm. */
+  /* "Chưa xếp lịch MT" (G5, BPXL-2 một tên) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số) —
+     lọc + ô "Xếp MTn" viền nhấn đậm. "Vắng tuần này": cờ máy chủ `vangTuan` (cùng luật số "Vắng · n em"). */
   const thieu = (h: HangFT | HangThuong) => loai === 'ft' && !!(h as HangFT).thieuMt;
-  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiChuaCoKe || thieu(h));
-  /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc "Cần xếp lại" thì hiện hết. */
-  /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp trong cột đang vẽ) —
+  const locEm = loc === 'chua-xep' ? thieu : loc === 'vang' ? (h: HangFT | HangThuong) => !!(h as HangFT).vangTuan : null;
+  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !locEm || locEm(h));
+  /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc em theo số thì hiện hết. */
+  /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (vắng chưa dời, trễ chấm, MT kế tiếp chưa xếp trong cột đang vẽ) —
      không em nào bị khuất sau "Hiện tất cả". */
-  const canChuY = (h: HangFT | HangThuong) => canXepLai(h) || chuaXepKeTiep(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
+  const canChuY = (h: HangFT | HangThuong) => vangChuaDoi(h) || chuaXepKeTiep(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
     .some((d) => oGon(d.kn, homNay)?.tt?.loai === 'tre'));
-  const hangs = hetHang || hvChon || chiChuaCoKe || tatCa.length <= HANG_GON + 2 ? tatCa
+  const hangs = hetHang || hvChon || locEm || tatCa.length <= HANG_GON + 2 ? tatCa
     : tatCa.filter((h, i) => i < HANG_GON || canChuY(h));
   const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean; huy?: number } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,

@@ -228,12 +228,12 @@ export function gomBaiXemTruoc(bai: BaiXemTruoc[]): Array<Omit<BaiXemTruoc, 'ski
   return [...nhom.values()];
 }
 
-/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT2 đang thi · MT3 chưa xếp 4 em · 2 em cần xếp lại`, bỏ vế trống (V5 C20: không gợi ý MT4+). */
+/** Dòng tóm tắt của một lớp Fast Track (Q12): `MT2 đang thi · MT3 chưa xếp 4 em · 2 em vắng` (vắng chưa dời — N38: không chữ "xếp lại"), bỏ vế trống (V5 C20: không gợi ý MT4+). */
 export function tomTatLopFT(i: { dangThi: number | null; chuaXep: { dot: number; soEm: number } | Array<{ dot: number; soEm: number }> | null; canXepLai?: number }): string {
   const ve: string[] = [];
   if (i.dangThi !== null) ve.push(`MT${i.dangThi} đang làm bài`);
   for (const c of i.chuaXep ? [i.chuaXep].flat() : []) if (c.soEm > 0) ve.push(`MT${c.dot} chưa xếp ${c.soEm} em`);
-  if (i.canXepLai) ve.push(`${i.canXepLai} em cần xếp lại`);
+  if (i.canXepLai) ve.push(`${i.canXepLai} em vắng`);
   return ve.join(' · ');
 }
 
