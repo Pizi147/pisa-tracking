@@ -2595,6 +2595,11 @@ api.post('/giao-viec/:loai/:id/han', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return giaoViecSvc.suaHan(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
 }));
+/* VH-1b (N62): { moTa: chữ ≤ 500 | '' (bỏ), moTaCu: chữ đang thấy | null } — Mô tả tuỳ chọn của việc N58 (409 khi người khác vừa sửa). */
+api.put('/giao-viec/:loai/:id/mo-ta', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.suaMoTa(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
 /* { userIds: số[] } — thêm người theo dõi. DELETE …/theo-doi/:userId — bỏ (tự bỏ: ai cũng được). */
 api.post('/giao-viec/:loai/:id/theo-doi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -3220,6 +3225,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     groupId: b.groupId === undefined ? undefined : b.groupId === null || b.groupId === '' ? null : Number(b.groupId),
     theoDoiIds: Array.isArray(b.theoDoiIds) ? b.theoDoiIds.map(Number) : undefined,
     lap: b.lap ?? null,
+    hangMuc: b.hangMuc, classId: b.classId, studentIds: b.studentIds,   // VH-1b (N62): không gửi → như cũ
     branchId: b.branchId ? Number(b.branchId) : null,
     assigneeUserId: b.assigneeUserId ? Number(b.assigneeUserId) : null,
     assigneeName: typeof b.assigneeName === 'string' ? b.assigneeName : null,

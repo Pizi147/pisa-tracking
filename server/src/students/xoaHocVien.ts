@@ -121,7 +121,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'sos_cases', sql: `DELETE FROM sos_cases WHERE id IN (${C})` },
   /* Ý thức: vi phạm ↔ PA xử lý (Q4 — PA của em khác lỡ nối vi phạm của em: chỉ mất dòng nối) */
   /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). */
-  ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
+  /* VH-1b (N62): + mô tả của việc (khoá mềm loai / ref_id) — id việc dùng lại không thừa hưởng mô tả của em đã xoá. */
+  ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id'], ['viec_mo_ta', 'ref_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
   /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
   { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' WHEN 'vi_pham_tra_lai' THEN 'tra_lai' END`, 'doi_tuong_id')}` },
   { bang: 'meeting_phan', sql: `DELETE FROM meeting_phan WHERE phoi_hop_id IN (${X})` },   // GV-1: trước sos_coordination_actions
