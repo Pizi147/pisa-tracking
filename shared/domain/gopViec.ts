@@ -63,8 +63,8 @@ export const khoaDongGop = (group: string, classId: number, ownerId: number | nu
 const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep', 'phoi_hop_tvv']);   // GV-2 ([XM 1] PTA): Báo PH Meeting mỗi em một dòng — panel ba phần là đường làm chính
 /** PHOI-HOP-V2 (mockup #1368 K1): dòng Phối hợp SOS đã là (lớp × việc) — không gộp các việc của một lớp lại. */
 /* GV-2 (mockup v22 G8a / G8e): Xếp lịch họp · Kết quả meeting — mỗi em một dòng (nút Hoàn thành bấm thẳng trên dòng). */
-/* TL-2 (mockup v22 T4a): Vi phạm bị trả lại — mỗi yêu cầu một dòng (lý do, người trả, hạn riêng). */
-const GIU_TUNG_DONG = new Set(['phoi_hop_sos', 'meeting_xep_lich', 'meeting_ket_qua', 'yt_tra_lai']);
+/* TL-2 (mockup v22 T4a): Vi phạm bị trả lại — mỗi yêu cầu một dòng (lý do, người trả, hạn riêng). VH-1b: việc tay (Vận hành) mỗi việc một dòng — gắn lớp không gộp "Cả lớp". */
+const GIU_TUNG_DONG = new Set(['phoi_hop_sos', 'meeting_xep_lich', 'meeting_ket_qua', 'mgmt', 'yt_tra_lai']);
 const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !it.chonPa && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group))
   && !GIU_TUNG_DONG_TVV.has(it.group) && !GIU_TUNG_DONG.has(it.group) && !it.key.startsWith('chot-ngay-thi:');
 /**

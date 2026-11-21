@@ -98,6 +98,7 @@ import { migratePrCxN52 } from './migrate/prCxN52.ts';
 import { migratePrGiaoViec } from './migrate/prGiaoViec.ts';
 import { migratePrTraLai } from './migrate/prTraLai.ts';
 import { migratePrVanHanh } from './migrate/prVanHanh.ts';
+import { migratePrHangMuc } from './migrate/prHangMuc.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -566,6 +567,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrTraLai(conn, applied));
   /* VH-1 (N59, chủ SP 20/11, SAU GV-1 — cần viec_theo_doi): task_groups + 4 nhóm khởi đầu, cột lặp lại trên tasks; group_key / watcher / task_followers → group_id / viec_theo_doi (một lần). */
   buoc(() => migratePrVanHanh(conn, applied));
+  /* VH-1b (N62, chủ SP 21/11, SAU VH-1): tasks.hang_muc + bảng viec_mo_ta (chỉ thêm, chạy lặp được). */
+  buoc(() => migratePrHangMuc(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

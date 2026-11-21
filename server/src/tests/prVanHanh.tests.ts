@@ -381,7 +381,7 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước VH-1: cắt khối cột VH-1 của tasks, hai chỉ mục, bảng task_groups. */
     const cat = SCHEMA
-      .replace(/idempotency_key TEXT,( +--[^\n]*)\n {2}\/\*\n {3}\* VH-1[\s\S]*?lap_tu TEXT\n\)/, 'idempotency_key TEXT$1\n)')
+      .replace(/idempotency_key TEXT,( +--[^\n]*)\n {2}\/\*\n {3}\* VH-1[\s\S]*?lap_tu TEXT(?:,\n[\s\S]*?hang_muc TEXT)?\n\)/, 'idempotency_key TEXT$1\n)')   // VH-1b: hang_muc là cột của bước sau (prHangMuc)
       .replace(/CREATE UNIQUE INDEX ux_tasks_lap_ky[^\n]*\n/, '').replace(/CREATE INDEX idx_tasks_lap_mo[^\n]*\n/, '').replace(/CREATE INDEX idx_task_giao_mo[^\n]*\n/, '')
       .replace(/\/\*\n \* VH-1 \(N59\): NHÓM VIỆC[\s\S]*?tao_luc TEXT NOT NULL\n\);\n/, '');
     if (/task_groups|lap_kieu|group_id INTEGER/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm VH1-9');
@@ -406,7 +406,7 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     const c2: string[] = []; migratePrVanHanh(cu, c2);
     assert(c2.length === 1 && /ux_tasks_lap_ky/.test(c2[0]), `tự lành: ${c2.join(' | ')}`);
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
-    const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
+    const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).filter((x) => x.name !== 'hang_muc').map((x) => `${x.name}:${x.type}:${x.notnull}`));
     for (const bang of ['tasks', 'task_groups']) assert(cot(cu, bang) === cot(moi, bang), `${bang}: ${cot(cu, bang)} ≠ ${cot(moi, bang)}`);
     const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND name IN ('ux_tasks_lap_ky', 'idx_tasks_lap_mo', 'idx_task_giao_mo') ORDER BY name`).all() as any[]));
     assert(chiMuc(cu).replace(/\s+/g, ' ').replace(/IF NOT EXISTS /g, '') === chiMuc(moi).replace(/\s+/g, ' '), `chỉ mục: ${chiMuc(cu)} ≠ ${chiMuc(moi)}`);
