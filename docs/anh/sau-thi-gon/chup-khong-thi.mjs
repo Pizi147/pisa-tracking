@@ -6,6 +6,7 @@ const fs = await import('node:fs');
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge' });
 const log = [];
+let panel1440 = null;
 const cho = (page) => page.waitForLoadState('networkidle').then(() => page.waitForTimeout(600));
 const anh = async (page, ten) => { await cho(page); await page.screenshot({ path: `${out}/${ten}.png` }); };
 for (const [rong, toi] of [[1440, true], [375, false]]) {
@@ -32,8 +33,13 @@ for (const [rong, toi] of [[1440, true], [375, false]]) {
   await page.request.post(`${base}/api/demo/session`, { data: { userId: 23 } });
   await page.goto(`${base}/hoc-vien/21?viec=thi-that`); await anh(page, `${hau}-14-ho-so-buoc-tiep`);
   await page.request.post(`${base}/api/demo/session`, { data: { userId: 31 } });
-  if (rong === 1440) {
-    /* Panel Công việc bước 1 → bấm Không thi. */
+  if (rong === 1440) panel1440 = { ctx, page, hau };
+  else await ctx.close();
+}
+/* Cuối cùng (sau khi 375 đã chụp trạng thái chưa KQ): panel Công việc 1440 bước 1 → bấm Không thi (ghi DB). */
+{
+  const { ctx, page, hau } = panel1440;
+  {
     await page.goto(`${base}/cong-viec`); await cho(page);
     await page.locator('[data-hd="cv-dong"]', { hasText: 'Phan Hải Anh' }).first().locator('xpath=.').click({ position: { x: 40, y: 20 } });
     await anh(page, `${hau}-15-panel-buoc-1`);
