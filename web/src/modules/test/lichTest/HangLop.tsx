@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { ChipHan, ChipKy, Nhan } from '../../../ui/Nhan.tsx';
 import { CHAM_CHEO, chuOChuaLuu, duongDotTest, tenMonNgan } from '@shared/domain/index.ts';
 import { khoaHang, type LichTest, type LopLichTest } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
+import { Skeleton } from '../../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 
@@ -94,6 +95,26 @@ export const ODot = ({ luot, classId, kind }: { luot: readonly LuotHang[]; class
 export const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim">{t('Còn chờ: {ds}', { ds })}</p> : null);
 
 /**
+ * GIAM-COMPUTE C1 (chủ SP 21/11 "Làm C1"): lưới hàng lớp đang mở chỉ gắn (gọi `/classes/:id/cham`) khi tới gần khung nhìn — lề một màn trên / dưới. "Mở tất cả lớp"
+ * trước bắn mọi lưới song song (mỗi request một máy Netlify → khởi động lạnh). Đã gắn thì giữ (cuộn đi không mất dữ liệu / ô đang gõ); `ngay` (hàng mở tay / theo
+ * đường dẫn — con trỏ vào ô trống) gắn liền. Trang cuộn trong `<main id="noi-dung">` nên lấy nó làm gốc (lề tính theo gốc). Khung chờ = khung chờ của `LuoiNhung`.
+ */
+function KhiToiGan({ ngay, children }: { ngay: boolean; children: ReactNode }) {
+  const [gan, setGan] = useState(ngay);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (gan) return undefined;
+    const el = ref.current;
+    if (ngay || !el || typeof IntersectionObserver === 'undefined') { setGan(true); return undefined; }
+    const o = new IntersectionObserver((ds) => { if (ds.some((d) => d.isIntersecting)) setGan(true); },
+      { root: el.closest('#noi-dung'), rootMargin: '100% 0px' });
+    o.observe(el);
+    return () => o.disconnect();
+  }, [gan, ngay]);
+  return gan ? <>{children}</> : <div ref={ref} className="py-1"><Skeleton rows={4} /></div>;
+}
+
+/**
  * HÀNG LỚP của Lịch tuần (GD-11a, ⑦ A1 / A3 / A6): ghi THẲNG trên hàng — Lớp (link hồ sơ) · Đợt chính "MT3 · 5 em" (+ "+ MT1 · 1 em" nếu có lượt khác) · Môn của bạn
  * (QL: Môn) · hạn chấm (chip, lớp xong thì trống) · tiến độ (kèm thẻ "n bài chờ duyệt dời"; tooltip có "còn chờ: GV (môn)") · trạng thái; một hàng tiêu đề cột mảnh ở đầu.
  * Mở ra là lưới chấm tại chỗ đúng tuần thi của hàng (KHÔNG đổi). < 1024 px: mỗi lớp một thẻ (mã · tiến độ / đợt · môn / hạn · chờ dời · trạng thái).
@@ -181,10 +202,12 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
               <HangCon className={mo ? '' : 'hidden'}>
                 <td colSpan={soCot} className="!p-0">
                   <DongConCho ds={conCho} />
-                  <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
-                    tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
-                    datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
-                    onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} luotChinh={nhanChinh} />
+                  <KhiToiGan ngay={conTro.has(k)}>
+                    <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
+                      tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
+                      datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
+                      onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} luotChinh={nhanChinh} />
+                  </KhiToiGan>
                 </td>
               </HangCon>
             )}
