@@ -416,8 +416,9 @@ function khoiCua(d: any): KhoiGv {
     phuTrach: ten ? [{ id: d.assigneeUserId ?? 0, ten }] : [], macDinh: [], duocGiao: !!d.createdBy,
     giaoBoi: d.createdBy ? { id: d.createdBy, ten: d.createdByName ?? null } : null, giaoLuc: null,
     han: d.due ?? null, hanMacDinh: null, hanChon: null, /* việc Vận hành: hạn người giao đặt, không "mặc định" theo luật */ coTheSuaHan: !!d.viewer?.canSuaHan,
-    theoDoi: (d.theoDoi ?? []).map((x: any) => ({ id: x.id, ten: x.ten, nguon: x.nguon ?? '' })), toiTheoDoi: false,
+    theoDoi: (d.theoDoi ?? []).map((x: any) => ({ id: x.id, ten: x.ten, nguon: x.nguon ?? '', vai: x.vai ?? null })), toiTheoDoi: false,
     coTheDoiNguoi: !!d.viewer?.canEdit && !dong(d.progress), coTheSuaTheoDoi: !!d.viewer?.canSuaTheoDoi && !dong(d.progress), hoanTacDuoc: false, lichSu: [],
+    /* GV-3: việc Vận hành có ghi chú riêng (tasks.note) — không dòng Mô tả việc của khối. */ moTa: null, coTheSuaMoTa: false,
   };
 }
 
