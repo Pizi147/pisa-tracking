@@ -467,34 +467,51 @@ function FormBo({ id, tvv, onDong, onXong }: { id: number; tvv: number | null; o
  * Meeting CX/GĐCN (N58): "GVCN xác nhận" rồi ba phần ĐỘC LẬP Xếp lịch (BPXL) · Kết quả (CX) · Báo PH (TVV); việc chỉ của GVCN một chấm.
  * Người có việc làm tại chỗ (GVCN / QL: Xác nhận; TVV: Ghi kết quả). Dữ liệu = request sẵn có của tab (ba phần Meeting nạp theo lô ở máy chủ).
  */
-export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo, phamVi }: {
+export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo, phamVi, tieuDe }: {
   turns: CoordTurn[]; cot1: 'hocVien' | 'luot'; onChanged: () => void; onGoAcademic?: () => void;
   /** Chữ phạm vi ("mọi lượt") gắn vào dải đầu của lượt đầu tiên — không đứng riêng một hàng (PTA rà #2000). */
   phamVi?: string;
   /** GV-CU-BO-TRO [XM-2]: em người xem không mở được hồ sơ (người dạy bổ trợ chỉ xem lớp) — tên chữ thường. */
   khongMo?: ReadonlySet<number>;
+  /** HV-YT-BO-TAB-CON (mockup v23 Y1): đầu khối "Phối hợp SOS · n việc" + "+ Thêm việc" (của lượt đầu) — thay tab con. */
+  tieuDe?: string;
 }) {
   const [vuaLuu, setVuaLuu] = useState<ReadonlySet<number>>(new Set());
+  const [themDau, setThemDau] = useState(false);
   if (!turns.length) return <p className="m-0 px-4 py-8 text-center text-sm font-semibold text-[color:var(--text)]">{t('Không còn việc phối hợp nào')}</p>;
   /* Lượt chưa xong lên trước (lớp: rồi theo tên em; HV: máy chủ đã xếp mới nhất trước). */
   const ds = [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete));
   const vua = (id: number) => (co: boolean) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(id); else n.delete(id); return n; });
+  const themDuoc = (l: CoordTurn) => l.canAct && !l.nhanDot;
+  const dau = tieuDe !== undefined && themDuoc(ds[0]!);
   return (
-    <div className="text-sm [container-type:inline-size]" aria-label={t('Phối hợp SOS')}>
-      {ds.map((luot, i) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} phamVi={i === 0 ? phamVi : undefined} />)}
+    <div className="text-sm [container-type:inline-size]" aria-label={tieuDe ?? t('Phối hợp SOS')}>
+      {tieuDe !== undefined && (
+        <div className="flex min-h-12 flex-wrap items-center gap-x-2.5 gap-y-1 border-b py-1.5 pl-4 pr-2 max-sm:pl-3" style={{ borderColor: 'var(--line)' }}>
+          <h3 className="m-0 text-[14px] font-bold text-[color:var(--text)]">{tieuDe}</h3>
+          <span className="text-[13px] tabular-nums text-dim">{t('{n} việc', { n: ds.reduce((n, l) => n + l.summary.active, 0) })}</span>
+          {dau && !themDau && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-[32px]" onClick={() => setThemDau(true)}>{t('+ Thêm việc')}</button>}
+        </div>
+      )}
+      {ds.map((luot, i) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} phamVi={i === 0 ? phamVi : undefined}
+        themNgoai={i === 0 && dau ? { mo: themDau, dat: setThemDau } : undefined} />)}
     </div>
   );
 }
 
 const LINK_NHO = 'link inline-flex min-h-[44px] appearance-none items-center border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0';
 
-function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, phamVi }: {
+function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, phamVi, themNgoai }: {
   luot: CoordTurn; cot1: 'hocVien' | 'luot'; vuaLuu: ReadonlySet<number>; vua: (id: number) => (co: boolean) => void; onChanged: () => void; onGoAcademic?: () => void;
   khongMo?: ReadonlySet<number>; phamVi?: string;
+  /** "+ Thêm việc" đặt ở đầu khối (không ở dải lượt) — trạng thái mở form do khối giữ. */
+  themNgoai?: { mo: boolean; dat: (v: boolean) => void };
 }) {
   /* Lượt đã xong (hồ sơ HV) gập một dòng, "Xem việc ▸" mở tại chỗ. */
   const [mo, setMo] = useState(!(cot1 === 'luot' && luot.summary.complete));
-  const [them, setThem] = useState(false);
+  const [themTrong, setThemTrong] = useState(false);
+  const them = themNgoai ? themNgoai.mo : themTrong;
+  const setThem = themNgoai ? themNgoai.dat : setThemTrong;
   const xong = luot.summary.complete;
   const TEN = 'text-sm font-bold text-[color:var(--text)] no-underline';
   return (
@@ -509,7 +526,7 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, p
         <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
           {phamVi && <span className="text-[13px] text-dim">{phamVi}</span>}
           {!mo && <button type="button" className={LINK_NHO} aria-expanded={false} onClick={() => setMo(true)}>{t('Xem việc ▸')}</button>}
-          {luot.canAct && !luot.nhanDot && !them && <button type="button" className={LINK_NHO} onClick={() => setThem(true)}>{t('+ Thêm việc')}</button>}
+          {!themNgoai && luot.canAct && !luot.nhanDot && !them && <button type="button" className={LINK_NHO} onClick={() => setThem(true)}>{t('+ Thêm việc')}</button>}
           {onGoAcademic && <button type="button" className={LINK_NHO} onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
         </span>
       </div>

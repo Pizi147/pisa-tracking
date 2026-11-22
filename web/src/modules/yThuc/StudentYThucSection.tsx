@@ -15,7 +15,7 @@ import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
-import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
+import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TheLoai, type VpDong } from './BangLan.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -31,7 +31,7 @@ const CHO_GV = new Set(['moi', 'can_xu_ly', 'qua_han']);
 const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]';
 
 /**
- * TINH-HINH (mockup `thiet-ke/v20/tinh-hinh.html` A4, chủ SP duyệt 12/11): hai tab nhỏ "Tình hình học tập / Ý thức" · "Phối hợp SOS"; trong tab nhỏ đầu:
+ * TINH-HINH (mockup `thiet-ke/v20/tinh-hinh.html` A4) → HV-YT-BO-TAB-CON (v23 Y1, chủ SP 23/11): hết hai tab nhỏ — Thang | Đang chờ, Phối hợp SOS, Lịch sử một trang:
  *   dải mốc (MỐC VIẾT HOA · Bậc kế · Thang ▾) + Khai / Hỏi / Báo tình hình / + Vi phạm / Nhắc nhở · "Đang chờ" (mọi bước còn chờ, cả tình hình hai chiều) ·
  *   "Cả quá trình" (vi phạm, nhắc nhở, tình hình, lần xử lý — mới nhất trước; lọc loại + phạm vi + nhóm). Cùng dòng `DongLan` với tab lớp.
  * (cũ) TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN — Y-THUC-V2 (mockup `thiet-ke/2026-11-11-y-thuc-v2/y-thuc-v2.html` K3 · K4, chủ SP duyệt 11/11).
@@ -39,7 +39,7 @@ const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text
  *   Đầu thẻ: phân đoạn `Vi phạm | Phối hợp SOS` · trong Vi phạm `Cần làm | Lịch sử` · phải: Khai / sửa cấp bậc · + Vi phạm / Nhắc nhở.
  *   Dải bậc MỘT hàng: Đã tới · Bậc kế · Thang ▾ (thay dải 5 ô + hàng 4 nút khác kiểu). "Lần này" chỉ hiện ở ô ② khi PHẢI xử lý.
  *   Lịch sử: Đã xem · Đã xử lý · Đã thu hồi (chủ SP 11/11) · phạm vi Lộ trình | Cả lịch sử · nhóm vi phạm. Phối hợp SOS: mọi lượt (không đổi).
- * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → panel Xác nhận xử lý; `&sub=phoi-hop` → mở phân đoạn Phối hợp.
+ * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → panel Xác nhận xử lý; `&sub=phoi-hop` → cuộn tới khối Phối hợp SOS (HV-YT-BO-TAB-CON: hết tab con).
  */
 /** N63 ⑤: BPXL không xem Ý thức — tab hồ sơ chỉ còn Phối hợp (việc Xếp lịch họp Meeting của BPXL ở đây). Cùng đường + cùng bảng phân đoạn Phối hợp. */
 export function PhoiHopHocVien({ studentId, thuong, onGoAcademic }: { studentId: number; thuong: boolean; onGoAcademic?: () => void }) {
@@ -48,7 +48,7 @@ export function PhoiHopHocVien({ studentId, thuong, onGoAcademic }: { studentId:
     <section className="card overflow-clip pb-1" aria-label={thuong ? t('Phối hợp') : t('Phối hợp SOS')}>
       {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
         : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
-        : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic} onChanged={() => { coord.reload(); }} />}
+        : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" tieuDe={thuong ? t('Phối hợp') : t('Phối hợp SOS')} onGoAcademic={onGoAcademic} onChanged={() => { coord.reload(); }} />}
     </section>
   );
 }
@@ -66,7 +66,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
   const { data: d, error, loading, reload } = useApi<YThucHocVien>(`/students/${studentId}/y-thuc${phamVi === 'tat-ca' ? '?pham-vi=tat-ca' : ''}`, [studentId, phamVi]);
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
-  const [phan, setPhan] = useState<'vi-pham' | 'phoi-hop'>(params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham');
   const [loc, setLoc] = useState<LocLs>('tat-ca');
   const [nhomVp, setNhomVp] = useState('');
   const [moVp, setMoVp] = useState<string | null>(null);
@@ -80,6 +79,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   /* Vi phạm đang gửi Đã xem — mọi nút Đã xem khoá tới khi xong (không gửi chồng). */
   const [dangGhi, setDangGhi] = useState(false);
   const dauRef = useRef<HTMLElement>(null);
+  const phRef = useRef<HTMLDivElement>(null);
   const [hop, setHop] = useState<{ che: CheDoHop; neo: RefObject<HTMLElement | null> } | null>(null);
   const neoBao = useRef<HTMLButtonElement>(null);
   const neoHoi = useRef<HTMLButtonElement>(null);
@@ -96,14 +96,14 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     setParams(p, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.get('mo'), studentId]);
-  /* PR-LT2a: việc "Báo PH kết quả Test" mở `&sub=phoi-hop` — mở phân đoạn Phối hợp và cuộn tới. */
+  /* PR-LT2a: việc "Báo PH kết quả Test" mở `&sub=phoi-hop` — cuộn tới khối Phối hợp SOS (em không có Phối hợp: đầu tab). */
   const coSub = params.get('sub') === 'phoi-hop';
+  const phXong = !!coord.data || !!coord.error;
   useEffect(() => {
-    if (!coSub || !d) return;
-    setPhan('phoi-hop');
-    dauRef.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (!coSub || !d || !phXong) return;
+    (phRef.current ?? dauRef.current)?.scrollIntoView({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coSub, !!d]);
+  }, [coSub, !!d, phXong]);
 
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !d) return <Skeleton rows={5} />;
@@ -273,20 +273,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
 
   return (
     <section ref={dauRef} className="card scroll-mt-24 overflow-clip [container-type:inline-size]" aria-label={t('Ý thức & Phối hợp')}>
-      {/* Mockup v20 A4: MỘT tab lớn, hai tab nhỏ (chủ SP 12/11). */}
-      <TabNho value={phan} onChange={setPhan}
-        muc={[{ key: 'vi-pham', nhan: t('Tình hình học tập / Ý thức'), ngan: t('Tình hình / Ý thức') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
-
-      {phan === 'phoi-hop' ? (
-        <div className="pb-1">
-          {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
-            : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
-            /* PHOI-HOP-V2 PR-2 (mockup #1368 K7): cùng bảng với hồ sơ lớp, cột đầu là Lượt. */
-            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic} phamVi={t('mọi lượt')}
-                onChanged={() => { coord.reload(); }} />}
-        </div>
-      ) : (
-        <>
           {/* NHẸ HƠN PR-6 (v23 ⑧ Y1, PTA rà #2000): ≥ 1280 hai cột — Thang (trái) · Đang chờ (phải, = "Vi phạm chưa xử lý" của khung); hẹp hơn xếp dọc.
               Cột phải là khung đo riêng (`container`) để dòng chờ vẽ dạng thẻ theo bề rộng cột, không theo cả khối. */}
           <div className="grid items-start border-b min-[1280px]:grid-cols-2" style={{ borderColor: 'var(--line)' }}>
@@ -321,6 +307,20 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           </div>
           </div>
 
+          {/* HV-YT-BO-TAB-CON (mockup v23 Y1 / Y3): Phối hợp SOS ngay dưới thang — không còn tab con; em không có Phối hợp → không vẽ khối.
+              Tải song song với Ý thức (hai request cùng lúc khi mở tab). -mb-px: vạch cuối của lượt trùng vạch trên Lịch sử. */}
+          {(coord.error || !!coord.data?.rows.length) && (
+            <div ref={phRef} className="-mb-px scroll-mt-24">
+              {coord.error ? <>
+                <h3 className="m-0 flex min-h-12 items-center border-b px-4 text-[14px] font-bold text-[color:var(--text)] max-sm:px-3" style={{ borderColor: 'var(--line)' }}>{tenPhoiHop}</h3>
+                <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
+              </>
+                /* PHOI-HOP-V2 PR-2 (mockup #1368 K7): cùng bảng với hồ sơ lớp, cột đầu là Lượt. */
+                : <BangPhoiHopHoSo turns={coord.data!.rows} cot1="luot" tieuDe={tenPhoiHop} onGoAcademic={onGoAcademic} phamVi={t('mọi lượt')}
+                    onChanged={() => { coord.reload(); }} />}
+            </div>
+          )}
+
           <div id={`yt-ls-${studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
             <LichSuGap so={soTong} moSan={moLs} onMo={setMoLs} className="!rounded-none !border-0 !bg-transparent">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
@@ -340,8 +340,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
                 : <div className="p-4"><Empty title={loc === 'tat-ca' && !nhomVp ? t('Chưa có gì trong lịch sử') : t('Không có dòng nào khớp bộ lọc')} /></div>}
             </LichSuGap>
           </div>
-        </>
-      )}
 
       {baoPh && (
         /* Báo PH tại chỗ (TVV / QL ghi; GVCN sửa hạn) — cùng panel với Công việc và tab lớp. */
