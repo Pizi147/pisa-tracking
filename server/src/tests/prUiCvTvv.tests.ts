@@ -57,9 +57,9 @@ export async function runPrUiCvTvvTests(t: any) {
   };
 
   try {
-    await checkAsync('UICV-1 · TVV có menu Công việc (work + workSupport), không Chấm điểm / duyệt / Test; GV, QL không đổi', () => thu(() => {
+    await checkAsync('UICV-1 · TVV có menu Công việc (work + workSupport), không Chấm điểm / duyệt; Test chỉ xem Lịch (22/11); GV, QL không đổi', () => thu(() => {
       const n = navOf(tvvMoi());
-      assert(n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && !n.test, JSON.stringify(n));
+      assert(n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.test && !n.testPlan, JSON.stringify(n));
       const g = navOf(gvcn), q = navOf(P.mbManager);
       assert(g.work && g.workSupport && !g.workApprove && q.work && q.workApprove, 'GV / QL giữ cờ cũ');
     }));
