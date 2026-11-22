@@ -70,8 +70,14 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
   - Đầu mục mỗi loại việc tách bạch rõ: tiêu đề nhóm nổi + số việc · quá hạn; không trộn loại việc trong một dòng.
   - Trong một loại việc: mỗi dòng một lớp / em cụ thể (không "Cả lớp"), nói **thứ còn thiếu trước** (vd "MB FT 101 · W2 SEP · thiếu 5 điểm"). Người phụ trách ghi nhỏ cuối dòng, chỉ khi người xem không phải người phụ trách (Head / QL / Admin / CX xem "Tất cả").
 - **Riêng Admin (ý 15):** góc nhìn vận hành — đủ điểm / đủ báo cáo / lịch thi / hồ sơ trước, người phụ trách sau; tối giản bớt chip / chữ phụ, bớt phần GV-centric (số liệu theo GV để ở Head).
-  - Head giữ phần GV như hiện nay.
+  - Admin: danh sách gọn bên trái (không dàn cả trang), bấm dòng mở panel bên cạnh — chủ SP 22/11 ý 6.
   - Dữ liệu dùng chung nguồn đếm với `/my-work` (cùng hàm). Mockup + kế hoạch code phải ước câu / dòng Turso, và không thêm câu theo từng lớp.
+- **Head (chủ SP 22/11 ý 7, brainstorm):** Head nhiều người vẫn là GV → giữ nút **Của tôi / Của GV / Tất cả**, không đổi cấu trúc.
+  - "Của tôi" (mặc định): việc Head phải làm, gồm việc GV của chính mình; chia theo loại việc.
+  - "Của GV": số quá hạn trên nút ("Của GV · 12 quá hạn"); bên trong chia theo loại việc, đầu mục tách rõ; chỉ việc quá hạn + sắp đến (vàng / đỏ); dòng "lớp / em · thiếu gì · hạn", tên GV nhỏ cuối dòng; bấm là làm thay luôn (N64); lọc một GV qua "Lọc thêm".
+  - Tổng quan › khối Giáo viên (góc nhìn theo GV, rà cho rõ): mỗi GV một dòng — tên · số việc quá hạn · loại quá hạn (vd 3 chấm · 1 Case) · quá hạn lâu nhất; quá hạn nhiều lên đầu; bấm số mở Công việc "Của GV" lọc đúng GV + loại.
+  - Cùng nguồn đếm `/my-work`; không câu theo từng GV.
+- **Luật hạn (chủ SP 22/11, mọi màn):** ngày luôn dd/mm/yyyy; màu chữ thường (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) · đỏ (quá hạn); "quá hạn n ngày" chỉ ở dòng việc / đầu panel việc, bảng báo cáo / hồ sơ chỉ tô màu ngày; mã tuần giữ cho tuần thi / tuần học.
 - **Panel chấm điểm:**
   - Rộng ~75 %. Mỗi lớp một khối, đầu khối nổi rõ: lớp · tuần · kỹ năng · số bài.
   - Lưới: cột tên + ô điểm + kết quả, không khoảng trống thừa.
