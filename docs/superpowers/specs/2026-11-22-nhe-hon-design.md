@@ -65,10 +65,11 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
   - Dòng việc: tên (đậm) · một dòng phụ · hạn (đỏ chỉ khi quá hạn) · một nút.
   - Mỗi lớp một dòng (SUA-2211-B đã tách "Cả lớp").
   - Bảng "HV của tôi" (TVV) gọn: tên · lớp · một chip trạng thái.
-- **Công việc Admin (THEO LOẠI VIỆC — chủ SP 22/11 đổi lại, thay "theo lớp"):**
-  - Giữ phân loại theo loại việc như hiện nay (Điểm / Chấm · Báo cáo PH · Lịch thi · Hồ sơ · Vận hành…), nhưng mỗi dòng nói **thứ còn thiếu trước**: lớp / em · còn thiếu gì (vd "MB FT 101 · W2 SEP · thiếu 5 điểm"), **người phụ trách sau** (tên nhỏ cuối dòng). Việc đã đủ không hiện.
-  - Đầu mục mỗi loại việc phải tách bạch rõ (tiêu đề nhóm nổi, số việc · quá hạn); không trộn loại việc trong một dòng.
-  - Tab giữ như hiện có của Admin (+ Vận hành · Đang theo dõi); tối giản bớt chip / chữ phụ theo mục 1.
+- **Công việc MỌI VAI — THEO LOẠI VIỆC (chủ SP 22/11: "công việc của admin? ý tôi là công việc của tất cả mọi vai ấy chứ?"):**
+  - Mọi vai (GV, GVCN, TVV, Head, QL, Admin, CX, BPXL, QT) giữ phân loại theo loại việc như hiện nay (tab / nhóm: Chấm điểm · Case · Ý thức & Phối hợp · Báo PH · Sau thi · Bổ sung hồ sơ · Vận hành…), KHÔNG gom theo lớp.
+  - Đầu mục mỗi loại việc tách bạch rõ: tiêu đề nhóm nổi + số việc · quá hạn; không trộn loại việc trong một dòng.
+  - Trong một loại việc: mỗi dòng một lớp / em cụ thể (không "Cả lớp"), nói **thứ còn thiếu trước** (vd "MB FT 101 · W2 SEP · thiếu 5 điểm"). Người phụ trách ghi nhỏ cuối dòng, chỉ khi người xem không phải người phụ trách (Head / QL / Admin / CX xem "Tất cả").
+- **Riêng Admin (ý 15):** góc nhìn vận hành — đủ điểm / đủ báo cáo / lịch thi / hồ sơ trước, người phụ trách sau; tối giản bớt chip / chữ phụ, bớt phần GV-centric (số liệu theo GV để ở Head).
   - Head giữ phần GV như hiện nay.
   - Dữ liệu dùng chung nguồn đếm với `/my-work` (cùng hàm). Mockup + kế hoạch code phải ước câu / dòng Turso, và không thêm câu theo từng lớp.
 - **Panel chấm điểm:**
