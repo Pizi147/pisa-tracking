@@ -14,10 +14,10 @@ export async function runPrK26Tests(t: YThucTestKit) {
     assert(d.HUONG_TIEP.includes('chua_quyet') && d.HUONG_CHUYEN_TIEP.includes('chua_quyet'), 'hai bước cùng có chua_quyet');
     assert(!d.HUONG_TIEP.includes('chua_ro') && !d.HUONG_CHUYEN_TIEP.includes('xep_sau'), 'bỏ hai giá trị cũ');
   });
-  check('K26-1 · nhãn Chưa quyết: đầy đủ không ngày; ngắn có ngày → "Chưa quyết · xem lại dd/mm"', () => {
+  check('K26-1 · nhãn Chưa quyết: đầy đủ không ngày; ngắn có ngày → "Chưa quyết · xem lại dd/mm/yyyy"', () => {
     const ctx = { ma: 'FOU', maKe: 'BE' };
     assert(d.nhanHuong('chua_quyet', ctx) === 'Chưa quyết', d.nhanHuong('chua_quyet', ctx));
-    assert(d.nhanHuongNgan('chua_quyet', { ...ctx, ngayXemLai: '2026-09-28' }) === 'Chưa quyết · xem lại 28/09', d.nhanHuongNgan('chua_quyet', { ...ctx, ngayXemLai: '2026-09-28' }));
+    assert(d.nhanHuongNgan('chua_quyet', { ...ctx, ngayXemLai: '2026-09-28' }) === 'Chưa quyết · xem lại 28/09/2026', d.nhanHuongNgan('chua_quyet', { ...ctx, ngayXemLai: '2026-09-28' }));
     assert(d.nhanHuongNgan('chua_quyet', ctx) === 'Chưa quyết', 'không ngày');
     assert(d.tomTatChuyenTiep([{ huong: 'chua_quyet' }]).cau.join() === '1 em chưa quyết', 'tóm tắt');
   });

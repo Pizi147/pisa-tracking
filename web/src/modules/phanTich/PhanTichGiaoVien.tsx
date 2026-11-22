@@ -205,7 +205,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     );
     return (
       <div className="grid gap-2">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px]">{oCua(d, cot[0])}<span className="text-[13px] text-[color:var(--text-dim)]">{phuCua(d, cot[0])}</span></div>
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[14px]">{oCua(d, cot[0])}<span className="text-[13px] text-[color:var(--text-dim)]">{phuCua(d, cot[0])}</span></div>
         {nhomThe(NHOM_CT, cot.slice(1, 4), cot[4])}
         {nhomThe(NHOM_V, cot.slice(5, 8), cot[8])}
         <div className="grid justify-items-start gap-1 border-t pt-2" style={{ borderColor: 'var(--line)' }}>

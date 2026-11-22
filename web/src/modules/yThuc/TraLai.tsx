@@ -201,7 +201,7 @@ function DongVp({ x, dau, mo, cho, hn, traLaiDuoc, dangNhap, onBam, onNhap, onTr
   return (
     <li className={dau ? '' : 'border-t'} style={{ borderColor: 'var(--line)' }}>
       <button type="button" aria-expanded={mo} aria-controls={mo ? ma : undefined} onClick={onBam}
-        className="grid min-h-[44px] w-full appearance-none grid-cols-[48px_28px_minmax(0,1fr)_auto_16px] items-center gap-2 border-0 px-3 py-1.5 text-left font-[inherit] text-sm text-[color:var(--text)] hover:bg-[color:var(--accent-soft)] max-sm:grid-cols-[44px_26px_minmax(0,1fr)_16px]"
+        className="grid min-h-[44px] w-full appearance-none grid-cols-[84px_28px_minmax(0,1fr)_auto_16px] items-center gap-2 border-0 px-3 py-1.5 text-left font-[inherit] text-sm text-[color:var(--text)] hover:bg-[color:var(--accent-soft)] max-sm:grid-cols-[80px_26px_minmax(0,1fr)_16px]"
         style={mo ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : { background: 'transparent' }}>
         <span className="text-[13px] font-medium tabular-nums text-dim">{shortDate(x.ngay, hn)}</span>
         <ChipMon skill={x.skill} />
@@ -211,7 +211,7 @@ function DongVp({ x, dau, mo, cho, hn, traLaiDuoc, dangNhap, onBam, onNhap, onTr
         <span aria-hidden className={`text-faint transition-transform ${mo ? 'rotate-90' : ''}`}>›</span>
       </button>
       {mo && (
-        <div id={ma} className="grid gap-2.5 border-t py-2.5 pl-[68px] pr-3 text-sm max-sm:pl-3" style={{ borderColor: 'var(--line)', background: 'color-mix(in srgb, var(--accent-soft) 40%, var(--surface))' }}>
+        <div id={ma} className="grid gap-2.5 border-t py-2.5 pl-[132px] pr-3 text-sm max-sm:pl-3" style={{ borderColor: 'var(--line)', background: 'color-mix(in srgb, var(--accent-soft) 40%, var(--surface))' }}>
           <dl className="m-0 grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 max-sm:grid-cols-1">
             <dt className="text-[13px] text-dim">{t('Ghi lúc')}</dt>
             <dd className="m-0 tabular-nums">{[x.ghiLuc ? lucVn(x.ghiLuc) : shortDate(x.ngay, hn), x.nguoiGhi, x.skill ? t('buổi {mon}', { mon: tenMon(null, x.skill) }) : null].filter(Boolean).join(' · ')}</dd>

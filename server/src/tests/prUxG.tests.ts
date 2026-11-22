@@ -72,12 +72,12 @@ export async function runPrUxGTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ G3 · thông báo: giờ và chữ
   console.log('\nUX-G · G3 thông báo');
-  check('G3a · thoiGianThongBao: cùng ngày nghiệp vụ → chỉ giờ; ngày trước → "dd/mm giờ"; ghi nhận SAU ngày nghiệp vụ (demo) → "Ghi nhận dd/mm giờ", không giả làm ngày nghiệp vụ', () => {
+  check('G3a · thoiGianThongBao: cùng ngày nghiệp vụ → chỉ giờ; ngày trước → "dd/mm/yyyy giờ"; ghi nhận SAU ngày nghiệp vụ (demo) → "Ghi nhận dd/mm/yyyy giờ", không giả làm ngày nghiệp vụ', () => {
     const f = d.thoiGianThongBao;
     assert(typeof f === 'function', 'thiếu thoiGianThongBao');
     assert(f('2026-09-14T03:05:00Z', '2026-09-14') === '10:05', f('2026-09-14T03:05:00Z', '2026-09-14'));
-    assert(f('2026-09-10T03:05:00Z', '2026-09-14') === '10/09 10:05', f('2026-09-10T03:05:00Z', '2026-09-14'));
-    assert(f('2026-10-02T15:57:00Z', '2026-09-14') === 'Ghi nhận 02/10 22:57', f('2026-10-02T15:57:00Z', '2026-09-14'));
+    assert(f('2026-09-10T03:05:00Z', '2026-09-14') === '10/09/2026 10:05', f('2026-09-10T03:05:00Z', '2026-09-14'));
+    assert(f('2026-10-02T15:57:00Z', '2026-09-14') === 'Ghi nhận 02/10/2026 22:57', f('2026-10-02T15:57:00Z', '2026-09-14'));
     assert(f(null, '2026-09-14') === '', 'null → rỗng');
   });
   check('G3b · Header dùng thoiGianThongBao (không tự dựng giờ), tooltip nói cả ngày nghiệp vụ', () => {

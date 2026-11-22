@@ -113,11 +113,11 @@ export async function runPrOv15aTests(t: YThucTestKit) {
     assert(d.soKyVong(null, 6) === null && d.soKyVong(6, null) === null, 'thiếu → null');
   });
 
-  check('OV15a · 8: hạn chỉ ghi NGÀY ("hạn 18/09") — không thứ (T2…T7, CN) ở mọi loại hạn', () => {
+  check('OV15a · 8: hạn chỉ ghi NGÀY ("hạn 18/09/2026") — không thứ (T2…T7, CN) ở mọi loại hạn', () => {
     const KINDS = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'nhap-diem', 'viec-van-hanh', 'duyet', 'xu-ly-vi-pham', 'mini-test', 'phoi-hop', 'chot-len-ft', 'sau-thi'] as const;
     for (const kind of KINDS) {
       const v = d.deadlineView({ kind, due: '2026-09-29', today: '2026-09-23' });
-      assert(v.han === 'hạn 29/09', `${kind}: "${v.han}"`);
+      assert(v.han === 'hạn 29/09/2026', `${kind}: "${v.han}"`);
       assert(!/\b(T[2-7]|CN)\b/.test(v.text), `${kind}: còn thứ trong "${v.text}"`);
     }
   });

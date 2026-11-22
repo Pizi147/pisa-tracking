@@ -364,7 +364,7 @@ function HopDoiNguoi({ g, thaoTac, onDong, onXong, onXungDot }: { g: KhoiGv; tha
     <div ref={o} className="grid">
       <div className="flex items-start gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="grid min-w-0 flex-1 gap-0.5">
-          <b className="text-[15px] font-bold">{t('Đổi người phụ trách')}</b>
+          <b className="text-[14px] font-bold">{t('Đổi người phụ trách')}</b>
           <span className="text-[13px] text-dim">{g.tieuDe}</span>
         </div>
         <button type="button" className={NUT_DONG} aria-label={t('Đóng')} onClick={onDong}>✕</button>
@@ -434,7 +434,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
       {nguoi.size ? [...nguoi.values()].map(chip) : <span className="text-sm text-faint">{t('Chưa có')}</span>}
     </div>
     <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-      {suaDuoc && ds.some((g) => g.mo) && <button ref={nut} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center px-0 text-[17px] font-medium sm:h-[30px] sm:min-h-[30px] sm:w-[30px] sm:min-w-[30px]"
+      {suaDuoc && ds.some((g) => g.mo) && <button ref={nut} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center px-0 text-[16px] font-medium sm:h-[30px] sm:min-h-[30px] sm:w-[30px] sm:min-w-[30px]"
         aria-label={t('Thêm người theo dõi')} aria-haspopup="dialog" aria-expanded={hop} onClick={() => setHop(true)}>+</button>}
     </div>
     {hop && (
@@ -469,7 +469,7 @@ function HopThemTheoDoi({ ds, da, onDong, onThem }: { ds: KhoiGv[]; da: Readonly
   return (
     <div ref={o} className="grid">
       <div className="flex items-start gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <div className="grid min-w-0 flex-1 gap-0.5"><b className="text-[15px] font-bold">{t('Thêm người theo dõi')}</b><span className="text-[13px] text-dim">{ds[0]?.tieuDe}</span></div>
+        <div className="grid min-w-0 flex-1 gap-0.5"><b className="text-[14px] font-bold">{t('Thêm người theo dõi')}</b><span className="text-[13px] text-dim">{ds[0]?.tieuDe}</span></div>
         <button type="button" className={NUT_DONG} aria-label={t('Đóng')} onClick={onDong}>✕</button>
       </div>
       <div className="grid gap-2 px-4 py-3">

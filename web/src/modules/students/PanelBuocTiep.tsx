@@ -211,7 +211,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
             {HUONG_SAU_THI.map((k) => (
               <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(k)}
                 /* Chủ SP 18/11 "khung rõ": ô nền surface + viền mạnh trên nền nhấn của khối; ô đang chọn viền nhấn 2 px + nền nhấn nhạt. */
-                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
+                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[14px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
                 {NHAN_HUONG_SAU_THI[k]}
                 <span className="text-[13px] font-normal text-slate-400">
                   {k === 'dung' ? t('Em vào Lưu trữ') : k === 'hoc_tiep' ? t('Giữ lộ trình, lớp, Target') : t('LT1 · LT2 · RF · Khác')}{bt.goiY === k ? ` · ${t('gợi ý')}` : ''}

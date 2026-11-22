@@ -387,7 +387,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
   const loiAb = loiCua('so-buoi-tuan') ?? loiCua('so-buoi-du-kien') ?? loiCua('buoi-tong');
   const oSo = (khoa: string, v: string, dat: (x: string) => void, nhan: string, aria: string, loiThem = false) => (
     <label className="flex flex-col items-center gap-1">
-      <input className={`field h-10 w-[84px] text-center text-[15px] font-semibold tabular-nums max-sm:w-[72px] ${loiThem || loiCua(khoa) ? '!border-late ring-1 ring-late/40' : ''}`}
+      <input className={`field h-10 w-[84px] text-center text-[14px] font-semibold tabular-nums max-sm:w-[72px] ${loiThem || loiCua(khoa) ? '!border-late ring-1 ring-late/40' : ''}`}
         inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} readOnly={busy}
         onChange={(e) => dat(e.target.value.replace(/\D/g, ''))} />
       <span className="text-xs text-slate-400">{nhan}</span>
@@ -398,7 +398,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
       <span id={`sb-${pa.id}`} className="block text-[13px] font-semibold text-slate-300">{t('Số buổi')}<span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></span>
       <div className="flex flex-wrap items-start gap-x-2 gap-y-2">
         {oSo('so-buoi-tuan', tuan, setTuan, t('đã học'), t('Số buổi đã học'), !!loiCua('buoi-tong'))}
-        <span aria-hidden className="mt-2 text-[17px] font-medium text-slate-500">/</span>
+        <span aria-hidden className="mt-2 text-[16px] font-medium text-slate-500">/</span>
         {oSo('so-buoi-du-kien', duKien, setDuKien, t('dự kiến'), t('Số buổi dự kiến'))}
         {dem && <span className="ml-3 mt-2.5 whitespace-nowrap text-[13px] text-slate-300">{t('Đã học')} <b className="font-semibold text-slate-100 tabular-nums">{dem.da} / {dem.tong}</b>
           {dem.tt === 'vuot' && <span className="font-semibold text-late"> {t('· vượt {vuot} buổi', { vuot: dem.vuot })}</span>}</span>}

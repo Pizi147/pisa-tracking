@@ -243,7 +243,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(!mock.includes('Writing (tổng)') && !/<InlineScoreEditor/.test(mock), 'bảng dưới còn dòng Writing (tổng) / trình sửa trong dòng');
     assert(/<ONhanXet/.test(mock) && /nhanLuot\(/.test(mock), 'khối nhận xét / nhanLuot');
     const lon = docSach('web/src/modules/fasttrack/ODiemLon.tsx');
-    assert(/<HopNhapDiem/.test(lon) && /tabular-nums/.test(lon) && /text-\[28px\] font-bold/.test(lon), 'ODiemLon');
+    assert(/<HopNhapDiem/.test(lon) && /tabular-nums/.test(lon) && /text-\[26px\] font-bold/.test(lon), 'ODiemLon');
   });
 
   // ------------------------------------------------------------------ khối 6: hồ sơ HV › bảng Mock Test (đọc nguồn)

@@ -337,8 +337,7 @@ export const NO_SHOW_OVERRIDDEN_NOTE = t('Head đã đổi kết luận tuần n
 export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
   const day = (iso: string) => {
     const s = iso.slice(0, 10);
-    const dm = `${s.slice(8, 10)}/${s.slice(5, 7)}`;
-    return s.slice(0, 4) === today.slice(0, 4) ? dm : `${dm}/${s.slice(0, 4)}`;
+    return `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;   // NHẸ HƠN: ngày luôn có năm (`today` giữ cho chữ ký)
   };
   switch (v.state) {
     case 'khong-co-bai': return t('Không có bài · Có thể sửa đến hết Chủ nhật {day}', { day: day(v.editableUntil!) });

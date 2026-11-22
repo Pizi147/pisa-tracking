@@ -587,6 +587,8 @@ export function HoTroHocVienTab() {
   const theo = tab === 'theo-doi' ? params.get('theo') : null;
   const [theoDong, setTheoDong] = useState<DongTd | null>(null);
   const theoChon = theo && theoDong && `${theoDong.loai}:${theoDong.refId}` === theo ? theoDong : null;
+  /* NHẸ HƠN: panel bám mép phải (KhungPanel tại chỗ, ≥ 1024) đang mở → đầu trang + danh sách bó về cột trái min(556 px, 42 % − 48 px); không mở → bố cục cũ. */
+  const coPanel = !!(chon || theId || theoChon);
   const moTheo = (d: DongTd) => { setTheoDong(d); setParam('theo', `${d.loai}:${d.refId}`); };
   const dongTheo = () => { setParam('theo', null); lamMoiGiaoViec(); };
   const anTrenDienThoai = chon || theId || theoChon ? 'max-lg:hidden' : '';
@@ -594,11 +596,12 @@ export function HoTroHocVienTab() {
   const xemLopHep = (laGv || laTvv) && xemLop && !chon && !theId;
   return (
     <div className="space-y-3">
-      <div className={`space-y-2.5 ${anTrenDienThoai}`}>
+      {/* NHẸ HƠN: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024), panel 58 % bám mép phải không che nút lọc / + Task. */}
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(556px,calc(42vw-48px))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
-          <h1 className="m-0 text-[22px] font-bold text-slate-100">{t('Công việc')}</h1>
+          <h1 className="m-0 text-[20px] font-bold text-slate-100">{t('Công việc')}</h1>
           {data && !data.scopeEmpty && (
             /* AUDIT-UI B5 (mockup 375): "n việc · m quá hạn" xuống dòng riêng dưới tiêu đề. */
             <span className="text-sm text-dim max-sm:w-full" data-hd="cv-tom">
@@ -636,7 +639,7 @@ export function HoTroHocVienTab() {
           <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-[1fr_1fr_auto] [&>*]:max-sm:min-w-0">
             {laQuanLy && data && (
               <>
-                {!chiChamDiem && <span className="max-sm:col-span-3 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
+                {!chiChamDiem && <span className="max-sm:col-span-3 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[14px]">
                   <BoLocDoan ariaLabel={t('Việc của ai')} value={typeof nguoi === 'number' ? 'gv' : nguoi}
                     onChange={(k) => {
                       nhoNguoi(uid, k);
@@ -713,7 +716,7 @@ export function HoTroHocVienTab() {
             {[[false, t('Việc')], [true, laTvv ? t('HV của tôi') : t('Lớp của tôi')]].map(([k, nhan], i) => (
               /* HD-CHI: < 1024 px khung "Lớp của tôi" ẩn sau nút này — "Chỉ cho tôi" khoanh nút (cùng `data-hd` với khung). */
               <button key={String(k)} type="button" aria-pressed={xemLop === k} onClick={() => setXemLop(k as boolean)} data-hd={k && !laTvv ? 'cv-lop-cua-toi' : undefined}
-                className={`flex-1 appearance-none border-0 text-[15px] ${i ? 'border-l' : ''} ${xemLop === k
+                className={`flex-1 appearance-none border-0 text-[14px] ${i ? 'border-l' : ''} ${xemLop === k
                   ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'surface-2 font-medium text-dim'}`}
                 style={{ borderColor: 'var(--line-strong)' }}>{nhan as string}</button>
             ))}
@@ -726,9 +729,9 @@ export function HoTroHocVienTab() {
       </div>
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
-      {/* CV-TAB (chủ SP 06/11 "panel rộng hơn, cân đối, không nhảy chữ"): danh sách 640 px · panel phần còn lại (~740 px ở 1440). */}
+      {/* NHẸ HƠN (v23 `.cv-luoi`, chủ SP 22/11): danh sách trái = min(556 px, 42 % − 48 px) — panel 58 % bám mép phải (KhungPanel tại chỗ) không đè (1280: ~490 px). */}
       {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(556px,calc(42vw-48px))_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
@@ -796,7 +799,7 @@ export function HoTroHocVienTab() {
             </>
           ) : (
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center max-lg:hidden" style={{ borderColor: 'var(--line-strong)' }}>
-              <p className="m-0 text-[15px] text-dim">{t('Chọn một việc ở danh sách.')}</p>
+              <p className="m-0 text-[14px] text-dim">{t('Chọn một việc ở danh sách.')}</p>
             </div>
           )) : theId ? (
             <>
@@ -851,7 +854,7 @@ export function HoTroHocVienTab() {
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center"
               style={{ borderColor: 'var(--line-strong)' }}>
               {/* G1-15: mở từ link `?viec=` của việc đã xong / đã đổi — nói rõ, không để panel trống im lặng. */}
-              <p className="m-0 text-[15px] text-dim">{tab === 'duyet' ? t('Chọn một yêu cầu ở danh sách.') : viec ? t('Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
+              <p className="m-0 text-[14px] text-dim">{tab === 'duyet' ? t('Chọn một yêu cầu ở danh sách.') : viec ? t('Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
             </div>
           ) : null}
         </div>
@@ -878,8 +881,8 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
   return (
     <section className="card flex flex-col p-0" aria-label={t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}>
       <div className="grid justify-items-center gap-2.5 px-5 pb-6 pt-10 text-center" role="status">
-        {dai ? <div className="w-full text-left">{dai}</div> : <span className={`text-[15px] font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>}
-        <span className="text-[17px] font-bold">{t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}</span>
+        {dai ? <div className="w-full text-left">{dai}</div> : <span className={`text-[14px] font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>}
+        <span className="text-[16px] font-bold">{t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}</span>
         {daLuu > 0 && <span className="text-sm text-dim">{t('Đã lưu {n} việc trong nhóm này hôm nay.', { n: daLuu })}</span>}
         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={onXemLai}>{t('‹ Xem lại việc vừa lưu')}</button>
       </div>
@@ -934,7 +937,7 @@ function TomTatTheoDoi({ it, loai, onDong, onTiep, tenTiep }: {
               {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
             /* N37: Case · PA · Kết quả PA một tuyến — "Mở Case ›" sang hồ sơ em, Case mở sẵn ở đúng PA (id sẵn có). */
-            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.caseId !== null && <> · <button type="button" className="link-nho inline-flex items-center text-[15px] max-sm:min-h-[44px]"
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.caseId !== null && <> · <button type="button" className="link-nho inline-flex items-center text-[14px] max-sm:min-h-[44px]"
               onClick={() => setXemCase(true)}>{t('Mở Case ›')}</button></>}</> : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
@@ -974,7 +977,7 @@ function DaBoQua({ ds, homNay, onKhoiPhuc }: { ds: ViecDaBoQua[]; homNay: string
             <li key={x.key} className={`grid min-h-[56px] items-center gap-x-3 gap-y-1 border-t py-2 pl-4 pr-3 first:border-t-0 sm:min-h-[50px] sm:pr-4 ${COT_VIEC}`}
               style={{ borderColor: 'var(--line)' }}>
               <span className="grid min-w-0 gap-px">
-                <span className="break-words text-[15px] font-medium leading-snug text-dim">{dich(x.tieuDe)}</span>
+                <span className="break-words text-[14px] font-medium leading-snug text-dim">{dich(x.tieuDe)}</span>
                 <span className="break-words text-[13px] leading-snug text-faint">
                   {[x.classCode, t('Bỏ qua bởi {ai} · {ngay}', { ai: x.boi ?? '—', ngay: shortDate(x.luc, homNay) })].filter(Boolean).join(' · ')}
                 </span>

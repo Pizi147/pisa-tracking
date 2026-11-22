@@ -59,8 +59,8 @@ export function KyVongNguongAdmin() {
 function DongChiXem({ nhan, gia }: { nhan: string; gia: ReactNode }) {
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-2.5 last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-      <span className="text-[15px] text-slate-300">{nhan}</span>
-      <span className="text-[15px] tabular-nums text-slate-300">{gia}</span>
+      <span className="text-[14px] text-slate-300">{nhan}</span>
+      <span className="text-[14px] tabular-nums text-slate-300">{gia}</span>
     </li>
   );
 }
@@ -106,15 +106,15 @@ function KhoiCauHinh({ duong, tieuDe, truong, apDung, giaiThich, them, sauLuu }:
           const khacGoc = n !== g;
           return (
             <li key={q.k} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
-              <span className="inline-flex min-w-0 items-center gap-1 text-[15px] text-slate-100">{q.nhan}{q.luat && <NutLuat label={q.nhan}>{q.luat}</NutLuat>}</span>
+              <span className="inline-flex min-w-0 items-center gap-1 text-[14px] text-slate-100">{q.nhan}{q.luat && <NutLuat label={q.nhan}>{q.luat}</NutLuat>}</span>
               <span className="grid justify-items-end">
                 {sua === q.k ? (
                   <SuaO q={q} n={n} onThoi={() => setSua(null)} onLuu={async (moi) => { await luu(q, moi); setSua(null); }} />
                 ) : d.suaDuoc ? (
                   <button type="button" aria-label={`${t('Sửa')} ${q.nhan}`} onClick={() => setSua(q.k)}
-                    className={`inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-[15px] font-semibold tabular-nums hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${khacGoc ? 'text-accent' : 'text-slate-100'}`}
+                    className={`inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-[14px] font-semibold tabular-nums hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${khacGoc ? 'text-accent' : 'text-slate-100'}`}
                     style={{ borderColor: 'var(--line-strong)' }}>{q.hien(n)}</button>
-                ) : <span className={`text-[15px] font-semibold tabular-nums ${khacGoc ? 'text-accent' : 'text-slate-100'}`}>{q.hien(n)}</span>}
+                ) : <span className={`text-[14px] font-semibold tabular-nums ${khacGoc ? 'text-accent' : 'text-slate-100'}`}>{q.hien(n)}</span>}
                 {khacGoc && sua !== q.k && (
                   <span className="mt-0.5 text-xs text-slate-400">{t('gốc: {g}', { g: q.hien(g) })}
                     {d.suaDuoc && <button type="button" className="ml-1.5 border-0 bg-transparent p-0 text-xs font-semibold text-accent" onClick={() => void luu(q, g).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được')))}>{t('Về gốc')}</button>}

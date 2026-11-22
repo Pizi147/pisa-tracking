@@ -6,7 +6,7 @@ export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-col gap-px">
       <span className="text-xs font-medium text-slate-500">{n}</span>
-      <span className="text-[15px] font-bold text-slate-100">{g}</span>
+      <span className="text-[14px] font-bold text-slate-100">{g}</span>
     </span>
   );
 }

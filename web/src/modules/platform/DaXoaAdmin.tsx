@@ -92,7 +92,7 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
         {!hang.length ? <Card><Empty title={tim ? t('Không có học viên khớp "{loc}"', { loc: loc.trim() }) : t('Chưa có học viên nào đã xoá')} /></Card>
           : nhom.map((g) => (
             <section key={g.khoa} className="space-y-1.5" aria-label={g.ten}>
-              {nhom.length > 1 || !branchId ? <h2 className="m-0 flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{t('{n} em', { n: g.ds.length })}</span></h2> : null}
+              {nhom.length > 1 || !branchId ? <h2 className="m-0 flex items-baseline gap-2 text-[14px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{t('{n} em', { n: g.ds.length })}</span></h2> : null}
               <Bang ten={`${t('Đã xoá')} · ${g.ten}`} cot={COT} hang={g.ds} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')} />
             </section>
           ))}

@@ -92,7 +92,7 @@ export function HanMacDinhAdmin() {
         </div>
         {nhom.map((n) => (
           <section key={n}>
-            <div className="flex min-h-[42px] items-center gap-2 border-b px-4 text-[15px] font-bold text-slate-100" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>
+            <div className="flex min-h-[42px] items-center gap-2 border-b px-4 text-[14px] font-bold text-slate-100" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>
               {n}<span className="text-[13px] font-normal tabular-nums text-slate-400">{DONG.filter((q) => q.nhom === n).length}</span>
             </div>
             <ul className="m-0 list-none p-0">
@@ -102,15 +102,15 @@ export function HanMacDinhAdmin() {
                 const khacGoc = JSON.stringify(v) !== JSON.stringify(g);
                 return (
                   <li key={q.ma} className="grid gap-1 border-b px-4 py-2.5 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_2rem] sm:items-center sm:gap-3" style={{ borderColor: 'var(--line)' }}>
-                    <span className="text-[15px] text-slate-100">{q.viec}</span>
+                    <span className="text-[14px] text-slate-100">{q.viec}</span>
                     <span className="min-w-0">
                       {sua === q.ma ? (
                         <SuaHan v={v} onThoi={() => setSua(null)} onLuu={async (moi) => { await luu(q.ma, moi); setSua(null); }} />
                       ) : suaDuoc ? (
                         <button type="button" aria-label={`${t('Sửa')} ${q.viec}`} onClick={() => setSua(q.ma)}
-                          className={`inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-[15px] font-semibold hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${khacGoc ? 'text-accent' : 'text-slate-100'}`}
+                          className={`inline-flex min-h-[32px] items-center rounded-md border px-2.5 text-[14px] font-semibold hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${khacGoc ? 'text-accent' : 'text-slate-100'}`}
                           style={{ borderColor: 'var(--line-strong)' }}>{q.hien(v)}</button>
-                      ) : <span className={`text-[15px] font-semibold ${khacGoc ? 'text-accent' : 'text-slate-100'}`}>{q.hien(v)}</span>}
+                      ) : <span className={`text-[14px] font-semibold ${khacGoc ? 'text-accent' : 'text-slate-100'}`}>{q.hien(v)}</span>}
                       {khacGoc && sua !== q.ma && (
                         <span className="mt-0.5 block text-xs text-slate-400">{t('gốc: {g}', { g: q.hien(g) })}
                           {suaDuoc && <button type="button" className="ml-1.5 border-0 bg-transparent p-0 text-xs font-semibold text-accent" onClick={() => void luu(q.ma, g).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được')))}>{t('Về gốc')}</button>}

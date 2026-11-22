@@ -51,6 +51,14 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
     const t = h.scrollLeft > 1, p = h.scrollLeft + h.clientWidth < h.scrollWidth - 1;
     setMep((m) => (m.t === t && m.p === p ? m : { t, p }));
   };
+  /* NHẸ HƠN: hàng tab đổi bề rộng mà không đổi tab (panel Công việc mở → đầu trang vào cột trái, đổi cỡ cửa sổ) → tính lại mép mờ. */
+  useEffect(() => {
+    const h = hang.current;
+    if (!h || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(doMep);
+    ro.observe(h);
+    return () => ro.disconnect();
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps -- doMep chỉ đọc ref
   /* Không tab nào chọn (Hướng dẫn đang tìm): tab đầu nhận focus Tab — tablist luôn vào được bằng bàn phím. */
   const coChon = tabs.some((x) => x.key === value);
   /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào giữa hàng, không bị khuất. Chỉ đặt

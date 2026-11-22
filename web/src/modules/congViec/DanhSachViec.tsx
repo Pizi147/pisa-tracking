@@ -258,7 +258,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false,
     /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · số quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
        CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
        ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
-    <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
+    <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
       style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} aria-controls={dieuKhien} onClick={onMo}
         className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
@@ -361,7 +361,7 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu }: {
   }
   const coTrieu = mo !== undefined;
   const an375 = !coTrieu;   // nút động từ ẩn ở 375 — cả dòng là nút
-  const muiTen = an375 && !nutPhu && <span aria-hidden className="self-start text-[15px] leading-snug text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden">›</span>;
+  const muiTen = an375 && !nutPhu && <span aria-hidden className="self-start text-[14px] leading-snug text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden">›</span>;
   if (!nut && !nutPhu) return <>{muiTen}<span className={`${O_NUT} max-sm:hidden`} /></>;
   return (
     <>
@@ -473,7 +473,7 @@ const TheGiao = ({ it }: { it: WorkItem }) => (it.giaoBoi || it.nguoiTra ? (
     {it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : t('{ten} trả', { ten: it.nguoiTra! })}</span>
 ) : null);
 /* AUDIT-UI B4 (mockup `.viec .t1`): tên dòng 15 / 500. */
-const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug disabled:cursor-default';
+const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-[14px] font-medium leading-snug disabled:cursor-default';
 
 /**
  * MỘT VIỆC CỦA MỘT EM (mockup v17 `.viec`): tên việc (không lặp tên em) · dòng phụ = em (link hồ sơ — tách xem hồ sơ / làm việc) · lớp · SOS · lượt / tuần.

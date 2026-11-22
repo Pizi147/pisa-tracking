@@ -77,7 +77,7 @@ export function BangMau() {
   const phuFt = (h: HangFt, c: DinhNghiaCot) => (c.key === 'ten' ? h.lop : h.o[c.key as keyof HangFt['o']]?.phu);
   const oThuong = (h: HangThuong, c: DinhNghiaCot) => {
     if (c.key === 'ten') return <span className="font-semibold">{h.ten}</span>;
-    if (c.key === 'pt') return <span className={`text-[15px] font-bold tabular-nums ${h.dat === null ? '' : h.dat ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{h.pt}</span>;
+    if (c.key === 'pt') return <span className={`text-[14px] font-bold tabular-nums ${h.dat === null ? '' : h.dat ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{h.pt}</span>;
     if (c.key === 'kq') return h.dat === null ? <span className="px-2 text-slate-300">Chưa đủ điểm</span>
       : h.dat ? <span className="px-2 font-semibold text-kq-vuot">✓ Đạt</span> : <ChipSos muc={1} kyNang={['Speaking']} dot="Progress Test" thuong />;
     const k = c.key as 'gv' | 'r' | 'w' | 's';

@@ -20,7 +20,7 @@ const taiFile = (dir: string, out: string[] = []): string[] => {
 };
 
 /** Thang chữ (04 mục 2.2). */
-export const THANG_CHU = [12, 13, 14, 15, 17, 22, 28];
+export const THANG_CHU = [12, 13, 14, 16, 20, 26];   // NHẸ HƠN (chủ SP 22/11) — thay 12·13·14·15·17·22·28
 
 export async function runPrNenTypoMauTests(t: YThucTestKit) {
   const { check, assert } = t;
@@ -42,18 +42,17 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
   const ngoaiLe = (f: string, n: number) => (f === 'web/src/modules/phanTich/BaoCao.tsx' && (n === 48 || n === 40)) || (f === 'web/src/modules/phanTich/KetQuaThi.tsx' && n === 40);   // + số "Đạt Target" (đặc tả 5.2)
 
   // ------------------------------------------------------------------ chữ
-  check('NEN · K-CHU-1: mọi cỡ chữ viết tay (text-[Npx], fontSize, font-size) thuộc thang 12·13·14·15·17·22·28', () => {
+  check('NEN · K-CHU-1: mọi cỡ chữ viết tay (text-[Npx], fontSize, font-size) thuộc thang 12·13·14·16·20·26', () => {
     const hong = dong((_f, s) => {
       for (const m of s.matchAll(/text-\[(\d+(?:\.\d+)?)px\]/g)) if (ngoai(Number(m[1])) && !ngoaiLe(_f, Number(m[1]))) return m[0];
       for (const m of s.matchAll(/fontSize:\s*['"]?(\d+(?:\.\d+)?)/g)) if (ngoai(Number(m[1]))) return m[0];
       return /text-\[\d+(?:\.\d+)?r?em\]/.exec(s)?.[0] ?? null;
     });
-    /* 16 px chỉ cho ô nhập ở điện thoại (Safari không tự phóng to — OV-14b). */
     for (const m of css.matchAll(/([^{}]+)\{[^}]*?font-size:\s*(\d+(?:\.\d+)?)px/g)) {
       const n = Number(m[2]);
       /* G13 ngoại lệ duy nhất (chủ SP 30/10): `.tvv` 11 px — tên TVV dưới tên HV ở bảng em hồ sơ lớp (BANG-EM-GON). */
       if (n === 11 && m[1].trim().endsWith('.tvv')) continue;
-      if (n === 16 ? !/input|select|textarea|\.field/.test(m[1]) : ngoai(n)) hong.push(`index.css ${m[1].trim().slice(-40)} ${n}px`);
+      if (ngoai(n)) hong.push(`index.css ${m[1].trim().slice(-40)} ${n}px`);
     }
     assert(hong.length === 0, tom(hong));
   });
@@ -82,12 +81,12 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
     assert(hong.length === 0, tom(hong));
   });
 
-  check('NEN · K-CHU-5: lớp nền theo thang — body 15, ô bảng 15, đầu cột 13, nhãn 13, nút nhỏ 13, hàng nhóm 15, hàng con 13', () => {
+  check('NEN · K-CHU-5: lớp nền theo thang — body 14, ô bảng 14, đầu cột 13, nhãn 13, nút nhỏ 13, hàng nhóm 14, hàng con 13', () => {
     const co = (boChon: string) => {
       const m = new RegExp(`(?:^|[\\s}])${boChon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css);
       return m ? Number(/font-size:\s*(\d+)px/.exec(m[1])?.[1] ?? NaN) : NaN;
     };
-    const can: Array<[string, number]> = [['body', 15], ['.td', 15], ['.th', 13], ['.label', 13], ['.btn-sm', 13], ['.hang-lon > td', 15], ['.khoi-nhom-dau', 15], ['.hang-con > td', 13]];
+    const can: Array<[string, number]> = [['body', 14], ['.td', 14], ['.th', 13], ['.label', 13], ['.btn-sm', 13], ['.hang-lon > td', 14], ['.khoi-nhom-dau', 14], ['.hang-con > td', 13]];
     const hong = can.filter(([b, n]) => co(b) !== n).map(([b, n]) => `${b} = ${co(b)} (cần ${n})`);
     assert(hong.length === 0, hong.join(' · '));
   });

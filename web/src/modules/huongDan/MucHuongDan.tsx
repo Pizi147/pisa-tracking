@@ -16,7 +16,7 @@ export function MucHuongDan({ muc, moSan = false, onChi }: { muc: MucHd; moSan?:
     <div className="card flex flex-col gap-2.5 px-4 py-3.5 break-inside-avoid" data-muc={muc.id}>
       <button type="button" aria-expanded={mo} aria-controls={id} onClick={() => setMo(!mo)}
         className="flex min-h-[32px] w-full appearance-none flex-wrap items-center gap-x-2.5 gap-y-0.5 border-0 bg-transparent p-0 text-left cursor-pointer max-sm:min-h-[44px]">
-        <span className="min-w-0 flex-1 text-[15px] font-bold text-slate-100">{t(muc.ten)}</span>
+        <span className="min-w-0 flex-1 text-[14px] font-bold text-slate-100">{t(muc.ten)}</span>
         {muc.khi && <span className="whitespace-nowrap text-xs text-slate-500">{t(muc.khi)}</span>}
         <svg aria-hidden viewBox="0 0 8 8" width="9" height="9" className={`shrink-0 text-slate-400 transition-transform print:hidden ${mo ? '-rotate-90' : 'rotate-90'}`}>
           <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

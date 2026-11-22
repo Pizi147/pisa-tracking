@@ -262,13 +262,13 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
   const [het, setHet] = useState(false);
   const nhom = nhomGv(gv);
   const hien = het ? nhom : nhom.slice(0, 3);
-  const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="whitespace-nowrap text-xs text-dim">{nhan}</span><b className="text-[15px] font-semibold tabular-nums">{gt}</b></span>;
+  const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="whitespace-nowrap text-xs text-dim">{nhan}</span><b className="text-[14px] font-semibold tabular-nums">{gt}</b></span>;
   return (
     <div className="space-y-2">
       <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
       {hien.map((n) => (
         <div key={n.userId} className={THE_HV} style={nenThe}>
-          <span className="text-[15px] font-semibold">{n.ten}</span>
+          <span className="text-[14px] font-semibold">{n.ten}</span>
           {n.hang.map((g) => (
             <div key={g.kn} className="grid grid-cols-[28px_1fr] items-center gap-2 border-t pt-1.5" style={{ borderColor: 'var(--line)' }}>
               <b className="text-sm">{NHAN_KN[g.kn]}</b>
@@ -329,7 +329,7 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
       {hien.map((r) => (
         <div key={r.cycleId} className={THE_HV} style={nenThe}>
           <div className="flex items-center gap-2">
-            <Link to={`/hoc-vien/${r.studentId}`} className={`ten-hv min-w-0 text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link>
+            <Link to={`/hoc-vien/${r.studentId}`} className={`ten-hv min-w-0 text-[14px] font-semibold ${LINK_CHU}`}>{r.ten}</Link>
             <span className="ml-auto shrink-0">{chipMuc(r)}</span>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-dim">
@@ -369,7 +369,7 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
                   </td></tr>
                   {ds.map((r) => (
                     <tr key={r.cycleId} className="row-hover [&>td]:h-11">
-                      <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
+                      <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[14px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
                       <td className="td text-dim tabular-nums">{r.khongThi ? '—' : ngay(r.ngayThi, homNay).slice(0, 5)}</td>
                       {KN4.map((k) => <td key={k} className="td text-center">{diem(r, k)}</td>)}
                       <td className="td text-center">{diem(r, 'ovr')}</td>
@@ -408,7 +408,7 @@ function KhoiKetQua({ tk, tongThe, onTongThe, so }: { tk: ThongKeThiThatWeb; ton
           {dang ? (dienThoai ? '✓' : t('✓ đang xem')) : (dienThoai ? '○' : t('Xem'))}
         </span>
       </span>
-      <span className={`font-bold leading-tight tabular-nums ${to ? 'text-[40px] max-sm:text-[28px]' : 'text-[28px] max-sm:text-[22px]'}`}>{mau(x) ? `${pt(x.vuot + x.dat, mau(x))} %` : '—'}</span>
+      <span className={`font-bold leading-tight tabular-nums ${to ? 'text-[40px] max-sm:text-[26px]' : 'text-[26px] max-sm:text-[20px]'}`}>{mau(x) ? `${pt(x.vuot + x.dat, mau(x))} %` : '—'}</span>
       <span className="text-[13px] text-dim">{mau(x) ? <><b className="font-semibold tabular-nums text-[color:var(--text)]">{x.vuot + x.dat}/{mau(x)}</b> {t('em')} · {chu}</> : t('chưa em nào có KQ')}</span>
     </button>
   );
@@ -436,7 +436,7 @@ function KhoiKetQua({ tk, tongThe, onTongThe, so }: { tk: ThongKeThiThatWeb; ton
             <span key={k} style={{ flex: `${x[k]} 1 0` }}
               className={`flex min-w-fit items-center justify-center gap-1.5 border px-2 text-sm font-semibold max-sm:flex-col max-sm:gap-0 max-sm:px-0.5 max-sm:text-xs ${nen} ${chu} ${i === 0 ? 'rounded-l-lg' : ''} ${i === arr.length - 1 ? 'rounded-r-lg' : ''}`}>
               <span className="whitespace-nowrap max-sm:order-2">{dau} {nhan}</span>
-              <b className="text-[17px] max-sm:order-1">{so(x[k], tongThe ? `tong:tt-${o2}` : `tong:${o2}`, `${nhan} · ${ky}`, chu)}</b>
+              <b className="text-[16px] max-sm:order-1">{so(x[k], tongThe ? `tong:tt-${o2}` : `tong:${o2}`, `${nhan} · ${ky}`, chu)}</b>
               <span className="text-xs font-medium tabular-nums opacity-85 max-sm:hidden">{pt(x[k], tong)} %</span>
             </span>
           ))}

@@ -1,7 +1,8 @@
 /**
  * HÀM CHUNG HIỂN THỊ NGÀY VÀ TUẦN — luật G-6 (spec 2026-09-22-ux-toan-web-truoc-deploy-design §1).
  *
- *   ngày          dd/mm khi cùng năm với hôm nay, dd/mm/yyyy khi khác năm. Không bao giờ ISO.
+ *   ngày          LUÔN dd/mm/yyyy (NHẸ HƠN, chủ SP 22/11). Không bao giờ ISO.
+ *   mức hạn       `mucHan` — 'xa' chữ thường · 'sap' vàng (hôm nay → còn ≤ 2 ngày) · 'qua' đỏ (quá hạn).
  *   tuần lịch     W{n} {THÁNG} — "W3 SEP". Tuần thuộc tháng chứa ngày thứ Năm (week.ts). Chỉ thêm năm khi năm của tuần
  *                 khác năm hiện tại, để lịch vắt sang năm sau không bị đọc nhầm.
  *   tuần học      W{n}/{tổng} — "W8/8", tuần thứ n của một khoá lớp thường.
@@ -9,15 +10,21 @@
  * Màn mới dùng ba hàm này; màn cũ chuyển dần ở các PR sau. Khoá dữ liệu (thứ Hai, mã tuần có năm) vẫn ở week.ts.
  * Chuỗi có giờ đổi sang giờ Việt Nam trước khi lấy ngày; ngày không tồn tại ra "—" (ngayTheoGioVN, display.ts).
  */
-import { ngayTheoGioVN, shortDate } from './display.ts';
+import { HAN_GAN_NGAY, daysBetween, ngayTheoGioVN, shortDate } from './display.ts';
 import { MONTH_CODE, mondayOfDate, owningMonthOf, weekNumberInMonthOf } from './week.ts';
 import { t } from '../i18n/index.ts';
 
-export function ngay(d: string | null | undefined, homNay?: string | null): string {
-  const s = ngayTheoGioVN(d);
-  if (!s) return '—';
-  if (ngayTheoGioVN(homNay)) return shortDate(s, homNay as string);
-  return `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;
+/** "21/11/2026". `_homNay` giữ cho chỗ gọi cũ — năm luôn hiện. */
+export function ngay(d: string | null | undefined, _homNay?: string | null): string { return shortDate(d); }
+
+export type MucHan = 'xa' | 'sap' | 'qua';
+/** Mức của một hạn (`YYYY-MM-DD`, có giờ thì theo giờ VN) so với `homNay`. Hạn không hợp lệ → 'xa' (không tô màu). */
+export function mucHan(han: string, homNay: string): MucHan {
+  const h = ngayTheoGioVN(han);
+  const n = ngayTheoGioVN(homNay);
+  if (!h || !n) return 'xa';
+  if (h < n) return 'qua';
+  return daysBetween(n, h) <= HAN_GAN_NGAY ? 'sap' : 'xa';
 }
 
 export function tuanLich(d: string | null | undefined, homNay?: string | null): string {

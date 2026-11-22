@@ -28,13 +28,13 @@ const MO = 'text-[color:var(--text-faint)]';
 function SoTo({ ten, ky, luat, gt, phu, children }: { ten: string; ky: string; luat?: string; gt?: ReactNode; phu?: ReactNode; children?: ReactNode }) {
   return (
     <div className="so-to grid gap-1 rounded-xl border px-[22px] pb-[18px] pt-4 max-sm:px-3 max-sm:pb-3 max-sm:pt-2.5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-      <span className="flex flex-wrap items-center gap-x-1.5 text-[17px] font-semibold leading-snug text-[color:var(--text)] max-sm:text-sm">
-        {ten} <i className={`not-italic font-normal text-[15px] max-sm:text-[13px] ${MO}`}>· {ky}</i>
+      <span className="flex flex-wrap items-center gap-x-1.5 text-[16px] font-semibold leading-snug text-[color:var(--text)] max-sm:text-sm">
+        {ten} <i className={`not-italic font-normal text-[14px] max-sm:text-[13px] ${MO}`}>· {ky}</i>
         {luat && <NutLuat label={ten}>{luat}</NutLuat>}
       </span>
-      {gt != null && <span className="so-to-gt flex flex-wrap items-baseline gap-x-2.5 text-[48px] font-bold leading-[1.1] tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)] max-sm:text-[28px]">{gt}</span>}
+      {gt != null && <span className="so-to-gt flex flex-wrap items-baseline gap-x-2.5 text-[48px] font-bold leading-[1.1] tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)] max-sm:text-[26px]">{gt}</span>}
       {children}
-      {phu && <span className="text-[15px] leading-snug text-[color:var(--text-dim)] max-sm:text-[13px]">{phu}</span>}
+      {phu && <span className="text-[14px] leading-snug text-[color:var(--text-dim)] max-sm:text-[13px]">{phu}</span>}
     </div>
   );
 }
@@ -103,12 +103,12 @@ export function BaoCao(pv: PhamViPhanTich) {
             <span className="grid grid-cols-2 gap-3">
               <span className="grid min-w-0">
                 <i className="not-italic whitespace-nowrap text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Đạt Target · trừ KCK')}</i>
-                <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[28px]">{phanTram({ dat: x.vuot + x.dat, mau }, nThi(tong, 'tong:co-target'), t('Đạt Target · trừ KCK'))}</b>
+                <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[26px]">{phanTram({ dat: x.vuot + x.dat, mau }, nThi(tong, 'tong:co-target'), t('Đạt Target · trừ KCK'))}</b>
                 <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{mau ? <><Dam>{x.vuot + x.dat}/{mau}</Dam> {t('em')}</> : t('chưa em nào có KQ')}</span>
               </span>
               <span className="grid min-w-0">
                 <i className="not-italic text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Em thi')}</i>
-                <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[28px]"><OSo giaTri={x.emThi} nguon={nThi(tong, 'tong:thi')} tieuDe={t('Em thi')} className="so-chinh" /></b>
+                <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[26px]"><OSo giaTri={x.emThi} nguon={nThi(tong, 'tong:thi')} tieuDe={t('Em thi')} className="so-chinh" /></b>
                 {/* AUDIT-1611 A2-15: "· hiện tại" một cụm — không ngắt "hiện / tại". */}
                 <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} {x.chuaCoKq ? <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> : <span className="o-so-tinh">0</span>} <span className="whitespace-nowrap">· {t('hiện tại')}</span></span>
               </span>
@@ -123,13 +123,13 @@ export function BaoCao(pv: PhamViPhanTich) {
       <SoTo ten={t('Đạt Test')} ky={t('trong kỳ')} luat={t('Đếm BÀI: mỗi bài Progress Test / Final Test của một em (đủ điểm mọi môn) tính một lần. Đạt = Progress đạt hết các môn, Final từ 70 % tổng — cùng ô của bảng Test lớp thường.')}
         gt={phanTram(d.datTest, nTest(tong, 'dat-test'), t('Đạt Test'))} phu={d.datTest?.mau ? <><Dam>{d.datTest.dat}/{d.datTest.mau}</Dam> {t('bài · Progress, Final')}</> : t('Chưa có dữ liệu')} />
       <SoTo ten={t('Cuối khoá')} ky={t('trong kỳ')} luat={t('Đếm HỌC VIÊN có bài Final Test đủ môn trong kỳ (thi lại: bài mới nhất), xếp theo % tổng = Σ điểm / Σ câu các môn: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.')}
-        gt={<>{(d.cuoiKhoa ?? [0, 0, 0, 0]).reduce((a, b) => a + b, 0)}<small className="text-[15px] font-medium text-[color:var(--text-dim)]">{t('HV có Final')}</small></>}>
+        gt={<>{(d.cuoiKhoa ?? [0, 0, 0, 0]).reduce((a, b) => a + b, 0)}<small className="text-[14px] font-medium text-[color:var(--text-dim)]">{t('HV có Final')}</small></>}>
         {/* C2 (rà 19/11): 375 — thẻ nửa bề ngang, bốn ô một hàng đè nhãn → lưới 2 × 2. */}
         <span className="mt-1.5 grid grid-cols-4 gap-1.5 max-sm:grid-cols-2">
           {CK.map(([nhan, cot, mau], i) => (
             <span key={cot} className="grid min-w-0 rounded-lg border px-2.5 pb-1.5 pt-1 text-sm font-medium text-[color:var(--text-dim)] max-sm:px-2 max-sm:text-[13px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
               <span className="whitespace-nowrap">{nhan === 'Đạt' ? t('Đạt') : nhan}</span>
-              <b className="text-[22px] font-bold leading-tight tabular-nums"><OSo giaTri={d.cuoiKhoa?.[i] ?? 0} nguon={nMoi(cot, 'tong')} tieuDe={`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`} className={d.cuoiKhoa?.[i] ? mau : ''} /></b>
+              <b className="text-[20px] font-bold leading-tight tabular-nums"><OSo giaTri={d.cuoiKhoa?.[i] ?? 0} nguon={nMoi(cot, 'tong')} tieuDe={`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`} className={d.cuoiKhoa?.[i] ? mau : ''} /></b>
             </span>
           ))}
         </span>
@@ -216,12 +216,12 @@ export function BaoCao(pv: PhamViPhanTich) {
     const o3 = cot.filter((c) => c.key === 'hv' || c.key === 'datMt' || c.key === 'tienBo');
     return (
       <div className="grid gap-2.5">
-        <div className="text-[15px]">{oCua(h, cot[0])}</div>
+        <div className="text-[14px]">{oCua(h, cot[0])}</div>
         <div className={`grid grid-cols-3 gap-x-2.5 ${CAP_SO_DOC}`}>
           {o3.map((c) => (
             <div key={c.key} className="grid content-start gap-y-px">
               <span className="whitespace-nowrap text-xs font-medium text-slate-400">{c.nhan}</span>
-              <span className="text-[17px] font-bold tabular-nums">{oCua(h, c)}</span>
+              <span className="text-[16px] font-bold tabular-nums">{oCua(h, c)}</span>
             </div>
           ))}
         </div>
@@ -235,12 +235,12 @@ export function BaoCao(pv: PhamViPhanTich) {
     const mot = (c: CotBang) => (
       <div key={c.key} className="grid content-start gap-y-px">
         <span className="whitespace-nowrap text-xs font-medium text-slate-400">{c.nhan}</span>
-        <span className="text-[17px] font-bold tabular-nums">{oCua(h, c)}</span>
+        <span className="text-[16px] font-bold tabular-nums">{oCua(h, c)}</span>
       </div>
     );
     return (
       <div className="grid gap-2.5">
-        <div className="text-[15px]">{oCua(h, cot[0])}</div>
+        <div className="text-[14px]">{oCua(h, cot[0])}</div>
         <div className={`grid grid-cols-2 gap-x-2.5 ${CAP_SO_DOC}`}>{mot(o('hv'))}{mot(o('datTest'))}</div>
         <div className="grid gap-y-px">
           <span className="text-xs font-medium text-slate-400">{t('Cuối khoá')}</span>
@@ -263,7 +263,7 @@ export function BaoCao(pv: PhamViPhanTich) {
   return (
     <div className="bao-cao chi-nhanh">
       <VaoHangLoc o="phai"><NutXuat nhan={t('Xuất Excel')} tat={dangXuat} onClick={xuatExcel} /></VaoHangLoc>
-      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } } .chi-nhanh tr.tong > td { font-weight: 700; box-shadow: inset 0 1px var(--line-strong); } .chi-nhanh tr.tong > td.sticky-col { box-shadow: inset 0 1px var(--line-strong), inset 0 -1px var(--line); } @media (max-height: 760px) and (min-width: 1024px) { .chi-nhanh .so-to { padding-top: 6px; padding-bottom: 8px; gap: 0; } .chi-nhanh .so-to > span:first-child { font-size: 15px; } .chi-nhanh .so-to-gt { font-size: 40px; line-height: 1.05; } .chi-nhanh .so-thi { font-size: 28px; line-height: 1.1; } .chi-nhanh .cot-so { gap: 8px; } }'}</style>
+      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } } .chi-nhanh tr.tong > td { font-weight: 700; box-shadow: inset 0 1px var(--line-strong); } .chi-nhanh tr.tong > td.sticky-col { box-shadow: inset 0 1px var(--line-strong), inset 0 -1px var(--line); } @media (max-height: 760px) and (min-width: 1024px) { .chi-nhanh .so-to { padding-top: 6px; padding-bottom: 8px; gap: 0; } .chi-nhanh .so-to > span:first-child { font-size: 14px; } .chi-nhanh .so-to-gt { font-size: 40px; line-height: 1.05; } .chi-nhanh .so-thi { font-size: 26px; line-height: 1.1; } .chi-nhanh .cot-so { gap: 8px; } }'}</style>
       <div className="grid items-start gap-3.5 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] print:grid-cols-[360px_minmax(0,1fr)]">
         <div className="cot-so grid gap-3 max-lg:grid-cols-2 max-lg:[&>*:first-child]:col-span-2 max-lg:[&>*:nth-child(4)]:col-span-2 max-sm:gap-2">{cotTrai}</div>
         <div className="grid min-w-0 gap-3.5">

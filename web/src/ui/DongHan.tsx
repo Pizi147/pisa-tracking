@@ -92,7 +92,7 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
     </span>
   ) : (
     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-      {han ? <b className={`tabular-nums text-slate-100 ${gon ? 'text-sm' : khoi ? 'text-[15px]' : 'text-base'}`}>{shortDate(han, hn)}</b>
+      {han ? <b className={`tabular-nums text-slate-100 ${gon ? 'text-sm' : khoi ? 'text-[14px]' : 'text-base'}`}>{shortDate(han, hn)}</b>
         : <span className="text-sm text-faint">{t('Chưa có hạn')}</span>}
       {tinh && <span className="text-[13px] tabular-nums">{tinh}</span>}
       {!xong && nguon}

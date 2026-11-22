@@ -167,7 +167,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
   if (error) {
     return (
       <section className="card min-w-0 overflow-hidden" aria-label={t('Hành trình')}>
-        <h2 className="m-0 border-b px-4 py-3 text-[17px] font-bold text-slate-100" style={{ borderColor: 'var(--line)' }}>{t('Hành trình')}</h2>
+        <h2 className="m-0 border-b px-4 py-3 text-[16px] font-bold text-slate-100" style={{ borderColor: 'var(--line)' }}>{t('Hành trình')}</h2>
         <div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
       </section>
     );
@@ -232,7 +232,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
       <section id="truc-tuan" className="card min-w-0 scroll-mt-4" aria-label={t('Hành trình')}>
         {/* U07 (mockup `.the-dau`): tiêu đề 17 / 700 "Hành trình · Fast Track · lớp" + chọn kỹ năng · khoảng ở phải; 375: Danh sách / Biểu đồ. */}
         <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 inline-flex min-w-0 items-center gap-1.5 text-[17px] font-bold text-slate-100">
+          <h2 className="m-0 inline-flex min-w-0 items-center gap-1.5 text-[16px] font-bold text-slate-100">
             {hep ? t('Hành trình') : [t('Hành trình'), giaiDoanDangXem.loai === 'ft' ? 'Fast Track' : t('Lớp thường'), tenLop || null].filter(Boolean).join(' · ')}
             {/* CHU-GIAI (chủ SP 07/11): chú giải ký hiệu vào ⓘ cạnh tiêu đề, không còn dòng chân thẻ. */}
             {!danhSach && <NutLuat label={t('Ký hiệu')}><ChuGiai cheDo={cheDo} coPaKq={coPaKq} coDung={dungHienThi.length > 0} /></NutLuat>}
@@ -423,7 +423,7 @@ function HopKyNang({ hop, vi, vanDe, soAn, truc, boCuc, rongTuan, homNay, hopMo,
   return (
     <>
       <CotGhim hang={vi.dau} cotTen={boCuc.cotTen} className="min-w-0 flex-col justify-center gap-0.5 px-3.5 py-2">
-        <span className="truncate text-[15px] font-bold text-[var(--text)]" title={dich(hop.nhan)}>
+        <span className="truncate text-[14px] font-bold text-[var(--text)]" title={dich(hop.nhan)}>
           {/* Lớp thường: "Grammar + Vocabulary" / "Pronunciation" dài → tên ngắn G+V / P ở dạng hẹp (tên đủ ở tooltip). */}
           {boCuc.xuongDong ? dich(hop.nhanNgan ?? hop.nhan) : dich(hop.nhan)}
         </span>
@@ -512,7 +512,7 @@ function VanDeHang({ v, vi, truc, boCuc, rongTuan, homNay, mo, onOpenCase, onMoH
         title={`${dich(v.ten)} · ${t('mở {tuan}', { tuan: tuanLich(v.mo, homNay) })} · ${v.dong ? (v.huy ? t('Huỷ {tuan}', { tuan: tuanLich(v.dong, homNay) }) : t('xong {tuan}', { tuan: tuanLich(v.dong, homNay) })) : t('đang mở')}`}
         className={`z-[3] mx-0.5 flex h-5 min-w-0 appearance-none items-center justify-between gap-1.5 self-center overflow-hidden whitespace-nowrap rounded-[5px] border-[1.5px] bg-transparent px-2 text-[12px] font-semibold ${v.huy ? 'text-faint' : 'text-[var(--text)]'} ${v.dong ? '' : 'rounded-r-none'}`}
         style={{ gridRow: vi.khung, gridColumn: `${a + 2} / ${b + 3}`, borderColor: vien, borderRightStyle: v.dong ? undefined : 'dashed', ...(mo ? { boxShadow: '0 0 0 2px var(--accent)' } : {}) }}>
-        {!boCuc.xuongDong && (b - a + 1) * rongTuan >= 120 && (
+        {!boCuc.xuongDong && (b - a + 1) * rongTuan >= 150 && (   // "mở W2 SEP · đang mở" 12 px + đệm cần ~142 px (do-khung 1280)
           <>
             <span>{t('mở {tuan}', { tuan: tuanLich(v.mo, homNay) })}</span>
             {!v.dong ? <span>{t('đang mở')}</span>
@@ -616,7 +616,7 @@ function HopCase({ mo, homNay, hep, onDong, onOpenCase }: { mo: HopMo; homNay: s
       className={hep ? 'fixed inset-x-0 bottom-0 z-50 grid gap-2 rounded-t-[14px] border-t px-4 pb-[18px] pt-3.5 text-[14px] shadow-xl'
         : 'fixed z-50 grid w-[300px] gap-1 rounded-[10px] border px-3 py-2.5 text-[14px] shadow-xl'}
       style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)', ...(hep ? {} : { left: cho?.left ?? 0, top: cho?.top ?? 0, visibility: cho ? undefined : 'hidden' }) }}>
-      <b className="text-[15px] text-slate-100">{tieu}</b>
+      <b className="text-[14px] text-slate-100">{tieu}</b>
       <span className="text-slate-100">{giuaCase(v)}{d && d.kyVong != null && <> · <DiemKq diem={d.gt} kyVong={d.kyVong} /> / {t('kỳ vọng {kv}', { kv: fmtBand(d.kyVong) })}</>}</span>
       <span className="text-[13px] text-dim">{phu}</span>
       <span className="mt-1 flex flex-wrap gap-3.5 border-t pt-1.5" style={{ borderColor: 'var(--line)' }}>
@@ -655,7 +655,7 @@ function DanhSachSuKien({ hop, homNay, onOpenCase }: { hop: Hop[]; homNay: strin
         return (
           <Fragment key={h.kyNang}>
             <div className="grid gap-0.5 border-t px-3.5 py-2.5 first:border-t-0" style={{ background: 'var(--surface-2)', borderColor: 'var(--line-strong)' }}>
-              <span className="text-[15px] font-bold text-[var(--text)]">{dich(h.nhan)}</span>
+              <span className="text-[14px] font-bold text-[var(--text)]">{dich(h.nhan)}</span>
               <XuHuong hop={h} />
             </div>
             {sk.map((x) => (

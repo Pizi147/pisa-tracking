@@ -1,4 +1,4 @@
-import { tuanLich } from '@shared/domain/index.ts';
+import { tuanLich, ngay } from '@shared/domain/index.ts';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { DongSEx } from './kieu.ts';
@@ -26,7 +26,7 @@ export function OSEx({ x, so, onMo, onThem, soKe }: {
   }
   const tuan = tuanLich(x.tuan);
   const doc = [`${t('S Ex')} ${so}`, tuan, x.diem !== null ? fmtBand(x.diem) : t('chờ chấm')].join(' · ');
-  const title = [x.ngay && `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet]
+  const title = [x.ngay && ngay(x.ngay), x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet]
     .filter(Boolean).join('\n') || undefined;
   const chu = <><b className="o-sex-nhan">{t('S Ex {n}', { n: so })}</b><span className="o-sex-tuan">{tuan}</span>{x.diem !== null && <b className="tabular-nums">{fmtBand(x.diem)}</b>}</>;
   return onMo && (x.sua || x.cham)

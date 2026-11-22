@@ -31,7 +31,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (1) · ô tuần: ô hiện mã tuần, dòng phụ là khoảng ngày; gõ "W4 SEP" và gõ một ngày trong tuần đều nhận; lỗi nói mã tuần', () => {
     const H = '2026-09-14';
     assert(d.hienONgay('2026-08-24', 'tuan', H) === 'W4 AUG', d.hienONgay('2026-08-24', 'tuan', H));
-    assert(d.phuONgay('2026-08-24', 'tuan', H) === '24/08 – 30/08', d.phuONgay('2026-08-24', 'tuan', H));
+    assert(d.phuONgay('2026-08-24', 'tuan', H) === '24/08/2026 – 30/08/2026', d.phuONgay('2026-08-24', 'tuan', H));
     assert(d.hienONgay('2026-09-28', 'ngay', H) === '28/09/2026' && d.hienONgay('2026-10', 'thang', H) === '10/2026', 'kiểu khác giữ nguyên');
     assert(d.docONgay('W4 SEP', 'tuan', H).iso === '2026-09-21', 'W4 SEP');
     assert(d.docONgay('23/09', 'tuan', H).iso === '2026-09-21', 'gõ ngày vẫn nhận');
@@ -84,8 +84,8 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   check('UXF-b (3) · mocChuPa: PA 1 tháng nói MÃ TUẦN (18/10 → W3 OCT); đến lúc thi và Mini Test giữ NGÀY', () => {
     const H = '2026-09-14';
     assert(d.mocChuPa({ span: 'one_month', followupDue: '2026-10-18', mtKe: null, daXacNhan: true }, H) === '1 tháng · đến W3 OCT', d.mocChuPa({ span: 'one_month', followupDue: '2026-10-18', mtKe: null, daXacNhan: true }, H));
-    assert(d.mocChuPa({ span: 'until_exam', followupDue: '2026-11-20', mtKe: null, daXacNhan: true }, H) === 'đến lúc thi · đến 20/11', 'đến lúc thi giữ ngày thi');
-    assert(d.mocChuPa({ span: 'mini_test', followupDue: '2026-10-02', mtKe: null, daXacNhan: true }, H) === 'đến Mini Test · 02/10', 'Mini Test giữ ngày');
+    assert(d.mocChuPa({ span: 'until_exam', followupDue: '2026-11-20', mtKe: null, daXacNhan: true }, H) === 'đến lúc thi · đến 20/11/2026', 'đến lúc thi giữ ngày thi');
+    assert(d.mocChuPa({ span: 'mini_test', followupDue: '2026-10-02', mtKe: null, daXacNhan: true }, H) === 'đến Mini Test · 02/10/2026', 'Mini Test giữ ngày');
     assert(d.mocChuPa({ span: 'one_month', followupDue: null, mtKe: null, daXacNhan: false }, H) === '1 tháng', 'chưa xác nhận');
   });
   check('UXF-b (3) · nhập bù trùng khoảng: lỗi máy chủ nói MÃ TUẦN (W1 SEP → W3 SEP), không in ngày ISO thô', () => {
@@ -235,11 +235,11 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     let nem = false; try { casesSvc.skillSupportBoard(t.P.cpManager, sid); } catch { nem = true; }
     assert(nem, 'QL chi nhánh khác phải bị chặn');
   });
-  check('UXF-b (6) · Q13 oHocThuat: em Tạm dừng → mọi dòng có hạn (Quá hạn VÀ Cần làm) là "Tạm dừng từ dd/mm"; Chờ duyệt / Đang làm giữ; không Tạm dừng → như cũ', () => {
+  check('UXF-b (6) · Q13 oHocThuat: em Tạm dừng → mọi dòng có hạn (Quá hạn VÀ Cần làm) là "Tạm dừng từ dd/mm/yyyy"; Chờ duyệt / Đang làm giữ; không Tạm dừng → như cũ', () => {
     const hang = (tt: string) => [{ short: 'R', label: 'Reading', category: 'reading', missed: true,
       cases: [{ status: 'open', trangThaiV4: { t: tt }, viecTiep: { chu: 'Xác nhận PA' }, plans: [] }] }];
     const dung = (tt: string) => d.oHocThuat(hang(tt), '2026-09-10', '2026-09-14').dong[0];
-    for (const tt of ['can-lam', 'qua-han']) assert(dung(tt).t === 'tam-dung' && dung(tt).nhan === 'Tạm dừng từ 10/09', `${tt}: ${JSON.stringify(dung(tt))}`);
+    for (const tt of ['can-lam', 'qua-han']) assert(dung(tt).t === 'tam-dung' && dung(tt).nhan === 'Tạm dừng từ 10/09/2026', `${tt}: ${JSON.stringify(dung(tt))}`);
     for (const tt of ['cho-duyet', 'dang-lam']) assert(dung(tt).t === tt, `${tt}: ${dung(tt).t}`);
     assert(d.oHocThuat(hang('can-lam')).dong[0].t === 'can-lam', 'không Tạm dừng → Cần làm');
   });
@@ -296,13 +296,13 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 8 · chữ nhỏ: lý do nhiều dòng (VN01), "hạn hết T2" (VN28)
-  check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn 14/09 → "hạn 14/09" (OV-12a); boTienTo đã xoá', () => {
+  check('UXF-b (8) · VN28: ô Việc tiếp theo giữ đủ tiền tố "hạn" — PA hạn 14/09/2026 → "hạn 14/09/2026" (OV-12a); boTienTo đã xoá', () => {
     const v = d.viecTiepCuaEm({
       nhapDiem: null,
       cases: [{ caseId: 2, topic: 'listening', viecTiep: { chu: 'Kết quả PA Nghe podcast', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 9 } }],
       yThuc: null, homNay: '2026-09-14',
     });
-    assert(v[0]?.han === 'hạn 14/09', JSON.stringify(v[0]));   // OV-12a: hạn hết Thứ Ba
+    assert(v[0]?.han === 'hạn 14/09/2026', JSON.stringify(v[0]));   // OV-12a: hạn hết Thứ Ba
     assert(!/boTienTo/.test(doc('shared/domain/hocVienLop.ts')), 'boTienTo còn');
   });
   check('UXF-b (8) · VN01: lý do thẻ Chờ duyệt vẽ từng dòng của yc.dong với whitespace-pre-line (xuống dòng "Bổ sung dd/mm: …")', () => {

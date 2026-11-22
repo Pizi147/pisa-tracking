@@ -226,7 +226,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
         { loai: 'ghi-ket-qua', chu: 'Kết quả tuần W4 SEP · PA …', kyNangTen: 'Writing Task 2', quaHanNgay: 3 }],
       yThuc: { nhom: 'bat_buoc', keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null },
     });
-    assert(JSON.stringify(chu(r)) === JSON.stringify(['MT1 SOS 2: đang hỗ trợ Writing Task 2 và Speaking', 'PA Writing Task 2 quá hạn Kết quả 3 ngày', 'Ý thức: bắt buộc Report 2, hạn hết 04/10']), JSON.stringify(r));
+    assert(JSON.stringify(chu(r)) === JSON.stringify(['MT1 SOS 2: đang hỗ trợ Writing Task 2 và Speaking', 'PA Writing Task 2 quá hạn Kết quả 3 ngày', 'Ý thức: bắt buộc Report 2, hạn hết 04/10/2026']), JSON.stringify(r));
     assert(r.map((m) => m.tone).join() === 'sos2,danger,warn', `màu: ${r.map((m) => m.tone)}`);
   });
 
@@ -275,7 +275,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(d.oHocThuat([{ short: 'L', label: 'L', category: 'listening', missed: false, cases: [] }, { short: 'R', label: 'R', category: 'reading', missed: null, cases: [] }]).phu === 'Không có Case mở', 'thiếu điểm một kỹ năng');
     assert(d.oHocThuat([]).phu === 'chưa có điểm', 'bảng trống (PET)');
     const y = d.oYThuc({ bacTen: 'Report 1', nhom: 'bat_buoc', soBatBuoc: 3, keTiep: 'Report 2', han: '2026-10-04', quaHanNgay: null, deXuat: null, soMo: 3, tamDung: false }, '2026-09-14');
-    assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10' && y.tone === 'warn', JSON.stringify(y));
+    assert(y.gt === 'Report 1' && y.tren === 'bậc đã xử lý' && y.phu === '3 vi phạm / 2 tuần → bắt buộc Report 2 · hạn hết 04/10/2026' && y.tone === 'warn', JSON.stringify(y));
     const y0 = d.oYThuc(null);
     assert(y0.gt === 'Không có vi phạm' && y0.phu === '', JSON.stringify(y0));
     const st = (o: Record<string, unknown>) => d.oSapToi({ ketLuan: null, sauCuoiKhoa: null, ratio: false, kck: false, bacKe: null, homNay: HN,
@@ -410,7 +410,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       { status: 'open', viecTiep: { chu: 'Xác nhận nguyên nhân', loaiHan: 'xac-minh-sos', han: '2026-10-02' }, nguoiLam: { id: 2, ten: 'Đỗ Thanh Tùng' } },
       { status: 'done', viecTiep: null, nguoiLam: null },
     ], '2026-10-01');
-    assert(v.viec === 'Xác nhận nguyên nhân' && v.han === 'hạn 02/10' && v.nguoi === 'Đỗ Thanh Tùng' && !v.quaHan, JSON.stringify(v));
+    assert(v.viec === 'Xác nhận nguyên nhân' && v.han === 'hạn 02/10/2026' && v.nguoi === 'Đỗ Thanh Tùng' && !v.quaHan, JSON.stringify(v));
     const q = d.viecTiepHang([{ status: 'open', viecTiep: { chu: 'Kết quả PA x', loaiHan: 'cap-nhat-pa', han: '2026-09-28' }, nguoiLam: { id: 1, ten: 'A' } }], '2026-10-01');
     assert(q.quaHan === 'quá hạn 3 ngày' && q.nguoi === 'A', JSON.stringify(q));
     assert(d.viecTiepHang([{ status: 'done', viecTiep: null }], '2026-10-01') === null, 'không việc → null');

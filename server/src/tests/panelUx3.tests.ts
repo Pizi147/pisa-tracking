@@ -26,13 +26,13 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
 
   // ==================================================================== 1. Bộ chọn ngày / tuần / tháng (hàm thuần)
 
-  check('UX3 (1) · dsNgayGan: "Hôm nay, 14/09" · "Hôm qua, 13/09" · "Thứ Bảy, 12/09"; cùng năm không hiện năm', () => {
+  check('UX3 (1) · dsNgayGan: "Hôm nay, 14/09/2026" · "Hôm qua, 13/09/2026" · "Thứ Bảy, 12/09/2026"; luôn có năm (NHẸ HƠN 22/11)', () => {
     const ds = d.dsNgayGan('2026-09-14', 4);
     assert(ds.length === 4, `số ngày ${ds.length}`);
-    assert(ds[0].nhan === 'Hôm nay, 14/09' && ds[0].giaTri === '2026-09-14', JSON.stringify(ds[0]));
-    assert(ds[1].nhan === 'Hôm qua, 13/09', JSON.stringify(ds[1]));
-    assert(ds[2].nhan === 'Thứ Bảy, 12/09' && ds[3].nhan === 'Thứ Sáu, 11/09', JSON.stringify(ds.slice(2)));
-    assert(ds.every((x: any) => !/2026/.test(x.nhan)), 'cùng năm mà vẫn hiện năm');
+    assert(ds[0].nhan === 'Hôm nay, 14/09/2026' && ds[0].giaTri === '2026-09-14', JSON.stringify(ds[0]));
+    assert(ds[1].nhan === 'Hôm qua, 13/09/2026', JSON.stringify(ds[1]));
+    assert(ds[2].nhan === 'Thứ Bảy, 12/09/2026' && ds[3].nhan === 'Thứ Sáu, 11/09/2026', JSON.stringify(ds.slice(2)));
+    assert(ds.every((x: any) => /\/2026$/.test(x.nhan)), 'thiếu năm');
   });
 
   check('UX3 (1) · dsNgayGan: qua năm thì có năm; ngày hỏng → rỗng', () => {
@@ -41,11 +41,11 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.dsNgayGan('không phải ngày', 3).length === 0, 'ngày hỏng phải ra rỗng');
   });
 
-  check('UX3 (1) · dsTuan: giá trị = thứ Hai, nhãn qua tuanLich (W4 AUG → W1 SEP), phụ "dd/mm – dd/mm"', () => {
+  check('UX3 (1) · dsTuan: giá trị = thứ Hai, nhãn qua tuanLich (W4 AUG → W1 SEP), phụ "dd/mm/yyyy – dd/mm/yyyy"', () => {
     const ds = d.dsTuan('2026-08-26', 1, 2);
     assert(ds.map((x: any) => x.giaTri).join() === '2026-08-17,2026-08-24,2026-08-31,2026-09-07', ds.map((x: any) => x.giaTri).join());
     assert(ds.map((x: any) => x.nhan).join() === 'W3 AUG,W4 AUG,W1 SEP,W2 SEP', ds.map((x: any) => x.nhan).join());
-    assert(ds[2].phu === '31/08 – 06/09', String(ds[2].phu));
+    assert(ds[2].phu === '31/08/2026 – 06/09/2026', String(ds[2].phu));
   });
 
   check('UX3 (1) · dsTuan qua năm: tuần thuộc tháng của năm khác hiện kèm năm', () => {
@@ -107,8 +107,8 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const dp = v.find((x: any) => /^Thêm PA/.test(x.viec));
     assert(dp && dp.viec === 'Thêm PA W2' && dp.quaHanNgay === null, JSON.stringify(dp));
     const gk = v.find((x: any) => /^Kết quả/.test(x.viec));
-    assert(gk && gk.viec === 'Kết quả PA L · kỳ W4 AUG – W1 SEP' && gk.han === 'hạn 13/09' && gk.quaHanNgay === 3 && gk.tone === 'danger'
-      && gk.title === 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn 13/09 · quá hạn 3 ngày', JSON.stringify(gk));
+    assert(gk && gk.viec === 'Kết quả PA L · kỳ W4 AUG – W1 SEP' && gk.han === 'hạn 13/09/2026' && gk.quaHanNgay === 3 && gk.tone === 'danger'
+      && gk.title === 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn 13/09/2026 · quá hạn 3 ngày', JSON.stringify(gk));
     assert(!/Cập nhật|Xác định nguyên nhân/.test(JSON.stringify(v)), JSON.stringify(v));
   });
 

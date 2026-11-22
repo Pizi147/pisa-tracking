@@ -123,7 +123,7 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
       <span className="flex items-center gap-1.5">
         <span className="text-xs font-semibold text-slate-400">{nhan}</span>
         {kqT && <DauKetQua kq={kqT} />}
-        <span className={`${gon ? 'text-xl' : 'text-[22px]'} font-bold leading-none tabular-nums ${c.band === null ? 'text-slate-600' : lopKq(kqT) || 'text-slate-100'}`}>
+        <span className={`${gon ? 'text-xl' : 'text-[20px]'} font-bold leading-none tabular-nums ${c.band === null ? 'text-slate-600' : lopKq(kqT) || 'text-slate-100'}`}>
           {c.band === null ? '—' : fmtBand(c.band)}
         </span>
       </span>
@@ -187,7 +187,7 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
       /* NEN-TYPO-MAU: ✓ / ✗ đứng TRƯỚC số, số tô cùng màu kết quả (`lopKq`). */
       <span className={`flex items-center gap-1.5 ${gon ? '' : 'mt-0.5'}`}>
         {kq && <DauKetQua kq={kq} />}
-        <span className={`${gon ? (band === null && chuRong !== '—' ? 'text-sm font-semibold text-slate-300' : 'text-xl font-bold') : 'text-[28px] font-bold'} leading-none tabular-nums ${band === null ? (gon && chuRong !== '—' ? '' : 'text-slate-600') : lopKq(kq) || 'text-slate-100'}`}>
+        <span className={`${gon ? (band === null && chuRong !== '—' ? 'text-sm font-semibold text-slate-300' : 'text-xl font-bold') : 'text-[26px] font-bold'} leading-none tabular-nums ${band === null ? (gon && chuRong !== '—' ? '' : 'text-slate-600') : lopKq(kq) || 'text-slate-100'}`}>
           {band === null ? chuRong : fmtBand(band)}
         </span>
       </span>
@@ -231,7 +231,7 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
           {/* NEN-TYPO-MAU (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
           <span className="mt-0.5 flex items-center gap-1.5">
             {kqOverall && <DauKetQua kq={kqOverall} />}
-            <span className={`text-[28px] font-bold leading-none tabular-nums ${result.overall === null ? 'text-slate-600' : lopKq(kqOverall) || 'text-slate-100'}`}>
+            <span className={`text-[26px] font-bold leading-none tabular-nums ${result.overall === null ? 'text-slate-600' : lopKq(kqOverall) || 'text-slate-100'}`}>
               {result.overall === null ? '—' : fmtBand(result.overall)}
             </span>
           </span>

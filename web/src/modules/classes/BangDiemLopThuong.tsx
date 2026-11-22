@@ -140,7 +140,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const rows = tatCa.filter((s) => !s.dangBoTro && (loc === 'tat-ca' || (loc === 'case' ? s.openCases > 0 : chuaDat(s))));
   const khoiBoTro = boTro.length > 0 && (
     <details className="group/bt border-t" style={{ borderColor: 'var(--line)' }} open>
-      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-4 text-[15px] font-bold text-slate-100">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-4 text-[14px] font-bold text-slate-100">
         <svg aria-hidden viewBox="0 0 16 16" width="14" height="14" className="shrink-0 -rotate-90 fill-none stroke-current text-dim transition-transform group-open/bt:rotate-0 motion-reduce:transition-none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 6L8 10.5 12.5 6" /></svg>
         {t('Đã chuyển · đang bổ trợ')}
         <span className="inline-flex h-[22px] items-center rounded border px-1.5 text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{t('{n} em', { n: boTro.length })}</span>
@@ -233,7 +233,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
           ];
           return (
             <TheDong key={s.id} onClick={bamHang(() => moTen(s.id))} className={`grid cursor-pointer gap-2 !px-3.5 !py-3 ${mo === s.id ? 'dang-mo' : ''} ${lopHang(s)}`}
-              dau={<span className="text-[15px]">{oTen(s)}</span>} hanhDong={menu(s, NUT_BA_CHAM)} dong={[]}>
+              dau={<span className="text-[14px]">{oTen(s)}</span>} hanhDong={menu(s, NUT_BA_CHAM)} dong={[]}>
               <div className={`grid items-center gap-y-1 rounded-lg px-2 py-1.5 text-center ${mo === s.id ? 'bg-[color:var(--surface)]' : 'bg-[color:var(--surface-2)]'}`} style={luoi}>
                 <span />{cotMon.map((k) => <abbr key={k} className="text-xs font-semibold text-faint no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>)}{coPt && <span className="text-xs font-semibold text-faint">%</span>}
                 {BAI.map((b) => {
@@ -418,7 +418,7 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => setChon(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
                 <span className={`text-[13px] font-bold ${qua ? 'text-late' : 'text-slate-100'}`} title={k === 'chung' ? hangChung?.tenDu : tenMon(ct, k)}>{k === 'chung' ? hangChung?.nhan : tenMonNgan(ct, k)}{qua && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
-                {k !== 'chung' && <span className="text-[15px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>}
+                {k !== 'chung' && <span className="text-[14px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>}
                 <span className={`text-xs max-sm:hidden ${qua ? 'font-semibold text-late' : 'text-dim'}`}>{!e ? (chot.data ? t('Không Case') : '…') : cs.length ? (cs.some((c) => c.pas.length > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
@@ -432,7 +432,7 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
         ) : kn && (
           <div className="grid gap-3 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h5 className="m-0 text-[15px] font-bold text-slate-100">{kn === 'chung' ? hangChung?.tenDu : tenMon(ct, kn)}</h5>
+              <h5 className="m-0 text-[14px] font-bold text-slate-100">{kn === 'chung' ? hangChung?.tenDu : tenMon(ct, kn)}</h5>
               {nguoiPa && <span className={TAG_PHU} style={{ borderColor: 'var(--line-strong)' }}>{t('phụ trách')} <b>{nguoiPa}</b></span>}
               <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
                 <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
@@ -460,15 +460,15 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
               </div>}
               <div className="grid content-start gap-1">
                 <span className={NH}>{t('Case · PA')}</span>
-                {!e && !chot.data ? <Skeleton rows={1} /> : !c0 ? <span className="text-[15px] font-semibold text-dim">{t('Không có Case')}</span> : caKn.slice(0, 2).map((c) => (
+                {!e && !chot.data ? <Skeleton rows={1} /> : !c0 ? <span className="text-[14px] font-semibold text-dim">{t('Không có Case')}</span> : caKn.slice(0, 2).map((c) => (
                   <Fragment key={c.id}>
-                    <span className="text-[15px] font-semibold text-slate-100">{dich(c.tieuDe)}</span>
+                    <span className="text-[14px] font-semibold text-slate-100">{dich(c.tieuDe)}</span>
                     <span className="text-[13px] text-dim">{dich(c.trangThai.chu)}</span>
                     {/* XM-K6: việc của Case (Xác nhận Case / PA, Chờ QL duyệt…) ngay dưới Case; Ghi kết quả PA ở cột Kết quả PA. */}
                     {viecCase(c, ct, homNay).loai !== 'ghi-ket-qua' && <ViecTiepCase c={c} ct={ct} homNay={homNay} kn={kn} onMo={onMo} />}
                     {c.pas.filter((p) => !p.xong).map((p) => (
                       <span key={p.id} className="grid gap-px">
-                        <span className="mt-1 text-[15px] font-semibold text-slate-100">{p.ten.split(' · ')[0]}</span>
+                        <span className="mt-1 text-[14px] font-semibold text-slate-100">{p.ten.split(' · ')[0]}</span>
                         {(p.buoi || p.mocChu) && <span className="text-[13px] tabular-nums text-dim">
                           {[p.buoi && t('buổi {a} / {b}', { a: p.buoi.da, b: p.buoi.tong }), p.mocChu && dich(p.mocChu)].filter(Boolean).join(' · ')}</span>}
                       </span>

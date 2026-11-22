@@ -43,9 +43,9 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     assert(d.planDueDate('2026-09-14', 'urgent') === '2026-09-16' && d.signalVerifyDue('2026-09-14') === '2026-09-16', 'hạn 3 ngày');
     assert(d.HAN_DUYET_NGAY === 5, 'HAN_DUYET_NGAY');
   });
-  check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn 29/09" (OV-15a: hạn chỉ ngày)', () => {
+  check('N1 (1) → OV-12a · deadlineView cap-nhat-pa: "Kết quả W3–W4 SEP · hạn 29/09/2026" (OV-15a: hạn chỉ ngày)', () => {
     const v = d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-24' });
-    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn 29/09' && v.tone === 'waiting', JSON.stringify(v));
+    assert(v.viec === 'Kết quả PA · W3–W4 SEP' && v.han === 'hạn 29/09/2026' && v.tone === 'waiting', JSON.stringify(v));
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-09-29' }).homNay, 'đúng Thứ Ba là hôm nay');
     assert(d.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-29', today: '2026-10-01' }).quaHan === 'quá hạn 2 ngày', 'quá hạn');
     assert(!/CN|Chủ nhật/.test(v.text), v.text);
@@ -151,7 +151,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     const a = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: null }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
     assert(a.han === null && a.quaHanNgay === null && a.title === 'Nhập điểm R · MT2', JSON.stringify(a));
     const b = d.viecTiepCuaEm({ nhapDiem: { kyNang: ['reading'], dot: 'MT2', quaHan: false, han: '2026-09-27' }, cases: [], yThuc: null, homNay: '2026-09-24' })[0];
-    assert(b.han === 'hạn 27/09' && b.quaHanNgay === null && b.tone === 'warn' && !/quá hạn/.test(b.title), JSON.stringify(b));
+    assert(b.han === 'hạn 27/09/2026' && b.quaHanNgay === null && b.tone === 'warn' && !/quá hạn/.test(b.title), JSON.stringify(b));
     /* PR-UXF-a VN29: hạn nhập điểm nay dựng ở MỘT hàm (`nhapDiemTheoEm`) cho bảng lớp và Học viên & Lớp — hạn sớm nhất của ô còn nợ. */
     /* UI-HO-SO-LOP: bảng lớp bỏ viecTiepTheo — `classOverview` (badge) vẫn dựng việc bằng `nhapDiemTheoEm`. */
     assert(/nhapDiemTheoEm: nhapDiemTheoEm\(p, \[classId\]/.test(docSach('server/src/classes/classes.ts')), 'classes.ts chưa dùng nhapDiemTheoEm');

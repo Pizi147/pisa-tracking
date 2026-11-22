@@ -91,7 +91,7 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
             return [
               <tr key={`d-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
                 <OBang c={COT[0]} colSpan={cot.length} className="!whitespace-normal bg-[color:var(--surface-2)] py-2.5 pl-3.5 pr-3 shadow-[inset_3px_0_0_var(--line-strong)]">
-                  <span className="flex flex-wrap items-center gap-2.5 text-[15px] font-bold text-slate-100">
+                  <span className="flex flex-wrap items-center gap-2.5 text-[14px] font-bold text-slate-100">
                     {n.ten}<span className="rounded border px-1.5 text-[12px] font-semibold tabular-nums text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{hien}</span>
                     {an > 0 && <span className="text-[13px] font-normal text-slate-400">· {t('{n} đang ẩn', { n: an })}</span>}
                   </span>
@@ -112,9 +112,9 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                     </OBang>
                     <OBang c={COT[1]} className="!whitespace-normal py-1.5 pr-3">
                       {p.chiXem || m.an
-                        ? <span className={`text-[15px] font-medium ${m.an ? 'line-through decoration-1' : 'text-slate-100'}`}>{m.ten}</span>
+                        ? <span className={`text-[14px] font-medium ${m.an ? 'line-through decoration-1' : 'text-slate-100'}`}>{m.ten}</span>
                         /* GD-17c (mockup ⑩ K6): tên nhóm là ô có viền (bấm là sửa) như Chi nhánh — thay chữ + ✎. */
-                        : <button type="button" className="rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-[15px] font-medium text-slate-100 hover:border-[color:var(--accent)] max-sm:min-h-[44px]"
+                        : <button type="button" className="rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-[14px] font-medium text-slate-100 hover:border-[color:var(--accent)] max-sm:min-h-[44px]"
                             title={t('Sửa tên')} onClick={() => setSua({ nhom: n.key, idx: i, m: { ...m } })}>{m.ten}</button>}
                       {phu && <div className="text-[13px] text-slate-400">{phu}</div>}
                       {/* Mục gốc: máy chủ không đếm (luôn coi là đang dùng, chỉ ẩn được) → để trống. */}

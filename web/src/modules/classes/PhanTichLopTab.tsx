@@ -44,7 +44,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
     /* V8-HSL (mockup v8 D): hàng công cụ trên bảng — tên bảng · số HV · cách đọc ô · ⓘ cách tính (G9: ⓘ ra khỏi đầu cột). */
     <section className="card overflow-clip" aria-label={t('Đạt theo kỹ năng')}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[15px] font-bold text-slate-100">{ft ? t('Đạt theo kỹ năng') : t('Đạt theo môn')}</h2>
+        <h2 className="m-0 text-[14px] font-bold text-slate-100">{ft ? t('Đạt theo kỹ năng') : t('Đạt theo môn')}</h2>
         <span className="text-[13px] text-slate-400">{t('{n} HV', { n: data.soHocVien })} · {t('ô = HV đạt / HV có điểm')}</span>
         <NutLuat label={t('Cách tính')}>{goiY}</NutLuat>
       </div>

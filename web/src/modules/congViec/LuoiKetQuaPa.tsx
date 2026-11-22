@@ -350,7 +350,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, tutor, coCotTutor, thieu, k
     : tt === 'phuc' || (tt === 'loi' && !loi?.thuLai) ? <button type="button" className={NUT_VIEN} disabled={khoa} onClick={() => moDay(false)}>{t('Mở đầy đủ')}</button>
     : <button type="button" className={NUT_MA} disabled={khoa} onClick={() => moDay(false)}>{t('Mở đầy đủ')}</button>;
   const hoSo = (
-    <Link to={duongHoSoHocVien(em.studentId!)} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-2.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center sm:text-sm">{em.studentName}</Link>
+    <Link to={duongHoSoHocVien(em.studentId!)} className="text-[14px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-2.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center sm:text-sm">{em.studentName}</Link>
   );
   const phu = [kn && <b key="k" className="font-semibold text-dim">{kn}</b>, tenPa].filter(Boolean);
   /* TU2-4 (mockup Ⓣ1 E1): cụm `[a] / [b]` · ô Tutor (hẹp, có tìm, có GV) · Nhận xét — a = 0 ẩn Tutor và Nhận xét. */

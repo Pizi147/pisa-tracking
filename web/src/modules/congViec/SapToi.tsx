@@ -96,7 +96,7 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
         {gonMo && cum.map((c) => (
           <div key={c.khoa}>
             <button type="button" aria-expanded={mo === c.khoa} aria-label={c.nhan} onClick={(e) => bam(c.khoa, e)}
-              className="flex min-h-[44px] w-full appearance-none items-center justify-between border-0 border-t bg-transparent px-3 text-left text-[15px] text-[color:var(--text)]"
+              className="flex min-h-[44px] w-full appearance-none items-center justify-between border-0 border-t bg-transparent px-3 text-left text-[14px] text-[color:var(--text)]"
               style={{ borderColor: 'var(--line)', ...(mo === c.khoa ? { background: 'var(--accent-soft)' } : {}) }}>
               <span>{c.ten}</span><span className="font-bold tabular-nums text-[color:var(--accent)]">{c.so}</span>
             </button>

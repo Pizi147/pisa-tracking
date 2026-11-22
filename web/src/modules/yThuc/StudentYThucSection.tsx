@@ -320,7 +320,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               ([XM-4], một kiểu lịch sử GD-4c) với lọc loại · Lộ trình | Cả lịch sử · Mọi nhóm bên trong. */}
           <DauCotEm ph={iBaoPh} khongHv />
           <div className="flex flex-wrap items-baseline gap-x-2.5 px-4 pb-1 pt-3 max-sm:px-3">
-            <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Đang chờ')}</h3><span className="text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n: soCanLam })}</span>
+            <h3 className="m-0 text-[14px] font-bold text-slate-100">{t('Đang chờ')}</h3><span className="text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n: soCanLam })}</span>
           </div>
           {soCanLam === 0 && !kVua ? (
             <p className="m-0 px-4 pb-3 text-sm text-slate-400 max-sm:px-3"><span aria-hidden className="text-ok">✓ </span>{t('Không có việc nào đang chờ')}</p>

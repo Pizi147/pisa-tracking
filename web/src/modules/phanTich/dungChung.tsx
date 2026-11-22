@@ -43,7 +43,7 @@ export const MAU_SO_VOI_TRUOC = { bad: 'text-bad', ok: 'text-ok', muted: 'text-f
 
 /** Ô đoạn của hàng lọc (`.doan`): cao 36 (375: 44, hết bề rộng), chữ 14, viền ô nhập; mục đang chọn nền nhấn nhạt + chữ đậm + vạch đáy nhấn. */
 export const DOAN = 'inline-flex h-9 shrink-0 overflow-hidden rounded-lg border border-[color:var(--o-nhap-vien)] max-sm:h-11 max-sm:w-full';
-export const doanNut = (bat: boolean) => `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-0 px-3 text-sm [&+button]:border-l [&+button]:border-[color:var(--o-nhap-vien)] max-sm:flex-1 max-sm:px-1.5 max-sm:text-[15px] ${
+export const doanNut = (bat: boolean) => `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-0 px-3 text-sm [&+button]:border-l [&+button]:border-[color:var(--o-nhap-vien)] max-sm:flex-1 max-sm:px-1.5 max-sm:text-[14px] ${
   bat ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-[color:var(--o-nhap-nen)] font-medium text-[color:var(--text-dim)] hover:text-[color:var(--text)]'}`;
 
 /** Ô chọn thường (⑤ A6) — chuyển sang `ui/OChonThuong.tsx` (GD-17: Quản trị dùng chung); giữ tên `OChon` ở Phân tích. */
@@ -108,7 +108,7 @@ export function DaiChiSo({ ds, cot }: { ds: ChiSo[]; /** Số cột 1440 khi kh�
           <span className="text-[13px] font-medium text-[color:var(--text-dim)] sm:whitespace-nowrap">
             {c.ten}{c.ky && <i className="font-normal not-italic text-[color:var(--text-faint)] max-sm:block"><span className="max-sm:hidden"> · </span>{c.ky}</i>}
           </span>
-          <span className="chi-so-gt flex flex-wrap items-baseline gap-x-2 text-[28px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
+          <span className="chi-so-gt flex flex-wrap items-baseline gap-x-2 text-[26px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
             {c.gt}{c.nho && <small className="text-[13px] font-medium text-[color:var(--text-dim)]">{c.nho}</small>}
           </span>
           {c.mau && <span className="text-xs text-[color:var(--text-faint)]">{c.mau}</span>}
@@ -129,7 +129,7 @@ export function DauThe({ ten, dem, phu, phai, cachTinh }: { ten: ReactNode; dem?
   return (
     <>
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
-      <h2 className="m-0 text-[15px] font-bold text-[color:var(--text)]">{ten}</h2>
+      <h2 className="m-0 text-[14px] font-bold text-[color:var(--text)]">{ten}</h2>
       {dem != null && (
         <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{dem}</span>

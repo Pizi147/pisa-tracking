@@ -86,7 +86,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
               );
               const conCho = chuConCho(d.gvMon, d.chuongTrinh);   /* LICH-TEST-GON: ai còn chờ — dòng nhỏ trong phần lớp đã mở, không cột */
               const so = xong ? <Vien muc="xong">{t('Đã chấm')}</Vien> : <TienDo so={conCua(d)} />;
-              const han = xong ? null : d.phan && !d.quaHan ? <Han loai="nhap-diem" han={d.han} boTinHieu /> : <ChipHan vien loai="nhap-diem" han={d.han} />;
+              const han = xong ? null : d.phan && !d.quaHan ? <Han loai="nhap-diem" han={d.han} /> : <ChipHan vien loai="nhap-diem" han={d.han} />;
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const mon = <ChipMon ct={d.chuongTrinh} ds={d.phan ? d.phan.toi?.kyNang ?? [] : d.kyNang} />;
               const dot = chuDot(d.luot);

@@ -52,7 +52,7 @@ function nhan(h: Huong, ctx: NguCanhNhan, ngan: boolean): string {
     case 'hoc_lai': return `Học lại ${ma}`;
     case 'bao_luu': return 'Tạm dừng học (bảo lưu)';
     case 'dung_hoc': return 'Dừng học hẳn';
-    case 'chua_quyet': return ngan && ctx.ngayXemLai ? `Chưa quyết · xem lại ${ctx.ngayXemLai.slice(8, 10)}/${ctx.ngayXemLai.slice(5, 7)}` : 'Chưa quyết';
+    case 'chua_quyet': return ngan && ctx.ngayXemLai ? `Chưa quyết · xem lại ${ctx.ngayXemLai.slice(8, 10)}/${ctx.ngayXemLai.slice(5, 7)}/${ctx.ngayXemLai.slice(0, 4)}` : 'Chưa quyết';
   }
 }
 

@@ -80,7 +80,7 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
       phu={daThi.loai === 'kq' && daThi.diem.ovr != null && daThi.target != null ? `Target ${fmtBand(daThi.target)} · ${lech(daThi.diem.ovr, daThi.target)}` : null}>
       {daThi.loai === 'kq'
         ? <ODiem kieu="lon" so={daThi.diem.ovr != null ? fmtBand(daThi.diem.ovr) : null} kq={soKyVong(daThi.diem.ovr, daThi.target)} nhan={t('Thi thật')} kyVong={daThi.target != null ? `Target ${fmtBand(daThi.target)}` : undefined} />
-        : <span className="py-1 text-[17px] font-bold text-[color:var(--lich-chu)]">{t('Chờ kết quả')}</span>}
+        : <span className="py-1 text-[16px] font-bold text-[color:var(--lich-chu)]">{t('Chờ kết quả')}</span>}
     </ODiemTo>
   ) : !ratio && (
     /* U02 dòng 2 (PTA: bỏ chênh lệch — đã ở U07): MỘT dòng phụ "MT2 · kỳ vọng 7.5" — nguồn + mốc so. */
@@ -328,7 +328,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Hành trình · {kn}', { kn: tenKn })}</h2>
+        <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Hành trình · {kn}', { kn: tenKn })}</h2>
         <NutLuat label={t('Cách đọc hành trình')}>
           {cy.ratio
             ? t('Chấm = điểm bài của môn (% so tổng), màu theo ngưỡng đạt của lớp · vạch đứt = ngưỡng đạt · cột hồng = tuần này.')

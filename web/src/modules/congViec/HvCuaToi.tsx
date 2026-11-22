@@ -8,7 +8,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { IconNhom } from './DanhSachViec.tsx';
 import { lamTaiCho } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { NHOM_CV_TVV, NHOM_CV_TVV_LABEL, duongHoSoHocVien, nhomViecTvvCua, type NhomViecTvv } from '@shared/domain/index.ts';
+import { NHOM_CV_TVV, NHOM_CV_TVV_LABEL, duongHoSoHocVien, nhomViecTvvCua, type NhomViecTvv, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Em của TVV (`GET /tong-quan/tvv/em`, máy chủ `hvCuaToi.ts` `EmTvv`). */
@@ -54,7 +54,7 @@ function tinhTrangCua(e: EmTvv, homNay: string) {
   if (!thi && !e.choKq && !e.sos) return null;
   return (
     <span className="flex flex-wrap items-center gap-1">
-      {thi && <NhanLich loai="co">{t('Thi {ngay}', { ngay: `${thi.slice(8, 10)}/${thi.slice(5, 7)}` })}</NhanLich>}
+      {thi && <NhanLich loai="co">{t('Thi {ngay}', { ngay: ngay(thi) })}</NhanLich>}
       {e.choKq && <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>}
       {!!e.sos && <ChipSos muc={e.sos} hienKyNang={false} tinh />}
     </span>
@@ -85,7 +85,7 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
     <section className="card overflow-clip p-0" aria-labelledby="hv-cua-toi" data-hd="cv-hv-cua-toi">
       <div className="flex min-h-[48px] flex-wrap items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 bg-[color:var(--surface-2)] max-sm:py-2"
         style={{ borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
-        <h2 id="hv-cua-toi" className="m-0 flex items-center gap-2 text-[15px] font-bold leading-snug">
+        <h2 id="hv-cua-toi" className="m-0 flex items-center gap-2 text-[14px] font-bold leading-snug">
           <span className="text-[color:var(--accent)]"><IconNhom k="lop" /></span>
           <span className="text-[color:var(--text)]">{t('HV của tôi')}</span>
           {!!em?.length && <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
@@ -102,12 +102,12 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
       </div>
       {loi ? <div className="p-4">{loi}</div>
         : dangTai ? <div className="p-4"><Skeleton rows={5} /></div>
-          : !em?.length ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{t('Chưa có học viên nào do bạn phụ trách.')}</p>
+          : !em?.length ? <p className="m-0 px-4 py-6 text-[14px] text-dim">{t('Chưa có học viên nào do bạn phụ trách.')}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
                 <span>{t('Học viên')}</span><span>{t('Lớp')}</span><span>{t('Trạng thái')}</span><span>{t('Việc cần làm')}</span>
               </div>
-              {khop && !khop.length ? <p className="m-0 px-4 py-5 text-[15px] text-dim">{t('Không thấy em nào khớp.')}</p> : (
+              {khop && !khop.length ? <p className="m-0 px-4 py-5 text-[14px] text-dim">{t('Không thấy em nào khớp.')}</p> : (
                 <ul className="m-0 list-none p-0">
                   {chinh.map((d, i) => <DongEm key={d.em.id} d={d} dau={i === 0} ranh={i === vach && i > 0} homNay={homNay} onMo={onMo} />)}
                 </ul>
@@ -135,7 +135,7 @@ function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: bo
     /* ④ K7b: 375 — tên · lớp · trạng thái một hàng (gói khi hẹp), chip xuống hàng riêng cao 44. */
     <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-2 max-sm:py-3`}
       style={{ borderColor: ranh ? 'var(--line-strong)' : 'var(--line)' }}>
-      <Link to={duongHoSoHocVien(e.id)} className={`ten-hv min-w-0 max-w-full text-[15px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
+      <Link to={duongHoSoHocVien(e.id)} className={`ten-hv min-w-0 max-w-full text-[14px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
       <span className="truncate whitespace-nowrap text-[13px] text-dim">
         {e.lop.length ? e.lop.map((l, i) => <span key={l.id}>{i > 0 && ', '}<Link to={`/hoc-vien/lop/${l.id}`} className="!text-[color:var(--text-dim)] no-underline hover:underline">{l.ma}</Link></span>) : '—'}
       </span>

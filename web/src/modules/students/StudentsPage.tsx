@@ -493,7 +493,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     <div className="page space-y-3">
       {/* Đầu trang một hàng (mockup U04): tên · Xem · Fast Track / Lớp thường · phải: Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯ (B26). */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 className="m-0 mr-1 text-[22px] font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
+        <h1 className="m-0 mr-1 text-[20px] font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
         {!dienThoai && oXem}
         {!dienThoai && chonKhung}
         <div className="ml-auto flex items-center gap-2">
@@ -793,7 +793,7 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi, ch
   const n = soEm(hv);
   return (
     <>
-      <span className="hl-o">{lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui text-[15px] font-bold">{lop.code}</Link>
+      <span className="hl-o">{lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui text-[14px] font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}</span>
       <span className="hl-o text-[13px] text-dim">
         <span className="tabular-nums font-medium text-slate-100">{n}</span>{day && (dangLoc || cuaToi) ? <span className="tabular-nums">/{day.studentCount}</span> : null} {dangLoc ? t('HV khớp') : cuaToi ? t('HV của tôi') : 'HV'}

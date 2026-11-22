@@ -14,7 +14,7 @@ const tenMien = (url: string) => { try { return new URL(url).host; } catch { ret
 /** Đầu mục trong panel (V21: 15 / 700, vạch 3 × 18 px nhấn, chip đếm vuông). */
 function DauMuc({ chu, n }: { chu: string; n: number }) {
   return (
-    <h3 className="m-0 mt-5 flex items-center gap-2 text-[15px] font-bold text-[color:var(--text)]">
+    <h3 className="m-0 mt-5 flex items-center gap-2 text-[14px] font-bold text-[color:var(--text)]">
       <span aria-hidden className="h-[18px] w-[3px] rounded-sm bg-[color:var(--accent)]" />{chu}
       <span className="rounded border px-1.5 text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{n}</span>
     </h3>

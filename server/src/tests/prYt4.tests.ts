@@ -712,7 +712,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       const it = (myworkYt.myWork(loadPrincipal(P.mbManager.userId)).items as any[]).find((i) => i.key === `yt_xu_ly:${sid}`);
       assert(it && it.mine && it.ownerId === null && it.due === addDays(TODAY, 4) && /được yêu cầu/.test(it.reason), JSON.stringify(it));
       const tin = conn.prepare('SELECT user_id, kind, title FROM notifications WHERE dedup_key = ?').all(`yt-yc:${v.id}`) as any[];
-      assert(tin.some((x) => x.user_id === P.mbManager.userId && x.kind === 'discipline' && /trước \d\d\/\d\d$/.test(x.title)), JSON.stringify(tin));
+      assert(tin.some((x) => x.user_id === P.mbManager.userId && x.kind === 'discipline' && /trước \d\d\/\d\d\/\d{4}$/.test(x.title)), JSON.stringify(tin));
     } finally { conn.exec('ROLLBACK TO lg12b'); conn.exec('RELEASE lg12b'); xoaNho(); }
   });
   check('LG-12 (6) · đổi GVCN giữa chừng: việc sang GVCN mới (cùng hạn); GVCN cũ hết việc, "Không xử lý" → 403; GVCN mới làm được', () => {
@@ -994,9 +994,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const tb = thongBao(moi.gvcn.userId, `transfer:${900000 + sid}`);
     assert(tb.length === 1 && /· đang có 3 vi phạm cần xử lý$/.test(tb[0].body), JSON.stringify(tb));
   });
-  check('YT4 (6) · Hai loại hạn Ý thức cũ đã bỏ; "Xử lý vi phạm · hạn dd/mm"; dòng nhắc chỉ còn Phối hợp SOS', () => {
+  check('YT4 (6) · Hai loại hạn Ý thức cũ đã bỏ; "Xử lý vi phạm · hạn dd/mm/yyyy"; dòng nhắc chỉ còn Phối hợp SOS', () => {
     assert(!(d.DEADLINE_KINDS as readonly string[]).some((k) => k === 'thuc-hien-y-thuc' || k === 'hoan-thanh-y-thuc'), 'loại cũ');
-    assert(d.deadlineView({ kind: 'xu-ly-vi-pham', due: '2026-09-18', today: TODAY }).text === 'Xử lý vi phạm · hạn 18/09', 'nhãn hạn');
+    assert(d.deadlineView({ kind: 'xu-ly-vi-pham', due: '2026-09-18', today: TODAY }).text === 'Xử lý vi phạm · hạn 18/09/2026', 'nhãn hạn');
     /* PR-VAI-a (K5-10): dòng nhắc mềm Phối hợp SOS đã thành việc thật — YThucReminders.tsx đã xoá cùng /y-thuc/my-coordination. */
     const f3 = path.join(REPO3, 'web/src/modules/yThuc/YThucReminders.tsx');
     assert(!fs.existsSync(f3) || !/my-warnings/.test(fs.readFileSync(f3, 'utf8')), 'còn gọi /y-thuc/my-warnings');

@@ -276,7 +276,7 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
   if (mo && !daMo) setDaMo(true);
   return (
     <section className="card">
-      <h2 className="m-0 text-[15px] font-semibold text-slate-100">
+      <h2 className="m-0 text-[14px] font-semibold text-slate-100">
         <button id="khoi-diem-lop-nut" type="button" aria-expanded={mo} aria-controls="khoi-diem-lop-bang" onClick={onDoi}
           className="flex w-full min-h-[44px] scroll-mt-4 flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl px-3 py-3 text-left sm:px-4">
           <span className="text-slate-400"><MuiTen mo={mo} /></span>

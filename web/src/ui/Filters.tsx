@@ -166,7 +166,7 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
             <>
               <b className="whitespace-nowrap font-bold text-slate-100">{tuanLich(shown.weekStart, today)}</b>
               {/* 375: chỉ mã tuần (ô không xuống dòng); ngày trong lịch khi bấm. */}
-              <span className="whitespace-nowrap text-xs text-slate-500 max-sm:hidden">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
+              <span className="whitespace-nowrap text-xs text-slate-500 max-sm:hidden">{khoangTuan(shown.weekStart)}</span>
             </>
           ) : <span className="text-slate-500">{t('Đang tải…')}</span>}
         </button>
@@ -187,7 +187,7 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
       {label && <span className="label">{label}</span>}
       <div className="flex flex-wrap items-stretch gap-2">
         {/* NHÓM KHÔNG TÁCH HÀNG: mũi tên · trường tuần · mũi tên. */}
-        <div className="flex flex-1 basis-[17rem] min-w-0 items-stretch gap-2">
+        <div className="flex flex-1 basis-[18.5rem] min-w-0 items-stretch gap-2">
           <button
             type="button" className="btn flex-none h-11 px-3" disabled={busy || (!!toiThieu && !!shown && shown.weekStart <= toiThieu)}
             onClick={() => goAdjacent(-1)} aria-label={shown ? t('Tuần trước · {tuan}', { tuan: tuanLich(addDaysStr(shown.weekStart, -7), today) }) : t('Tuần trước')}
@@ -201,8 +201,8 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
           >
             {shown ? (
               <>
-                <span className="text-slate-100 truncate">{tuanLich(shown.weekStart, today)}</span>
-                <span className="text-slate-500 text-xs shrink-0">{ngay(shown.weekStart, today)} – {ngay(addDaysStr(shown.weekStart, 6), today)}</span>
+                <span className="shrink-0 whitespace-nowrap text-slate-100">{tuanLich(shown.weekStart, today)}</span>
+                <span className="min-w-0 truncate text-slate-500 text-xs">{khoangTuan(shown.weekStart)}</span>
               </>
             ) : (
               <span className="text-slate-500">{clearable ? t('Chưa xác định') : t('Đang tải…')}</span>
@@ -229,6 +229,8 @@ export function WeekPicker({ periodId, onPeriod, label = t('Tuần'), scope, cle
 
 /* PR-NV (T9): MỘT giá trị nhớ cho mọi ô chi nhánh — id hoặc 'tat-ca', mỗi tài khoản một khoá (máy dùng chung). localStorage hỏng /
    bị chặn thì chạy như chưa nhớ gì. */
+/** Khoảng ngày của tuần (Thứ Hai `t2`): năm ghi một lần ở cuối khi cùng năm — "14/09 – 20/09/2026" (như nhãn khoảng `khoangThoiGian`). */
+const khoangTuan = (t2: string) => { const cn = addDaysStr(t2, 6); return `${t2.slice(0, 4) === cn.slice(0, 4) ? ngay(t2).slice(0, 5) : ngay(t2)} – ${ngay(cn)}`; };
 const khoaChiNhanh = (uid: number | undefined) => `pisa.chiNhanh.${uid ?? 0}${hauToGocNhin()}`;
 export function docChiNhanhDaNho(uid: number | undefined): number | 'tat-ca' | null {
   try {

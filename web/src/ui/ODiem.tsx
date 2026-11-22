@@ -36,15 +36,15 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
   const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : chuKq(kq)}${kyVong ? ` ${fmtBand(kyVong)}` : ''}` : ''].filter(Boolean).join(' ');
   /* "✓ " / "✗ " trong cùng span với số (kế thừa cỡ, đậm, màu); không kết quả → giữ chỗ ẩn để số thẳng cột (trừ `lon`). */
   const kyHieu = so === null ? null : kqHien
-    ? <span aria-hidden className={kieu === 'lon' ? 'mr-0.5 text-[17px]' : undefined}>{kqHien === 'duoi' ? '✗' : '✓'} </span>
+    ? <span aria-hidden className={kieu === 'lon' ? 'mr-0.5 text-[16px]' : undefined}>{kqHien === 'duoi' ? '✗' : '✓'} </span>
     : kieu === 'lon' ? null : <span aria-hidden className="invisible">✓ </span>;
   const deKhac = kieu === 'ti-le' && tong != null && tongCot != null && tong !== tongCot;
   const so_ = so === null ? <span className="text-faint">—</span> : kieu === 'ti-le'
     ? <>
-        <span className={`inline-block min-w-[2ch] whitespace-nowrap text-right text-[15px] font-bold ${mau}`}>{kyHieu}{so}</span>
+        <span className={`inline-block min-w-[2ch] whitespace-nowrap text-right text-[14px] font-bold ${mau}`}>{kyHieu}{so}</span>
         <span className={`inline-block min-w-[3ch] text-left text-[13px] font-normal ${deKhac ? 'text-soon' : 'text-faint'}`} title={deKhac ? t('Đề khác') : undefined}>/{tong}</span>
       </>
-    : <span className={`whitespace-nowrap ${kieu === 'lon' ? 'text-[28px] leading-none' : 'text-[15px]'} font-bold ${mau}`}>{kyHieu}{so}</span>;
+    : <span className={`whitespace-nowrap ${kieu === 'lon' ? 'text-[26px] leading-none' : 'text-[14px]'} font-bold ${mau}`}>{kyHieu}{so}</span>;
   const dongPhu = (phu || (kck && kq === 'duoi')) && (
     <span className="block text-[12px] leading-4 text-faint" data-phu-odiem="">{phu ?? 'KCK'}</span>
   );

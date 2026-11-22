@@ -56,7 +56,7 @@ export function NhomLan({ chu, dem, i, tong, children }: { chu: string; dem: Rea
     <section aria-label={chu}>
       <div className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b px-4 py-2.5 max-sm:px-3 ${tong === 'bb' ? 'bg-soon-bg' : ''}`}
         style={{ borderColor: 'var(--line)', background: tong === 'bb' ? undefined : tong === 'gap' ? 'var(--surface)' : 'var(--surface-2)' }}>
-        <h3 className={`m-0 text-[15px] font-bold ${tong === 'bb' ? 'text-soon' : 'text-slate-100'}`}>{chu}</h3>
+        <h3 className={`m-0 text-[14px] font-bold ${tong === 'bb' ? 'text-soon' : 'text-slate-100'}`}>{chu}</h3>
         <span className="text-[13px] tabular-nums text-slate-400">{dem}</span>
         {i && <span className="-ml-1 self-center">{i}</span>}
       </div>
@@ -74,7 +74,7 @@ function HopVp({ v, homNay, neo }: { v: VpDong; homNay: string; neo: RefObject<H
     /* SUA-2211-A (chủ SP 22/11 ý 5): vẽ ra lớp trên cùng — khung khối / panel / đáy trang không cắt; thiếu chỗ dưới thì lật lên. */
     <NoiTren neo={neo} cach={8} role="tooltip" className="pointer-events-none grid w-[min(400px,80vw)] gap-2 rounded-[10px] border px-3.5 py-3 text-left shadow-xl [@media(hover:none)]:hidden"
       style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-      <b className="flex items-start text-[15px] font-bold text-slate-100"><ChipMon skill={v.skill} /><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></b>
+      <b className="flex items-start text-[14px] font-bold text-slate-100"><ChipMon skill={v.skill} /><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></b>
       <span className="grid grid-cols-[6.5rem_minmax(0,1fr)]">
         {truong.filter(([, g]) => g).map(([n, g], i) => (
           <span key={n} className="contents">
@@ -217,7 +217,7 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
   return (
     <div className="grid gap-2.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       <div className="flex flex-wrap items-center gap-2.5">
-        <h4 className="m-0 text-[15px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: bacDu(dich(v.nhan)) })}</h4>
+        <h4 className="m-0 text-[14px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: bacDu(dich(v.nhan)) })}</h4>
         {v.trangThai === 'mo' && <span className="rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2">{t('hạn {ngay}', { ngay: ngay(v.han, homNay) })}</span>}
         {v.coTheSuaHan && onSuaHan && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={onSuaHan}>{t('Sửa hạn')}</button>}
       </div>

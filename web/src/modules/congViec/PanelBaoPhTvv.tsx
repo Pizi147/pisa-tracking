@@ -104,7 +104,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   ];
   const dau = {
     ...dauViec({ em, lop: it.classCode }),
-    ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng
+    ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} lopNut={NUT_DONG} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng · NHẸ HƠN: cùng ô 36 × 36 với ✕
   };
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
   /* T3a: thẻ "Chờ GV sửa" cạnh tiêu đề (chữ + nền, không chỉ màu). */
@@ -205,7 +205,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             <div className="grid">
               <div className="flex items-start gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
                 <div className="grid min-w-0 flex-1 gap-0.5">
-                  <b className="text-[15px] font-bold">{t('Trả lại cả lần xử lý')}</b>
+                  <b className="text-[14px] font-bold">{t('Trả lại cả lần xử lý')}</b>
                   {/* ponytail: tên GVCN = người lưu lần xử lý (thường là GVCN hiện tại); người nhận thật theo luật hiện ở dải sau khi trả. */}
                   <span className="text-[13px] text-dim">{[bacNgan(v.nhan), v.ten, v.boiCanh.nguoiLuu && t('về GVCN {ten}', { ten: v.boiCanh.nguoiLuu })].filter(Boolean).join(' · ')}</span>
                 </div>
@@ -221,7 +221,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         {/* GV-2 (mockup v22 G1 / G8b): khối ba dòng ĐẦU thân panel. Meeting: hai phần (Xếp lịch họp · Kết quả meeting) trước, rồi phần "Báo PH" của TVV. */}
         {laMeeting ? <>
           {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
-          <h3 className="m-0 -mb-1 flex items-center gap-2 text-[15px] font-bold">{t('Báo PH')}</h3>
+          <h3 className="m-0 -mb-1 flex items-center gap-2 text-[14px] font-bold">{t('Báo PH')}</h3>
           {khoi}
         </> : khoi}
         {v.thuHoiCho && (

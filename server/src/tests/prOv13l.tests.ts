@@ -74,7 +74,7 @@ export async function runPrOv13lTests(t: YThucTestKit) {
     assert(!d.tuanHopLe(T2, THU5) && !d.tuanHopLe(addDays(THU5, -1), THU5) && !d.tuanHopLe(addDays(THU5, 1), THU5), 'Thứ Hai tuần này / hôm qua / mai');
     assert(d.tuanHopLe(addDays(T2, 7), THU5), 'Thứ Hai tuần sau');
     assert(d.kiemDongLenh({ huong: 'chuyen_lop', lopDichId: 5, lopDichFt: true, nguonFt: true, tuan: T2, homNay: THU5, lyDo: 'x', khacGoiY: false, mucTieu: null, ngayXemLai: null }) === d.LOI_TUAN_BAT_DAU, 'câu lỗi');
-    assert(d.nhanTuanBatDau(THU5, THU5) === `Ngay hôm nay · T5 ${THU5.slice(8, 10)}/${THU5.slice(5, 7)}`, d.nhanTuanBatDau(THU5, THU5));
+    assert(d.nhanTuanBatDau(THU5, THU5) === `Ngay hôm nay · T5 ${THU5.slice(8, 10)}/${THU5.slice(5, 7)}/${THU5.slice(0, 4)}`, d.nhanTuanBatDau(THU5, THU5));
   });
   check('L13-2 · hanBanGiaoLenh: mọi lệnh ≥ ra lệnh + 7 ngày (tính cả ngày ra lệnh), GVBM = GVCN; Cuối khoá giữ mốc hết tuần Final khi muộn hơn', () => {
     const bay = addDays(THU5, 6);

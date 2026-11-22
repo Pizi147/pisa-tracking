@@ -83,7 +83,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam, onTiep = null 
                 <span className="grid grid-cols-[48px_minmax(0,1fr)] items-start gap-x-2">
                   <span className="pt-px text-[13px] font-semibold tabular-nums text-slate-400 max-sm:pt-3">{ngay(v.occurredOn, homNay)}</span>
                   <button type="button" aria-expanded={moId === v.id} onClick={() => setMoId((c) => (c === v.id ? null : v.id))}
-                    className="flex min-w-0 appearance-none items-start border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-slate-100 hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
+                    className="flex min-w-0 appearance-none items-start border-0 bg-transparent p-0 text-left text-[14px] font-semibold text-slate-100 hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
                     <ChipMon skill={v.skill} /><span className="min-w-0 break-words"><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></span>
                   </button>
                 </span>

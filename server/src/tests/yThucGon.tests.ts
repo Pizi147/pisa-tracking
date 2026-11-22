@@ -36,7 +36,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
       { id: 3, field: 'occurred_on', oldValue: '2026-09-01', newValue: '2026-09-05', actorUserId: 1, actorName: null, createdAt: '2026-09-01T00:00:00Z' },
       '2026-09-23',
     );
-    assert(ngayRow.truong === 'Ngày xảy ra' && ngayRow.cu === '01/09' && ngayRow.moi === '05/09', `ngay: ${JSON.stringify(ngayRow)}`);
+    assert(ngayRow.truong === 'Ngày xảy ra' && ngayRow.cu === '01/09/2026' && ngayRow.moi === '05/09/2026', `ngay: ${JSON.stringify(ngayRow)}`);
     const ngayKhongHomNay = domain.nhanLichSuViPham({ id: 3, field: 'occurred_on', oldValue: '2026-09-01', newValue: '2026-09-05', actorUserId: 1, actorName: null, createdAt: '2026-09-01T00:00:00Z' });
     assert(ngayKhongHomNay.moi === '05/09/2026', `không homNay → đầy đủ: ${JSON.stringify(ngayKhongHomNay)}`);
   });
@@ -51,13 +51,13 @@ export async function runYThucGonTests(t: YThucTestKit) {
 
   check('PR-YT2 · cauCanhBaoTrung: 1 dòng và 2 dòng, chưa xử lý và có dòng đã xử lý', () => {
     const mot = domain.cauCanhBaoTrung([{ category: 'homework', occurredOn: '2026-09-05', trangThai: 'moi' }], '2026-09-23');
-    assert(mot === 'Đã có 1 vi phạm BTVN ngày 05/09 chưa xử lý', `1 dòng: ${mot}`);
+    assert(mot === 'Đã có 1 vi phạm BTVN ngày 05/09/2026 chưa xử lý', `1 dòng: ${mot}`);
 
     const hai = domain.cauCanhBaoTrung([
       { category: 'homework', occurredOn: '2026-09-05', trangThai: 'can_xu_ly' },
       { category: 'homework', occurredOn: '2026-09-05', trangThai: 'da_xu_ly' },
     ], '2026-09-23');
-    assert(hai === 'Đã có 2 vi phạm BTVN ngày 05/09', `2 dòng có xử lý: ${hai}`);
+    assert(hai === 'Đã có 2 vi phạm BTVN ngày 05/09/2026', `2 dòng có xử lý: ${hai}`);
 
     assert(domain.cauCanhBaoTrung([]) === null, 'rỗng → null');
   });

@@ -174,7 +174,7 @@ export default function LuuTruPage() {
   const cnLop = theoChiNhanh(data?.lop ?? [], (l) => ({ id: l.branchId, ten: l.chiNhanh }));
   const cnHv = theoChiNhanh(data?.hocVien ?? [], (s) => (s.branchId != null ? { id: s.branchId, ten: s.chiNhanh ?? '—' } : null));
   const dauCn = (ten: string, dem: string) => (
-    <h2 className="m-0 flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{dem}</span></h2>
+    <h2 className="m-0 flex items-baseline gap-2 text-[14px] font-bold text-slate-100">{ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{dem}</span></h2>
   );
   const nhanDai = (h: DaiNhom) => (
     <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap text-[14px] font-bold text-[color:var(--text)]">
@@ -279,7 +279,7 @@ export default function LuuTruPage() {
                 }}
                 theRieng={(h) => (laDai(h) ? nhanDai(h) : (
                   <div className="grid gap-1.5">
-                    <div className="flex items-baseline gap-2"><Link to={`/hoc-vien/lop/${h.id}`} className="link text-[15px] font-bold">{h.code}</Link><span className="text-[13px] text-dim">{h.tenChuongTrinh ?? h.ma ?? ''}</span><span className="ml-auto text-[13px] tabular-nums text-dim">{h.finishedAt ? ngay(h.finishedAt) : '—'}</span></div>
+                    <div className="flex items-baseline gap-2"><Link to={`/hoc-vien/lop/${h.id}`} className="link text-[14px] font-bold">{h.code}</Link><span className="text-[13px] text-dim">{h.tenChuongTrinh ?? h.ma ?? ''}</span><span className="ml-auto text-[13px] tabular-nums text-dim">{h.finishedAt ? ngay(h.finishedAt) : '—'}</span></div>
                     <div className="text-[13px] text-dim">{[h.gvcn, t('{n} HV', { n: h.soHvTungHoc })].filter(Boolean).join(' · ')}</div>
                     {nutLop(h)}
                   </div>

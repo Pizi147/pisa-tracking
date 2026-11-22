@@ -563,11 +563,11 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
         {dienThoai && <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />}
         <div className="flex items-start gap-2 border-b pb-2.5 pl-4 pr-3 pt-3" style={{ borderColor: 'var(--line)' }}>
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-bold text-slate-100">{ten}</div>
+            <div className="text-[14px] font-bold text-slate-100">{ten}</div>
             <div className="ten-hv mt-0.5 text-[13px] text-slate-400">{phu}</div>
           </div>
           {/* GD-3 (mockup v21 K2b): ✕ ở đầu hộp — cùng đường với Esc (đã gõ thì hỏi bỏ chữ ở chân). */}
-          <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[17px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
+          <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[16px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
             onClick={() => { if (daGo) setHoi(true); else onDong(); }}>✕</button>
         </div>
         <div className="flex flex-col gap-2.5 px-4 py-3">{children}</div>

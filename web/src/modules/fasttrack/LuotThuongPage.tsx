@@ -179,7 +179,7 @@ export default function LuotThuongPage() {
             <span className="inline-flex items-center gap-2">
               {(dsDot.data?.rows.length ?? 0) > 1 ? (
                 <ChonDot hienTai={r.attemptId} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(x) => navigate(attemptHref({ ...x, studentId: r.studentId }), { replace: true })} />
-              ) : <span className="text-[15px] font-semibold text-slate-200">{r.kindLabel}</span>}
+              ) : <span className="text-[14px] font-semibold text-slate-200">{r.kindLabel}</span>}
               <NutLuat label={t('Thông tin lượt Test')}>
                 <dl className="m-0 grid gap-2">
                   <Info label={t('Chương trình')}>{d.programme.name}</Info>
@@ -383,7 +383,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
       <div id={`kn-${k}`} role="row" onClick={bamDong} className={`${LUOI_MON} cursor-pointer scroll-mt-4 px-3 py-2.5`}>
         <div role="cell" aria-colindex={1} className="min-w-0">
           <button type="button" aria-expanded={mo} aria-controls={mo ? `vung-${k}` : undefined} onClick={onMo}
-            className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[15px] font-bold text-slate-100 sm:min-h-0">
+            className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[14px] font-bold text-slate-100 sm:min-h-0">
             <MuiMoDong mo={mo} />{ten}
           </button>
         </div>

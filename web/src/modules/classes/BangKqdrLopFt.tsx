@@ -149,7 +149,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
         };
         return (
           <section key={b.ct} className="card overflow-clip" aria-label={t('Kết quả đầu ra {ct}', { ct: b.ct })}>
-            <h3 className="m-0 flex flex-wrap items-baseline gap-x-2 px-3.5 py-3 text-[15px] font-bold text-slate-100">
+            <h3 className="m-0 flex flex-wrap items-baseline gap-x-2 px-3.5 py-3 text-[14px] font-bold text-slate-100">
               {t('Kết quả đầu ra {ct}', { ct: b.ct })}
               <span className="text-[13px] font-normal text-slate-400">{t('mốc MT0 {n}', { n: b1(nguong) ?? '' })}{!dt && ` · ${b.lop.map((l) => l.code).join(', ')}`}</span>
             </h3>
@@ -170,7 +170,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
                 ))}
               theRieng={(h) => (h.loai === 'dot' ? dongDot(h.dot) : (
                 <div className="grid gap-2.5">
-                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px]">{tenEm(h.em)}<span className="text-[13px] text-slate-400">{h.em.lopCu.code}</span></div>
+                  <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[14px]">{tenEm(h.em)}<span className="text-[13px] text-slate-400">{h.em.lopCu.code}</span></div>
                   <div className="grid grid-cols-6 gap-x-1.5" role="group" aria-label={t('Final và MT0')}>
                     {(['final', ...REGULAR_SKILLS, 'overall'] as const).map((k) => (
                       <span key={k} className="grid justify-items-start gap-px">
@@ -190,8 +190,8 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       {chot && <HopChot em={chot.em} ct={chot.ct} neo={chot.neo} onDong={() => setChot(null)} onXong={() => { setChot(null); reload(); }} />}
       {xem && (
         <HopNeo neo={{ current: xem.neo }} nhan={t('Bàn giao từ GV cũ · {ten}', { ten: xem.em.ten })} rong={420} onNgoai={() => setXem(null)}>
-          <b className="text-[15px] text-slate-100">{t('Bàn giao từ GV cũ')} · {xem.em.ten}</b>
-          <p className="m-0 whitespace-pre-line break-words text-[15px] text-slate-300">{xem.em.banGiao}</p>
+          <b className="text-[14px] text-slate-100">{t('Bàn giao từ GV cũ')} · {xem.em.ten}</b>
+          <p className="m-0 whitespace-pre-line break-words text-[14px] text-slate-300">{xem.em.banGiao}</p>
           <div className="flex justify-end"><button type="button" className="btn" onClick={() => setXem(null)}>{t('Đóng')}</button></div>
         </HopNeo>
       )}
@@ -238,7 +238,7 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
   return (
     <HopNeo neo={ref} nhan={t('Kết quả đầu ra · {ten}', { ten: em.ten })} rong={380} mui onNgoai={() => { if (!daSua) onDong(); }}>
       <div className="grid gap-0.5">
-        <b className="text-[15px] text-slate-100">{t('Kết quả đầu ra')} · {em.ten}</b>
+        <b className="text-[14px] text-slate-100">{t('Kết quả đầu ra')} · {em.ten}</b>
         <span className="text-[13px] text-slate-400">
           {!em.mt0 ? t('MT0 chưa đủ 3 kỹ năng') : em.mt0.overall === null
             ? t('MT0 có kỹ năng huỷ · mốc {ct} {n}', { ct, n: fmtBand(NGUONG_KY_VONG[ct] ?? 0) })

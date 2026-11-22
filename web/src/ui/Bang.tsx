@@ -88,7 +88,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
       const coMau = mau.some(coPhu);
       const phuDau = phuCua?.(h, theoKey.get(phan.dau[0])!);
       return <>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px]">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px]">
           {phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}
           {coPhu(phuDau) && <span className="basis-full text-[13px] text-slate-500">{phuDau}</span>}
         </div>
@@ -97,7 +97,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             {soLuoi.map((c, i) => (
               <div key={c.key} className={`grid ${coMau ? 'row-span-3' : 'row-span-2'} gap-y-px [grid-template-rows:subgrid]`}>
                 <span className="luoi-n self-end text-[13px] font-medium leading-[1.3] text-slate-400">{c.nhan}</span>
-                <span className="luoi-g text-[17px] font-bold tabular-nums">{o(h, c.key)}</span>
+                <span className="luoi-g text-[16px] font-bold tabular-nums">{o(h, c.key)}</span>
                 {coMau && <span className="luoi-p text-xs text-slate-500">{coPhu(mau[i]) ? mau[i] : ' '}</span>}
               </div>
             ))}
@@ -111,7 +111,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
       <article key={khoa(h)} className={`border-t ${theLuoi && !theRieng ? 'grid gap-2.5 px-3.5 py-3' : 'px-3 py-2.5 first:border-t-0'} ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
         tabIndex={onHang ? 0 : undefined} onClick={bam(h)} onKeyDown={phim(h)}>
         {theRieng ? theRieng(h) : theLuoi ? luoi(h) : <>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">{phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">{phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>
         {phuCua && coPhu(phuCua(h, theoKey.get(phan.dau[0])!)) && <div className="text-[13px] text-slate-400">{phuCua(h, theoKey.get(phan.dau[0])!)}</div>}
         {phan.diem.length > 0 && (
           <div className={`mt-1.5 grid gap-x-3 gap-y-1 ${tiLe ? 'grid-cols-[repeat(auto-fill,minmax(120px,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(76px,1fr))]'}`}>

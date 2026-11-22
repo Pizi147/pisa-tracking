@@ -199,7 +199,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   /* A1m: thẻ 375 — tên + Kỳ vọng phải; lớp · MT; lưới L R W1 W2 S OVR (cột đang xét nền nhấn). */
   const theL = (h: HL) => (
     <div className="grid gap-1.5">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}
         <span className="ml-auto whitespace-nowrap text-[13px] text-dim">{t('Kỳ vọng')} <b className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{h.kyVong === null ? '—' : fmtBand(h.kyVong)}</b></span>
       </div>
       <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="whitespace-nowrap">{lkMt(h.attemptId, h.mt)} <span className="text-[13px] text-faint">{tuanLich(h.tuan, homNay)}</span></span></div>
@@ -238,11 +238,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theT = (h: HT) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}
         <span className="ml-auto whitespace-nowrap text-[13px] text-dim">{t('Kỳ vọng')} <b className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{h.kyVong === null ? '—' : fmtBand(h.kyVong)}</b></span>
       </div>
       <div className="text-[14px]">{lkLop(h.classId, h.lop)}{!knNhan && <> · <b className="font-semibold">{h.kn}</b></>}</div>
-      <div className="flex flex-wrap items-baseline gap-x-2 text-[15px]">{oT(h, { key: 'truoc', nhan: '', kieu: 'chu' })}<span aria-hidden className="text-faint">→</span>{oT(h, { key: 'sau', nhan: '', kieu: 'chu' })}<span className="ml-auto">{chenh(h.chenh)}</span></div>
+      <div className="flex flex-wrap items-baseline gap-x-2 text-[14px]">{oT(h, { key: 'truoc', nhan: '', kieu: 'chu' })}<span aria-hidden className="text-faint">→</span>{oT(h, { key: 'sau', nhan: '', kieu: 'chu' })}<span className="ml-auto">{chenh(h.chenh)}</span></div>
     </div>
   );
 
@@ -255,7 +255,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   /* "W1" / "W2" (panel GV) tô cột W — thi thật chỉ có một band Writing. */
   const xetH = (k: KnThiBang) => knNhan?.[0]?.toLowerCase() === k;
   const cotH: DinhNghiaCot[] = [
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: coTuan ? 140 : 170 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 90 }, { key: 'ngay', nhan: t('Ngày thi'), kieu: 'chu', rong: 76 },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: coTuan ? 140 : 170 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 90 }, { key: 'ngay', nhan: t('Ngày thi'), kieu: 'chu', rong: 104 },
     ...KN4.map((k): DinhNghiaCot => (xetH(k) ? { key: k, nhan: k.toUpperCase(), kieu: 'noi-bat', rong: 58, sang: true } : { key: k, nhan: k.toUpperCase(), kieu: 'diem', rong: 58 })),
     { key: 'ovr', nhan: 'OVR', kieu: 'diem', rong: 62, tach: true }, { key: 'tg', nhan: 'Target', kieu: 'so', rong: 66 },
     ...(coTuan ? [{ key: 'tuan', nhan: t('Tuần dạy'), kieu: 'so', rong: 116 } as DinhNghiaCot] : []),
@@ -285,7 +285,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theH = (h: HH) => (
     <div className="grid gap-1.5">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}{chipKckH(h)}
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}{chipKckH(h)}
         <span className="ml-auto whitespace-nowrap text-[13px] text-dim">Target <b className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{h.kck ? 'KCK' : h.target === null ? '—' : fmtBand(h.target)}</b></span>
       </div>
       <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="tabular-nums text-dim">{h.ngay ? ngay(h.ngay, homNay).slice(0, 5) : '—'}</span>{tuanH(h)}</div>
@@ -332,7 +332,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theB = (hang: HB[]) => (h: HB) => (
     <div className="grid gap-1.5">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}
         {h.tong !== null && <span className="ml-auto whitespace-nowrap text-[13px] text-dim">{t('Tổng')} {oB(hang)(h, { key: 'tong', nhan: '', kieu: 'diem' })}</span>}
       </div>
       <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="whitespace-nowrap">{dich(h.nhanBai)} <span className="text-[13px] text-faint">{tuanLich(h.tuan, homNay)}</span></span></div>
@@ -345,7 +345,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   );
 
   /* ---------- kiểu 'vi-pham' (PT-VP-PA, mockup v13 A4 · P-VP): vi phạm · theo em · theo lớp ---------- */
-  const ddmm = (iso: string | null | undefined) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '—');
+  const ddmm = (iso: string | null | undefined) => ngay(iso);
   const mo = (x: ReactNode) => <span className="text-faint">{x}</span>;
   const tatV = loc.flatMap((r) => (r.viPham ? [{ ...r.viPham, id: r.id }] : []));
   const tatVe = loc.flatMap((r) => (r.viPhamEm ? [{ ...r.viPhamEm, id: r.id }] : []));
@@ -353,7 +353,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   type HV = (typeof tatV)[number]; type HVe = (typeof tatVe)[number]; type HVl = (typeof tatVl)[number];
   const cotV: DinhNghiaCot[] = [
     /* Panel 820, ô 14 (`day`): 140 + 96 + 70 + Vi phạm (phần còn lại ≈ 192, mô tả cắt một dòng có title) + 150 + 140 — tên Người ghi đọc đủ (PTA rà #984). */
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'chu', rong: 70 },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'chu', rong: 104 },
     { key: 'vp', nhan: t('Vi phạm'), kieu: 'chu', linhHoat: true }, { key: 'nguoi', nhan: t('Người ghi'), kieu: 'chu', rong: 150 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 140 },
   ];
   const oV = (h: HV, c: DinhNghiaCot): ReactNode => {
@@ -366,7 +366,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theV = (h: HV) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto">{oV(h, cotV[5])}</span></div>
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto">{oV(h, cotV[5])}</span></div>
       <div className="text-[14px]">{lkLop(h.classId, h.lop)} · <span className="tabular-nums">{ddmm(h.ngay)}</span>{h.nguoiGhi && <> · {h.nguoiGhi}</>}</div>
       <div className="text-[14px]"><b className="font-semibold">{dich(h.nhom)}</b>{h.moTa && <span className="block text-[13px] text-dim">{h.moTa}</span>}</div>
     </div>
@@ -406,7 +406,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 60 },
     { key: 'pa', nhan: 'PA', kieu: 'chu', linhHoat: true },
     ...(nghiaVu
-      ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 70 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 86 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 124 }] as DinhNghiaCot[]
+      ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 104 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 104 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 124 }] as DinhNghiaCot[]
       : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Người phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
   ];
   const oP = (h: HP, c: DinhNghiaCot): ReactNode => {
@@ -426,7 +426,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theP = (h: HP) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto text-[14px]">{oP(h, { key: nghiaVu ? 'dung' : 'kq', nhan: '', kieu: 'chu' })}</span></div>
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto text-[14px]">{oP(h, { key: nghiaVu ? 'dung' : 'kq', nhan: '', kieu: 'chu' })}</span></div>
       <div className="text-[14px]">{lkLop(h.classId, h.lop)}{h.kyNang && <> · <b className="font-semibold">{dich(h.kyNang)}</b></>} · {oP(h, { key: 'pa', nhan: '', kieu: 'chu' })}</div>
       <div className="text-[13px] text-dim">{nghiaVu ? <>{t('Hạn')} {ddmm(h.han)}{h.ngayGhi && <> · {t('Ngày ghi')} {ddmm(h.ngayGhi)}</>}</> : h.batDau ? tuanLich(h.batDau, homNay) : null}{h.nguoiPhuTrach && <> · {h.nguoiPhuTrach}</>}</div>
     </div>
@@ -442,7 +442,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     /* PT-a (mockup v19 khung 2a): Học viên đầu dòng, rồi Bài / Việc. RA-GD-0711: Lớp 120 — "MB FT RF 12", "MB Pre FOU 03" không cắt. */
     { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
     { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 120 },
-    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 92 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 176 },
+    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 104 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 176 },
   ];
   /* Chủ SP 06/11: MỘT chữ "Quá hạn" (bỏ "Trễ") — việc mở và việc làm sau hạn cùng nhãn; dòng phụ "đã làm / nhập dd/mm" phân biệt. */
   const ttVc = (h: HVc) => {
@@ -485,7 +485,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const nhanNhom = (h: NhomLop) => <span className="whitespace-nowrap text-[13px] font-bold text-[color:var(--text)]">{h.nhomLop} <span className="font-medium text-faint">· {t('{n} bài', { n: h.n })}</span></span>;
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, COT_VIEC)}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
+      <div className="flex items-baseline gap-2 text-[14px]">{oVc(h, COT_VIEC)}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
       {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
       <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.hanGoc && <> ({t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) })})</>}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, COT_VIEC) && <> · {phuVc(h, COT_VIEC)}</>}</div>
     </div>
@@ -532,7 +532,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: t('Đạt'), so: soDat }]} />
               )}
               {/* PTA rà #1292: tab Chưa làm chia nhóm → mỗi nhóm có số riêng, bỏ dòng tổng (lẫn với số nhóm). */}
-              {!(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}
+              {!(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[14px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}
               {vk
                 /* Sổ nghĩa vụ: tab Chưa làm có bài S chéo chung → hai nhóm "Bài của bạn" / "S chéo chung · chưa ai nhận" (máy chủ xếp nhóm riêng sau). */
                 ? (nhomChung ? [[nhanBaiRieng, false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {

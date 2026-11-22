@@ -20,7 +20,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DongChoDoi, type ChoDoiLop } from './TeacherAssignPanel.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
-import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope } from '@shared/domain/index.ts';
+import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope, ngay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, useViecLop } from './ThanhViecLop.tsx';
 import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
@@ -210,7 +210,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const bConLai = b.an.length === 1 ? { hien: [...b.hien, ...b.an], an: [] as typeof b.an } : b;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
   /* HSL-GON (M1, M4): viên chương trình · HV · tuần chữ 500 mờ (không số đậm trong viên); "khai giảng" không thành viên — rê chuột viên tuần (`title`). */
-  const khaiGiang = data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : undefined;
+  const khaiGiang = data.startDate ? t('khai giảng {ngay}', { ngay: ngay(data.startDate) }) : undefined;
   const meta: ReactNode[] = [
     dich(data.programme?.name ?? data.kind),
     <><span className="tabular-nums">{s?.studentCount ?? 0}</span> HV</>,
@@ -264,7 +264,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
         }}
         giua={<>
           <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 max-sm:order-2 max-sm:basis-full">
-            <h1 className="m-0 whitespace-nowrap text-[22px] font-bold leading-[1.3] text-slate-100 sm:ml-1">{data.code}</h1>
+            <h1 className="m-0 whitespace-nowrap text-[20px] font-bold leading-[1.3] text-slate-100 sm:ml-1">{data.code}</h1>
             {/* U03 (mockup `.tags .tag.nhat`): chương trình · HV · tuần thành chip nền phụ. */}
             <span className="flex flex-wrap items-center gap-1.5 max-sm:basis-full">
               {meta.map((m, i) => <span key={i} className="inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-medium text-dim">{m}</span>)}

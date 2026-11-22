@@ -337,7 +337,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
       speaking: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
     })), 'tre-cham', 'W4 SEP · trễ L');
     const trePhu = d.oMt(luot(xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: '2026-09-30' } })), H);
-    assert(trePhu.title.split('\n')[2] === 'Writing: W4 SEP · trễ chấm · hạn 30/09', trePhu.title);
+    assert(trePhu.title.split('\n')[2] === 'Writing: W4 SEP · trễ chấm · hạn 30/09/2026', trePhu.title);
     const kn = xongKn('2026-09-14', { writing: { trangThai: 'da-xep', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', hanCham: null } });
     vaoRa(luot(kn), 'cho-cham', 'W4 SEP · chờ W');
     // hôm nay đúng hạn chấm: chưa trễ

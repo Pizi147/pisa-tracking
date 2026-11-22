@@ -212,8 +212,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         <span className="flex min-w-0 flex-col items-start gap-2">
           {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em không mở được hồ sơ (roster `xemHoSo: false`) là chữ thường, không link tới 403. */}
           {khongMo.has(sid)
-            ? <span className="block text-[15px] font-semibold text-slate-100">{ten}</span>
-            : <Link className="block text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${sid}?tab=y-thuc`}>{ten}</Link>}
+            ? <span className="block text-[14px] font-semibold text-slate-100">{ten}</span>
+            : <Link className="block text-[14px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${sid}?tab=y-thuc`}>{ten}</Link>}
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
             {/* Chủ SP 12/11: mốc viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm" — cùng `bac` với thang (TH-9). */}
             {e && (e.bac > 0 || e.soLs > 0 || theoEmCo(sid)) && <ChipBac bac={e.bac} ten={ten}>{(dong) => <ThangEm sid={sid} ten={ten} homNay={homNay} onKhai={() => { dong(); mo({ loai: 'khai', studentId: sid }); }} onLichSu={() => { dong(); moLichSu(sid); }} />}</ChipBac>}
@@ -468,7 +468,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   };
   const dauNhom = (chu: string, dem: string, i?: ReactNode) => (
     <div className="flex flex-wrap items-baseline gap-x-2.5 px-4 pb-2 pt-4 max-sm:px-3">
-      <h3 className="m-0 text-[15px] font-bold text-slate-100">{chu}</h3><span className="text-[13px] tabular-nums text-slate-400">{dem}</span>{i && <span className="-ml-1 self-center">{i}</span>}
+      <h3 className="m-0 text-[14px] font-bold text-slate-100">{chu}</h3><span className="text-[13px] tabular-nums text-slate-400">{dem}</span>{i && <span className="-ml-1 self-center">{i}</span>}
     </div>
   );
 
@@ -636,7 +636,7 @@ function ThangEm({ sid, ten, homNay, onKhai, onLichSu }: { sid: number; ten: str
     <>
       {/* GD-6 (lời 28, 36): thang vạch chung. */}
       <span className="flex flex-wrap items-center gap-3">
-        <b className="text-[15px] font-bold text-slate-100">{t('Thang · {ten}', { ten })}</b>
+        <b className="text-[14px] font-bold text-slate-100">{t('Thang · {ten}', { ten })}</b>
         {hv && <ThangVach dong={hv.dongThang} />}
       </span>
       {error ? <LoiTaiNho chu={error.message} onRetry={reload} className="px-0 py-1" /> : !hv ? <Skeleton rows={2} /> : <ThangYThuc d={hv} homNay={homNay} />}

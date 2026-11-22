@@ -51,7 +51,7 @@ export function DauTrangTq({ phamVi, ben, ky, lienKet }: { phamVi: ReactNode; be
   const { homNay } = useNgayNghiepVu();
   return (
     <header className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
-      <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{t('Tổng quan')}</h1>
+      <h1 className="m-0 text-[20px] font-bold leading-[1.3] text-slate-100">{t('Tổng quan')}</h1>
       {/* AUDIT-UI TQ1: GV không có phạm vi (tên chính mình đã ở nút tài khoản) → bắt đầu bằng mã tuần, không "·" thừa. */}
       <span className="text-sm text-slate-400 max-sm:basis-full">{phamVi}{homNay && <>{phamVi ? ' · ' : ''}<b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}
         {ky && <> · {t('kỳ {ky}', { ky: kyChu(ky) })}</>}</span>
@@ -389,7 +389,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const COT_THE: [string, string][] = [['v-pt', t('Việc · % đúng hạn')], ['v-chua', t('Việc · chưa làm')], ['tre', t('Bài quá hạn')], ['cd-pt', t('Chấm Test · % đúng hạn')], ['cd-chua', t('Chấm Test · chưa làm')]];
   const theGv = (h: HangGv) => (
     <div className="grid gap-2">
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px]">{oCua(h, COT_GV_HC[0])}<span className="text-[13px] text-dim">{phuCua(h, COT_GV_HC[0])}</span></div>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[14px]">{oCua(h, COT_GV_HC[0])}<span className="text-[13px] text-dim">{phuCua(h, COT_GV_HC[0])}</span></div>
       <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
         {COT_THE.map(([k, nhan]) => (
           /* AUDIT-1611 A2-07 (mockup ⑧ `.cap > span { align-content:end }`): nhãn hai dòng thì số vẫn thẳng hàng — căn theo đáy. */

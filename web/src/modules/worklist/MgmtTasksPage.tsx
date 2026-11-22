@@ -27,7 +27,7 @@ import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_MUC_CV, HANG_SO, HANG_SO_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
   TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
   trangThaiKyGiao, tuanLich, quyCheViecGiao, quyCheViecLap,
-  type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc,
+  type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc, ngay,
 } from '@shared/domain/index.ts';
 
 /** VH-1: lặp lại của việc gốc — `ngay`: thứ ISO (T2 = 1 … CN = 7) hoặc MỘT ngày trong tháng. */
@@ -219,7 +219,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
             <ODai key={h} nhan={HANG_SO_LABEL[h]}>
               {n === 0 && !active ? <SoTinh n={0} /> : (
                 <button type="button" aria-pressed={active}
-                  className={`${mauOSo(h === 'qua-han' ? 'text-bad' : '')} text-[15px] ${active ? 'rounded bg-[color:var(--accent-soft)] px-1' : ''}`}
+                  className={`${mauOSo(h === 'qua-han' ? 'text-bad' : '')} text-[14px] ${active ? 'rounded bg-[color:var(--accent-soft)] px-1' : ''}`}
                   onClick={() => {
                     /*
                      * "Vừa hoàn thành" là việc ĐÃ KHÉP — Trạng thái mặc định "Đang mở" thì lọc còn 0 dòng dù hàng số > 0 (G-10). Bấm hàng số nào cũng
@@ -237,7 +237,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
 
       <section className="overflow-clip rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} aria-label={t('Việc vận hành')}>
         <div className="flex min-h-[52px] flex-wrap items-center gap-2.5 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Việc vận hành')}</h2>
+          <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc vận hành')}</h2>
           <span className="text-sm text-dim">{t('{n} việc', { n: rows.length })}</span>
           <span className="ml-auto"><BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
         </div>
@@ -327,7 +327,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
 function HangNhom({ p, mo, qh, onBam, cao }: { p: Phan; mo: boolean; qh: number; onBam: () => void; cao?: boolean }) {
   return (
     <button type="button" aria-expanded={mo} onClick={onBam}
-      className={`flex w-full flex-wrap items-center gap-x-2 gap-y-1 border-0 border-l-[3px] py-1.5 pl-[13px] pr-4 text-left text-[15px] font-bold text-slate-100 hover:bg-[color:var(--accent-soft)] ${cao ? 'min-h-[48px]' : 'min-h-[44px]'}`}
+      className={`flex w-full flex-wrap items-center gap-x-2 gap-y-1 border-0 border-l-[3px] py-1.5 pl-[13px] pr-4 text-left text-[14px] font-bold text-slate-100 hover:bg-[color:var(--accent-soft)] ${cao ? 'min-h-[48px]' : 'min-h-[44px]'}`}
       style={{ background: 'var(--surface-2)', borderLeftColor: p.khongPl ? 'var(--text-faint)' : 'var(--accent)' }}>
       <span className="whitespace-nowrap">{p.ten}</span>
       <Chev mo={mo} />
@@ -539,7 +539,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
             {lap && !data.parentTaskId && (
               <DongBc k={t('Lặp lại')}>
                 {lap.dung ? <span>{t('Không lặp · đã dừng')}</span> : (
-                  <span className="inline-flex items-center gap-1"><IcLap />{t('{lap} · bản tới {ngay}', { lap: chuLap(lap), ngay: kyToi(lap, homNay).slice(5).split('-').reverse().join('/') })}</span>
+                  <span className="inline-flex items-center gap-1"><IcLap />{t('{lap} · bản tới {ngay}', { lap: chuLap(lap), ngay: ngay(kyToi(lap, homNay)) })}</span>
                 )}
                 {data.viewer.canDungLap && (lap.dung
                   ? <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => void dungLap(false)}>{t('Lặp lại tiếp')}</button>
@@ -1156,7 +1156,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
                           macDinhTrong={t('Chưa giao')} ariaLabel={t('Người phụ trách việc con {n}', { n: i + 1 })} gon />
                       </div>
                       <div className="max-sm:col-span-2 max-sm:row-start-3"><ONgay kieu="ngay" value={x.han} onChange={(v) => setVc(vc.map((y) => (y.k === x.k ? { ...y, han: v } : y)))} /></div>
-                      <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent p-0 text-[15px] text-dim hover:bg-[color:var(--accent-soft)] max-sm:col-start-2 max-sm:row-start-1 max-sm:h-11 max-sm:w-11"
+                      <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent p-0 text-[14px] text-dim hover:bg-[color:var(--accent-soft)] max-sm:col-start-2 max-sm:row-start-1 max-sm:h-11 max-sm:w-11"
                         aria-label={t('Bỏ việc con {n}', { n: i + 1 })} onClick={() => setVc(vc.filter((y) => y.k !== x.k))}>✕</button>
                     </div>
                   ))}

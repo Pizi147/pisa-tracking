@@ -28,7 +28,7 @@ function DauMuc({ chu, so, phai }: { chu: string; so?: number; phai?: ReactNode 
   return (
     <div className="flex flex-wrap items-center gap-2.5 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
       <span aria-hidden className="h-[18px] w-[3px] rounded-sm bg-[color:var(--accent)]" />
-      <h3 className="m-0 text-[15px] font-bold text-slate-100">{chu}</h3>
+      <h3 className="m-0 text-[14px] font-bold text-slate-100">{chu}</h3>
       {so != null && <span className="inline-grid h-[22px] min-w-[22px] place-items-center rounded-md border px-1.5 text-xs font-semibold tabular-nums text-slate-300" style={{ borderColor: 'var(--line-strong)' }}>{so}</span>}
       {phai && <span className="ml-auto flex flex-wrap items-center gap-2">{phai}</span>}
     </div>
@@ -116,7 +116,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
     <button type="button" aria-pressed={loc === k} onClick={() => setLoc(loc === k ? 'tat-ca' : k)}
       className={`grid min-h-[52px] gap-0.5 rounded-[10px] border px-2 py-1.5 text-left sm:px-3 sm:min-h-[56px] sm:py-2 hover:border-[color:var(--accent)] ${loc === k ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-[color:var(--surface)]'}`}
       style={{ borderColor: loc === k ? undefined : 'var(--line)' }}>
-      <span className="truncate text-[13px] font-medium text-slate-400">{nhan}</span><b className="text-[17px] font-bold tabular-nums text-slate-100">{gt}</b>
+      <span className="truncate text-[13px] font-medium text-slate-400">{nhan}</span><b className="text-[16px] font-bold tabular-nums text-slate-100">{gt}</b>
     </button>
   );
   const NHAN_LOC: Record<Exclude<LocKq, 'tat-ca' | 'khong'>, string> = {
@@ -124,7 +124,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
   };
   const cot: CotBang[] = [
     /* PTA Tutor 20/11: bảng ĐỌC — ba cột tiêu chí đủ "✗ Không" nguyên chữ; bớt Ngày / Buổi / Đánh giá; Nội dung co và xuống dòng. */
-    { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 72 },
+    { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 128 },
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 160 },
     { key: 'kn', nhan: 'KN', kieu: 'chu', rong: 48 },
     { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 50 },
