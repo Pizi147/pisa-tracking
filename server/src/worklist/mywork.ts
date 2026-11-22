@@ -2131,7 +2131,8 @@ export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkI
     if (it.group === 'buoc_tiep') return !!lop && coQuyenBuocTiepCtx(p, lop);
     if (it.group === 'thi_that') return !!lop && (coQuyenBuocTiepCtx(p, lop) || isCoreTeacherOf(p, lop.classId));
     if (it.group === 'xem_nx_s') return !!lop && (isCoreTeacherOf(p, lop.classId) || can(p, PERMISSIONS.SCORE_OVERRIDE, lop) || qlDiem(p, lop));
-    if (it.group === 'mini_test') return !!it.lamThay || (!!lop && (can(p, PERMISSIONS.REQUEST_APPROVE, lop) || isCoreTeacherOf(p, lop.classId)));
+    /* PTA rà #1989 P1: KHÔNG tin cờ đặt sẵn trên dòng — ở "Của một GV" cờ đó là của GV đang được xem (CX thấy form, lưu 403). "Tất cả" vẫn OR cờ sẵn ở nơi gọi. */
+    if (it.group === 'mini_test') return !!lop && (can(p, PERMISSIONS.REQUEST_APPROVE, lop) || isCoreTeacherOf(p, lop.classId));
     if (it.key.startsWith('chot-ngay-thi:')) return !!lop && (can(p, PERMISSIONS.STUDENT_EDIT, lop) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, lop));
     const c = it.caseId ? ctx.get(it.caseId) : undefined;
     return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);

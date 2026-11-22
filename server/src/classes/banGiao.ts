@@ -26,8 +26,9 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  */
 
 /**
- * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). Planning 30/09 (Câu 1 = A): Quản lý phạm vi lớp nguồn được điền
- * thay và xác nhận thay khi lớp KHÔNG có GVCN hoặc quá hạn 3 ngày. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu đã xác nhận/đã chuyển (Q15).
+ * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). N64 (chủ SP 22/11, thay Planning 30/09 Câu 1 = A "khi lớp không GVCN
+ * hoặc quá hạn 3 ngày"): Quản lý phạm vi lớp nguồn điền thay và xác nhận thay MỌI LÚC, không hỏi. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu
+ * đã xác nhận/đã chuyển (Q15).
  */
 export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number }, mon?: string, o: { ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
@@ -224,7 +225,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const coGvcnLop = gv.some((r) => !!r.is_core);
 
   /* Quyền đọc: phía nguồn xem hết; phía đích chỉ dòng đã xác nhận/đã chuyển của lớp chuyển đến mình có quyền. */
-  /* Quản lý xác nhận thay theo hạn của dòng CHƯA xác nhận (PR-S5F-a) — dòng đã xác nhận quá hạn cũ không mở quyền thay cho dòng mới. */
+  /* N64: Quản lý lớp nguồn xác nhận thay mọi lúc (không xét hạn — bỏ luật PR-S5F-a theo hạn dòng chưa xác nhận). */
   const q = quyenBanGiao(p, { lop_nguon_id: lopId }, undefined, { ct });
   let thay = rows;
   if (!q.doNguon) {

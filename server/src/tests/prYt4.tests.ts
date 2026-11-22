@@ -923,6 +923,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       assert(lt(P.cpManager, it) === false && lt(gvbm, it) === false, `Head CP / GVBM: ${g} phải false`);
     }
     assert(lt(P.mbManager, dong('yt_tra_lai', { nguoiTraId: P.mbManager.userId })) === false, 'người trả không làm thay việc trả lại của mình');
+    /* PTA rà #1989 P1: "Của một GV" — dòng Mini Test mang cờ đặt sẵn của GV đang được xem; người xem không quyền (GVBM / Head CP) vẫn false. */
+    assert(lt(gvbm, dong('mini_test', { lamThay: true })) === false && lt(P.cpManager, dong('mini_test', { lamThay: true })) === false, 'mini_test: không tin cờ đặt sẵn');
+    const gvcnSo = (myworkSvc.viecCuaNguoi(P.mbManager, gvcn.userId).items as any[]).filter((i) => i.group === 'mini_test');
+    assert(gvcnSo.every((i) => i.lamThay === lt(P.mbManager, i)), '"Của một GV": cờ Mini Test = quyền người xem');
     assert(lt(P.mbManager, dong('khai_bac', { classId: null })) === false && lt(P.mbManager, dong('khai_bac', { ownerId: null })) === false, 'không lớp / chưa có người: false');
     /* Khai bậc — cùng quyền máy chủ: Head lưu được (200), Head CP / GVBM 403, DB không đổi. */
     const khai = () => (conn.prepare('SELECT COUNT(*) n FROM y_thuc_khai_bac WHERE student_id = ?').get(sid) as any).n as number;
