@@ -16,7 +16,8 @@ export type PhieuBanGiaoGvDto = {
   nhanXetChung: string | null; xacNhan: { boi: string; luc: string; thay: boolean } | null;
   em: { studentId: number; ten: string; tuDien: TuDien | null; gopY: Record<string, GopYGv | null> }[];
   /** `viet`: ghi góp ý / nhận xét chung · `xacNhan`: bấm Xác nhận · `thay`: QL điền thay (góp ý ghi `dien_thay`). */
-  nguoiXem: { viet: boolean; xacNhan: boolean; thay: boolean };
+  /** N64: `lamThay` = Head làm thay người được giao (panel hiện dải, không hỏi). */
+  nguoiXem: { viet: boolean; xacNhan: boolean; thay: boolean; lamThay: { ten: string | null } | null };
 };
 
 /** Trạng thái một em trên phiếu: "Đủ" · "Thiếu {cột}" (một cột còn trống) · "Chưa có" (chưa cột nào / thiếu nhiều cột). */
