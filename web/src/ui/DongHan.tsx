@@ -11,7 +11,7 @@ import { BadgeHan, DauQuaHan, LOP_MUC_HAN, NhanChoGv } from './Nhan.tsx';
  * Xem: "10/11 · còn 7 ngày · đã chỉnh · mặc định 07/11 · Sửa hạn". Sửa: ô ngày (gõ + lịch) · Lưu hạn · Huỷ · Về mặc định — lưu RIÊNG, không lý do,
  * không trần; ngày đã qua vẫn nhận (hiện quá hạn). 409 (người khác vừa sửa): ngày đang gõ giữ trong ô + Tải lại. Quyền kiểm ở máy chủ (`suaHanBaoPh`, `suaHanPhoiHop`).
  * GV-2 (N58, mockup v22 G1 / G2b): cụm Hạn của khối Phụ trách · Hạn · Theo dõi (`khoi` — nơi gọi dựng cụm từ giá trị · nút "Sửa hạn"); việc không hạn → "Chưa có hạn" · "Đặt hạn".
- * NHẸ HƠN PR-2b (v23 `.pht1`, luật hạn): trong khối chỉ ngày dd/mm/yyyy tô theo `mucHan` (+ ⚠ khi quá hạn) — không "quá hạn / còn n ngày" (chỉ ở đầu panel), không thẻ "mặc định" trần.
+ * NHẸ HƠN PR-2b (v23 `.pht1`, luật hạn): trong khối chỉ ngày dd/mm/yyyy tô theo `mucHan` (quá hạn: chữ đỏ + nền đỏ nhạt, không ⚠ — HAN-BO-DAU) — không "quá hạn / còn n ngày" (chỉ ở đầu panel), không thẻ "mặc định" trần.
  */
 export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, onLuu, onTaiLai, gon, khoi, tamDung, tinhLai }: {
   /** TL-1 / GV-2: hạn đang tạm dừng (Báo PH "Chờ GV sửa", cờ máy chủ) — không đếm ngày / không tô quá hạn. */

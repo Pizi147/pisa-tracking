@@ -333,14 +333,11 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   /* V22 (chủ SP 14/11, DESIGN.md): hạn / số quá hạn chỉ bằng MÀU (đỏ quá · vàng gần · thường chưa tới), KHÔNG ⚠ / biểu tượng. ⚠ chỉ còn cho lỗi, chặn,
      xác nhận. Chống tái phát: ⚠ (hay `<IconCanhBao`) đứng trong vài chục ký tự quanh chữ / khoá hạn trên CÙNG một dòng mã (bỏ chú thích) → lỗi;
      CSS: `content: '⚠'` ở bộ chọn hạn / số xấu → lỗi. */
-  check('V22 → NHẸ HƠN (22/11): ⚠ cạnh hạn CHỈ qua `DauQuaHan` (web/src/ui/Nhan.tsx); không ⚠ / IconCanhBao tự dựng cạnh chữ hạn (web .tsx, shared/domain), không ::before ⚠ cho hạn / số xấu (index.css)', () => {
+  check('V22 + HAN-BO-DAU (23/11): hạn KHÔNG ⚠ ở đâu — `DauQuaHan` chỉ còn chữ sr-only, quá hạn = chữ đỏ + nền đỏ nhạt (`LOP_MUC_HAN.qua`); không ⚠ / IconCanhBao cạnh chữ hạn (web .tsx, shared/domain), không ::before ⚠ cho hạn / số xấu (index.css)', () => {
     const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
     const HAN = /quá hạn|hạn hôm nay|hạn \{|hạn \$\{|còn \{n\} ngày|\{n\} ngày|quaHan|qua-han|'qua'|late:|overdue|treNgay|daysOverdue|ganHan|\bhan\b/i;
     /* Ngoại lệ có lý do: [tệp, mẩu chữ của dòng]. */
-    const NGOAI_LE: [string, string][] = [
-      /* Luật hạn NHẸ HƠN (chủ SP 22/11, thay V22): quá hạn có thêm dấu ⚠ — MỘT chỗ dựng, `Han` / chỗ khác dùng `<DauQuaHan />`. */
-      ['web/src/ui/Nhan.tsx', 'export const DauQuaHan = () =>'],
-    ];
+    const NGOAI_LE: [string, string][] = [];
     const tep = [...tepNguon('web/src').filter((f) => f.endsWith('.tsx')), ...tepNguon('shared/domain')];
     const loi: string[] = [];
     for (const f of tep) {
@@ -354,7 +351,11 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     for (const m of boChuThich(doc('web/src/index.css')).matchAll(/([^{}]*)\{[^{}]*content:\s*["'][^"']*⚠/g)) {
       if (/qua|han|late|tre|so-bam|dai-cs/i.test(m[1])) loi.push(`index.css: ${m[1].trim()}`);
     }
-    assert(loi.length === 0, `${loi.length} chỗ hạn tự dựng ⚠ (chỉ qua DauQuaHan): ` + loi.slice(0, 6).join(' · '));
+    assert(loi.length === 0, `${loi.length} chỗ hạn tự dựng ⚠ (V22: hạn không biểu tượng): ` + loi.slice(0, 6).join(' · '));
+    const nhan = doc('web/src/ui/Nhan.tsx');
+    assert(/export const DauQuaHan = \(\) => <span className="sr-only">/.test(nhan), 'DauQuaHan phải chỉ là chữ sr-only "quá hạn" (không ⚠)');
+    assert(/qua: '[^']*text-late[^']*bg-late-bg/.test(nhan), 'LOP_MUC_HAN.qua: chữ đỏ + nền đỏ nhạt (dấu ngoài màu chữ)');
+    assert(!/khongDau/.test(doc('web/src/ui/Han.tsx')), 'Han: không còn cờ khongDau (không ⚠ là mặc định)');
   });
   /* PTA Plan rà #1649: V22 "không ⚠ hay biểu tượng nào kèm" — cả chấm "●" ở chip / badge báo hạn, quá hạn, việc chờ. Chấm "có việc mới" trên tab giữ. */
   check('V22 · không chấm "●" ở chip hạn / quá hạn / việc chờ: Nhan late + soon, DongHan, BadgeViec qua + cho, .vh-qua, badge lớp; "●" chữ không đứng cạnh chữ hạn', () => {
