@@ -394,12 +394,14 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     if (x.kv) return x.kv.dat ? 'dat' : 'khong';
     return e.kqdr.mt0 || e.kqdr.moTay ? 'can' : 'cho';
   };
+  /** Vùng bấm ≥ 44 px ở 375 mà không đội chiều cao dòng (thẻ gọn như khung K3). */
+  const HIT = "relative after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-['']";
   const VIEN_DAT = { color: 'rgb(var(--kq-bang-rgb))', borderColor: 'rgb(var(--kq-bang-rgb) / .5)' };   // Đạt = xanh dương (MK-6), không xanh lá
   const VIEN_TRUOT = { color: 'rgb(var(--bad-rgb))', borderColor: 'rgb(var(--bad-line-rgb))' };
   /** `gon` (thẻ < 1280, khung K3): chữ màu không viền, vùng bấm vẫn ≥ 44 px ở 375. */
   const nutDiem = (e: Em, chu: ReactNode, dat: boolean | null, nhan: string, gon = false) => (
     <button type="button" aria-label={nhan} aria-expanded={hopDiem === e.id} aria-haspopup="dialog"
-      className={`inline-flex items-center justify-center gap-1 rounded-md bg-transparent text-sm font-semibold tabular-nums hover:bg-[color:var(--accent-soft)] ${gon ? 'min-h-[44px] border-0 px-1 sm:min-h-0' : 'h-[30px] min-w-[72px] border px-2'}`}
+      className={`inline-flex items-center justify-center gap-1 rounded-md bg-transparent text-sm font-semibold tabular-nums hover:bg-[color:var(--accent-soft)] ${gon ? `border-0 px-0.5 ${HIT}` : 'h-[30px] min-w-[72px] border px-2'}`}
       style={dat === true ? VIEN_DAT : dat === false ? VIEN_TRUOT : { borderColor: 'var(--line-strong)' }}
       onClick={(ev) => { neoDiem.current = ev.currentTarget; setHopDiem(hopDiem === e.id ? null : e.id); }}>{chu}</button>
   );
@@ -518,7 +520,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     if (khoa(e)) {
       return (
         <span className="inline-flex flex-wrap items-center gap-x-2 text-sm font-semibold text-slate-100">
-          <IconKhoa />{chuHuong(e)}
+          <span className="inline-flex items-center gap-1"><IconKhoa />{chuHuong(e)}</span>
           {laQl && e.lenh!.huong !== 'chuyen_lop' && <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={() => doi(e.id, { mo: true })}>{t('Sửa')}</button>}
           {e.lenh!.huong === 'chuyen_lop' && <span className="text-xs font-normal text-slate-500">{t('sửa ở ⋯ Chuyển lớp… của em')}</span>}
         </span>
@@ -611,7 +613,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     return (
       <span className="block" onFocusCapture={taiLopKhac}>
         <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })}
-          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chi nhánh {cn} trước, chi nhánh khác sau', { cn: d.from.branchCode })} gon />
+          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chi nhánh {cn} trước, chi nhánh khác sau', { cn: d.from.branchCode })} placeholder={t('Chọn lớp')} gon />
       </span>
     );
   };
@@ -620,7 +622,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const hl = huongLenh(x);
     if (!hl || !canLopDich(hl)) return null;
     const ngayNay = laChuyenNgay(x.tuan, h);
-    if (khoa(e)) return <span className="whitespace-nowrap text-[13px] tabular-nums text-dim">{ngayNay ? t('Ngay hôm nay · {ngay}', { ngay: thuNgay(x.tuan, h) }) : tuanLich(x.tuan, h)}</span>;
+    if (khoa(e)) return <span className="whitespace-nowrap text-[13px] tabular-nums text-dim">{ngayNay ? t('Ngay hôm nay · {ngay}', { ngay: ngay(x.tuan) }) : tuanLich(x.tuan, h)}</span>;
     return <OTuan tuanChon={d.tuanChon} value={ngayNay ? '' : x.tuan} onChange={(v) => doi(e.id, { tuan: v })} ariaLabel={t('Tuần · {ten}', { ten: e.fullName })}
       chuaChon={ngayNay ? t('Ngay hôm nay') : tuanLich(tuanChung, h)} gon />;
   };
@@ -630,7 +632,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const xong = l.banGiao.xacNhan;
     const qua = !xong && !!l.banGiao.hanGvcn && h > l.banGiao.hanGvcn;
     return (
-      <button type="button" className="inline-flex min-h-[44px] items-center gap-1.5 border-0 bg-transparent p-0 text-left sm:min-h-0" onClick={() => setBanGiao(l.id)}
+      <button type="button" className={`inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-left ${HIT}`} onClick={() => setBanGiao(l.id)}
         aria-label={t('Bàn giao · {ten}', { ten: e.fullName })}>
         <Nhan tone={xong ? 'ok' : qua ? 'late' : 'soon'}>{xong ? t('Đã bàn giao') : qua ? t('Quá hạn bàn giao') : t('Chờ bàn giao')}</Nhan>
         {!xong && l.banGiao.hanGvcn && <span className="text-[12px] tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(l.banGiao.hanGvcn) })}</span>}
@@ -790,7 +792,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           <span className="flex max-xl:pt-0.5">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
           <span className="min-w-0">
             <span className="flex flex-wrap items-center gap-x-1.5"><Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link><ChipXetLaiDong sid={e.id} />
-              {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <Nhan tone="doing">{t('đã sửa')}</Nhan>}</span>
+              {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <Nhan tone="doing">{t('đã sửa')}</Nhan>}
+              {kvTrang(e, x) && <span className="ml-auto whitespace-nowrap xl:hidden">{oKv(e, x)}</span>}</span>
             {((mot && nhomCua(e) !== 'cho') || e.cuoiKhoa?.goiY?.baoPhTvv || bg) && (
               <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
                 {mot && nhomCua(e) !== 'cho' && <span className="inline-flex h-5 items-center gap-1.5 whitespace-nowrap rounded px-1.5 font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>
@@ -801,19 +804,21 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
             )}
             {phu}
             {/* < 1280 (khung K3): dòng hai — Final · MT0 · Kỳ vọng · bước tiếp · lớp; "Sửa" mở ô tại thẻ. */}
-            <span className="mt-1 flex flex-wrap items-center gap-x-2 text-[13px] text-dim xl:hidden">
-              <span className="inline-flex items-center gap-1.5">Final {oFinal(e, true)}</span>
-              {e.kqdr && <span className="inline-flex items-center gap-1.5">MT0 {oMt0(e, true)}</span>}
-              {kvTrang(e, x) && oKv(e, x)}
-              <span aria-hidden className="text-faint">·</span>
-              <span className={x.huong ? 'font-semibold text-slate-100' : 'text-faint'}>{khoa(e) ? <><IconKhoa />{chuHuong(e)}</> : tenHuong(x) ?? t('Chưa có hướng')}</span>
-              {lopChu && <span>· {lopChu}</span>}
+            <span className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] leading-6 text-dim xl:hidden">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">Final {oFinal(e, true)}</span>
+              {e.kqdr && <span className="inline-flex items-center gap-1 whitespace-nowrap"><span aria-hidden className="text-faint">·</span>MT0 {oMt0(e, true)}</span>}
+            </span>
+            <span className="flex items-center gap-x-1.5 text-[13px] leading-6 text-dim xl:hidden">
+              <span className={`min-w-0 truncate ${x.huong ? 'font-semibold text-slate-100' : 'text-faint'}`}>
+                {khoa(e) ? <span className="inline-flex items-center gap-1"><IconKhoa />{chuHuong(e)}</span> : tenHuong(x) ?? t('Chưa có hướng')}
+                {lopChu && <span className="font-normal text-dim"> · {lopChu}</span>}
+              </span>
               {laQl && !moO && (
-                <button type="button" className="link ml-auto min-h-[44px] border-0 bg-transparent p-0 text-[13px]"
+                <button type="button" className={`link ml-auto shrink-0 border-0 bg-transparent p-0 text-[13px] ${HIT}`}
                   onClick={() => (khoa(e) ? doi(e.id, { mo: true }) : setMoThe((s) => new Set(s).add(e.id)))}>{t('Sửa')}</button>
               )}
               {laQl && moThe.has(e.id) && !sua[e.id]?.mo && (
-                <button type="button" className="link ml-auto min-h-[44px] border-0 bg-transparent p-0 text-[13px]"
+                <button type="button" className={`link ml-auto shrink-0 border-0 bg-transparent p-0 text-[13px] ${HIT}`}
                   onClick={() => setMoThe((s) => { const n = new Set(s); n.delete(e.id); return n; })}>{t('Xong')}</button>
               )}
             </span>
@@ -864,7 +869,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         {coO && (
           <>
             <span className="min-w-0 max-sm:hidden max-xl:[grid-column:2/-1]" title={t('Lớp cho cả nhóm')}><ChonLop ds={dsLop} value={lopCuaNhom(k)} onChange={(id) => chonLopNhom(k, id)} ariaLabel={t('Lớp cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })}
-              maCu={lopCua.get(lopCuaNhom(k) ?? 0)?.code} moLopMoi={() => setMoLop({ huong, ganCho: { nhom: k } })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} placeholder={t('Lớp cho cả nhóm')} gon /></span>
+              maCu={lopCua.get(lopCuaNhom(k) ?? 0)?.code} moLopMoi={() => setMoLop({ huong, ganCho: { nhom: k } })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} placeholder={t('Chọn lớp')} gon /></span>
             <span className="min-w-0 max-sm:hidden max-xl:[grid-column:2/-1]"><OTuan tuanChon={d.tuanChon} value={tuanNhom(k)} onChange={(v) => chonTuanNhom(k, v)} ariaLabel={t('Tuần cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} chuaChon={tuanLich(tuanChung, h)} gon /></span>
           </>
         )}
@@ -908,21 +913,22 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           <>
             {coKv && (
               <div className="mx-4 mb-2.5 flex min-h-10 flex-wrap items-center gap-x-2 rounded-lg border px-3 py-1.5 text-sm sm:flex-nowrap sm:overflow-hidden sm:whitespace-nowrap" style={{ borderColor: 'var(--line)' }}>
-                <b className="font-semibold">{t('Kỳ vọng FT')}</b>
+                <b className="whitespace-nowrap font-semibold">{t('Kỳ vọng FT')}</b>
                 {[demKv.dat && t('{n} em đạt', { n: demKv.dat }), demKv.khong && t('{n} em không đạt', { n: demKv.khong }), demKv.can && t('{n} em Head cân nhắc', { n: demKv.can }),
-                  demKv.cho && t('{n} em chờ MT0', { n: demKv.cho })].filter(Boolean).map((s) => <span key={String(s)} className="text-dim"><span aria-hidden className="mr-2 text-faint">·</span>{s}</span>)}
+                  demKv.cho && t('{n} em chờ MT0', { n: demKv.cho })].filter(Boolean).map((s) => <span key={String(s)} className="whitespace-nowrap text-dim"><span aria-hidden className="mr-2 text-faint max-sm:hidden">·</span>{s}</span>)}
                 <span className="ml-auto">{luatKv}</span>
               </div>
             )}
             {/* Thanh thao tác MỘT hàng (khung K1 ①): ô chọn tất cả · n em đã chọn › Bước tiếp › Lớp › Tuần · Bỏ chọn …… Lọc. Chưa chọn: chỉ ô chọn + Lọc. */}
-            <div role="toolbar" aria-label={t('Áp cho các em đã chọn')} className="mx-4 mb-3 flex min-h-[52px] flex-wrap items-center gap-x-2.5 gap-y-2 rounded-[10px] border px-3 py-2"
-              style={chon.size ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--line)' }}>
+            {/* 375 (khung K3): hàng này chỉ ô chọn tất cả + Lọc, không khung — "n em đã chọn" và ô áp chỉ ở thanh dính đáy. */}
+            <div role="toolbar" aria-label={t('Áp cho các em đã chọn')} className="mx-4 mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 max-sm:mx-3 max-sm:mb-1.5 sm:min-h-[52px] sm:rounded-[10px] sm:border sm:px-3 sm:py-2"
+              style={chon.size && !dt ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--line)' }}>
               {tatCaQl.length > 0 && (
                 <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap text-sm font-semibold text-slate-100 sm:min-h-0">
                   <input type="checkbox" className="h-[18px] w-[18px]" checked={daChonHet} aria-label={t('Chọn tất cả')}
                     ref={(el) => { if (el) el.indeterminate = !daChonHet && chon.size > 0; }}
                     onChange={() => setChon(daChonHet ? new Set() : new Set(tatCaQl.map((e) => e.id)))} />
-                  {chon.size ? <span className="tabular-nums">{t('{n} em đã chọn', { n: chon.size })}</span> : <>{t('Chọn tất cả')} · <span className="tabular-nums">{tatCaQl.length}</span></>}
+                  {chon.size && !dt ? <span className="tabular-nums">{t('{n} em đã chọn', { n: chon.size })}</span> : <>{t('Chọn tất cả')} · <span className="tabular-nums">{tatCaQl.length}</span></>}
                 </label>
               )}
               {chon.size > 0 && !dt && (laQl ? thanhAp : nxChungO)}
