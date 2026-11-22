@@ -1,7 +1,7 @@
 /**
  * Hướng dẫn TƯ VẤN VIÊN — HD-V2 (c), HD-V3-C (13/11). Đặc tả `docs/superpowers/specs/2026-11-05-huong-dan-v2/de-xuat.md`; mockup `thiet-ke/v14/huong-dan.html`.
  * Đối chiếu từng việc / màn / panel với mã main ở `docs/superpowers/specs/2026-11-13-huong-dan-v3/doi-chieu-tvv-cx.md` (SAI / CŨ / THIẾU → sửa ở đây).
- * Sự thật mã (kiểm 13/11): TVV có Công việc CHỈ việc của mình — một tab, bốn nhóm (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ); không Test;
+ * Sự thật mã (kiểm 13/11): TVV có Công việc CHỈ việc của mình — một tab, bốn nhóm (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ); Test: CHỈ XEM Lịch Test tuần (22/11);
  * Case, điểm, Ý thức, Phối hợp SOS chỉ xem (ngoại lệ: ghi kết quả Báo PH); sửa thông tin / Target / Tạm dừng / thi thật / Lộ trình đang học / Môn học;
  * ở Hồ sơ HV các việc là NÚT trên đầu hồ sơ (không phải ⋯ — `vaiXemHocVien`). `lam` là MỘT nguồn (xem `ql.ts`). CX dùng lại phần lớn tệp này
  * (`cx.ts`, N52: CX làm thay phía TVV, không có việc của mình), Head tutor lấy Hồ sơ cá nhân (`headTutor.ts`).
@@ -567,6 +567,14 @@ export const HD_TVV: HuongDan = {
         { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
         mucGv('hoc-vien', 'hv-lich-thi'),
       ],
+    },
+    /* SUA-2211-B2 (chủ SP 22/11): TVV chỉ XEM Lịch Test tuần (test.view) — không Kế hoạch Test, không nhập điểm, không xếp lịch. */
+    {
+      id: 'lich-test', ten: 'Lịch Test tuần', duong: ['/test', '/test/lich', '/nhap-diem', '/bang-diem-thuong'],
+      dangO: { cau: 'Test của một tuần: lớp có Test, bài chưa chấm.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
+      khongLam: [KHONG_GV, KHONG_QL],
+      muc: [{ id: 'tvv-lt', ten: 'Xem Test tuần', buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>; bấm dòng lớp mở lưới điểm để xem.',
+        'Nhập điểm, xếp / dời lịch Test là việc của GV, Admin.'] }],
     },
     ...manHoSoVai(false),
     ...manPanelTvvCx(false),

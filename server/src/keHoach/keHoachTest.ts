@@ -61,7 +61,7 @@ function lopMt0CoLuot(p: Principal): Set<number> {
 }
 /** Người xem chỉ vào lớp thường qua MT0 S chéo: Giữa / Cuối khoá không lộ (chủ SP 08/11 "Final / progress thì vẫn là GV lớp đó thấy thôi"). */
 const chiMt0Lop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId }) && !teachesClass(p, classId);
-const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
+export const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
 /** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`, và không phải GVCN lớp đó khi công tắc "Mở sửa lịch Test" BẬT). */
 const chiXemLop = (p: Principal, classId: number) => !choSuaLichTest(p, { classId });
 

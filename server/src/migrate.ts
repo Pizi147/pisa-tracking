@@ -110,6 +110,7 @@ import { migratePrTu } from './migrate/prTu.ts';
 import { migratePrTub } from './migrate/prTub.ts';
 import { migratePrTutor2 } from './migrate/prTutor2.ts';
 import { migratePrTvvPt } from './migrate/prTvvPt.ts';
+import { migratePrTvvTest } from './migrate/prTvvTest.ts';
 import { migratePrUiHoSoLop } from './migrate/prUiHoSoLop.ts';
 import { migratePrBaoCaoLichSu } from './migrate/prBaoCaoLichSu.ts';
 import { migratePrKetPet } from './migrate/prKetPet.ts';
@@ -572,6 +573,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrHangMuc(conn, applied));
   /* SUA-2211-B (chủ SP 22/11 ý 14): vai TVV gỡ analysis.view (một lần, khoá demo_config). */
   buoc(() => migratePrTvvPt(conn, applied));
+  buoc(() => migratePrTvvTest(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

@@ -16,6 +16,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { soHocVien } = await import('../worklist/hvCuaToi.ts');
   const { migratePrTvvPt } = await import('../migrate/prTvvPt.ts');
+  const { migratePrTvvTest } = await import('../migrate/prTvvTest.ts');
   const { phamViPhanTich } = await import('../phanTich/phamVi.ts');
   console.log('\nPR-OV2a · vai TVV / CX / Admin, quyền, đổi góc nhìn');
 
@@ -138,7 +139,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       ['Xem Case · PA (attempt.view + case.view)', (p) => can(p, 'attempt.view', hs) && can(p, 'case.view', hs), [true, true, true, true, true, true, true]],
       ['Tổng quan · Phân tích (chủ SP 22/11: TVV không)', (p) => can(p, 'analysis.view', { anyScope: true }), [true, true, true, false, false, false, true]],
       ['Phần GV (Phân tích theo GV, hồ sơ GV)', (p) => can(p, 'analysis.view_teacher', { anyScope: true }), [true, true, true, false, false, false, true]],
-      ['Test (3 tab)', (p) => can(p, 'test.view', cs), [true, true, true, true, true, false, true]],
+      ['Test (chủ SP 22/11: TVV xem Lịch Test)', (p) => can(p, 'test.view', cs), [true, true, true, true, true, true, true]],
       ['Xếp/dời lịch MT', (p) => can(p, 'plan.week', cs), [true, true, true, false, false, false, false]],
       ['Nhập / sửa điểm (GV: môn mình)', (p) => editableSkills(p, lop, KY_NANG).length > 0, [true, true, true, true, true, false, false]],
       ['Huỷ / khôi phục cả lượt', (p) => can(p, 'attempt.cancel', cs), [true, true, false, false, false, false, false]],
@@ -157,13 +158,13 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     assert(!sai.length, sai.join(' | '));
   });
 
-  check('OV2a-3 · thanh trên theo vai: TVV không Test, Công việc chỉ của mình; CX (N52) có Test, Công việc xem, phần GV; Admin có Công việc (Việc học viên), không Báo cáo/Vận hành', () => {
+  check('OV2a-3 · thanh trên theo vai: TVV Test chỉ xem (không Kế hoạch), Công việc chỉ của mình; CX (N52) có Test, Công việc xem, phần GV; Admin có Công việc (Việc học viên), không Báo cáo/Vận hành', () => {
     const v = V();
     for (const k of ['TVV', 'CX'] as const) {
       const n = navOf((v as any)[k]);
       /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV có Công việc chỉ việc của mình — không Chấm điểm / duyệt / Vận hành. N52: CX có Test, Công việc (xem / làm thay,
          không hộp Chờ duyệt, không Vận hành), phần GV. */
-      if (k === 'TVV') assert(!n.test && n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.students && !n.analysis && !(n as any).phanTichGv, `${k}: ${JSON.stringify(n)}`);
+      if (k === 'TVV') assert(n.test && !n.testPlan && !n.testPlanXem && !n.xuatMt && n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.students && !n.analysis && !(n as any).phanTichGv, `${k}: ${JSON.stringify(n)}`);
       else assert(n.test && n.work && n.workCx && !n.workApprove && !n.workOps && n.students && n.analysis && (n as any).phanTichGv && !n.admin, `${k}: ${JSON.stringify(n)}`);
     }
     const a = navOf(v.Admin);
@@ -188,6 +189,23 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)').run(tvvId, ptId);
     const ap2: string[] = []; migratePrTvvPt(conn, ap2);
     assert(!ap2.length && one('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?', tvvId, ptId), 'chạy lần hai lại gỡ (Quản trị cấp lại phải giữ)');
+  }));
+
+  check('SUA-2211-B2 · migrate thêm test.view cho vai TVV đúng một lần (idempotent), vai khác không đụng, Quản trị gỡ lại thì giữ', () => thu(() => {
+    const tvvId = one("SELECT id FROM roles WHERE key = 'consultant'").id; const ptId = one("SELECT id FROM permissions WHERE key = 'test.view'").id;
+    assert(ROLE_PERMISSIONS.consultant.includes('test.view') && !ROLE_PERMISSIONS.consultant.includes('plan.week'), 'seed TVV: phải có test.view, không plan.week');
+    const co = () => !!one('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?', tvvId, ptId);
+    const tong = () => one('SELECT COUNT(*) n FROM role_permissions').n;
+    conn.prepare('DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?').run(tvvId, ptId);
+    conn.prepare("DELETE FROM demo_config WHERE key = 'pr_tvv_xem_test_at'").run();
+    const t0 = tong(); const ap: string[] = []; migratePrTvvTest(conn, ap);
+    assert(ap.length === 1 && co() && tong() === t0 + 1, `migrate chưa thêm đúng một dòng: ${ap}`);
+    const ap2: string[] = []; migratePrTvvTest(conn, ap2);
+    assert(!ap2.length && tong() === t0 + 1, 'chạy lần hai đổi dữ liệu');
+    conn.prepare('DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?').run(tvvId, ptId);
+    migratePrTvvTest(conn, []);
+    assert(!co(), 'Quản trị gỡ lại mà migrate cấp lại');
+    conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)').run(tvvId, ptId);
   }));
 
   check('OV2a-4 · Admin: Công việc chỉ nhóm Chấm điểm (kể cả "Tất cả trong phạm vi")', () => {
@@ -262,8 +280,6 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       const mong: [string, string, string, string, unknown?][] = [
         ['Admin khôi phục lượt', a, 'POST', `/attempts/${luot}/reopen`],
         ['Admin khôi phục kết quả', a, 'POST', `/attempts/${luot}/khoi-phuc-ket-qua`, { lyDo: 'thử' }],
-        ['TVV Lịch Test', tv, 'GET', '/cham/lich-test'],
-        ['TVV Kế hoạch Test', tv, 'GET', `/ke-hoach-test/lop?branchId=${cn}`],
         /* UI-CV-TVV: TVV đọc `/my-work` (chỉ việc TVV của mình — prUiCvTvv); việc người khác / khu khác của Công việc vẫn 403. */
         ['TVV Công việc người khác', tv, 'GET', '/my-work?nguoi=tat-ca'], ['TVV Vận hành', tv, 'GET', '/mgmt-tasks'],
         ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work?nguoi=tat-ca'],
@@ -287,7 +303,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['CX Phân tích tổng hợp', cx, `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['CX hồ sơ HV', cx, `/students/${em}`],
         ['Admin Lịch Test', a, '/cham/lich-test'], ['Admin Công việc', a, '/my-work?nguoi=tat-ca'],
         /* N52 (chủ SP 18/11): CX xem Test, Công việc, phần GV như QL. */
-        ['CX Lịch Test', cx, '/cham/lich-test'], ['CX Lịch Test (đổi hoa thường)', cx, '/CHAM/Lich-Test'], ['CX Công việc', cx, '/my-work'],
+        ['TVV Lịch Test (22/11)', tv, '/cham/lich-test'], ['TVV Lịch Test (đổi hoa thường)', tv, '/CHAM/Lich-Test'], ['TVV Quá hạn chấm', tv, '/cham/lich-test/qua-han'], ['CX Lịch Test', cx, '/cham/lich-test'], ['CX Lịch Test (đổi hoa thường)', cx, '/CHAM/Lich-Test'], ['CX Công việc', cx, '/my-work'],
         ['CX hồ sơ GV', cx, `/giao-vien/${gvcn}`], ['CX Phân tích theo GV', cx, `/phan-tich/giao-vien?cn=${cn}`],
       ];
       for (const [ten, ck, url] of duoc) {
@@ -295,6 +311,50 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         if (r.status !== 200) sai.push(`${ten}: ${r.status} ${r.json?.error ?? ''}`);
       }
       assert(!sai.length, sai.join(' | '));
+    });
+
+    await checkAsync('SUA-2211-B2 · TVV xem Lịch Test CHỈ ĐỌC: đọc 200 đúng chi nhánh, chi nhánh khác không lộ lớp, mọi đường ghi / xếp lịch 403 và DB không đổi', async () => {
+      const tv = await vao(idTvv);
+      const khac = one("SELECT id FROM branches WHERE code != 'CP' ORDER BY id LIMIT 1").id;
+      const lopKhac = one('SELECT id FROM classes WHERE branch_id = ? AND is_fast_track = 1 LIMIT 1', khac)?.id;
+      const ngoai = (await goi('GET', `/cham/lich-test?branchId=${khac}${lopKhac ? `&classId=${lopKhac}` : ''}`, tv)).json;
+      assert(!(ngoai.lop ?? []).length && !ngoai.lopDangLoc, `TVV thấy lớp chi nhánh khác: ${JSON.stringify((ngoai.lop ?? []).map((l: any) => l.code ?? l.classId))}`);
+      const trong = (await goi('GET', '/cham/lich-test', tv)).json;
+      assert(Array.isArray(trong.lop), 'Lịch Test TVV không có danh sách lớp');
+      const tuanId = one('SELECT id FROM report_periods ORDER BY id DESC LIMIT 1').id;
+      const lopKH = (await goi('GET', `/ke-hoach-test/lop?branchId=${cn}`, tv)).json;
+      assert(!(lopKH.ft ?? lopKH.lop ?? []).length && !JSON.stringify(lopKH).includes(`"id":${lop},`), `Kế hoạch Test lộ lớp cho TVV: ${JSON.stringify(lopKH).slice(0, 200)}`);
+      const chup = () => JSON.stringify([one('SELECT COUNT(*) n, COALESCE(SUM(id),0) s FROM assessment_scores'), one('SELECT COUNT(*) n FROM attempt_schedule_history'),
+        one('SELECT COUNT(*) n, COALESCE(SUM(id),0) s FROM assessment_attempts'), one('SELECT COUNT(*) n FROM attempt_skills')]);
+      const truoc = chup();
+      const ghi: [string, string, string, unknown?][] = [
+        ['Nhập điểm', 'PUT', `/attempts/${luot}/scores/listening`, { band: 5 }],
+        ['Dời tuần cả lượt', 'POST', `/attempts/${luot}/week`, { periodId: tuanId }],
+        ['Dời tuần một kỹ năng', 'POST', `/attempts/${luot}/skills/listening/week`, { periodId: tuanId }],
+        ['Dời hạn', 'POST', `/attempts/${luot}/deadline`, { deadline: '2030-01-01' }],
+        ['Báo vắng', 'POST', `/attempts/${luot}/skills/listening/bao-vang`, {}],
+        ['Huỷ điểm', 'POST', `/attempts/${luot}/skills/listening/huy-diem`, { lyDo: 'thử' }],
+        ['Mở lại lượt', 'POST', `/attempts/${luot}/reopen`, {}],
+        ['Xếp lịch', 'POST', '/ke-hoach-test/dot', { attemptId: luot, kyNang: [{ skill: 'listening', periodId: tuanId }] }],
+        ['Xếp mới', 'POST', '/ke-hoach-test/xep-moi', { studentId: em, tuan: { listening: tuanId } }],
+        ['Xếp hàng loạt', 'POST', '/ke-hoach-test/hang-loat', { classId: lop, tuan: { listening: tuanId } }],
+        ['Thi lại', 'POST', '/ke-hoach-test/thi-lai', { attemptId: luot, skills: ['listening'], periodId: tuanId }],
+        ['Ghi chú lịch', 'POST', '/ke-hoach-test/ghi-chu', { classId: lop, noiDung: 'thử' }],
+        ['GV chấm cột', 'PUT', '/cham/gv-cham-cot', { classId: lop, dot: '1', gv: null }],
+        ['Kế hoạch Test (lưới FT)', 'GET', `/ke-hoach-test/ft/${lop}`],
+        ['Xuất Kế hoạch Test', 'POST', '/ke-hoach-test/xuat', { branchId: cn, classIds: [] }],
+        ['Lịch sử ghi chú lịch', 'GET', `/ke-hoach-test/ghi-chu/lich-su?classId=${lop}`],
+        ['Kiểm đợt', 'POST', '/ke-hoach-test/dot/kiem', { attemptId: luot, kyNang: [{ skill: 'listening', periodId: tuanId }] }],
+        ['Lưới lớp thường (quét Checkpoint)', 'GET', `/ke-hoach-test/thuong/${lop}`],
+        ['Xuất điểm Test', 'POST', '/xuat-mt', { khung: 'ft', chiNhanh: [cn], tg: 'tuan', tu: '2026-09-14', den: '2026-09-14' }],
+      ];
+      const sai: string[] = [];
+      for (const [ten, m, url, body] of ghi) {
+        const r = await goi(m, url, tv, body);
+        if (r.status !== 403) sai.push(`${ten}: ${r.status} ${r.json?.error ?? ''}`);
+      }
+      assert(!sai.length, sai.join(' | '));
+      assert(chup() === truoc, 'DB đổi sau các lần ghi bị chặn');
     });
 
     await checkAsync('OV2a-8 · góc nhìn: QL+GV chọn GV → việc chỉ QL 403, Về vai gốc → lại được; 1 vai / không QL → 403', async () => {
