@@ -787,6 +787,7 @@ api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
   keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc })));
 
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
+  keHoachSvc.requireXem(principalOf(req), pInt(req, 'classId'));   // PTA rà #1987: kiểm quyền xem TRƯỚC khi quét (quét có ghi)
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
   return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
 }));

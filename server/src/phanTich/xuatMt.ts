@@ -36,6 +36,8 @@ export function phamViXuatMt(p: Principal, homNay?: string): PhamViXuat {
     if (!g.permissions.has(PERMISSIONS.ATTEMPT_VIEW)) continue;
     /* PR-OV2a: vai không có khu Test (TVV, CX) không xuất kết quả Test; quyền cấp riêng giữ như cũ (mỗi grant riêng chỉ một quyền). */
     if (!g.permissions.has(PERMISSIONS.TEST_VIEW) && g.roleKey !== 'granted') continue;
+    /* SUA-2211-B2 (chủ SP 22/11): TVV có `test.view` chỉ để XEM Lịch Test tuần — không xuất Excel điểm Test (nút ẩn ↔ máy chủ 403). */
+    if (g.roleKey === 'consultant') continue;
     if (g.roleKey === 'teacher') { laGv = true; continue; }          // GV: chỉ lớp mình là GVCN (dưới)
     if (g.branchId === null) tatCa = true; else cn.add(g.branchId);  // QL chi nhánh · Quản trị · quyền cấp riêng
   }

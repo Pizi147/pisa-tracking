@@ -98,10 +98,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'student.view', 'student.edit_info', 'analysis.view', 'analysis.view_teacher'],
   /*
    * TVV: xem HV chi nhánh (mặc định "HV của tôi"), điểm, Case, PA, Ý thức, nhận xét; sửa MỌI thông tin HV — OV-8b (chủ SP 13/10): cả Target, ghi chú,
-   * Tạm dừng / Quay lại / Thôi học, kết quả thi thật (`student.edit_more`). Học thuật vẫn của GV / QL. Không Test, không Công việc.
+   * Tạm dừng / Quay lại / Thôi học, kết quả thi thật (`student.edit_more`). Học thuật vẫn của GV / QL. Test: CHỈ XEM Lịch Test tuần (test.view, như CX; chủ SP 22/11). Không Công việc của người khác.
    * OV-13p (chủ SP 16/10): tạo lớp (`class.create`, chi nhánh của grant) + thêm học viên (`student.add`) — KHÔNG phân công GV (`class.assign`).
    */
-  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'class.create', 'student.add'],   // chủ SP 22/11: TVV không xem Phân tích
+  consultant: ['attempt.view', 'case.view', 'test.view', 'student.view', 'student.edit_info', 'student.edit_more', 'class.create', 'student.add'],   // chủ SP 22/11: TVV không xem Phân tích; vẫn xem Lịch Test tuần (test.view, chỉ đọc)
   /*
    * CX — N52 (chủ SP 18/11): theo 1 / nhiều chi nhánh (grant không chi nhánh = toàn hệ thống). XEM mọi thứ như Quản lý (Test, Công việc, Phân tích cả
    * phần giáo viên, thống kê Ý thức). SỬA = phía TVV (người quản lý TVV): mọi quyền TVV (`VAI_PHIA_TVV`, `permissions.ts`) + Ý thức + tạo / sửa lớp, thêm HV,

@@ -127,6 +127,9 @@ export const DUONG_DO: MucDo[] = [
   /* N52: CX xem Phân tích phần GV + Test (như QL). */
   { trang: 'Phân tích GV CX', vai: ['CX'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1' },
   { trang: 'Lịch Test CX', vai: ['CX'], url: '/cham/lich-test' },
+  /* SUA-2211-B2 (PTA rà #1987): TVV xem Lịch Test tuần (test.view, chỉ đọc) — đo trên TVV MB (49 em). */
+  { trang: 'Lịch Test TVV', vai: ['TVV'], url: '/cham/lich-test' },
+  { trang: 'Lịch Test TVV', vai: ['TVV'], url: '/cham/lich-test/qua-han' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
   /* S-CHEO-CN (16/11): mục "Chi nhánh khác" của panel Chấm Speaking — chỉ tải khi mở; GV Speaking đo ở prSCheoCn (`TRAN_CHAM_SPEAKING_CN_KHAC`). */
@@ -597,7 +600,7 @@ export const TRAN: Record<string, number> = {
   'QL /my-work/theo-doi': 13, 'QT /my-work/theo-doi': 13, 'GVCN /my-work/theo-doi': 13, 'GVBM /my-work/theo-doi': 13, 'TVV /my-work/theo-doi': 13, 'CX /my-work/theo-doi': 13, 'ADMIN /my-work/theo-doi': 13,
   /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: chỉ câu phiên) đo 2 · "Tất cả" (danh sách QL cùng phạm vi, CX demo toàn hệ thống) đo 51 / 51
      · Lịch Test đo 22 · Phân tích GV đo 17 (trước N52: 403) → max(đo + 10, ⌈đo × 1,3⌉). */
-  'CX /my-work': 12, 'CX /my-work?nguoi=tat-ca': 67, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 67, 'CX /cham/lich-test': 32, 'CX /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30,
+  'CX /my-work': 12, 'CX /my-work?nguoi=tat-ca': 67, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 67, 'CX /cham/lich-test': 32, 'TVV /cham/lich-test': 29, 'TVV /cham/lich-test/qua-han': 18,   // SUA-2211-B2: đo 19 · 8 (TVV MB) → đo + 10 'CX /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30,
   /* TQ-SOS-CN: panel ô SOS 2–3 (đọc đúng các em của ô, dữ liệu ×3): đo 9 / 9 / 8 câu → đo + 10. Cách cũ (tính lại cả chi nhánh) đo 10 câu · 3 358 dòng. */
   'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,
   /* GD-7a (XM-10): hồ sơ HV thêm Nhập điểm + Trả lời tình hình của người xem (listAttempts theo em + câu tình hình): đo 66 / 66 / 74 / 72 câu → đo + 10. */
@@ -1582,6 +1585,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN_THUONG /classes/3/roster': 1931,   // đo 1882; TL-HVL: đo 1485 (trước 1734)
   'QT /classes/3/roster': 1905,   // đo 1656; TL-HVL: đo 1465 (trước 1714)
   'QL /cham/lich-test': 1079,   // TD7c: đo 575 (trước TD7c 720; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 830 (trần cũ 748) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'TVV /cham/lich-test': 643, 'TVV /cham/lich-test/qua-han': 394,   // SUA-2211-B2: đo 494 · 303 (TVV MB) → max(đo + 50, ⌈đo × 1,3⌉)
   'GVCN /cham/lich-test': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   'GVBM /cham/lich-test': 922,   // TD7c: đo 485 (trước TD7c 614; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 709 (trần cũ 631) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   'GVCN_THUONG /cham/lich-test': 835,   // TD7c: đo 445 (trước TD7c 561; khối 1 chỉ nạp lượt có ô thi trước tuần trước)   // V5 SV-SO1 sau gộp main: đo 642 (trần cũ 579) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ

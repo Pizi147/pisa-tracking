@@ -94,9 +94,9 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     assert(/huy: d\.viewer\.canSkipSkill, han: d\.viewer\.canOverrideDeadline/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage: huy / han theo cờ máy chủ');
   });
 
-  check('OV10a-5 · link vào Test / Công việc: TVV không Test, Công việc của mình; CX (N52) có Test + Công việc, không Chờ duyệt; Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
+  check('OV10a-5 · link vào Test / Công việc: TVV Test chỉ xem Lịch + Công việc của mình; CX (N52) có Test + Công việc, không Chờ duyệt; Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
     /* UI-CV-TVV: TVV có Công việc (chỉ việc của mình, không Chờ duyệt). N52: CX xem Test, Công việc như QL, không hộp Chờ duyệt (không việc của mình). */
-    { const n = navOf(V.TVV); assert(!n.test && n.work && !n.workApprove, 'TVV: không Test; Công việc của mình'); }
+    { const n = navOf(V.TVV); assert(n.test && !n.testPlan && n.work && !n.workApprove, 'TVV: Test chỉ xem Lịch (22/11); Công việc của mình'); }
     { const n = navOf(V.CX); assert(n.test && n.work && !n.workApprove, 'CX: Test + Công việc, không Chờ duyệt'); }
     const n = navOf(V.Admin);
     assert(n.test && n.work && !n.workApprove, 'Admin: có Test, Công việc, không Chờ duyệt');
