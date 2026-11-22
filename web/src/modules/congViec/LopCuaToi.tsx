@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSession, type Assignment } from '../../lib/session.tsx';
-import { ChipKy, DauQuaHan } from '../../ui/Nhan.tsx';
+import { ChipKy, lopBadgeHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
@@ -168,7 +168,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
   );
 }
 
-/** Cột Việc: MỘT số (tổng các loại, cùng đơn vị chip cũ); quá hạn = số đỏ + ⚠ (`DauQuaHan`); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
+/** Cột Việc: MỘT số (tổng các loại, cùng đơn vị chip cũ); quá hạn = số trong ô NỀN ĐẶC đỏ nhạt (cùng chip "quá hạn n ngày", `lopBadgeHan('qua')` — V22 không biểu tượng); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
 function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
   if (!d.chip.length) return <span className="text-right text-faint [@container(max-width:639px)]:hidden" aria-hidden>—</span>;
   const so = d.chip.reduce((n, c) => n + c.so, 0);
@@ -178,8 +178,8 @@ function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
   return (
     <span className="flex justify-end [@container(max-width:639px)]:w-full [@container(max-width:639px)]:justify-start">
       <button type="button" onClick={() => onMo(dau)} title={chu} aria-label={`${qua ? `${t('Quá hạn')}: ` : ''}${chu} · ${d.code}`}
-        className={`inline-flex h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 text-[14px] font-semibold tabular-nums hover:bg-[color:var(--accent-soft)] max-sm:h-11 max-sm:min-w-[44px] ${qua ? 'text-late' : 'text-[color:var(--text)]'}`}>
-        {qua && <DauQuaHan />}{so}
+        className="inline-flex min-h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:min-h-11 max-sm:min-w-[44px]">
+        {qua ? <span className={lopBadgeHan('qua')}>{so}</span> : <span className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{so}</span>}
       </button>
     </span>
   );

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { DauQuaHan, NhanLich } from '../../ui/Nhan.tsx';
+import { NhanLich, lopBadgeHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -155,7 +155,7 @@ function DongEm({ d, homNay, onMo, nhat = false }: { d: Dong; homNay: string; on
   const dau = d.chip.map((c) => c.dau).filter((x): x is WorkItem => !!x).sort(xepHan)[0] ?? null;
   const boSung = d.chip.some((c) => !c.dau);
   const chu = d.chip.map((c) => (c.dau ? `${NHOM_CV_TVV_LABEL[c.nhom]} · ${c.so}` : NHOM_CV_TVV_LABEL[c.nhom])).join(', ');
-  /* v23 ③: số việc là CHỮ SỐ (không ô) — đỏ + ⚠ khi quá hạn; vẫn là nút (bấm mở việc), vùng bấm 44 ở 375. */
+  /* v23 ③: số việc là CHỮ SỐ; quá hạn = số trong ô nền đặc đỏ nhạt (`lopBadgeHan('qua')`, cùng Lớp của tôi / PR-3); vẫn là nút (bấm mở việc), vùng bấm 44 ở 375. */
   const lopSo = `inline-flex h-7 min-w-[32px] items-center justify-end gap-0.5 rounded-md border-0 bg-transparent px-1 text-[13px] font-semibold tabular-nums no-underline hover:bg-[color:var(--accent-soft)] max-sm:h-11 max-sm:min-w-[44px] ${quaHan
     ? 'text-late' : '!text-[color:var(--text)]'}`;
   const vien = undefined;
@@ -166,7 +166,7 @@ function DongEm({ d, homNay, onMo, nhat = false }: { d: Dong; homNay: string; on
       <span className="col-start-3 flex justify-end">
         {dau ? (
           <button type="button" onClick={() => onMo(dau)} className={lopSo} style={vien} title={chu}
-            aria-label={`${quaHan ? `${t('Quá hạn')}: ` : ''}${chu} · ${e.ten}`}>{quaHan && <DauQuaHan />}{so}{!lamTaiCho(dau) && <span aria-hidden>›</span>}</button>
+            aria-label={`${quaHan ? `${t('Quá hạn')}: ` : ''}${chu} · ${e.ten}`}>{quaHan ? <span className={lopBadgeHan('qua')}>{so}</span> : so}{!lamTaiCho(dau) && <span aria-hidden>›</span>}</button>
         ) : boSung ? (
           /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — sang hồ sơ em (`?viec=bo-sung` mở sẵn panel). */
           <Link to={duongHoSoHocVien(e.id, { viec: 'bo-sung' })} className={lopSo} style={vien} title={chu} aria-label={`${chu} · ${e.ten}`}>›</Link>
