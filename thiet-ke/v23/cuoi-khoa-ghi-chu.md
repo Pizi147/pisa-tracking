@@ -53,3 +53,8 @@ Bảng em mới: tick 44 · Học viên 1fr · Final 96 · Kết quả 112 · K�
 | 2 luật hạn | "hạn chốt 28/11/2026" |
 
 Bảng em mới: tick 44 · Học viên 1fr · Final 96 · MT0 80 · Kỳ vọng FT 136 · Bước tiếp 180 · Lớp mới 150 · Tuần 124.
+
+## Chủ SP 22/11 (trong phiên, sau vòng 2)
+
+- "các cột cần cân đối lại… color code, trượt không trượt có màu đỏ xanh và bấm vào là hiện ra điểm cụ thể" → điểm Final / MT0 là nút có viền: **xanh ✓** khi đạt (Final ≥ 60 %, MT0 ≥ mốc 5.0), **đỏ ✗** khi dưới mốc, "—" khi không có; bấm mở hộp điểm từng kỹ năng (kỹ năng cũng tô màu). Hai cột điểm cùng cỡ 100, căn giữa; bảng: tick 44 · Học viên ≥ 260 · Final 100 · MT0 100 · Kỳ vọng FT 124 · Bước tiếp 168 · Lớp mới 140 · Tuần 116.
+- [XM-14] Mốc đạt / trượt dùng để tô màu (Final 60 %, MT0 5.0) là số giả trong mockup — PR code đọc mốc thật của chương trình / kỳ vọng FT.

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tổng quan Head · Giáo viên · v23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v23.css">
+<style>
+.tq { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; }
+.khoi { background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.gvt col.c-ten { width:auto; } .gvt col.c-so { width:110px; } .gvt col.c-loai { width:220px; } .gvt col.c-lau { width:150px; }
+.gvt .so-q { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:30px; padding:0 8px; border:0; border-radius:6px; background:none; font:700 var(--c16) var(--phong-so); color:var(--bad); cursor:pointer; }
+.gvt .so-q:hover { background:var(--bad-nen); text-decoration:underline; text-underline-offset:3px; }
+.gvt .so-q.khong { color:var(--text-faint); font-weight:500; cursor:default; }
+.gvt .so-q.khong:hover { background:none; text-decoration:none; }
+.gvt .loai { display:flex; gap:0; flex-wrap:wrap; font-size:var(--c13); color:var(--text-dim); white-space:normal; }
+.gvt .loai > a + a::before, .gvt .loai > span + span::before { content:"·"; margin:0 6px; color:var(--text-faint); }
+.gvt .loai a { color:var(--text-dim); } .gvt .loai a b { color:var(--text); font-weight:600; }
+.gvt .loai a:hover { color:var(--accent); }
+.gvt tr.on td { color:var(--text-faint); }
+.gvt .gv { font-weight:600; color:var(--text); }
+.gvt .lop { display:block; font-size:var(--c12); color:var(--text-faint); }
+.so4 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.so4 > div { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:grid; gap:2px; }
+.so4 b { font:700 var(--c26) var(--phong-so); }
+.so4 span { font-size:var(--c13); color:var(--text-dim); }
+.mo-nhat { opacity:.55; }
+/* 375 */
+.gv375 .h { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; align-items:center; padding:10px 12px; border-top:1px solid var(--line); }
+.gv375 .h:first-child { border-top:0; }
+.gv375 .h .loai { grid-column:1 / -1; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v23 · ⑩ Tổng quan Head › khối Giáo viên — mỗi GV một dòng: số quá hạn · loại · quá hạn lâu nhất</h1>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 3 "Head" (#1985) · chủ SP 22/11 vòng 2 ý 7 (Head theo dõi việc quá hạn của GV trong chi nhánh). Bấm số → <a href="cong-viec-head.html">⑨ Công việc "Của GV"</a> lọc đúng GV + loại.</p>
+    <p>Dữ liệu bịa: Head <b>Nguyễn Thanh Mai</b> · Monbay · hôm nay <b>thứ Hai 23/11/2026 · W4 NOV</b>.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#q1">Q1 · 1440</a><a href="#q2">Q2 · 375 · rỗng</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="q1">
+    <h2>Q1 · Head · Tổng quan — khối Giáo viên (1440 tối; phần còn lại của Tổng quan giữ như hiện có, vẽ mờ)</h2>
+    <p class="ghi"><span class="so-mk">1</span>mỗi GV một dòng: tên (link hồ sơ GV) + lớp dạy nhỏ · <b>số việc quá hạn</b> (số đỏ, bấm = Công việc "Của GV" lọc GV đó) · <b>loại quá hạn</b> ("3 chấm · 1 Case" — mỗi phần bấm = lọc GV + loại) · <b>quá hạn lâu nhất</b> (ngày dd/mm/yyyy đỏ — bảng báo cáo chỉ tô ngày, luật hạn) · <span class="so-mk">2</span>quá hạn nhiều lên đầu; GV không quá hạn gom cuối, chữ mờ, số 0 không bấm · <span class="so-mk">3</span>tiêu đề cột không có nút · <span class="so-mk">4</span>không thêm chỉ số mới vào dải số đầu Tổng quan.</p>
+    <div class="hang-khung"><figure><figcaption>Q1 · 1440 · tối · Tổng quan Head</figcaption>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Tổng quan</span><span class="m">Công việc <span class="so-nav">3</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Phân tích</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">TM</span>Nguyễn Thanh Mai</span></span></div>
+        <div class="noi-dung">
+          <div class="dau-trang"><h1>Tổng quan</h1><span class="dem">Monbay · <span class="chip tuan">W4 NOV</span></span></div>
+          <div class="so4 mo-nhat"><div><b>214</b><span>học viên đang học</span></div><div><b>9</b><span>SOS 2–3</span></div><div><b>18</b><span>lớp có Test tuần này</span></div></div>
+          <div class="tq">
+            <div class="khoi">
+              <div class="ds-dau"><b>Giáo viên</b><span>8 GV · <span class="qua-chu">4 có việc quá hạn</span></span></div>
+              <table class="bang gvt">
+                <colgroup><col class="c-ten"><col class="c-so"><col class="c-loai"><col class="c-lau"></colgroup>
+                <thead><tr><th>Giáo viên</th><th class="so-c">Quá hạn</th><th>Loại</th><th>Lâu nhất</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="gv" href="#">Vũ Thu Lan</a><span class="lop">MB FT 101 · FT 104 · FOU 12</span></td><td class="so-c"><button class="so-q" aria-label="6 việc quá hạn của Vũ Thu Lan">6</button></td><td><span class="loai"><a href="#"><b>3</b> chấm</a><a href="#"><b>2</b> Case</a><a href="#"><b>1</b> Báo PH</a></span></td><td><span class="han qua">20/11/2026</span></td></tr>
+                  <tr><td><a class="gv" href="#">Đỗ Minh Quân</a><span class="lop">MB FT 112 · FT 116</span></td><td class="so-c"><button class="so-q" aria-label="3 việc quá hạn của Đỗ Minh Quân">3</button></td><td><span class="loai"><a href="#"><b>2</b> chấm</a><a href="#"><b>1</b> Case</a></span></td><td><span class="han qua">21/11/2026</span></td></tr>
+                  <tr><td><a class="gv" href="#">Đinh Thu Hằng</a><span class="lop">GVCN MB FOU 12 · FOU 14</span></td><td class="so-c"><button class="so-q" aria-label="2 việc quá hạn của Đinh Thu Hằng">2</button></td><td><span class="loai"><a href="#"><b>1</b> vi phạm</a><a href="#"><b>1</b> Phối hợp SOS</a></span></td><td><span class="han qua">22/11/2026</span></td></tr>
+                  <tr><td><a class="gv" href="#">Hà Quốc Bảo</a><span class="lop">Speaking · 6 lớp</span></td><td class="so-c"><button class="so-q" aria-label="1 việc quá hạn của Hà Quốc Bảo">1</button></td><td><span class="loai"><a href="#"><b>1</b> chấm Speaking</a></span></td><td><span class="han qua">21/11/2026</span></td></tr>
+                  <tr class="on"><td><a class="gv" href="#" style="color:var(--text-dim)">Trần Hải Nam</a><span class="lop">MB FOU 15</span></td><td class="so-c"><span class="so-q khong">0</span></td><td><span class="loai"><span>sắp đến: 1 Báo cáo PH <span class="han nay">25/11/2026</span></span></span></td><td>—</td></tr>
+                  <tr class="on"><td><a class="gv" href="#" style="color:var(--text-dim)">Lâm Bảo Trâm</a><span class="lop">MB PRE 7</span></td><td class="so-c"><span class="so-q khong">0</span></td><td>—</td><td>—</td></tr>
+                  <tr class="on"><td colspan="4" style="font-size:13px">+ 2 GV không có việc quá hạn</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="khoi mo-nhat"><div class="ds-dau"><b>Chờ bạn duyệt</b><span>2</span></div><div style="height:180px"></div></div>
+          </div>
+        </div>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="q2">
+    <h2>Q2 · 375 sáng — khối Giáo viên hai dòng mỗi GV · trạng thái rỗng</h2>
+    <div class="hang-khung">
+      <figure><figcaption>Q2a · 375 · sáng · có quá hạn</figcaption>
+        <div class="dt sang cao" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Tổng quan</h1></div>
+            <div class="khoi">
+              <div class="ds-dau"><b>Giáo viên</b><span><span class="qua-chu">4 có quá hạn</span></span></div>
+              <div class="gv375">
+                <div class="h"><a class="gv" href="#" style="font-weight:600;color:var(--text)">Vũ Thu Lan</a><span><span class="han qua">20/11/2026</span> <button class="so-q" style="border:0;background:none;font:700 16px Inter;color:var(--bad);min-width:44px;height:44px">6</button></span><span class="loai" style="font-size:13px;color:var(--text-dim)"><b>3</b>&nbsp;chấm · <b>2</b>&nbsp;Case · <b>1</b>&nbsp;Báo PH</span></div>
+                <div class="h"><a class="gv" href="#" style="font-weight:600;color:var(--text)">Đỗ Minh Quân</a><span><span class="han qua">21/11/2026</span> <button class="so-q" style="border:0;background:none;font:700 16px Inter;color:var(--bad);min-width:44px;height:44px">3</button></span><span class="loai" style="font-size:13px;color:var(--text-dim)"><b>2</b>&nbsp;chấm · <b>1</b>&nbsp;Case</span></div>
+                <div class="h"><a class="gv" href="#" style="font-weight:600;color:var(--text)">Đinh Thu Hằng</a><span><span class="han qua">22/11/2026</span> <button class="so-q" style="border:0;background:none;font:700 16px Inter;color:var(--bad);min-width:44px;height:44px">2</button></span><span class="loai" style="font-size:13px;color:var(--text-dim)"><b>1</b>&nbsp;vi phạm · <b>1</b>&nbsp;Phối hợp SOS</span></div>
+                <div class="h" style="color:var(--text-faint);font-size:13px">+ 4 GV không có việc quá hạn</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>Q2b · 1440 · tối · không GV nào quá hạn (cắt 700 px)</figcaption>
+        <div class="man toi" data-web style="width:700px;height:260px">
+          <div class="noi-dung"><div class="khoi"><div class="ds-dau"><b>Giáo viên</b><span>8 GV</span></div><div class="het-viec"><svg class="ic"><use href="#i-ok"/></svg><b>Không GV nào có việc quá hạn</b></div></div></div>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+<script src="v23.js"></script>
+</body>
+</html>
