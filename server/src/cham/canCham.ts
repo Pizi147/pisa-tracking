@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
+  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, laHeadHoacQt, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -421,7 +421,7 @@ export function noQuaHan(
 export function oQuaHanCham(
   p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null; khung?: Khung | null }, today: string = demoToday(),
 ): { ids: number[]; khac: number[]; lop: number } {
-  const coPhanCong = defaultWorkScope(p) === 'mine';
+  const coPhanCong = defaultWorkScope(p) === 'mine' && !laHeadHoacQt(p);
   const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
   /*
@@ -813,7 +813,7 @@ export function lichTest(
 ): LichTest {
   /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
   const scope = scopeXemLuotCham(p, today);
-  const coPhanCong = defaultWorkScope(p) === 'mine';
+  const coPhanCong = defaultWorkScope(p) === 'mine' && !laHeadHoacQt(p);
   /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
