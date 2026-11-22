@@ -2113,7 +2113,7 @@ export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkI
     if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
     /* SUA-QL-PHOIHOP (luật Phối hợp SOS, chủ SP 11/11): GVCN làm, QL / Quản trị theo dõi + làm thay — cùng quyền máy chủ kiểm khi lưu (`requireLam` → DISCIPLINE_MANAGE). */
     if (it.group === 'phoi_hop_sos') return !!it.classId && can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId: it.classId });
-    const c =it.caseId ? ctx.get(it.caseId) : undefined;
+    const c = it.caseId ? ctx.get(it.caseId) : undefined;
     return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);
   };
 }
