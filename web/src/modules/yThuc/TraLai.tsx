@@ -4,8 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { Truong, useNhap } from '../../ui/KhungPanel.tsx';
 import { NutDichGop, useDichGop } from '../../ui/ChuDich.tsx';
 import { DsLichSu } from '../../ui/LichSuThayDoi.tsx';
-import { CHU_TOI_THIEU, hanTraLai, nhanLichSuViPham, shortDate, tenMon } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { CHU_TOI_THIEU, VIOLATION_CATEGORY_LABEL, hanTraLai, nhanLichSuViPham, shortDate, tenMon, type ViolationCategory } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { ChipMon } from './BangLan.tsx';
 import { BadgeHan, NhanChoGv } from '../../ui/Nhan.tsx';
 import { lucVn } from '../congViec/gioVn.ts';
@@ -30,7 +30,7 @@ export type TraLaiView = {
   lanXuLy: { id: number; nhan: string; soViPham: number } | null;
   coTheRut: boolean; hoanTacDuoc: boolean; coTheLam: boolean; coTheXoa: boolean; coTheThuHoi: boolean;
 };
-export type ViPhamBaoPh = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; nguoiGhi?: string | null; ghiLuc?: string | null; daSua?: boolean };
+export type ViPhamBaoPh = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; /** PR-2b: mã nhóm (`violations.category`). */ nhom?: string | null; nguoiGhi?: string | null; ghiLuc?: string | null; daSua?: boolean };
 
 /** Sau mọi thao tác trả lại: danh sách việc + hồ sơ HV + tab Ý thức + chuông đọc lại. */
 const KHOA_TRA_LAI = ['/my-work', '/tong-quan', '/students', '/y-thuc', '/classes', '/violations', '/notifications', '/giao-viec'];
@@ -188,6 +188,29 @@ export function DsViPhamBaoPh({ viPham, mo: dsMo, coTheTraLai, hn, onTraLai }: {
   );
 }
 
+/** PR-2b (góp ý 4 "chữ dài cần đậm / tách dòng"): tách mô tả thành câu ngắn (theo dấu chấm / xuống dòng). */
+const cauVa = (chu: string) => chu.split(/(?<=[.!?…])\s+|\n+/).map((c) => c.trim()).filter(Boolean);
+/** Đậm các con số (8:20, 20 phút, lần thứ 2…) trong chữ dài — chữ còn lại giữ thường. */
+function DamSo({ chu }: { chu: string }) {
+  return <>{chu.split(/(\d+(?:[:.,/]\d+)*)/).map((p, i) => (i % 2 ? <b key={i} className="font-semibold">{p}</b> : p))}</>;
+}
+/**
+ * TỆP CỦA MỘT VI PHẠM (PR-2b, mockup v23 P1 `.vpd-ct .tep`) — chỉ gắn khi dòng đang mở → một GET `/attachments` mỗi lần người dùng mở (đường sẵn có,
+ * quyền = quyền xem bản ghi chủ ở máy chủ). Không có tệp → không vẽ dòng "Tệp".
+ */
+function TepViPham({ id }: { id: number }) {
+  const { data, error, reload } = useApi<{ rows: { id: number; kind: 'file' | 'link'; displayName: string; href: string }[] }>(`/attachments?ownerType=violation&ownerId=${id}`, [id]);
+  if (!error && (!data || !data.rows.length)) return null;
+  return <>
+    <dt>{t('Tệp')}</dt>
+    <dd className="m-0 flex flex-wrap gap-x-3 gap-y-1">{error
+      ? <span className="text-[13px] text-dim">{t('Không tải được tệp')} · <button type="button" className="link appearance-none border-0 bg-transparent p-0 font-semibold" onClick={reload}>{t('Thử lại')}</button></span>
+      : data!.rows.map((r) => r.kind === 'link'
+        ? <a key={r.id} className="link break-all" href={r.href} target="_blank" rel="noopener noreferrer">{r.displayName}</a>
+        : <a key={r.id} className="link break-all" href={r.href} download>{r.displayName}</a>)}</dd>
+  </>;
+}
+
 function DongVp({ x, dau, mo, cho, hn, traLaiDuoc, dangNhap, onBam, onNhap, onTraLai }: {
   x: ViPhamBaoPh; dau: boolean; mo: boolean; cho: TraLaiMo | null; hn: string; traLaiDuoc: boolean; dangNhap: boolean;
   onBam: () => void; onNhap: (b: boolean) => void; onTraLai: (lyDo: string) => Promise<void>;
@@ -212,11 +235,18 @@ function DongVp({ x, dau, mo, cho, hn, traLaiDuoc, dangNhap, onBam, onNhap, onTr
       </button>
       {mo && (
         <div id={ma} className="grid gap-2.5 border-t py-2.5 pl-[132px] pr-3 text-sm max-sm:pl-3" style={{ borderColor: 'var(--line)', background: 'color-mix(in srgb, var(--accent-soft) 40%, var(--surface))' }}>
-          <dl className="m-0 grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 max-sm:grid-cols-1">
-            <dt className="text-[13px] text-dim">{t('Ghi lúc')}</dt>
-            <dd className="m-0 tabular-nums">{[x.ghiLuc ? lucVn(x.ghiLuc) : shortDate(x.ngay, hn), x.nguoiGhi, x.skill ? t('buổi {mon}', { mon: tenMon(null, x.skill) }) : null].filter(Boolean).join(' · ')}</dd>
-            <dt className="text-[13px] text-dim">{t('Nội dung')}</dt>
-            <dd className="m-0 whitespace-pre-wrap break-words">{ten}{x.moTa.trim() ? <><br /><span className="text-slate-300">{d.chu(1)}</span></> : null} <NutDichGop d={d} /></dd>
+          {/* NHẸ HƠN PR-2b (v23 `.vpd-ct`, góp ý chủ SP 22/11 ý 1 + 4): Nhóm · Ngày · người ghi · Mô tả (tách câu, đậm số) · Tệp. */}
+          <dl className="m-0 grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-1.5 max-sm:grid-cols-1 max-sm:gap-y-0.5 [&>dt]:text-[13px] [&>dt]:text-dim max-sm:[&>dt:not(:first-child)]:mt-1.5">
+            <dt>{t('Nhóm')}</dt>
+            <dd className="m-0 break-words">{x.nhom && VIOLATION_CATEGORY_LABEL[x.nhom as ViolationCategory] ? <>{dich(VIOLATION_CATEGORY_LABEL[x.nhom as ViolationCategory])} · </> : null}<b className="font-semibold">{ten}</b></dd>
+            <dt>{t('Ngày · người ghi')}</dt>
+            <dd className="m-0 tabular-nums"><b className="font-semibold">{x.ghiLuc ? lucVn(x.ghiLuc) : shortDate(x.ngay, hn)}</b>
+              {x.nguoiGhi && <> · <b className="font-semibold">{x.nguoiGhi}</b></>}{x.skill && <> · {t('buổi {mon}', { mon: tenMon(null, x.skill) })}</>}</dd>
+            {x.moTa.trim() && <>
+              <dt>{t('Mô tả')}</dt>
+              <dd className="m-0 grid gap-1 break-words leading-relaxed">{cauVa(d.chu(1)).map((c, i) => <span key={i}><DamSo chu={c} /></span>)}<span><NutDichGop d={d} /></span></dd>
+            </>}
+            <TepViPham id={x.id} />
           </dl>
           {(x.daSua || cho) && <LichSuViPham id={x.id} hn={hn} />}
           {dangNhap
