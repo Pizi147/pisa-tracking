@@ -59,6 +59,13 @@ export async function runPrUiTongQuanTests(t: any) {
     const ql = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' });
     for (const l of ql.lop) assert(l.sos23Ids.length === l.sos[1] + l.sos[2], `${l.ma}: id SOS 2–3 ${l.sos23Ids.length} ≠ ${l.sos[1] + l.sos[2]}`);
     assert(!('tre' in ql) && !('caseGv' in ql), 'Tổng quan còn trả Trễ chấm / caseGv (đã bỏ — khối GV đọc Công việc)');
+    /* PTA rà #2002 (Turso): `gon` bỏ tập trang không hiện — SOS theo lớp, id em, Tình hình GIỮ NGUYÊN số. */
+    for (const [p, cn] of [[P.mbManager, null], [P.admin, null]] as const) {
+      const du = v5.tongQuanV5(p, { branchId: cn, ct: 'ft' }), gon = v5.tongQuanV5(p, { branchId: cn, ct: 'ft', gon: true });
+      const sosLop = (x: any) => JSON.stringify([...(x.lop ?? x.lopCn ?? [])].map((l: any) => [l.id, l.sos, l.sos23Ids]));
+      assert(sosLop(du) === sosLop(gon) && JSON.stringify(du.sos) === JSON.stringify(gon.sos), 'gon: SOS theo lớp / tổng lệch bản đủ');
+      assert(JSON.stringify([du.datMt, du.thiThangNay, du.thiThat]) === JSON.stringify([gon.datMt, gon.thiThangNay, gon.thiThat]), 'gon: Tình hình lệch bản đủ');
+    }
     const qt = v5.tongQuanV5(P.admin, { branchId: null, ct: 'ft' });
     const s23 = qt.chiNhanh.reduce((s: number, c: any) => s + c.sos23, 0);
     assert(qt.lopCn.reduce((s: number, l: any) => s + l.sos[1] + l.sos[2], 0) === s23, 'Σ SOS 2–3 lớp (Toàn hệ thống) ≠ Σ chi nhánh');

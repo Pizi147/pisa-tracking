@@ -7,8 +7,7 @@ import { useDemYeuCau, useDuongViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { OSo } from '../../ui/OSo.tsx';
-import { Han } from '../../ui/Han.tsx';
-import { CHIP_SOS, CHIP_VUONG, DauQuaHan, lopBadgeHan, lopSos } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, CHIP_VUONG, LOP_MUC_HAN, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DauViecCongViec, KhungPanel, QuayLaiPanel } from '../../ui/KhungPanel.tsx';
 import { DaiLamThay } from '../../ui/DaiLamThay.tsx';
@@ -18,22 +17,31 @@ import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import type { WorkItem } from './WorkList.tsx';
 import { PhanTram, ChuaCoDl, kyChu, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
 import {
-  LOAI_HAN_CUA_VIEC, laViec, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
+  daysBetween, laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * NHẸ HƠN PR-3 — TỔNG QUAN "Hôm nay có gì bất thường?" (mockup `thiet-ke/v23/tong-quan.html` T1–T4 + đặc tả 2026-11-22 mục 3, 6.1–6.3).
  * Hàng "Cần xử lý" theo vai · khối chính (Giáo viên ‖ Chờ duyệt · Lớp cần chú ý ‖ Tình hình). Ô số = panel TẠI CHỖ đúng danh sách tạo ra số; "›" = đổi trang.
- * Nguồn (đo trên bản chép thật, mô tả PR): việc = `/my-work` ĐÃ NẠP — Head / Quản trị / Admin đúng URL Công việc "Tất cả" (`nguoi=tat-ca`, thay
- * `/phan-tich/giao-vien` cũ; mở Công việc trong 5 phút dùng lại bản này), CX badge; SOS / Tình hình = `/tong-quan/v5` (cùng hàm Phân tích).
+ * Nguồn (đo trên bản chép thật, mô tả PR — PTA rà #2002 Turso): MỘT GET `/tong-quan/v5?gon=1&kemViec=1` — SOS / Tình hình (cùng hàm Phân tích, bỏ tập trang
+ * không hiện) + `viec` = CHÍNH `dong` Công việc "Tất cả" (`myWork` nguoi=tat-ca) trong cùng request (lượt / điểm đọc một lần); CX: badge `/my-work`.
  */
 type Dong = WorkItem & { lamThay?: boolean };
 type ViecTatCa = { dong: Dong[] };
 
-/** URL Công việc "Tất cả" — CHÍNH chuỗi `HoTroHocVienTab` gửi (branchId trước nguoi) để dùng chung bản đã nạp. */
-export const duongTatCa = (branchId: number | null) => `/my-work?${branchId ? `branchId=${branchId}&` : ''}nguoi=tat-ca`;
 const congViec = (q: string) => `/cong-viec?nguoi=tat-ca${q ? `&${q}` : ''}`;
+
+/**
+ * Hạn ở Tổng quan (PTA rà #2002, luật V22 / NH4): chữ dd/mm/yyyy tô theo `mucHan` — KHÔNG ⚠ (dấu hình chỉ ở ô quá hạn của ma trận: nền đặc).
+ * `quaHan`: dòng việc / panel việc — quá hạn ghi "quá hạn n ngày" (như mockup T1c), chưa quá hạn ghi ngày.
+ */
+function NgayHan({ han, quaHan }: { han: string; quaHan?: boolean }) {
+  const { homNay } = useNgayNghiepVu();
+  const muc = homNay ? mucHan(han, homNay) : 'xa';
+  const chu = quaHan && muc === 'qua' ? t('quá hạn {n} ngày', { n: daysBetween(han.slice(0, 10), homNay) }) : ngay(han);
+  return <span className={`whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>{chu}</span>;
+}
 
 /* ───────────── Ô "Cần xử lý" ───────────── */
 
@@ -107,8 +115,7 @@ function PanelDsViec({ tieuDe, phu, nhom, chan, onDong }: { tieuDe: string; phu?
                       <span className="block text-sm font-semibold text-slate-100">{tenDong(x)}</span>
                       <span className="block text-[13px] text-dim">{[nhanLoaiTq(loaiTq(x)), x.studentName ? x.classCode : null, x.soBai ? t('thiếu {n} bài', { n: x.soBai }) : null].filter(Boolean).join(' · ')}</span>
                     </span>
-                    {x.due && <span className="shrink-0 text-right">{LOAI_HAN_CUA_VIEC[x.group]
-                      ? <Han loai={LOAI_HAN_CUA_VIEC[x.group]!} han={x.due} soNgay /> : <Han loai="viec-van-hanh" han={x.due} soNgay />}</span>}
+                    {x.due && <span className="shrink-0 text-right"><NgayHan han={x.due} quaHan /></span>}
                   </>
                 );
                 const lop = 'flex min-h-[48px] w-full items-center justify-between gap-3 border-t px-3.5 py-2 text-left first:border-t-0 hover:bg-[color:var(--accent-soft)]';
@@ -212,10 +219,11 @@ function OMaTran({ o, cot, lop, onBam }: { o: HangLop<Dong>['o'][CotLop]; cot: C
   const so = o.so || o.viec.length;
   const chu = DON_VI[cot](so);
   const nhan = `${lop} · ${NHAN_COT[cot]} · ${chu}${o.muc === 'qua' ? ` · ${t('quá hạn')}` : o.muc === 'sap' ? ` · ${t('sắp đến hạn')}` : ''}`;
-  const lopO = o.muc === 'qua' ? lopBadgeHan('qua') : o.muc === 'sap' ? `${CHIP_VUONG} border-[rgb(var(--soon-line-rgb))] text-soon` : 'px-1 text-sm font-semibold text-slate-100';
+  /* Dấu thêm cho quá hạn = NỀN ĐẶC (không ⚠ — PTA rà #2002): đặc đỏ · viền vàng · chữ thường — khác hình, không chỉ khác màu. */
+  const lopO = o.muc === 'qua' ? `${CHIP_VUONG} border-transparent bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]` : o.muc === 'sap' ? `${CHIP_VUONG} border-[rgb(var(--soon-line-rgb))] text-soon` : 'px-1 text-sm font-semibold text-slate-100';
   return (
     <button type="button" onClick={onBam} aria-label={nhan} title={nhan} className={`${lopO} cursor-pointer hover:underline max-sm:min-h-[36px]`}>
-      {o.muc === 'qua' && <DauQuaHan />}<span className="sm:hidden">{so}</span><span className="max-sm:hidden">{chu}</span>
+      <span className="sm:hidden">{so}</span><span className="max-sm:hidden">{chu}</span>
     </button>
   );
 }
@@ -233,10 +241,10 @@ function LopCanChuYC({ hang, cot, sos, onMo, xemHet }: { hang: HangLop<Dong>[]; 
       action={hang.length > 0 ? <Link to={xemHet} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Xem hết')} ›</Link> : undefined}>
       {!ds.length ? <p className="m-0 px-4 py-6 text-sm text-dim">{t('✓ Không lớp nào có việc quá hạn hay sắp đến hạn.')}</p> : (
         <div data-hd="tq-lop-chu-y" className="max-sm:[&_th]:whitespace-normal max-sm:[&_th]:px-1 max-sm:[&_th]:text-xs max-sm:[&_td]:px-1 [&_td]:py-1.5">
-          {/* Mockup C: 375 GIỮ ma trận (không thành thẻ) — `the375={false}`; cột lớp giữ rộng, cột loại chia đều (`deu`). */}
+          {/* Mockup C: 375 GIỮ ma trận (không thành thẻ) — `the375={false}`; độ rộng cơ sở vừa 375 (96 + 4 × 62), ≥ 640 phần dư chia theo tỉ lệ (`deu`). */}
           <Bang ten={t('Lớp cần chú ý')} khung={false} the375={false} deu hang={ds} khoa={(h) => h.classId}
-            cot={[{ key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 132 }, ...cot.map((c) => ({ key: c, nhan: NHAN_COT[c], kieu: 'so' as const, rong: 120 })),
-              ...(sos ? [{ key: 'sos', nhan: NHAN_COT.sos, kieu: 'so' as const, rong: 120 }] : [])]}
+            cot={[{ key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 96 }, ...cot.map((c) => ({ key: c, nhan: NHAN_COT[c], kieu: 'so' as const, rong: 62 })),
+              ...(sos ? [{ key: 'sos', nhan: NHAN_COT.sos, kieu: 'so' as const, rong: 62 }] : [])]}
             oCua={(h, c) => {
               if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so whitespace-nowrap font-semibold">{h.classCode}</Link>;
               if (c.key === 'sos') { const x = sos?.get(h.classId); return x?.n ? <OSo giaTri={x.n} nhan={t('{n} em', { n: x.n })} tieuDe={`${t('SOS 2–3')} · ${h.classCode}`} nguon={`/tong-quan/chi-nhanh/sos23?ids=${x.ids.join(',')}`} className="so-chinh text-sm" /> : null; }
@@ -321,7 +329,7 @@ function DongDuyet({ ds, onMo }: { ds: TheYeuCauDto[]; onMo: (y: TheYeuCauDto) =
               <span className="block break-words text-sm font-semibold text-slate-100">{[y.hocVien, dich(y.nhanLoai)].filter(Boolean).join(' · ')}</span>
               <span className="block text-[13px] text-dim">{[y.lop, y.nguoiXin && t('{ten} gửi', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </span>
-            {y.hanDuyet && <span className="shrink-0"><Han loai="duyet" han={y.hanDuyet} /></span>}
+            {y.hanDuyet && <span className="shrink-0"><NgayHan han={y.hanDuyet} /></span>}
           </button>
         </li>
       ))}
@@ -347,7 +355,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
   const dem = useDemYeuCau();
   const choN = dem?.cho ?? 0;
   const hop = useHop(d.branchId, duyet && choN > 0);
-  const viec = useApi<ViecTatCa>(duongTatCa(d.branchId), [d.branchId]);
+  const viec = { data: d.viec ? { dong: d.viec as Dong[] } : null };
   const cn = useApi<{ id: number; name: string }[]>(d.branchId ? null : '/ref/branches').data;
   const [panel, setPanel] = useState<MoPanel | null>(null);
   const [duyetMo, setDuyetMo] = useState<{ dau: TheYeuCauDto | null } | null>(null);
@@ -370,12 +378,12 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
     <>
       <HangO n={3}>
         <OCan ten={t('GV quá hạn')} so={viec.data ? soGv : null} nguy phu={quaHan.length ? t('{n} việc quá hạn', { n: quaHan.length }) : undefined} onBam={moGvQuaHan} />
-        {duyet && <OCan ten={t('Chờ duyệt')} so={dem ? choN : null} phu={ganNhat ? <Han loai="duyet" han={ganNhat} /> : undefined}
+        {duyet && <OCan ten={t('Chờ duyệt')} so={dem ? choN : null} phu={ganNhat ? <>{t('gần nhất')} <NgayHan han={ganNhat} /></> : undefined}
           onBam={hop.data ? () => setDuyetMo({ dau: null }) : undefined} />}
         <OCan ten={t('Em SOS cần chú ý')} so={s2 + s3} phu={s2 + s3 ? [s3 ? `${s3} SOS 3` : null, s2 ? `${s2} SOS 2` : null].filter(Boolean).join(' · ') : undefined}
           o={<span className="text-[26px] font-bold leading-none"><OSo giaTri={s2 + s3} tieuDe={t('Em SOS cần chú ý')} nguon={`/tong-quan/chi-nhanh/sos23?${thamSoTq(d.branchId, d.ct)}&ids=${sos23Ids.join(',')}`} className="so-chinh text-late" /></span>} />
       </HangO>
-      {viec.error ? <ErrorState message={viec.error.message} hint={viec.error.hint} status={viec.error.status} onRetry={viec.reload} /> : !viec.data ? <Skeleton rows={6} /> : (
+      {!viec.data ? null : (
         <div className="flex flex-col gap-4">
           {/* 375 (mockup T1b): Lớp cần chú ý → Giáo viên → Chờ duyệt → Tình hình — hai lưới thành `contents`, thứ tự bằng `order`. */}
           <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1200px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
@@ -404,7 +412,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
 /** ADMIN (góc vận hành): Điểm chưa đủ · Báo cáo PH chưa đủ (Lịch thi / Hồ sơ: Admin không có việc đó trong Công việc — không vẽ ô, [XM-P3-2]) · Lớp cần chú ý ‖ Tình hình. */
 export function TongQuanAdmin({ d, congTac }: { d: TongQuanV5Data; congTac: ReactNode }) {
   const { homNay } = useNgayNghiepVu();
-  const viec = useApi<ViecTatCa>(duongTatCa(d.branchId), [d.branchId]);
+  const viec = { data: d.viec ? { dong: d.viec as Dong[] } : null };
   const [panel, setPanel] = useState<MoPanel | null>(null);
   const [moDiem, setMoDiem] = useState(false);
   const dong = viec.data?.dong ?? [];
@@ -426,10 +434,10 @@ export function TongQuanAdmin({ d, congTac }: { d: TongQuanV5Data; congTac: Reac
           phu={soBai ? t('bài · {n} lớp', { n: lop(diem) }) : undefined}
           onBam={() => setMoDiem(true)} />
         <OCan ten={t('Báo cáo PH chưa đủ')} so={viec.data ? bcph.length : null} nguy={bcph.some((x) => x.urgency === 'overdue')}
-          phu={bcph.length ? <>{t('{n} lớp', { n: lop(bcph) })}{hanSom(bcph) && <> · <Han loai="viec-van-hanh" han={hanSom(bcph)} /></>}</> : undefined}
+          phu={bcph.length ? <>{t('{n} lớp', { n: lop(bcph) })}{hanSom(bcph) && <> · <NgayHan han={hanSom(bcph)!} /></>}</> : undefined}
           onBam={() => setPanel({ tieuDe: t('Báo cáo PH chưa đủ'), phu: t('{n} việc', { n: bcph.length }), nhom: theoLop(bcph), chan: { to: congViec(`nhom=${bcph[0] ? tabCuaViec(bcph[0]) : 'van-hanh'}`), nhan: t('Công việc · Báo cáo PH') } })} />
       </HangO>
-      {viec.error ? <ErrorState message={viec.error.message} hint={viec.error.hint} status={viec.error.status} onRetry={viec.reload} /> : !viec.data ? <Skeleton rows={6} /> : (
+      {!viec.data ? null : (
         <div className="grid items-stretch gap-4 min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
           <LopCanChuYC hang={hang} cot={['diem', 'bcph']} onMo={setPanel} xemHet={congViec('')} />
           <TinhHinh d={d} congTac={congTac} />
@@ -477,7 +485,7 @@ function PanelDiemAdmin({ diem, onDong }: { diem: Dong[]; onDong: () => void }) 
           if (c.key === 'lop') return <b className="whitespace-nowrap font-semibold text-slate-100">{h.lop}</b>;
           if (c.key === 'bai') return h.bai;
           if (c.key === 'thieu') return <b className="tabular-nums">{h.thieu}</b>;
-          if (c.key === 'han') return h.han ? <Han loai="nhap-diem" han={h.han} /> : null;
+          if (c.key === 'han') return h.han ? <NgayHan han={h.han} /> : null;
           return <span className="grid gap-1">{h.nguoi.map((n) => (
             <span key={n.ten} className="inline-flex items-center gap-1 whitespace-nowrap text-[13px]">{n.ten}
               {n.kns.map((kn) => <span key={kn} className={CHIP_VUONG}>{tenMonNgan(null, kn)}</span>)}<span className="tabular-nums text-dim">· {n.n}</span></span>
@@ -517,7 +525,7 @@ export function TongQuanCx({ d, congTac }: { d: TongQuanV5Data; congTac: ReactNo
       <HangO n={3}>
         <OCan ten={t('Em SOS 2–3')} so={s2 + s3} phu={s2 + s3 ? [s3 ? `${s3} SOS 3` : null, s2 ? `${s2} SOS 2` : null].filter(Boolean).join(' · ') : undefined}
           o={<span className="text-[26px] font-bold leading-none"><OSo giaTri={s2 + s3} tieuDe={t('Em SOS 2–3')} nguon={nguonSos} className="so-chinh text-late" /></span>} />
-        <OCan ten={t('Meeting chờ kết quả')} so={toi ? meeting.length : null} phu={hanSom(meeting) ? <>{t('gần nhất')} <Han loai="phoi-hop" han={hanSom(meeting)} /></> : undefined}
+        <OCan ten={t('Meeting chờ kết quả')} so={toi ? meeting.length : null} phu={hanSom(meeting) ? <>{t('gần nhất')} <NgayHan han={hanSom(meeting)!} /></> : undefined}
           onBam={() => setPanel({ tieuDe: t('Meeting chờ kết quả'), phu: t('{n} việc', { n: meeting.length }), nhom: [{ khoa: 'm', ten: t('Kết quả meeting'), viec: meeting }], chan: { to: '/cong-viec?nhom=kq-meeting', nhan: t('Công việc · Kết quả meeting') } })} />
         <OCan ten={t('Chưa chốt bước tiếp')} so={choBuoc} phu={choBuoc ? t('em') : undefined} to={`/hoc-vien?phamVi=${hv.data?.phamVi ?? 'tat-ca'}${cnQ}&view=cho-buoc-tiep`} />
       </HangO>
@@ -533,12 +541,12 @@ export function TongQuanCx({ d, congTac }: { d: TongQuanV5Data; congTac: ReactNo
                 if (c.key === 'lop') return lopEm(r);
                 if (c.key === 'sos') return chipSos(r);
                 if (c.key === 'treo') return treo ? dich(treo.tieuDe) : <span className="text-faint">—</span>;
-                return treo?.due ? <Han loai="phoi-hop" han={treo.due} /> : <span className="text-faint">—</span>;
+                return treo?.due ? <NgayHan han={treo.due} /> : <span className="text-faint">—</span>;
               }}
               theRieng={(r) => { const treo = treoDau(r.id); return (
                 <>
                   <div className="flex items-center justify-between gap-3"><Link to={r.href} className="ten-ho-so font-semibold">{r.title}</Link>{chipSos(r)}</div>
-                  <span className="text-[13px] text-dim">{[lopEm(r), treo ? dich(treo.tieuDe) : null].filter(Boolean).join(' · ')}{treo?.due && <> · <Han loai="phoi-hop" han={treo.due} /></>}</span>
+                  <span className="text-[13px] text-dim">{[lopEm(r), treo ? dich(treo.tieuDe) : null].filter(Boolean).join(' · ')}{treo?.due && <> · <NgayHan han={treo.due} /></>}</span>
                 </>
               ); }} />
           )}

@@ -13,7 +13,7 @@
 | Admin ô Điểm chưa đủ · Báo cáo PH chưa đủ | `TongQuanAdmin` | admin | KHỚP 2/4; Lịch thi · Hồ sơ BỎ (XM-P3-2: Admin không có việc đó ở Công việc) |
 | CX ô Em SOS 2–3 · Meeting chờ kết quả · Chưa chốt bước tiếp › | `TongQuanCx` | cx | KHỚP; "Chưa chốt bước tiếp ›" đổi trang HV & Lớp (GIỮ đích cũ, danh sách em ở đó) |
 | Khối Giáo viên NGANG Chờ duyệt, cân đáy; Loại ≤ 3 + "+n" | `KhoiGiaoVien` · `LoaiGv` | head · qt | KHỚP (đặc tả 6.1 thắng ảnh) |
-| Lớp cần chú ý — ma trận C ~60 % + Tình hình cạnh | `LopCanChuYC` · `OMaTran` · `TinhHinh` | head · admin · qt | KHỚP; màu ở số: quá hạn = badge nền đỏ + ⚠, sắp đến = chữ vàng viền mảnh (đặc tả 6.3 — bỏ chấm tròn + chú giải) |
+| Lớp cần chú ý — ma trận C ~60 % + Tình hình cạnh | `LopCanChuYC` · `OMaTran` · `TinhHinh` | head · admin · qt | KHỚP; màu ở số: quá hạn = nền đặc đỏ, sắp đến = viền vàng (đặc tả 6.3 + PTA rà #2002 — bỏ chấm tròn + chú giải) |
 | Em cần chú ý (CX) | `TongQuanCx` (Bang, 375 `theRieng`) | cx | KHỚP |
 | Tình hình 4 số (dọc cạnh ma trận / ngang ở CX) + FT · Lớp thường | `TinhHinh` | mọi ảnh | KHÁC nhẹ: số màu nhấn (luật ô số bấm được — `mauOSo`), mockup chữ trắng |
 | Panel T1c "GV quá hạn" nhóm theo GV | `PanelDsViec` | head-panel | KHỚP; bấm dòng → `PanelViec` thay nội dung (‹ quay lại), làm thay N64 |
@@ -37,23 +37,33 @@
 | CX: ô Chờ KQ thi thật › | BỎ khỏi Tổng quan (chip "Đã thi · chờ KQ" ở HV & Lớp) | mockup T3 |
 | Chọn chi nhánh · FT / Lớp thường | GIỮ (FT / Lớp thường sang đầu khối Tình hình) | mockup |
 
-## Turso (đo `scripts/do-ban-chep.mjs`-kiểu, bản chép 12/11 đã migrate · seed) — trước → sau
+## Turso — PTA rà #2002: phương án nhẹ (đo `do-ban-chep`-kiểu, mỗi bộ trước / sau một tiến trình riêng, cùng bản chép mới)
 
-| Đường | Bản chép thật | Seed |
+Cách làm: Tổng quan gọi MỘT GET `/tong-quan/v5?gon=1&kemViec=1`:
+- `gon=1` — bảng chi nhánh chỉ tính SOS (Tình hình + ma trận); bỏ tập trang không hiện (dưới kỳ vọng, Case, độ phủ, nợ điểm, đã thi chờ KQ). Phép kiểm: SOS theo lớp / id em / Tình hình = bản đủ.
+- `kemViec=1` (Head / QT / Admin) — kèm CHÍNH `dong` Công việc "Tất cả" (`myWork` nguoi=tat-ca, cùng quyền route `/my-work`) trong cùng request: lượt / lịch kỹ năng / điểm đọc một lần (`nhoTheoId`). Số khối GV / ma trận vẫn = `demDongViec` Công việc "Của GV" (phép kiểm giữ).
+- Bỏ: `/phan-tich/giao-vien` (Head) · `/my-work?nguoi=tat-ca` riêng · `/tong-quan/mock-test` + `/highlights` (Admin) · Trễ chấm + caseGv.
+
+| Cả lượt trang | Bản chép thật (câu · dòng) | Seed (câu · dòng) |
 |---|---|---|
-| `/tong-quan/v5?ct=ft` một chi nhánh (QL) | 37 → **31** câu · 7 321 → 7 308 dòng | 36 → 34 · 2 234 → 2 218 |
-| Cả lượt trang **Head / QL** | 108 → **144** câu · 25 364 → 27 208 dòng | 153 → 201 |
-| Cả lượt trang **Quản trị** Toàn hệ thống | 88 → **147** câu · 24 745 → 35 138 dòng | 136 → 204 |
-| Cả lượt trang **CX** | 54 → 61 câu · 12 453 → 13 167 dòng | 67 → 74 |
-| Cả lượt trang **Admin** | 48 → 58 câu · 4 076 → 10 069 dòng | 81 → 98 |
+| Head / QL | 167 · 27 868 → **136 · 24 271** | 153 · 3 625 → 186 · 3 022 |
+| Quản trị toàn hệ thống | 91 · 24 746 → **135 · 25 424** | 140 · 3 910 → 192 · 3 978 |
+| CX | 57 · 12 454 → **50 · 11 435** | 72 · 5 307 → 66 · 4 596 |
+| Admin | 50 · 4 077 → **45 · 7 036** | 86 · 1 214 → 82 · 2 228 |
 
-- Thêm: `/my-work?branchId&nguoi=tat-ca` (Head 60 câu / 3 794 dòng · QT 59 / 10 393 · Admin 15 / 2 291) — CHÍNH URL Công việc "Tất cả": mở Công việc trong 5 phút sau dùng lại, 0 GET.
-- Bỏ: `/phan-tich/giao-vien?v2=1` (Head) · `/tong-quan/mock-test` + `/highlights` (Admin) · Trễ chấm + caseGv trong `/tong-quan/v5`.
-- Ước / ngày (Head ~100 · QT ~20 · Admin ~50 · CX ~50 lần mở): ≈ +180 k + 210 k + 300 k + 35 k ≈ **+0,7 triệu dòng / ngày (~5 % trần 15 triệu)**, trước khi trừ phần Công việc dùng lại.
-- Trần `tocDoDuong.ts`: `QL /tong-quan/v5?ct=ft` giữ 46 (đo 34); thêm ADMIN `/tong-quan/v5` 45 câu · ADMIN `/my-work?nguoi=tat-ca&branchId` 26 · CX `sos23` 18; trang QL 107 → 145, QT (mới) 150, CX 80 → 95, Admin 60 → 73.
+- Dòng / ngày (Head ~100 · QT ~20 · CX ~50 · Admin ~50 lần mở): −360 k + 14 k − 50 k + 150 k ≈ **−250 nghìn dòng / ngày** (giảm).
+- Câu: Head −31, CX −7, Admin −5; **QT +44 (+48 %)** — vượt mốc +10 % câu (đi vào `myWork` toàn hệ thống); dòng QT +0,7 k / lần.
+- Đổi lại: mở Công việc sau Tổng quan không còn dùng chung bản `/my-work?nguoi=tat-ca` (khác URL).
+- Trần `tocDoDuong.ts` (seed phép đo): `…/v5?ct=ft&gon=1&kemViec=1` QL 97 · QT 102 · ADMIN 46 câu, CX `gon=1` 35; trang QL 107 → 125 (đo 96), QT mới 132 (đo 101), CX 80 (đo 61), Admin 60 (đo 41).
+
+## Hạn (PTA rà #2002)
+
+- Mọi hạn ở Tổng quan: chữ dd/mm/yyyy tô theo `mucHan`, KHÔNG ⚠ (luật V22 / NH4) — ô Chờ duyệt, danh sách Chờ duyệt, ô Báo cáo PH / Meeting, bảng "Điểm chưa đủ", Em cần chú ý (`NgayHan`).
+- Panel việc (GV quá hạn, ô ma trận): dòng quá hạn chỉ "quá hạn n ngày" (như T1c); chưa quá hạn ghi ngày tô màu.
+- Ma trận "Lớp cần chú ý": dấu thêm cho quá hạn = NỀN ĐẶC đỏ (sắp đến = viền vàng, còn xa = chữ thường) — khác hình, không chỉ khác màu; thay ⚠ / chấm tròn.
 
 ## [XM] cho PTA
 
 - [XM-P3-5] Mockup v23 không có ô "Việc của tôi ›" (XM 3, 11/11; CLAUDE.md "việc của tôi ở trang đầu vai") → giữ dạng link gọn đầu trang. Bỏ hẳn? PTA chốt.
-- [XM-P3-6] Số đọc tăng theo cả lượt trang (bảng trên) — ước trước (đo từng đường riêng) nói Head giảm; đo cả lượt thì `/phan-tich/giao-vien` rẻ hơn khi đi sau `/tong-quan/v5` (bộ nhớ trong tiến trình). PTA báo chủ SP con số đúng.
+- [XM-P3-6] Đã xử lý bằng `gon=1&kemViec=1` (bảng trên): dòng / ngày giảm; còn QT +44 câu / lần — chủ SP quyết nếu cần thấp hơn (vd khối Giáo viên toàn hệ thống chỉ khi chọn chi nhánh).
 - [XM-P3-7] Hướng dẫn (`shared/huongDan` ql / qt / admin / cx, mục Tổng quan) còn tả dải ô cũ — PR này chỉ đổi `data-hd` cho đúng phần tử; cần PR hướng dẫn viết lại chữ (kèm bản EN).

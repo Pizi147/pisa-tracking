@@ -42,11 +42,12 @@ export type TongQuanV5 = {
 
 const tang = (m: Map<number, number>, k: number | undefined) => { if (k !== undefined) m.set(k, (m.get(k) ?? 0) + 1); };
 
-export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; ky?: { tu: string; den: string } | null }): TongQuanV5 {
+export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; ky?: { tu: string; den: string } | null;
+  /** NHẸ HƠN PR-3 (PTA rà #2002, Turso): Tổng quan v23 chỉ hiện SOS + Tình hình — bảng không tính Case / dưới kỳ vọng / nợ điểm (các số đó = 0 trong kết quả). */ gon?: boolean }): TongQuanV5 {
   const homNay = demoToday();
   /* UI-PHAN-TICH: Báo cáo HV gọi CHÍNH hàm này với khoảng đang chọn — số Báo cáo = số Tổng quan khi cùng kỳ. */
   const ky = f.ky ?? khoangMacDinh(homNay);
-  const bang = bangChiNhanh(p, { branchId: f.branchId ?? null, ct: f.ct, chuY: true });
+  const bang = bangChiNhanh(p, { branchId: f.branchId ?? null, ct: f.ct, chuY: true, chiSos: f.gon });
   const ft = f.ct === 'ft';
   const loc = { branchId: bang.branchId, ct: f.ct, tu: ky.tu, den: ky.den };
   const dm = ft ? tapDatMt(p, loc) : null;

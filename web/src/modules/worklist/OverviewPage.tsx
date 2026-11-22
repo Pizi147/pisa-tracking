@@ -32,7 +32,8 @@ export default function OverviewPage() {
   const vai = nav?.hvCuaToi ? 'tvv'
     : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
-  const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' || vai === 'admin' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
+  /* NHẸ HƠN PR-3 (PTA rà #2002 Turso): `gon=1` — bảng chỉ tính SOS (Tình hình + ma trận); Head / QT / Admin `kemViec=1` — việc Công việc "Tất cả" cùng request. */
+  const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' || vai === 'admin' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}&gon=1${vai === 'cx' ? '' : '&kemViec=1'}` : null, [branchId, khung, vai]);
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   /* BPXL-1 (N57): Chuyên viên Xếp lịch (không kèm vai GV) — trang đầu = Kế hoạch Test. Dải 4 số lặng: PR BPXL-2. */

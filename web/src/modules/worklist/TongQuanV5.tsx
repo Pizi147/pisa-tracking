@@ -26,6 +26,8 @@ export type TongQuanV5Data = {
   lop: DongLop[] | null; chiNhanh: DongCn[] | null;
   /** NHẸ HƠN PR-3: lớp của mọi chi nhánh (chế độ chi nhánh) · SOS 1 / 2 / 3 cả phạm vi. */
   lopCn: { id: number; ma: string; cn: string; sos: [number, number, number]; sos23Ids: number[] }[] | null; sos: [number, number, number];
+  /** NHẸ HƠN PR-3 (`kemViec=1`): `dong` Công việc "Tất cả" cùng request; null = không có quyền xem việc người khác. */
+  viec?: unknown[] | null;
 };
 
 export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
