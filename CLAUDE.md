@@ -84,13 +84,10 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - Không cài thêm plugin/skill (toàn máy hoặc vào repo) khi chưa hỏi chủ sản phẩm: mục tiêu là giảm token, và mỗi plugin
   luôn bật đều tốn token ở mọi phiên.
 
-## Dòng đọc Turso (chủ SP 30/10 — gói Free, mốc 500 triệu dòng / tháng, giữ < 450 triệu ≈ < 15 triệu / ngày)
-- **Chủ SP 06/11: LUÔN tối ưu dòng đọc + tốc độ khi viết code** (mọi PR, không chờ ai nhắc): đọc đúng phạm vi, không câu lặp / quét cả bảng, không request thừa; đo trước → sau trong mô tả PR.
-- Mọi kế hoạch, mockup, code, rà PR: luôn hỏi "việc này đọc bao nhiêu dòng / bao nhiêu câu mỗi lần mở trang?". Chọn cách đọc ít nhất:
-  đọc đúng phạm vi cần (một lớp, một em, một kỳ) — không đọc cả chi nhánh rồi lọc; không gọi lại cùng dữ liệu hai lần trong một trang;
-  sau khi lưu chỉ tải lại phần vừa đổi; số liệu hiển thị dùng dữ liệu đã nạp, không thêm request.
-- Đường API mới / đổi: có trần câu + dòng ở `server/src/tests/tocDoDuong.ts`. Thấy đường vượt ~30 câu hoặc ~2 000 dòng, hay tính năng nào
-  làm tăng đọc đáng kể → **cảnh báo chủ SP** (ước số dòng / ngày) và đề xuất cách nhẹ hơn trước khi làm; ghi trong mô tả PR.
+## Tốc độ + compute (chủ SP 23/11 — THAY luật dòng đọc Turso 30/10 · 06/11)
+- Chủ SP 23/11: "không cần sợ dòng đọc turso nhiều nữa, thấy hợp lí thì làm, để ý đến compute và tốc độ web thôi là ok". Dòng đọc Turso KHÔNG còn là lý do chặn / bớt tính năng; không cần cảnh báo chủ SP về dòng / ngày.
+- Vẫn LUÔN tối ưu **tốc độ trang + compute Netlify** (mọi PR): ít request, ít câu (mỗi câu là một vòng mạng tới Turso), không câu lặp / N+1, không quét cả bảng khi không cần, không tính lại cái đã có; sau khi lưu chỉ tải lại phần vừa đổi.
+- Đường API mới / đổi: vẫn có trần câu + dòng ở `server/src/tests/tocDoDuong.ts` (chặn hồi quy tốc độ); đo trước → sau trong mô tả PR. Đường vượt ~30 câu hoặc thời gian phản hồi tăng rõ → tìm cách gọn hơn trước khi làm.
 
 ## Bộ nhớ khi chạy kiểm
 - `prepare()` của libsql 0.5.29 rò ~4,9 KB mỗi lần gọi (`gc()` không trả). `server/src/db.ts` (PR-BN) nhớ câu lệnh theo
