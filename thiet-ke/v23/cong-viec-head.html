@@ -28,8 +28,8 @@
 .hop-loc { position:absolute; z-index:6; width:300px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 10px 28px var(--bong); padding:12px; display:grid; gap:10px; }
 .cv-luoi .tab { padding:10px 7px 11px; gap:4px; }
 .cv-luoi .tabs { -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent); mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent); }
-.pv-o { display:inline-flex; align-items:center; gap:8px; margin-left:8px; align-self:center; }
-.pv-o .doan button { height:30px; }
+.pv-hang { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:-2px 0 10px; }
+.pv-hang .doan button { height:30px; }
 .dt .doan.pv { width:100%; }
 </style>
 </head>
@@ -47,14 +47,15 @@
 
   <section class="khu" id="h1">
     <h2>H1 · Head · Công việc · "Của GV · 12 quá hạn" · tab Ý thức — bấm dòng Xử lý vi phạm → panel làm thay luôn (1440 tối)</h2>
-    <p class="ghi"><span class="so-mk">1</span>ba nút <b>Của tôi · Của GV · Tất cả</b> ở <b>hàng đầu trang, cạnh tiêu đề</b> (không để góc phải vì panel mở sẽ che), bên dưới là <b>hàng tab loại việc GIỐNG HỆT trang GV</b> (Chấm điểm · Chấm Speaking · Case học thuật · Ý thức · Vận hành · Chờ duyệt) — đổi phạm vi chỉ đổi số trên tab, không đổi bố cục (chủ SP vòng 3); nút "Của GV" mang số quá hạn đỏ · <span class="so-mk">2</span>trong mỗi tab: đầu mục nổi theo việc (Xử lý vi phạm · Phối hợp SOS…) + "n việc · m quá hạn"; <b>chỉ việc quá hạn + sắp đến</b> (≤ 2 ngày) — việc còn xa không hiện ở đây (xem ở "Tất cả") · <span class="so-mk">3</span>dòng: <b>lớp / em · thiếu gì</b> · hạn ("quá hạn n ngày" đỏ / "hạn dd/mm/yyyy" vàng) · <b>tên GV chữ nhỏ cuối dòng</b> · <span class="so-mk">4</span>bấm dòng = mở panel <b>làm được ngay</b> (N64): dải "Bạn đang làm thay GVCN Đinh Thu Hằng" dưới đầu panel, không nút trung gian; lịch sử ghi tên Head · <span class="so-mk">5</span>"Lọc thêm" chọn một GV / loại (H4).</p>
+    <p class="ghi"><span class="so-mk">1</span>ba nút <b>Của tôi · Của GV · Tất cả</b> ở <b>hàng riêng ngay dưới tiêu đề, trên hàng tab</b> — luôn vừa trọn cột danh sách khi panel mở (không cắt chữ, kể cả 1280), bên dưới là <b>hàng tab loại việc GIỐNG HỆT trang GV</b> (Chấm điểm · Chấm Speaking · Case học thuật · Ý thức · Vận hành · Chờ duyệt) — đổi phạm vi chỉ đổi số trên tab, không đổi bố cục (chủ SP vòng 3); nút "Của GV" mang số quá hạn đỏ · <span class="so-mk">2</span>trong mỗi tab: đầu mục nổi theo việc (Xử lý vi phạm · Phối hợp SOS…) + "n việc · m quá hạn"; <b>chỉ việc quá hạn + sắp đến</b> (≤ 2 ngày) — việc còn xa không hiện ở đây (xem ở "Tất cả") · <span class="so-mk">3</span>dòng: <b>lớp / em · thiếu gì</b> · hạn ("quá hạn n ngày" đỏ / "hạn dd/mm/yyyy" vàng) · <b>tên GV chữ nhỏ cuối dòng</b> · <span class="so-mk">4</span>bấm dòng = mở panel <b>làm được ngay</b> (N64): dải "Bạn đang làm thay GVCN Đinh Thu Hằng" dưới đầu panel, không nút trung gian; lịch sử ghi tên Head · <span class="so-mk">5</span>"Lọc thêm" chọn một GV / loại (H4).</p>
     <div class="hang-khung"><figure><figcaption>H1 · 1440 · tối · Của GV, panel làm thay</figcaption>
       <p class="cap-doi">Đổi: "Của GV" liệt kê mọi việc của GV, có nút "Làm thay" → <b>chỉ quá hạn + sắp đến</b>, theo loại, tên GV nhỏ cuối dòng; bấm là làm luôn.</p>
       <div class="man toi" data-web>
         <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Công việc <span class="so-nav">3</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Phân tích</span><span class="m">Test</span>
           <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TM</span>Nguyễn Thanh Mai</span></span></div>
         <div class="noi-dung">
-          <div class="dau-trang"><h1>Công việc</h1><span class="dem">Của GV · <b>18</b> việc · <span class="qua"><b>12</b> quá hạn</span></span><span class="pv-o"><span class="doan pv"><button>Của tôi</button><button class="on">Của GV<b>12</b></button><button>Tất cả</button></span><button class="nut nut-nho"><svg class="ic"><use href="#i-loc"/></svg>Lọc thêm</button></span></div>
+          <div class="dau-trang"><h1>Công việc</h1><span class="dem">Của GV · <b>18</b> việc · <span class="qua"><b>12</b> quá hạn</span></span></div>
+          <div class="pv-hang"><span class="doan pv"><button>Của tôi</button><button class="on">Của GV<b>12</b></button><button>Tất cả</button></span><button class="nut nut-nho"><svg class="ic"><use href="#i-loc"/></svg>Lọc thêm</button></div>
           <div class="cv-luoi"><div>
             <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Chấm điểm <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Chấm Speaking <span class="bd">1</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="true">Ý thức <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Vận hành</button><button class="tab" role="tab" aria-selected="false">Chờ duyệt</button></div>
             <div class="ds">
@@ -98,7 +99,8 @@
         <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Công việc <span class="so-nav">3</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Phân tích</span><span class="m">Test</span>
           <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">TM</span>Nguyễn Thanh Mai</span></span></div>
         <div class="noi-dung">
-          <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>7</b> việc · <span class="qua"><b>1</b> quá hạn</span></span><span class="pv-o"><span class="doan pv"><button class="on">Của tôi</button><button>Của GV<b>12</b></button><button>Tất cả</button></span><button class="nut nut-nho"><svg class="ic"><use href="#i-loc"/></svg>Lọc thêm</button><button class="nut nut-nho">+ Giao việc</button><button class="nut nut-nho">+ Task</button></span></div>
+          <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>7</b> việc · <span class="qua"><b>1</b> quá hạn</span></span></div>
+          <div class="pv-hang"><span class="doan pv"><button class="on">Của tôi</button><button>Của GV<b>12</b></button><button>Tất cả</button></span><button class="nut nut-nho"><svg class="ic"><use href="#i-loc"/></svg>Lọc thêm</button><button class="nut nut-nho">+ Giao việc</button><button class="nut nut-nho">+ Task</button></div>
           <div class="cv-luoi"><div>
             <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Chấm điểm <span class="bd">2</span></button><button class="tab" role="tab" aria-selected="false">Chấm Speaking</button><button class="tab" role="tab" aria-selected="false">Case học thuật</button><button class="tab" role="tab" aria-selected="false">Ý thức</button><button class="tab" role="tab" aria-selected="true">Vận hành <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Chờ duyệt <span class="bd">2</span></button></div>
             <div class="ds">

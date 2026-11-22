@@ -80,3 +80,5 @@ Critique (tự chấm): **35 / 40**, không P0 / P1. P2: Tình hình ở 375 xu�
 - Mỗi lớp **một dòng gập sẵn**: lớp · n việc · hạn sớm nhất (dd/mm/yyyy, vàng / đỏ). Bấm dòng mở **mỗi việc một hàng** (vd "Điểm Mock W3 NOV · thiếu 6 bài", "Báo cáo PH tháng 11 · thiếu nhận xét 4 em") + hạn riêng + người phụ trách nhỏ cuối hàng (nhiều người mỗi người một dòng). Vẽ MB FT 101 đang mở.
 - Chỉ lớp có việc quá hạn / sắp đến (≤ 2 ngày), lớp gấp nhất lên đầu, tối đa 5 + "Xem hết ›" → Công việc đã lọc; lớp chỉ có việc còn xa không hiện. Head / Quản trị dùng cùng kiểu.
 - Bấm: dòng lớp = mở / gập tại chỗ; hàng việc = panel việc đó; mã lớp = hồ sơ lớp; "Xem hết ›" = trang.
+
+- Chủ SP (trong phiên): panel "Điểm chưa đủ" đổi thành **bảng cột cố định**: Lớp 120 · Bài Test 1fr · Thiếu 72 (số, giữa) · Người phụ trách · số bài 230 (mỗi người một dòng) · Hạn 116; hàng tổng "4 lớp · 25" khớp ô.

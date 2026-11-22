@@ -400,3 +400,6 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .dt .vpd-ct { padding-left:12px; }
 .ls li { grid-template-columns:120px minmax(0,1fr); }
 .dt .bac li:not(.ke) .duoi { display:none; }
+/* danh sách trái co theo khung khi panel 58 % mở (1280: ~490 px) — không bị panel đè */
+.man { container-type:inline-size; }
+.man .cv-luoi { grid-template-columns:min(556px, calc(42cqw - 48px)) minmax(0,1fr) !important; }

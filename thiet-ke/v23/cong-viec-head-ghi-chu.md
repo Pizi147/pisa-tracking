@@ -47,3 +47,5 @@ Critique (tự chấm): Công việc Head **35 / 40** · khối Giáo viên **35
 | 3 nút phạm vi đặt chỗ khác, tab loại việc giống GV / TVV | **Của tôi · Của GV · Tất cả** lên hàng đầu trang **cạnh tiêu đề** (không đặt góc phải vì panel mở sẽ che); bên dưới **hàng tab loại việc giống trang GV** (Chấm điểm · Chấm Speaking · Case học thuật · Ý thức · Vận hành · Chờ duyệt) — đổi phạm vi chỉ đổi số trên tab. Áp cho mọi vai có nút phạm vi (QL, Quản trị, CX). Tab dài hơn cột 556 → cuộn ngang, mép phải mờ |
 | 2 nhiều người phụ trách | ở danh sách / panel có cột người phụ trách: mỗi người một dòng; Speaking của Mock = "GV Speaking" |
 | 5 khối GV bỏ "quá hạn lâu nhất" | `tong-quan-head-gv.html` chỉ tên · số quá hạn · loại; số / loại bấm = panel (luật bấm Tổng quan) |
+
+- PTA rà H1: nhóm Của tôi / Của GV / Tất cả bị cắt khi panel mở → chuyển xuống **hàng riêng dưới tiêu đề, trên hàng tab**; danh sách trái co theo khung (`min(556px, 42% − 48px)`) nên ở 1280 không bị panel đè; đã đo 1280: 0 phần tử tràn chữ, tab đang chọn luôn thấy.
