@@ -228,6 +228,13 @@ export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<
   return overall >= nguong ? { overall, dat: true, monTruot: [] } : { overall, dat: false, monTruot: duoi };
 }
 
+/** NHẸ HƠN PR-5 (XM-14): tô màu ô điểm trang Cuối khoá — mốc THẬT, cùng luật `daiCuoiKhoa` (Final: ngưỡng đạt của lớp) và `goiYKyVong` (MT0: mốc chương trình). */
+export const datFinalMon = (ratio: number, nguong: number | null | undefined): boolean => ratio >= (nguong ?? RATIO_PASS_THRESHOLD);
+export const datMt0Mon = (band: number, ct: string | null | undefined): boolean => {
+  const n = NGUONG_KY_VONG[programmeOf(ct) ?? ''];
+  return n !== undefined && band >= n;
+};
+
 /** KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc mà QL chưa chốt → tự Đạt — SUY RA khi đọc (không ghi DB), cùng dáng kết luận đã lưu. */
 export function tuDatKyVong(goiY: GoiYKyVong | null | undefined): { dat: true; nguyenNhan: null; mon: string[]; ghiChu: null; tuDong: true } | null {
   return goiY?.dat ? { dat: true, nguyenNhan: null, mon: [], ghiChu: null, tuDong: true } : null;
