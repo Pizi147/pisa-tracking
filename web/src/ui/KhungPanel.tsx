@@ -147,9 +147,9 @@ export const ThanTrongCot = createContext(false);
  * như `KhungTrongCot` nhưng không đầu panel (một dòng đầu mục `.muc-h` thay), không đệm ngang, chân không dính đáy. Không đổi view, không panel lồng panel.
  */
 export const KhungTrongThe = createContext(false);
-/** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
+/** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …"). */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
-export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode;
+export const DauViecCongViec = createContext<{ loai: string; dai?: ReactNode;
   /** N56 ① (PTA rà #1880): dải "Bạn đang làm thay … · Chỉ xem" — LUÔN thấy: ngay dưới đầu panel, ngoài vùng cuộn (1440), dính đầu vùng nhìn (375). */
   daiLamThay?: ReactNode;
   /** UI-CONG-VIEC (khung A3): đang làm thay — dải sự kiện thêm "Phụ trách {tên}". */
@@ -428,10 +428,9 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
                 ))}
               </p>
             </div>}
-            {cvNgoai?.them}
           </header>
         ) : (
-        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'min-h-[52px] py-1.5'}`} style={{ borderColor: 'var(--line)' }}>
+        <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai ? 'flex-wrap pb-2.5 pt-3' : 'min-h-[52px] py-1.5'}`} style={{ borderColor: 'var(--line)' }}>
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
           {/* GD-20b (PTA rà #1745, chủ SP không nhận chữ cắt): < 640 px tiêu đề dài xuống dòng (không "…"), giữ cùng hàng với ✕ góc phải trên; ≥ 640 một dòng như cũ. */}
@@ -441,7 +440,6 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
           {nutXem}
           {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
           {!lui && <span className="flex shrink-0 max-sm:self-start">{nutDong}</span>}
-          {cvNgoai?.them && <div className="w-full pb-1">{cvNgoai.them}</div>}
         </header>
         )}
         {cvNgoai?.daiLamThay && (

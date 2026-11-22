@@ -99,7 +99,8 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     assert(w.items.every((i: any) => typeof i.lamThay === 'boolean'), 'mỗi việc phải có lamThay');
     const diem = w.items.filter((i: any) => i.group === 'score' && !d.laViecChamCheo(i));   // T18: Chấm Speaking chỉ theo dõi
     assert(diem.every((i: any) => i.lamThay), 'QL nhập hộ được điểm');
-    assert(w.items.filter((i: any) => d.nhomViecCua(i.group) === 'y-thuc' || i.ownerId === null).every((i: any) => !i.lamThay), 'Ý thức / chưa phân công: chỉ theo dõi');
+    /* SUA-QL-PHOIHOP: Phối hợp SOS — QL làm thay (luật 11/11); việc Ý thức khác / chưa phân công vẫn chỉ theo dõi. */
+    assert(w.items.filter((i: any) => (d.nhomViecCua(i.group) === 'y-thuc' && i.group !== 'phoi_hop_sos') || i.ownerId === null).every((i: any) => !i.lamThay), 'Ý thức / chưa phân công: chỉ theo dõi');
     const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' });
     assert(tc.items.filter((i: any) => !i.mine && i.ownerId === null).every((i: any) => i.lamThay === false), '"Tất cả": việc chưa phân công → lamThay false');
     /* Case: SOS_EDIT theo ngữ cảnh Case (như cases.ts) — QL chi nhánh được; GV khác kỹ năng KHÔNG. */
