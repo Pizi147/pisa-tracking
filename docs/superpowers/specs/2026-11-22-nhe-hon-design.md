@@ -78,6 +78,12 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
   - Tổng quan › khối Giáo viên (góc nhìn theo GV, rà cho rõ): mỗi GV một dòng — tên · số việc quá hạn · loại quá hạn (vd 3 chấm · 1 Case) · quá hạn lâu nhất; quá hạn nhiều lên đầu; bấm số mở Công việc "Của GV" lọc đúng GV + loại.
   - Cùng nguồn đếm `/my-work`; không câu theo từng GV.
 - **Luật hạn (chủ SP 22/11, mọi màn):** ngày luôn dd/mm/yyyy; màu chữ thường (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) · đỏ (quá hạn); "quá hạn n ngày" chỉ ở dòng việc / đầu panel việc, bảng báo cáo / hồ sơ chỉ tô màu ngày; mã tuần giữ cho tuần thi / tuần học.
+- **Tổng quan (chủ SP 22/11 "xem lại tổng quan của tất cả các vai trò… trực diện rõ ràng và chuẩn chỉnh hơn", brainstorm — chọn "Hôm nay có gì bất thường?" + bộ ô theo vai):** áp cho Head / QL, Admin, CX, Quản trị (GV / TVV vào thẳng Công việc, BPXL vào Kế hoạch Test — giữ).
+  1. Đầu trang "Tổng quan · chi nhánh · W3 NOV"; ô chọn chi nhánh chỉ khi người xem nhiều chi nhánh.
+  2. Hàng "Cần xử lý" 3–4 ô theo vai, mỗi ô một số, bấm mở đúng danh sách đã lọc ở Công việc; ô = 0 xám "✓ không có". Head: GV quá hạn · Chờ duyệt · Em SOS cần chú ý. Admin: Điểm chưa đủ · Báo cáo PH chưa đủ · Lịch thi chưa chốt · Hồ sơ thiếu. CX: Em SOS 2–3 · Meeting chờ kết quả · Chưa chốt bước tiếp. Quản trị: như Head + ô việc hệ thống (tài khoản / lỗi nhập) khi có.
+  3. Khối chính theo vai: Head / Quản trị — khối Giáo viên (mục Head ở trên) + Chờ duyệt gọn; Admin — "Lớp còn thiếu" 5 lớp đầu (mỗi lớp một dòng thiếu gì) + "Xem hết ›"; CX — "Em cần chú ý" (tên · lớp · SOS / Meeting / bước tiếp còn treo).
+  4. "Tình hình" dưới cùng một hàng gọn: Đạt MT · SOS 1 / 2 / 3 · Thi tháng này · Đạt Target thi thật; nút nhỏ Fast Track / Lớp thường cạnh tiêu đề khối. "Lớp cần chú ý" (Head / Quản trị) chỉ lớp có vấn đề, mỗi lớp một dòng (thay thẻ to).
+  5. Mọi số cùng nguồn Công việc / Phân tích; không thêm câu Turso so với Tổng quan hiện tại (`tong-quan/v5` ~35 câu); theo luật hạn + 60-30-10.
 - **Panel chấm điểm:**
   - Rộng ~75 %. Mỗi lớp một khối, đầu khối nổi rõ: lớp · tuần · kỹ năng · số bài.
   - Lưới: cột tên + ô điểm + kết quả, không khoảng trống thừa.
