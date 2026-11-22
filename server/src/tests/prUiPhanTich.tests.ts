@@ -14,6 +14,7 @@ export async function runPrUiPhanTichTests(t: any) {
   const homNay = demoToday();
   const k = d.khoangMacDinh(homNay);
 
+  const hoSoGv: any = await import('../giaoVien/hoSo.ts');
   check('UI-PHAN-TICH · Báo cáo HV gọi tongQuanV5 với kỳ: kỳ mặc định = Tổng quan (cùng số); kỳ khác vẫn = baoCao().datMt', () => {
     const a = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' });
     const b = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft', ky: { tu: k.tu, den: k.den } });
@@ -57,7 +58,8 @@ export async function runPrUiPhanTichTests(t: any) {
 
   check('UI-PHAN-TICH · Phân tích GV: Đạt MT + thi thật = Kết quả gộp; Case có PA = Tổng quan; ô = số dòng panel', () => {
     const cn = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' }).branchId;
-    const tq = v5.tongQuanV5(P.mbManager, { branchId: cn, ct: 'ft' });
+    /* NHẸ HƠN PR-3: Tổng quan không còn trả `caseGv` — so thẳng với hàm nguồn `caseCoPaTheoGv` (Tổng quan cũ dùng chính hàm này). */
+    const caseGv = hoSoGv.caseCoPaTheoGv(P.mbManager, cn, 'ft');
     const den = d.mondayOfDate(homNay), tu = d.addDaysIso(den, -56);
     const f = { cn, ct: 'ft', tu, den };
     const r = gv.phanTichGiaoVien(P.mbManager, f);
@@ -72,7 +74,7 @@ export async function runPrUiPhanTichTests(t: any) {
         const hs = gv.chiSoHoSoGv(P.mbManager, h.id, { tu, den });
         assert(hs.thiThat.k === 'so' && hs.thiThat.tong >= h.thiThat.tong, `${h.ten}: Pass Target ${JSON.stringify(h.thiThat)} lệch hồ sơ ${JSON.stringify(hs.thiThat)}`);
       }
-      const cp = tq.caseGv[h.id];
+      const cp = caseGv.get(h.id);
       assert(cp ? h.casePa.k === 'so' && h.casePa.dung === cp.coPa && h.casePa.tong === cp.mo : h.casePa.k === 'rong', `${h.ten}: Case có PA lệch Tổng quan`);
       for (const [cot, o] of [['dat-mt', h.datMt]] as const) {
         if (o?.k !== 'so') continue;

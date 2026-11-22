@@ -862,10 +862,10 @@ const COT_TRA_LAI = `SELECT 'tra_lai', t.id, t.student_id, t.phu_trach_id, t.gia
  * `vaiTai(phan, cn)` = người đầu tiên có vai ở chi nhánh `cn` (hoặc toàn hệ thống), null = chi nhánh chưa có người giữ vai đó.
  */
 const nguoiGiuVai = () => nho('gv1:vai-meeting', () => {
-  const m = new Map<string, { u: number; b: number | null }[]>();
-  for (const r of db().prepare(`SELECT r.key, ur.user_id AS u, ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users uu ON uu.id = ur.user_id
+  const m = new Map<string, { u: number; b: number | null; ten: string }[]>();
+  for (const r of db().prepare(`SELECT r.key, ur.user_id AS u, ur.branch_id AS b, uu.full_name AS ten FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users uu ON uu.id = ur.user_id
       WHERE r.key IN ('${VAI_BPXL}', 'cx') AND ur.status = 'active' AND uu.status = 'active' AND uu.deleted_at IS NULL ORDER BY ur.user_id`).all() as any[]) {
-    m.set(r.key, [...(m.get(r.key) ?? []), { u: r.u, b: r.b ?? null }]);
+    m.set(r.key, [...(m.get(r.key) ?? []), { u: r.u, b: r.b ?? null, ten: r.ten }]);
   }
   return m;
 });
@@ -873,6 +873,9 @@ const nguoiGiuVai = () => nho('gv1:vai-meeting', () => {
 const vaiTaiDs = (phan: string, cn: number | null): number[] =>
   (nguoiGiuVai().get(phan === 'xep_lich' ? VAI_BPXL : 'cx') ?? []).filter((x) => x.b === null || x.b === cn).map((x) => x.u);
 const vaiTai = (phan: string, cn: number | null): number | null => vaiTaiDs(phan, cn)[0] ?? null;
+/** NHẸ HƠN PR-6: tên người theo luật của phần Meeting ở chi nhánh `cn` (cùng bộ nhớ `nguoiGiuVai`, 0 câu thêm) — thanh chấm Phối hợp SOS ở hồ sơ. */
+export const tenVaiTai = (phan: string, cn: number | null): string | null =>
+  (nguoiGiuVai().get(phan === 'xep_lich' ? VAI_BPXL : 'cx') ?? []).find((x) => x.b === null || x.b === cn)?.ten ?? null;
 
 /**
  * Việc người khác giao cho tôi (ba bảng có `phu_trach_id = tôi`, đi chỉ mục một phần) + phần Meeting (giao cho tôi; theo luật ở chi nhánh tôi có vai

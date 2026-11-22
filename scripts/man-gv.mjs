@@ -14,9 +14,9 @@ const M = 'web/src/modules/';
 const VAO = ['worklist/OverviewPage', 'fasttrack/MockDetailPage', 'students/StudentsPage', 'classes/ClassOverviewPage', 'students/StudentDetailPage',
   'students/LuuTruPage', 'cases/CaseBoardPage', 'test/TestPage', 'congViec/CongViecPage', 'giaoVien/HoSoGiaoVienPage', 'huongDan/HuongDanPage']
   .map((f) => `${M}${f}.tsx`);
-/** Trang / tab vai GV không có (seed `teacher`: không plan.week, meeting, request.approve, analysis; MockTestAdmin = vai Admin). */
+/** Trang / tab vai GV không có (seed `teacher`: không plan.week, meeting, request.approve, analysis; Tổng quan Admin trong OverviewPage). */
 const DUNG = new Set(['test/KeHoachTestTab', 'worklist/MgmtTasksPage', 'worklist/MeetingPage', 'duyet/HopChoDuyet', 'phanTich/PhanTichPage',
-  'platform/AdminPage', 'worklist/MockTestAdmin'].map((f) => `${M}${f}.tsx`));
+  'platform/AdminPage',].map((f) => `${M}${f}.tsx`));
 
 export function tepManGv() {
   const da = new Set();

@@ -6,10 +6,8 @@ import type { Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
-import { treCham } from './tongQuanQl.ts';
 import { tapDatMt, tapKqMt, tapThiThangNayLop } from '../phanTich/baoCao.ts';
 import type { MetricRow } from './metrics.ts';
-import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 
 /**
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — MỘT GET cho QL / QT / CX. KHÔNG ĐẾM LẠI: mọi số gọi CHÍNH hàm tập của Báo cáo
@@ -21,6 +19,8 @@ type TyLeV5 = { dat: number; mau: number };
 export type DongLopV5 = {
   id: number; khoa: string; ma: string; hv: number; gvcn: string | null;
   datMt: TyLeV5 | null; sos: [number, number, number]; caseChuaPa: number; thiThangNay: number;
+  /** NHẸ HƠN PR-3: id em SOS 2–3 của lớp (tập sẵn trong bộ nhớ của `bangChiNhanh`) — panel "Em SOS cần chú ý" đọc đúng các em này khi bấm. */
+  sos23Ids: number[];
 };
 export type DongCnV5 = {
   id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number };
@@ -28,24 +28,26 @@ export type DongCnV5 = {
   /** TQ-SOS-CN: id em của ô SOS 2–3 (panel đọc đúng các em này khi bấm). */
   sos23Ids: number[]; caseChuaPa: number;
 };
+/** NHẸ HƠN PR-3: lớp của MỌI chi nhánh (chế độ chi nhánh — Quản trị "Toàn hệ thống") cho cột SOS 2–3 của "Lớp cần chú ý"; con có sẵn của `bangChiNhanh`, +0 câu. */
+export type DongLopCnV5 = { id: number; ma: string; cn: string; sos: [number, number, number]; sos23Ids: number[] };
 export type TongQuanV5 = {
   homNay: string; ky: { tu: string; den: string }; ct: ChuongTrinh; branchId: number | null; tenChiNhanh: string | null;
   datMt: (TyLeV5 & { chuaDu: number }) | null; casePa: { coPa: number; mo: number; chuaPa: number }; thiThangNay: number;
   thiThat: TyLeV5 | null;
   /** Chế độ lớp (một chi nhánh) — Lớp cần chú ý. */ lop: DongLopV5[] | null;
   /** Chế độ chi nhánh (QT / CX chưa chọn chi nhánh). */ chiNhanh: DongCnV5[] | null;
-  tre: ReturnType<typeof treCham>['dong'];
-  /** XM-2 (chủ SP 23/10): "Case có PA" theo người phụ trách (chế độ lớp) — mẫu = Case đang mở của GV (`caseMoTheoChu`), tử = mẫu trừ Case chưa chốt PA. */
-  caseGv: Record<number, { coPa: number; mo: number }>;
+  /** NHẸ HƠN PR-3: lớp của mọi chi nhánh — chỉ chế độ chi nhánh. */ lopCn: DongLopCnV5[] | null;
+  /** NHẸ HƠN PR-3: SOS 1 · 2 · 3 hiện tại của cả phạm vi (khối Tình hình). */ sos: [number, number, number];
 };
 
 const tang = (m: Map<number, number>, k: number | undefined) => { if (k !== undefined) m.set(k, (m.get(k) ?? 0) + 1); };
 
-export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; ky?: { tu: string; den: string } | null }): TongQuanV5 {
+export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; ky?: { tu: string; den: string } | null;
+  /** NHẸ HƠN PR-3 (PTA rà #2002, Turso): Tổng quan v23 chỉ hiện SOS + Tình hình — bảng không tính Case / dưới kỳ vọng / nợ điểm (các số đó = 0 trong kết quả). */ gon?: boolean }): TongQuanV5 {
   const homNay = demoToday();
   /* UI-PHAN-TICH: Báo cáo HV gọi CHÍNH hàm này với khoảng đang chọn — số Báo cáo = số Tổng quan khi cùng kỳ. */
   const ky = f.ky ?? khoangMacDinh(homNay);
-  const bang = bangChiNhanh(p, { branchId: f.branchId ?? null, ct: f.ct, chuY: true });
+  const bang = bangChiNhanh(p, { branchId: f.branchId ?? null, ct: f.ct, chuY: true, chiSos: f.gon });
   const ft = f.ct === 'ft';
   const loc = { branchId: bang.branchId, ct: f.ct, tu: ky.tu, den: ky.den };
   const dm = ft ? tapDatMt(p, loc) : null;
@@ -68,14 +70,13 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
   const thiThat: TyLeV5 | null = tt ? [...tt.values()].reduce((a, e) => (e.cot === 'chua-du' ? a : { dat: a.dat + (e.cot === 'dat' ? 1 : 0), mau: a.mau + 1 }), { dat: 0, mau: 0 }) : null;
   let lop: DongLopV5[] | null = null;
   let chiNhanh: DongCnV5[] | null = null;
-  const caseGv: TongQuanV5['caseGv'] = {};
+  let lopCn: DongLopCnV5[] | null = null;
   if (bang.cheDo === 'lop') {
     const s = theo((l) => l);
     lop = bang.hang.map((h) => ({
       id: h.id, khoa: h.khoa, ma: h.nhan, hv: h.o.hocVien.n, gvcn: h.gvcn ?? null,
-      datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id),
+      datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id), sos23Ids: h.sos23 ?? [],
     }));
-    if (bang.branchId) for (const [gv, x] of caseCoPaTheoGv(p, bang.branchId, f.ct)) caseGv[gv] = x;
   } else {
     const s = theo((l) => cnCua.get(l));
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();
@@ -90,15 +91,15 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
       thiThat: tt ? { dat: ttDat.get(h.id) ?? 0, mau: ttMau.get(h.id) ?? 0 } : null,
       thiThangNay: s.thi(h.id), sos23: h.o.sos2.n + h.o.sos3.n, sos23Ids: h.sos23 ?? [], caseChuaPa: h.o.caseChuaChot.n,
     }));
+    lopCn = bang.hang.flatMap((h) => (h.lop ?? []).map((l) => ({ id: l.id, ma: l.nhan, cn: h.nhan, sos: [l.o.sos1.n, l.o.sos2.n, l.o.sos3.n] as [number, number, number], sos23Ids: l.sos23 ?? [] })));
   }
   const mo = bang.tong.caseMo.n, chuaPa = bang.tong.caseChuaChot.n;
   return {
     homNay, ky: { tu: ky.tu, den: ky.den }, ct: f.ct, branchId: bang.branchId, tenChiNhanh: bang.tenChiNhanh,
     datMt: dm ? { dat: dm.dat.size, mau: dm.mau.size, chuaDu: dm.chuaDu.size } : null,
     casePa: { coPa: Math.max(0, mo - chuaPa), mo, chuaPa }, thiThangNay: thi.size, thiThat,
-    lop, chiNhanh,
-    tre: bang.cheDo === 'lop' ? treCham(p, bang.branchId, f.ct).dong : [],
-    caseGv,
+    lop, chiNhanh, lopCn,
+    sos: [bang.tong.sos1.n, bang.tong.sos2.n, bang.tong.sos3.n],
   };
 }
 

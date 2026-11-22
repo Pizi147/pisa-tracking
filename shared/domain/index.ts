@@ -125,3 +125,4 @@ export * from './quyCheVanHanh.ts';
 export * from './ganDay.ts';
 export * from './chuDaGhi.ts';
 export * from './congViecNhe.ts';
+export * from './tongQuanVai.ts';

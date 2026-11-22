@@ -45,7 +45,11 @@ export type CoordAction = {
     viecId: number; trangThai: 'mo' | 'xong' | 'bo'; han: string; hanMacDinh: string; hanChon: string | null; quaHan: boolean; tvv: string | null;
     lan: { ketQua: string; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null } | null; soLan: number; coTheGhi: boolean; coTheSuaHan: boolean; toiThieu?: number;
   } | null;
+  /** NHẸ HƠN PR-6 (N58): hai phần Xếp lịch · Kết quả của Meeting CX/GĐCN đã xác nhận (máy chủ nạp theo lô). */
+  meeting?: { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null } | null;
 };
+/** Khớp `PhanMeetingTom` ở `server/src/yThuc/phoiHop.ts`. */
+export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLuc: string | null; nguoi: string | null; vai: string };
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;
   classCode: string | null; sosLevel: number | null; skillLabels: string[];

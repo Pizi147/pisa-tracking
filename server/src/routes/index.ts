@@ -2436,9 +2436,17 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
     const k = khoangOf(req) ?? khoangChiNhanhMacDinh(demoToday());
     return chiNhanhSvc.chiNhanhV2(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den });
   }
-  const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
+  const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req), gon: qStr(req, 'gon') === '1' });
   /* QUET-THEO-KY Q3: Báo cáo HV MỘT request — kèm CHÍNH `/phan-tich/bao-cao` (cùng hàm, cùng quyền); dưới `/tong-quan` để `invalidate('/tong-quan')` vẫn trúng. */
-  return qStr(req, 'kemBaoCao') === '1' ? { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) } : tq;
+  if (qStr(req, 'kemBaoCao') === '1') return { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) };
+  /* NHẸ HƠN PR-3 (PTA rà #2002, Turso): Tổng quan Head / Quản trị / Admin — kèm CHÍNH `dong` Công việc "Tất cả" (`myWork` nguoi=tat-ca, cùng hàm, cùng quyền
+     route `/my-work`) trong CÙNG request: lượt / lịch kỹ năng / điểm đọc một lần cho cả SOS lẫn việc (bộ nhớ request `nhoTheoId`). */
+  if (qStr(req, 'kemViec') === '1') {
+    const p = principalOf(req);
+    if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null };
+    return { ...tq, viec: nheMyWork(myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true })).dong };
+  }
+  return tq;
 }));
 /** Phân tích V2 · Chi nhánh: panel ô mới — `o` = vao · ket-thuc · chua-co-kq (em). Dưới `/tong-quan` như GET của báo cáo. */
 api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {

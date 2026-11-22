@@ -70,21 +70,23 @@ function napTruocBang(p: Principal, base: { branchId: number | null; program: Ch
   loadBundle(kem, { boCase: true });
 }
 
-function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }) {
+function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean; chiSos?: boolean }) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
   if (scope.none) throw forbidden('Bảng này dành cho Head.');
   const conn = db();
   /* Một chi nhánh: đã chọn, hoặc phạm vi chỉ có một chi nhánh (P5 "1 CN thì ưu tiên bảng lớp"). */
   const branchId = f.branchId ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   const base = { branchId, program: f.ct };
-  napTruocBang(p, base, f.chuY);
-  const duoi = metricSet(p, 'hv-duoi-ky-vong-mon', base);
+  napTruocBang(p, base, f.chuY && !f.chiSos);
+  /* NHẸ HƠN PR-3 (`chiSos`, Tổng quan v23): chỉ cần SOS 1 / 2 / 3 theo lớp — bỏ các tập trang không hiện (dưới kỳ vọng, Case, độ phủ, nợ điểm, đã thi chờ KQ): ô của chúng = 0. */
+  const rong = { ids: [] as number[], numeratorIds: [] as number[], byKind: {} as Record<string, number[]> };
+  const duoi = f.chiSos ? rong : metricSet(p, 'hv-duoi-ky-vong-mon', base);
   const sos = metricSet(p, 'hv-sos-hien-tai', base);
-  const caseMo = metricSet(p, 'case-mo', base);
-  const thieu = metricSet(p, 'case-thieu-pa', base);
-  const phu = metricSet(p, 'do-phu-danh-gia', base);
+  const caseMo = f.chiSos ? rong : metricSet(p, 'case-mo', base);
+  const thieu = f.chiSos ? rong : metricSet(p, 'case-thieu-pa', base);
+  const phu = f.chiSos ? rong : metricSet(p, 'do-phu-danh-gia', base);
   /* OV-15d: Case chưa chốt PA — CÙNG tập ô số Tổng quan (`case-cho-xac-dinh-nguyen-nhan`); HV = em của các Case đó (một câu). */
-  const chot = metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', base);
+  const chot = f.chiSos ? rong : metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', base);
 
   const where = [`c.status = 'active'`];
   const args: unknown[] = [];
@@ -141,7 +143,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   caseMoIds.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
   sDu.forEach((x) => tongTap.duDuLieu.add(x)); sMau.forEach((x) => tongTap.duDuLieuMau.add(x));
   chotIds.forEach((x) => { tongTap.caseChuaChot.add(x); if (emCase.get(x)) tongTap.caseChuaChotHv.add(emCase.get(x)!); });
-  if (f.chuY) chiaCotChuY(p, base, f.ct === 'ft', tapLop, tongTap, sSos, today);
+  if (f.chuY) chiaCotChuY(p, base, f.ct === 'ft', tapLop, tongTap, sSos, today, f.chiSos);
 
   /* UX-1: phần của tập gốc không rơi vào hàng lớp nào (Case / em của lớp đã kết thúc) gom vào MỘT hàng — Σ hàng = hàng tổng. */
   const conLai = tapRong();
@@ -199,7 +201,7 @@ export function tapCaseQl(caseMo: readonly number[], chot: { ids: number[]; byKi
 }
 
 /** `branchId` là chi nhánh ĐÃ GIẢI (đã chọn, hoặc QL một chi nhánh được server tự khoanh) — web dùng nó cho bảng Theo giáo viên. */
-export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }): {
+export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean; /** NHẸ HƠN PR-3: chỉ SOS (Tổng quan v23). */ chiSos?: boolean }): {
   cheDo: 'chi-nhanh' | 'lop'; hang: HangBang[]; conLai: HangBang | null; tong: Record<CotBang, OBang>; tenChiNhanh: string | null; branchId: number | null;
   /** OV-15h1: chỉ ở chế độ chú ý — số Case mỗi nhóm `NHOM_CASE_CHUA_CHOT`, cộng = `tong.caseChuaChot`. */
   phanRa?: Record<string, number> | null;
@@ -207,7 +209,7 @@ export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: Ch
   const r = tinh(p, f);
   const gon = (h: any): HangBang => ({
     khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon), ...('gvcn' in h ? { gvcn: h.gvcn } : {}),
-    ...(f.chuY && h.loai === 'chi-nhanh' ? { sos23: [...new Set([...h.tap.sos2, ...h.tap.sos3])].sort((a: number, b: number) => a - b) } : {}),
+    ...(f.chuY ? { sos23: [...new Set([...h.tap.sos2, ...h.tap.sos3])].sort((a: number, b: number) => a - b) } : {}),
   });
   return { cheDo: r.cheDo, hang: r.hang.map(gon), conLai: r.hangConLai && gon(r.hangConLai), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId,
     ...(f.chuY ? { phanRa: r.phanRa } : {}) };
@@ -275,7 +277,7 @@ export function sos23ChiNhanh(p: Principal, f: { branchId: number | null; ids: r
  *  · SOS 1 / 2 / 3: mức của lượt mới nhất hợp lệ — cùng `latestAttempts` của `hv-sos-hien-tai` (nhớ trong request), Σ = cột SOS;
  *  · Đã thi · chờ KQ (FT): `sauThiTheoEm` (cùng nhãn bảng lớp Học viên & Lớp, OV-14b) trên dân số của bảng.
  */
-function chiaCotChuY(p: Principal, base: { branchId: number | null; program: ChuongTrinh }, ft: boolean, tapLop: Map<number, Tap>, tong: Tap, sSos: Set<number>, today: string) {
+function chiaCotChuY(p: Principal, base: { branchId: number | null; program: ChuongTrinh }, ft: boolean, tapLop: Map<number, Tap>, tong: Tap, sSos: Set<number>, today: string, chiSos?: boolean) {
   const theoHv = (cot: CotBang, hv: Iterable<number>) => {
     const s = new Set(hv);
     for (const x of s) tong[cot].add(x);
@@ -285,6 +287,7 @@ function chiaCotChuY(p: Principal, base: { branchId: number | null; program: Chu
   for (const [cot, muc] of [['sos1', 1], ['sos2', 2], ['sos3', 3]] as const) {
     theoHv(cot, [...sSos].filter((sid) => Math.min(3, ev.get(sid)?.sosLevel ?? 0) === muc));
   }
+  if (chiSos) return;
   if (ft) {
     theoHv('daThiChoKq', [...sauThiTheoEm([...tong.hocVien], today)].filter(([, x]) => x.giaiDoan === 'da_thi_cho_kq').map(([sid]) => sid));
   }

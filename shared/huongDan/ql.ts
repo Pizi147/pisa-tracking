@@ -68,7 +68,7 @@ export const HD_QL: HuongDan = {
     /* ---------------------------------------------------------------- Điểm */
     {
       id: 'nhap-ho', ten: 'Nhập hộ bài quá hạn', nhom: 'diem',
-      loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Bài quá hạn', duong: '/', chi: { hd: 'tq-gv-tre', duong: '/', chu: 'Bấm số ở cột <b>Bài quá hạn</b> (Tới hôm nay) của GV.' } },
+      loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Bài quá hạn', duong: '/', chi: { hd: 'tq-gv', duong: '/', chu: 'Bấm số ở cột <b>Bài quá hạn</b> (Tới hôm nay) của GV.' } },
       loiTat: ['cong-viec', 'p-nhap-diem'], tatThem: ['Công việc › Của GV › Chấm điểm'], cung: 'mở cùng lưới nhập.',
       buoc: ['Ở <b>Tổng quan</b>, bảng <b>Giáo viên</b>: bấm số ở cột <b>Bài quá hạn</b> (nhóm <b>Tới hôm nay</b>).', 'Panel bài quá hạn của GV: mỗi dòng lớp · lượt · kỹ năng, xem em còn trống.',
         'Bấm <b>Nhập hộ</b> ở dòng, gõ điểm; em vắng gõ <b>-</b>, rồi lưu.'],
@@ -474,7 +474,7 @@ export const HD_QL: HuongDan = {
       khongLam: [DEN_KH, { ten: 'Xem thống kê theo kỳ', den: { chu: 'Phân tích', duong: '/phan-tich' } }],
       muc: [
         { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Chờ duyệt ›</b> · <b>Đạt MT</b> · <b>Case chưa có PA</b> · <b>Thi tháng này</b>; số 0 không bấm.', 'Bấm số mở danh sách ngay tại trang; ô <b>Case chưa có PA</b>: số nhỏ "trong n Case đang mở" mở danh sách Case đang mở.', 'Panel Case có dải bốn bước (Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối): bấm bước để lọc, <b>Bỏ lọc bước</b> về bộ lọc ban đầu. Panel <b>Bài quá hạn</b> theo GV có biểu tượng hai tờ giấy: chép chữ nhắc GV để dán Zalo (không có tên học viên).'],
-          chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
+          chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'tq-duyet', viec: 'duyet', ten: 'Chờ duyệt', buoc: ['<b>Chờ duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>.', '<b>+ n yêu cầu</b> mở thêm ngay tại chỗ; ô <b>Chờ duyệt ›</b> mở Công việc.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
         { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Giáo viên', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS hiện tại, Case chưa có PA, Thi tháng này; 5 lớp cần chú ý nhất. Số trong hộp viền bấm được.', '<b>Giáo viên</b> · <b>Hành chính</b>: <b>Việc</b> và <b>Chấm Test</b> (% đúng hạn · Chưa làm — bấm % xem Đúng hạn / Làm muộn) · <b>Tới hôm nay</b> (Bài quá hạn — bấm để nhập hộ); hàng cuối <b>S chéo chung</b>. <b>Học thuật</b>: Đạt kỳ vọng Test · Tiến bộ · Case chưa có PA.'],
