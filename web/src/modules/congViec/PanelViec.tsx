@@ -38,6 +38,7 @@ import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
 import { KhoiGiaoViec, useGiaoViec } from './KhoiGiaoViec.tsx';
+import { PanelNhapDiemTuan, chanViecTiep, hetViec } from './PanelNhapDiemTuan.tsx';
 const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
 const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelSauThi));
 const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
@@ -230,14 +231,6 @@ const conBaiLuoi = (d: BangTheoLuot, chiAttempt: ReadonlySet<number> | null, kns
     .flatMap((r) => r.skillSchedule.filter((x) => cot(x.skill) && oThuong(r, x.skill, homNay).trong)).length;
 };
 
-/** Chân panel việc chấm: "Việc tiếp ›" (nổi bật khi đã đủ phần người xem); không có việc kế → không chân. */
-const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) => (onTiep ? {
-  huy: null,
-  /* Nút hành động kế (không phải nút lựa chọn — NEN B3): nổi bật khi đã đủ phần người xem. */
-  chinh: <button type="button" className={xong ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button>,
-} : undefined);
-const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
-
 export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false, nhapHo = false }: {
   /** QC-Q82: "Bạn nhập hộ · " đầu dòng quy chế — nơi gọi không có dải "Bạn đang làm thay" (panel GV trễ chấm). */
   nhapHo?: boolean;
@@ -314,85 +307,6 @@ function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void;
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="luot" onChanged={() => { reload(); onDaLam(); }} />}
       </div>
-    </KhungPanel>
-  );
-}
-
-/**
- * NHẬP ĐIỂM THEO TUẦN THI (OV-13c, Q4; mockup OV-13 §3a): một dòng = một tuần thi của một người giữ việc, có thể nhiều lớp. Panel = lưới điểm của
- * tuần đó từng lớp (`LuoiNhung`, cùng lưới Lịch Test — luật chấm không đổi), lớp đầu mở sẵn. Danh sách lớp giữ như lúc mở: lớp vừa nhập xong
- * không biến khỏi panel khi Công việc tải lại.
- */
-function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem; tuMo: boolean; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
-  const { homNay } = useNgayNghiepVu();
-  const [lop] = useState(() => (it.con?.length ? it.con : [it]));
-  /* R1-LUU-TIEP: hết bài của người xem ở một lớp → "Lớp tiếp: {mã} ›" (lớp kế của việc, theo thứ tự) mở lớp đó tại panel, con trỏ ô trống đầu;
-     lớp cuối → "Việc tiếp ›". ponytail: lớp kế theo thứ tự, không đếm bài còn thiếu (dữ liệu từng lớp nằm trong `LuoiNhung`) — lớp kế đã xong thì hộp báo hết ngay. */
-  const [conTro, setConTro] = useState<string | null>(null);
-  const hetLop = (x: WorkItem) => () => {
-    const ke = lop[lop.indexOf(x) + 1];
-    if (!ke) return hetViec(onTiep)();
-    return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode ?? '' }), onClick: () => { setMo(new Set([ke.key])); setConTro(ke.key); } };
-  };
-  /* GD-3 (mockup v21 K2): một lớp → tiêu đề = tên việc ("Nhập điểm Listening, Reading"), dòng 2 "lớp · tuần · n bài", lưới ngay dưới (không hàng gập lớp). */
-  const motLop = lop.length === 1;
-  /* Mockup K2 dòng 2 "MB FT 104 · MT1 · W3 SEP · còn 4 / 10 bài": cùng URL lưới `LuoiNhung` đang đọc (`useApi` gộp GET đang bay / vừa xem) → 0 request thêm.
-     Bài = ô kỹ năng của việc ở tuần thi này, sửa được; còn = `conThieuFt`. MT ghi khi cả lớp cùng một lượt. */
-  const dsLop = useApi<Cham>(motLop && lop[0].classId ? duongCham(lop[0].classId, { periodId: lop[0].periodId ?? null, kind: lop[0].kind ?? null }) : null, [motLop]).data;
-  const demBai = useMemo(() => {
-    const x = lop[0]; const kns = x.kns ?? (x.kn ? [x.kn] : null);
-    if (!dsLop?.ft || !it.tuanThi) return null;
-    /* NT-SUA: `demBaiViec` — cùng bộ lọc với lưới (em của việc, không ngừng học) → "còn n / m" khớp dòng việc "n bài". */
-    const o = demBaiViec(dsLop.ft.rows, { em: emCuaViec(x), tuan: it.tuanThi, cot: (s) => !kns || kns.some((k) => khopKn(s, k)) });
-    if (!o.tong) return null;
-    return { con: o.con, tong: o.tong, mt: o.mt.length === 1 ? `MT${o.mt[0]}` : null };
-  }, [dsLop, it.tuanThi]);   // eslint-disable-line react-hooks/exhaustive-deps
-  /* A3-05: người xem không nhập được (CX) — tiêu đề "Điểm …", không mời "Nhập điểm"; lưới vẫn theo quyền máy chủ từng ô (chỉ xem). */
-  const chiXem = !!useContext(DauViecCongViec)?.chiXem;
-  const [tieuDe] = useState(() => (chiXem ? (motLop && it.tieuDe ? t('Điểm {skills}', { skills: dich(it.tieuDe.replace(/^Nhập điểm /, '')) }) : t('Điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }))
-    : motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
-  const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
-  const periodId = lop[0].periodId ?? null;
-  const dau = dauViec({
-    han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
-    ngCanh: (
-      <Link className="link" to={duongLichTest({ periodId })}>
-        {motLop ? [lop[0].classCode, demBai?.mt, it.tuanThi ? tuanLich(it.tuanThi) : null].filter(Boolean).join(' · ') : t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {motLop && demBai ? t('còn {con} / {tong} bài', demBai) : t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
-      </Link>
-    ),
-  });
-  const luoiLop = (x: WorkItem, lopKhung: string) => (
-    <LuoiTrongPanel className={lopKhung}>
-      <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
-                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
-                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
-                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
-    </LuoiTrongPanel>
-  );
-  return (
-    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
-      {chiXem && <p className="m-0 pt-2 text-[13px] text-dim">{t('Chỉ xem · GV / Head nhập')}</p>}
-      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
-      <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
-        {lop.map((x) => {
-          const dangMo = mo.has(x.key);
-          return (
-            <li key={x.key}>
-              <button type="button" aria-expanded={dangMo} onClick={() => setMo((s) => { const n = new Set(s); if (dangMo) n.delete(x.key); else n.add(x.key); return n; })}
-                className="flex min-h-[44px] w-full appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2.5 text-left sm:min-h-0">
-                <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`shrink-0 transition-transform ${dangMo ? 'rotate-90' : ''}`}>
-                  <path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <b className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-100">{x.classCode}</b>
-                <span className="min-w-0 truncate text-xs text-slate-400">{dich(x.contextLabel ?? '')} · {dich(x.phu ?? x.reason)} · {t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
-              </button>
-              {dangMo && luoiLop(x, 'luoi-trong-panel px-2 pb-2')}
-            </li>
-          );
-        })}
-      </ul>
-      )}
     </KhungPanel>
   );
 }

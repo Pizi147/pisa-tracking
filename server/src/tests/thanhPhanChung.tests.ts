@@ -547,7 +547,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(caLop.con === 6 && caLop.tong === 6, `việc cả lớp bỏ em ngừng học: ${JSON.stringify(caLop)}`);
     const sau = d.demBaiViec([{ ...rows[0], cells: cells(6.5) }, rows[1]] as any, { em: [1, 2], tuan: '2026-07-06', cot });
     assert(sau.con === 2 && sau.tong === 4, `nhập xong một em: còn 2 / 4: ${JSON.stringify(sau)}`);
-    assert(/demBaiViec\(dsLop\.ft\.rows, \{ em: emCuaViec\(x\)/.test(doc('web/src/modules/congViec/PanelViec.tsx')), 'đầu panel dùng demBaiViec với em của việc');
+    assert(/demBaiViec\(dsLop\.ft\.rows, \{ em: emCuaViec\(x\)/.test(doc('web/src/modules/congViec/PanelNhapDiemTuan.tsx')), 'đầu panel dùng demBaiViec với em của việc');
   });
 
   console.log('\nGD-18 · Chữ đồng bộ toàn web');

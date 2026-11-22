@@ -69,7 +69,7 @@ export async function runPrMtChamTests(t: any) {
 
   check('MT-CHAM ③ PanelViec: việc chấm có tuần (kể cả chấm chéo) mở PanelNhapDiemTuan, lưới lọc em có bài tuần; "Cả lớp" giữ', () => {
     const goc = path.join(ROOT, 'web/src');
-    const pv = fs.readFileSync(path.join(goc, 'modules/congViec/PanelViec.tsx'), 'utf8');
+    const pv = fs.readFileSync(path.join(goc, 'modules/congViec/PanelViec.tsx'), 'utf8') + fs.readFileSync(path.join(goc, 'modules/congViec/PanelNhapDiemTuan.tsx'), 'utf8');   // NHẸ HƠN PR-4: panel tuần tách tệp riêng
     assert(/if \(it\.con \|\| it\.periodId\) return <PanelNhapDiemTuan/.test(pv), 'việc có tuần chưa mở panel tuần');
     assert(!/!laViecChamCheo\(it\) && \(it\.con \|\| it\.periodId\)/.test(pv), 'chấm chéo còn mở bảng cả lớp theo đợt');
     assert(/emCoBaiTuan=\{\(x\.kind \?\? 'mock'\) === 'mock'\}/.test(pv), 'panel tuần chưa lọc em có bài tuần');
