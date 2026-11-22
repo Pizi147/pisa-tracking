@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, NUT_DONG, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
@@ -93,7 +94,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const em = { id: it.studentId!, ten: it.studentName };
   const tieuDe = laMeeting ? t('Meeting CX/GĐCN') : it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
-  /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
+  /* NHẸ HƠN PR-2b (v23 P1 `.meta`, luật hạn): đầu panel ghi hạn "21/11/2026 · quá hạn n ngày" (chỗ DUY NHẤT trong panel có "quá hạn n ngày");
+     khối Phụ trách · Hạn chỉ tô màu ngày. Hạn tạm dừng (chờ GV sửa) / việc đã đóng → không ghi. */
   /* TL-2 (N61, PTA chốt): Trả lại chỉ khi máy chủ cho (việc còn mở, phía TVV) + không đang chờ Head duyệt thu hồi + không mở từ tab theo dõi. */
   const traLaiDuoc = !!v?.coTheTraLai && !v.thuHoiCho && !chiXem;
   const dsMo = v?.traLai ?? [];
@@ -103,7 +105,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     ...(v?.coTheGhi && !bo ? [{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }] : []),
   ];
   const dau = {
-    ...dauViec({ em, lop: it.classCode }),
+    ...dauViec({ em, lop: it.classCode, han: v && v.trangThai === 'mo' && !v.choGvSua ? <ChipHan chuThuong loai="viec-van-hanh" han={v.han} /> : null }),
     ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} lopNut={NUT_DONG} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng · NHẸ HƠN: cùng ô 36 × 36 với ✕
   };
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
@@ -218,6 +220,9 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             </div>
           </HopNho>
         )}
+        {/* NHẸ HƠN PR-2b (chủ SP 22/11 mục 6.4): Theo dõi chung của việc Meeting lên đầu, trước các phần. */}
+        {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
+          dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
         {/* GV-2 (mockup v22 G1 / G8b): khối ba dòng ĐẦU thân panel. Meeting: hai phần (Xếp lịch họp · Kết quả meeting) trước, rồi phần "Báo PH" của TVV. */}
         {laMeeting ? <>
           {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
@@ -277,8 +282,6 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             </Truong>
           </>
         )}
-        {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
-          dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
         {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n"; chưa có lần ghi thì không vẽ (lời 40). Chủ SP 22/11 ý 12: luôn gập sẵn. */}
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
