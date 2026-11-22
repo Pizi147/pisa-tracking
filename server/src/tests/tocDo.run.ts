@@ -1539,11 +1539,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Đã kiểm (trước HEAD / DEM-VIEC): trả chữ gợi ý cũ → mọi băm trùng ảnh cũ. Trước: QT tat-ca 0b4978eb4ee4b434 */
     /* SO-LIEU-4 (N63 ③, AUDIT-2111 B2-02): chụp lại 'QL toi' / 'QL tat-ca' — đổi CÓ CHỦ Ý: việc Vận hành KHÔNG hạng mục giao cho chính Head nay vào /my-work
        (Việc được giao, +3 dòng `mgmt:` của seed; câu giữ 34 / 51). Trước: QL toi bae55443ea652c0f, QL tat-ca 22a8a1f30e44bec6 */
-    'QL toi': '71b11266cf6b5ad1', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
+    /* SUA-2211-B (chủ SP 22/11 ý 9 "Đồng bộ hết chia ra từng lớp đi"): chụp lại 8 băm (QL / QT toi, ADMIN giữ) — đổi CÓ CHỦ Ý: Nhập điểm theo tuần thi gom TRONG MỘT lớp
+       (khoá `gop:score:t…:c{lớp}`), không còn dòng "n lớp"; dòng một lớp không mang mã lớp ở `contextLabel`. Diff /my-work chỉ ở `khoaGopCua` + nhánh dòng tuần của `gopViecTheoLop`.
+       Trước: GVCN toi edb4cf790b2ddc32, GVBM toi c0018a4d4207215e, GVCN_THUONG toi edb4cf790b2ddc32, QL tat-ca 4d85cbb2cd43b54f, QT tat-ca aae3d57d2cc9e595, QT tat-ca cn f66551b0430a85b6, QL gvcn e131a8cc32044548, GVS toi 5277337aca746e96 */
+    'QL toi': '71b11266cf6b5ad1', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '6f1b3ccac5a948f8', 'GVBM toi': '5fba8a27d45206ab',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '4d85cbb2cd43b54f', 'QT tat-ca': 'aae3d57d2cc9e595',
-    'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
+    'GVCN_THUONG toi': '6f1b3ccac5a948f8', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '823f4eee67dd0f26', 'QT tat-ca': 'dc1d7094099dce13',
+    'QT tat-ca cn': 'e87ba722c330cfd9', 'QL gvcn': '00ad6d45dc70a2b9', 'GVS toi': '10640e5b9d61b1a6',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

@@ -21,6 +21,7 @@ export const EN_UI_CON_LAI = {
   'Dạy được {mon} · {cn}': 'Can teach {mon} · {cn}',
   'Chưa có kỹ năng {mon}': 'No {mon} skill yet',
   'Head, Admin và CX': 'Heads, Admins and CX',
+  'Vai trò của bạn không có khu Phân tích.': 'Your role does not have the Analytics area.',
   'Giáo viên, Head, Admin, BPXL và CX': 'Teachers, Heads, Admins, schedulers and CX',   // A3-15: + vai mới
   'Giáo viên, Head, Admin, TVV, CX và BPXL': 'Teachers, Heads, Admins, consultants, CX and schedulers',
   'Chỉ xem · GV / Head nhập': 'View only · teachers / Heads enter scores',   // A3-05: CX ở việc chấm chưa có người
