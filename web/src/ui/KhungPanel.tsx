@@ -30,15 +30,6 @@ export const panelHdTren = (): PanelHd | null => panelHd.reduce<{ hd: PanelHd; t
 const panelDangSua = new Map<string, (tiep: () => void, o?: () => void, nut?: string) => void>();
 export const coPanelDangSua = () => panelDangSua.size > 0;
 /** Đổi việc / "‹ Công việc" / mở việc khác: còn chữ chưa lưu thì panel hỏi (Ở lại = nút chính); bỏ chữ hoặc không có chữ → `tiep`. */
-/** U01 #5 / #11 (khung A3) · N64: dải vàng "đang làm thay" đầu panel (chữ do nơi gọi soạn) — không nút: mở là làm. */
-export function DaiLamThay({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
-      <b className="font-semibold text-soon">{children}</b>
-    </div>
-  );
-}
-
 export function boChuRoi(tiep: () => void, nut?: string) {
   const hoi = [...panelDangSua.values()].pop();
   if (hoi) hoi(tiep, undefined, nut); else tiep();
