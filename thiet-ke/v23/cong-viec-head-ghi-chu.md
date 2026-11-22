@@ -29,7 +29,7 @@ Mockup: [`cong-viec-head.html`](cong-viec-head.html) · [`tong-quan-head-gv.html
 ## Nguồn dữ liệu + Turso
 
 - Công việc "Của GV" = cùng `/my-work?nguoi=tat-ca` đang có (đo audit 21/11: **50–51 câu · ~1 200 dòng**), lọc quá hạn / sắp đến tại máy → +0 câu.
-- **Cảnh báo cho PR code (khối Giáo viên ở Tổng quan):** nếu Tổng quan Head gọi thêm `/my-work?nguoi=tat-ca` mỗi lần mở trang thì **+~50 câu · ~1 200 dòng / lần** (đường đã sát trần 30 câu). Ước Head 5 người × ~10 lần mở / ngày ≈ +60 K dòng / ngày (≈ +1,8 M / tháng) — nhỏ so với mốc 450 M nhưng đường vượt trần câu. Đề xuất nhẹ hơn: máy chủ trả kèm vào đường Tổng quan đang gọi một mảng đếm `{gv, soQuaHan, theoLoai, quaHanLauNhat}` tính từ **cùng hàm** `myWork(..., 'tat-ca')` (không câu theo từng GV); hoặc chỉ tải khi khối cuộn vào tầm nhìn. PTA / chủ SP chọn.
+- **Khối Giáo viên ở Tổng quan (PTA chốt 22/11):** +0 câu — dùng lại dữ liệu GV đang có trong `tong-quan/v5`, tách theo loại trong câu đang có; không tách được thì bỏ cột "Loại" (loại xem ở Công việc "Của GV"). Không gọi `/my-work?nguoi=tat-ca`, không chạy myWork tất cả trong Tổng quan. Chi tiết: [`tong-quan-head-gv-ghi-chu.md`](tong-quan-head-gv-ghi-chu.md).
 - Số khớp: số GV ở Tổng quan = số dòng quá hạn của GV đó ở Công việc "Của GV" (cùng `demDongViec`).
 
 ## [XM]
