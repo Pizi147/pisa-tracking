@@ -22,7 +22,7 @@ import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
-import { SapToi, type SapToiGv } from './SapToi.tsx';
+import type { SapToiGv } from './SapToi.tsx';
 import { PaDangChayKhoi, viecPdcTheoKhoa } from './PaDangChay.tsx';
 import { NutTask } from './NutTask.tsx';
 import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
@@ -50,7 +50,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, chenTheoViTri, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, khopNguoiViec, dongCuaToi, type DemYeuCau, type LocNguoiViec,
-  NHAN_LOAI_VIEC, chenHan, demBai, type PaDangChay, viecGapCuaGv, TAB_ADMIN, tabAdminCua, NHAN_TAB_ADMIN,
+  NHAN_LOAI_VIEC, chenHan, demBai, type PaDangChay, viecGapCuaGv, TAB_ADMIN, tabAdminCua, NHAN_TAB_ADMIN, gopDiemAdmin,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -186,7 +186,8 @@ export function HoTroHocVienTab() {
   const trongNguon = (it: WorkItem) => khopNguoi(it, nguoi)
     /* Việc không gắn lớp (`cn` null) hiện ở mọi chi nhánh (như khung — không bao giờ giấu việc). */
     && (cnLoc == null || it.cn == null || it.cn === cnLoc);
-  const tatCaViec = useMemo(() => dsGoc.filter(trongNguon), [dsGoc, nguoi, cnLoc, homNay]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* PTA rà #2001 (v23 ④ A1): Admin — dòng Điểm gộp một lớp · đợt; panel lớp đọc lại dòng gốc (`dsGoc`). */
+  const tatCaViec = useMemo(() => { const ds = dsGoc.filter(trongNguon); return chiChamDiem ? gopDiemAdmin(ds) : ds; }, [dsGoc, nguoi, cnLoc, homNay, chiChamDiem]);   // eslint-disable-line react-hooks/exhaustive-deps
   const dsCn = laGvThuong ? data?.chiNhanh ?? [] : [];
   const maCn = useMemo(() => new Map(dsCn.map((b) => [b.id, b.code])), [dsCn]);
   /* RA-LOI-0711i: số trên dải chi nhánh = cùng bộ lọc với số đầu trang (người · khung · loại việc), chỉ khác chi nhánh — "Tất cả" = số đầu trang. */
@@ -556,7 +557,6 @@ export function HoTroHocVienTab() {
   const tong = useMemo(() => demDongViec(laQuanLy ? items : dongCuaToi(items)), [items, laQuanLy]);
   /* NHẸ HƠN PR-2a: số trên nút "Của GV" = số quá hạn của GV (cùng lọc quá hạn + sắp đến) — chỉ khi danh sách "tất cả" đã nạp (đang ở Của GV / Tất cả), +0 request. */
   const soGvQuaHan = laQuanLy && !chiChamDiem && data && nguoi !== 'toi' && typeof nguoi !== 'number' ? demDongViec(theoKhung(dsGoc.filter((x) => khopNguoi(x, 'gv')))).quaHan : null;
-  const soLamThay = useMemo(() => (laQuanLy ? 0 : demDongViec(items).n - tong.n), [items, laQuanLy, tong]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
   const chiCc = !conViec && tatCaViec.some(laViecChamCheo);
   /* brief 7: việc của người khác (QL xem GV / Tất cả) = theo dõi; `chiXem` = đang xem đúng một GV. Việc chưa có người (Phân công…) không phải của ai — làm được. */
@@ -656,7 +656,7 @@ export function HoTroHocVienTab() {
               {[nguoi === 'gv' ? t('Của GV') : null, tenGvChon].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
               <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
-              {soLamThay > 0 && <> · <span title={t('Việc của GV khác mà bạn làm thay được — có trong danh sách, không tính vào việc của bạn.')}>{t('{n} làm thay', { n: soLamThay })}</span></>}
+              {/* NHẸ HƠN NH5: đầu trang chỉ "n việc · m quá hạn" — bỏ "· n làm thay" (dòng làm thay vẫn trong danh sách, dải "Bạn đang làm thay" ở panel). */}
               {/* AUDIT-1611 P1-02 · N50 (11): bỏ "· n bài" ở đầu trang (mọi phạm vi) — mockup ① chỉ "n việc · m quá hạn"; số bài ở từng dòng. */}
             </span>
           )}
@@ -847,7 +847,7 @@ export function HoTroHocVienTab() {
           ) : laGv && tab !== 'duyet' && !data?.scopeEmpty ? (
             /* GD-1 (mockup v21 ① K1, K7): GV chưa chọn việc → "Lớp của tôi" (thay ô "Chọn một việc"); cả khi tab hết việc, GV chưa có lớp, đang tải, lỗi. */
             <>
-              {!error && data && <SapToi sapToi={data.sapToi} testSapToi={data.testSapToi} tenLop={(id) => session?.assignments?.find((a) => a.classId === id)?.classCode ?? undefined} />}
+              {/* NHẸ HƠN (đặc tả mục 0 "bỏ dải số"): bỏ dòng "Sắp tới" — Test kế đã ở cột của Lớp của tôi. */}
               <LopCuaToi dong={dongLop} dangTai={!error && !data} onMo={(x) => boChuRoi(() => mo(x))}
                 loi={error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : null} />
             </>

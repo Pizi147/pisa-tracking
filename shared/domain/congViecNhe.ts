@@ -53,3 +53,35 @@ export function gomEmThieu(dong: readonly {
   }
   return [...em.values()].sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.ten.localeCompare(b.ten, 'vi'));
 }
+
+/**
+ * Admin (v23 ④ A1, PTA rà #2001): danh sách Điểm GỘP một dòng mỗi lớp · loại bài · tuần thi ("MB FT 101 · thiếu 6 bài" + chip L R W1 W2 S) — máy chủ trả
+ * một dòng mỗi người phụ trách (khoá việc, làm thay theo người). Dòng gộp giữ khoá của dòng gấp nhất (bấm mở panel lớp — panel đọc lại mọi dòng gốc cùng lớp).
+ * Việc khác giữ nguyên. Dòng gộp có `gopLop: true`.
+ */
+export function gopDiemAdmin<T extends {
+  key: string; group: string; classId: number | null; kind?: string | null; tuanThi?: string | null; luot?: string; con?: unknown[] | null;
+  kns?: string[]; knsQuaHan?: string[]; emIds?: number[]; studentId: number | null; soBai?: number; count?: number | null; due?: string | null; urgency: string;
+}>(ds: readonly T[]): T[] {
+  const nang = (u: string) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
+  const nhom = new Map<string, T[]>();
+  const out: (T | string)[] = [];
+  for (const x of ds) {
+    if (x.group !== 'score' || !x.classId || x.con?.length) { out.push(x); continue; }
+    const k = `${x.classId}|${x.kind ?? 'mock'}|${x.tuanThi ?? x.luot ?? ''}`;
+    if (!nhom.has(k)) { nhom.set(k, []); out.push(k); }
+    nhom.get(k)!.push(x);
+  }
+  return out.map((x) => {
+    if (typeof x !== 'string') return x;
+    const g = nhom.get(x)!;
+    if (g.length === 1) return g[0];
+    const dau = [...g].sort((a, b) => nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'))[0];
+    const em = [...new Set(g.flatMap((y) => y.emIds ?? (y.studentId !== null ? [y.studentId] : [])))];
+    return {
+      ...dau, gopLop: true, owner: null, ownerId: null, studentId: null, emIds: em, count: em.length,
+      kns: [...new Set(g.flatMap((y) => y.kns ?? []))], knsQuaHan: [...new Set(g.flatMap((y) => y.knsQuaHan ?? []))],
+      soBai: g.reduce((n, y) => n + (y.soBai ?? 0), 0), due: g.map((y) => y.due).filter(Boolean).sort()[0] ?? null,
+    } as T;
+  });
+}

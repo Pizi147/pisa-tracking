@@ -17,4 +17,6 @@ export const EN_CV_TAB = {
   'Điểm chưa nhập · {ngu}': 'Scores not entered · {ngu}',
   '{n} bài · {m} em': '{n} scores · {m} students',
   'Học viên còn thiếu điểm': 'Students with missing scores',
+  'Test kế': 'Next test',
+  'thiếu {n} bài': '{n} scores missing',
 } satisfies Record<string, Dich>;

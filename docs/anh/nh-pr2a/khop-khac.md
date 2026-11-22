@@ -6,7 +6,7 @@ Khung: `thiet-ke/v23/cong-viec-gv|tvv|admin|head.html` (+ ghi chú). Đặc tả
 
 | Khung | Ý | Thành phần | Ảnh | Khớp |
 |---|---|---|---|---|
-| G1, T1, A1, H1 | Đầu trang "Công việc · n việc · m quá hạn" mọi vai | `HoTroHocVienTab.tsx` `cv-tom` (bỏ hai số Admin, bỏ dải chỉ số TVV, bỏ tên chi nhánh TVV) | `*-1440-toi.png` | KHỚP |
+| G1, T1, A1, H1 | Đầu trang "Công việc · n việc · m quá hạn" mọi vai | `HoTroHocVienTab.tsx` `cv-tom` (bỏ hai số Admin, dải chỉ số TVV, tên chi nhánh TVV, "· n làm thay" — NH5) | `*-1440-toi.png` | KHỚP |
 | H1–H4 | Của tôi / Của GV / Tất cả ở hàng RIÊNG dưới tiêu đề, trên tab | `cv-pham-vi` | `head-*` | KHỚP |
 | H1 | "Của GV · 12" = số quá hạn | `soGvQuaHan` (cùng `demDongViec`) | `head-1440-toi.png` | KHỚP (số chỉ khi đã ở Của GV / Tất cả — [XM-A]) |
 | H1 | "Của GV" chỉ quá hạn + sắp đến (≤ 2 ngày) | `viecGapCuaGv` (shared, cùng mốc `mucHan`) | `head-*` | KHỚP |
@@ -16,11 +16,16 @@ Khung: `thiet-ke/v23/cong-viec-gv|tvv|admin|head.html` (+ ghi chú). Đặc tả
 | T1 vòng 3 | HV của tôi nhóm theo lớp: "lớp · n em" · tên · 1 chip · số việc | `HvCuaToi.tsx` `NhomLop` | `tvv-*` | KHỚP |
 | G1 | Dòng: tên 600 · phụ chữ thường · ≤ 2 chip · hạn luật PR-1 | `DanhSachViec.tsx` `DongPhu`, bỏ ô biểu tượng | `gv-*` | KHỚP |
 | G1 | Nhập điểm: "MB FT 101 · W3 NOV · thiếu 5 em" + chip "L R W1 W2" | `dongDiem` | `gv-*` | KHỚP |
-| G1 | Lớp của tôi bảng 4 cột | `LopCuaToi.tsx` | `gv-*` | KHÁC có lý do: cột việc giữ chip theo loại (bấm mở đúng loại — thao tác V21) thay một số |
+| G1 | Lớp của tôi: Lớp · Tôi dạy · Test kế · Việc (MỘT số, quá hạn đỏ + ⚠; chia loại ở rê chuột) | `LopCuaToi.tsx` `SoViecLop` (cùng `chipViecLop`) | `gv-*` | KHỚP (PTA rà #2001) |
+| — | Dòng "Sắp tới · Test tuần tới · Báo cáo PH" trên Lớp của tôi | — | — | BỎ (đặc tả "bỏ dải số"; Test kế đã ở cột; hộp "Sắp tới" mất — báo PTA) |
+| H1 | "Của GV" không có "Hạn sau …" (chỉ quá hạn + sắp đến) | `viecGapCuaGv` | `head-*` | KHỚP (đã soát ảnh) |
 | G1 | Vạch hạn trong mục ("Quá hạn" · "Hạn đến 20/09/2026") | `chiaVachHan` (có sẵn) | `gv-*` | GIỮ (mockup không vẽ; bỏ là mất mốc tuần) |
 | H1 | "Chờ bạn duyệt" chỉ ở "Của tôi" | tab duyệt ẩn khi Của GV | `head-*` | KHỚP |
 | A1 | Danh sách Admin không ghi người phụ trách (người ở panel lớp) | `anNguoi` | `admin-*` | KHỚP |
-| A1 | Dòng Điểm gộp một lớp ("MB FT 101 · thiếu 6 bài") | máy chủ gom lớp × tuần × người | `admin-*` | KHÁC: dòng theo người phụ trách như cũ (khoá việc + làm thay theo người); panel lớp gom đủ |
+| A1 | Dòng Điểm gộp một lớp · đợt ("MB FT 101 · W1 SEP · thiếu 15 bài" + chip L R W1 W2 S), không nút | `gopDiemAdmin` (web, shared) + `anNguoi` | `admin-*` | KHỚP (PTA rà #2001) |
+| A1 panel | Cột Hạn chỉ tô màu ngày (bỏ ⚠), không cắt | `PanelLopAdmin` `MucNgay` | `admin-panel-*` | KHỚP |
+| A1 panel | Chân "Nhắc GV" | — | — | KHÁC: đường Nhắc đã bỏ (OV-12h, `/my-work/nhac` 404) — giữ "Nhập điểm ›", không làm máy chủ mới |
+| G3, H3 (375) | Đầu nhóm một dòng ("Progress / Final Test") | `DaiNhom`: tên 16 / 700 nowrap, số "n việc" chữ phụ, biểu tượng ẩn ở 375 (dùng chung mọi danh sách có `DaiNhom`) | `*-375-sang.png` | KHỚP |
 | C1 (panel-cham-diem) | Panel bảng 75 % → cột trái 330 px, dòng gọn không nút; đầu nhóm dính không đè panel (PR-4 báo) | `data-pn="bang"` (KhungPanel) + `:has()` ở trang; cột trái `isolate`, cột phải `z-20` | `gv-panel-bang-gia-lap-1440-toi.png` | KHỚP |
 | — | Dải chỉ số TVV (5 ô) | — | — | BỎ (chủ SP mục 0) |
 | — | Ô biểu tượng đầu dòng việc | — | — | BỎ (60-30-10, mockup không có) |
@@ -36,12 +41,15 @@ Khung: `thiet-ke/v23/cong-viec-gv|tvv|admin|head.html` (+ ghi chú). Đặc tả
 | Admin xuất BC PH trong tab Vận hành | tab "Báo cáo PH" riêng (nút Xuất lớp giữ) |
 | Admin bấm dòng Nhập điểm → lưới | panel lớp (em · thiếu · người) → "Nhập điểm ›" mở lưới cũ |
 | TVV dải 5 chỉ số | bỏ |
+| GV Lớp của tôi: chip "{loại} · n" mỗi loại | MỘT số / lớp (bấm = mở việc gấp nhất, như chip đầu cũ); loại ở `title` |
+| GV hộp "Sắp tới" (bấm số mở danh sách Test / Báo cáo PH sắp mở) | bỏ (Test kế ở cột) |
+| Admin dòng Điểm có nút "Nhập điểm" | bấm dòng → panel lớp → "Nhập điểm ›" |
 | TVV HV của tôi: chip "{nhóm} · n" mỗi nhóm | một số việc / em (bấm = mở việc gấp nhất, như chip cũ); tên nhóm ở `title` / trình đọc màn |
 | Mọi thao tác khác (+ Task, + Giao việc, Gia hạn, Bỏ qua, Hoàn thành, Xuất lớp, Tìm em, "n em khác") | giữ |
 
 ## [XM] hỏi PTA
-- [XM-A] "Của GV · n" khi đang ở "Của tôi": không hiện (cần GET thêm ~50 câu · ~1 200 dòng / lần mở). Đề xuất giữ như vậy.
-- [XM-C] Admin: dòng Nhập điểm mở panel lớp trước, lưới sau một bấm. Muốn mở lưới thẳng như cũ thì bỏ một điều kiện.
+- [XM-A] PTA đồng ý: "Của GV · n" không hiện khi ở "Của tôi".
+- [XM-C] PTA đồng ý: panel lớp trước.
 
 ## Turso
 - `/my-work`: +0 câu (trường `emThieu` dựng từ dữ liệu đã đọc, chỉ gửi cho Admin). `tocDoDuong` giữ trần cũ.

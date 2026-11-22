@@ -125,6 +125,13 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
     assert(khoa.cap.some((c: any) => c.nguoi === 'GV Speaking' && c.kns.join() === 'speaking') && khoa.cap.some((c: any) => c.nguoi === 'Vũ Thu Lan' && c.kns.join() === 'listening,reading')
       && khoa.cap.some((c: any) => c.nguoi === 'Hà Quốc Bảo'), 'mỗi người một dòng, S Mock = GV Speaking');
     assert(khoa.due === '2026-11-21', 'hạn em = hạn sớm nhất');
+    /* PTA rà #2001: Admin gộp dòng Điểm một lớp · đợt; việc khác / lớp khác giữ. */
+    const s = (key: string, classId: number, tuanThi: string, kns: string[], emIds: number[], soBai: number, due: string, urgency = 'normal') =>
+      ({ key, group: 'score', classId, kind: 'mock', tuanThi, kns, emIds, studentId: null, soBai, due, urgency });
+    const gop = d.gopDiemAdmin([s('a', 1, 'W1', ['listening'], [1, 2], 2, '2026-11-25'), { key: 'x', group: 'mgmt', classId: null, studentId: null, urgency: 'normal' },
+      s('b', 1, 'W1', ['speaking'], [2, 3], 2, '2026-11-20', 'overdue'), s('c', 2, 'W1', ['reading'], [9], 1, '2026-11-26')]);
+    assert(gop.length === 3 && gop[0].key === 'b' && gop[0].gopLop && gop[0].soBai === 4 && gop[0].emIds.length === 3 && gop[0].kns.join() === 'listening,speaking'
+      && gop[0].due === '2026-11-20' && gop[1].key === 'x' && gop[2].key === 'c' && !gop[2].gopLop, JSON.stringify(gop));
   });
 
   check('NH2a-2 · /my-work thật: Head "Của GV" = dòng của GV có hạn ≤ hôm nay + 2 (số nút = số dòng quá hạn, cùng demDongViec); Admin có emThieu khớp soBai, GV không có', () => {

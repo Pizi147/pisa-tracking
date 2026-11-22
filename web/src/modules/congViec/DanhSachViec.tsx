@@ -262,11 +262,11 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false,
       style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} aria-controls={dieuKhien} onClick={onMo}
         className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
-        <span className={trungTinh ? 'text-faint' : 'text-[color:var(--accent)]'}><IconNhom k={k} /></span>
-        <span className="min-w-0 text-[color:var(--text)]">{nhan}</span>
+        {/* NHẸ HƠN PR-2a (v23 `.ds-dau`, PTA rà #2001): tên đầu mục 16 / 700 MỘT dòng; số "n việc" là chữ phụ (không ô); biểu tượng ẩn ở 375 cho đủ chỗ. */}
+        <span className={`max-sm:hidden ${trungTinh ? 'text-faint' : 'text-[color:var(--accent)]'}`}><IconNhom k={k} /></span>
+        <span className="min-w-0 whitespace-nowrap text-[16px] text-[color:var(--text)]">{nhan}</span>
         {chevSauTen && chev}
-        {chip && <span className="inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-          style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{chip}</span>}
+        {chip && <span className="shrink-0 whitespace-nowrap text-[13px] font-medium tabular-nums text-dim">{chip}</span>}
         {!chevPhai && !chevSauTen && chev}
       </button>
       {luat && <span className="relative z-[1] inline-flex">{luat}</span>}
@@ -298,9 +298,11 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn, anNguoi
     : laViecChamCheo(it) || (xem && it.group === 'score') ? t('Nhập điểm') : laPhoiHop(it) ? t('Phối hợp') : dich(it.actionLabel);
   /* QL Tất cả: người giữ việc đứng dưới hạn (mockup `.h .ai`) — cột "khi nào · ai" thẳng hàng. v12 S3: không lặp điều đã biết — việc của tôi,
      việc của GV đang xem (`nguoiAn`), bài chấm chéo ("GV chấm chéo" = tên nhóm) không ghi người. */
+  /* PTA rà #2001 (v23 ④): Admin — dòng Điểm không nút (bấm dòng mở panel lớp; "Nhập điểm ›" ở chân panel). */
+  const nutCuoi = anNguoi && it.group === 'score' ? null : nut;
   const cc = laViecChamCheo(it) || dich(it.statusLabel) === CHAM_CHEO;
   const nguoi = anNguoi || it.mine || cc || (nguoiAn != null && it.ownerId === nguoiAn) ? null : it.owner ?? (it.ownerId === null && !viecCaLop ? t('Chưa có người') : null);
-  return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nut, nguoi, viecCaLop };
+  return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nut: nutCuoi, nguoi, viecCaLop };
 }
 
 /**
@@ -526,16 +528,20 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
  * (Mock / Progress Test 2) + MỘT chip kỹ năng gộp "L R W1 W2" (≤ 2 chip / dòng). Không lớp (bài lẻ) → giữ cách ghi cũ.
  */
 const MON_GON = CASE_CATEGORY_SHORT as Record<string, string>;
+/* Chip kỹ năng luôn theo thứ tự L · R · W1 · W2 · S (dòng gộp Admin nối nhiều dòng). */
+const THU_KN = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking', 'listening_speaking', 'reading_writing'];
+const thuKn = (k: string) => { const i = THU_KN.indexOf(k); return i < 0 ? THU_KN.length : i; };
 function dongDiem(it: WorkItem): { ten: string; phu: string[]; chip: ReactNode } | null {
   if (it.group !== 'score' || !it.classCode) return null;
   const ds = it.con?.length ? it.con : [it];
   const em = new Set(ds.flatMap((x) => x.emIds ?? (x.studentId !== null ? [x.studentId] : [])));
-  const kns = [...new Set(ds.flatMap((x) => x.kns ?? (x.kn ? [x.kn] : [])))];
+  const kns = [...new Set(ds.flatMap((x) => x.kns ?? (x.kn ? [x.kn] : [])))].sort((x, y) => thuKn(x) - thuKn(y));
   const tuan = MA_TUAN.exec(it.contextLabel ?? '')?.[1] ?? null;
   const luot = (it.contextLabel ?? '').replace(MA_TUAN, '').trim() || ((it.kind ?? 'mock') === 'mock' ? 'Mock' : '');
   const n = em.size || it.count || 0;
   return {
-    ten: [it.classCode, tuan, n ? t('thiếu {n} em', { n }) : null].filter(Boolean).join(' · '),
+    /* Admin dòng gộp (v23 ④): "thiếu n bài" — dòng gộp nhiều người phụ trách, số bài nói đủ hơn số em. */
+    ten: [it.classCode, tuan, it.gopLop && it.soBai ? t('thiếu {n} bài', { n: it.soBai }) : n ? t('thiếu {n} em', { n }) : null].filter(Boolean).join(' · '),
     phu: luot ? [dich(luot)] : [],
     chip: kns.length ? <span className={`${CHIP_VUONG} text-dim`}>{kns.map((k) => MON_GON[k] ?? k).join(' ')}</span> : null,
   };

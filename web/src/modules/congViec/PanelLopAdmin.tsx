@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Bang } from '../../ui/Bang.tsx';
-import { ChipHan, ChipKy, DauQuaHan, LOP_MUC_HAN } from '../../ui/Nhan.tsx';
+import { ChipHan, ChipKy, LOP_MUC_HAN } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { CASE_CATEGORY_SHORT, gomEmThieu, laViecChamCheo, mucHan, ngay, type DinhNghiaCot } from '@shared/domain/index.ts';
@@ -37,8 +37,7 @@ export function PanelLopAdmin({ it, dong, onDong, onLuoi }: { it: WorkItem; dong
   );
 }
 
-/** Ngày hạn trong bảng: chỉ tô màu (luật hạn); quá hạn thêm dấu ⚠ (không chỉ bằng màu — cùng `DauQuaHan` của PR-1). */
+/** Ngày hạn trong bảng: CHỈ tô màu (luật hạn V22 / NH4 — "quá hạn n ngày" và ⚠ chỉ ở dòng việc / đầu panel). */
 function MucNgay({ han, homNay }: { han: string; homNay: string }) {
-  const muc = mucHan(han.slice(0, 10), homNay);
-  return <span className={`inline-flex items-center ${LOP_MUC_HAN[muc]}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
+  return <span className={`whitespace-nowrap ${LOP_MUC_HAN[mucHan(han.slice(0, 10), homNay)]}`}>{ngay(han)}</span>;
 }
