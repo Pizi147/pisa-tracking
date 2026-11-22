@@ -100,7 +100,7 @@ export function CatalogAdmin() {
     { key: 'ft', ten: t('Fast Track · lộ trình'), ds: dong.filter((d) => d.loai === 'ft') },
   ].filter((g) => g.ds.length > 0);
   const dai = (g: (typeof nhom)[number]) => (
-    <span className="flex items-center gap-2 text-[15px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{g.ds.length}</span></span>
+    <span className="flex items-center gap-2 text-[14px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{g.ds.length}</span></span>
   );
   /* GD-17b (mockup ⑩ K2): mỗi giá trị sửa được là MỘT ô có viền (bấm là sửa tại chỗ); ô khoá (Môn FT / Pre FOU, Độ dài FT / liên tục, Đạt từ FT) = chữ mờ không viền. */
   const khoa = (chu: ReactNode, title?: string) => <span className="text-slate-400" title={title}>{chu}</span>;

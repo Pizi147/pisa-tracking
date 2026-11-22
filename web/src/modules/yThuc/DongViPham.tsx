@@ -8,7 +8,7 @@ const NHAN = 'text-xs text-slate-500';
 /**
  * Dòng vi phạm MỞ TẠI CHỖ — MỘT kiểu mở cho mọi danh sách vi phạm (ngày · chip môn · tên): bấm TÊN mở mô tả ngay dưới dòng, bấm lại thu.
  * Không request thêm — mô tả đã nạp cùng danh sách. MỘT nút Dịch trong phần mở dịch cả tên (thay chữ tên ở dòng) lẫn mô tả (`useDichGop`).
- * `ngay` đã định dạng (mã tuần / dd/mm do nơi gọi chọn) · `moSan`: khối chỉ có vài dòng, đọc luôn · `truoc` / `phu`: ô tick và nhãn trạng thái của dòng
+ * `ngay` đã định dạng (mã tuần / dd/mm/yyyy do nơi gọi chọn — cột 84 px vừa ngày có năm, v23 `.vpd`) · `moSan`: khối chỉ có vài dòng, đọc luôn · `truoc` / `phu`: ô tick và nhãn trạng thái của dòng
  * chọn được (ô tick chỉ chọn) · `duoi`: dòng phụ luôn thấy dưới tên · `nhom`: nhóm vi phạm, thấy trong phần mở.
  */
 export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom }: {
@@ -25,7 +25,7 @@ export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom }: {
     <div className="flex min-w-0 items-start gap-2">
       {truoc}
       <div className="min-w-0 flex-1">
-        <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2">
+        <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-2">
           <span className="pt-px tabular-nums text-slate-400 max-sm:pt-3">{ngay}</span>
           <button type="button" aria-expanded={mo} aria-controls={mo ? idChiTiet : undefined} onClick={() => setMo((x) => !x)}
             className="flex min-w-0 appearance-none items-start gap-1 border-0 bg-transparent p-0 text-left font-[inherit] text-inherit hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
@@ -34,9 +34,9 @@ export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom }: {
                 className={`ml-1.5 inline-block align-middle text-slate-500 ${mo ? 'rotate-180' : ''}`}><path d="M1 1l3 3 3-3" /></svg></span>
           </button>
         </div>
-        {duoi && <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span /><div className="min-w-0 text-xs text-slate-500">{duoi}</div></div>}
+        {duoi && <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-2"><span /><div className="min-w-0 text-xs text-slate-500">{duoi}</div></div>}
         {mo && (
-          <div id={idChiTiet} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2 pb-1 pt-1 max-sm:grid-cols-1">
+          <div id={idChiTiet} className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-2 pb-1 pt-1 max-sm:grid-cols-1">
             <span className="max-sm:hidden" />
             <div className="grid min-w-0 gap-1 text-sm">
               {nhom && <span className={NHAN}>{t('Nhóm')}: <span className="text-slate-300">{nhom}</span></span>}

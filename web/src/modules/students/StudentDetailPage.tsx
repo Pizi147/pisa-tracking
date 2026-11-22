@@ -437,7 +437,7 @@ export default function StudentDetailPage() {
               {chon === OVERALL && !cy.ratio ? (
                 <>
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-                    <h2 className="m-0 text-[17px] font-bold text-slate-100">Mock Test</h2>
+                    <h2 className="m-0 text-[16px] font-bold text-slate-100">Mock Test</h2>
                     <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
                   </div>
                   <KhoiMockTest cy={cy} ten={data.fullName} attempts={data.attempts} dotId={p.dot} homNay={homNay} ketThuc={data.status === 'finished' ? data.finishedAt ?? null : null} onOpen={(a) => navigate(attemptHref(a))} />

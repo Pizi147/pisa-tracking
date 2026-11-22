@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { t } from '@shared/i18n/index.ts';
-import { tuanLich } from '@shared/domain/index.ts';
+import { tuanLich, ngay } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -32,7 +32,7 @@ export function OSapThiSos({ so, nguon, ngCanh }: { so: SapThiSosSo; nguon: (o: 
         <span className="min-w-0 flex-1">{ten}</span>
         <NutLuat phai label={ten}>{t('Em đang học có lịch thi trong tháng này hoặc tháng sau — ngày đã chốt hoặc tháng dự kiến chưa chốt ngày — và đang SOS ở lượt MT mới nhất (hiện tại, không theo kỳ đang chọn). Đếm em, không đếm lượt: khác số của tab SOS.')}</NutLuat>
       </span>
-      <span className="chi-so-gt flex items-baseline gap-2 text-[28px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
+      <span className="chi-so-gt flex items-baseline gap-2 text-[26px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
         {so.n ? <button type="button" className={`${LOP_OSO} so-chinh`} aria-haspopup="dialog" aria-label={t('{n} em — xem danh sách', { n: so.n })} onClick={() => setMo('sap-thi')}>{so.n}</button>
           : <span className="font-medium text-faint">0</span>}
         <small className="text-[13px] font-medium text-[color:var(--text-dim)]">{t('em')}</small>
@@ -66,7 +66,7 @@ function PanelSapThi({ nguon, tieuDe, ngCanh, so, onDong }: { nguon: string; tie
       case 'em': return <Link to={r.href} className="ten-hv ten-ho-so font-semibold">{r.em.ten}</Link>;
       case 'lop': return r.classId ? <Link to={`/hoc-vien/lop/${r.classId}`} className="text-[color:var(--text)] no-underline hover:underline">{r.lop}</Link> : (r.lop ?? '—');
       case 'lich': return r.lichThi.ngay
-        ? <span className="grid leading-tight"><b className="font-semibold">{t('thi {ngay}', { ngay: `${r.lichThi.ngay.slice(8, 10)}/${r.lichThi.ngay.slice(5, 7)}` })}</b><small className="text-xs text-[color:var(--text-faint)]">{tuanLich(r.lichThi.ngay)}</small></span>
+        ? <span className="grid leading-tight"><b className="font-semibold">{t('thi {ngay}', { ngay: ngay(r.lichThi.ngay) })}</b><small className="text-xs text-[color:var(--text-faint)]">{tuanLich(r.lichThi.ngay)}</small></span>
         : <span className="grid leading-tight"><b className="font-semibold">{t('dự kiến {thang}', { thang: thang(r.lichThi.thang) })}</b><small className="text-xs text-[color:var(--text-faint)]">{t('chưa chốt ngày')}</small></span>;
       case 'sos': return <span className={`${CHIP_SOS} ${lopSos(r.sos.muc)}`}>{[`SOS ${r.sos.muc}`, ...r.sos.kyNang].join(' · ')}</span>;
       default: return r.tvv ?? <span className="text-faint">—</span>;
@@ -80,7 +80,7 @@ function PanelSapThi({ nguon, tieuDe, ngCanh, so, onDong }: { nguon: string; tie
         : loading || !data ? <Skeleton rows={6} />
         : (
           <div className="flex flex-col gap-3">
-            <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] font-bold text-[color:var(--text)]">
+            <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] font-bold text-[color:var(--text)]">
               {t('{n} em', { n: data.n })}
               {/* ⑨ C5: dòng chip chia SOS (mức có em) + "đã chốt ngày n · dự kiến n" — chỉ đọc. */}
               {so.sos.map((n, i) => n > 0 && <span key={i} className="inline-flex h-7 items-center rounded-full border px-3 text-[13px] font-medium" style={{ borderColor: 'var(--line-strong)' }}>SOS {i + 1} <b className="ml-1.5 tabular-nums">{n}</b></span>)}

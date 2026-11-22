@@ -4,7 +4,7 @@ import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import type { XinYKien } from './DongXinYKien.tsx';
 import type { BoTro } from './CasePanel.tsx';
-import { GIAI_THICH_KCK, chuTamDung, duongDotTest, tuanLich, type DeadlineKind, type TrangThai, type TrangThaiCaseV4 } from '@shared/domain/index.ts';
+import { GIAI_THICH_KCK, chuTamDung, duongDotTest, tuanLich, type DeadlineKind, type TrangThai, type TrangThaiCaseV4, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 
@@ -140,7 +140,7 @@ export function NhanTamDung({ tu }: { tu: string }) {
   return (
     <span className="inline-flex items-center whitespace-nowrap rounded-md bg-soon-bg px-1.5 py-0.5 text-[12px] font-semibold tabular-nums text-soon"
       title={t('Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại')}>
-      {chuTamDung(`${tu.slice(8, 10)}/${tu.slice(5, 7)}`, true)}
+      {chuTamDung(ngay(tu), true)}
     </span>
   );
 }

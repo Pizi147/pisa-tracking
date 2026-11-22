@@ -91,7 +91,7 @@ export function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
         <li key={v.key} className={v.key === GVCN ? 'mt-1 border-t pt-1' : ''} style={{ borderColor: 'var(--line)' }}>
           <button type="button" aria-current={vai === v.key} onClick={() => setVai(v.key)}
             className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-2 rounded-lg border-0 px-3 py-2 text-left cursor-pointer ${vai === v.key ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bg-transparent hover:bg-[color:var(--accent-soft)]'}`}>
-            <span className="text-[15px] font-semibold text-slate-100">{v.ten}</span>
+            <span className="text-[14px] font-semibold text-slate-100">{v.ten}</span>
             <span className="row-span-2 text-[13px] tabular-nums text-slate-400">{t('{n} quyền', { n: soQuyen(v.key) })}</span>
             <span className="text-[13px] text-slate-400">{v.soNguoi === null ? t('tự có theo chủ nhiệm') : t('{n} tài khoản', { n: v.soNguoi })}</span>
           </button>
@@ -110,7 +110,7 @@ export function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     const bamDuoc = !laGvcn && !ly && !busy;
     return (
       <li key={p.key} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-t px-4 py-2 max-sm:min-h-[56px] ${daDoi ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''}`} style={{ borderColor: 'var(--line)' }}>
-        <span className="flex min-w-0 items-center gap-1 text-[15px] text-slate-100">
+        <span className="flex min-w-0 items-center gap-1 text-[14px] text-slate-100">
           <span className="min-w-0">{dich(p.ten)}</span>
           {giai && <NutLuat label={dich(p.ten)}>{giai}</NutLuat>}
         </span>
@@ -152,7 +152,7 @@ export function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
           ) : <div className="border-r" style={{ borderColor: 'var(--line)' }}>{chonVai}</div>}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-              <span className="text-[17px] font-bold text-slate-100">{tenVai(vai)}</span>
+              <span className="text-[16px] font-bold text-slate-100">{tenVai(vai)}</span>
               {vai !== GVCN && <Link className="text-[13px] font-semibold" to={`/quan-tri?vai=${vai}`}>{t('{n} tài khoản', { n: d.vai.find((v) => v.key === vai)?.soNguoi ?? 0 })} ›</Link>}
               <input type="search" className="field ml-auto w-full sm:w-56" placeholder={t('Tìm quyền…')} aria-label={t('Tìm quyền')} value={tim} maxLength={60}
                 onChange={(e) => setTim(e.target.value)} />
@@ -164,7 +164,7 @@ export function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
               return (
                 <section key={g.key}>
                   <button type="button" aria-expanded={mo} onClick={() => setGap((s) => { const n = new Set(s); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; })}
-                    className="flex min-h-[44px] w-full items-center gap-2 border-0 border-t bg-[color:var(--surface-2)] px-4 text-left text-[15px] font-bold text-slate-100 shadow-[inset_3px_0_0_var(--accent)] sm:min-h-[40px]"
+                    className="flex min-h-[44px] w-full items-center gap-2 border-0 border-t bg-[color:var(--surface-2)] px-4 text-left text-[14px] font-bold text-slate-100 shadow-[inset_3px_0_0_var(--accent)] sm:min-h-[40px]"
                     style={{ borderColor: 'var(--line)' }}>
                     {g.ten}
                     <span className="text-[13px] font-normal tabular-nums text-slate-400">{g.quyen.filter((x) => (vai === GVCN ? gvcn.has(x.key) || coSan('teacher', x.key) : co(vai, x.key))).length} / {g.quyen.length}</span>

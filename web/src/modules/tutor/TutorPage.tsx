@@ -162,7 +162,7 @@ export default function TutorPage() {
   const the = (d: DongTutor) => (
     <div className="grid gap-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        <span className={`truncate text-[15px] font-bold ${ngung(d) ? 'text-faint' : 'text-slate-100'}`}>{d.ten}</span><NhanLoai d={d} />
+        <span className={`truncate text-[14px] font-bold ${ngung(d) ? 'text-faint' : 'text-slate-100'}`}>{d.ten}</span><NhanLoai d={d} />
         {d.danhGia != null && <span className="ml-auto">{sao(d.danhGia)}</span>}
       </div>
       <span className="text-[13px] text-slate-400">{[nhanKyNang(d.kyNang), nhanNoiDay(d.noiDay), d.thieu.length ? chuThieu(d) : null].filter(Boolean).join(' · ')}</span>
@@ -171,7 +171,7 @@ export default function TutorPage() {
         <div className="grid grid-cols-4 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
           {[{ nhan: t('Buổi'), v: <span className="tabular-nums">{d.buoi}</span> }, ...TIEU_CHI.map((c) => ({ nhan: c.k === 'feedbackGv' ? t('Feedback') : c.nhan, v: tyLe(d, c.k) }))].map((o, i) => (
             <div key={i} className={`grid gap-0.5 px-2 py-1 ${i ? 'border-l' : ''}`} style={{ borderColor: 'var(--line)' }}>
-              <span className="truncate text-xs text-slate-400">{o.nhan}</span><span className="text-[15px] font-semibold">{o.v}</span>
+              <span className="truncate text-xs text-slate-400">{o.nhan}</span><span className="text-[14px] font-semibold">{o.v}</span>
             </div>
           ))}
         </div>

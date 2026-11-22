@@ -79,7 +79,7 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled, nen = 
   return (
     <div className="flex flex-col gap-3 rounded-[10px] border p-3.5" style={{ borderColor: 'var(--line-strong)', background: nen }}>
       <Truong nhan="Target" tuyChon as="div">
-        <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
+        <div className="flex flex-wrap items-center gap-2.5 text-[14px]">
           {/* Chủ SP 21/11: Target là MỘT ô điểm điền sẵn Target cũ — sửa thẳng, không nút "giữ / Sửa / Giữ Target"; để nguyên = giữ. */}
           <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={t('Ví dụ: 6.5')} value={v.tg ?? bt.target ?? ''} disabled={disabled}
             onChange={(e) => onChange({ ...v, tg: e.target.value === bt.target ? null : e.target.value })} />
@@ -206,7 +206,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
           </>
         ))}
         {buoc(3, <>Target{khac && <span className="font-normal text-slate-500">{t('(không bắt buộc)')}</span>}</>, (
-          <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
+          <div className="flex flex-wrap items-center gap-2.5 text-[14px]">
             {boTarget
               ? <b className="tabular-nums text-slate-100">—</b>
               : <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />}

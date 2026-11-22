@@ -385,8 +385,8 @@ export default function App() {
         <div className="flex items-center gap-3 px-3 sm:px-5 h-14 max-sm:h-[52px] max-sm:gap-0.5 max-sm:pl-4 max-sm:pr-1.5 min-w-0">
           <Link to="/" className="mr-3 flex shrink-0 items-center gap-2 no-underline max-sm:mr-1" aria-label={t('PISA — Tổng quan')}>
             <span title="PISA Tracking" className="flex items-baseline gap-1.5 whitespace-nowrap leading-none">
-              <span className="text-[22px] font-extrabold tracking-[.02em] text-[color:var(--hong)]">PISA</span>
-              <span className="text-[15px] font-light tracking-[.14em] text-[color:var(--dieu-huong-chu-mo)]">TRACKING</span>
+              <span className="text-[20px] font-extrabold tracking-[.02em] text-[color:var(--hong)]">PISA</span>
+              <span className="text-[14px] font-light tracking-[.14em] text-[color:var(--dieu-huong-chu-mo)]">TRACKING</span>
             </span>
             {!banChinh && <span className="hidden text-xs text-[color:var(--dieu-huong-chu)] lg:inline">{t('Bản demo nội bộ')}</span>}
           </Link>

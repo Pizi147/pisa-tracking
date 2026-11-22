@@ -117,7 +117,7 @@ export function CauHinhCaseSos() {
         </div>
         <aside className="card min-w-0 px-4 pb-1.5 pt-3.5" aria-label={t('Nhật ký')}>
           <div className="mb-1 flex items-center gap-2">
-            <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
+            <h3 className="m-0 text-[14px] font-bold text-slate-100">{t('Nhật ký')}</h3>
             {/* Nhật ký chung (Quản trị › Quyền & nhật ký) có mọi lần đổi (audit `cau_hinh_case_sos.*`); ở đây 8 lần gần nhất của danh sách đang xem. */}
             {!chiXem && nk.length > 8 && <Link to="/quan-tri?tab=config&muc=case-sos" className="ml-auto text-[13px] font-semibold">{t('Xem tất cả ›')}</Link>}
           </div>

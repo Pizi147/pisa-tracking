@@ -82,14 +82,14 @@ const O_NUT = 'max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:se
 const Av = () => (
   <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]"><IconNhom k="ca-lop" /></span>
 );
-const TEN = 'min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug text-[color:var(--text)]';
+const TEN = 'min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[14px] font-medium leading-snug text-[color:var(--text)]';
 
 /** ponytail: 375 vẽ lại dòng (DongNho + dải lớp) thay vì một dòng co giãn — mockup D5 khác hẳn bố cục 1440; gộp khi có thêm màn dùng chung. */
 /** 375: thẻ hai dòng — tên · hạn │ kỹ năng · PA · nhãn nháp (hai dòng đều cao ≥ 44). */
 function DongNho({ k, chonDong, tren, duoi, han, nut, onBam }: { k: string; chonDong: boolean; tren: ReactNode; duoi: ReactNode; han: string; nut: ReactNode; onBam: () => void }) {
   return (
     <div data-hd="pdc-dong-nho" data-khoa={k} onClick={onBam} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3.5 sm:hidden ${chonDong ? 'row-active' : 'bam'}`}>
-      <span className="min-w-0 break-words text-[15px] text-[color:var(--text)]" title={typeof tren === 'string' ? tren : undefined}>{tren}</span>
+      <span className="min-w-0 break-words text-[14px] text-[color:var(--text)]" title={typeof tren === 'string' ? tren : undefined}>{tren}</span>
       <span className="justify-self-end"><ChipHan vien loai="cap-nhat-pa" han={han} /></span>
       <span className="min-w-0 break-words text-[13px] text-dim" title={typeof duoi === 'string' ? duoi : undefined}>{duoi}</span>
       <span className="justify-self-end" onClick={(e) => e.stopPropagation()}>{nut}</span>
@@ -129,7 +129,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                 {/* 375 (mockup D5, R1.23): dải lớp cao 44 "MB FT 101 · 4 PA · hạn 24/11 ⌄" · thẻ hai dòng (tên · hạn │ kỹ năng · PA · nhãn nháp). */}
                 {nhieu ? (
                   <div data-hd="pdc-dong-nho" data-khoa={key} className={`flex min-h-[44px] items-center gap-2 pl-3.5 pr-1 sm:hidden ${chonDong ? 'row-active' : ''}`}>
-                    <button type="button" className="min-h-[44px] min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-left text-[15px] text-[color:var(--text)]" onClick={() => onMo(viecTuLop(g, uid))}>
+                    <button type="button" className="min-h-[44px] min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-left text-[14px] text-[color:var(--text)]" onClick={() => onMo(viecTuLop(g, uid))}>
                       <b className="font-semibold">{g.lop}</b> <span className="text-[13px] text-dim">· {t('{n} PA', { n: g.ds.length })} · {t('hạn {ngay}', { ngay: ngan(han) })}</span>
                     </button>
                     <button type="button" aria-expanded={mo} aria-label={t('{n} PA · {lop}', { n: g.ds.length, lop: g.lop ?? '' })} onClick={() => khay(g.khoa)}
@@ -173,7 +173,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                             duoi={[nhanKn(x), tenLoai(x)].filter(Boolean).join(' · ')} />
                           <div data-hd="pdc-em" data-khoa={k2} className={`${DONG} min-h-[48px] pl-8 max-sm:hidden sm:pl-8 ${chon === k2 ? 'row-active' : 'bam'}`} onClick={() => moPa(x)}>
                             <span className="grid min-w-0 gap-0.5">
-                              <span className="flex min-w-0 items-baseline gap-2 text-[15px] leading-snug max-sm:items-center">
+                              <span className="flex min-w-0 items-baseline gap-2 text-[14px] leading-snug max-sm:items-center">
                                 <Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="shrink-0 font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{x.studentName}</Link>
                                 <span className="min-w-0 truncate font-normal text-dim max-sm:hidden">{tenLoai(x)}</span>
                               </span>

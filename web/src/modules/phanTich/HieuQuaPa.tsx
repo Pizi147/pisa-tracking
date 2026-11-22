@@ -146,7 +146,7 @@ export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua
   const tongCt = data ? data.gvThem.tomTat.caiThien + data.quyChe.tomTat.caiThien : 0;
   const pctCt = rateView(tongCt, tongPa);
   const chuaTinh = (giaTri: number, dong: string, cot: string, chu: string, giaiThich?: string) => (
-    <span className="inline-flex flex-wrap items-center gap-x-1.5"><span><b className="mr-1 text-[15px] font-bold tabular-nums text-[color:var(--text)]"><OSo giaTri={giaTri} nguon={nguon(dong, cot)} tieuDe={chu} /></b>{chu}</span>
+    <span className="inline-flex flex-wrap items-center gap-x-1.5"><span><b className="mr-1 text-[14px] font-bold tabular-nums text-[color:var(--text)]"><OSo giaTri={giaTri} nguon={nguon(dong, cot)} tieuDe={chu} /></b>{chu}</span>
       {/* PANEL-RIENG (B6): ⓘ nói vì sao không tính. */}
       {giaiThich && <NutLuat label={giaiThich}>{giaiThich}</NutLuat>}</span>
   );
@@ -177,8 +177,8 @@ export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua
           <>
             {/* V2 (đặc tả 11, mockup #1400 B1): một khối gọn — đầu khối 2 số (PA có kết quả · Có cải thiện); bỏ "Thời gian thường mất"; "Chưa tính" một dòng nhỏ khi > 0. */}
             <DauThe ten={t('PA nào hiệu quả')}
-              phu={<span className="inline-flex flex-wrap items-baseline gap-x-1.5">{t('PA có kết quả')} <b className="text-[17px]"><OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" /></b>
-                · {t('có cải thiện')} <b className="text-[17px]"><OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" /></b>{pctCt.kind === 'value' && <span className="text-faint">{pctCt.percent} %</span>}</span>}
+              phu={<span className="inline-flex flex-wrap items-baseline gap-x-1.5">{t('PA có kết quả')} <b className="text-[16px]"><OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" /></b>
+                · {t('có cải thiện')} <b className="text-[16px]"><OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" /></b>{pctCt.kind === 'value' && <span className="text-faint">{pctCt.percent} %</span>}</span>}
               cachTinh={cachDoc} />
             {data.chuaGhiKetQua + data.caseChuaPhanLoai + data.chuaRoNguon > 0 && (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-[13px] text-[color:var(--text-dim)]" style={{ borderColor: 'var(--line)' }}>

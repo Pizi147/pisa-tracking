@@ -50,7 +50,7 @@ function KhungO({ tieuDe, o, moc, duLieu, coPa, cungAp, onThoi, onLuu, busy }: {
   return (
     <div className="grid gap-3.5 rounded-lg border bg-[color:var(--surface-2)] p-3.5" style={{ borderColor: 'var(--accent)' }}
       onKeyDown={(e) => { if (e.key === 'Escape') onThoi(); }}>
-      <div className="text-[15px] font-bold text-slate-100">{tieuDe}</div>
+      <div className="text-[14px] font-bold text-slate-100">{tieuDe}</div>
       {coPa && (
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">{t('Loại PA quy chế')}
@@ -118,7 +118,7 @@ export function MocSosFt({ duLieu, chiXem, luuDs }: ChungProps) {
       <Bang<HangFt> ten={t('Mốc SOS')} cot={COT_FT} hang={HANG_FT} khoa={(h) => h} the375={false} hangRieng={(h) => (
               <Fragment key={h}>
                 <tr className="border-b" style={{ borderColor: 'var(--line)' }}>
-                  <OBang c={COT_FT[0]} className="py-3 pl-4 align-top text-[15px] font-bold text-slate-100">{TEN_HANG[h]}{h === 'rf' && <span className="block text-[12px] font-normal text-slate-500">{t('mọi MT')}</span>}</OBang>
+                  <OBang c={COT_FT[0]} className="py-3 pl-4 align-top text-[14px] font-bold text-slate-100">{TEN_HANG[h]}{h === 'rf' && <span className="block text-[12px] font-normal text-slate-500">{t('mọi MT')}</span>}</OBang>
                   {(['1', '2', '3'] as MucSos[]).map((s, i) => {
                     const dang = chon?.h === h && chon.s === s;
                     const noi = <NoiDungO o={moc.ft[h][s]} moc={moc} tenPa={tenPa} />;
@@ -192,7 +192,7 @@ export function MocSosThuong({ duLieu, chiXem, luuDs }: ChungProps) {
       <Bang<(typeof MOC_THUONG)[number]> ten={t('Mốc SOS · Lớp thường')} cot={COT_THUONG} hang={MOC_THUONG} khoa={(m) => m.k} the375={false} hangRieng={(m) => (
               <Fragment key={m.k}>
                 <tr className="border-b align-top" style={{ borderColor: 'var(--line)' }}>
-                  <OBang c={COT_THUONG[0]} className="!whitespace-normal py-3 pl-4 text-[15px] font-bold text-slate-100">{m.ten}<span className="block text-[12px] font-normal text-slate-500">{m.phu}</span></OBang>
+                  <OBang c={COT_THUONG[0]} className="!whitespace-normal py-3 pl-4 text-[14px] font-bold text-slate-100">{m.ten}<span className="block text-[12px] font-normal text-slate-500">{m.phu}</span></OBang>
                   <OBang c={COT_THUONG[1]} className="!whitespace-normal py-3 text-sm text-slate-200">{m.caseChu}</OBang>
                   <OBang c={COT_THUONG[2]} className="!whitespace-normal py-3 pr-3 text-sm text-slate-100">{pa(m.k)}</OBang>
                   <OBang c={COT_THUONG[3]} className="border-l p-0" style={{ borderColor: 'var(--line)' }}>

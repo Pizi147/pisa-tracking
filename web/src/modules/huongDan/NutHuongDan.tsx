@@ -96,9 +96,9 @@ export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** 
   const dau = (
     <div className="flex flex-col gap-3 pt-3 max-sm:gap-2.5 max-sm:pt-1.5 sm:px-1">
       <div className="flex min-h-9 items-center gap-2.5">
-        <h2 className="m-0 whitespace-nowrap text-[17px] font-bold text-slate-100">{t('Hướng dẫn')}</h2>
+        <h2 className="m-0 whitespace-nowrap text-[16px] font-bold text-slate-100">{t('Hướng dẫn')}</h2>
         {coXemVaiKhac(cuaToi) && VAI_CO_NOI_DUNG.length > 1 ? (
-          <select className="field o-chon-vai h-[30px] w-auto py-0 pl-2.5 pr-7 text-[13px] max-sm:h-11 max-sm:text-[15px]" aria-label={t('Xem vai khác')} title={t('Xem vai khác')}
+          <select className="field o-chon-vai h-[30px] w-auto py-0 pl-2.5 pr-7 text-[13px] max-sm:h-11 max-sm:text-[14px]" aria-label={t('Xem vai khác')} title={t('Xem vai khác')}
             value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); setTang(tab2 ? 2 : 3); }}>
             {VAI_CO_NOI_DUNG.map((v) => <option key={v} value={v}>{t('Vai: {vai}', { vai: TEN_VAI_HD[v] })}</option>)}
           </select>
@@ -111,7 +111,7 @@ export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** 
           <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
         <input type="search" autoComplete="off" className="field pl-[34px] pr-10 [&::-webkit-search-cancel-button]:hidden" value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={t('Tìm trong hướng dẫn')} aria-label={t('Tìm trong hướng dẫn')} />
-        {q && <button type="button" className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md border-0 bg-transparent text-[15px] text-slate-400 sm:right-1 sm:h-8 sm:w-8"
+        {q && <button type="button" className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md border-0 bg-transparent text-[14px] text-slate-400 sm:right-1 sm:h-8 sm:w-8"
           aria-label={t('Xoá chữ tìm')} onClick={() => setQ('')}>✕</button>}
       </label>
       <HangTab<Tab | ''> ariaLabel={t('Phần hướng dẫn')} panelId={idThan} value={kq ? '' : tab} onChange={(k) => { if (k) { setTab(k); setQ(''); setMoThe(null); } }}
@@ -156,7 +156,7 @@ export type Ctx = { hd: HuongDan; q: string; onChi: (c: ChiChoToi) => void; onDo
 /* ---------------------------------------------------------------- khối dùng chung */
 
 const NUT_LEN = '-my-1 -ml-1.5 inline-flex min-h-7 items-center gap-1 self-start rounded-md border-0 bg-transparent px-1.5 text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] max-sm:-my-2.5 max-sm:min-h-[44px]';
-const H3 = 'm-0 flex items-center gap-2 text-[15px] font-bold leading-tight text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)]';
+const H3 = 'm-0 flex items-center gap-2 text-[14px] font-bold leading-tight text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)]';
 export function KhoiHd({ ten, children }: { ten: string; children: ReactNode }) {
   return <section className="flex flex-col gap-2"><h3 className={H3}>{ten}</h3>{children}</section>;
 }
@@ -202,7 +202,7 @@ export function BanDangO({ man, tenRieng, tren, trang = false, cau, ctx }: { man
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         {!trang && <span className="text-[13px] font-medium text-slate-500">{t('Bạn đang ở')}</span>}
-        {ten && <h3 className="m-0 text-[17px] font-bold text-slate-100">{ten}</h3>}
+        {ten && <h3 className="m-0 text-[16px] font-bold text-slate-100">{ten}</h3>}
         {tren && <span className="text-[13px] font-medium text-slate-400">{t('trên {man}', { man: tren })}</span>}
       </div>
       {cau ? <p className="m-0 text-sm text-slate-400">{t(cau)}</p>
@@ -226,7 +226,7 @@ export function KhongLam({ man, ctx }: { man: ManHd; ctx: Ctx }) {
   if (!man.khongLam?.length) return null;
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Không làm ở đây')}</h3>
+      <h3 className="m-0 text-[14px] font-bold text-slate-100">{t('Không làm ở đây')}</h3>
       <div className="grid">
         {man.khongLam.map((k, i) => (
           <div key={k.ten} className={`grid gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline ${i ? 'border-t py-2.5 sm:py-[9px]' : 'pb-2.5 pt-0.5 sm:pb-[9px]'}`} style={{ borderColor: 'var(--line)' }}>
@@ -307,7 +307,7 @@ function TheViec({ v, ctx, dangMo, dai, qc, dangODung = false, hdThe }: { v: Vie
       )}
       <dl className="m-0 grid gap-2.5 max-sm:gap-3">
         {ds.map((d) => (
-          <div key={d.k} className={`grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[108px_minmax(0,1fr)]`}>
+          <div key={d.k} className={`grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[14px] sm:grid-cols-[108px_minmax(0,1fr)]`}>
             <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
             <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
           </div>
@@ -347,7 +347,7 @@ function DongGap({ id, ten, phai, moSan = false, ctx, children }: { id: string; 
       <button type="button" aria-expanded={mo} aria-controls={idThan} onClick={() => setMo(!mo)}
         className="grid min-h-[44px] w-full cursor-pointer appearance-none grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 border-0 bg-transparent px-3 py-[9px] text-left text-slate-100 hover:bg-[color:var(--accent-soft)]">
         <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
-        <b className="min-w-0 text-[15px] font-semibold leading-snug">{ctx.q ? <ToKhop chu={ten} q={ctx.q} /> : ten}</b>
+        <b className="min-w-0 text-[14px] font-semibold leading-snug">{ctx.q ? <ToKhop chu={ten} q={ctx.q} /> : ten}</b>
         <span className="flex items-center gap-2">{phai}</span>
       </button>
       {(mo || ctx.inDuoc) && <div id={idThan} className={`pb-3.5 pl-9 pr-3.5 ${mo ? 'block' : 'hidden print:block'}`}>{children}</div>}
@@ -501,7 +501,7 @@ export function LuoiThe({ viec, ctx }: { viec: ViecHd[]; ctx: Ctx }) {
                 const nhan = nhanVai(v);
                 return (
                   <div key={v.id} className="card grid gap-3 px-4 py-3.5 break-inside-avoid" data-muc={v.id}>
-                    <h3 className="m-0 flex flex-wrap items-center gap-2 text-[15px] font-bold text-slate-100">{t(v.ten)}{nhan && <ChipVai chu={nhan} />}</h3>
+                    <h3 className="m-0 flex flex-wrap items-center gap-2 text-[14px] font-bold text-slate-100">{t(v.ten)}{nhan && <ChipVai chu={nhan} />}</h3>
                     <TheViec v={v} ctx={ctx} />
                   </div>
                 );
@@ -526,7 +526,7 @@ function TheTinhHuong({ x, hd, onThe }: { x: TinhHuongHd; hd: HuongDan; onThe?: 
     <article className="grid gap-3.5" aria-label={t('Trường hợp {ten}', { ten: t(x.ten) })}>
       <dl className="m-0 grid gap-2.5 max-sm:gap-3">
         {ds.map((d) => (
-          <div key={d.k} className="grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[108px_minmax(0,1fr)]">
+          <div key={d.k} className="grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[14px] sm:grid-cols-[108px_minmax(0,1fr)]">
             <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
             <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
           </div>
@@ -551,7 +551,7 @@ export function KetQuaTim({ kq, q, ctx, onXemHet, onThe }: { kq: { viec: ViecHd[
   return (
     <>
       {n > 0 ? <p className="m-0 text-[13px] font-medium text-slate-400" aria-live="polite">{t('{n} mục khớp', { n })}</p>
-        : <p className="m-0 text-[15px] text-slate-400" aria-live="polite">{t('Không có việc của bạn khớp “{q}”.', { q: q.trim() })}</p>}
+        : <p className="m-0 text-[14px] text-slate-400" aria-live="polite">{t('Không có việc của bạn khớp “{q}”.', { q: q.trim() })}</p>}
       {kq.viec.length > 0 && <DsNhom viec={kq.viec} ctx={ctx} moDau />}
       {kq.muc.length > 0 && <Nhom ten={t('Màn này')}><DsViec>{kq.muc.map((m, i) => <DongMuc key={m.id} m={m} ctx={ctx} moSan={!kq.viec.length && i === 0} />)}</DsViec></Nhom>}
       {kq.tinhHuong.length > 0 && (

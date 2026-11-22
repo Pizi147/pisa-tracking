@@ -128,7 +128,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
   const chuaPhanCong = !dangTai && !loi && !dong.length;
   return (
     <section className="card overflow-clip p-0 [container-type:inline-size]" aria-labelledby="lop-cua-toi" data-hd="cv-lop-cua-toi">
-      <h2 id="lop-cua-toi" className="m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)]"
+      <h2 id="lop-cua-toi" className="m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug bg-[color:var(--surface-2)]"
         style={{ borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
         <span className="text-[color:var(--accent)]"><IconNhom k="lop-toi-day" /></span>
         <span className="text-[color:var(--text)]">{t('Lớp của tôi')}</span>
@@ -137,7 +137,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
       </h2>
       {loi ? <div className="p-4">{loi}</div>
         : dangTai ? <div className="p-4"><Skeleton rows={4} /></div>
-          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
+          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[14px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint [@container(max-width:639px)]:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
                 <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test')}</span><span>{t('Việc cần làm')}</span>
@@ -157,7 +157,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
     <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-col [@container(max-width:639px)]:items-start [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:py-3`}
       style={{ borderColor: 'var(--line)' }}>
       <span className="flex min-w-0 items-center gap-2 [@container(max-width:639px)]:w-full [@container(max-width:639px)]:flex-wrap">
-        <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[15px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
+        <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[14px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
         <span className="hidden [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:gap-1">{monCua(d, nhat)}</span>
       </span>
       {/* C1 (rà 19/11): cột 164 px — 5 môn một dòng, "chủ nhiệm" xuống dòng TRONG ô, không tràn sang cột Test. */}

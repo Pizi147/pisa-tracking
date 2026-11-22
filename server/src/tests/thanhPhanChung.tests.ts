@@ -87,7 +87,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     loi('28/09/26', 'ngay', 'Năm cần đủ 4 số, ví dụ 28/09/2026');
     loi('29/09/2026', 'ngay', 'Không được sau hôm nay', { toiDa: H });
     loi('27/09/2026', 'ngay', 'Không được trước hôm nay', { toiThieu: H });
-    loi('05/10/2026', 'ngay', 'Không được sau 04/10', { toiDa: '2026-10-04' });
+    loi('05/10/2026', 'ngay', 'Không được sau 04/10/2026', { toiDa: '2026-10-04' });
     loi('13/2026', 'thang', 'Gõ dạng mm/yyyy');
   });
   check('NEN (1) · tuần nhảy về Thứ Hai; mốc cuối = Chủ nhật, cắt về hôm nay khi là tuần hiện tại', () => {
@@ -113,19 +113,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.docONgay('15/10', 'ngay-hoac-thang', H).iso === '2026-10-15', 'ngày thiếu năm');
     const r = d.docONgay('08/2026', 'thang', H, { toiThieu: H }); assert(r.loi === 'Không được trước tháng 09/2026', JSON.stringify(r));
   });
-  check('NEN (1) · hiện: ngày dd/mm/yyyy · tháng mm/yyyy · ô tuần hiện mã tuần, phụ "21/09 – 27/09"; không bao giờ ISO', () => {
+  check('NEN (1) · hiện: ngày dd/mm/yyyy · tháng mm/yyyy · ô tuần hiện mã tuần, phụ "21/09/2026 – 27/09/2026"; không bao giờ ISO', () => {
     assert(d.hienONgay('2026-09-28', 'ngay') === '28/09/2026' && d.hienONgay('2026-10', 'thang') === '10/2026', 'hien');
     assert(d.hienONgay('2026-10', 'ngay-hoac-thang') === '10/2026' && d.hienONgay('', 'ngay') === '', 'hien 2');
-    assert(d.phuONgay('2026-09-21', 'tuan', H) === '21/09 – 27/09', d.phuONgay('2026-09-21', 'tuan', H));
+    assert(d.phuONgay('2026-09-21', 'tuan', H) === '21/09/2026 – 27/09/2026', d.phuONgay('2026-09-21', 'tuan', H));
     assert(d.phuONgay('2026-09-28', 'ngay', H) === '', 'ngày không có dòng phụ');
   });
   check('NEN (1) · Gần đây theo luật từng chỗ; lưới tháng tròn tuần', () => {
     const g = d.goiYGanDay('ngay', H, { toiDa: H });
-    assert(g.length === 5 && g[0].nhan === 'Hôm nay, 28/09' && g[1].giaTri === '2026-09-27', JSON.stringify(g));
+    assert(g.length === 5 && g[0].nhan === 'Hôm nay, 28/09/2026' && g[1].giaTri === '2026-09-27', JSON.stringify(g));
     const w = d.goiYGanDay('tuan', H, {});
     assert(w[0].nhan === 'Tuần này' && w[0].giaTri === H && w.length === 3, JSON.stringify(w));
     const tl = d.goiYGanDay('ngay', H, { toiThieu: H });
-    assert(tl.length === 5 && tl.every((x: any) => x.giaTri >= H) && tl[0].nhan === 'Hôm nay, 28/09', JSON.stringify(tl));
+    assert(tl.length === 5 && tl.every((x: any) => x.giaTri >= H) && tl[0].nhan === 'Hôm nay, 28/09/2026', JSON.stringify(tl));
     const m = d.goiYGanDay('thang', H, {}); assert(m[0].giaTri === '2026-09' && m[0].nhan === 'Tháng này', JSON.stringify(m));
     const l = d.luoiThang(2026, 9);
     assert(l.length === 5 && l[0][0] === '2026-08-31' && l[4][6] === '2026-10-04' && l.every((h: string[]) => h.length === 7), JSON.stringify(l));
@@ -333,11 +333,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   /* V22 (chủ SP 14/11, DESIGN.md): hạn / số quá hạn chỉ bằng MÀU (đỏ quá · vàng gần · thường chưa tới), KHÔNG ⚠ / biểu tượng. ⚠ chỉ còn cho lỗi, chặn,
      xác nhận. Chống tái phát: ⚠ (hay `<IconCanhBao`) đứng trong vài chục ký tự quanh chữ / khoá hạn trên CÙNG một dòng mã (bỏ chú thích) → lỗi;
      CSS: `content: '⚠'` ở bộ chọn hạn / số xấu → lỗi. */
-  check('V22 · hạn chỉ bằng màu: không ⚠ / IconCanhBao cạnh chữ hạn (web .tsx, shared/domain) và không ::before ⚠ cho hạn / số xấu (index.css)', () => {
+  check('V22 → NHẸ HƠN (22/11): ⚠ cạnh hạn CHỈ qua `DauQuaHan` (web/src/ui/Nhan.tsx); không ⚠ / IconCanhBao tự dựng cạnh chữ hạn (web .tsx, shared/domain), không ::before ⚠ cho hạn / số xấu (index.css)', () => {
     const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
     const HAN = /quá hạn|hạn hôm nay|hạn \{|hạn \$\{|còn \{n\} ngày|\{n\} ngày|quaHan|qua-han|'qua'|late:|overdue|treNgay|daysOverdue|ganHan|\bhan\b/i;
     /* Ngoại lệ có lý do: [tệp, mẩu chữ của dòng]. */
     const NGOAI_LE: [string, string][] = [
+      /* Luật hạn NHẸ HƠN (chủ SP 22/11, thay V22): quá hạn có thêm dấu ⚠ — MỘT chỗ dựng, `Han` / chỗ khác dùng `<DauQuaHan />`. */
+      ['web/src/ui/Nhan.tsx', 'export const DauQuaHan = () =>'],
     ];
     const tep = [...tepNguon('web/src').filter((f) => f.endsWith('.tsx')), ...tepNguon('shared/domain')];
     const loi: string[] = [];
@@ -352,7 +354,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     for (const m of boChuThich(doc('web/src/index.css')).matchAll(/([^{}]*)\{[^{}]*content:\s*["'][^"']*⚠/g)) {
       if (/qua|han|late|tre|so-bam|dai-cs/i.test(m[1])) loi.push(`index.css: ${m[1].trim()}`);
     }
-    assert(loi.length === 0, `${loi.length} chỗ hạn còn ⚠ (V22: chỉ màu): ` + loi.slice(0, 6).join(' · '));
+    assert(loi.length === 0, `${loi.length} chỗ hạn tự dựng ⚠ (chỉ qua DauQuaHan): ` + loi.slice(0, 6).join(' · '));
   });
   /* PTA Plan rà #1649: V22 "không ⚠ hay biểu tượng nào kèm" — cả chấm "●" ở chip / badge báo hạn, quá hạn, việc chờ. Chấm "có việc mới" trên tab giữ. */
   check('V22 · không chấm "●" ở chip hạn / quá hạn / việc chờ: Nhan late + soon, DongHan, BadgeViec qua + cho, .vh-qua, badge lớp; "●" chữ không đứng cạnh chữ hạn', () => {
@@ -398,7 +400,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
     assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
     const k = doc('web/src/ui/KhungPanel.tsx');
-    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
+    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
   });
   check('GD-6 · phần mở rộng em: TVV chỉ ở "Điểm theo lượt"; thẻ kỹ năng / môn quá hạn chỉ màu (V22); lịch sử Case + Nhật ký PA = LichSuGap', () => {
     const b = doc('web/src/modules/classes/BangHoSoLop.tsx');

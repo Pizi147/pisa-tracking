@@ -375,7 +375,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
       style={{ borderColor: 'var(--line-strong)' }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
-        <div className="min-w-0 flex-1 text-[17px] font-bold text-slate-100" title={tieuDe}>
+        <div className="min-w-0 flex-1 text-[16px] font-bold text-slate-100" title={tieuDe}>
           {attemptId !== null
             ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? khoaBaiThuong(dot.kind) : 'mock', classId }, null)} onClick={onClose}
                 className="ten-ho-so flex min-h-[44px] items-center gap-1 sm:min-h-0"><span className="ten-hv">{tieuDe}</span><span aria-hidden>›</span></Link>

@@ -423,7 +423,7 @@ function TheTaiKhoan(p: ThaoTacTk & { tai: TaiDong }) {
     <div className="grid gap-1.5 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <div className="flex items-center gap-2">
         <span className="min-w-0">
-          <span className={`text-[15px] font-semibold ${u.status === 'deleted' ? 'text-faint' : 'text-slate-100'}`}>{u.fullName}</span>{' '}
+          <span className={`text-[14px] font-semibold ${u.status === 'deleted' ? 'text-faint' : 'text-slate-100'}`}>{u.fullName}</span>{' '}
           <span className="whitespace-nowrap text-xs tabular-nums text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
         </span>
         <span className="ml-auto inline-flex shrink-0 items-center gap-1.5"><NutTaiKhoan {...p} /></span>

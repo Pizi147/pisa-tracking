@@ -1,7 +1,7 @@
 // CONG-CU — ĐO BẢNG trên trang thật (từ `v2b-do-bang.mjs` + `v3a-cat.mjs` của đợt đánh giá 20/10). Mỗi <table> thấy được:
 // g1 lệch tiêu đề ↔ ô > 2 px (cột ≥ 3 ô; so theo kiểu căn THẬT của ô: mép trái / mép phải / tâm) · g2 lệch đường cơ sở trong hàng > 2 px
 // g3 cao hàng ∉ {44, 64} ± 1 · g4 đè nhau: hai phần tử bấm được giao nhau > 2 px (kể cả nút opacity 0 chờ rê chuột — vẫn bấm được)
-// g5 cỡ chữ ngoài thang 12 · 13 · 14 · 15 · 17 · 22 · 28.
+// g5 cỡ chữ ngoài thang 12 · 13 · 14 · 16 · 20 · 26 (NHẸ HƠN).
 // Chạy trong `do-khung` ở MỌI kịch bản: 1440 tối, 1280 tối, 375 sáng. Lỗi đã biết nằm ở `scripts/mien-do.json` (mỗi dòng ghi PR sẽ gỡ).
 // Chạy riêng phần bảng: npm run dev (PORT/WEB_PORT riêng) rồi `KHUNG_BASE=http://localhost:5611 node scripts/do-bang.mjs [lọc]`
 // (= do-khung với KHUNG_CHI=bang). MIEN=0 tắt danh sách miễn (xem lỗi thật).
@@ -24,7 +24,7 @@ export const mienThua = (congCu) => process.env.MIEN === '0' ? [] : MIEN.filter(
 
 /** Chạy trong trang (page.evaluate) — tự đủ, không dùng biến ngoài. Trả mảng dòng lỗi `«bảng» gN …`. */
 export function doBang() {
-  const THANG = [12, 13, 14, 15, 17, 22, 28];
+  const THANG = [12, 13, 14, 16, 20, 26];   // NHẸ HƠN (chủ SP 22/11)
   const cv = document.createElement('canvas').getContext('2d');
   const descent = (cs) => { cv.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; return cv.measureText('ag').fontBoundingBoxDescent ?? parseFloat(cs.fontSize) * 0.25; };
   const r1 = (v) => Math.round(v * 10) / 10;

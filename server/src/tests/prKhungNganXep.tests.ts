@@ -90,7 +90,7 @@ export async function runPrKhungNganXepTests(t: YThucTestKit) {
   check('6b-1 · nhãn loại không đoán "VIỆC" theo `dau`: panel việc khai qua dauViec / loai; panel chỉ đọc không mang nhãn VIỆC', () => {
     const k = docSach('web/src/ui/KhungPanel.tsx');
     assert(!/dau \? t\('Việc'\)/.test(k), 'khung còn đoán "Việc" khi có dau');
-    assert(/dau\?\.loai/.test(k), 'khung không đọc nhãn loại từ dau');
+    assert(!/dongLoai|vachLoai/.test(k), 'NHẸ HƠN (v23 đầu một dòng): khung không còn vẽ dòng loại "Việc · …"');
     assert(/loai: t\('Việc'\)/.test(docSach('web/src/ui/KhuonViec.tsx')), 'dauViec không khai nhãn VIỆC');
     for (const f of ['web/src/ui/LichSuThayDoi.tsx', 'web/src/modules/huongDan/NutHuongDan.tsx', 'web/src/modules/students/PanelMotEm.tsx']) {
       assert(!/dauViec\(/.test(docSach(f)), `${f} chỉ đọc mà dùng dauViec (nhãn VIỆC)`);

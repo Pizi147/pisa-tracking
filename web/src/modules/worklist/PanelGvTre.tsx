@@ -127,7 +127,7 @@ function NhomGv({ g, mo, onMo, dai = true, chep }: { g: NhomHien; mo: string; on
   const lopChuaGv = g.gvId === 0 ? [...new Map(g.dong.filter((d) => d.classId).map((d) => [d.classId!, d.lop])).entries()] : [];
   return (
     <section>
-      {dai && <h3 className="sticky top-0 z-[1] -mx-4 m-0 flex min-h-[40px] flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-[15px] font-bold leading-[1.35] text-slate-100"
+      {dai && <h3 className="sticky top-0 z-[1] -mx-4 m-0 flex min-h-[40px] flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-[14px] font-bold leading-[1.35] text-slate-100"
         style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
         {g.gvId > 0
           ? <Link to={`/giao-vien/${g.gvId}`} className="text-slate-100 no-underline hover:underline">{g.ten}</Link>
@@ -144,7 +144,7 @@ function NhomGv({ g, mo, onMo, dai = true, chep }: { g: NhomHien; mo: string; on
               <button type="button" disabled={!!d.du} aria-current={chon || undefined} onClick={() => onMo(d.key)}
                 style={chon ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}
                 className="grid min-h-[44px] w-full appearance-none items-center gap-x-4 gap-y-1 border-0 bg-transparent px-4 py-2.5 text-left hover:bg-[color:var(--accent-soft)] disabled:hover:bg-transparent grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_4.5rem_6rem_9.5rem]">
-                <span className={`min-w-0 text-[15px] font-medium leading-snug ${d.du ? 'text-slate-300' : 'text-slate-100'}`}>
+                <span className={`min-w-0 text-[14px] font-medium leading-snug ${d.du ? 'text-slate-300' : 'text-slate-100'}`}>
                   {tenDong(d)} <span className={`${CHIP_VUONG} ml-1 align-[1px] text-[color:var(--accent)]`} style={{ borderColor: 'var(--line-strong)' }}>{d.knChu}</span>
                   {d.tuan && <span className="ml-2 text-[13px] font-normal text-slate-400">{t('thi {tuan}', { tuan: tuanLich(d.tuan) })}</span>}
                 </span>
@@ -248,7 +248,7 @@ function BangEm({ d }: { d: DongGvTre }) {
         {d.kns.map((k) => <span key={k} role="columnheader" className="text-center">{tenCot(k)}</span>)}
       </div>
       {hang.map((h) => (
-        <div key={h.id} role="row" className="grid min-h-[44px] items-center gap-x-2 border-b px-4 py-2 text-[15px]" style={{ gridTemplateColumns: cot, borderColor: 'var(--line)' }}>
+        <div key={h.id} role="row" className="grid min-h-[44px] items-center gap-x-2 border-b px-4 py-2 text-[14px]" style={{ gridTemplateColumns: cot, borderColor: 'var(--line)' }}>
           <span role="cell" className="min-w-0">
             <Link className="ten-hv font-medium text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(h.id)}>{h.ten}</Link>
           </span>

@@ -182,7 +182,7 @@ function DaiBuoc({ hien, loc, soLoc, datLoc }: {
           <button type="button" aria-pressed={chuaPa} onClick={() => datLoc(chuaPa ? [] : [...dauHai])}
             className="absolute left-1/2 top-0 inline-flex min-h-[28px] -translate-x-1/2 -translate-y-1/2 appearance-none items-center gap-1.5 whitespace-nowrap rounded-md border-0 bg-[color:var(--surface)] px-2.5 text-[14px] font-bold text-[color:var(--accent)] max-sm:min-h-[44px]"
             style={chuaPa ? { background: 'var(--accent-soft)' } : undefined}>
-            {t('Chưa có PA')} · <span className="text-[17px] tabular-nums">{tong}</span>
+            {t('Chưa có PA')} · <span className="text-[16px] tabular-nums">{tong}</span>
           </button>
         </div>
         {loc.length > 0 && <button type="button" className="link col-span-2 mt-3 self-start justify-self-end appearance-none whitespace-nowrap border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={() => datLoc(null)}>{t('Bỏ lọc bước')}</button>}
@@ -193,7 +193,7 @@ function DaiBuoc({ hien, loc, soLoc, datLoc }: {
             className={`flex min-h-[44px] min-w-0 appearance-none flex-col items-start justify-center gap-0.5 border-0 px-3 py-1.5 text-left disabled:opacity-50 sm:min-h-[52px] ${i % 2 ? 'max-sm:border-l' : ''} ${i > 0 ? 'sm:border-l' : ''} ${i > 1 ? 'max-sm:border-t' : ''}`}
             style={{ borderColor: 'var(--line-strong)', background: bat(b) ? 'var(--accent-soft)' : 'transparent', boxShadow: bat(b) ? 'inset 0 -2px 0 var(--accent)' : undefined }}>
             <span className="text-[13px] font-medium leading-tight text-slate-300">{NHAN_BUOC_CASE[b]}</span>
-            <span className="text-[15px] font-bold tabular-nums text-slate-100">{so(b)}</span>
+            <span className="text-[14px] font-bold tabular-nums text-slate-100">{so(b)}</span>
           </button>
         ))}
       </div>
@@ -402,7 +402,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
             {COT_CASE.map((c) => <OBang key={c.key} c={c}>{oCase(h.r, c.key)}</OBang>)}
           </tr>
         ) : (
-          <tr className="nhom-b"><td colSpan={COT_CASE.length} className="px-4 py-2 text-[15px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
+          <tr className="nhom-b"><td colSpan={COT_CASE.length} className="px-4 py-2 text-[14px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
             {h.ten}<span className="ml-2 inline-flex items-center gap-2 align-middle"><span className={`${CHIP_VUONG} ${h.conCho ? 'text-slate-200' : 'text-ok'}`} style={{ borderColor: 'var(--line-strong)' }} title={h.conCho ? t('{n} Case còn chờ', { n: h.conCho }) : t('Đã xử lý hết')}>{h.conCho || '✓'}</span>
               {h.tre > 0 && <span className="text-[13px] font-medium text-late">{t('{n} quá hạn', { n: h.tre })}</span>}</span>
           </td></tr>
@@ -411,11 +411,11 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           <button type="button" className="btn btn-sm min-h-[44px]" onClick={() => datMoRong((m) => [...m, h.nhom])}>+ {h.them} Case</button>
         ) : 'r' in h ? (
           <div className="grid gap-1" data-dong={h.r.id}>
-            <div className="flex items-baseline justify-between gap-2"><span className="min-w-0 text-[15px] font-medium">{oCase(h.r, 'hv')}</span>{oCase(h.r, 'han')}</div>
+            <div className="flex items-baseline justify-between gap-2"><span className="min-w-0 text-[14px] font-medium">{oCase(h.r, 'hv')}</span>{oCase(h.r, 'han')}</div>
             <div className="text-[13px] text-slate-400">{oCase(h.r, 'case')}</div>
             <div className="text-[13px] text-slate-300">{oCase(h.r, 'gv')}</div>
           </div>
-        ) : <div className="-mx-3 -my-2.5 px-3 py-2 text-[15px] font-bold" style={{ background: 'var(--surface-2)' }}>{h.ten} · {h.conCho}{h.tre > 0 && <span className="ml-2 text-[13px] font-medium text-late">{t('{n} quá hạn', { n: h.tre })}</span>}</div>)}
+        ) : <div className="-mx-3 -my-2.5 px-3 py-2 text-[14px] font-bold" style={{ background: 'var(--surface-2)' }}>{h.ten} · {h.conCho}{h.tre > 0 && <span className="ml-2 text-[13px] font-medium text-late">{t('{n} quá hạn', { n: h.tre })}</span>}</div>)}
         lopHang={(h) => ('r' in h ? '' : 'them' in h ? 'them' : 'nhom-b')} />
     );
   };
@@ -429,7 +429,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     );
     if (k === 'case') return (
       <span className="flex min-w-0 flex-col items-start gap-0.5">
-        {r.deMuc && <span className="text-[15px] font-bold leading-snug text-slate-100">{r.deMuc}</span>}
+        {r.deMuc && <span className="text-[14px] font-bold leading-snug text-slate-100">{r.deMuc}</span>}
         <span className="flex min-w-0 max-w-full flex-nowrap items-center gap-x-2">
           {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
           <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
@@ -454,7 +454,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
               <CanLam trongDong>
                 {v.loai === 'xac-nhan-pa' && v.pa ? (
                   <div className="flex flex-col gap-1">
-                    <span className="text-[15px] font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[v.pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.pa.kind)}</span>
+                    <span className="text-[14px] font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[v.pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.pa.kind)}</span>
                     {v.pa.description && <span className="text-sm text-slate-200">{dichDu(v.pa.description)}</span>}
                     <span className="text-[13px] text-slate-400">{[v.pa.performer, v.pa.mocChu].filter(Boolean).join(' · ')}</span>
                   </div>
@@ -511,7 +511,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       <li key={r.id} data-dong={r.id} className="border-t px-4 pb-[11px] pt-2.5 first:border-t-0" style={{ borderColor: 'var(--line)', ...(r.xong ? { background: 'rgb(var(--ok-bg-rgb))' } : moRong ? { background: 'var(--accent-soft)' } : {}) }}>
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1.5">
           {xh && <span className={`xh ${xh.lop}`}>{xh.chu}</span>}
-          <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]">{ten}</Link>
+          <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="text-[14px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]">{ten}</Link>
           {hienLop(tieuDe, lop) && <span className="whitespace-nowrap text-[13px] text-slate-400">{lop}</span>}
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           <span className="ml-auto inline-flex items-center gap-2">
@@ -558,7 +558,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
         <li key={r.id} data-dong={r.id} className="flex border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 pl-4 pr-1">
           <span className="flex w-full items-center gap-2.5">
-            <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-slate-100">
+            <span className="min-w-0 flex-1 text-[14px] font-medium leading-snug text-slate-100">
               {r.title}
             </span>
             {chipHan}

@@ -395,7 +395,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       <span className="inline-grid gap-1.5 rounded-[10px] border px-2.5 py-2" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}
         role="group" aria-label={t('Kết quả · {ten}', { ten: e.fullName })}>
         <span className="flex items-baseline gap-2 whitespace-nowrap">
-          {nhanLuot ? <span className="text-[13px] font-semibold text-slate-400">{nhanLuot}</span> : <b className="text-[15px] font-bold text-faint">—</b>}
+          {nhanLuot ? <span className="text-[13px] font-semibold text-slate-400">{nhanLuot}</span> : <b className="text-[14px] font-bold text-faint">—</b>}
           {tyLe != null && <b className={`text-lg font-bold tabular-nums ${datTong ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{datTong ? '✓' : '✗'} {Math.round(tyLe * 100)} %</b>}
         </span>
         <span className="grid grid-cols-[repeat(4,68px)] gap-1 max-sm:grid-cols-[repeat(4,minmax(0,1fr))]">
@@ -775,7 +775,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         <span className="flex">{idsChon.length > 0 && (
           <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label={t('Chọn cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} checked={tatCa}
             onChange={() => setChon((s) => { const n = new Set(s); for (const id of idsChon) { if (tatCa) n.delete(id); else n.add(id); } return n; })} />)}</span>
-        <span className="flex items-center gap-2 whitespace-nowrap text-[15px] font-bold text-slate-100 xl:[grid-column:span_3]">
+        <span className="flex items-center gap-2 whitespace-nowrap text-[14px] font-bold text-slate-100 xl:[grid-column:span_3]">
           {TEN_NHOM[k]}<span className="inline-flex h-[22px] items-center rounded border px-1.5 text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{t('{n} em', { n: rows.length })}</span>
           {k === 'cho' && <NutLuat label={t('Chờ Final')}>{t('Chốt trước Final được. Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final.')}</NutLuat>}
         </span>

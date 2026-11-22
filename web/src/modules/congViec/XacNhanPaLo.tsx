@@ -156,7 +156,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
         )}
         {conLai.length > 0 && (
           <CanLam>
-            {tenLoai && <span className="text-[15px] font-bold text-slate-100">{dich(tenLoai)}{it.sos ? <span className="ml-2 text-[13px] font-normal text-slate-400">{t('quy chế SOS {sos}', { sos: it.sos })}</span> : null}</span>}
+            {tenLoai && <span className="text-[14px] font-bold text-slate-100">{dich(tenLoai)}{it.sos ? <span className="ml-2 text-[13px] font-normal text-slate-400">{t('quy chế SOS {sos}', { sos: it.sos })}</span> : null}</span>}
             <Truong nhan={t('Nội dung / hướng dẫn')} batBuoc={canChung} loi={lf.loiCua(loi, 'noi-dung')} dem={{ co: moTa.trim().length, can: TOI_THIEU, toiDa: TRAN_CHU.noiDungPa }}>
               <textarea className="field w-full" rows={2} value={moTa} disabled={busy} {...lf.o(loi, 'noi-dung')}
                 onChange={(e) => setMoTa(e.target.value)} placeholder={GOI_Y_MO_TA_PA} />

@@ -142,7 +142,7 @@ export function ThanhViec({ viec, onLam, dangMo }: {
   const quaHan = ds.filter((x) => x.gap === 'qua-han').length;
   return (
     <section aria-label={t('Việc cần làm')} className="card overflow-clip p-0">
-      <h2 className="m-0 flex min-h-[44px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
+      <h2 className="m-0 flex min-h-[44px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug"
         style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
         <svg viewBox="0 0 16 16" aria-hidden className="h-4 w-4 shrink-0 fill-none stroke-current text-[color:var(--accent)]" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M3 4l1.5 1.5L7 3M3 9l1.5 1.5L7 8M9 4.5h4M9 9.5h4M3 13h10" /></svg>
         <span className="text-[color:var(--text)]">{t('Việc cần làm')}</span>
@@ -178,8 +178,8 @@ function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; d
       <span className="grid min-w-0 gap-px">
         {bam
           ? <button type="button" aria-label={[ten, ...the].join(', ')} aria-expanded={dangMo} onClick={(e) => { e.stopPropagation(); bam(); }}
-              className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
-          : <span className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
+              className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[14px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
+          : <span className="text-[14px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
         <ThePhu ds={the.slice(0, 2)} xuong />
         {/* SAU-THI-GON (chủ SP 21/11): "Cập nhật kết quả thi thật" (đã thi, chưa KQ) — "Không thi" bấm tại chỗ; chỉ khi việc mở được ở đây (người xem nhập được). */}
         {x.loai === 'thi-that' && bam && soCuaKhoa(x.key) && <span className="mt-1 flex"><NutKhongThi cycleId={soCuaKhoa(x.key)!} /></span>}
@@ -189,7 +189,7 @@ function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; d
       {bam ? <>
         <span className="flex max-sm:hidden"><button type="button" tabIndex={-1} aria-hidden className="btn btn-sm h-[30px] min-h-[30px] w-full justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold"
           onClick={(e) => { e.stopPropagation(); bam(); }}>{nut}</button></span>
-        <span aria-hidden className="text-[15px] text-faint sm:hidden">›</span>
+        <span aria-hidden className="text-[14px] text-faint sm:hidden">›</span>
       </> : <span />}
     </div>
   );
@@ -240,7 +240,7 @@ export function DaiTamDung({ tamDung, onQuayLai }: {
   onQuayLai?: () => void;
 }) {
   if (!tamDung) return null;
-  const ngayDung = `${tamDung.tu.slice(8, 10)}/${tamDung.tu.slice(5, 7)}`;
+  const ngayDung = ngay(tamDung.tu);
   return (
     <section aria-label={t('Học viên đang tạm dừng')} className="flex items-start gap-2.5 rounded-[10px] bg-soon-bg px-3 py-2.5 shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">
       <span className="mt-[3px] text-soon"><IconTamDung /></span>

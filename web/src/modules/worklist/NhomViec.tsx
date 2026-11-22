@@ -123,7 +123,7 @@ export function HopNhomViec({ neo, nhom: dau, branchId, onDong }: {
     <HopNeo neo={neo} nhan={t('Nhóm công việc')} rong={520} onNgoai={() => onDong(daDoi.current)} lop="grid gap-3 p-0">
       <div className="flex items-start gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="grid min-w-0 flex-1 gap-0.5">
-          <b className="text-[15px] font-bold">{t('Nhóm công việc')}</b>
+          <b className="text-[14px] font-bold">{t('Nhóm công việc')}</b>
           <span className="text-[13px] text-dim">{t('{n} nhóm đang dùng', { n: dangDung })}</span>
         </div>
         <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={() => onDong(daDoi.current)}>✕</button>

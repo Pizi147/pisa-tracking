@@ -354,7 +354,7 @@ export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dic
       <div className="ds-pa">
         {themPa && (
           <div className="the-pa mo moi-doi" data-pa-moi>
-            <div className="pa-dau" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}><span className="ten-pa py-1 text-[15px] font-semibold">{t('PA mới')}</span></div>
+            <div className="pa-dau" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}><span className="ten-pa py-1 text-[14px] font-semibold">{t('PA mới')}</span></div>
             <div className="pa-than">
               <KhungTrongThe.Provider value>
                 <ThemPaPanel caseId={data.id} studentId={data.student?.id} coPaBatBuoc={coPaBatBuoc} onClose={() => setThemPa(false)}

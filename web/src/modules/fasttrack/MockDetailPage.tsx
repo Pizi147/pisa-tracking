@@ -882,7 +882,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
           className={`${ROW_GRID} cursor-pointer scroll-mt-4 px-3 py-2.5 ${r.required ? '' : 'row-muted'}`}>
           <div role="cell" className="flex min-w-0 items-center gap-1.5 md:order-none">
             <button type="button" aria-expanded={mo} aria-controls={mo ? `vung-${k}` : undefined} onClick={() => onMoKn(k)}
-              className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[15px] font-bold text-slate-100 sm:min-h-0">
+              className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[14px] font-bold text-slate-100 sm:min-h-0">
               <MuiMoDong mo={mo} />{skillLabel(k)}
             </button>
             {/* GD-11c (mockup ⑦ C1, [XM-2]): công thức Writing vào ⓘ cạnh tên — cùng câu với hộp nhập điểm. */}

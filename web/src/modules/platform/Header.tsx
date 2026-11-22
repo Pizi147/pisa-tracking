@@ -301,7 +301,7 @@ export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null 
           /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
           <div role="dialog" aria-label={t('Tài khoản {ten}', { ten: hoTen })} className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[70dvh] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
             {/* U09 #6 (G3, mockup v11 khu F): tên · vai — khối GVCN + Kỹ năng được phân công đã sang Hồ sơ GV. */}
-            <div className="text-[15px] font-bold text-slate-100">{session?.user?.fullName}</div>
+            <div className="text-[14px] font-bold text-slate-100">{session?.user?.fullName}</div>
             <div className="mb-3 text-[13px] text-dim">{session?.user?.title && dich(session.user.title)}</div>
 
             {/* PR-OV2a (mockup overhaul-3 §2): đổi góc nhìn — chỉ vai tài khoản đang nắm; chọn vai gốc = về làm việc bằng mọi vai. */}

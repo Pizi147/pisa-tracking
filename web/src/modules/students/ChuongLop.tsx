@@ -80,7 +80,7 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
   return (
     <section aria-label={t('Chương theo lớp')} className="space-y-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <h3 className="m-0 text-[15px] font-semibold text-slate-100">
+        <h3 className="m-0 text-[14px] font-semibold text-slate-100">
           {t('{n} lớp · từ {tuan} · {so} tuần', { n: chuong.length, tuan: tuanLich(chuong[0].tu, homNay), so: tongTuan })}
         </h3>
         <span className="text-[12px] text-slate-400">{dienThoai ? t('Chương đang học mở sẵn; chương cũ bấm để mở') : t('Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau')}</span>
@@ -124,7 +124,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
       <div className="flex flex-col gap-0.5">
         <span className={`text-[12px] font-bold tracking-[.05em] ${c.dangHoc ? 'text-[color:var(--accent)]' : 'text-slate-400'}`}>{dich(c.nhan)}</span>
         {/* Bàn phím: mã lớp là nút (cả thẻ bấm được bằng chuột) — Tab tới được mọi chương, không lồng liên kết ghim vào nút. */}
-        <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[15px] font-bold leading-tight text-slate-100"
+        <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[14px] font-bold leading-tight text-slate-100"
           title={t('Xem trục tuần {lop}', { lop: c.code })} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
         <span className="text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay)}</span>
         {c.gvcn && <span className="text-[12px] text-slate-400">{t('GVCN')} {c.gvcn}</span>}

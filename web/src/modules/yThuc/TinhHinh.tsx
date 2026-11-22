@@ -197,7 +197,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       {che.loai === 'bao' ? (
         /* GD-4d (⑤ F3 / ① K5c `.h-dau`): "Tình hình học tập" + dòng phụ "Gửi TVV", ✕ cùng hàng tiêu đề. */
         <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
-          <b className="min-w-0 text-[15px] font-bold text-slate-100">{t('Tình hình học tập')}</b>
+          <b className="min-w-0 text-[14px] font-bold text-slate-100">{t('Tình hình học tập')}</b>
           <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={ngoai}>✕</button>
           <span className="text-[13px] text-dim">{t('Gửi TVV')}</span>
         </div>
@@ -248,7 +248,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       )}
       <label className="grid gap-1.5">
         <span className="text-sm font-bold text-slate-100">{nhanO} <span className="text-bad">*</span></span>
-        <textarea className={`field min-h-[96px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} maxLength={TOI_DA + 50}
+        <textarea className={`field min-h-[96px] py-2 text-[14px] ${dai ? 'border-late-line' : ''}`} value={chu} maxLength={TOI_DA + 50}
           readOnly={luu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
         <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-bad' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
       </label>
@@ -332,7 +332,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
         ) : (
           <label className="grid gap-1.5">
             <span className="text-sm font-bold text-slate-100">{t('Kết quả')} <span className="text-bad">*</span></span>
-            <textarea className={`field min-h-[110px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} readOnly={luu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
+            <textarea className={`field min-h-[110px] py-2 text-[14px] ${dai ? 'border-late-line' : ''}`} value={chu} readOnly={luu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
             <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-late' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
           </label>
         )}

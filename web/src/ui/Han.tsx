@@ -1,7 +1,6 @@
-import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
-import { BadgeHan, QuaHan } from './Nhan.tsx';
+import { deadlineView, mucHan, ngayTheoGioVN, type DeadlineKind } from '@shared/domain/index.ts';
+import { DauQuaHan, LOP_MUC_HAN } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
-import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỌI HẠN ĐỀU CÓ LOẠI (HE_GIAO_DIEN §4, đóng lỗi F11).
@@ -13,16 +12,13 @@ import { t } from '@shared/i18n/index.ts';
  * phải một cảnh báo lúc chạy. Mỗi loại (`DEADLINE_KINDS`, PR-NEN thêm Duyệt · Xử lý vi phạm ·
  * Mini Test) là một đồng hồ riêng trong rule book; ngày trần ("30/08") không nói được người đọc đang trễ việc gì.
  *
- * PR-UX0 (B-2/B-3): việc là TIÊU ĐỀ DÒNG ở chỗ gọi, nên hạn chỉ là chữ mờ "hạn hết T2 31/08"; quá hạn nối
- * ngay sau bằng badge đỏ ("quá hạn 15 ngày", `BadgeHan` — BADGE-QUA-HAN 15/11); đúng hạn hôm nay là badge vàng "hôm nay"
- * ( V22: hạn chỉ bằng màu, không biểu tượng). Chỗ không có tiêu đề nói việc thì truyền `coViec` để hiện lại tên việc. Bản đầy đủ nằm ở tooltip.
+ * LUẬT HẠN NHẸ HƠN (chủ SP 22/11, v23 `.han`): chữ "hạn 21/11/2026" tô theo `mucHan` — chữ phụ (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) ·
+ * đỏ + ⚠ (quá hạn, đếm từ hạn GỐC). Chữ "quá hạn n ngày" chỉ ở dòng việc / đầu panel việc → `soNgay`; bảng báo cáo / hồ sơ chỉ tô ngày.
+ * Bản đầy đủ nằm ở tooltip. `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính.
  *
- * `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính, không bao giờ quá hạn, không bao giờ đỏ.
- *
- * Toàn bộ luật (câu chữ, đếm quá hạn từ hạn GỐC, hiện cả hẹn xử lý) nằm ở `deadlineView` trong
- * `shared/domain/display.ts` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
+ * Toàn bộ câu chữ nằm ở `deadlineView` (`shared/domain/display.ts`), mức ở `mucHan` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
  */
-export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, boTinHieu, mo }: {
+export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo }: {
   loai: DeadlineKind;
   /** Hạn đang hiệu lực, dạng `2026-09-23`. `null` = chưa đặt. */
   han: string | null;
@@ -36,29 +32,22 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, b
   ghiChu?: string;
   /** Hiện tên việc ("Nhập điểm · hạn 23/09") — chỉ cho chỗ không có tiêu đề nói việc. */
   coViec?: boolean;
-  /** Phần "quá hạn"/"hôm nay" xuống dòng riêng (cột hạn hẹp, cột thẳng hàng). */
-  haiDong?: boolean;
-  /** Chỉ chữ hạn, không "quá hạn n ngày"/"hôm nay" — chỗ gọi tự vẽ badge riêng (Lịch Test khối 2, PR-LT3 D6). */
-  boTinHieu?: boolean;
-  /** Việc của người khác: "quá hạn" chữ mờ, không đỏ. */
+  /** Dòng việc / đầu panel việc: thêm "· quá hạn n ngày" sau ngày. */
+  soNgay?: boolean;
+  /** Việc của người khác: không tô màu (⚠ vẫn giữ — nói nghĩa không bằng màu). */
   mo?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai, due: han, originalDue: hanGoc, reschedule: hen, today: homNay });
+  const goc = hanGoc && ngayTheoGioVN(hanGoc) ? hanGoc : han;
+  const muc = loai === 'du-kien-ket-thuc' || !goc ? 'xa' : mucHan(goc, homNay);
   const title = v.text + (v.title ? ` · ${v.title}` : '');
-  const tinHieu = (
-    <>
-      {v.tone === 'overdue' && <QuaHan ngay={v.daysOverdue} mo={mo} />}
-      {v.homNay && (mo ? <span className="text-slate-400">{t('hôm nay')}</span> : <BadgeHan muc="gan">{t('hôm nay')}</BadgeHan>)}
-    </>
-  );
-  const coTinHieu = !boTinHieu && (v.tone === 'overdue' || v.homNay);
   return (
-    <span title={title} className="text-xs tabular-nums text-slate-500">
+    <span title={title} className="text-[13px] tabular-nums text-dim">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
-      {/* OV-12e → BADGE-QUA-HAN: còn ≤ 3 ngày (chưa tới hôm nay) — badge vàng, cùng ngưỡng chip hạn (`deadlineView.ganHan`). */}
-      {v.ganHan && !v.homNay && !boTinHieu && !mo ? <BadgeHan muc="gan">{v.han}</BadgeHan> : v.han}
-      {coTinHieu && (haiDong ? <span className="block">{tinHieu}</span> : <> {tinHieu}</>)}
+      <span className={`whitespace-nowrap ${mo ? LOP_MUC_HAN.xa : LOP_MUC_HAN[muc]}`}>
+        {muc === 'qua' && <DauQuaHan />}{v.han}{soNgay && v.quaHan && <> · {v.quaHan}</>}
+      </span>
       {v.hen && <> · {v.hen}</>}
       {ghiChu && <> · {ghiChu}</>}
     </span>

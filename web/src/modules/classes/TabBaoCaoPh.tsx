@@ -151,11 +151,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
       {(dotHien ?? (data.dot ? null : data.sapMo)) && <ChipHan loai="viec-van-hanh" han={(dotHien ?? data.sapMo)!.han} vien />}
       {data.dot && toiCon !== null && (
         <span className="text-[13px] text-dim">{toiCon > 0
-          ? <>{t('bạn còn')} <b className="text-[15px] tabular-nums text-slate-100">{toiCon}</b> / {em.length} {t('em')}</>
+          ? <>{t('bạn còn')} <b className="text-[14px] tabular-nums text-slate-100">{toiCon}</b> / {em.length} {t('em')}</>
           : <span className="font-semibold text-ok">✓ {t('Xong phần của bạn')}</span>}</span>
       )}
       <span className="flex-1" />
-      {data.dot && <span className="text-[13px] text-dim">{t('Cả lớp đủ')} <b className="text-[15px] tabular-nums text-slate-100">{soDu}</b> / {em.length} {t('em')}</span>}
+      {data.dot && <span className="text-[13px] text-dim">{t('Cả lớp đủ')} <b className="text-[14px] tabular-nums text-slate-100">{soDu}</b> / {em.length} {t('em')}</span>}
       {/* BAO-PH-DAT-NHANH (chủ SP 15/11): thanh công cụ của tab, không trong tiêu đề bảng (V5). Chỉ khi người xem viết được một phần có tiêu chí. */}
       {phanDat.length > 0 && <button ref={nutDatNhanh} type="button" className={nutDot} aria-expanded={datNhanh} onClick={() => { setMo(null); setDatNhanh((x) => !x); }}>{t('Đặt nhanh')}</button>}
       {data.quyetDot && (data.sapMo || (data.dot && dotHien?.them)) && <>
@@ -189,18 +189,18 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
         {congCu}
         {data.sapMo ? (
           <div className="rounded-lg border px-4 py-5 text-center" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="m-0 text-[17px] font-bold text-slate-100">{dich(data.sapMo.nhan)} · {t('Sắp mở {ngay}', { ngay: ngay(data.sapMo.mo, homNay) })}</h2>
+            <h2 className="m-0 text-[16px] font-bold text-slate-100">{dich(data.sapMo.nhan)} · {t('Sắp mở {ngay}', { ngay: ngay(data.sapMo.mo, homNay) })}</h2>
             <p className="m-0 mt-1 text-sm text-slate-400">{t('Hạn {ngay}', { ngay: ngay(data.sapMo.han, homNay) })}</p>
           </div>
         ) : data.daBo ? (
           <div className="rounded-lg border px-4 py-5 text-center" style={{ borderColor: 'var(--line)' }}>
-            <h2 className="m-0 text-[17px] font-bold text-slate-300">{dich(data.daBo.nhan)} · {t('Không báo cáo')}</h2>
+            <h2 className="m-0 text-[16px] font-bold text-slate-300">{dich(data.daBo.nhan)} · {t('Không báo cáo')}</h2>
             <p className="m-0 mt-1 text-sm text-slate-400">{t('Bài đã viết vẫn còn; khôi phục là hiện lại.')}</p>
             <button type="button" className={`${nutDot} mt-3`} onClick={() => void khoiPhuc()}>{t('Khôi phục')}</button>
           </div>
         ) : (
           <div className="px-4 py-6 text-center">
-            <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Chưa có đợt')}</h2>
+            <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Chưa có đợt')}</h2>
             {data.dotDau && <p className="m-0 mt-1 text-sm text-slate-400">{t('Đợt đầu: {dot}', { dot: dich(data.dotDau) })}</p>}
           </div>
         )}
@@ -255,7 +255,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             );
             return (
               <li key={e.id} className="py-2">
-                <Link className="ten-ho-so text-[15px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
+                <Link className="ten-ho-so text-[14px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
                 {!thieu.length && !nhap.length && <div className="text-[13px] text-slate-400">✓ {t('đủ')}</div>}
                 {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
                 {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
@@ -389,7 +389,7 @@ function HopDatNhanh({ neo, lopId, lopMa, dot, bo, phan, onDoi, onDong }: {
   const than = (
     <>
       <div className="-mt-1 flex items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
-        <b className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-100">{t('Đặt nhanh')} <span className="text-[13px] font-medium text-dim">· {lopMa}</span></b>
+        <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-100">{t('Đặt nhanh')} <span className="text-[13px] font-medium text-dim">· {lopMa}</span></b>
         <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={ngoai}>✕</button>
       </div>
       {/* Cùng dáng hàng Mức (`HangThang`): nhãn trái · dải phải; 375 xếp dọc, dải rộng hết. */}
@@ -649,7 +649,7 @@ function HetEm({ lopMa, phan, dotNhan, so, phanTiep, onPhanTiep, onDong }: {
   const tiep = phanTiep.find((p) => p.thieu.length) ?? phanTiep[0];
   return (
     <div className="py-2">
-      <h3 className="m-0 text-[17px] font-bold text-slate-100">{t('Xong phần của bạn')}</h3>
+      <h3 className="m-0 text-[16px] font-bold text-slate-100">{t('Xong phần của bạn')}</h3>
       <p className="m-0 mt-1 text-sm text-slate-400">{lopMa} · {phan.khoa === 'chung' ? t('Nhận xét chung') : phan.ten} · {dotNhan}: {t('{so} em đủ', { so })}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {tiep && <button type="button" className="btn btn-primary min-h-[44px] font-semibold sm:min-h-0" onClick={() => onPhanTiep(tiep.khoa, tiep.thieu[0] ?? 0)}>
@@ -685,7 +685,7 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
   return (
     <div className="min-w-0 sm:px-6 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <h3 className="m-0 flex-1 text-[17px] font-bold text-slate-100">{em.ten}</h3>
+        <h3 className="m-0 flex-1 text-[16px] font-bold text-slate-100">{em.ten}</h3>
         {du ? <Nhan tone="done">{t('Đủ')}</Nhan> : nhap ? <Nhan tone="soon">{t('Nháp')}</Nhan> : null}
       </div>
       {phan.coDiem && <DongDiem goc={em.goc} thang={thang} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
@@ -700,7 +700,7 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
         return (
           <div key={gi} className="mt-3">
             <p className="m-0 mb-1 flex flex-wrap items-center gap-2">
-              <span className="border-l-[3px] pl-2 text-[15px] font-bold text-slate-100" style={{ borderColor: 'var(--accent)' }}>{n.vi ? chuBc(n) : t('Tiêu chí')}</span>
+              <span className="border-l-[3px] pl-2 text-[14px] font-bold text-slate-100" style={{ borderColor: 'var(--accent)' }}>{n.vi ? chuBc(n) : t('Tiêu chí')}</span>
               {san && dotTruoc && <span className="rounded surface-2 px-1.5 py-0.5 text-[12px] font-medium text-slate-400">{t('Đặt sẵn như {dot}', { dot: dotTruoc })}</span>}
             </p>
             {n.ds.map((x) => (
@@ -710,7 +710,7 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
         );
       })}
       <div className="mt-4">
-        <label htmlFor={`bc-chu-${em.id}`} className="mb-1.5 block text-[15px] font-bold text-slate-100">{nhanOChu(phan)}</label>
+        <label htmlFor={`bc-chu-${em.id}`} className="mb-1.5 block text-[14px] font-bold text-slate-100">{nhanOChu(phan)}</label>
         {/* GD-20a (A1 · A3 · A6): khối "Bạn đã ghi" bên phải ô; không có câu → ô rộng như cũ; ô đã có chữ / em đã đủ → khối gập. */}
         <div className={`viet-ghi${daGhi.ds.length ? '' : ' mot'}`}>
           <div className="o-chu">

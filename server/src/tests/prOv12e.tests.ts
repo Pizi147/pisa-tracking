@@ -35,11 +35,11 @@ export async function runPrOv12eTests(t: YThucTestKit) {
   check('OV12e-1 · deadlineView 3 mức: quá hạn · còn ≤ 3 ngày (gần) · xa hơn; dự kiến kết thúc không bao giờ gần / quá', () => {
     const v = (n: number, kind = 'xac-minh-sos') => dm.deadlineView({ kind, due: cong(n), today: TODAY });
     assert(v(-2).tone === 'overdue' && v(-2).ganHan === false, `quá hạn: ${JSON.stringify(v(-2))}`);
-    for (const n of [0, 1, 3]) assert(v(n).tone !== 'overdue' && v(n).ganHan === true, `còn ${n} ngày phải "gần": ${v(n).ganHan}`);
-    assert(v(4).ganHan === false && v(10).ganHan === false, 'còn 4 / 10 ngày là xa');
+    for (const n of [0, 1, 2]) assert(v(n).tone !== 'overdue' && v(n).ganHan === true, `còn ${n} ngày phải "gần": ${v(n).ganHan}`);
+    assert(v(3).ganHan === false && v(10).ganHan === false, 'còn 3 / 10 ngày là xa (NHẸ HƠN 22/11: ≤ 2 ngày)');
     assert(v(1, 'du-kien-ket-thuc').ganHan === false, 'dự kiến kết thúc không phải hạn');
     assert(dm.deadlineView({ kind: 'nhap-diem', due: null, today: TODAY }).ganHan === false, 'chưa có hạn');
-    assert(dm.HAN_GAN_NGAY === 3, 'ngưỡng 3 ngày một hằng');
+    assert(dm.HAN_GAN_NGAY === 2, 'ngưỡng 2 ngày một hằng (luật hạn NHẸ HƠN)');
   });
 
   check('OV12e-2 · Quyết định 3 nút: PA thường Giữ nguyên · Điều chỉnh · Kết thúc PA, Điều chỉnh chứa Sửa PA · Thay PA · Xin hỗ trợ QL; PA quy chế không Kết thúc; không mất lựa chọn nào', () => {
@@ -75,7 +75,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     assert(tyc.includes('<ChipHan vien loai="duyet"') && !/\.slice\(0, 10\) < homNay|86_400_000/.test(tyc), 'TheYeuCau');
     /* BADGE-QUA-HAN (PTA 15/11): gần hạn = badge vàng như mọi nơi (V22) — vẫn theo `deadlineView.ganHan`, không tự so ngày. */
     assert(/<BadgeHan muc=\{han\.quaHan \? 'qua' : 'gan'\}/.test(doc('web/src/modules/students/CotCaseHv.tsx')), 'CotCaseHv (CASE-PA-UI b: TheKyNang gỡ)');
-    assert(/v\.ganHan && !v\.homNay/.test(doc('web/src/ui/Han.tsx')), 'Han');
+    assert(/mucHan\(/.test(doc('web/src/ui/Han.tsx')), 'Han theo mucHan (luật hạn NHẸ HƠN)');
   });
 
   check('OV12e-2b · ⋯ cạnh tên em: "Xác nhận xử lý" ngay sau Ghi vi phạm (sau + Case — MENU-DONG 29/10) khi em cần xử lý Ý thức, không có thì không hiện', () => {

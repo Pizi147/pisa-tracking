@@ -91,7 +91,7 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false }
     return (
       <div role="status" className="grid justify-items-center gap-2.5 px-4 pb-6 pt-12 text-center">
         <span aria-hidden className="grid h-11 w-11 place-items-center rounded-full border text-xl font-bold text-ok bg-ok-bg border-ok-line">✓</span>
-        <b className="text-[17px] font-bold text-[color:var(--text)]">{lop ? t('Xong việc này ở {lop}', { lop }) : t('Không còn em nào cần làm')}</b>
+        <b className="text-[16px] font-bold text-[color:var(--text)]">{lop ? t('Xong việc này ở {lop}', { lop }) : t('Không còn em nào cần làm')}</b>
       </div>
     );
   }
@@ -239,7 +239,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
       ) : (
       <span role="cell" className="min-w-0 py-2.5 pr-2.5 max-sm:pb-1">
         <span className="flex flex-wrap items-center gap-2">
-          <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+          <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[14px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>
         <DiemMotDong th={luot.the} />
@@ -474,7 +474,7 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo 
   khongMo?: ReadonlySet<number>;
 }) {
   const [vuaLuu, setVuaLuu] = useState<ReadonlySet<number>>(new Set());
-  if (!turns.length) return <p className="m-0 px-4 py-8 text-center text-[15px] font-semibold text-[color:var(--text)]">{t('Không còn việc phối hợp nào')}</p>;
+  if (!turns.length) return <p className="m-0 px-4 py-8 text-center text-[14px] font-semibold text-[color:var(--text)]">{t('Không còn việc phối hợp nào')}</p>;
   /* Lượt chưa xong lên trước (lớp: rồi theo tên em; HV: máy chủ đã xếp mới nhất trước). */
   const ds = [...turns].sort((a, b) => Number(a.summary.complete) - Number(b.summary.complete));
   const vua = (id: number) => (co: boolean) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(id); else n.delete(id); return n; });
@@ -507,8 +507,8 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo }:
       <span role="cell" className="grid content-start justify-items-start gap-1.5 border-r px-4 py-3 max-sm:border-r-0 max-sm:px-3 max-sm:pb-1" style={{ borderColor: 'var(--line)' }}>
         <span className="flex flex-wrap items-center gap-2">
           {cot1 === 'hocVien'
-            ? khongMo?.has(luot.studentId) ? <span className="text-[15px] font-semibold text-[color:var(--text)]">{luot.studentName}</span> : <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
-            : <b className={`text-[15px] font-bold ${xong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{luot.nhanDot ?? `MT${luot.attemptNo}`}</b>}
+            ? khongMo?.has(luot.studentId) ? <span className="text-[14px] font-semibold text-[color:var(--text)]">{luot.studentName}</span> : <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[14px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+            : <b className={`text-[14px] font-bold ${xong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{luot.nhanDot ?? `MT${luot.attemptNo}`}</b>}
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>
         <DiemMotDong th={luot.the} anLuot={cot1 === 'luot'} />

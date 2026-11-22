@@ -111,7 +111,7 @@ function BangDiem() {
     <Bang ten="Điểm MT2 MB FT 101" cot={COT} hang={HANG} khoa={(h) => h.id} oCua={o} phuCua={phu}
       onHang={(h) => setMo(h.id === mo ? null : h.id)} dangMo={(h) => h.id === mo}
       congCu={<>
-        <span className="text-[15px] font-bold text-slate-100">MB FT 101 · MT2 · W3 AUG</span>
+        <span className="text-[14px] font-bold text-slate-100">MB FT 101 · MT2 · W3 AUG</span>
         <Nhan tone="muted">Kỳ vọng = Target − 0,5</Nhan>
         <span className="flex-1" />
         <span className="text-[13px] text-slate-400">5 / 22 HV · 4 việc của tôi</span>

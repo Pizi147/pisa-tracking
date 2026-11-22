@@ -230,7 +230,7 @@ function NhanDau({ nhan, children }: { nhan: string; children: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-col gap-px">
       <span className="text-xs font-medium text-slate-500">{nhan}</span>
-      <span className="text-[15px] font-bold text-slate-100">{children}</span>
+      <span className="text-[14px] font-bold text-slate-100">{children}</span>
     </span>
   );
 }
@@ -341,7 +341,7 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   };
   const the = (l: LopHs) => (
     <div className="grid gap-1.5">
-      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">{oCua(l, COT[0])}{oCua(l, COT[1])}</span>
+      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">{oCua(l, COT[0])}{oCua(l, COT[1])}</span>
       {(phu?.get(l.id) || (!l.laGvcn && l.gvcn)) && (
         <span className="text-[13px] text-dim">{[phu?.get(l.id), !l.laGvcn && l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</span>
       )}
@@ -349,7 +349,7 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
         {(['hv', 'chua', 'qh'] as const).map((k) => (
           <span key={k} className="grid content-start justify-items-start gap-1">
             <span className="text-xs text-dim">{COT.find((c) => c.key === k)!.nhan}</span>
-            <span className="inline-flex min-h-9 items-center text-[15px] font-semibold">{oCua(l, COT.find((c) => c.key === k)!)}</span>
+            <span className="inline-flex min-h-9 items-center text-[14px] font-semibold">{oCua(l, COT.find((c) => c.key === k)!)}</span>
           </span>
         ))}
       </span>
@@ -776,7 +776,7 @@ function KhoiCase({ data, homNay, linkPa, onDoi }: { data: HoSo; homNay: string;
                       <span className="flex min-w-0 items-start gap-3">
                         <span aria-hidden className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]"><IconNhom k="ca-lop" /></span>
                         <span className="min-w-0">
-                          <button type="button" className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-[15px] font-medium text-slate-100 hover:text-[color:var(--accent)]"
+                          <button type="button" className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-[14px] font-medium text-slate-100 hover:text-[color:var(--accent)]"
                             onClick={(e) => { e.stopPropagation(); moViec(); }} title={v?.title}>
                             {[c.maLop, chinh].filter(Boolean).join(' · ')}
                           </button>

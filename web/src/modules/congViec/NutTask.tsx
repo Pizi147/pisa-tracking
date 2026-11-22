@@ -165,7 +165,7 @@ function HopChonEm({ neo, loai, timEm, onDong, onChon }: {
     <HopNeo neo={neo} nhan={tieuDe} rong={440} onNgoai={onDong}>
       {/* ⑤ F2 `.h-dau`: tiêu đề 15 + ✕ CÙNG HÀNG (tâm ✕ = tâm dòng tiêu đề), dòng phụ "Chọn em" dưới; ✕ cách mép phải hộp 12 px (đệm 16 − 4). */}
       <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
-        <b className="min-w-0 text-[15px] font-bold text-slate-100">{tieuDe}</b>
+        <b className="min-w-0 text-[14px] font-bold text-slate-100">{tieuDe}</b>
         <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={onDong}>✕</button>
         <span className="text-[13px] text-dim">{t('Chọn em')}</span>
       </div>

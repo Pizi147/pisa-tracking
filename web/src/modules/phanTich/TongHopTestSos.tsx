@@ -303,7 +303,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
           <Fragment key={c.khoa}>
             <span className="grid min-w-0 content-start gap-px">
               <span className={`${laXuLy(g) ? 'leading-tight' : 'whitespace-nowrap'} text-xs font-medium text-[color:var(--text-dim)]`}>{nhanCot(c)}</span>
-              <span className="text-[15px] font-bold tabular-nums">{oCell(row, c)}</span>
+              <span className="text-[14px] font-bold tabular-nums">{oCell(row, c)}</span>
             </span>
             {kq32(g) && c.khoa === 'chuaDu' && <span aria-hidden />}
           </Fragment>
@@ -319,7 +319,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       <article key={row.khoa} className={THE}>
         <div className={DAU_THE}>
           <span className="min-w-0">{row.nhan}{row.phu && <span className="ml-1.5 text-[13px] font-normal text-[color:var(--text-faint)]">{row.phu}</span>}</span>
-          {laThuong && cotLuot && <span className="ml-auto whitespace-nowrap text-[13px] font-normal text-[color:var(--text-dim)]"><span className="text-[15px] font-bold">{soBam(row, cotLuot)}</span> {t('bài')}</span>}
+          {laThuong && cotLuot && <span className="ml-auto whitespace-nowrap text-[13px] font-normal text-[color:var(--text-dim)]"><span className="text-[14px] font-bold">{soBam(row, cotLuot)}</span> {t('bài')}</span>}
           {!!row.con?.length && (
             <button type="button" aria-expanded={mo} aria-label={`${row.nhan} — ${NHAN_MO_CON[theo]}`} onClick={() => toggleOpen(row.khoa)}
               className={`-my-2 ${laThuong ? 'ml-1' : 'ml-auto'} inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-[color:var(--accent)]`}>
@@ -439,7 +439,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
               {/* V8-PT: phân trang chỉ dưới bảng (bỏ lặp); neo đầu bảng giữ để lật ở thanh dưới cuộn về đây. */}
               <div ref={pt.thanh.dauBang} />
               <div className="table-scroll bang-dinh bang-dinh-1440">
-                <table className="w-full text-[15px]" style={{ tableLayout: 'fixed' }}>
+                <table className="w-full text-[14px]" style={{ tableLayout: 'fixed' }}>
                   <colgroup>
                     {/* PR-HK2 / OV-14b: lớp thường 22 cột — cột đầu 158 px để cả bảng ≤ 1398 px. FT theo mockup V8: 190 px. */}
                     <col className={ct === 'thuong' ? 'w-[158px]' : 'w-[190px]'} />

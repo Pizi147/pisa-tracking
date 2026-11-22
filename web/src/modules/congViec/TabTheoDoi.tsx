@@ -94,7 +94,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
       <span className="flex min-w-0 items-center gap-3 max-sm:items-start">
         <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--surface-2)] text-dim"><IconNhom k="theo-doi" /></span>
         <span className="grid min-w-0 gap-0.5">
-          <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug text-[color:var(--text)]"
+          <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[14px] font-medium leading-snug text-[color:var(--text)]"
             aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>{dich(ten)}</button>
           <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px]">
             {d.studentId != null && <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>}

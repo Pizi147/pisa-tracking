@@ -121,7 +121,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
       <div className="border-t pt-3 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-2.5">
           {cot1 === 'hocVien' && (
-            <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+            <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[14px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
           )}
           {/* PHOI-HOP-SOS-INFO: chip chỉ "SOS n" (kỹ năng trượt nằm trong thẻ kết quả bên cạnh — một chỗ, không lặp). */}
           {!luot.nhanDot && luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
@@ -149,7 +149,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
         onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
-          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : (
+          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[14px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : (
             /* TEN-HV-LINK: tên = hồ sơ HV (không lan lên đầu thẻ mở / đóng). */
             <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="ten-ho-so" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>{luot.studentName}</Link>
           )}</span>
@@ -320,7 +320,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   const meeting = laMeetingCx(a.kind);
   return (
     <div className="mb-2 mt-1"><CanLam>
-      {meeting && <span className="text-[15px] font-bold text-slate-100">{a.kind === 'cx_meeting_family' ? t('CX / GĐCN gặp HV và PH') : t('CX / GĐCN gặp HV')}</span>}
+      {meeting && <span className="text-[14px] font-bold text-slate-100">{a.kind === 'cx_meeting_family' ? t('CX / GĐCN gặp HV và PH') : t('CX / GĐCN gặp HV')}</span>}
       <Hang2>
         <Truong nhan={meeting ? t('Ngày') : t('Ngày thực hiện')} batBuoc>
           <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={performedOn} onChange={setPerformedOn} toiDa={today} /></span>

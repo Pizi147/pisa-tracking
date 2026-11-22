@@ -44,15 +44,15 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 1 · G-6
 
   check('PR-Qa · G-6 chuỗi có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày', () => {
-    eq(d.ngay('2026-09-22T18:30:00Z', '2026-09-22'), '23/09', '01:30 sáng 23/09 giờ VN');
-    eq(d.ngay('2026-09-22T16:59:59Z', '2026-09-22'), '22/09', '23:59:59 giờ VN vẫn là 22/09');
-    eq(d.ngay('2026-09-22 20:00:00', '2026-09-22'), '23/09', 'Dạng SQLite (UTC, không ghi múi giờ)');
-    eq(d.ngay('2026-09-22T08:00:00+07:00', '2026-09-22'), '22/09', 'Có ghi múi giờ +07:00');
+    eq(d.ngay('2026-09-22T18:30:00Z', '2026-09-22'), '23/09/2026', '01:30 sáng 23/09/2026 giờ VN');
+    eq(d.ngay('2026-09-22T16:59:59Z', '2026-09-22'), '22/09/2026', '23:59:59 giờ VN vẫn là 22/09/2026');
+    eq(d.ngay('2026-09-22 20:00:00', '2026-09-22'), '23/09/2026', 'Dạng SQLite (UTC, không ghi múi giờ)');
+    eq(d.ngay('2026-09-22T08:00:00+07:00', '2026-09-22'), '22/09/2026', 'Có ghi múi giờ +07:00');
     eq(d.ngay('2026-12-31T17:00:00Z', '2026-09-22'), '01/01/2027', 'Sang năm mới theo giờ VN phải ghi năm');
-    eq(d.shortDate('2026-09-22T18:30:00Z', '2026-09-22'), '23/09', 'shortDate (display.ts) cùng luật');
-    eq(d.shortDate('2027-01-05', '2026-12-31T18:00:00Z'), '05/01', 'Hôm nay là một mốc giờ: 01/01/2027 giờ VN');
+    eq(d.shortDate('2026-09-22T18:30:00Z', '2026-09-22'), '23/09/2026', 'shortDate (display.ts) cùng luật');
+    eq(d.shortDate('2027-01-05', '2026-12-31T18:00:00Z'), '05/01/2027', 'Hôm nay là một mốc giờ: 01/01/2027 giờ VN');
     eq(d.tuanLich('2026-09-27T20:00:00Z', '2026-09-22'), 'W1 OCT', '20:00 UTC Chủ nhật 27/09 = thứ Hai 28/09 giờ VN');
-    eq(d.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19'), 'Ngày nghiệp vụ 14/09 · Ghi nhận 19/09', 'Không đổi');
+    eq(d.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19'), 'Ngày nghiệp vụ 14/09/2026 · Ghi nhận 19/09/2026', 'Không đổi');
   });
 
   check('PR-Qa · G-6 ngày không tồn tại bị từ chối (31/02, 29/02 năm thường, tháng 13, giờ 25)', () => {
@@ -61,7 +61,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       eq(d.shortDate(s, '2026-09-22'), '—', `shortDate ${s}`);
       eq(d.tuanLich(s, '2026-09-22'), '—', `tuanLich ${s}`);
     }
-    eq(d.ngay('2028-02-29', '2028-01-01'), '29/02', 'Năm nhuận 2028 có 29/02');
+    eq(d.ngay('2028-02-29', '2028-01-01'), '29/02/2028', 'Năm nhuận 2028 có 29/02');
     eq(d.ngayTheoGioVN('2026-02-31'), null, 'ngayTheoGioVN từ chối 31/02');
     eq(d.ngayTheoGioVN('2026-09-22'), '2026-09-22', 'ngày trần giữ nguyên');
     assert(/Chưa có hạn/.test(d.deadlineView({ kind: 'nhap-diem', due: '2026-02-31', today: '2026-09-14' }).text),
@@ -211,10 +211,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     });
     eq(v.map((x: any) => [x.viec, x.han, x.quaHanNgay, x.tone, x.title]), [
       /* PR-S5F-b (mockup 21) → OV-12a: việc ghi kết quả PA nói KỲ (hai tuần) của kết quả. */
-      ['Kết quả PA L · kỳ W4 AUG – W1 SEP', 'hạn 13/09', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn 13/09 · quá hạn 1 ngày'],
+      ['Kết quả PA L · kỳ W4 AUG – W1 SEP', 'hạn 13/09/2026', 1, 'danger', 'Kết quả PA Nghe podcast · Listening · kỳ W4 AUG – W1 SEP · hạn 13/09/2026 · quá hạn 1 ngày'],
       ['Nhập điểm L, W · Progress Test', null, null, 'warn', 'Nhập điểm L, W · Progress Test'],
       ['Thêm PA W2', null, null, 'warn', 'Thêm PA · Writing Task 2'],
-      ['Kết quả PA R · kỳ W1–W2 SEP', 'hạn 20/09', null, 'info', 'Kết quả PA Đọc báo · Reading · kỳ W1–W2 SEP · hạn 20/09'],
+      ['Kết quả PA R · kỳ W1–W2 SEP', 'hạn 20/09/2026', null, 'info', 'Kết quả PA Đọc báo · Reading · kỳ W1–W2 SEP · hạn 20/09/2026'],
     ], 'Thứ tự và chữ (Case không việc bị bỏ)');
     /* Ý kiểm cũ "Case nói trước" (chonCaseChinh) nay là thứ tự hàng của `hangCanHoTro` — kiểm ở prHvl.tests.ts (T19). */
   });
@@ -400,7 +400,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(pcW);
     /* PR-N1 A6: máy chủ truyền hạn nhập điểm → việc trễ nói đủ "quá hạn n ngày". */
     // PR-MON (MH2): lớp FOU — ô W hiện G+V.
-    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Progress Test', han: 'hạn 09/09', quaHanNgay: 5, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Progress Test · hạn 09/09 · quá hạn 5 ngày' }, 'Writing tuần 31/08 chưa có điểm, hạn thứ Tư 09/09 đã qua');
+    eq(row.viecTiepTheo[0], { viec: 'Nhập điểm G+V · Progress Test', han: 'hạn 09/09/2026', quaHanNgay: 5, tone: 'danger', dich: { loai: 'nhap-diem' }, title: 'Nhập điểm G+V · Progress Test · hạn 09/09/2026 · quá hạn 5 ngày' }, 'Writing tuần 31/08/2026 chưa có điểm, hạn thứ Tư 09/09/2026 đã qua');
     const t = row.timeline.find((x: any) => x.kind === 'progress');
     eq(t.tuanMon.writing, '2026-08-31', 'Tuần thi của môn Writing');
     assert(row.viecTiepTheo.every((v: any) => !/MT\d|kỳ vọng/.test(v.viec)), 'Chữ FT lọt vào lớp thường');

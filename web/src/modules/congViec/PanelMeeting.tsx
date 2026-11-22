@@ -75,7 +75,7 @@ function DongBaoPh({ g }: { g: KhoiGv }) {
   return (
     <section className="flex min-h-[44px] flex-wrap items-center gap-x-2.5 gap-y-1 rounded-[10px] border px-3 py-2" style={{ borderColor: 'var(--line)', background: g.mo ? 'var(--surface)' : 'var(--surface-2)' }}
       aria-label={t('Báo PH')}>
-      <h3 className="m-0 text-[15px] font-bold">{t('Báo PH')}</h3>
+      <h3 className="m-0 text-[14px] font-bold">{t('Báo PH')}</h3>
       <TheTrangThai xong={!g.mo} chu={g.mo ? t('Chưa xong') : t('Đã báo PH')} />
       <span className="text-[13px] text-dim">{[g.phuTrach.map((x) => x.ten).filter(Boolean).join(', ') || null, g.mo && g.han ? t('hạn {ngay}', { ngay: shortDate(g.han, hn) }) : null].filter(Boolean).join(' · ')}</span>
     </section>
@@ -140,7 +140,7 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
         </div>
       )}
       <div className="flex min-h-[28px] flex-wrap items-center gap-x-2.5 gap-y-1">
-        <h3 className="m-0 text-[15px] font-bold">{m.ten}</h3>
+        <h3 className="m-0 text-[14px] font-bold">{m.ten}</h3>
         <TheTrangThai xong={xong} chu={xong ? t('Hoàn thành') : m.trangThai === 'bo' ? t('Đã bỏ') : t('Chưa xong')} />
         {!mo && ai && <span className="min-w-0 text-[13px] text-dim">{ai}{xong && xep && m.ngayGio ? <> · {t('họp')} <b className="font-semibold text-[color:var(--text)]">{ngayGioDoc(m.ngayGio, hn)}</b></> : null}</span>}
         {xong && !mo && m.coTheLam && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-[30px]" onClick={() => { setNgay(m.ngayGio?.slice(0, 10) ?? ''); setGio(m.ngayGio?.slice(11, 16) ?? ''); setKq(m.ketQua ?? ''); setSua(true); }}>{t('Sửa')}</button>}

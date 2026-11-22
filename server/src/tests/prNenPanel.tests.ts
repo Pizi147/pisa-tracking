@@ -163,7 +163,8 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
   /* GD-3 (mockup v21 ① `.loai`, chủ SP duyệt 14/11 — thay B11 08/11): dòng loại có lại vạch nhấn hồng 14 × 3, chữ 12 / 700 mờ. */
   check('NEN-PANEL · dòng loại (v21: vạch hồng 14 × 3 + chữ 12 / 700 mờ): panel việc "Việc" (M6 6b-1: khai qua dauViec, khung không đoán); panel số không dòng làm được = "Báo cáo · chỉ đọc"', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? dau\?\.loai \?\? null\) : loai/.test(kp) && /h-\[3px\] w-3\.5[^"]*bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại (v21 ①: vạch hồng 14 × 3, chữ 12 / 700 mờ)');
+    /* NHẸ HƠN (chủ SP 22/11, v23 `.pn-dau`): đầu panel MỘT dòng — bỏ dòng loại "Việc · …" (vạch hồng). `loai` vẫn nhận, không vẽ. */
+    assert(!/h-\[3px\] w-3\.5[^"]*bg-\[color:var\(--hong\)\]/.test(kp) && !/vachLoai/.test(kp), 'đầu panel một dòng: không còn dòng loại');
     assert(/t\('Báo cáo · chỉ đọc'\)/.test(docSach('web/src/ui/SoLieu.tsx')), 'SoLieu chưa đặt loại báo cáo');
   });
 }

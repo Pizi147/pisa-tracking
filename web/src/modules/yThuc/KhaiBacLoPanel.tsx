@@ -273,7 +273,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
                     </label>
                   )}
                 </span>
-                <span className={`ten-hv text-[15px] font-semibold ${khoa ? 'font-medium text-dim' : 'text-slate-100'}`}>{e.ten}</span>
+                <span className={`ten-hv text-[14px] font-semibold ${khoa ? 'font-medium text-dim' : 'text-slate-100'}`}>{e.ten}</span>
                 <span role={loiDong ? 'alert' : undefined} title={chuHt}
                   className={`truncate text-[13px] ${loiDong ? 'font-semibold text-bad' : vuaLuu ? 'font-semibold text-ok' : ha ? 'font-semibold text-soon' : doi ? 'font-semibold text-[color:var(--accent)]' : e.capBac.khai === null && !e.bacNhan ? 'text-faint' : 'text-dim'}`}>
                   {loiDong ? `⚠ ${chuHt}` : chuHt}

@@ -10,7 +10,7 @@ import { t } from '@shared/i18n/index.ts';
  * NÚT ⋯ ĐẦU TRANG (chủ SP 07/11 "cho cân đối"): ô vuông cùng khung nút cạnh, ký tự ⋯ căn giữa, 17 px (thang chữ). Nơi gọi chỉ thêm cỡ ô
  * (`h-9 w-9` cạnh nút `btn`, …) — hồ sơ lớp, hồ sơ HV, Kế hoạch Test dùng chung.
  */
-export const NUT_BA_CHAM_DAU = 'btn shrink-0 justify-center !px-0 text-[17px] leading-none';
+export const NUT_BA_CHAM_DAU = 'btn shrink-0 justify-center !px-0 text-[16px] leading-none';
 /* B11 (audit-ui 08/11, mockup `.nut`): nút hàng đầu hồ sơ lớp + hồ sơ HV một dáng — cao 36, điện thoại 44; ⋯ vuông cùng cỡ. */
 export const NUT_DAU_HO_SO = 'btn h-9 justify-center max-sm:h-11';
 export const NUT_BA_CHAM = `${NUT_BA_CHAM_DAU} h-9 w-9 max-sm:h-11 max-sm:w-11`;
@@ -153,7 +153,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
             : 'menu-hop fixed z-[60] overflow-y-auto overscroll-contain w-[220px] rounded-[10px] border p-1'}
           style={viTri?.day ? { borderColor: 'var(--line-strong)', maxHeight: viTri.cao }
             : { borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
-          {viTri?.day && <div role="presentation" className="px-3 pb-1.5 pt-2 text-[15px] font-bold">{tieuDeDay}</div>}
+          {viTri?.day && <div role="presentation" className="px-3 pb-1.5 pt-2 text-[14px] font-bold">{tieuDeDay}</div>}
           {muc.map((m, i) => { const ke = i === 0 || muc[i - 1]?.tieuDe ? '' : m.keTruoc === 'do' || (m.nguyHiem && !muc[i - 1]?.nguyHiem) ? 'menu-muc-nguy' : m.keTruoc ? 'menu-muc-ke' : ''; return m.tieuDe ? (
             <div key={m.key} role="presentation" className="menu-nhom">{m.nhan}</div>
           ) : (

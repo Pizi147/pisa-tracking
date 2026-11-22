@@ -17,7 +17,7 @@ export function NutNgonNgu({ kieu = 'menu', daDangNhap = true }: { kieu?: 'menu'
       <div role="group" aria-label={t('Ngôn ngữ')} className="grid grid-cols-2 gap-2.5">
         {([['vi', 'Tiếng Việt'], ['en', 'English']] as const).map(([nn, chu]) => (
           <button key={nn} type="button" aria-pressed={NGON_NGU === nn} onClick={chon(nn)} lang={nn}
-            className={`min-h-[56px] rounded-[10px] border text-[17px] font-semibold ${NGON_NGU === nn
+            className={`min-h-[56px] rounded-[10px] border text-[16px] font-semibold ${NGON_NGU === nn
               ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]'
               : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-200'}`}>{chu}</button>
         ))}

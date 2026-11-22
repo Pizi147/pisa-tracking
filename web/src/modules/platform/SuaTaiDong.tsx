@@ -76,7 +76,7 @@ export function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLu
         </KhungPanel>
       ) : (
         <HopNeo neo={o} nhan={`${tieuDe} · ${ten}`} rong={560} onNgoai={ngoai}>
-          <div className="flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{tieuDe}<span className="text-[13px] font-normal text-slate-400">{ten}</span></div>
+          <div className="flex items-baseline gap-2 text-[14px] font-bold text-slate-100">{tieuDe}<span className="text-[13px] font-normal text-slate-400">{ten}</span></div>
           {than}
           {chan}
         </HopNeo>

@@ -7646,21 +7646,21 @@ check('PR-E · <KetQuaDot>: đủ điểm nhưng thiếu kỳ vọng thì không
 
 check('PR-E · <Han>: sáu loại hạn có sáu nhãn khác nhau, đúng bảng HE_GIAO_DIEN §4 (việc · mốc, PR-UX0 B-3)', () => {
   const t = (loai: any, han = '2026-09-23') => domain.deadlineView({ kind: loai, due: han, today: '2026-09-14' }).text;
-  assert(t('xac-minh-sos') === 'Xác nhận · hạn 23/09', `xac-minh-sos: "${t('xac-minh-sos')}"`);
-  assert(t('lap-pa') === 'Thêm PA · hạn 23/09', `lap-pa: "${t('lap-pa')}"`);
-  assert(t('cap-nhat-pa') === 'Kết quả PA · W2–W3 SEP · hạn 23/09', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
+  assert(t('xac-minh-sos') === 'Xác nhận · hạn 23/09/2026', `xac-minh-sos: "${t('xac-minh-sos')}"`);
+  assert(t('lap-pa') === 'Thêm PA · hạn 23/09/2026', `lap-pa: "${t('lap-pa')}"`);
+  assert(t('cap-nhat-pa') === 'Kết quả PA · W2–W3 SEP · hạn 23/09/2026', `cap-nhat-pa: "${t('cap-nhat-pa')}"`);
   /* PR-YT4 (K5-24): `thuc-hien-y-thuc`, `hoan-thanh-y-thuc` bỏ — Ý thức dùng `xu-ly-vi-pham`. */
-  assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
+  assert(t('xu-ly-vi-pham') === 'Xử lý vi phạm · hạn 23/09/2026', `xu-ly-vi-pham: "${t('xu-ly-vi-pham')}"`);
   assert(!(domain.DEADLINE_KINDS as readonly string[]).includes('thuc-hien-y-thuc') && !(domain.DEADLINE_KINDS as readonly string[]).includes('hoan-thanh-y-thuc'), 'hai loại cũ còn');
-  assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09', `nhap-diem: "${t('nhap-diem')}"`);
-  assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
+  assert(t('nhap-diem') === 'Nhập điểm · hạn 23/09/2026', `nhap-diem: "${t('nhap-diem')}"`);
+  assert(t('du-kien-ket-thuc') === 'Dự kiến kết thúc 23/09/2026', `du-kien-ket-thuc: "${t('du-kien-ket-thuc')}"`);
   const all = ['xac-minh-sos', 'lap-pa', 'cap-nhat-pa', 'xu-ly-vi-pham', 'duyet', 'nhap-diem', 'du-kien-ket-thuc'].map((k) => t(k));
   assert(new Set(all).size === 7, 'Có hai loại hạn dùng chung một câu — chúng là sáu đồng hồ khác nhau');
 });
 
 check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC, không từ hạn đã dời', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', today: '2026-09-25' });
-  assert(v.text === 'Nhập điểm · hạn 23/09 · quá hạn 2 ngày' && v.quaHan === 'quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
+  assert(v.text === 'Nhập điểm · hạn 23/09/2026 · quá hạn 2 ngày' && v.quaHan === 'quá hạn 2 ngày' && v.tone === 'overdue' && v.daysOverdue === 2,
     `Đang ghi "${v.text}" (${v.tone}, ${v.daysOverdue}, ${v.quaHan})`);
   // Hạn đã dời sang 30/09 nhưng hạn gốc 23/09 đã qua 2 ngày: vẫn đếm từ 23/09.
   const moved = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-30', originalDue: '2026-09-23', today: '2026-09-25' });
@@ -7672,7 +7672,7 @@ check('PR-E · <Han>: quá hạn ghi rõ số ngày và đếm từ HẠN GỐC,
 
 check('PR-E · <Han>: có hẹn xử lý thì hiện CẢ HAI, không ghi đè hạn gốc', () => {
   const v = domain.deadlineView({ kind: 'nhap-diem', due: '2026-09-23', reschedule: '2026-09-30', today: '2026-09-14' });
-  assert(v.text === 'Nhập điểm · hạn 23/09 · hẹn xử lý 30/09' && v.hen === 'hẹn xử lý 30/09', `Đang ghi "${v.text}"`);
+  assert(v.text === 'Nhập điểm · hạn 23/09/2026 · hẹn xử lý 30/09/2026' && v.hen === 'hẹn xử lý 30/09/2026', `Đang ghi "${v.text}"`);
 });
 
 check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không bao giờ quá hạn, không bao giờ đỏ (F11)', () => {
@@ -7683,7 +7683,7 @@ check('PR-E · <Han>: "Dự kiến kết thúc" KHÔNG phải hạn — không b
 
 check('PR-E · <Han>: cập nhật phương án cũng đếm số ngày quá hạn từ mốc hạn (Thứ Ba, OV-12a; đổi nghĩa PR-UX0, mockup 17 #1; PR-N1 R-PA3)', () => {
   const v = domain.deadlineView({ kind: 'cap-nhat-pa', due: '2026-09-08', today: '2026-09-15' });
-  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn 08/09',
+  assert(v.tone === 'overdue' && v.daysOverdue === 7 && v.quaHan === 'quá hạn 7 ngày' && v.han === 'hạn 08/09/2026',
     `Phải báo quá hạn 7 ngày: "${v.text}" (${v.daysOverdue}, ${v.han})`);
 });
 
@@ -7692,15 +7692,15 @@ check('PR-E · <Han>: thiếu ngày hạn thì nói thẳng là chưa có hạn,
   assert(/Chưa có hạn/.test(v.text) && v.han === 'Chưa có hạn' && !/Invalid|NaN|undefined/.test(v.text), `Đang ghi "${v.text}"`);
 });
 
-check('PR-E · Ngày viết ngắn 14/09 trong cùng năm, có năm khi qua năm khác', () => {
-  assert(domain.shortDate('2026-09-14', '2026-09-20') === '14/09', domain.shortDate('2026-09-14', '2026-09-20'));
+check('PR-E · Ngày luôn có năm dd/mm/yyyy (NHẸ HƠN 22/11), cùng năm hay khác năm', () => {
+  assert(domain.shortDate('2026-09-14', '2026-09-20') === '14/09/2026', domain.shortDate('2026-09-14', '2026-09-20'));
   assert(domain.shortDate('2027-01-05', '2026-09-20') === '05/01/2027', domain.shortDate('2027-01-05', '2026-09-20'));
 });
 
 check('PR-E · Ngày nghiệp vụ khác ngày ghi nhận thì hiện CẢ HAI (MT-P10), cùng ngày thì chỉ một', () => {
-  assert(domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19') === 'Ngày nghiệp vụ 14/09 · Ghi nhận 19/09',
+  assert(domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19') === 'Ngày nghiệp vụ 14/09/2026 · Ghi nhận 19/09/2026',
     domain.businessDateText('2026-09-14', '2026-09-19T10:20:00Z', '2026-09-19'));
-  assert(domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14') === '14/09',
+  assert(domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14') === '14/09/2026',
     domain.businessDateText('2026-09-14', '2026-09-14T03:00:00Z', '2026-09-14'));
 });
 
@@ -8040,7 +8040,7 @@ check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, khôn
   assert(domain.NO_SHOW_HINT === 'Nhập - nếu học viên không làm bài', `Gợi ý: "${domain.NO_SHOW_HINT}"`);
   const early = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-14',
     enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });
-  assert(domain.noShowText(early, 'W3 SEP 2026', '2026-09-14') === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09',
+  assert(domain.noShowText(early, 'W3 SEP 2026', '2026-09-14') === 'Không có bài · Có thể sửa đến hết Chủ nhật 20/09/2026',
     `Sau khi lưu: "${domain.noShowText(early, 'W3 SEP 2026', '2026-09-14')}"`);
   const settled = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: PRG_MON,
     enteredAfterWeekEnd: false, lateRule: 'cho-ql-hieu-chinh' });

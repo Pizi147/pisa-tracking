@@ -53,7 +53,7 @@ function Diem({ kq, so, mau }: { kq: 'vuot' | 'bang' | 'duoi' | null; so: string
   return (
     <span className="inline-flex items-center gap-1 tabular-nums">
       <span className="inline-flex w-[14px]">{kq && <DauKetQua kq={kq} />}</span>
-      <span className={`text-[15px] font-bold ${lopKq(kq)}`}>{so}</span>
+      <span className={`text-[14px] font-bold ${lopKq(kq)}`}>{so}</span>
       {mau && <span className="text-[13px] text-faint">{mau}</span>}
     </span>
   );
@@ -83,7 +83,7 @@ export function SanMauNen() {
       <Card title="Màu kết quả điểm — tô chính con số, ✓ / ✗ trước số">
         <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <Muc tieuDe="Mẫu (kỳ vọng 6.5)">
-            <div className="grid grid-cols-[132px_minmax(0,1fr)] items-center gap-y-2 text-[15px]">
+            <div className="grid grid-cols-[132px_minmax(0,1fr)] items-center gap-y-2 text-[14px]">
               <span className="text-slate-400">Vượt</span><Diem kq="vuot" so="7.0" />
               <span className="text-slate-400">Bằng (vẫn Đạt)</span><Diem kq="bang" so="6.5" />
               <span className="text-slate-400">Dưới</span><Diem kq="duoi" so="5.5" />

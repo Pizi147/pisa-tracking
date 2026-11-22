@@ -47,7 +47,7 @@ function DongChiDoc({ d, n }: Dong) {
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
       <span className="min-w-0">
-        <span className="block truncate text-[15px] font-medium text-[color:var(--text)]">{[d.lop?.ma, mon].filter(Boolean).join(' · ')}</span>
+        <span className="block truncate text-[14px] font-medium text-[color:var(--text)]">{[d.lop?.ma, mon].filter(Boolean).join(' · ')}</span>
         {(em || phu.length > 0) && (
           <span className="mt-[3px] flex min-w-0 flex-wrap items-center gap-[3px]">
             {em && <Link to={`/hoc-vien/${em.id}`} className="ten-hv min-h-5 min-w-0 rounded-md px-1.5 text-xs font-medium leading-5 text-dim no-underline hover:underline" style={{ background: 'var(--surface-2)' }}>{em.ten}</Link>}
@@ -88,7 +88,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
     })].join('\n');
   const khoi = (khoa: string, ten: ReactNode, n: number, dong: DongViecHan[], phu?: string, tenChep?: string) => (
     <section key={khoa} className="overflow-clip rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
-      <h3 className="m-0 flex min-h-11 items-center gap-2 px-4 py-2 text-[15px] font-bold text-[color:var(--text)] shadow-[inset_3px_0_0_var(--hang-lon-vach)]" style={{ background: 'var(--hang-lon-bg)' }}>
+      <h3 className="m-0 flex min-h-11 items-center gap-2 px-4 py-2 text-[14px] font-bold text-[color:var(--text)] shadow-[inset_3px_0_0_var(--hang-lon-vach)]" style={{ background: 'var(--hang-lon-bg)' }}>
         {ten}
         <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded border px-[7px] text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{n}</span>
         {phu && <span className="text-[13px] font-normal text-[color:var(--text-dim)]">{phu}</span>}
@@ -109,7 +109,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
         : loading || !data ? <Skeleton rows={5} />
         : (
           <div className="flex flex-col gap-3">
-            <p className="m-0 flex items-center gap-1.5 text-[15px] font-bold text-[color:var(--text)]">
+            <p className="m-0 flex items-center gap-1.5 text-[14px] font-bold text-[color:var(--text)]">
               {t('{n} {dv} · {g} GV', { n: soTab(tab), dv: donVi, g: nhomDs.length })}
               <NutLuat label={t('Chưa làm')}>{t('Bài / việc có hạn trong kỳ đã qua hạn mà chưa làm, của từng người được phân công. S chéo chung (bài Speaking chấm chéo chưa ai nhận) để riêng cuối danh sách, không vào số và tỉ lệ của ai.')}</NutLuat>
             </p>

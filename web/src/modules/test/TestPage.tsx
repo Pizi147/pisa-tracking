@@ -42,7 +42,7 @@ export default function TestPage() {
     <div className="page space-y-4">
       {/* U05 (mockup V11): nút của tab đứng cùng hàng tiêu đề — tab gắn vào `#test-nut-trang` bằng portal. */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="m-0 text-[22px] font-bold text-slate-100">{t('Test')}</h1>
+        <h1 className="m-0 text-[20px] font-bold text-slate-100">{t('Test')}</h1>
         <span id="test-nut-trang" className="ml-auto" />
       </div>
       {tabs.length > 1 && (

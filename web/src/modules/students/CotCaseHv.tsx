@@ -82,7 +82,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
           <span className="the-kn dac self-start mt-[3px] [@container(min-width:640px)]:mt-0 [@container(min-width:640px)]:self-center">{r.short}</span>
           <button type="button" aria-expanded={ngan ? undefined : moRa} onClick={bat}
             className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-4 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
-            <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
+            <b className="flex basis-full flex-wrap items-center gap-2 text-[14px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
             {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
             <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
               <span className="shrink-0"><NhanTrangThai cham t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
@@ -94,7 +94,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
           </button>
           <span className={`flex items-center gap-2 [@container(min-width:640px)]:contents`}>
             <span className="hidden [@container(min-width:640px)]:inline-flex">{chuHan}</span>
-            {ngan ? <span aria-hidden className="w-6 text-center text-[17px] text-faint">›</span>
+            {ngan ? <span aria-hidden className="w-6 text-center text-[16px] text-faint">›</span>
               : <button type="button" className="mui-pa" aria-label={moRa ? t('Gập Case') : t('Mở Case')} aria-expanded={moRa} onClick={bat}><IconGap mo={moRa} /></button>}
           </span>
         </div>
@@ -124,7 +124,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
   return (
     <section className="card flex min-w-0 flex-col overflow-hidden [container-type:inline-size]" aria-label={t('Case & phương án · {kn}', { kn: tenKn })}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[17px] font-bold text-slate-100">{mot ? t('Case & phương án · {kn}', { kn: tenKn }) : t('Case & phương án')}</h2>
+        <h2 className="m-0 text-[16px] font-bold text-slate-100">{mot ? t('Case & phương án · {kn}', { kn: tenKn }) : t('Case & phương án')}</h2>
         {dangMo.length > 0 && <span className="the-phu"><b>{dangMo.length}</b> {t('đang mở')}</span>}
       </div>
       {daThi && dangMo.length > 0 && <p className="m-0 border-b px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>{t('Đã có KQ thi thật · không còn việc Case / PA')}</p>}

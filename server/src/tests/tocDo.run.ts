@@ -1545,7 +1545,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     'QL toi': '71b11266cf6b5ad1', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '6f1b3ccac5a948f8', 'GVBM toi': '5fba8a27d45206ab',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
-    'GVCN_THUONG toi': '6f1b3ccac5a948f8', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '823f4eee67dd0f26', 'QT tat-ca': 'dc1d7094099dce13',
+    /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
+       ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
+       băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
+    'GVCN_THUONG toi': '6f1b3ccac5a948f8', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '823f4eee67dd0f26', 'QT tat-ca': 'e82787f509b476d9',
     'QT tat-ca cn': 'e87ba722c330cfd9', 'QL gvcn': '00ad6d45dc70a2b9', 'GVS toi': '10640e5b9d61b1a6',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

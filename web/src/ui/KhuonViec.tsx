@@ -43,7 +43,7 @@ export function TruongDoc({ dong }: { dong: [string, ReactNode][] }) {
       {co.map(([n, v], i) => (
         <Fragment key={n}>
           <dt className={`py-2.5 text-[13px] font-medium leading-snug text-faint max-sm:pb-0.5 ${i ? 'border-t max-sm:border-0' : ''}`} style={{ borderColor: 'var(--line)' }}>{n}</dt>
-          <dd className={`m-0 min-w-0 py-[9px] text-[15px] leading-normal text-[color:var(--text)] max-sm:pt-0 ${i ? 'border-t max-sm:border-0' : ''}`} style={{ borderColor: 'var(--line)' }}>{v}</dd>
+          <dd className={`m-0 min-w-0 py-[9px] text-[14px] leading-normal text-[color:var(--text)] max-sm:pt-0 ${i ? 'border-t max-sm:border-0' : ''}`} style={{ borderColor: 'var(--line)' }}>{v}</dd>
         </Fragment>
       ))}
     </dl>
@@ -51,7 +51,7 @@ export function TruongDoc({ dong }: { dong: [string, ReactNode][] }) {
 }
 export function MucH({ children }: { children: ReactNode }) {
   return (
-    <h3 className="m-0 mb-1.5 flex flex-wrap items-center gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]">
+    <h3 className="m-0 mb-1.5 flex flex-wrap items-center gap-2 text-[14px] font-bold leading-snug text-[color:var(--text)]">
       <span aria-hidden className="h-[18px] w-[3px] shrink-0 rounded-sm bg-[color:var(--accent)]" />{children}
     </h3>
   );
@@ -60,7 +60,7 @@ export const TheMuc = ({ children }: { children: ReactNode }) => (
   <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{children}</span>
 );
 export function Trich({ children }: { children: ReactNode }) {
-  return <p className="m-0 line-clamp-3 max-w-[80ch] border-l-[3px] py-0.5 pl-3 text-[15px] leading-relaxed text-[color:var(--text)]" style={{ borderColor: 'var(--line-strong)' }}>{children}</p>;
+  return <p className="m-0 line-clamp-3 max-w-[80ch] border-l-[3px] py-0.5 pl-3 text-[14px] leading-relaxed text-[color:var(--text)]" style={{ borderColor: 'var(--line-strong)' }}>{children}</p>;
 }
 
 export function BoiCanh({ dong, them }: { dong: [string, ReactNode][]; them?: ReactNode }) {
@@ -220,7 +220,7 @@ export function KhoiDaLuu({ x, luc, nutChinh, phu, onHoanTac }: {
   return (
     <div className="flex flex-col gap-4 pt-4">
       <div className="flex flex-col gap-1 rounded-[4px_10px_10px_4px] bg-ok-bg py-3.5 pl-[19px] pr-4" style={{ boxShadow: 'inset 3px 0 0 var(--ok)' }} role="status">
-        <b className="text-[15px] font-bold text-ok">✓ {x.chu}</b>
+        <b className="text-[14px] font-bold text-ok">✓ {x.chu}</b>
         {x.phu && <span className="text-[13px] text-slate-300">{x.phu}</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2 [&>button:first-child]:max-sm:w-full [&>button:first-child]:max-sm:justify-center">{nutChinh}{phu}</div>

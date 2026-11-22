@@ -490,7 +490,7 @@ function CayDuyet({ ds, ...dong }: { ds: (TheYeuCauDto & { giu?: { chu: string; 
                   style={{ background: 'var(--surface-2)', borderColor: 'var(--line-strong)' }}>{chuDau(k[0].hocVien ?? '')}</span>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5">
                   <Link to={`/hoc-vien/${k[0].hocVienId}`} title={t('Mở hồ sơ {ten}', { ten: k[0].hocVien ?? '' })}
-                    className="ten-hv text-[15px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline">{k[0].hocVien}</Link>
+                    className="ten-hv text-[14px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline">{k[0].hocVien}</Link>
                   {k[0].lop && <span className="whitespace-nowrap text-[13px] text-dim">{k[0].lop}</span>}
                   {/* DUYET-QL: SOS hiện tại của em (máy chủ gắn ở tab Chờ duyệt) — dòng duyệt không có cột điểm nên giữ "· S". */}
                   {k[0].sos && <ChipSos muc={k[0].sos.muc} kyNang={k[0].sos.kyNang} tam={k[0].sos.tam} dot={k[0].diemHv?.luot} ten={k[0].hocVien} />}
@@ -520,7 +520,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       style={{ boxShadow: dang === y.id ? 'inset 3px 0 0 var(--accent)' : undefined }}>
       <span aria-hidden className={em ? 'w-5' : 'w-7'} />
       <span className="grid min-w-0 gap-px">
-        <span className="truncate text-[15px] leading-normal text-dim">{dich(y.tieuDe)}</span>
+        <span className="truncate text-[14px] leading-normal text-dim">{dich(y.tieuDe)}</span>
         <span className="min-w-0 truncate text-[13px] font-semibold leading-normal text-ok">✓ {dich(y.giu.chu)}</span>
       </span>
       {y.giu.huy && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={() => onHoanTac(y.id)}>{t('Hoàn tác')}</button>}
@@ -558,7 +558,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       <button type="button" onClick={(e) => { e.stopPropagation(); onMo(y); }} aria-current={dang === y.id ? 'true' : undefined}
         className="grid min-w-0 scroll-mt-14 appearance-none gap-px border-0 bg-transparent p-0 text-left">
         {/* v12 S1: tên yêu cầu 500 — chỉ tên em đậm. */}
-        <span className="text-[15px] font-medium leading-snug text-[color:var(--text)]">{dich(y.tieuDe)}</span>
+        <span className="text-[14px] font-medium leading-snug text-[color:var(--text)]">{dich(y.tieuDe)}</span>
         <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">

@@ -11,16 +11,33 @@ export async function runKhungTests(t: YThucTestKit) {
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-O · Khung 4 khu vực');
 
-  check('PR-O · G-6 ngày: dd/mm cùng năm, dd/mm/yyyy khác năm, không bao giờ ISO', () => {
+  check('NHẸ HƠN · ngày LUÔN dd/mm/yyyy (cùng năm cũng có năm), không bao giờ ISO', () => {
     const eq = (got: string, want: string, m: string) => assert(got === want, `${m}: "${got}" ≠ "${want}"`);
-    eq(d.ngay('2026-09-22', '2026-09-22'), '22/09', 'Cùng năm');
-    eq(d.ngay('2026-09-22T18:30:00Z', '2026-01-01'), '23/09', 'Có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày');
+    eq(d.ngay('2026-11-21', '2026-11-22'), '21/11/2026', 'Cùng năm vẫn có năm (luật hạn chủ SP 22/11)');
+    eq(d.shortDate('2026-11-21', '2026-11-22'), '21/11/2026', 'shortDate cùng luật');
+    eq(d.ngay('2026-09-22T18:30:00Z', '2026-01-01'), '23/09/2026', 'Có giờ (UTC) đổi sang giờ Việt Nam rồi mới lấy ngày');
     eq(d.ngay('2027-01-04', '2026-09-22'), '04/01/2027', 'Khác năm phải có năm');
     eq(d.ngay('2026-09-22'), '22/09/2026', 'Không biết hôm nay thì ghi đủ năm');
     eq(d.ngay(null, '2026-09-22'), '—', 'Trống');
     eq(d.ngay('abc', '2026-09-22'), '—', 'Chuỗi lạ');
     for (const s of ['2026-09-22', '2027-01-04', '2026-12-31T23:00:00Z']) {
       assert(!/\d{4}-\d{2}/.test(d.ngay(s, '2026-09-22')), `Lộ ISO: ${d.ngay(s, '2026-09-22')}`);
+    }
+  });
+
+  check('NHẸ HƠN · mucHan: còn ≥ 3 ngày xa · hôm nay → còn 2 ngày sắp · hôm qua quá; một ngưỡng với deadlineView', () => {
+    const eq = (got: string, want: string, m: string) => assert(got === want, `${m}: "${got}" ≠ "${want}"`);
+    const H = '2026-11-22';
+    eq(d.mucHan('2026-11-25', H), 'xa', 'còn 3 ngày');
+    eq(d.mucHan('2026-11-24', H), 'sap', 'còn 2 ngày');
+    eq(d.mucHan('2026-11-23', H), 'sap', 'còn 1 ngày');
+    eq(d.mucHan(H, H), 'sap', 'hôm nay');
+    eq(d.mucHan('2026-11-21', H), 'qua', 'hôm qua');
+    eq(d.mucHan('2026-11-22T18:30:00Z', H), 'sap', 'có giờ → ngày VN 23/11');
+    eq(d.mucHan('abc', H), 'xa', 'chuỗi lạ không tô màu');
+    for (const n of ['2026-11-21', H, '2026-11-24', '2026-11-25']) {
+      const v = d.deadlineView({ kind: 'nhap-diem', due: n, today: H });
+      eq(v.tone === 'overdue' ? 'qua' : v.ganHan ? 'sap' : 'xa', d.mucHan(n, H), `deadlineView ${n} cùng mức`);
     }
   });
 

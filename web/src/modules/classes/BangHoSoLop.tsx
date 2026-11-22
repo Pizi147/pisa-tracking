@@ -26,7 +26,7 @@ import { useViecLop } from './ThanhViecLop.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
   CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
-  lyDoChuaDu, maLoTrinhNgan, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
+  lyDoChuaDu, maLoTrinhNgan, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs, ngay,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -49,7 +49,7 @@ const CHIP_CHON = 'font-semibold border-[color:var(--accent)] bg-[color:var(--ac
 const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-400 hover:text-slate-100';
 /* Mockup U03 `.khoi` / `.muc-h`: khối nền thẻ trong vùng mở rộng, tiêu đề 15/700 có vạch nhấn trái. */
 export const KHOI = 'grid min-w-0 content-start [&>*]:min-w-0 gap-2.5 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 max-sm:px-2.5';
-export const MUC_H = "m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
+export const MUC_H = "m-0 flex items-center gap-2 text-[14px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
 const TAG = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
@@ -218,7 +218,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
     return (
       <div className="flex cursor-pointer flex-col gap-2" onClick={bamHang(() => moTen(r))}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-          <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
+          <span className="inline-flex min-w-0 items-center gap-2.5 text-[14px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
             <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{ltKhac(r) && <span className="flex flex-wrap gap-1.5">{chuLt(r)}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc, tvv: r.tvv ?? null })}
@@ -230,7 +230,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
           {(['l', 'r', 'w', 's', 'ovr'] as const).map((k) => (
             <div key={k} className="flex min-w-0 flex-col items-center">
               <dt className="text-[12px] font-semibold text-slate-500">{k === 'ovr' ? 'Overall' : k.toUpperCase()}</dt>
-              <dd className="m-0 text-[15px]">{oDiem(r, h, k)}</dd>
+              <dd className="m-0 text-[14px]">{oDiem(r, h, k)}</dd>
             </div>
           ))}
         </dl>
@@ -409,7 +409,7 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, quaHan, onKn, onChiTie
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => onKn(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
                 <span className={`text-[13px] font-bold ${quaHan.has(k) ? 'text-late' : 'text-slate-100'}`}>{NHAN_KN[k]}{quaHan.has(k) && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
-                <span className="text-[15px] font-bold tabular-nums">{truoc !== null && moi !== null && <span className="max-sm:hidden">{fmtBand(truoc)} → </span>}{o(moi, ls[0]?.expectation)}</span>
+                <span className="text-[14px] font-bold tabular-nums">{truoc !== null && moi !== null && <span className="max-sm:hidden">{fmtBand(truoc)} → </span>}{o(moi, ls[0]?.expectation)}</span>
                 <span className={`text-xs max-sm:hidden ${quaHan.has(k) ? 'font-semibold text-late' : 'text-dim'}`}>{coCase.length ? (coCase.some((c) => c.interventionCount > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
@@ -442,7 +442,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
   return (
     <div className="grid gap-3 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-center gap-2.5">
-        <h4 className="m-0 text-[15px] font-bold text-slate-100">{dich(CASE_CATEGORY_LABEL[s as keyof typeof CASE_CATEGORY_LABEL] ?? s)}</h4>
+        <h4 className="m-0 text-[14px] font-bold text-slate-100">{dich(CASE_CATEGORY_LABEL[s as keyof typeof CASE_CATEGORY_LABEL] ?? s)}</h4>
         {ca?.ownerName && <span className={TAG} style={{ borderColor: 'var(--line-strong)' }}>{t('phụ trách')} <b>{ca.ownerName}</b></span>}
         <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
           <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(r.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
@@ -477,14 +477,14 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
         </div>
         <div className="grid content-start gap-1">
           <span className={NH}>{t('Case · PA')}</span>
-          {!ca ? <span className="text-[15px] font-semibold text-dim">{t('Không có Case')}</span> : (
+          {!ca ? <span className="text-[14px] font-semibold text-dim">{t('Không có Case')}</span> : (
             <>
               {/* Mockup `.ba-cot`: giá trị = nguyên nhân chính (600 15 trắng); chưa tải / không có → tên Case. */}
-              <span className="text-[15px] font-semibold text-slate-100">{dich(ct.data?.issues.find((i: any) => i.role === 'primary')?.label ?? ca.title).replace(' - ', ' · ')}</span>
+              <span className="text-[14px] font-semibold text-slate-100">{dich(ct.data?.issues.find((i: any) => i.role === 'primary')?.label ?? ca.title).replace(' - ', ' · ')}</span>
               <span className="text-[13px] text-dim">{t('Case mở {tuan}', { tuan: tuanLich(ca.detectedAt, homNay) })}</span>
               {ct.error ? null : !ct.data ? <Skeleton rows={1} /> : pa.length ? pa.slice(0, 2).map((iv: any) => (
                 <Fragment key={iv.id}>
-                  <span className="mt-1 text-[15px] font-semibold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>
+                  <span className="mt-1 text-[14px] font-semibold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>
                   <span className="text-[13px] text-dim">{iv.awaitingConfirmation ? t('Chờ xác nhận') : iv.status === 'started' ? t('đang chạy') : t('chưa bắt đầu')}</span>
                 </Fragment>
               )) : <span className="mt-1 text-[13px] text-dim">{t('Chưa có PA')}</span>}
@@ -574,7 +574,7 @@ function OLichThi({ l, homNay, the }: { l?: LichThi; homNay: string; the?: boole
   if (!l || l.trangThai === 'chua-co') return <span className="text-slate-500" title={t('Chưa có lịch')}><span aria-hidden>—</span><span className="sr-only">{t('Chưa có lịch')}</span></span>;
   /* U03 (mockup `.lich`): chip nhạt màu "đang làm" — Thi dd/mm · Dự kiến MM/YYYY; "Đã thi" chữ thường. */
   const CHU = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-sm bg-[rgb(var(--doing-bg-rgb))] px-[7px] text-xs font-semibold text-doing [&_b]:font-semibold [&_b]:tabular-nums';
-  if (l.trangThai === 'da-chot-ngay' && l.ngay) return <span className={CHU}>{t('Thi')} <b>{`${l.ngay.slice(8, 10)}/${l.ngay.slice(5, 7)}`}</b></span>;
+  if (l.trangThai === 'da-chot-ngay' && l.ngay) return <span className={CHU}>{t('Thi')} <b>{ngay(l.ngay)}</b></span>;
   if (l.trangThai === 'da-thi') return <span className="whitespace-nowrap text-[13px] text-dim">{t('Đã thi')}</span>;
   return <span className={CHU} title={l.tuan ? tuanLich(l.tuan, homNay) : undefined}>{t('Dự kiến')} <b>{nhanThang(l.thang!)}</b></span>;
 }

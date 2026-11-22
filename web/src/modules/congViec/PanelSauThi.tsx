@@ -322,7 +322,7 @@ function Buoc({ so, tieuDe, phu, them, xong, mo = true, children }: { so: string
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span aria-hidden className={`inline-flex h-6 w-6 items-center justify-center self-center rounded-full text-xs font-bold ${xong ? 'bg-ok-bg text-ok' : 'text-[color:var(--accent)]'}`}
           style={xong ? undefined : { background: 'var(--accent-soft)' }}>{so}</span>
-        <h3 className="m-0 text-[15px] font-bold text-slate-100">{tieuDe}</h3>
+        <h3 className="m-0 text-[14px] font-bold text-slate-100">{tieuDe}</h3>
         {phu && <span className="text-xs text-slate-400">{phu}</span>}
         {them && <span className="ml-auto">{them}</span>}
       </div>

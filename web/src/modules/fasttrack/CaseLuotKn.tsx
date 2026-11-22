@@ -35,7 +35,7 @@ export function CaseLuotKn({ cards, form, onForm, onDoi }: {
             <div className="grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5">
               <span className="the-kn">{c.topic ? skillShort(c.topic) : 'C'}</span>
               <button type="button" aria-expanded={moRa} onClick={bat} className="grid min-h-[44px] min-w-0 appearance-none gap-0.5 border-0 bg-transparent p-0 text-left">
-                <b className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100"><TenCase c={c} luot={c.luot} kn={c.topic} />{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
+                <b className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-slate-100"><TenCase c={c} luot={c.luot} kn={c.topic} />{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
                 <span className="text-[13px] text-dim">{dich(c.viecTiep?.chu ?? c.trangThaiV4.chu)}</span>
               </button>
               <span className="flex items-center gap-2">

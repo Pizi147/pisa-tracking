@@ -261,7 +261,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const xem = bt.xemTruocLoTrinhMoi(QL, a.cy, {});
     assert(xem.routeGoiY === 'LT2' && xem.loi === null, JSON.stringify(xem));
     assert(xem.dong.some((x: string) => /^Tạo MT1–MT3: W\d [A-Z]{3} · W\d [A-Z]{3} · W\d [A-Z]{3}$/.test(x)), `tóm tắt MT: ${xem.dong.join(' | ')}`);
-    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d: L 7\.0 · R 7\.0 · W 6\.5 · S 6\.5$/.test(x)), `tóm tắt đầu vào: ${xem.dong.join(' | ')}`);
+    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d\/\d{4}: L 7\.0 · R 7\.0 · W 6\.5 · S 6\.5$/.test(x)), `tóm tắt đầu vào: ${xem.dong.join(' | ')}`);
     assert(xem.dong.some((x: string) => /^Kết thúc LT1 · đóng 1 Case \(S\) — Kết thúc lộ trình$/.test(x)) && xem.dong.some((x: string) => x === 'Dừng 1 PA — Dừng · kết thúc lộ trình'), `tóm tắt Case: ${xem.dong.join(' | ')}`);
     bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi' });
     const m = cyMoi(a.sid);
@@ -516,7 +516,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const L = lop(); const a = emHocTiep(L);
     bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });
     const xem = bt.xemTruocLoTrinhMoi(QL, a.cy, {});
-    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d: L 7\.0/.test(x)), `xem trước dùng KQ lần đó: ${xem.dong.join(' | ')}`);
+    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d\/\d{4}: L 7\.0/.test(x)), `xem trước dùng KQ lần đó: ${xem.dong.join(' | ')}`);
     bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi' });
     const m = cyMoi(a.sid);
     assert(m.id !== a.cy && m.baseline_listening === 7 && get('SELECT system_close_reason FROM sos_cases WHERE id = ?', a.caseId).system_close_reason === 'ket_thuc_lo_trinh', `Lộ trình mới: ${JSON.stringify(m)}`);

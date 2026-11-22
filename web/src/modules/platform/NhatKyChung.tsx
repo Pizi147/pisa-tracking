@@ -127,7 +127,7 @@ export function NhatKyMuc({ muc, quanTri }: { muc: Muc; quanTri: boolean }) {
   return (
     <aside className="card min-w-0 self-start" aria-label={t('Nhật ký')}>
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
+        <h3 className="m-0 text-[14px] font-bold text-slate-100">{t('Nhật ký')}</h3>
         {dong.length > 0 && <BadgeMo so={dong.length} />}
         {quanTri
           ? <Link className="ml-auto text-[13px] font-semibold" to={`/quan-tri?tab=config&muc=${muc}`}>{t('Xem tất cả')} ›</Link>

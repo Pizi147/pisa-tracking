@@ -89,7 +89,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
   if (rong) {
     return (
       <section className="card flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3" aria-label={t('Tiến độ trên lớp')}>
-        <span className="flex min-w-0 items-center gap-x-2.5"><h2 className="m-0 text-[17px] font-bold text-slate-100">{tieuDe}</h2>{nutLuat}</span>
+        <span className="flex min-w-0 items-center gap-x-2.5"><h2 className="m-0 text-[16px] font-bold text-slate-100">{tieuDe}</h2>{nutLuat}</span>
         <span className="order-3 min-w-0 flex-[1_1_calc(100%-140px)] text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</span>
         {ghiDuoc && <button type="button" className="btn btn-sm order-4 ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
       </section>
@@ -98,7 +98,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
   return (
     <section className="card flex min-w-0 flex-col" aria-label={t('Tiến độ trên lớp')}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[17px] font-bold text-slate-100">{tieuDe}</h2>
+        <h2 className="m-0 text-[16px] font-bold text-slate-100">{tieuDe}</h2>
         {nutLuat}
         {ghiDuoc && mo !== 'moi' && <button type="button" className="btn btn-sm ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
       </div>

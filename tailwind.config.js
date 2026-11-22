@@ -19,16 +19,16 @@ export default {
     /* GD-20a: lớp khối "Bạn đã ghi" (.viet-ghi.mot, .da-ghi .cau, .da-ghi.gap) + biến `gan` trùng phủ định JS. */ '!mot', '!cau', '!gap', '!gan'],   // LICH-THI-UI: .ngay (.lt-ls .ngay) trùng phủ định JS
   theme: {
     /*
-     * NEN-TYPO-MAU (04 mục 2.2): THANG CHỮ 12 · 13 · 14 · 15 · 17 · 22 · 28 — đặt `fontSize` (không extend) để lớp ngoài thang không sinh được.
+     * NHẸ HƠN (chủ SP 22/11, thay NEN-TYPO-MAU): THANG CHỮ 12 · 13 · 14 · 16 · 20 · 26 — đặt `fontSize` (không extend) để lớp ngoài thang không sinh được.
      * 13 dùng `text-[13px]`. Line-height Việt: một dòng có cắt ≥ 1,5; nhiều dòng ≥ 1,45; tiêu đề ≥ 1,3. Phép kiểm `prNenTypoMau` K-CHU-1/2.
      */
     fontSize: {
       xs: ['12px', '1.4'],    // tối thiểu: badge, dòng phụ ô điểm, chú thích
       sm: ['14px', '1.45'],   // lưới dày, giá trị trong panel
-      base: ['15px', '1.5'],  // chữ thường, ô bảng, nút
-      lg: ['17px', '1.35'],   // tiêu đề khối / panel
-      xl: ['22px', '1.3'],    // tiêu đề trang
-      '2xl': ['28px', '1.1'], // số lớn
+      base: ['14px', '1.5'],  // chữ thường, ô bảng, nút
+      lg: ['16px', '1.35'],   // tiêu đề khối / panel
+      xl: ['20px', '1.3'],    // tiêu đề trang
+      '2xl': ['26px', '1.1'], // số lớn
     },
     extend: {
       /* NEN-V8: bóng nổi (menu, panel, hộp, toast) theo mockup v8 — một biến `--bong-noi` (index.css) cho tối và sáng. */

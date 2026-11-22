@@ -93,7 +93,7 @@ export async function runPrDhTests(t: YThucTestKit) {
 
   check('PR-DH (13) · khung toàn màn (KhungPanel, Modal/ConfirmDialog) có !mt-0 — không bị space-y của trang cha đẩy lệch xuống, lộ demo bar', () => {
     for (const f of ['web/src/ui/KhungPanel.tsx', 'web/src/ui/Drawer.tsx']) {
-      assert(/fixed inset-0 !mt-0 /.test(doc(f)), `${f}: gốc fixed inset-0 phải có !mt-0`);
+      assert(/fixed inset-(?:0|x-0) !mt-0 /.test(doc(f)), `${f}: gốc fixed inset-0 phải có !mt-0`);   // NHẸ HƠN: KhungPanel `inset-x-0` + top dưới thanh menu
     }
   });
 

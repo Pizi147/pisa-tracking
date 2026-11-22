@@ -55,15 +55,12 @@ export function ngayTheoGioVN(s: string | null | undefined): string | null {
 const validIso = (s: string | null | undefined): s is string => ngayTheoGioVN(s) !== null;
 
 /**
- * NGÀY VIẾT NGẮN: `14/09` khi cùng năm với `today`, `05/01/2027` khi sang năm khác — để một
- * cột ngày không bao giờ khiến người đọc phải đoán năm nào (HE_GIAO_DIEN §2). Cả hai tham số đi qua giờ Việt Nam.
+ * NGÀY HIỆN TRÊN WEB — NHẸ HƠN (luật hạn chủ SP 22/11): LUÔN `dd/mm/yyyy` ("21/11/2026"), cùng năm hay khác năm. Đi qua giờ Việt Nam.
+ * `_today` giữ cho chỗ gọi cũ (trước 22/11 cùng năm thì bỏ năm) — không còn dùng.
  */
-export function shortDate(iso: string | null | undefined, today: string): string {
+export function shortDate(iso: string | null | undefined, _today?: string | null): string {
   const s = ngayTheoGioVN(iso);
-  if (!s) return '—';
-  const dm = `${s.slice(8, 10)}/${s.slice(5, 7)}`;
-  const nam = (ngayTheoGioVN(today) ?? today).slice(0, 4);
-  return s.slice(0, 4) === nam ? dm : `${dm}/${s.slice(0, 4)}`;
+  return s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : '—';
 }
 
 /** NEN-V5 (P7, chủ SP 22/10): MỘT nhãn hạn cho cả web — ngày / tháng thật "hạn 28/10" (khác năm thì kèm năm); không thứ, không "tuần này / tuần sau". */
@@ -373,8 +370,8 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
  * LUẬT HIỆN HẠN (PR-UX0, B-3): việc · mốc · quá hạn/hôm nay · hẹn — mỗi thông tin nói MỘT lần.
  * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
  */
-/** OV-12e: chip hạn 3 mức — quá hạn cam · còn ≤ 3 ngày vàng · xa hơn viền xám (chủ SP 14/10 tối). */
-export const HAN_GAN_NGAY = 3;
+/** Luật hạn NHẸ HƠN (chủ SP 22/11): vàng = từ hôm nay tới còn ≤ 2 ngày · đỏ = quá hạn · xa hơn chữ thường. MỘT ngưỡng (`mucHan`, `deadlineView.ganHan`, máy chủ). */
+export const HAN_GAN_NGAY = 2;
 
 /** C-004: một chữ cho "việc không đặt hạn"; nơi so khớp (hồ sơ HV, thẻ kỹ năng) dùng hằng này, không so chuỗi hiển thị. */
 export const CHUA_CO_HAN = t('Chưa có hạn');
