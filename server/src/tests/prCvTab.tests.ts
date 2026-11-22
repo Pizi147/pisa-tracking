@@ -106,4 +106,54 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
         `GV tự xem (còn vai ở ${khac}: ${coVaiKhac}): ${JSON.stringify(tu.map((x) => [x.key, x.cn]))}`);
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
+
+  /* NHẸ HƠN PR-2a (v23 ④ ⑨): Head "Của GV" chỉ quá hạn + sắp đến; tab Admin; panel lớp Admin mỗi người một dòng, S Mock = "GV Speaking". */
+  check('NH2a-1 · hàm thuần: viecGapCuaGv theo mốc tô vàng; tabAdminCua; gomEmThieu tách cặp kỹ năng ↔ người, S Mock = GV Speaking', () => {
+    const h = '2026-11-22';
+    assert(d.viecGapCuaGv({ due: '2026-11-21' }, h) && d.viecGapCuaGv({ due: h }, h) && d.viecGapCuaGv({ due: '2026-11-24' }, h)
+      && !d.viecGapCuaGv({ due: '2026-11-25' }, h) && !d.viecGapCuaGv({ due: null }, h), 'quá hạn / hôm nay / còn 2 ngày vào; còn 3 ngày / không hạn ra');
+    assert(d.tabAdminCua({ group: 'score', key: 'k' }) === 'diem' && d.tabAdminCua({ group: 'xuat_bc_ph', key: 'k' }) === 'bao-cao-ph'
+      && d.tabAdminCua({ group: 'missing_data', key: 'k' }) === 'lich-thi' && d.tabAdminCua({ group: 'bo_sung_ho_so', key: 'k' }) === 'ho-so'
+      && d.tabAdminCua({ group: 'mgmt', key: 'k' }) === 'van-hanh', 'tab Admin theo loại');
+    for (const x of [{ group: 'score' }, { group: 'xuat_bc_ph' }, { group: 'missing_data' }, { group: 'mgmt' }]) assert(d.TAB_ADMIN.includes(d.tabAdminCua({ ...x, key: 'k' })), `${x.group} không có tab Admin`);
+    const em = d.gomEmThieu([
+      { owner: 'Vũ Thu Lan', ownerId: 1, kind: 'mock', due: '2026-11-21', emThieu: [{ id: 1, ten: 'Tạ Minh Khoa', kns: ['listening', 'reading', 'speaking'] }, { id: 2, ten: 'Ngô Bảo Châu', kns: ['writing2'] }] },
+      { owner: 'Hà Quốc Bảo', ownerId: 2, kind: 'progress', due: '2026-11-23', emThieu: [{ id: 1, ten: 'Tạ Minh Khoa', kns: ['writing1'] }] },
+    ]);
+    const khoa = em.find((x: any) => x.id === 1);
+    assert(em.length === 2 && khoa.cap.length === 3, JSON.stringify(em));
+    assert(khoa.cap.some((c: any) => c.nguoi === 'GV Speaking' && c.kns.join() === 'speaking') && khoa.cap.some((c: any) => c.nguoi === 'Vũ Thu Lan' && c.kns.join() === 'listening,reading')
+      && khoa.cap.some((c: any) => c.nguoi === 'Hà Quốc Bảo'), 'mỗi người một dòng, S Mock = GV Speaking');
+    assert(khoa.due === '2026-11-21', 'hạn em = hạn sớm nhất');
+    /* PTA rà #2001: Admin gộp dòng Điểm một lớp · đợt; việc khác / lớp khác giữ. */
+    const s = (key: string, classId: number, tuanThi: string, kns: string[], emIds: number[], soBai: number, due: string, urgency = 'normal') =>
+      ({ key, group: 'score', classId, kind: 'mock', tuanThi, kns, emIds, studentId: null, soBai, due, urgency });
+    const gop = d.gopDiemAdmin([s('a', 1, 'W1', ['listening'], [1, 2], 2, '2026-11-25'), { key: 'x', group: 'mgmt', classId: null, studentId: null, urgency: 'normal' },
+      s('b', 1, 'W1', ['speaking'], [2, 3], 2, '2026-11-20', 'overdue'), s('c', 2, 'W1', ['reading'], [9], 1, '2026-11-26')]);
+    assert(gop.length === 3 && gop[0].key === 'b' && gop[0].gopLop && gop[0].soBai === 4 && gop[0].emIds.length === 3 && gop[0].kns.join() === 'listening,speaking'
+      && gop[0].due === '2026-11-20' && gop[1].key === 'x' && gop[2].key === 'c' && !gop[2].gopLop, JSON.stringify(gop));
+  });
+
+  check('NH2a-2 · /my-work thật: Head "Của GV" = dòng của GV có hạn ≤ hôm nay + 2 (số nút = số dòng quá hạn, cùng demDongViec); Admin có emThieu khớp soBai, GV không có', () => {
+    xoaNho();
+    const w = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' });
+    const gv = (w.dong as any[]).filter((x) => d.khopNguoiViec(x, 'gv') && d.viecGapCuaGv(x, TODAY));
+    for (const x of gv) assert(d.mucHan(x.due.slice(0, 10), TODAY) !== 'xa', `${x.key} còn xa vẫn vào Của GV`);
+    const conXa = (w.dong as any[]).filter((x) => d.khopNguoiViec(x, 'gv') && !d.viecGapCuaGv(x, TODAY));
+    assert(gv.every((x) => !conXa.includes(x)), 'hai tập rời');
+    assert(d.demDongViec(gv).quaHan === d.demDongViec((w.dong as any[]).filter((x) => d.khopNguoiViec(x, 'gv'))).quaHan, 'lọc sắp đến không làm mất việc quá hạn');
+    const idAdmin = (db().prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' AND ur.status = 'active' LIMIT 1`).get() as any)?.id;
+    if (idAdmin) {
+      xoaNho();
+      const a = mywork.myWork(loadPrincipal(idAdmin), { nguoi: 'tat-ca' });
+      for (const x of (a.dong as any[]).flatMap((y) => [y, ...(y.con ?? [])]).filter((y) => y.group === 'score' && !y.con?.length)) {
+        assert(Array.isArray(x.emThieu), `Admin ${x.key} thiếu emThieu`);
+        /* soBai đếm theo lượt (MT1 + MT2 cùng tuần = 2 bài), emThieu gộp kỹ năng theo em → ≤; mỗi em của dòng đều có. */
+        const so = x.emThieu.reduce((n: number, e: any) => n + e.kns.length, 0);
+        assert(so > 0 && so <= x.soBai && x.emThieu.length === (x.emIds?.length ?? 1), `Admin ${x.key}: emThieu ${so} / soBai ${x.soBai}`);
+      }
+    }
+    xoaNho();
+    for (const x of mywork.myWork(P.coreTeacher, {}).dong as any[]) assert(x.emThieu === undefined, 'GV không nhận emThieu');
+  });
 }

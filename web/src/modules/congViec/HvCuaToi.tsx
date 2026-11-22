@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { NhanLich } from '../../ui/Nhan.tsx';
+import { NhanLich, lopBadgeHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -48,26 +48,21 @@ export function dungHvCuaToi(em: readonly EmTvv[], viec: readonly WorkItem[], ho
 }
 const xepHanNull = (a: WorkItem | undefined, b: WorkItem | undefined) => (a && b ? xepHan(a, b) : a ? -1 : b ? 1 : 0);
 
-/** [XM-9] Tình trạng — ba loại, theo trạng thái (lời 40): Thi dd/mm (ngày đã chốt trong tháng) · Đã thi · chờ KQ · SOS n (em đang học). */
+/** [XM-9] Tình trạng — NHẸ HƠN PR-2a (v23 ③ vòng 3): MỘT chip / em, ưu tiên SOS → Đã thi · chờ KQ → Thi dd/mm/yyyy (ngày đã chốt trong tháng). */
 function tinhTrangCua(e: EmTvv, homNay: string) {
   const thi = e.thi && 'ngay' in e.thi && e.thi.ngay.slice(0, 7) === homNay.slice(0, 7) ? e.thi.ngay : null;
-  if (!thi && !e.choKq && !e.sos) return null;
-  return (
-    <span className="flex flex-wrap items-center gap-1">
-      {thi && <NhanLich loai="co">{t('Thi {ngay}', { ngay: ngay(thi) })}</NhanLich>}
-      {e.choKq && <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>}
-      {!!e.sos && <ChipSos muc={e.sos} hienKyNang={false} tinh />}
-    </span>
-  );
+  if (e.sos) return <ChipSos muc={e.sos} hienKyNang={false} tinh />;
+  if (e.choKq) return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;
+  if (thi) return <NhanLich loai="co">{t('Thi {ngay}', { ngay: ngay(thi) })}</NhanLich>;
+  return null;
 }
 
-const COT = 'grid grid-cols-[160px_84px_150px_minmax(0,1fr)] items-center gap-x-3 px-4';
+const COT = 'grid grid-cols-[minmax(0,1fr)_auto_44px] items-center gap-x-3 px-4';
 
 /**
- * HV CỦA TÔI — khung phải trang Công việc của TVV khi chưa chọn việc (GD-8, mockup v21 ④ K1, R4.3; cùng dáng "Lớp của tôi" của GV).
- * Cột: Học viên (link hồ sơ) · Lớp · Trạng thái (mockup "Tình trạng" — S3: một khái niệm một tên) · Việc cần làm (nút-chip "{nhóm} · {số}" không biểu tượng, đỏ khi quá hạn; "›" khi đổi trang).
- * Bấm chip = việc đầu (hạn sớm nhất) của nhóm đó của em: mở panel tại chỗ (`onMo`). Em không việc, không tình trạng gập "n em khác" ([XM-3]).
- * Ô "Tìm em": lọc tại máy trên danh sách đã nạp (cả nhóm gập). 375: mỗi em một thẻ, chip cao 44.
+ * HV CỦA TÔI — khung phải trang Công việc của TVV khi chưa chọn việc (GD-8; NHẸ HƠN PR-2a mockup v23 ③ vòng 3: NHÓM THEO LỚP).
+ * Hàng nhóm "MB FOU 12 · 12 em" (nền nhạt) · em: tên (link hồ sơ) · MỘT chip trạng thái · số việc (đỏ + ⚠ khi quá hạn; bấm = mở việc gấp nhất của em tại chỗ).
+ * Em học nhiều lớp đứng ở lớp đầu. Em không việc, không tình trạng gập "n em khác" ([XM-3]). "Tìm em" lọc tại máy. 375 cùng kiểu, số cao 44.
  */
 export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
   em: readonly EmTvv[] | undefined; viec: readonly WorkItem[]; onMo: (x: WorkItem) => void; dangTai: boolean; loi: React.ReactNode;
@@ -80,16 +75,19 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
   const khop = q ? dong.filter((d) => d.em.ten.toLocaleLowerCase('vi').includes(q)) : null;
   const chinh = khop ?? dong.filter((d) => d.chip.length || d.tinhTrang);
   const khac = khop ? [] : dong.filter((d) => !d.chip.length && !d.tinhTrang);
-  const vach = khop ? -1 : chinh.findIndex((d) => !d.chip.length);
+  /* Sĩ số nhóm = mọi em của TVV ở lớp đó (cả em gập ở "n em khác"). */
+  const siSo = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const d of dong) { const id = d.em.lop[0]?.id ?? 0; m.set(id, (m.get(id) ?? 0) + 1); }
+    return m;
+  }, [dong]);
   return (
     <section className="card overflow-clip p-0" aria-labelledby="hv-cua-toi" data-hd="cv-hv-cua-toi">
       <div className="flex min-h-[48px] flex-wrap items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 bg-[color:var(--surface-2)] max-sm:py-2"
         style={{ borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
-        <h2 id="hv-cua-toi" className="m-0 flex items-center gap-2 text-[14px] font-bold leading-snug">
-          <span className="text-[color:var(--accent)]"><IconNhom k="lop" /></span>
+        <h2 id="hv-cua-toi" className="m-0 flex items-baseline gap-2 text-[16px] font-bold leading-snug">
           <span className="text-[color:var(--text)]">{t('HV của tôi')}</span>
-          {!!em?.length && <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-            style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{t('{n} em', { n: em.length })}</span>}
+          {!!em?.length && <span className="text-[13px] font-medium tabular-nums text-dim">{t('{n} em', { n: em.length })}</span>}
         </h2>
         {!!em?.length && (
           <label className="ml-auto flex h-[34px] w-[200px] items-center gap-1.5 rounded-lg border px-2.5 text-faint focus-within:border-[color:var(--accent)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)] max-sm:ml-0 max-sm:h-11 max-sm:w-full"
@@ -104,14 +102,13 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
         : dangTai ? <div className="p-4"><Skeleton rows={5} /></div>
           : !em?.length ? <p className="m-0 px-4 py-6 text-[14px] text-dim">{t('Chưa có học viên nào do bạn phụ trách.')}</p>
             : <>
-              <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
-                <span>{t('Học viên')}</span><span>{t('Lớp')}</span><span>{t('Trạng thái')}</span><span>{t('Việc cần làm')}</span>
-              </div>
-              {khop && !khop.length ? <p className="m-0 px-4 py-5 text-[14px] text-dim">{t('Không thấy em nào khớp.')}</p> : (
-                <ul className="m-0 list-none p-0">
-                  {chinh.map((d, i) => <DongEm key={d.em.id} d={d} dau={i === 0} ranh={i === vach && i > 0} homNay={homNay} onMo={onMo} />)}
-                </ul>
-              )}
+              {khop && !khop.length ? <p className="m-0 px-4 py-5 text-[14px] text-dim">{t('Không thấy em nào khớp.')}</p>
+                : <>
+                  <div className={`${COT} min-h-[30px] border-b text-xs font-semibold text-faint`} style={{ borderColor: 'var(--line)' }} aria-hidden>
+                    <span>{t('Học viên')}</span><span>{t('Trạng thái')}</span><span className="text-right">{t('Việc')}</span>
+                  </div>
+                  <NhomLop ds={chinh} siSo={siSo} homNay={homNay} onMo={onMo} />
+                </>}
               {khac.length > 0 && (
                 <>
                   <button type="button" aria-expanded={moKhac} onClick={() => setMoKhac((x) => !x)}
@@ -119,9 +116,7 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
                     style={{ borderColor: 'var(--line-strong)' }}>
                     <IconGap mo={moKhac} />{t('{n} em khác', { n: khac.length })}
                   </button>
-                  {moKhac && <ul className="m-0 list-none border-t p-0" style={{ borderColor: 'var(--line)' }}>
-                    {khac.map((d, i) => <DongEm key={d.em.id} d={d} dau={i === 0} ranh={false} homNay={homNay} onMo={onMo} nhat />)}
-                  </ul>}
+                  {moKhac && <div className="border-t" style={{ borderColor: 'var(--line)' }}><NhomLop ds={khac} siSo={siSo} homNay={homNay} onMo={onMo} nhat /></div>}
                 </>
               )}
             </>}
@@ -129,32 +124,53 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
   );
 }
 
-function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: boolean; ranh: boolean; homNay: string; onMo: (x: WorkItem) => void; nhat?: boolean }) {
-  const e = d.em;
+/** Nhóm theo lớp đầu của em — thứ tự nhóm = thứ tự em gấp nhất (danh sách đã xếp hạn). */
+function NhomLop({ ds, siSo, homNay, onMo, nhat = false }: {
+  ds: readonly Dong[]; siSo: ReadonlyMap<number, number>; homNay: string; onMo: (x: WorkItem) => void; nhat?: boolean;
+}) {
+  const nhom = new Map<number, { id: number; ma: string; em: Dong[] }>();
+  for (const d of ds) {
+    const l = d.em.lop[0] ?? { id: 0, ma: '—' };
+    (nhom.get(l.id) ?? nhom.set(l.id, { id: l.id, ma: l.ma, em: [] }).get(l.id)!).em.push(d);
+  }
   return (
-    /* ④ K7b: 375 — tên · lớp · trạng thái một hàng (gói khi hẹp), chip xuống hàng riêng cao 44. */
-    <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-2 max-sm:py-3`}
-      style={{ borderColor: ranh ? 'var(--line-strong)' : 'var(--line)' }}>
-      <Link to={duongHoSoHocVien(e.id)} className={`ten-hv min-w-0 max-w-full text-[14px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
-      <span className="truncate whitespace-nowrap text-[13px] text-dim">
-        {e.lop.length ? e.lop.map((l, i) => <span key={l.id}>{i > 0 && ', '}<Link to={`/hoc-vien/lop/${l.id}`} className="!text-[color:var(--text-dim)] no-underline hover:underline">{l.ma}</Link></span>) : '—'}
-      </span>
-      <span className="min-w-0 max-sm:empty:hidden">{tinhTrangCua(e, homNay)}</span>
-      <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
-        {d.chip.map((c) => {
-          const nhan = NHOM_CV_TVV_LABEL[c.nhom];
-          const lop = `inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold no-underline max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
-            ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 !text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`;
-          const vien = c.quaHan ? undefined : { borderColor: 'var(--line-strong)' };
-          /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — chip sang hồ sơ em, không số. SUA-2211-B: `?viec=bo-sung` mở sẵn panel Bổ sung hồ sơ ở đó. */
-          if (!c.dau) return <Link key={c.nhom} to={duongHoSoHocVien(e.id, { viec: 'bo-sung' })} className={lop} style={vien} aria-label={`${nhan} · ${e.ten}`}>{nhan}<span aria-hidden> ›</span></Link>;
-          return (
-            <button key={c.nhom} type="button" onClick={() => onMo(c.dau!)} className={lop} style={vien}
-              aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${nhan} · ${c.so} · ${e.ten}`}>
-              {nhan} · <span className="tabular-nums">{c.so}</span>{!lamTaiCho(c.dau) && <span aria-hidden> ›</span>}
-            </button>
-          );
-        })}
+    <ul className="m-0 list-none p-0">
+      {[...nhom.values()].map((g, gi) => (
+        <li key={g.id} className={gi ? 'border-t' : ''} style={{ borderColor: 'var(--line-strong)' }}>
+          <div className="flex min-h-[34px] items-center gap-1.5 bg-[color:var(--surface-2)] px-4 text-[13px]">
+            {g.id ? <Link to={`/hoc-vien/lop/${g.id}`} className="font-bold !text-[color:var(--text)] no-underline hover:underline">{g.ma}</Link> : <b>{g.ma}</b>}
+            <span className="text-dim">· {t('{n} em', { n: siSo.get(g.id) ?? g.em.length })}</span>
+          </div>
+          <ul className="m-0 list-none p-0">{g.em.map((d) => <DongEm key={d.em.id} d={d} homNay={homNay} onMo={onMo} nhat={nhat} />)}</ul>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DongEm({ d, homNay, onMo, nhat = false }: { d: Dong; homNay: string; onMo: (x: WorkItem) => void; nhat?: boolean }) {
+  const e = d.em;
+  const so = d.chip.reduce((n, c) => n + (c.dau ? c.so : 0), 0);
+  const quaHan = d.chip.some((c) => c.quaHan);
+  const dau = d.chip.map((c) => c.dau).filter((x): x is WorkItem => !!x).sort(xepHan)[0] ?? null;
+  const boSung = d.chip.some((c) => !c.dau);
+  const chu = d.chip.map((c) => (c.dau ? `${NHOM_CV_TVV_LABEL[c.nhom]} · ${c.so}` : NHOM_CV_TVV_LABEL[c.nhom])).join(', ');
+  /* v23 ③: số việc là CHỮ SỐ; quá hạn = số trong ô nền đặc đỏ nhạt (`lopBadgeHan('qua')`, cùng Lớp của tôi / PR-3); vẫn là nút (bấm mở việc), vùng bấm 44 ở 375. */
+  const lopSo = `inline-flex h-7 min-w-[32px] items-center justify-end gap-0.5 rounded-md border-0 bg-transparent px-1 text-[13px] font-semibold tabular-nums no-underline hover:bg-[color:var(--accent-soft)] max-sm:h-11 max-sm:min-w-[44px] ${quaHan
+    ? 'text-late' : '!text-[color:var(--text)]'}`;
+  const vien = undefined;
+  return (
+    <li className={`${COT} min-h-[44px] border-t py-1`} style={{ borderColor: 'var(--line)' }}>
+      <Link to={duongHoSoHocVien(e.id)} className={`ten-hv min-w-0 text-[14px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
+      <span className="min-w-0 empty:hidden">{tinhTrangCua(e, homNay)}</span>
+      <span className="col-start-3 flex justify-end">
+        {dau ? (
+          <button type="button" onClick={() => onMo(dau)} className={lopSo} style={vien} title={chu}
+            aria-label={`${quaHan ? `${t('Quá hạn')}: ` : ''}${chu} · ${e.ten}`}>{quaHan ? <span className={lopBadgeHan('qua')}>{so}</span> : so}{!lamTaiCho(dau) && <span aria-hidden>›</span>}</button>
+        ) : boSung ? (
+          /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — sang hồ sơ em (`?viec=bo-sung` mở sẵn panel). */
+          <Link to={duongHoSoHocVien(e.id, { viec: 'bo-sung' })} className={lopSo} style={vien} title={chu} aria-label={`${chu} · ${e.ten}`}>›</Link>
+        ) : <span className="pr-1 text-faint" aria-hidden>—</span>}
       </span>
     </li>
   );

@@ -77,7 +77,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     const dm2: any = dm;
     assert(dm2.demDongViec(dm2.dongCuaToi(w.dong)).n === w.summary.viec, `Việc của tôi ${dm2.demDongViec(dm2.dongCuaToi(w.dong)).n} ≠ summary.viec ${w.summary.viec}`);
     const web = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx').replace(/\r\n/g, '\n');
-    assert(/haiSo[\s\S]{0,260}dongCuaToi\(items\)/.test(web) && /Việc của tôi/.test(web) && /Việc của GV/.test(web), 'đầu trang Admin chưa tách "Việc của tôi" / "Việc của GV" bằng dongCuaToi');
+    /* NHẸ HƠN (chủ SP 22/11 mục 0, thay GD-ADMIN-HAI-SO): mọi vai một cặp "n việc · m quá hạn" cùng `demDongViec`. */
+    assert(!/haiSo/.test(web) && /const tong = useMemo\(\(\) => demDongViec\(/.test(web), 'đầu trang Admin phải là một cặp "n việc · m quá hạn" (demDongViec)');
   }));
 
   check('OV2a-0 · ROLES có ba vai mới, nhãn đúng; branch_admin vẫn chỉ là vai đã bỏ', () => {

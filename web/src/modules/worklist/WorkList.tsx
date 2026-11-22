@@ -27,6 +27,10 @@ export type WorkItem = {
   baiQuaHan?: number;
   /** OV-15b: mọi kỹ năng của việc Nhập điểm — panel chỉ hiện các cột này. */
   kns?: string[];
+  /** NHẸ HƠN PR-2a: Nhập điểm, chỉ Admin — từng em còn thiếu kỹ năng nào (panel lớp). */
+  emThieu?: { id: number; ten: string; kns: string[] }[];
+  /** PTA rà #2001: dòng Điểm Admin gộp một lớp · đợt (web, `gopDiemAdmin`). */
+  gopLop?: boolean;
   /** OV-13b: Kết quả PA ghi nhanh được (máy chủ `ghiNhanhDuoc`) — CV-LOI: form gọn trong khung phải. */
   ghiNhanh?: boolean;
   /** NHAP-KQ-PA: Kết quả PA có nháp lưu trên máy chủ (chưa chốt) — chip "Có nháp". */

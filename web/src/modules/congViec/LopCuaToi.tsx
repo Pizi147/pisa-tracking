@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useSession, type Assignment } from '../../lib/session.tsx';
-import { ChipHan, ChipKy } from '../../ui/Nhan.tsx';
+import { ChipKy, lopBadgeHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
-import { IconNhom } from './DanhSachViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { LOAI_HAN_CUA_VIEC, dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
+import { dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** LG-8: "Test sắp tới" từng lớp GV đang dạy hôm nay (`/my-work`, chỉ vai GV) — cũng là danh sách lớp còn hiệu lực. */
@@ -111,7 +110,8 @@ export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBa
   );
 }
 
-const COT = 'grid grid-cols-[104px_164px_152px_minmax(0,1fr)] items-center gap-x-3 px-4';
+/* NHẸ HƠN PR-2a (v23 ② G1): Lớp · Tôi dạy · Test kế · Việc (MỘT số) — bốn cột cố định. */
+const COT = 'grid grid-cols-[104px_164px_minmax(0,1fr)_56px] items-center gap-x-3 px-4';
 /* C1 (rà 19/11): bốn cột cố định cần ≥ 640 px. Khung hẹp hơn (Công việc 1100: khung phải ~520 px; 375) → mỗi lớp một thẻ dọc — đo theo
    bề ngang KHUNG (container query `[container-type:inline-size]` ở <section>), không theo cửa sổ, nên chip không bao giờ tràn / bị cắt sang cột bên. */
 
@@ -130,17 +130,15 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
     <section className="card overflow-clip p-0 [container-type:inline-size]" aria-labelledby="lop-cua-toi" data-hd="cv-lop-cua-toi">
       <h2 id="lop-cua-toi" className="m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug bg-[color:var(--surface-2)]"
         style={{ borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
-        <span className="text-[color:var(--accent)]"><IconNhom k="lop-toi-day" /></span>
-        <span className="text-[color:var(--text)]">{t('Lớp của tôi')}</span>
-        {dong.length > 0 && <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-          style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{t('{n} lớp', { n: dong.length })}</span>}
+        <span className="text-[16px] text-[color:var(--text)]">{t('Lớp của tôi')}</span>
+        {dong.length > 0 && <span className="text-[13px] font-medium tabular-nums text-dim">{t('{n} lớp', { n: dong.length })}</span>}
       </h2>
       {loi ? <div className="p-4">{loi}</div>
         : dangTai ? <div className="p-4"><Skeleton rows={4} /></div>
           : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[14px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint [@container(max-width:639px)]:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
-                <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test')}</span><span>{t('Việc cần làm')}</span>
+                <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test kế')}</span><span className="text-right">{t('Việc')}</span>
               </div>
               <ul className="m-0 list-none p-0">
                 {dong.map((d, i) => <DongLop key={d.classId} d={d} dau={i === 0} onMo={onMo} />)}
@@ -164,12 +162,26 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
       <span className="flex min-w-0 flex-wrap items-center gap-1 [@container(max-width:639px)]:hidden">{monCua(d, nhat)}</span>
       <span className="grid min-w-0 justify-items-start gap-1 [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:empty:hidden">
         {d.test && <span className={`whitespace-nowrap text-sm leading-snug ${d.test.han ? 'font-medium text-[color:var(--text)]' : 'text-dim'}`}>{d.test.chu}</span>}
-        {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
-      <span className="flex flex-wrap gap-1.5 [@container(max-width:639px)]:w-full [@container(max-width:639px)]:empty:hidden">
-        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} onBam={() => onMo(c.dau)} />)}
-      </span>
+      <SoViecLop d={d} onMo={onMo} />
     </li>
+  );
+}
+
+/** Cột Việc: MỘT số (tổng các loại, cùng đơn vị chip cũ); quá hạn = số trong ô NỀN ĐẶC đỏ nhạt (cùng chip "quá hạn n ngày", `lopBadgeHan('qua')` — V22 không biểu tượng); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
+function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
+  if (!d.chip.length) return <span className="text-right text-faint [@container(max-width:639px)]:hidden" aria-hidden>—</span>;
+  const so = d.chip.reduce((n, c) => n + c.so, 0);
+  const qua = d.chip.some((c) => c.quaHan);
+  const dau = d.chip.map((c) => c.dau).sort(xepHan)[0];
+  const chu = d.chip.map((c) => `${c.nhan} · ${c.so}`).join(', ');
+  return (
+    <span className="flex justify-end [@container(max-width:639px)]:w-full [@container(max-width:639px)]:justify-start">
+      <button type="button" onClick={() => onMo(dau)} title={chu} aria-label={`${qua ? `${t('Quá hạn')}: ` : ''}${chu} · ${d.code}`}
+        className="inline-flex min-h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:min-h-11 max-sm:min-w-[44px]">
+        {qua ? <span className={lopBadgeHan('qua')}>{so}</span> : <span className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{so}</span>}
+      </button>
+    </span>
   );
 }
 
