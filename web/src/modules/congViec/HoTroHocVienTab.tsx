@@ -29,7 +29,7 @@ import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
 import { DaiChiSoTvv, type ChiSoTvv } from '../worklist/TongQuanV5.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { DaiLamThay, DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec } from './PanelViecLuoi.tsx';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { BaoDaGiao, lamMoiGiaoViec } from './KhoiGiaoViec.tsx';
@@ -577,7 +577,7 @@ export function HoTroHocVienTab() {
     loai: `${dangLamThay ? t('Làm thay') : chiXemCx(chon) ? t('Chỉ xem') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null, chiXem: chiXemCx(chon),
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
     /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
-    daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} /> : undefined,
+    daiLamThay: dangLamThay ? <DaiLamThay>{t('Bạn đang làm thay {ai}.', { ai: chon.owner ?? t('người phụ trách') })}</DaiLamThay> : undefined,
   } : null;
 
   /* Tên nhóm cho thẻ "Hết việc" — cùng nhãn tab (QL: "Việc quản lý"). */
@@ -952,15 +952,6 @@ function NhomGap({ k, nhan, children }: { k: string; nhan: string; children: Rea
       <DaiNhom k={k} nhan={nhan} mo={mo} onMo={() => setMo((x) => !x)} trungTinh />
       {mo && <div className="p-3 [&>.card]:border-0 [&>.card]:shadow-none">{children}</div>}
     </section>
-  );
-}
-
-/** U01 #5 / #11 (khung A3): đang LÀM THAY — dải vàng trên panel việc. N64: không nút "Chỉ xem" (mở là làm). */
-function DaiLamThay({ ai }: { ai: string }) {
-  return (
-    <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
-      <b className="font-semibold text-soon">{t('Bạn đang làm thay {ai}.', { ai })}</b>
-    </div>
   );
 }
 

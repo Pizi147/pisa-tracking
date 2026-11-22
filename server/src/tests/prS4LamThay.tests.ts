@@ -56,6 +56,9 @@ export async function runPrS4LamThayTests(t: any) {
     /* PTA rà #1880: dải làm thay ở đầu panel (ngoài vùng cuộn, 375 dính) — không nằm trong `dai` (đầu thân cuộn). */
     const kp = fs.readFileSync('web/src/ui/KhungPanel.tsx', 'utf8');
     assert(s.includes('daiLamThay: dangLamThay ? <DaiLamThay') && !/dai: [^\n]*DaiLamThay/.test(s), 'HoTroHocVienTab: dải qua daiLamThay');
-    assert(/cvNgoai\?\.daiLamThay && \([\s\S]{0,40}<div className="shrink-0 [^"]*max-sm:sticky max-sm:-top-4/.test(kp) && kp.indexOf('cvNgoai?.daiLamThay &&') < kp.indexOf('{tabs && <div'), 'KhungPanel: dải ngoài vùng cuộn, trước thân');
+    assert(/\(daiRieng \?\? cvNgoai\?\.daiLamThay\) && \([\s\S]{0,40}<div className="shrink-0 [^"]*max-sm:sticky max-sm:-top-4/.test(kp) && kp.indexOf('(daiRieng ?? cvNgoai?.daiLamThay) &&') < kp.indexOf('{tabs && <div'), 'KhungPanel: dải ngoài vùng cuộn, trước thân');
+    /* N64 (PTA 22/11): bàn giao không hỏi "Head vẫn làm thay?" — panel hiện dải "Đang giao cho …" qua `daiLamThay`. */
+    for (const f of ['server/src/classes/banGiao.ts', 'server/src/classes/banGiaoGv.ts']) assert(!/canXacNhan/.test(fs.readFileSync(f, 'utf8')), `${f}: không còn hộp hỏi làm thay`);
+    for (const f of ['BanGiaoGvPanel.tsx', 'BanGiaoPanel.tsx']) assert(/daiLamThay=\{dto\.nguoiXem\.lamThay\?\.ten .*<DaiLamThay>\{chuDangGiao\(/.test(fs.readFileSync(`web/src/modules/classes/${f}`, 'utf8')), `${f}: dải Đang giao cho …`);
   });
 }

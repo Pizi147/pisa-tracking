@@ -66,7 +66,9 @@ export const EN_BAN_GIAO_GV = {
   'Xác nhận bàn giao': 'Confirm handover',
   'Đã xác nhận bàn giao {lop}': 'Handover {lop} confirmed',
   'Chỉ đọc': 'Read only',
-  'Head điền thay — góp ý ghi là điền thay.': 'Head filling in — notes are marked as filled in.',
+  'Đang giao cho {ten} — bạn làm thay.': 'Assigned to {ten} — you are acting for them.',
+  'Đang giao cho {ten} · còn hạn {ngay} — bạn làm thay.': 'Assigned to {ten} · due {ngay} — you are acting for them.',
+  'Đang giao cho {ten} · quá hạn {ngay} — bạn làm thay.': 'Assigned to {ten} · overdue since {ngay} — you are acting for them.',
   'Lớp không còn em nào đang học.': 'No active students in this class.',
   /* dải hồ sơ lớp */
   '{mon} đã giao cho {ten} từ {ngay} · còn xem tới khi xong bàn giao, ít nhất tới {den}': '{mon} handed to {ten} from {ngay} · you can view until the handover is done, at least until {den}',

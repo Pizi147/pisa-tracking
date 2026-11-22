@@ -6,10 +6,10 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { DaiLamThay, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { addDaysIso, cauBanGiao, chuCuaPhan, mondayOfDate, ngay, quyCheBanGiaoGv, shortDate, trangThaiEmBg, tuanLich, type DuLieuChuDaGhi, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
-import { DsEmBanGiao, OGopY, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
+import { DsEmBanGiao, OGopY, TuDienEm, chuDangGiao, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu } from '../../lib/luuChac.ts';
 import { DaiChenLo, useChenLo } from '../../ui/KhoiDaGhi.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -130,6 +130,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
       quyChe={viet && cho ? quyCheBanGiaoGv() : null}
+      daiLamThay={dto.nguoiXem.lamThay?.ten ? <DaiLamThay>{chuDangGiao(dto.nguoiXem.lamThay.ten, dto.han, h)}</DaiLamThay> : undefined}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>
@@ -161,7 +162,6 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
         ) : undefined,
       }}>
       <div className="space-y-4 pt-3">
-        {dto.nguoiXem.thay && cho && <p className="m-0 text-xs text-slate-400">{t('Head điền thay — góp ý ghi là điền thay.')}</p>}
         <section className="rounded-lg border" style={{ borderColor: 'var(--line)' }}>
           <button type="button" className="flex w-full items-center gap-2 border-0 bg-transparent px-3 py-2 text-left text-sm font-semibold text-slate-200" aria-expanded={moChung} onClick={() => setMoChung((x) => !x)}>
             <MuiChev mo={moChung} />

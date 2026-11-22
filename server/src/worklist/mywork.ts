@@ -16,6 +16,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
+import { coTheRaLenh } from '../classes/quyenChuyenLop.ts';
 import { viecBaoCaoPhGv, viecBcPhQuaHanQl, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
@@ -2104,7 +2105,7 @@ const bangChiNhanh = (): { id: number; code: string; name: string }[] =>
 /**
  * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
  * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`);
- * Phối hợp SOS · Xử lý vi phạm · Đã thực hiện = `DISCIPLINE_MANAGE` (N64). Việc chưa phân công / việc khác: chỉ theo dõi.
+ * Phối hợp SOS · Xử lý vi phạm · Đã thực hiện = `DISCIPLINE_MANAGE` (N64) · Bàn giao = `coTheRaLenh` lớp nguồn (N64). Việc chưa phân công / việc khác: chỉ theo dõi.
  */
 export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkItem) => boolean {
   const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!), coKhoa(CASE_MO_DA_NAP) ? nho(CASE_MO_DA_NAP, () => []) : undefined);
@@ -2116,6 +2117,8 @@ export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkI
     /* N64 (chủ SP 22/11, thay SV-SO1 "QL chỉ theo dõi"): Xử lý vi phạm · Đã thực hiện — QL / Quản trị làm thay GVCN, cùng quyền máy chủ kiểm khi lưu
        (`requireManageDiscipline` → DISCIPLINE_MANAGE theo em + lớp đang học = `it.classId`). Không câu thêm. */
     if (it.group === 'yt_xu_ly' || it.group === 'yt_thuc_hien') return !!it.classId && can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId: it.classId, studentId: it.studentId ?? undefined });
+    /* N64 (PTA 22/11): Bàn giao (chuyển lớp · môn · đổi GV) — Head lớp (nguồn) điền / xác nhận thay, không hỏi; cùng quyền máy chủ (`quyenBanGiao` / `quyenViec` → `coTheRaLenh`). */
+    if (it.group === 'ban_giao') return !!it.classId && coTheRaLenh(boVaiCx(p), it.classId);
     const c = it.caseId ? ctx.get(it.caseId) : undefined;
     return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);
   };

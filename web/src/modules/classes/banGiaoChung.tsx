@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
-import type { ChuDaGhi, TuDien } from '@shared/domain/index.ts';
+import { shortDate, type ChuDaGhi, type TuDien } from '@shared/domain/index.ts';
 import { DuoiOChu, KhoiDaGhi, useChen } from '../../ui/KhoiDaGhi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { taoHangLuu, type HangLuu, type TrangThaiO } from '../../lib/luuChac.ts';
@@ -14,6 +14,13 @@ import { taoHangLuu, type HangLuu, type TrangThaiO } from '../../lib/luuChac.ts'
 const TONE: Record<'du' | 'thieu' | 'chua' | 'muted', ToneNhan> = { du: 'ok', thieu: 'soon', chua: 'muted', muted: 'muted' };
 
 /** Danh sách em bên trái: chip trạng thái (chữ, không chỉ màu) + dòng phụ; ↑ / ↓ đi từng em, focus theo em đang chọn. */
+/** N64 (PTA 22/11): chữ dải làm thay của bàn giao — "Đang giao cho {người} · còn hạn / quá hạn {ngày} — bạn làm thay." (không hỏi lại khi lưu). */
+export function chuDangGiao(ten: string, han: string | null, homNay: string): string {
+  if (!han) return t('Đang giao cho {ten} — bạn làm thay.', { ten });
+  return (homNay > han ? t('Đang giao cho {ten} · quá hạn {ngay} — bạn làm thay.', { ten, ngay: shortDate(han, homNay) })
+    : t('Đang giao cho {ten} · còn hạn {ngay} — bạn làm thay.', { ten, ngay: shortDate(han, homNay) }));
+}
+
 export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, onChon, trangThai, phu, nhan, dau }: {
   ds: T[]; chon: number; onChon: (id: number) => void;
   trangThai?: (e: T) => { khoa: 'du' | 'thieu' | 'chua' | 'muted'; nhan: string } | null;

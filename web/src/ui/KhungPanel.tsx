@@ -30,6 +30,15 @@ export const panelHdTren = (): PanelHd | null => panelHd.reduce<{ hd: PanelHd; t
 const panelDangSua = new Map<string, (tiep: () => void, o?: () => void, nut?: string) => void>();
 export const coPanelDangSua = () => panelDangSua.size > 0;
 /** Đổi việc / "‹ Công việc" / mở việc khác: còn chữ chưa lưu thì panel hỏi (Ở lại = nút chính); bỏ chữ hoặc không có chữ → `tiep`. */
+/** U01 #5 / #11 (khung A3) · N64: dải vàng "đang làm thay" đầu panel (chữ do nơi gọi soạn) — không nút: mở là làm. */
+export function DaiLamThay({ children }: { children: ReactNode }) {
+  return (
+    <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
+      <b className="font-semibold text-soon">{children}</b>
+    </div>
+  );
+}
+
 export function boChuRoi(tiep: () => void, nut?: string) {
   const hoi = [...panelDangSua.values()].pop();
   if (hoi) hoi(tiep, undefined, nut); else tiep();
@@ -186,7 +195,7 @@ export const NUT_DONG = 'grid h-9 w-9 shrink-0 cursor-pointer place-items-center
 /** Bản nhỏ của `NUT_DONG` — ✕ xoá chữ TRONG ô gõ (mockup ⑤ `.oc .bo`: ô 28, ✕ 14; điện thoại 36 trong ô 44). Nơi đặt căn giữa theo chiều cao ô. */
 export const NUT_DONG_NHO = 'grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-sm leading-none text-dim hover:bg-[color:var(--accent-soft)] hover:text-[color:var(--text)] max-sm:h-9 max-sm:w-9';
 
-export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, nutHd = true, onDong, children }: {
+export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, daiLamThay: daiRieng, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, nutHd = true, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
@@ -209,6 +218,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   /** `vua` 1180 px: panel bàn giao (mockup v11 — bảng hai cột không trải hết 1440). */
   rong?: 'hep' | 'rong' | 'vua' | 'toan' | /** PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ bài chấm của một GV — 640. */ 'so' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang' | /** TU2-6 (mockup Ⓣ2 P1): panel một người dạy — 880. */ 'nguoi-day';
   tabs?: ReactNode; ngCanh?: ReactNode;
+  /** N64: dải làm thay của chính panel (vd bàn giao: "Đang giao cho … — bạn làm thay") — cùng chỗ, thắng dải chung của Công việc. */
+  daiLamThay?: ReactNode;
   /** DON-NHO-3 (TAB-A11Y): thân cuộn là vùng của `tabs` (`role="tabpanel"`, id = `panelId` của HangTab) — chỉ gắn thuộc tính, không bọc thêm (Khoi `first:` giữ khoảng cách). */
   vungTab?: { id: string; nhan: string };
   /** M6 6b-3: `xem` = không phải lùi mà vào view kế ("Xem Case" của panel việc) — vẽ thành link cuối dòng 2 của đầu, không thành nút ‹. */
@@ -442,8 +453,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
           {!lui && <span className="flex shrink-0 max-sm:self-start">{nutDong}</span>}
         </header>
         )}
-        {cvNgoai?.daiLamThay && (
-          <div className="shrink-0 px-4 pt-2.5 max-sm:sticky max-sm:-top-4 max-sm:z-20 max-sm:pb-1" style={{ background: 'var(--surface)' }}>{cvNgoai.daiLamThay}</div>
+        {(daiRieng ?? cvNgoai?.daiLamThay) && (
+          <div className="shrink-0 px-4 pt-2.5 max-sm:sticky max-sm:-top-4 max-sm:z-20 max-sm:pb-1" style={{ background: 'var(--surface)' }}>{daiRieng ?? cvNgoai?.daiLamThay}</div>
         )}
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
