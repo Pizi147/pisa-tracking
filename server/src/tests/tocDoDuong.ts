@@ -445,10 +445,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   /* PR-4 THI-THAT: tab Thi thật — danh sách + Tổng · Từng kỹ năng · Theo GV (QL / QT / CX; TVV không chạy 2 câu Theo GV); panel ô chỉ khi bấm. */
-  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN', 'TVV', 'CX'], url: '/phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN', 'TVV', 'CX'], url: '/phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403, TVV: 403 } },   // SUA-2211-B: TVV không Phân tích
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   /* GD-12b-a: panel ô "Sắp thi · còn SOS" (đọc khi bấm — cùng `tapSapThiSos` với ô kèm `/phan-tich/thi-that`). */
-  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV', 'CX'], url: '/phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV', 'CX'], url: '/phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
   /* DEM-QUA-HAN b: ô Chấm Test đúng hạn mở panel số chung (dòng việc) thay panel Chấm điểm riêng. */
