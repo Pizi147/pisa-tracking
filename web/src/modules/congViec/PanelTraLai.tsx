@@ -51,7 +51,7 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
   const toast = useToast();
 
   const tieuDe = caLan && d ? t('Lần xử lý bị trả lại · {nhan}', { nhan: d.nhanXuLy ?? '' }) : t('Vi phạm bị trả lại');
-  const dau = dauViec({ han: d && d.trangThai === 'mo' ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : null, em: d ? { id: d.studentId, ten: d.tenEm } : null, lop,
+  const dau = dauViec({ han: d && d.trangThai === 'mo' ? <ChipHan chuThuong loai="viec-van-hanh" han={d.han} /> : null, em: d ? { id: d.studentId, ten: d.tenEm } : null, lop,
     ngCanh: caLan ? null : d?.lanXuLy ? bacDu(d.lanXuLy.nhan) : null });
   dau.loai = `${t('Việc')} · ${t('Ý thức')}`;
   if (error) return <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;

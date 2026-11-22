@@ -337,4 +337,25 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(!/hoc_sinh' && !x\.kv\.mon/.test(src), 'kvLoi bắt kỹ năng cho Học viên');
     assert(src.includes('coBaoPhKhiChot(huongLenh(r.x)!'), 'danh sách Báo PH phải dùng coBaoPhKhiChot');
   });
+
+  check('CK-9 · NHẸ HƠN PR-5 (XM-14): tô màu Final / MT0 dùng mốc thật — khớp daiCuoiKhoa (ngưỡng lớp) và goiYKyVong (mốc chương trình)', () => {
+    for (const nguong of [0.7, 0.6, 0.8]) {
+      for (const r of [0, 0.5, 0.5999, 0.6, 0.6999, 0.7, 0.75, 0.7999, 0.8, 1]) {
+        assert(d.datFinalMon(r, nguong) === (d.daiCuoiKhoa(r, nguong) === 'dat'), `Final ${r} / ngưỡng ${nguong}`);
+      }
+    }
+    assert(d.datFinalMon(0.6999, null) === false && d.datFinalMon(0.7, null) === true, 'thiếu ngưỡng lớp → RATIO_PASS_THRESHOLD 0.7');
+    for (const ct of ['FOU', 'BE', 'ELE']) {
+      for (const b of [3, 3.5, 4, 4.5, 5, 5.5]) {
+        const g = d.goiYKyVong(ct, { listening: b, reading: b, writing: b, speaking: b });
+        assert(d.datMt0Mon(b, ct) === g.dat, `MT0 ${ct} ${b}: Overall đạt = kỹ năng đạt`);
+        const g2 = d.goiYKyVong(ct, { listening: b, reading: 1, writing: 1, speaking: 1 });   // Overall trượt → monTruot liệt kê từng kỹ năng dưới mốc
+        assert(!g2.dat && d.datMt0Mon(b, ct) === !g2.monTruot.includes('listening'), `MT0 ${ct} kỹ năng ${b} khớp monTruot`);
+      }
+    }
+    assert(d.datMt0Mon(3.5, 'FOU') === false && d.datMt0Mon(4, 'FOU') === true && d.datMt0Mon(4, 'ELE') === false && d.datMt0Mon(4.5, 'ELE') === true, 'FOU ≥ 4 · ELE ≥ 4.5');
+    assert(d.datMt0Mon(9, 'PET') === false, 'chương trình không có mốc → không tô xanh');
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(src.includes('datFinalMon(') && src.includes('datMt0Mon(') && !src.includes('+ Ghi chú'), 'trang dùng hàm mốc chung; bỏ nút "+ Ghi chú"');
+  });
 }

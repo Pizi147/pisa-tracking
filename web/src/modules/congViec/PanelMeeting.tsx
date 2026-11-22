@@ -51,6 +51,9 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   return (
     <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-3 pt-4">
+        {/* NHẸ HƠN PR-2b (chủ SP 22/11 mục 6.4): Theo dõi chung của cả việc Meeting lên ĐẦU thân panel. */}
+        <DongTheoDoi rieng ds={bp.g ? [...phan, bp.g] : phan} reload={reload}
+          dat={(ds) => { setBan(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) bp.dat(b); }} />
         {/* Mockup G8a: họp vì sao (SOS · ngày · GVCN · ghi chú) + liên hệ ai (PH · SĐT bấm gọi) — dữ liệu đi cùng GET panel. */}
         {bc && <BoiCanh dong={[
           [bc.sos ? t('Lên SOS {n}', { n: bc.sos }) : t('GVCN xác nhận'), [bc.ngay ? shortDate(bc.ngay, hn) : null, bc.gvcn ? t('GVCN {ten}', { ten: bc.gvcn }) : null, bc.ghiChu].filter(Boolean).join(' · ') || null],
@@ -59,8 +62,6 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
         ]} />}
         {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={datPhan} reload={reload} />)}
         {bp.g && <DongBaoPh g={bp.g} />}
-        <DongTheoDoi rieng ds={bp.g ? [...phan, bp.g] : phan} reload={reload}
-          dat={(ds) => { setBan(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) bp.dat(b); }} />
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
         </LichSuGap>

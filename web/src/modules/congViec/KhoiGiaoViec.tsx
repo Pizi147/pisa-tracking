@@ -74,8 +74,25 @@ export function useGiaoViec(loai: LoaiGiao, id: number | null | undefined) {
 const NHAN_VAI: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', cx: 'CX', admin: 'Admin', qt: 'Quản trị', gv: 'GV' };
 /** Trần chữ Mô tả — cùng số với máy chủ (`TRAN_MO_TA`, đếm sau khi bỏ khoảng trắng hai đầu). */
 const TRAN_MO_TA = 500;
-const O = 'flex min-h-[46px] min-w-0 items-center gap-2 border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
-const NHAN = `${O} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`;
+/** NHẸ HƠN PR-2b (chủ SP 22/11 mục 6.4): theo dõi đông → hiện chừng này tên + "+n người" bấm mở hết tại chỗ. */
+export const TRAN_THEO_DOI = 3;
+/** Khung khối (v23 `.pht1`): một dải nền phụ, không lưới viền từng dòng; các cụm dàn ngang, xuống dòng khi chật. */
+const KHUNG_KHOI = 'relative flex flex-wrap items-center gap-x-7 gap-y-2 rounded-[10px] border px-4 py-2.5 text-sm max-sm:gap-y-0 max-sm:px-3 max-sm:py-1';
+const NUT_NHO = 'btn btn-sm min-h-[44px] sm:h-[28px] sm:min-h-[28px]';
+/**
+ * MỘT CỤM của khối (v23 `.pht1 > span`): nhãn nhỏ · giá trị · nút. 1440: dàn ngang trong hàng; 375: lưới 64 px · giá trị · nút (mỗi cụm một dòng ≥ 44 px).
+ * `rong` = cụm chiếm cả hàng (Theo dõi, Mô tả việc, ô đang sửa).
+ */
+function Cum({ nhan, nut, rong, children }: { nhan: ReactNode; nut?: ReactNode; rong?: boolean; children: ReactNode }) {
+  return (
+    <div className={`flex min-w-0 items-center gap-x-2 gap-y-1 max-sm:grid max-sm:min-h-[44px] max-sm:basis-full max-sm:grid-cols-[64px_minmax(0,1fr)_auto] max-sm:py-1 ${rong ? 'basis-full' : ''}`}>
+      <span className="self-center whitespace-nowrap text-xs font-semibold text-faint">{nhan}</span>
+      {/* Không nút (ô đang sửa) → giá trị trải hết hàng; có nút → nút đứng ngay sau giá trị (v23: "+" sau tên người theo dõi). */}
+      <span className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 ${rong && !nut ? 'flex-1' : ''}`}>{children}</span>
+      {nut ?? <span className="hidden max-sm:block" />}
+    </div>
+  );
+}
 const THE_VIEN = 'inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs text-dim';
 
 /** Lỗi thao tác: 409 = người khác vừa đổi → báo tại chỗ + tải lại khối (thao tác người dùng không mất: hộp giữ lựa chọn). */
@@ -136,27 +153,20 @@ export function KhoiGiaoViec({ g: gGoc, mo = true, dat, reload, gon, chiHan, anT
           <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setLoi(null)}>{t('Đóng')}</button>
         </p>
       )}
-      <div role="group" aria-label={t('Phụ trách, hạn, theo dõi')}
-        className={`grid rounded-[10px] border [&>*:nth-child(-n+3)]:border-t-0 ${gon ? 'grid-cols-[84px_minmax(0,1fr)_auto]' : 'grid-cols-[84px_minmax(0,1fr)_auto] max-sm:grid-cols-[80px_minmax(0,1fr)_auto]'}`}
-        style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-        {!chiHan && <>
-          <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Phụ trách')}</div>
-          <div className={`${O} flex-wrap gap-y-1.5 text-sm`} style={{ borderColor: 'var(--line)' }}>
-            <b className="font-semibold text-[color:var(--text)]">{nguoiPt}</b>
-            {laToi && <span className="text-[13px] text-faint">{t('bạn')}</span>}
-            {theGiao}
-            {headLam && <span className="text-[13px] text-faint">{t('Head làm được')}</span>}
-          </div>
-          <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-            {g.coTheDoiNguoi && !anDoi && <button ref={nutDoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-haspopup="dialog" aria-expanded={hop}
-              onClick={() => setHop(true)}>{t('Đổi')}</button>}
-          </div>
-        </>}
-        <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
-        <DongHan khoi tamDung={g.tamDung} tinhLai={g.hanTinhLai} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+      <div role="group" aria-label={t('Phụ trách, hạn, theo dõi')} className={KHUNG_KHOI}
+        style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+        {!chiHan && <Cum nhan={t('Phụ trách')} nut={g.coTheDoiNguoi && !anDoi ? <button ref={nutDoi} type="button" className={NUT_NHO} aria-haspopup="dialog" aria-expanded={hop}
+          onClick={() => setHop(true)}>{t('Đổi')}</button> : undefined}>
+          <b className="font-semibold text-[color:var(--text)]">{nguoiPt}</b>
+          {laToi && <span className="text-[13px] text-faint">{t('bạn')}</span>}
+          {theGiao}
+          {headLam && <span className="text-[13px] text-faint">{t('Head làm được')}</span>}
+        </Cum>}
+        <DongHan khoi={(giaTri, nut, sua) => <Cum nhan={t('Hạn')} nut={nut ?? undefined} rong={sua}>{giaTri}</Cum>}
+          tamDung={g.tamDung} tinhLai={g.hanTinhLai} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+        {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} thaoTac={thaoTac} />}
         {/* Việc Vận hành (VH-2) có ghi chú riêng (`tasks.note`) — không thêm dòng Mô tả việc của khối. */}
         {g.loai !== 'van_hanh' && (g.moTa || (g.coTheSuaMoTa && !chiHan)) && <DongMoTa g={g} daDoi={daDoi} reload={reload} />}
-        {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} thaoTac={thaoTac} />}
       </div>
       {hop && (
         <HopNho nhan={t('Đổi người phụ trách')} tren="top-[52px]" onDong={() => { setHop(false); nutDoi.current?.focus(); }}>
@@ -210,24 +220,22 @@ function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void;
       document.getElementById(idO)?.focus();
     } finally { setDang(false); }
   };
-  const o = 'flex min-h-[46px] min-w-0 items-center border-t px-3 py-[7px] max-sm:min-h-[52px] max-sm:px-2.5';
   const moSua = () => { setNhap(cu ?? ''); setLoi(null); setSua(true); };
-  /* Rà PTA (3): chưa có mô tả → một dòng thấp "Mô tả · + Thêm mô tả" (không ô trống cao, không nút bên phải). */
-  if (!cu && !sua) {
-    const gon = 'flex min-h-[38px] min-w-0 items-center border-t px-3 py-1 max-sm:min-h-[44px] max-sm:px-2.5';
-    return <>
-      <div className={`${gon} whitespace-nowrap pr-0 text-[13px] font-medium text-dim`} style={{ borderColor: 'var(--line)' }}>{t('Mô tả việc')}</div>
-      <div className={`${gon} col-span-2`} style={{ borderColor: 'var(--line)' }}>
-        <button ref={nutSua} type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={moSua}>{t('+ Thêm mô tả việc')}</button>
-      </div>
-    </>;
-  }
-  return <>
-    <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{sua ? <label htmlFor={idO}>{t('Mô tả việc')}</label> : t('Mô tả việc')}</div>
-    {sua ? (
-      /* Esc chỉ đóng ô sửa (giữ panel) — KhungPanel bỏ qua Esc đã `preventDefault`. */
-      <div className={`${o} col-span-2 flex-col items-stretch gap-2`} style={{ borderColor: 'var(--line)' }}
-        onKeyDown={(e) => { if (e.key === 'Escape' && !dang) { e.preventDefault(); setSua(false); } }}>
+  /* Rà PTA (3): chưa có mô tả → một cụm thấp "Mô tả việc · + Thêm mô tả việc" (không ô trống cao). */
+  if (!cu && !sua) return (
+    <Cum nhan={t('Mô tả việc')} rong>
+      <button ref={nutSua} type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={moSua}>{t('+ Thêm mô tả việc')}</button>
+    </Cum>
+  );
+  if (!sua) return (
+    <Cum nhan={t('Mô tả việc')} rong nut={g.coTheSuaMoTa ? <button ref={nutSua} type="button" className={NUT_NHO} onClick={moSua}>{t('Sửa')}</button> : undefined}>
+      <span className="min-w-0 whitespace-pre-wrap break-words text-[color:var(--text)]">{cu}</span>
+    </Cum>
+  );
+  return (
+    <Cum nhan={<label htmlFor={idO}>{t('Mô tả việc')}</label>} rong>
+      {/* Esc chỉ đóng ô sửa (giữ panel) — KhungPanel bỏ qua Esc đã `preventDefault`. */}
+      <div className="flex w-full flex-col items-stretch gap-2 py-1" onKeyDown={(e) => { if (e.key === 'Escape' && !dang) { e.preventDefault(); setSua(false); } }}>
         <textarea id={idO} className="field min-h-[72px] w-full resize-y py-2 text-sm" rows={3} name="mo-ta" autoComplete="off" value={nhap} readOnly={dang}
           aria-invalid={qua || undefined} aria-describedby={`${idO}-dem`} placeholder={t('Cần làm gì, lưu ý gì (tuỳ chọn)')}
           onChange={(e) => setNhap(e.target.value)}
@@ -247,16 +255,8 @@ function DongMoTa({ g, daDoi, reload }: { g: KhoiGv; daDoi: (g: KhoiGv) => void;
           </span>
         )}
       </div>
-    ) : <>
-      <div className={`${o} text-sm`} style={{ borderColor: 'var(--line)' }}>
-        <span className="min-w-0 whitespace-pre-wrap break-words text-[color:var(--text)]">{cu}</span>
-      </div>
-      <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-        {g.coTheSuaMoTa && <button ref={nutSua} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]"
-          onClick={moSua}>{t('Sửa')}</button>}
-      </div>
-    </>}
-  </>;
+    </Cum>
+  );
 }
 
 /** Dải "✓ Đã giao cho … · Hoàn tác · n giây" (mockup G3b) — 10 giây, đếm lùi trên nút. */
@@ -398,6 +398,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
   const toi = session?.user?.id;
   const toast = useToast();
   const [hop, setHop] = useState(false);
+  const [moHet, setMoHet] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
   const nguoi = new Map<number, Nguoi & { nguon: string; vai: string | null }>();
   /* A3-10 (AUDIT-2111): dòng Theo dõi chung của nhiều phần (Meeting) bỏ người đang phụ trách một phần của chính việc đó (theo dõi = người chỉ xem). */
@@ -428,27 +429,24 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
       </span>
     );
   };
-  const dong = <>
-    <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Theo dõi')}</div>
-    <div className={`${O} flex-wrap gap-y-1.5`} style={{ borderColor: 'var(--line)' }}>
-      {nguoi.size ? [...nguoi.values()].map(chip) : <span className="text-sm text-faint">{t('Chưa có')}</span>}
-    </div>
-    <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-      {suaDuoc && ds.some((g) => g.mo) && <button ref={nut} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center px-0 text-[16px] font-medium sm:h-[30px] sm:min-h-[30px] sm:w-[30px] sm:min-w-[30px]"
-        aria-label={t('Thêm người theo dõi')} aria-haspopup="dialog" aria-expanded={hop} onClick={() => setHop(true)}>+</button>}
-    </div>
+  const ds1 = [...nguoi.values()];
+  const an = moHet ? 0 : Math.max(0, ds1.length - TRAN_THEO_DOI);
+  const dong = <Cum nhan={t('Theo dõi')} rong nut={suaDuoc && ds.some((g) => g.mo)
+    ? <button ref={nut} type="button" className="inline-grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-dashed bg-transparent p-0 text-base text-dim hover:text-[color:var(--text)] sm:h-[28px] sm:min-h-[28px] sm:w-[28px] sm:min-w-[28px]"
+      style={{ borderColor: 'var(--line-strong)' }} aria-label={t('Thêm người theo dõi')} aria-haspopup="dialog" aria-expanded={hop} onClick={() => setHop(true)}>+</button> : undefined}>
+    {ds1.length ? ds1.slice(0, ds1.length - an).map(chip) : <span className="text-sm text-faint">{t('Chưa có')}</span>}
+    {/* Chủ SP 22/11 (6.4): chật → "+n người", bấm mở hết tại chỗ; mở rồi có "Thu gọn". */}
+    {ds1.length > TRAN_THEO_DOI && <button type="button" className="link min-h-[44px] appearance-none whitespace-nowrap border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0"
+      aria-expanded={moHet} onClick={() => setMoHet((x) => !x)}>{moHet ? t('Thu gọn') : t('+{n} người', { n: an })}</button>}
     {hop && (
       <HopNho nhan={t('Thêm người theo dõi')} tren="top-full" onDong={() => { setHop(false); nut.current?.focus(); }}>
         <HopThemTheoDoi ds={ds} da={new Set(nguoi.keys())} onDong={() => { setHop(false); nut.current?.focus(); }}
           onThem={async (ids) => { await goi((g) => (g.coTheSuaTheoDoi && g.mo ? thaoTac.themTheoDoi(g, ids) : null)); setHop(false); nut.current?.focus(); }} />
       </HopNho>
     )}
-  </>;
+  </Cum>;
   if (!rieng) return dong;
-  return (
-    <div className="relative grid grid-cols-[84px_minmax(0,1fr)_auto] rounded-[10px] border max-sm:grid-cols-[80px_minmax(0,1fr)_auto] [&>*]:border-t-0"
-      style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>{dong}</div>
-  );
+  return <div className={KHUNG_KHOI} style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>{dong}</div>;
 }
 
 /** Hộp "Thêm người theo dõi" (mockup G4a): chọn nhiều (chip trong ô), người đã theo dõi hiện mờ "đang theo dõi", "Thêm n người". */

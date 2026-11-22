@@ -268,6 +268,9 @@ const BG_GV = (() => {
 /** VH-1b (N62): một việc Báo PH (khối giao việc N58 + Mô tả) — đường `/giao-viec/bao_ph/{viecBaoPh}`. */
 const VIEC_BAO_PH = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE s.branch_id = ? ORDER BY v.id LIMIT 1`).get(CN) as any)?.id as number;
 assert(VIEC_BAO_PH, 'Seed thiếu việc Báo PH ở chi nhánh MB');
+/** NHẸ HƠN PR-2b: một vi phạm ở chi nhánh MB — tệp của vi phạm tải khi mở dòng ở panel Báo PH (`/attachments?ownerType=violation`). */
+const VP = (conn.prepare(`SELECT x.id FROM violations x JOIN students s ON s.id = x.student_id WHERE s.branch_id = ? ORDER BY x.id LIMIT 1`).get(CN) as any)?.id as number;
+assert(VP, 'Seed thiếu vi phạm ở chi nhánh MB');
 const server = createApp().listen(0);
 /* Giữa hai lượt gọi có đoạn đo đồng bộ dài (nhân dữ liệu, vòng mọi vai) > 5 s mặc định: máy chủ đóng kết nối giữ sống, fetch kế tiếp dùng lại → ECONNRESET. */
 server.keepAliveTimeout = 120_000;
@@ -293,6 +296,7 @@ function urlFor(mau: string): string {
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
     .replace('{viecBaoPh}', String(VIEC_BAO_PH))
+    .replace('{vp}', String(VP))
     .replace('{cn}', String(CN))
     .replace('{sos23}', SOS23)
     .replace('{gv}', String(USER.GVCN));

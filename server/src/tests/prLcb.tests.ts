@@ -436,7 +436,7 @@ export async function runPrLcbTests(t: YThucTestKit) {
     assert(web('modules/classes/ClassProgressPanel.tsx').includes(">{t('Cuối khoá ›')}</button>"), 'Lịch Test');
     const pn = web('modules/classes/CuoiKhoaLop.tsx');
     /* MOCKUP-1111 màn 3 (#1326): ô thả "Chọn hướng" → chip "Bước tiếp"; cột "Kết quả đầu ra" → "Kết quả" (hộp điểm). */
-    for (const chu of ['<OTuan', 'mocLoTrinh(', 'Lưu nháp', 'Chốt', 'Bước tiếp', 'Chưa chốt', "t('Kết quả')", 'Còn bàn giao']) assert(pn.includes(chu), `CuoiKhoaLop thiếu: ${chu}`);
+    for (const chu of ['<OTuan', 'mocLoTrinh(', 'Lưu nháp', 'Chốt', 'Bước tiếp', 'Chưa chốt', "t('Kỳ vọng FT')", 'datFinalMon(', 'Còn bàn giao']) assert(pn.includes(chu), `CuoiKhoaLop thiếu: ${chu}`);
     assert(!pn.includes('placeholder="6.0"') && !/Dự kiến thi/.test(pn), 'không ô Target mờ 6.0, không ô Dự kiến thi');
   });
   check('LCb-w2 · transitionPlan: em có cờ kck (Target khoá KCK) — panel biết em đã có Target, không hỏi lại', () => {
