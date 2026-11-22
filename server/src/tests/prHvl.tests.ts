@@ -629,7 +629,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     /* P9b: TransitionPanel (FT) và BangLoTrinhTiep đã gỡ — trang Cuối khoá: cột "Kết quả đầu ra" theo Final, lỗi giữ tại dòng (R5.3). */
     const ck = web('modules/classes/CuoiKhoaLop.tsx');
     /* MOCKUP-1111 màn 3 (#1326): cột "Kết quả" (hộp điểm theo Final). */
-    assert(/t\('Kết quả'\)/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Kết quả + lỗi tại dòng');
+    assert(/datFinalMon\(/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Final (NHẸ HƠN PR-5 thay cột Kết quả) + lỗi tại dòng');
   });
 
   // ------------------------------------------------------------------ Task 9 · điện thoại: bảng → thẻ (D2)
