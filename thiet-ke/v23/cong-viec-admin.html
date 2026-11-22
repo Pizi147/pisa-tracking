@@ -10,14 +10,14 @@
 <link rel="stylesheet" href="v23.css">
 <style>
 /* THEO LOẠI VIỆC: mỗi loại một thẻ (đầu nhóm nổi), mỗi dòng một lớp / em — "còn thiếu gì" trước · hạn · người phụ trách nhỏ · › mở em */
-.cot-ad { max-width:1080px; }
-.dong.ad { grid-template-columns:20px minmax(0,1fr) 120px 190px; padding-left:10px; }
+.cot-ad { max-width:none; }
+.dong.ad { grid-template-columns:20px minmax(0,1fr) 140px 240px; padding-left:10px; }
 .dong.ad .ai { text-align:right; overflow:hidden; text-overflow:ellipsis; }
 .dong.ad[aria-expanded="true"] { background:var(--accent-soft); }
 .dong.ad .khong-chev { width:16px; }
 .em-ds { background:var(--bg); border-top:1px solid var(--line); padding:2px 0 6px; }
 .toi .em-ds { background:color-mix(in srgb, var(--surface) 55%, var(--bg)); }
-.em-h { display:grid; grid-template-columns:220px minmax(0,1fr) 120px 190px; column-gap:12px; align-items:center; min-height:40px; padding:0 14px 0 42px; cursor:pointer; font-size:var(--c14); }
+.em-h { display:grid; grid-template-columns:240px minmax(0,1fr) 140px 240px; column-gap:12px; align-items:center; min-height:40px; padding:0 14px 0 42px; cursor:pointer; font-size:var(--c14); }
 .em-h + .em-h { border-top:1px solid var(--line); }
 .em-h:hover { background:var(--accent-soft); }
 .em-h.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
@@ -103,8 +103,8 @@
           <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">NA</span>Trịnh Ngọc Ánh</span></span></div>
         <div class="noi-dung">
           <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>14</b> việc · <span class="qua"><b>8</b> quá hạn</span></span></div>
-          <div class="tabs" role="tablist" style="max-width:560px"><button class="tab" role="tab" aria-selected="false">Tất cả</button><button class="tab" role="tab" aria-selected="true">Điểm <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Báo cáo PH <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Lịch thi <span class="bd">2</span></button></div>
-          <div class="ds" style="max-width:1080px">
+          <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Tất cả</button><button class="tab" role="tab" aria-selected="true">Điểm <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Báo cáo PH <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Lịch thi <span class="bd">2</span></button></div>
+          <div class="ds">
             <div class="ds-dau"><b>Điểm chưa nhập</b><span>6 việc · <span class="qua-chu">5 quá hạn</span></span></div>
             <div class="dong ad" aria-expanded="true"><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><div class="chu"><span class="t">MB FT 101 · Mock W3 NOV · thiếu 5 bài</span><span class="p">3 em</span></div><span class="han qua">quá hạn 2 ngày</span><span class="ai">GV Vũ Thu Lan</span></div>
             <div class="em-ds">
