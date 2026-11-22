@@ -17,4 +17,19 @@ export const EN_M1111_CUOI_KHOA = {
   'từ {tuan}': 'from {tuan}',
   'Nhận xét chung cho các em đã chọn': 'Shared comment for the selected students',
   'Ghi cho {n} em': 'Write for {n} students',
+  /* NHẸ HƠN PR-5 (khung v23 Cuối khoá) */
+  'Final {d} — xem điểm từng kỹ năng': ({ d }) => `Final ${d} — see each skill`,
+  'MT0 {d} — xem điểm từng kỹ năng': ({ d }) => `MT0 ${d} — see each skill`,
+  'MT0 đang chấm — xem điểm từng kỹ năng': 'MT0 being marked — see each skill',
+  'đang chấm': 'marking',
+  'mốc {n}': ({ n }) => `pass mark ${n}`,
+  'Tuần · {ten}': ({ ten }) => `Week · ${ten}`,
+  'hạn chốt {ngay}': ({ ngay }) => `confirm by ${ngay}`,
+  'Luật Kỳ vọng FT': 'FT expectation rule',
+  '{kv}: MT0 Overall ≥ {moc} là Đạt (mỗi kỹ năng tô theo cùng mốc). Không đạt do Trung tâm → Case + Tutor {n} buổi/kỹ năng; do Học viên → ghi phương án, không Case. Chỉ Head chốt.':
+    ({ kv, moc, n }) => `${kv}: MT0 Overall ≥ ${moc} is Met (each skill is coloured against the same mark). Not met due to the Centre → Case + Tutor ${n} sessions/skill; due to the student → record a plan, no Case. Only the Head confirms.`,
+  '{n} em đạt': ({ n }) => `${n} met`,
+  '{n} em không đạt': ({ n }) => `${n} not met`,
+  '{n} em chờ MT0': ({ n }) => `${n} awaiting MT0`,
+  'Điểm từng kỹ năng · {ten}': ({ ten }) => `Scores by skill · ${ten}`,
 } satisfies Record<string, Dich>;
