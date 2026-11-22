@@ -8,7 +8,7 @@ import { chuOChuaLuu } from '@shared/domain/index.ts';
 import type { DongNoLop } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { useManHinh } from '../../../ui/TheDong.tsx';
-import { COT_LICH_TEST, ColLichTest, DauCotLichTest, DongConCho, DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
+import { COT_LICH_TEST, ColLichTest, DauCotLichTest, DongConCho, DongGv,DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** OV-11e (TE-7): số bài của người xem — người có phân công chỉ đếm phần của mình (dải số, badge khối, cột Còn cùng số). */
@@ -25,8 +25,10 @@ const conCua = (d: DongNoLop) => (d.phan ? d.phan.toi?.con ?? 0 : d.conBai);
  * Q14: hàng đang mở mà máy chủ không còn trả (vừa chấm hết) vẫn giữ trên màn, ghi "Đã chấm ✓", tới khi người dùng thu — hàng biến mất giữa lúc gõ
  * là mất ô đang nhập. `dongMo` là bản sao hàng đó, do `LichTestTab` giữ.
  */
-export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, chuaLuu, baoChuaLuu }: {
+export function KhoiNo({ no, gvLop, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, chuaLuu, baoChuaLuu }: {
   no: DongNoLop[]; mo: boolean; onMo: () => void;
+  /** LT-DONG-GV: classId → GV đang dạy (`LichTest.gvLop`). */
+  gvLop: Readonly<Record<number, readonly string[]>>;
   dongMo: { d: DongNoLop; viTri: number; conTro: boolean } | null;
   onMoDong: (d: DongNoLop | null, viTri: number) => void;
   hep: boolean; homNay: string; onDaLuu: () => void; knUrl: string | null;
@@ -91,7 +93,12 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
               const han = xong ? null : <Han loai="nhap-diem" han={d.han} trongBang={!gon} />;
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const dot = chuDot(d.luot);
-              const maLop = <Link to={`/hoc-vien/lop/${d.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link>;
+              const maLop = (
+                <span className="block min-w-0 flex-1">
+                  <Link to={`/hoc-vien/lop/${d.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link>
+                  {!gon && <DongGv ds={gvLop[d.classId]} />}
+                </span>
+              );
               return (
                 <Fragment key={d.key}>
                   {gon ? (
@@ -100,6 +107,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                       <td className="cursor-pointer">
                         <span className="lt-the">
                           <span className="h1">{maLop}{so}</span>
+                          <DongGv ds={gvLop[d.classId]} />
                           <span className="h2"><b><DotChinh luot={d.luot[0]} classId={d.classId} kind={d.kind} /></b>{dot.phu && <span className="text-xs text-dim">{dot.phu}</span>}</span>
                           {(han || canhBao) && <span className="h3">{han}{canhBao}</span>}
                           {nut}

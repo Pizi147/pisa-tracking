@@ -81,7 +81,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prOv13e: 300, prHf: 300, prOv13d: 300, prOv13c: 300, prOv13l: 300, prOv15d: 300, prTu: 300, mtTrangThai: 300, prNenTypoMau: 300, prChuThi: 300,
   prUiTongQuan: 300, prCuoiKhoa: 300, prMonDangKy: 300, prPilotCase: 300, prRaLuong: 300, yThucGon: 200, prLop: 200, thanhPhanChung: 200,
   prS5fb: 200, prNt: 200, prLuiA1: 200, prViecNho: 200, prTen: 200, prVn5: 200, prOv1a: 200, prOv2b: 200, prOv3b: 200, prOv1b: 200, prOv1c: 200,
-  prOv7a: 200, prOv9: 200, prOv14b: 200, prOv14a: 200, prTub: 200, prSvSo3: 200, prUiChamTest: 200, prUiConLai: 200, prMtDem: 200, prDich: 200,
+  prOv7a: 200, prOv9: 200, prOv14b: 200, prLtDongGv: 200, prOv14a: 200, prTub: 200, prSvSo3: 200, prUiChamTest: 200, prUiConLai: 200, prMtDem: 200, prDich: 200,
   prSvLoTrinh: 200, prPilotGvTre: 200, prOv11h: 100, khung: 100, hanhTrinh: 100, prNhap: 100, prKck: 100, prSang: 100, prUxd: 100, prHk1: 100,
   prPh: 100, prLm: 100, prBn: 100, prGvb: 100, prBc: 100, prPhh: 100, prDh: 100, prU12: 100, prLuiB: 100, prQrl2cYThuc: 100, prKhung: 100,
   prOChon: 100, fixXepBaiThuong: 100, prTd2d: 100, fixKqGanNhat: 100, fixDtlOmt: 100, prHan: 100, prViecNho2: 100, prLtGon: 100, prKiemDuLieuMt: 100,
@@ -9457,6 +9457,8 @@ await runPrVn1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== OV-14b (sửa nhỏ sau rà UX 17/10: Đã thi · chờ kết quả, Đang SOS Toàn bộ, Quá hạn chấm theo khung)
 const { runPrOv14bTests } = bocTep('prOv14b', await import('./prOv14b.tests.ts'));
 await runPrOv14bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrLtDongGvTests } = bocTep('prLtDongGv', await import('./prLtDongGv.tests.ts'));
+await runPrLtDongGvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-14a (lưu chắc chắn, không mất chữ — audit 17/10 F01–F12)
 const { runPrOv14aTests } = bocTep('prOv14a', await import('./prOv14a.tests.ts'));
 await runPrOv14aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

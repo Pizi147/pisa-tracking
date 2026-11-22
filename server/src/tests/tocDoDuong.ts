@@ -1010,6 +1010,8 @@ export const TRAN: Record<string, number> = {
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
   // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
+  // LT-DONG-GV 23/11 — dòng "GV …" dưới mã lớp (`gvLop`, một lô phân công mọi lớp trên trang): +1 câu mọi vai, +4–15 dòng —
+  // đo QL 20→21 · QT 23→24 · GVCN 18→19 · GVBM 18→19 · CX 22→23 · TVV 19→20; `?classId=` không đổi (19). Trong trần, giữ.
   'QL /cham/lich-test': 32,   // TL-NEN: đo 22 (trước 27)
   'GVCN /cham/lich-test': 30,   // TL-NEN: đo 20 (trước 25)
   'GVBM /cham/lich-test': 31,   // TL-NEN: đo 21 (trước 26)
