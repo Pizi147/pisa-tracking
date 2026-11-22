@@ -28,7 +28,7 @@ import { DongThi, LuotChinhContext, nhanKyNangFt } from './DongThi.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, tenDotFt, type FtSheet, type HangMo, type PhienO } from './LuoiFT.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import {
-  LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, useMenuOThuong, type ThuongSheet,
+  LuoiThuong, OHuyGo, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, useMenuOThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -343,7 +343,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   row: DongThuongRow; k: string; sheet: ThuongSheet; tongCot: number | null; active: boolean; onReload: () => void; tuanDangXem: string | null;
   inputRef: (el: HTMLInputElement | null) => void; onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
-  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+  const { luu, luuHuy, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
   /* NHAP-DIEM-b: 375 có ⋯ (Vắng · Huỷ điểm / Khôi phục · Lịch sử…) như lưới — cùng hook. */
   const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
@@ -356,6 +356,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
   /* SUA-2211-B (chủ SP 22/11 ý 11): môn đã huỷ chưa điểm = chip "Đã huỷ" thay ô nhập (như lưới) — Khôi phục ở ⋯. */
   const huy = dung && s!.progress === 'cancelled';
+  const lyHuy = huy ? lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' }) : null;
   const phu = (cell.khongDuThi ? t('Vắng') : null)
     ?? (dung && canEdit && !huy ? chuDung : null)
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
@@ -372,7 +373,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={trong ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {huy ? <span className="inline-flex min-h-11 items-center"><ChipDaHuy ly={lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' })} /></span>
+        {huy && !canEdit ? <span className="inline-flex min-h-11 items-center"><ChipDaHuy ly={lyHuy} /></span>
         : (dung && !canEdit) || !s ? (
           <span className="inline-flex items-center gap-1">
             <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? t('không có lịch')}`}>
@@ -382,9 +383,13 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
             <ChoNutDau />
           </span>
         ) : (
-          <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
-            onSave={(p, o) => luu(k, p, o)} onDau={(bat, ht) => dau(k, bat, ht)} onLoiNhap={(x) => loiNhap(k, x)}
-            inputRef={inputRef} onKeyDown={onKeyDown} />
+          (() => {
+            const o = <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
+              onSave={(p, o) => (huy ? luuHuy : luu)(k, p, o)} onDau={(bat, ht) => dau(k, bat, ht)} onLoiNhap={(x) => loiNhap(k, x)}
+              inputRef={inputRef} onKeyDown={onKeyDown} />;
+            /* PTA [XM] 22/11: môn đã huỷ — chip, bấm thành ô nhập; gõ điểm = tự khôi phục (Hoàn tác ở toast). */
+            return huy ? <OHuyGo ly={lyHuy}>{o}</OHuyGo> : o;
+          })()
         )}
         {/* NHAP-DIEM-b: Nhận xét + ⋯ thẳng hàng ô nhập (cao 44) — không theo giữa khối khi dưới ô có dòng "Đạt · %". */}
         <span className="inline-flex min-h-11 items-center gap-1 self-start">

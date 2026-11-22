@@ -5,7 +5,7 @@
  * sửa riêng từng em vẫn được, và ô có tổng khác tổng của cột thì viền vàng. Không có tổng cố định theo chương trình.
  * Gõ "-" = em không làm bài: môn đó tự dời sang tuần sau (C08) — không phải điểm 0, không đụng môn khác.
  */
-import { useContext, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -154,6 +154,24 @@ const COT_TEN_GON = 200;
 const COT_MON_GON = 118;
 
 /**
+ * Ô MÔN ĐÃ HUỶ, NGƯỜI XEM NHẬP ĐƯỢC (PTA [XM] 22/11): chip "Đã huỷ" khi ô trống; bấm / Tab vào chip → ô nhập (con trỏ vào ô đúng), gõ điểm = tự khôi phục
+ * (`luuHuy`). Rời ô mà chưa gõ → về chip. Dùng ở lưới lớp thường và màn 375 một môn.
+ */
+export function OHuyGo({ ly, children }: { ly: string | null; children: ReactNode }) {
+  const [mo, setMo] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => { if (mo) ref.current?.querySelector('input')?.focus(); }, [mo]);
+  if (!mo) return <ChipDaHuy ly={ly} onMo={() => setMo(true)} />;
+  return (
+    <span ref={ref} className="contents" onBlur={(e) => {
+      const o = e.currentTarget;
+      if (o.contains(e.relatedTarget as Node | null)) return;
+      if (![...o.querySelectorAll('input')].some((x) => x.value.trim())) setMo(false);
+    }}>{children}</span>
+  );
+}
+
+/**
  * Lưu một ô của lưới lớp thường cho MỘT dòng — cùng dáng `useSaveScore` của FT: trạng thái lưu riêng TỪNG Ô,
  * chặn gửi lặp cùng một ô, lỗi thì giữ bản nháp. `nem` = ném lỗi cho hộp lý do hiện câu lỗi tại ô.
  */
@@ -233,8 +251,22 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   /* OV-4b: nhận xét lưu riêng (hộp "Nhận xét"); lỗi ném ra để hộp giữ chữ đã gõ. */
   const nhanXet = async (skill: string, v: string | null) => (await gui(skill, { nhanXet: v }, { nem: true })) !== null;
 
+  /* PTA [XM] 22/11 (luật đơn giản hoá: thao tác tự nhiên, không thêm bước): gõ điểm vào môn ĐÃ HUỶ = máy chủ tự khôi phục + lưu (NHAP-DIEM-b) —
+     toast "Đã khôi phục" có Hoàn tác 10 s (huỷ lại, điểm vừa gõ cất như Huỷ điểm). */
+  const luuHuy = async (skill: string, p: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => {
+    const ok = await luu(skill, p, opts);
+    if (ok && p.score !== null) {
+      const mon = tenMonNgan(ct, skill);
+      toast.push('ok', t('Đã khôi phục {mon}{ai}', { mon, ai: tenHv ? ` · ${tenHv}` : '' }), {
+        key: `huy-diem:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true,
+        hanhDong: { nhan: t('Hoàn tác'), onBam: () => void guiHuyDiem(toast, { attemptId, skill, mon, tenHv, huy: true, onDone: onReload }) },
+      });
+    }
+    return ok;
+  };
+
   return {
-    luu, dau, nhanXet, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
+    luu, luuHuy, dau, nhanXet, status: tt.status, lastError: tt.lastError, retry, o: tt.o, loi: tt.loi, luuLai, soLoi: tt.soLoi,
     loiNhap: tt.loiNhap, coGuiLai: tt.coGuiLai,
   };
 }
@@ -446,7 +478,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
 }) {
   const lichTest = useContext(LuotChinhContext) !== null;   /* LICH-TEST-GON: một lưới = một bài của lớp, ghi ở hàng lớp — không lặp "{bài} ›" ở mọi em */
-  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+  const { luu, luuHuy, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
   const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
@@ -494,12 +526,14 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             </OBang>
           );
         }
-        /* SUA-2211-B (chủ SP 22/11 ý 11): môn ĐÃ HUỶ chưa có điểm — chip "Đã huỷ" giữa ô, cùng hàng (lý do ở title); ⋯ luôn hiện (Khôi phục ở đó). */
-        if (dung && s!.progress === 'cancelled') {
+        /* SUA-2211-B (chủ SP 22/11 ý 11): môn ĐÃ HUỶ chưa có điểm — chip "Đã huỷ" giữa ô, cùng hàng (lý do ở title); ⋯ luôn hiện. Người nhập được: chip bấm / Tab vào = ô nhập (`OHuyGo`). */
+        const huy = dung && s!.progress === 'cancelled';
+        const lyHuy = huy ? lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' }) : null;
+        if (huy && !canEdit) {
           return (
             <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
               <span className="inline-flex items-center justify-center gap-1">
-                <ChipDaHuy ly={lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' })} />
+                <ChipDaHuy ly={lyHuy} />
                 {menuO(k, true)}
               </span>
             </OBang>
@@ -532,10 +566,10 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             chiChuKetQua={CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code)}
             tenMon={tenMon(sheet.programme.code, k)}
             tenHv={row.studentName}
-            onSave={(p, o) => luu(k, p, o)}
+            onSave={(p, o) => (huy ? luuHuy : luu)(k, p, o)}
             onDau={(bat, ht) => dau(k, bat, ht)}
             onLoiNhap={(c) => loiNhap(k, c)}
-            moTaId={dung ? `tt-${row.attemptId}-${k}` : undefined}
+            moTaId={dung && !huy ? `tt-${row.attemptId}-${k}` : undefined}
             inputRef={(el) => register(ci, el)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1, e.key === 'Enter'); }
@@ -551,7 +585,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
               /* G1-11 (mockup L1–L3): ô HAI TẦNG — đúng / tổng trên; "Nhận xét" + ⋯ dưới. Tầng dưới luôn hiện ở hàng đang làm, ô có nhận xét / lỗi;
                  hàng khác hiện khi rê / Tab vào HÀNG (như ⋯ cũ) — thiết bị không rê luôn hiện. Tab trong ô: đúng → tổng → Nhận xét → ⋯ (vẫn 4 điểm dừng). */
               <div className="flex flex-col items-center gap-1">
-                {oDiem}
+                {huy ? <OHuyGo ly={lyHuy}>{oDiem}</OHuyGo> : oDiem}
                 <div className={`flex min-h-6 items-center justify-center gap-0.5 ${!active && !s?.nhanXet && o[k] !== 'loi'
                   ? '[@media(hover:hover)]:hidden [@media(hover:hover)]:group-hover/hang:flex [@media(hover:hover)]:group-focus-within/hang:flex' : ''}`}>
                   {nutNx}{menuO(k, true)}
@@ -561,7 +595,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
               /* Chủ SP 20/11 (gọn chỗ): đúng / tổng + ⋯ nhỏ cạnh — Nhận xét, Vắng, Huỷ điểm (Hoàn tác), Lịch sử trong ⋯. ⋯ ẩn tới khi rê / focus vào ô
                  (điện thoại luôn hiện); ô đã có nhận xét: ⋯ luôn hiện, có dấu •. */
               <div className="inline-flex items-baseline justify-center gap-1">
-                {oDiem}{menuO(k, !!s?.nhanXet, nutNx ? { chu: s?.nhanXet ?? null, mo: () => setNxMo(k) } : undefined)}
+                {huy ? <OHuyGo ly={lyHuy}>{oDiem}</OHuyGo> : oDiem}{menuO(k, huy || !!s?.nhanXet, nutNx ? { chu: s?.nhanXet ?? null, mo: () => setNxMo(k) } : undefined)}
               </div>
             )}
             {quaHan && (
@@ -569,7 +603,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
             {/* NHAP-DIEM-b: môn vắng / "Đã huỷ" vẫn nhập được tại ô (máy chủ đổi về đã làm bài) — trạng thái là dòng chữ mờ dưới ô (V22, không ⚠). */}
-            {dung && <div id={`tt-${row.attemptId}-${k}`} className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
+            {dung && !huy && <div id={`tt-${row.attemptId}-${k}`} className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
           </OBang>
         );
       })}
