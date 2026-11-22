@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel chấm điểm · v23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v23.css">
+<style>
+/* KHỐI LỚP: đầu nổi rõ (nền surface-2, mã lớp 16 / 700, vạch trái nhấn) · lưới gọn tên · ô · kết quả */
+.kl { border:1px solid var(--line-strong); border-radius:10px; overflow:clip; background:var(--surface); }
+.kl + .kl { margin-top:4px; }
+.kl-dau { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; min-height:52px; padding:8px 14px 8px 13px; background:var(--surface-2); border-left:3px solid var(--accent); border-bottom:1px solid var(--line); }
+.kl-dau .ma { font:700 var(--c16) var(--phong); color:var(--text); }
+.kl-dau .ma:hover { color:var(--accent); }
+.kl-dau .meta { display:flex; flex-wrap:wrap; align-items:center; gap:2px 0; font-size:var(--c14); color:var(--text-dim); }
+.kl-dau .meta > * + *::before { content:"·"; margin:0 8px; color:var(--text-faint); }
+.kl-dau .meta b { color:var(--text); font-weight:600; }
+.kl-dau .phai { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.kl.xong .kl-dau { border-left-color:var(--ok); }
+/* lưới: tên 1fr (tối thiểu 220, không cắt) · 4 ô 84 · Overall 84 · Kết quả 150 — mọi khối cùng cột → thẳng hàng giữa các lớp */
+.lc col.c-ten { width:auto; } .lc col.c-o { width:88px; } .lc col.c-kq { width:168px; }
+.lc td { padding-top:5px; padding-bottom:5px; }
+.lc .so-c .od { margin:0 auto; }
+.lc tr.huy td:not(:last-child) .ten-hv { color:var(--text-dim); }
+.lc th.ky-th { text-align:center; }
+.lc .ovr { font:600 var(--c14) var(--phong-so); }
+.dang-mo { position:relative; }
+.hop { position:absolute; z-index:6; width:360px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 32px var(--bong); }
+.hop .h-dau { display:flex; align-items:center; gap:8px; min-height:44px; padding:4px 6px 4px 14px; border-bottom:1px solid var(--line); font-size:var(--c14); }
+.hop .h-dau b { font-weight:700; }
+.hop .h-dau .dim { font-size:var(--c13); }
+.hop .h-dau .vuong { margin-left:auto; }
+.hop .h-than { padding:12px 14px; display:grid; gap:8px; }
+.hop .h-chan { display:flex; align-items:center; gap:8px; padding:8px 14px 10px; border-top:1px solid var(--line); }
+.hop .h-chan .tiep { font-size:var(--c12); color:var(--text-faint); white-space:nowrap; }
+.hop .h-chan .phai { margin-left:auto; display:flex; gap:8px; }
+.cau { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.cau .o { min-height:40px; justify-content:center; font-family:var(--phong-so); }
+.dt .lc col.c-o { width:52px; } .dt .lc col.c-kq { width:0; }
+.dt .lc th:last-child, .dt .lc td:last-child { display:none; }
+.dt .lc .od { width:44px; font-size:13px; }
+.dt .lc td, .dt .lc th { padding-left:4px; padding-right:4px; }
+.dt .lc td:first-child, .dt .lc th:first-child { padding-left:12px; white-space:normal; }
+.dt .lc .hv2 small { display:block; }
+.dt .lc-dt th:last-child, .dt .lc-dt td:last-child { display:table-cell; }
+.dt .lc-dt .ten-hv { white-space:normal; }
+.dt .kl-dau { padding:8px 12px 8px 11px; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v23 · ⑤ Panel chấm điểm — 75 %, mỗi lớp một khối đầu nổi rõ, lưới gọn, điểm huỷ rõ ràng</h1>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 3 "Panel chấm điểm" · ý chủ SP 22/11 số <b>9b</b> (panel chấm xấu, hẹp, hàng tên lớp không phân biệt, chỗ trống một đống) và <b>11</b> (điểm huỷ thể hiện rõ — phần hình; sửa logic do SUA-2211). Khung: <a href="khung-panel.html">① panel bảng</a>.</p>
+    <p>Dữ liệu bịa: GV <b>Vũ Thu Lan</b> · Mock Test W3 NOV · hai lớp MB FT 101, MB FT 104 · hôm nay <b>23/11/2026 · W4 NOV</b>.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#c1">C1 · 1440 có việc</a><a href="#c2">C2 · Hộp nhập + lỗi</a><a href="#c3">C3 · 375</a><a href="#c4">C4 · Xong phần của bạn</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="c1">
+    <h2>C1 · GV · Công việc · "Nhập điểm Mock Test W3 NOV" — panel 75 %, hai lớp (1440 tối)</h2>
+    <p class="ghi"><span class="so-mk">1</span>panel bảng 75 % (1080 px), đầu một dòng: tên việc · số lớp · hạn · <span class="so-mk">2</span><b>mỗi lớp một khối</b>: đầu khối nền đậm hơn + vạch trái nhấn, mã lớp 16 / 700 (link hồ sơ lớp) · Mock Test W3 NOV · kỹ năng của bạn · "n bài còn thiếu"; khối xong vạch xanh + "✓ đủ" · <span class="so-mk">3</span>lưới <b>cùng bộ cột ở mọi khối</b> (tên 1fr · L R W S 88 · Overall 88 · Kết quả 168) → các lớp thẳng hàng, không khoảng trống thừa · <span class="so-mk">4</span>ô kỹ năng không phải của bạn: chữ xám, không viền nút (chỉ xem) · <span class="so-mk">5</span>vắng = <b>"−"</b> trong ô (nền xám) · <span class="so-mk">6</span><b>điểm đã huỷ</b>: ô viền đứt, gạch chéo nền, điểm gạch ngang; ô Kết quả cùng hàng ghi "Đã huỷ · vắng 2 lần" + ⓘ (ai huỷ, khi nào, Khôi phục) — không còn chữ "đã huỷ" lơ lửng dưới ô.</p>
+    <div class="hang-khung"><figure><figcaption>C1 · 1440 · tối · panel chấm hai lớp</figcaption>
+      <p class="cap-doi">Đổi: panel 720 px, hàng tên lớp chữ thường lẫn với hàng em → <b>75 %, khối lớp có đầu nổi</b> · cột ô rộng 112 + khoảng trống → <b>88 đều, cùng cột giữa các lớp</b> · "đã huỷ" dưới ô → <b>ô huỷ + nhãn ở cột Kết quả</b>.</p>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav">2</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TL</span>Vũ Thu Lan</span></span></div>
+        <div class="noi-dung"><div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>7</b> việc · <span class="qua"><b>2</b> quá hạn</span></span></div>
+          <div class="ds" style="width:330px"><div class="dong chon ngan"><div class="chu"><span class="t">MB FT 101 · thiếu 5 em</span><span class="p">Mock W3 NOV</span></div><span class="han qua">quá hạn 2 ngày</span></div><div class="dong ngan"><div class="chu"><span class="t">MB FT 104 · thiếu 2 em</span><span class="p">Mock W3 NOV</span></div><span class="han qua">quá hạn 2 ngày</span></div></div></div>
+        <section class="pn rong" aria-label="Nhập điểm Mock Test W3 NOV">
+          <div class="pn-dau">
+            <h2>Nhập điểm Mock Test · W3 NOV</h2>
+            <div class="meta"><span>2 lớp</span><span>7 bài còn thiếu</span><span class="han qua">quá hạn 2 ngày · hạn 21/11</span></div>
+            <span class="goc"><button class="nut-i" aria-label="Luật nhập điểm"><svg class="ic"><use href="#i-i"/></svg></button><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          </div>
+          <div class="pn-than">
+            <div class="kl">
+              <div class="kl-dau"><a class="ma" href="#">MB FT 101</a><span class="meta"><span>Mock Test W3 NOV</span><span>bạn chấm <b>L R W1 W2</b></span><span><b>5</b> bài còn thiếu</span></span></div>
+              <table class="bang lc">
+                <colgroup><col class="c-ten"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
+                <thead><tr><th>Học viên</th><th class="ky-th">L</th><th class="ky-th">R</th><th class="ky-th">W1</th><th class="ky-th">W2</th><th class="ky-th">S</th><th class="ky-th">Overall</th><th>Kết quả</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td class="so-c"><button class="od">6.5<small>28 câu</small></button></td><td class="so-c"><button class="od">7.0<small>31 câu</small></button></td><td class="so-c"><button class="od">6.5</button></td><td class="so-c"><button class="od">6.0</button></td><td class="so-c so dim">6.0</td><td class="so-c ovr">6.5</td><td><span class="kq dat">✓ Đạt</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Tạ Minh Khoa</a></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">5.5</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 3 bài</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Ngô Bảo Châu</a></td><td class="so-c"><button class="od">5.5<small>21 câu</small></button></td><td class="so-c"><button class="od">5.0<small>18 câu</small></button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">5.5</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 1 bài</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c so dim">−</td><td class="so-c mo">—</td><td><span class="kq cho">Vắng</span></td></tr>
+                  <tr class="huy"><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">4.5</button></td><td class="so-c so dim" style="text-decoration:line-through">5.0</td><td class="so-c mo">—</td><td><span class="kq huy">Đã huỷ · vắng 2 lần</span> <button class="nut-i" aria-label="Chi tiết huỷ"><svg class="ic"><use href="#i-i"/></svg></button></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Phạm Gia Huy</a></td><td class="so-c"><button class="od">5.5<small>22 câu</small></button></td><td class="so-c"><button class="od">6.0<small>24 câu</small></button></td><td class="so-c"><button class="od">6.0</button></td><td class="so-c"><button class="od">5.5</button></td><td class="so-c so dim">6.0</td><td class="so-c ovr">6.0</td><td><span class="kq dat">✓ Đạt</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="kl">
+              <div class="kl-dau"><a class="ma" href="#">MB FT 104</a><span class="meta"><span>Mock Test W3 NOV</span><span>bạn chấm <b>W1 W2</b></span><span><b>2</b> bài còn thiếu</span></span></div>
+              <table class="bang lc">
+                <colgroup><col class="c-ten"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
+                <thead><tr><th>Học viên</th><th class="ky-th">L</th><th class="ky-th">R</th><th class="ky-th">W1</th><th class="ky-th">W2</th><th class="ky-th">S</th><th class="ky-th">Overall</th><th>Kết quả</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="ten-hv" href="#">Phan Đức Duy</a></td><td class="so-c so dim">6.0</td><td class="so-c so dim">6.5</td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">6.0</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 1 bài</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Vương Thị Thanh Trúc</a></td><td class="so-c so dim">5.5</td><td class="so-c so dim">6.0</td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">5.5</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 1 bài</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="pn-chan"><span class="luu da">✓ Đã lưu 15:40 · 9 / 16 bài</span><span class="phai"><button class="nut">Đóng</button><button class="nut nut-chinh">Bài thiếu tiếp ›</button></span></div>
+        </section>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="c2">
+    <h2>C2 · Bấm ô → hộp nhập neo dưới ô (bậc 2, giữ HopNhapDiem) · lỗi máy chủ ở ô · ⓘ điểm huỷ không bị cắt</h2>
+    <p class="ghi"><span class="so-mk">1</span>hộp nhập 360 px neo dưới ô, tự lật lên / sang trái khi sát mép (ý 7 — không bị cắt) · đầu hộp một dòng "em · kỹ năng", chân "Tiếp: Reading · Tạ Minh Khoa" + Vắng · Lưu · bài tiếp › (V12 giữ) · <span class="so-mk">2</span>lỗi: ô viền đỏ + câu lý do trong hộp, chữ đang gõ giữ · <span class="so-mk">3</span>ⓘ cạnh "Đã huỷ": ai huỷ · khi nào · lý do · Khôi phục (giữ đường khôi phục hiện có).</p>
+    <div class="hang-khung">
+      <figure><figcaption>C2a · cắt panel · tối · hộp nhập + lỗi</figcaption>
+        <div class="man toi" data-web style="width:1080px;height:470px">
+          <div style="padding:16px 20px" class="dang-mo">
+            <div class="kl">
+              <div class="kl-dau"><a class="ma" href="#">MB FT 101</a><span class="meta"><span>Mock Test W3 NOV</span><span>bạn chấm <b>L R W1 W2</b></span><span><b>5</b> bài còn thiếu</span></span></div>
+              <table class="bang lc">
+                <colgroup><col class="c-ten"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
+                <thead><tr><th>Học viên</th><th class="ky-th">L</th><th class="ky-th">R</th><th class="ky-th">W1</th><th class="ky-th">W2</th><th class="ky-th">S</th><th class="ky-th">Overall</th><th>Kết quả</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="ten-hv" href="#">Tạ Minh Khoa</a></td><td class="so-c"><button class="od loi">29</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">5.5</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 3 bài</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Ngô Bảo Châu</a></td><td class="so-c"><button class="od">5.5<small>21 câu</small></button></td><td class="so-c"><button class="od">5.0<small>18 câu</small></button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c so dim">5.5</td><td class="so-c mo">—</td><td><span class="kq cho">Còn 1 bài</span></td></tr>
+                  <tr class="huy"><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">4.5</button></td><td class="so-c so dim" style="text-decoration:line-through">5.0</td><td class="so-c mo">—</td><td><span class="kq huy">Đã huỷ · vắng 2 lần</span> <button class="nut-i" aria-label="Chi tiết huỷ" style="color:var(--accent);background:var(--accent-soft)"><svg class="ic"><use href="#i-i"/></svg></button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="hop" style="left:300px;top:150px">
+              <div class="h-dau"><b>Tạ Minh Khoa</b><span class="dim">Listening · MB FT 101</span><button class="vuong" aria-label="Đóng hộp"><svg class="ic"><use href="#i-x"/></svg></button></div>
+              <div class="h-than">
+                <span class="lb">Số câu đúng (0–40)</span>
+                <span class="o loi go so" style="max-width:120px">29<span class="con"></span></span>
+                <span class="loi-chu">Chưa lưu được: mất kết nối. Số đã gõ vẫn giữ — bấm Lưu lại.</span>
+              </div>
+              <div class="h-chan"><span class="tiep">Tiếp: Reading · Tạ Minh Khoa</span><span class="phai"><button class="nut nut-nho">Vắng</button><button class="nut nut-nho nut-chinh">Lưu · bài tiếp ›</button></span></div>
+            </div>
+            <div class="pop" style="right:20px;top:296px;--mui:268px">
+              <b>Đã huỷ · vắng 2 lần</b>
+              <span class="dim">Head Nguyễn Thanh Mai huỷ 20/11 15:02 — em vắng 2 buổi Mock liên tiếp, kết quả không tính.</span>
+              <span><button class="nut nut-nho">Khôi phục</button></span>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c3">
+    <h2>C3 · 375 sáng — panel toàn màn, khối lớp xếp dọc</h2>
+    <p class="ghi"><span class="so-mk">1</span>375: cột Kết quả ẩn — Overall vẫn hiện; ô 44 × 44 (vùng bấm đủ) · <span class="so-mk">2</span>tên được xuống hai dòng, không cắt · <span class="so-mk">3</span>đầu khối lớp giữ nền + vạch, meta xuống dòng.</p>
+    <div class="hang-khung">
+      <figure><figcaption>C3 · 375 · sáng · panel chấm</figcaption>
+        <div class="dt sang" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <section class="pn rong">
+            <div class="pn-dau">
+              <button class="vuong quay" aria-label="Quay lại danh sách"><svg class="ic"><use href="#i-lui"/></svg></button>
+              <h2>Nhập điểm Mock W3 NOV</h2>
+              <span class="goc"><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+              <div class="meta"><span>2 lớp</span><span>7 bài thiếu</span><span class="han qua">quá hạn 2 ngày</span></div>
+            </div>
+            <div class="pn-than" style="padding:12px 12px 16px">
+              <div class="kl">
+                <div class="kl-dau"><a class="ma" href="#">MB FT 101</a><span class="meta"><span>bạn chấm <b>L R W1 W2</b></span><span><b>5</b> bài thiếu</span></span></div>
+                <table class="bang lc lc-dt">
+                  <colgroup><col><col style="width:48px"><col style="width:48px"><col style="width:48px"><col style="width:48px"><col style="width:40px"></colgroup>
+                  <thead><tr><th>Học viên</th><th class="ky-th">L</th><th class="ky-th">R</th><th class="ky-th">W1</th><th class="ky-th">W2</th><th class="ky-th">OVR</th></tr></thead>
+                  <tbody>
+                    <tr><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td class="so-c"><button class="od">6.5</button></td><td class="so-c"><button class="od">7.0</button></td><td class="so-c"><button class="od">6.5</button></td><td class="so-c"><button class="od">6.0</button></td><td class="so-c ovr">6.5</td></tr>
+                    <tr><td><a class="ten-hv" href="#">Tạ Minh Khoa</a></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c"><button class="od trong">—</button></td><td class="so-c mo">—</td></tr>
+                    <tr><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c"><button class="od vang">−</button></td><td class="so-c mo">—</td></tr>
+                    <tr class="huy"><td><span class="hv2"><a class="ten-hv" href="#">Lý Hải Đăng</a><small>Đã huỷ · vắng 2 lần</small></span></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">5.0</button></td><td class="so-c"><button class="od huy">4.5</button></td><td class="so-c mo">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="kl xong">
+                <div class="kl-dau"><a class="ma" href="#">MB FT 104</a><span class="meta"><span>bạn chấm <b>W1 W2</b></span><span class="kq dat">✓ đủ</span></span></div>
+              </div>
+            </div>
+            <div class="pn-chan"><span class="luu da">✓ Đã lưu 15:40</span><span class="phai"><button class="nut nut-chinh">Bài thiếu tiếp ›</button></span></div>
+          </section>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c4">
+    <h2>C4 · Hết bài của bạn (rỗng) — giữ câu V12 ⑦</h2>
+    <div class="hang-khung">
+      <figure><figcaption>C4 · cắt panel · tối · xong phần của bạn</figcaption>
+        <div class="man toi" data-web style="width:1080px;height:330px">
+          <section class="pn rong" style="position:static;width:100%;height:100%;box-shadow:none;border:0">
+            <div class="pn-dau"><h2>Nhập điểm Mock Test · W3 NOV</h2><div class="meta"><span>2 lớp</span><span>hạn 21/11</span></div><span class="goc"><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span></div>
+            <div class="pn-than"><div class="het-viec"><svg class="ic"><use href="#i-ok"/></svg><b>Đã xong phần của bạn · MB FT 101 · Mock W3 NOV: đã lưu 5 bài</b><span>Còn: MB FT 104 · 2 bài</span></div></div>
+            <div class="pn-chan"><span class="luu da">✓ Đã lưu 15:58</span><span class="phai"><button class="nut">Đóng</button><button class="nut nut-chinh">Lớp tiếp: MB FT 104 ›</button></span></div>
+          </section>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+<script src="v23.js"></script>
+</body>
+</html>
