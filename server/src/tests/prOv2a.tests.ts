@@ -342,6 +342,10 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['Ghi chú lịch', 'POST', '/ke-hoach-test/ghi-chu', { classId: lop, noiDung: 'thử' }],
         ['GV chấm cột', 'PUT', '/cham/gv-cham-cot', { classId: lop, dot: '1', gv: null }],
         ['Kế hoạch Test (lưới FT)', 'GET', `/ke-hoach-test/ft/${lop}`],
+        ['Xuất Kế hoạch Test', 'POST', '/ke-hoach-test/xuat', { branchId: cn, classIds: [] }],
+        ['Lịch sử ghi chú lịch', 'GET', `/ke-hoach-test/ghi-chu/lich-su?classId=${lop}`],
+        ['Kiểm đợt', 'POST', '/ke-hoach-test/dot/kiem', { attemptId: luot, kyNang: [{ skill: 'listening', periodId: tuanId }] }],
+        ['Lưới lớp thường (quét Checkpoint)', 'GET', `/ke-hoach-test/thuong/${lop}`],
         ['Xuất điểm Test', 'POST', '/xuat-mt', { khung: 'ft', chiNhanh: [cn], tg: 'tuan', tu: '2026-09-14', den: '2026-09-14' }],
       ];
       const sai: string[] = [];

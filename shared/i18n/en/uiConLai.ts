@@ -23,7 +23,8 @@ export const EN_UI_CON_LAI = {
   'Head, Admin và CX': 'Heads, Admins and CX',
   'Vai trò của bạn không có khu Phân tích.': 'Your role does not have the Analytics area.',
   'bấm để nhập điểm': 'click to enter a score',
-  'Giáo viên, Head, Admin, BPXL và CX': 'Teachers, Heads, Admins, schedulers and CX',   // A3-15: + vai mới
+  'Giáo viên, Head, Admin, BPXL và CX': 'Teachers, Heads, Admins, schedulers and CX',
+  'Giáo viên, Head, Admin, BPXL, CX và TVV': 'Teachers, Heads, Admins, schedulers, CX and consultants',   // A3-15: + vai mới
   'Giáo viên, Head, Admin, TVV, CX và BPXL': 'Teachers, Heads, Admins, consultants, CX and schedulers',
   'Chỉ xem · GV / Head nhập': 'View only · teachers / Heads enter scores',   // A3-05: CX ở việc chấm chưa có người
   'Điểm {skills}': 'Scores {skills}',
