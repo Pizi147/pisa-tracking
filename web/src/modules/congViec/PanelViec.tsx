@@ -433,7 +433,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
   const qc = tvv ? quyChePhoiHopTvv(han) : { ...quyChePhoiHopSos(/meeting/i.test(it.tieuDe) ? 'meeting' : 'xac-nhan', han), chiTiet: quyChePhoiHopSos('bo', null).chu };
   const n = it.con?.length ?? it.count ?? 1;
   const dau = dauViec({
-    han: it.due ? <ChipHan loai="phoi-hop" han={it.due} /> : null,
+    han: it.due ? <ChipHan chuThuong loai="phoi-hop" han={it.due} /> : null,
     ngCanh: <><Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>{` · ${tvv ? t('{n} em cần báo', { n }) : t('{n} em cần làm', { n })}`}</>,
   });
   return (
