@@ -912,6 +912,26 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   /* N64 (chủ SP 22/11 "Có, làm thay" — thay SV-SO1 "QL chỉ theo dõi"): QL / Quản trị ở góc nhìn QL làm thay "Xử lý vi phạm" của GVCN —
      cờ `lamThay` = đúng quyền máy chủ kiểm khi lưu (DISCIPLINE_MANAGE); Head chi nhánh khác / GVBM: cờ false, lưu 403, DB không đổi. */
+  /* N64 (PTA rà #1983 — "mọi loại việc"): cờ lamThay của các loại còn lại = phép kiểm máy chủ khi lưu; Head chi nhánh khác / GVBM false. */
+  check('N64-2 · cờ lamThay: Khai bậc · Phối hợp · Hỏi tình hình · Trả lại (trừ người trả) · Bước tiếp · Thi thật · Xem NX S · Mini Test — Head lớp true, Head CP / GVBM false; khai bậc Head lưu 200, CP / GVBM 403 DB không đổi', () => {
+    const sid = hv();
+    const dong = (group: string, o: Record<string, unknown> = {}) => ({ key: `${group}:${sid}`, group, classId: LOP, studentId: sid, caseId: null, ownerId: gvcn.userId, mine: false, ...o }) as any;
+    const lt = (p: any, it: any) => myworkSvc.lamThayCua(p, [it])(it);
+    for (const g of ['khai_bac', 'phoi_hop', 'yt_hoi_tinh_hinh', 'yt_tra_lai', 'buoc_tiep', 'thi_that', 'xem_nx_s', 'mini_test']) {
+      const it = dong(g);
+      assert(lt(P.mbManager, it) === true, `Head lớp: ${g} phải true`);
+      assert(lt(P.cpManager, it) === false && lt(gvbm, it) === false, `Head CP / GVBM: ${g} phải false`);
+    }
+    assert(lt(P.mbManager, dong('yt_tra_lai', { nguoiTraId: P.mbManager.userId })) === false, 'người trả không làm thay việc trả lại của mình');
+    assert(lt(P.mbManager, dong('khai_bac', { classId: null })) === false && lt(P.mbManager, dong('khai_bac', { ownerId: null })) === false, 'không lớp / chưa có người: false');
+    /* Khai bậc — cùng quyền máy chủ: Head lưu được (200), Head CP / GVBM 403, DB không đổi. */
+    const khai = () => (conn.prepare('SELECT COUNT(*) n FROM y_thuc_khai_bac WHERE student_id = ?').get(sid) as any).n as number;
+    for (const [ten, p] of [['Head CP', P.cpManager], ['GVBM', gvbm]] as const) {
+      assert(loiCua(() => xuLy.khaiBac(p, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' })).status === 403 && khai() === 0, `${ten}: 403, DB không đổi`);
+    }
+    xuLy.khaiBac(P.mbManager, sid, { bac: 1, ghiChu: 'Report 1 tháng 8 (Head khai thay)' });
+    assert(khai() === 1 && (conn.prepare('SELECT khai_boi FROM y_thuc_khai_bac WHERE student_id = ?').get(sid) as any).khai_boi === P.mbManager.userId, 'Head khai thay: đã ghi, người khai = Head');
+  });
   check('N64 · Xử lý vi phạm: QL + QT (góc nhìn QL) lamThay true, lưu 200 ghi đúng người làm; Head CP / GVBM lamThay false, 403, DB không đổi', () => {
     const { apGocNhin } = authN64;
     conn.exec('SAVEPOINT n64');

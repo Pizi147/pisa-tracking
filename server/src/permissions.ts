@@ -917,8 +917,12 @@ export const laTvvCuaEm = (p: Principal, s: { consultant_user_id: number | null;
     && (s.em_branch !== undefined ? g.branchId === null || g.branchId === s.em_branch : grantCovers(g, { studentId: s.student_id })));
 
 export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
-  return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
-    || can({ ...p, grants: p.grants.filter(grantPhiaTvv) }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+  return coQuyenBuocTiepCtx(p, { studentId });
+}
+/** N64: cùng luật `coQuyenBuocTiep` theo ngữ cảnh có sẵn (Công việc: lớp của dòng — không đọc chi nhánh em theo từng dòng). */
+export function coQuyenBuocTiepCtx(p: Principal, ctx: Ctx): boolean {
+  return can(p, PERMISSIONS.CYCLE_EDIT, ctx)
+    || can({ ...p, grants: p.grants.filter(grantPhiaTvv) }, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
 }
 
 /**

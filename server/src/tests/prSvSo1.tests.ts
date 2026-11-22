@@ -101,7 +101,7 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
     assert(diem.every((i: any) => i.lamThay), 'QL nhập hộ được điểm');
     /* SUA-QL-PHOIHOP: Phối hợp SOS — QL làm thay (luật 11/11). N64 (22/11): Xử lý vi phạm · Đã thực hiện cũng làm thay (DISCIPLINE_MANAGE);
        việc Ý thức khác / chưa phân công vẫn chỉ theo dõi. */
-    const ytLam = /^(phoi_hop_sos|yt_xu_ly|yt_thuc_hien)$/;
+    const ytLam = /^(phoi_hop_sos|yt_xu_ly|yt_thuc_hien|khai_bac|phoi_hop|yt_hoi_tinh_hinh|yt_tra_lai)$/;   // N64: cả Khai bậc · Phối hợp · Hỏi tình hình · Trả lại (PTA rà #1983)
     assert(w.items.filter((i: any) => (d.nhomViecCua(i.group) === 'y-thuc' && !ytLam.test(i.group)) || i.ownerId === null).every((i: any) => !i.lamThay), 'Ý thức khác / chưa phân công: chỉ theo dõi');
     const tc = mw.myWork(P.mbManager, { nguoi: 'tat-ca' });
     assert(tc.items.filter((i: any) => !i.mine && i.ownerId === null).every((i: any) => i.lamThay === false), '"Tất cả": việc chưa phân công → lamThay false');
