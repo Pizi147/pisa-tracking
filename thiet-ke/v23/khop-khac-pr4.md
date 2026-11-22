@@ -10,7 +10,7 @@ Mockup: `lich-test.html` L1 / L2, `panel-cham-diem.html` C1 / C3. Kế hoạch: 
 | L1: lưới mở cùng cột tên, các lớp thẳng hàng; Kết quả trùng cột Trạng thái | `.lt-luoi` (td lưới trong `HangLop` / `KhoiNo`): cột tên 256 (tên em thẳng mã lớp, đệm 36), ô điểm chia đều, cột cuối 180 | l1 | KHỚP (≥ 1024; < 1024 giữ thẻ / lưới cuộn như cũ) |
 | L1: hạn chấm = ngày dd/mm/yyyy tô màu, không chip "Quá hạn n ngày" | `<Han trongBang>` (prop mới, dùng chung): CHỈ ngày, màu theo `mucHan`; quá hạn thêm nền đỏ nhạt (NH4: dấu không chỉ bằng màu), không ⚠, không chữ "hạn"; lớp xong → trống | l1 | KHỚP |
 | L1: nhóm Quá hạn chấm có hàng đầu cột như Test tuần này | `DauCotLichTest` dùng chung; nút Nhập điểm / Thu gọn ở cột Trạng thái (180, thẳng cột) | l1 | KHỚP — cột 4 ghi "Còn lại" + "n bài": nhóm này chỉ chứa bài CHƯA chấm (quá hạn = chưa có điểm) nên "n / m" luôn 0 / n |
-| L1: dòng GV dưới mã lớp | — | — | **KHÁC → hỏi PTA**: máy chủ chỉ nạp phân công GV cho lớp còn bài của GV khác (QL); hiện cho mọi lớp phải thêm câu Turso |
+| L1: dòng GV dưới mã lớp | — | — | **BỎ** (PTA 23/11): máy chủ chỉ nạp phân công GV cho lớp còn bài của GV khác; hiện cho mọi lớp phải thêm câu Turso |
 | Lưới: cột W trống cả lớp | `LuoiFT` ẩn cột W khi chưa em nào có W | l1 | KHỚP |
 | L1: tiến độ = số + vạch xám mảnh | `TienDo` thêm `ti` → `<i>` vạch 56 px, không màu (`.lt-td > i`) | l1 | KHỚP |
 | L1: trạng thái là chữ (≤ 1 điểm màu / hàng) | `.lt-vien` → chữ, không viên / chấm; "Chờ bạn chấm" đậm, "✓ Đã chấm" xanh | l1 | KHỚP |
@@ -39,7 +39,6 @@ Mockup: `lich-test.html` L1 / L2, `panel-cham-diem.html` C1 / C3. Kế hoạch: 
 
 ## [XM] / để sau
 - **Panel 75 % đè danh sách Công việc:** đầu nhóm dính của danh sách bên trái (`HoTroHocVienTab.tsx`, cột min(556 px, 42vw − 48 px)) vẽ đè lên panel `rong="bang"` ở 1440. **PR-2a sửa** (PTA giao 23/11: đầu nhóm dính không đè + cột trái ~330 px khi panel rộng bảng). PR-4 không đụng `HoTroHocVienTab.tsx`.
-- Dòng GV dưới mã lớp: cần PTA quyết (thêm câu Turso hay bỏ).
 
 ## Turso
 Không đổi máy chủ, không thêm request: lưới vẫn chỉ tải khi mở / tới gần; panel chấm vẫn chỉ tải lớp đang mở.
