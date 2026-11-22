@@ -123,3 +123,13 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
 - Lịch Test: các lớp thẳng cột; tên HV không cắt ở mọi bảng (đo `do-khung` / `do-bang` 1440 · 1280 · 375).
 - Admin: theo loại việc, đầu mục tách rõ; việc đủ không hiện; số "thiếu" khớp hồ sơ lớp / Công việc (cùng hàm).
 - Chữ thường 14 px khắp nơi; không tràn ngang ở 375.
+
+## 6. Chốt mockup v23 (#1977 merge, chủ SP 22/11) — chỉnh khi code, KHÔNG vẽ lại
+
+Mockup `thiet-ke/v23/` là khung đã duyệt (chọn C cho "Lớp cần chú ý", mọi XM 2–17 duyệt). Chủ SP dặn thêm (nguyên văn): "Tổng quan Head: bảng GV ngang với bảng lớp cần chú ý cho đồng bộ, phần 'Loại để tối đa 3 cái hiện nếu có loại thứ 4 thì có thể bấm thêm? kiểu vậy? không cần mockup lại. Nhớ là khi bấm vào các con số thì hiện ra thông tin thực sự liên quan đấy nhé. Bảng lớp cần chú ý thôi đừng để hình tròn bên cạnh, để badge hoặc để mỗi color code ở số là được rồi. không cần mockup lại. Lưu ý là phần công việc có người theo dõi thì nếu chật quá thì ghi là + mấy người nữa chẳng hạn và khi bấm vào expand ra hết nhé, thiết kế lại chỗ đấy cho rộng rãi hơn 1 xíu cũng được, tôi chỉ bảo là để bên trên thôi, không nhất thiết phải cố định và phải thành một thanh riêng biệt như thế đâu"
+
+PR code làm theo (thắng ảnh mockup ở các điểm này):
+1. **Tổng quan Head / Quản trị:** khối Giáo viên đặt NGANG hàng với khối "Lớp cần chú ý" (cùng hàng, cùng kiểu bảng, cân đáy); Chờ duyệt + Tình hình xếp hàng còn lại. Cột "Loại" hiện tối đa 3 loại; có loại thứ 4 trở lên → "+n" bấm mở hết tại chỗ.
+2. **Bấm số ở mọi khối Tổng quan** mở panel đúng thông tin của chính số đó (cùng nguồn, cùng số dòng — vd "6" quá hạn của GV A → panel 6 việc quá hạn của A, chia theo loại; ô ma trận lớp × loại → đúng lớp + loại).
+3. **"Lớp cần chú ý":** bỏ chấm tròn / vòng rỗng cạnh số. Màu nằm ở chính số (badge nhỏ hoặc chữ số tô màu): quá hạn đỏ · sắp đến vàng · còn xa thường. Vì đỏ / vàng khó phân biệt với người mù màu (dataviz), badge quá hạn phải có thêm dấu khác màu (vd nền đặc vs viền, hoặc ⚠) — chọn một, ghi trong PR.
+4. **Khối Phụ trách · Hạn · Theo dõi (panel việc liên phòng ban):** vẫn đặt ở phần trên panel nhưng KHÔNG cần thanh cố định riêng; bố cục thoáng hơn (vd hai dòng: Phụ trách · Hạn / Theo dõi). Người theo dõi chật thì hiện vài tên + "+n người" — bấm mở hết (tại chỗ), thao tác thêm / bỏ giữ nguyên.
