@@ -135,6 +135,19 @@ components:
 > **Thứ tự đọc (TL-V5, 24/10):** mục "Luật V5" (mới nhất, thắng khi khác) → "Luật 21/10" → phần mô tả bên dưới. Bảng mẫu sống: `/dev/thanh-phan`
 > (`web/src/modules/dev/BangMauV5.tsx`, theo `thiet-ke/v5/bang-mau.html`).
 
+## Luật NHẸ HƠN (chủ SP 22/11 — đặc tả `docs/superpowers/specs/2026-11-22-nhe-hon-design.md`, mockup `thiet-ke/v23/`; mới nhất, thắng Luật V5 / 21/10 khi khác)
+
+| # | Luật | Nguồn |
+|---|---|---|
+| NH1 | **60-30-10:** 60 % nền trung tính · 30 % bề mặt thẻ / bảng + chữ phụ · 10 % màu nhấn, chỉ cho nút chính của việc và trạng thái cần xử lý (quá hạn, chưa đạt, SOS 2–3). Mỗi dòng tối đa **một** điểm màu nổi | đặc tả mục 1 |
+| NH2 | **Thang chữ 12 · 13 · 14 · 16 · 20 · 26** (thay 12 · 13 · 14 · 15 · 17 · 22 · 28; `tailwind.config.js`): chữ thường **14**, bảng / lưới điểm 13–14, tiêu đề khối / panel 16, tiêu đề trang 20, số lớn 26. Vùng bấm ở 375 ≥ 44 px | đặc tả mục 1; #1995 |
+| NH3 | **Badge tính chất giữ, gom một kiểu** (SOS, Đạt / Chưa đạt, kỹ năng L R W S, mã tuần): mặc định viền mảnh, không nền; chỉ SOS 2–3 và "quá hạn" có nền màu. Dòng việc tối đa **2 chip** | đặc tả mục 1 |
+| NH4 | **Luật hạn (mọi màn):** ngày luôn **dd/mm/yyyy**; màu chữ thường (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) · đỏ (quá hạn); quá hạn có thêm một dấu khác màu (nền / viền) để không chỉ dựa vào màu. "quá hạn n ngày" chỉ ở dòng việc và đầu panel việc; bảng báo cáo / hồ sơ chỉ tô màu ngày. Mã tuần giữ cho tuần thi / tuần học. Một hàm `mucHan` / `<Han>` | chủ SP 22/11; thay V8 (hạn `28/10`) |
+| NH5 | **Chữ phụ:** bỏ hàng "Quy chế …" ở chân panel và câu giải thích lặp — luật vào ⓘ. Dòng phụ dưới tên việc chỉ giữ thông tin phân biệt (em / lớp / tuần / số bài). Đầu trang Công việc chỉ "n việc · m quá hạn" | đặc tả mục 1, 3 |
+| NH6 | **Luật bảng chung:** cột tên đủ rộng, tên HV không cắt (N55) · cột số / điểm hẹp và đều · cột kết quả co theo nội dung · không điều khiển trong tiêu đề bảng · mã tuần một dòng (Lịch Test, hồ sơ lớp, Phân tích, lưới điểm) | đặc tả mục 1 |
+| NH7 | **Công việc mọi vai chia theo loại việc**, đầu mục mỗi loại tách bạch (tiêu đề nhóm + số việc · quá hạn). Nút phạm vi Của tôi / Của GV / Tất cả ở hàng riêng. Làm thay = mở là làm, không nút / hộp trung gian (N64) | đặc tả mục 3; N64 |
+| NH8 | **Panel việc:** khối Phụ trách · Hạn · Theo dõi ở phần trên, không thanh cố định riêng; người theo dõi chật → vài tên + "+n người", bấm mở tại chỗ | đặc tả mục 6 |
+
 ## Luật V5 (22–24/10 — mockup `thiet-ke/v5/` #507–#510 + `docs/superpowers/specs/2026-10-22-overhaul-v5/` `04`, `10`; đã vào mã #528–#561)
 
 | # | Luật | Nguồn |
@@ -221,8 +234,8 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
 ## Typography
 
 - **Be Vietnam Pro** cho mọi chữ; **chữ số lấy từ Inter** (khai báo `@font-face` cùng tên, `unicode-range` 0–9) để số thẳng hàng.
-- **Thang 12 · 13 · 14 · 15 · 17 · 22 · 28** (NEN-TYPO-MAU #497; `tailwind.config.js` đặt `fontSize`, không extend): `xs` 12 badge / dòng phụ · 13 (`text-[13px]`) đầu cột,
-  nhãn, `btn-sm` · `sm` 14 lưới dày, giá trị panel · `base` 15 chữ thường, ô bảng, nút · `lg` 17 tiêu đề khối / panel · `xl` 22 tiêu đề trang · `2xl` 28 số lớn.
+- **Thang 12 · 13 · 14 · 16 · 20 · 26** (NHẸ HƠN NH2, thay NEN-TYPO-MAU #497; `tailwind.config.js` đặt `fontSize`, không extend): `xs` 12 badge / dòng phụ · 13 (`text-[13px]`) đầu cột,
+  nhãn, `btn-sm` · `sm` 14 lưới dày, giá trị panel · `base` 14 chữ thường, ô bảng, nút · `lg` 16 tiêu đề khối / panel · `xl` 20 tiêu đề trang · `2xl` 26 số lớn.
   Ô nhập ở 375 = 16 (Safari không tự phóng to). Đầu cột **không in hoa**. Line-height Việt ≥ 1,45 (nhiều dòng), tiêu đề ≥ 1,3.
 - Hàng nhóm đậm, hàng con nhạt hơn (cỡ theo thang trên).
 - **Độ đậm (MAU-WEB-2 D10, 27/10):** chữ thường 400 · nhãn (ô form, trường panel, nút phụ `btn-sm`, tab / chip lọc / nút đoạn KHÔNG chọn) 500 ·
