@@ -25,25 +25,22 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  * `lenh_chuyen_lop` (nhận xét chung + bản chụp phần tự điền + xác nhận) và các dòng `ban_giao_mon`.
  */
 
-const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(lopId);
-
 /**
- * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). Planning 30/09 (Câu 1 = A): Quản lý phạm vi lớp nguồn được điền
- * thay và xác nhận thay khi lớp KHÔNG có GVCN hoặc quá hạn 3 ngày. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu đã xác nhận/đã chuyển (Q15).
+ * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). N64 (chủ SP 22/11, thay Planning 30/09 Câu 1 = A "khi lớp không GVCN
+ * hoặc quá hạn 3 ngày"): Quản lý phạm vi lớp nguồn điền thay và xác nhận thay MỌI LÚC, không hỏi. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu
+ * đã xác nhận/đã chuyển (Q15).
  */
-export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: string | null }, mon?: string, o: { coGvcn?: boolean; ct?: string | null } = {}) {
+export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number }, mon?: string, o: { ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
   const ql = coTheRaLenh(boVaiCx(p), l.lop_nguon_id);
-  /* RKC-4b → N64 (chủ SP 22/11 "cứ làm luôn"): QL làm thay cả TRƯỚC hạn GVCN (`vuot`) — không hỏi nữa; panel hiện dải "Đang giao cho … — bạn làm thay". */
-  const qlLuat = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
+  /* RKC-4b → N64 (chủ SP 22/11 "cứ làm luôn"): QL lớp nguồn làm thay mọi lúc, không hỏi, không xét hạn — panel hiện dải "Đang giao cho … — bạn làm thay". */
   const qlThay = ql;
-  const vuot = ql && !qlLuat;
   const dungMon = !!mon && kyNangPhuTrach(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,
     xacNhan: pc.gvcn || qlThay, xacNhanThay: !pc.gvcn && qlThay,
     doNguon: pc.gvcn || pc.kyNang.size > 0 || can(p, PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),
-    laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay, vuot,
+    laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay,
   };
 }
 
@@ -228,8 +225,8 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const coGvcnLop = gv.some((r) => !!r.is_core);
 
   /* Quyền đọc: phía nguồn xem hết; phía đích chỉ dòng đã xác nhận/đã chuyển của lớp chuyển đến mình có quyền. */
-  /* Quản lý xác nhận thay theo hạn của dòng CHƯA xác nhận (PR-S5F-a) — dòng đã xác nhận quá hạn cũ không mở quyền thay cho dòng mới. */
-  const q = quyenBanGiao(p, { lop_nguon_id: lopId, han_gvcn: rows.filter((r) => !r.xac_nhan_luc).map((r) => r.han_gvcn).filter(Boolean).sort()[0] ?? null }, undefined, { coGvcn: coGvcnLop, ct });
+  /* N64: Quản lý lớp nguồn xác nhận thay mọi lúc (không xét hạn — bỏ luật PR-S5F-a theo hạn dòng chưa xác nhận). */
+  const q = quyenBanGiao(p, { lop_nguon_id: lopId }, undefined, { ct });
   let thay = rows;
   if (!q.doNguon) {
     const dich = [...new Set(rows.map((r) => r.lop_dich_id).filter((x): x is number => !!x))];

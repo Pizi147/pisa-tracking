@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thang Ý thức · v23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v23.css">
+<style>
+/* THANH BƯỚC NGANG — 7 ô bằng nhau (grid), KHÔNG BAO GIỜ xuống dòng: chấm 20 trên vạch nối · tên ngắn dưới (12 / 600).
+   đã qua = chấm đặc nhạt + ✓ · đang ở = chấm to 24 viền nhấn 2 px + tên đậm chữ chính · kế tiếp = chấm viền nhấn đứt · sau = chấm rỗng mờ.
+   Tên đầy đủ: title (rê chuột) + ⓘ (bảng 7 tên). */
+.bac { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(var(--n, 7), minmax(0,1fr)); }
+.bac li { position:relative; display:grid; justify-items:center; align-content:start; gap:6px; padding-top:2px; min-width:0; }
+.bac li::before { content:""; position:absolute; top:13px; left:-50%; right:50%; height:2px; background:var(--line-strong); }
+.bac li:first-child::before { content:none; }
+.bac li.qua::before, .bac li.dang::before { background:var(--text-faint); }
+.bac .ch { position:relative; z-index:1; width:24px; height:24px; display:grid; place-items:center; }
+.bac .ch i { width:20px; height:20px; border-radius:50%; border:2px solid var(--line-strong); background:var(--surface); display:grid; place-items:center; font:700 11px/1 var(--phong); color:var(--surface); font-style:normal; }
+.bac li.qua .ch i { background:var(--text-faint); border-color:var(--text-faint); }
+.bac li.qua .ch i::after, .bac li.dang .ch i::after { content:"✓"; color:var(--surface); }
+.bac li.khai .ch i { background:transparent; border-style:dashed; border-color:var(--text-faint); }
+.bac li.khai .ch i::after { content:"✓"; color:var(--text-faint); }
+.bac li.dang .ch i { width:24px; height:24px; background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+.bac li.dang .ch i::after { color:var(--accent-ink); }
+.bac li.ke .ch i { border-color:var(--accent); border-style:dashed; }
+.bac li.cho .ch i { width:24px; height:24px; border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 4px var(--accent-soft); }
+.bac li.cho .ten { color:var(--text); font-weight:700; }
+.bac li.cho::before { background:var(--text-faint); }
+.vp3 > div { display:grid; grid-template-columns:52px 28px minmax(0,1fr); gap:8px; align-items:center; min-height:40px; padding:4px 16px; border-top:1px solid var(--line); }
+.vp3 > div:first-child { border-top:0; }
+.vp3 .ng { font:500 var(--c13) var(--phong-so); color:var(--text-dim); }
+.bac .ten { font:600 var(--c12) var(--phong); color:var(--text-faint); white-space:nowrap; }
+.bac li.qua .ten, .bac li.khai .ten { color:var(--text-dim); }
+.bac li.dang .ten { color:var(--text); font-weight:700; font-size:var(--c13); }
+.bac li.ke .ten { color:var(--accent); }
+.bac .duoi { font:500 11px var(--phong-so); color:var(--text-faint); white-space:nowrap; margin-top:-4px; }
+.bac li.dang .duoi { color:var(--text-dim); }
+/* khối thang trong hồ sơ HV */
+.kt { border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.kt-dau { display:flex; align-items:center; gap:10px; min-height:48px; padding:6px 8px 6px 16px; border-bottom:1px solid var(--line); }
+.kt-dau h3 { font:700 var(--c14) var(--phong); }
+.kt-dau .dim { font-size:var(--c13); }
+.kt-dau .phai { margin-left:auto; display:flex; gap:4px; align-items:center; }
+.kt-than { padding:16px 16px 14px; display:grid; gap:14px; }
+.kt-chan { display:flex; align-items:center; gap:8px; padding:10px 16px; border-top:1px solid var(--line); }
+.kt-chan .dim { font-size:var(--c13); }
+.kt-chan .phai { margin-left:auto; display:flex; gap:8px; }
+/* Phối hợp SOS: mỗi việc một hàng — tên · thanh 3 bước (cùng thành phần, --n:3) · hạn · một nút */
+.ph-dong { display:grid; grid-template-columns:minmax(0,1fr) 400px 104px 120px; column-gap:16px; align-items:center; min-height:64px; padding:8px 16px; border-top:1px solid var(--line); }
+.ph-dong:first-child { border-top:0; }
+.ph-dong .t { font-weight:600; }
+.ph-dong .p { font-size:var(--c13); color:var(--text-dim); display:block; }
+.ph-dong .bac.mot { --n:1; max-width:100px; }
+.ph-dong .n .nut { width:100%; }
+.luot-dau { display:flex; align-items:center; gap:10px; min-height:44px; padding:0 16px; background:var(--surface-2); border-top:1px solid var(--line); border-bottom:1px solid var(--line); font-size:var(--c14); }
+.luot-dau b { font-weight:700; }
+.dt .ph-dong { grid-template-columns:minmax(0,1fr) auto; row-gap:8px; padding:10px 12px; }
+.dt .ph-dong .bac { grid-column:1 / -1; grid-row:2; }
+.dt .ph-dong .han { grid-column:2; grid-row:1; }
+.dt .ph-dong .n { grid-column:1 / -1; grid-row:3; }
+.dt .kt-than { padding:14px 8px 12px; }
+.dt .kt-dau { padding-left:12px; }
+.dt .kt-chan { padding:10px 12px; }
+.dt .kt-chan .phai { margin-left:0; flex:1; }
+.dt .kt-chan .phai .nut { flex:1; }
+.dt .bac .ten { font-size:11px; }
+.dt .bac li.dang .ten { font-size:12px; }
+/* hộp thang (hộp nhỏ, bậc 2) */
+.hop-t { width:560px; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; box-shadow:0 12px 32px var(--bong); }
+.hop-t .h-dau { display:flex; align-items:center; gap:8px; min-height:52px; padding:6px 8px 6px 18px; border-bottom:1px solid var(--line); }
+.hop-t .h-dau h3 { font:700 var(--c16) var(--phong); }
+.hop-t .h-dau .dim { font-size:var(--c14); }
+.hop-t .h-dau .goc { margin-left:auto; display:flex; }
+.hop-t .h-than { padding:18px 18px 14px; display:grid; gap:16px; }
+.hop-t .h-chan { display:flex; gap:8px; align-items:center; padding:10px 18px 12px; border-top:1px solid var(--line); }
+.hop-t .h-chan .phai { margin-left:auto; display:flex; gap:8px; }
+.hop-t .ls li { grid-template-columns:64px 88px minmax(0,1fr); }
+.hop-t .ls b { font-weight:600; }
+.hs-dau { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-bottom:12px; }
+.hs-dau h1 { font-size:var(--c20); font-weight:700; }
+.hs-dau .meta { display:flex; gap:0; flex-wrap:wrap; font-size:var(--c14); color:var(--text-dim); }
+.hs-dau .meta > * + *::before { content:"·"; margin:0 8px; color:var(--text-faint); }
+.hai-cot { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; }
+.bien { display:grid; gap:14px; }
+.bien .nhan { font:600 var(--c12) var(--phong); color:var(--text-faint); margin-bottom:6px; }
+
+/* N58: Meeting CX/GĐCN = GVCN xác nhận rồi BA PHẦN ĐỘC LẬP, không thứ tự (Xếp lịch BPXL · Kết quả CX · Báo PH TVV) → ô đầu nối, ba ô sau không vạch nối, cách bằng vạch dọc */
+.bac.n58 { --n:4; }
+.bac.n58 li:nth-child(n+3)::before { content:none; }
+.bac.n58 li:nth-child(2)::before { content:none; }
+.bac.n58 li:nth-child(2) { border-left:1px dashed var(--line-strong); }
+.bac .ai-l { font:500 11px var(--phong); color:var(--text-faint); white-space:nowrap; margin-top:-4px; }
+.mau-khung { width:620px; padding:16px; background:var(--bg); border-radius:6px; display:grid; gap:14px; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v23 · ⑧ Thang Ý thức — thanh bước ngang không xuống dòng; đặt trong hồ sơ HV (cùng khối Phối hợp SOS) và hộp thang</h1>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 3 "Thang Ý thức" · ý chủ SP 22/11/2026 số <b>6</b> (box thang lôm côm, lên xuống dòng, mất cân đối). Thành phần: <code>web/src/modules/yThuc/ThangYThuc.tsx</code> (luật thang <code>shared/domain/yThuc.ts</code> — KHÔNG đổi).</p>
+    <p>Dữ liệu bịa: HV <b>Kiều Thanh Tâm</b> · MB FOU 12 · GVCN <b>Đinh Thu Hằng</b> · TVV <b>Đặng Hải Yến</b> · hôm nay <b>23/11/2026 · W4 NOV</b>. Tên ngắn: R1 · R2 · WL1 · R4+M · R5 · WL2 · R7 (= Report 1 · Report 2 · Warning Letter 1 · Report 4 + Meeting CX/GĐCN · Report 5 · Warning Letter 2 · Report 7, 8…).</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#y1">Y1 · Hồ sơ HV 1440</a><a href="#y2">Y2 · Hộp thang</a><a href="#y3">Y3 · 375</a><a href="#y4">Y4 · Các trạng thái thang</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="y1">
+    <h2>Y1 · GVCN · hồ sơ HV · tab Ý thức &amp; Phối hợp — khối Thang + khối Phối hợp SOS (1440 tối)</h2>
+    <p class="ghi"><span class="so-mk">1</span>thang = <b>7 ô bằng nhau</b> trên một vạch: chấm + tên ngắn, không bao giờ xuống dòng (đo theo khung, cả 375) · <span class="so-mk">2</span><b>đang ở</b> (R2) chấm nhấn to + tên đậm; <b>đã qua</b> ✓ chấm đặc xám; <b>kế tiếp</b> (WL1) chấm viền nhấn đứt; sau: chấm rỗng · ngày xử lý chữ nhỏ dưới bậc đã qua · <span class="so-mk">3</span>tên đầy đủ: rê chuột (title) + ⓘ ở đầu khối (hộp ⓘ mở: khung Y2c) · <span class="so-mk">4</span>đầu khối: "Thang xử lý vi phạm · FT" + "Xác nhận cấp bậc vi phạm" (link, giữ) · chân: "3 vi phạm chưa xử lý" + <b>Xác nhận xử lý</b> · Đề xuất QL duyệt (giữ hai nút cùng cỡ) · <span class="so-mk">6</span><b>vi phạm bấm mở mô tả</b> ngay dưới dòng (nhóm · người ghi · mô tả) — luật cũ, góp ý 1; mô tả tách dòng, số / người đậm (góp ý 4) · <span class="so-mk">5</span>Phối hợp SOS dùng <b>cùng thành phần chấm</b>: Meeting CX/GĐCN theo <b>N58</b> = GVCN xác nhận → rồi <b>ba phần độc lập, không thứ tự</b> (Xếp lịch · BPXL · Kết quả · CX (TVV nhập hộ) · Báo PH · TVV) — ô đầu nối vạch, ba ô sau không nối (vạch dọc đứt ngăn); việc chỉ của GVCN (Trao đổi với gia đình) một chấm.</p>
+    <div class="hang-khung"><figure><figcaption>Y1 · 1440 · tối · hồ sơ HV, tab Ý thức &amp; Phối hợp</figcaption>
+      <p class="cap-doi">Đổi: thang chip nối "→" tự xuống dòng ở khối hẹp → <b>thanh bước 7 ô cố định</b> · ô ①②③ Phối hợp SOS → <b>cùng thanh bước 3 ô</b>.</p>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Công việc</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+        <div class="noi-dung">
+          <div class="hs-dau"><h1>Kiều Thanh Tâm</h1><span class="meta"><a href="#">MB FOU 12</a><span>GVCN Đinh Thu Hằng</span><span>TVV Đặng Hải Yến</span></span><span class="chip sos2">SOS 2</span></div>
+          <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Tổng quan</button><button class="tab" role="tab" aria-selected="false">Học thuật</button><button class="tab" role="tab" aria-selected="true">Ý thức &amp; Phối hợp</button><button class="tab" role="tab" aria-selected="false">Lộ trình</button><button class="tab" role="tab" aria-selected="false">Thông tin</button></div>
+          <div class="hai-cot">
+            <div class="kt">
+              <div class="kt-dau"><h3>Thang xử lý vi phạm</h3><span class="dim">FT</span><span class="phai"><button class="nut nut-ma nut-nho">Xác nhận cấp bậc vi phạm</button><button class="nut-i" aria-label="Tên đầy đủ các bậc" ><svg class="ic"><use href="#i-i"/></svg></button></span></div>
+              <div class="kt-than">
+                <ol class="bac" aria-label="Thang xử lý vi phạm: đang ở Report 2, kế tiếp WL 1">
+                  <li class="qua" title="Report 1 · 02/10/2026 · GVCN Đinh Thu Hằng"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li>
+                  <li class="dang" title="Report 2 · 19/11/2026 · GVCN Đinh Thu Hằng"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li>
+                  <li class="ke" title="Warning Letter 1 · kế tiếp"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">kế tiếp</span></li>
+                  <li title="Report 4 + Meeting CX/GĐCN"><span class="ch"><i></i></span><span class="ten">R4+M</span></li>
+                  <li title="Report 5"><span class="ch"><i></i></span><span class="ten">R5</span></li>
+                  <li title="Warning Letter 2"><span class="ch"><i></i></span><span class="ten">WL2</span></li>
+                  <li title="Report 7, 8… (sau WL 2)"><span class="ch"><i></i></span><span class="ten">R7</span></li>
+                </ol>
+              </div>
+              <div class="kt-chan"><span class="dim">3 vi phạm chưa xử lý · từ 20/11/2026</span><span class="phai"><button class="nut">Đề xuất QL duyệt</button><button class="nut nut-chinh">Xác nhận xử lý</button></span></div>
+            </div>
+            <div class="kt">
+              <div class="kt-dau"><h3>Vi phạm chưa xử lý</h3><span class="dim">3</span></div>
+              <div class="vpd" style="border:0;border-radius:0">
+                <button aria-expanded="false"><span class="ng">20/11/2026</span><span class="chip ky">R</span><span>Không làm bài tập về nhà</span><span class="ai">GV Vũ Thu Lan</span><svg class="chev"><use href="#i-chev"/></svg></button>
+                <button aria-expanded="true"><span class="ng">21/11/2026</span><span class="chip ky">L</span><span>Đi muộn 20 phút</span><span class="ai">GVCN</span><svg class="chev"><use href="#i-chev"/></svg></button>
+                <div class="vpd-ct"><span>Nhóm</span><span>Chuyên cần</span><span>Người ghi</span><span>GVCN <b>Đinh Thu Hằng</b> · <b>21/11/2026</b></span><span>Mô tả</span><span class="chu-dai"><span>Muộn <b>20 phút</b>, lỡ chữa đề Listening.</span><span>Lần thứ <b>2</b> trong tháng.</span></span></div>
+                <button aria-expanded="false"><span class="ng">22/11/2026</span><span class="chip ky">S</span><span>Dùng điện thoại trong giờ</span><span class="ai">GV Hà Quốc Bảo</span><svg class="chev"><use href="#i-chev"/></svg></button>
+              </div>
+              <details class="gap" style="border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px"><summary><svg class="chev"><use href="#i-chev"/></svg><span class="ten-gap">Lịch sử vi phạm</span><span class="tom"><span>7 vi phạm · 2 lần xử lý</span></span></summary></details>
+            </div>
+          </div>
+          
+          <div class="kt" style="margin-top:16px">
+            <div class="kt-dau"><h3>Phối hợp SOS</h3><span class="dim">2 việc</span><span class="phai"><button class="nut nut-nho">+ Thêm việc</button></span></div>
+            <div class="luot-dau"><span class="chip sos2">SOS 2</span><b>MT2</b><span class="dim">Overall 5.5 / kỳ vọng 6.0</span><a href="#" style="margin-left:auto;font-size:13px">Học thuật ›</a></div>
+            <div class="ph-dong"><div><span class="t">Meeting CX/GĐCN với HV và PH</span><span class="p">GVCN xác nhận 20/11/2026 · BPXL <b style="color:var(--text);font-weight:600">Hoàng Minh Đức</b> đã xếp lịch <b style="color:var(--text);font-weight:600">26/11/2026 17:30</b></span><span class="p">Chờ: CX <b style="color:var(--text);font-weight:600">Lương Thảo Vy</b> · TVV <b style="color:var(--text);font-weight:600">Đặng Hải Yến</b></span></div>
+              <ol class="bac n58" aria-label="GVCN đã xác nhận; ba phần độc lập: xếp lịch xong, kết quả chờ CX, báo PH chờ TVV"><li class="qua" title="GVCN xác nhận · 20/11/2026"><span class="ch"><i></i></span><span class="ten">GVCN xác nhận</span><span class="ai-l">20/11/2026</span></li><li class="qua" title="Xếp lịch họp · BPXL · 21/11/2026"><span class="ch"><i></i></span><span class="ten">Xếp lịch</span><span class="ai-l">BPXL</span></li><li class="cho" title="Kết quả meeting · CX (TVV nhập hộ được)"><span class="ch"><i></i></span><span class="ten">Kết quả</span><span class="ai-l">CX</span></li><li class="cho" title="Báo PH · TVV"><span class="ch"><i></i></span><span class="ten">Báo PH</span><span class="ai-l">TVV</span></li></ol>
+              <span class="han qua">hạn 22/11/2026</span><span class="n"><button class="nut nut-nho">Xem</button></span></div>
+            <div class="ph-dong"><div><span class="t">Trao đổi với gia đình</span><span class="p">GVCN · chưa xác nhận</span></div>
+              <ol class="bac mot" aria-label="Việc của GVCN, chưa xác nhận"><li class="ke"><span class="ch"><i></i></span><span class="ten">GVCN xác nhận</span></li></ol>
+              <span class="han">không hạn</span><span class="n"><button class="nut nut-nho nut-chinh">Xác nhận</button></span></div>
+          </div>
+        </div>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="y2">
+    <h2>Y2 · Hộp thang (mở từ chip bậc ở dòng việc / hộp vi phạm) — 560 px, cùng thanh bước + lịch sử bậc gập</h2>
+    <p class="ghi"><span class="so-mk">1</span>đầu hộp một dòng: "Thang xử lý vi phạm · em · lớp" · ✕ · <span class="so-mk">2</span>thanh bước như Y1 · <span class="so-mk">3</span>dưới: các lần xử lý (ngày · bậc · người) — gập sẵn nếu &gt; 3 (ý 12) · <span class="so-mk">4</span>chân giữ hai nút; người chỉ xem: không nút, chân không vẽ.</p>
+    <div class="hang-khung">
+      <figure><figcaption>Y2a · hộp · tối</figcaption>
+        <div class="man toi" data-web style="width:620px;height:auto;padding:20px">
+          <div class="hop-t">
+            <div class="h-dau"><h3>Thang xử lý vi phạm</h3><span class="dim">Kiều Thanh Tâm · MB FOU 12</span><span class="goc"><button class="nut-i" aria-label="Tên đầy đủ các bậc" style="width:36px;height:36px"><svg class="ic"><use href="#i-i"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span></div>
+            <div class="h-than">
+              <ol class="bac"><li class="qua" title="Report 1"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang" title="Report 2"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke" title="Warning Letter 1"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">kế tiếp</span></li><li title="Report 4 + Meeting CX/GĐCN"><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li title="Report 5"><span class="ch"><i></i></span><span class="ten">R5</span></li><li title="Warning Letter 2"><span class="ch"><i></i></span><span class="ten">WL2</span></li><li title="Report 7, 8…"><span class="ch"><i></i></span><span class="ten">R7</span></li></ol>
+              <ul class="ls"><li><time>19/11/2026</time><b>Report 2</b><span class="dim">GVCN Đinh Thu Hằng · 3 vi phạm</span></li><li><time>02/10/2026</time><b>Report 1</b><span class="dim">GVCN Đinh Thu Hằng · 1 vi phạm</span></li></ul>
+            </div>
+            <div class="h-chan"><span class="dim" style="font-size:13px">3 vi phạm chưa xử lý</span><span class="phai"><button class="nut">Đề xuất QL duyệt</button><button class="nut nut-chinh">Xác nhận xử lý</button></span></div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>Y2b · hộp · sáng (người chỉ xem)</figcaption>
+        <div class="man sang" data-web style="width:620px;height:auto;padding:20px">
+          <div class="hop-t">
+            <div class="h-dau"><h3>Thang xử lý vi phạm</h3><span class="dim">Kiều Thanh Tâm · MB FOU 12</span><span class="goc"><button class="nut-i" aria-label="Tên đầy đủ các bậc" style="width:36px;height:36px"><svg class="ic"><use href="#i-i"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span></div>
+            <div class="h-than">
+              <ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol>
+              <details class="gap"><summary><svg class="chev"><use href="#i-chev"/></svg><span class="ten-gap">Các lần xử lý</span><span class="tom"><span>2 lần · mới nhất 19/11/2026 Report 2</span></span></summary></details>
+            </div>
+          </div>
+        </div>
+      </figure>
+<figure><figcaption>Y2c · hộp · tối · ⓘ mở (neo dưới nút, trong khung nhìn)</figcaption>
+        <div class="man toi" data-web style="width:620px;height:400px;padding:20px">
+          <div class="hop-t">
+            <div class="h-dau"><h3>Thang xử lý vi phạm</h3><span class="dim">Kiều Thanh Tâm · MB FOU 12</span><span class="goc"><button class="nut-i" aria-label="Tên đầy đủ các bậc" style="width:36px;height:36px;color:var(--accent);background:var(--accent-soft)"><svg class="ic"><use href="#i-i"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span></div>
+            <div class="h-than"><ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+          </div>
+          <div class="pop" style="left:240px;top:66px;width:340px;--mui:300px">
+            <b>Thang xử lý vi phạm · FT</b>
+            <ol><li>R1 — Report 1</li><li>R2 — Report 2</li><li>WL1 — Warning Letter 1</li><li>R4+M — Report 4 + Meeting CX/GĐCN</li><li>R5 — Report 5</li><li>WL2 — Warning Letter 2</li><li>R7 — Report 7, 8… (sau WL 2)</li></ol>
+            <span class="dim">WL 3, phương án khác: qua Đề xuất QL duyệt.</span>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="y3">
+    <h2>Y3 · 375 sáng — thang vẫn một hàng 7 ô (≈ 44 px / ô), Phối hợp SOS xếp ba dòng</h2>
+    <p class="ghi"><span class="so-mk">1</span>375: ô thang 49 px, tên 11 / 600 ("R4+M" rộng 30 px — vừa) · không thu bậc đã qua thành ✓ như bản cũ (đủ chỗ) · <span class="so-mk">2</span>Phối hợp SOS: tên + hạn · GVCN + ba phần N58 · nút rộng.</p>
+    <div class="hang-khung">
+      <figure><figcaption>Y3 · 375 · sáng · hồ sơ HV</figcaption>
+        <div class="dt sang cao" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <div class="noi-dung">
+            <div class="hs-dau"><h1>Kiều Thanh Tâm</h1><span class="chip sos2">SOS 2</span><span class="meta" style="flex-basis:100%"><a href="#">MB FOU 12</a><span>GVCN Đinh Thu Hằng</span></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Tổng quan</button><button class="tab" role="tab" aria-selected="true">Ý thức &amp; Phối hợp</button><button class="tab" role="tab" aria-selected="false">Lộ trình</button></div>
+            <div class="kt">
+              <div class="kt-dau"><h3>Thang xử lý vi phạm</h3><span class="dim">FT</span><span class="phai"><button class="nut-i" aria-label="Tên đầy đủ các bậc"><svg class="ic"><use href="#i-i"/></svg></button></span></div>
+              <div class="kt-than">
+                <ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol>
+              </div>
+              <div class="kt-chan"><span class="phai"><button class="nut">Đề xuất QL</button><button class="nut nut-chinh">Xác nhận xử lý</button></span></div>
+            </div>
+            <div class="kt" style="margin-top:12px">
+              <div class="kt-dau"><h3>Phối hợp SOS</h3><span class="dim">2 việc</span></div>
+              <div class="ph-dong"><div><span class="t">Meeting CX/GĐCN</span><span class="p">BPXL đã xếp lịch · chờ CX, TVV</span></div>
+                <ol class="bac n58"><li class="qua"><span class="ch"><i></i></span><span class="ten">GVCN</span><span class="ai-l">20/11/2026</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">Xếp lịch</span><span class="ai-l">BPXL</span></li><li class="cho"><span class="ch"><i></i></span><span class="ten">Kết quả</span><span class="ai-l">CX</span></li><li class="cho"><span class="ch"><i></i></span><span class="ten">Báo PH</span><span class="ai-l">TVV</span></li></ol>
+                <span class="han qua">hạn 22/11/2026</span><span class="n"><button class="nut">Xem</button></span></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="y4">
+    <h2>Y4 · Các trạng thái thang (cùng thành phần) — mới, khai trước, đã qua WL 2, có đề xuất chờ</h2>
+    <p class="ghi"><span class="so-mk">1</span>chưa xử lý lần nào: mọi chấm rỗng, R1 "kế tiếp" · <span class="so-mk">2</span>bậc xác nhận từ trước (khai, trước khi dùng web): chấm viền đứt + ✓ mờ, rê = "xác nhận 01/09/2026 · Head" · <span class="so-mk">3</span>đã qua WL 2: ô cuối là bậc đang ở thật (R8), ô đầu "…" thay các bậc xa nhất — vẫn 7 ô, vẫn một hàng (giữ luật gộp hiện có) · <span class="so-mk">4</span>có đề xuất QL chờ: ô kế tiếp ghi tên đề xuất + "chờ QL" (chip đề xuất cũ thành chữ dưới chấm), nút ẩn như hiện nay.</p>
+    <div class="hang-khung">
+      <div class="mau-khung toi">
+        <div class="bien"><div><div class="nhan" style="color:var(--text-faint)">Chưa xử lý lần nào</div>
+          <ol class="bac"><li class="ke"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R2</span></li><li><span class="ch"><i></i></span><span class="ten">WL1</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        <div><div class="nhan" style="color:var(--text-faint)">Bậc xác nhận từ trước (khai) R1 · R2, đang ở WL1</div>
+          <ol class="bac"><li class="khai" title="xác nhận 01/09/2026 · Head Nguyễn Thanh Mai"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">khai</span></li><li class="khai" title="xác nhận 01/09/2026 · Head Nguyễn Thanh Mai"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">khai</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">14/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">R4+M</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        <div><div class="nhan" style="color:var(--text-faint)">Đã qua WL 2 — đang ở R8</div>
+          <ol class="bac"><li class="qua" title="4 bậc trước đã xử lý"><span class="ch"><i></i></span><span class="ten">…</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">R5</span><span class="duoi">08/10/2026</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">WL2</span><span class="duoi">22/10/2026</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">R7</span><span class="duoi">05/11/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R8</span><span class="duoi">18/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">R9</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R10</span></li></ol></div>
+        <div><div class="nhan" style="color:var(--text-faint)">Có đề xuất QL chờ duyệt (WL 3 ngoài thang)</div>
+          <ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">chờ QL</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        </div>
+      </div>
+      <div class="mau-khung sang">
+        <div class="bien"><div><div class="nhan">Cùng bốn trạng thái · sáng</div>
+          <ol class="bac"><li class="ke"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R2</span></li><li><span class="ch"><i></i></span><span class="ten">WL1</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        <div><ol class="bac"><li class="khai"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">khai</span></li><li class="khai"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">khai</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">14/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">R4+M</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        <div><ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">…</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">R5</span><span class="duoi">08/10/2026</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">WL2</span><span class="duoi">22/10/2026</span></li><li class="qua"><span class="ch"><i></i></span><span class="ten">R7</span><span class="duoi">05/11/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R8</span><span class="duoi">18/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">R9</span><span class="duoi">kế tiếp</span></li><li><span class="ch"><i></i></span><span class="ten">R10</span></li></ol></div>
+        <div><ol class="bac"><li class="qua"><span class="ch"><i></i></span><span class="ten">R1</span><span class="duoi">02/10/2026</span></li><li class="dang"><span class="ch"><i></i></span><span class="ten">R2</span><span class="duoi">19/11/2026</span></li><li class="ke"><span class="ch"><i></i></span><span class="ten">WL1</span><span class="duoi">chờ QL</span></li><li><span class="ch"><i></i></span><span class="ten">R4+M</span></li><li><span class="ch"><i></i></span><span class="ten">R5</span></li><li><span class="ch"><i></i></span><span class="ten">WL2</span></li><li><span class="ch"><i></i></span><span class="ten">R7</span></li></ol></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="v23.js"></script>
+</body>
+</html>

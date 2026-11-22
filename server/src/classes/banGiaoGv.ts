@@ -180,11 +180,10 @@ function docViec(id: number): any {
 function quyenViec(p: Principal, b: any) {
   const ql = coTheRaLenh(boVaiCx(p), b.class_id);
   const laNguoiLam = b.nguoi_lam === p.userId;
-  /* RKC-4b → N64 (chủ SP 22/11): QL điền thay TRƯỚC hạn được, không hỏi — panel hiện dải "Đang giao cho … — bạn làm thay" (`vuot`). */
-  const thayLuat = ql && !laNguoiLam && (b.nguoi_lam === null || demoToday() > b.han || b.trang_thai === 'xong');
+  /* RKC-4b → N64 (chủ SP 22/11): QL điền thay mọi lúc, không hỏi — panel hiện dải "Đang giao cho … — bạn làm thay". */
   const thay = ql && !laNguoiLam;
   const viet = b.trang_thai !== 'huy' && (laNguoiLam || thay);
-  return { ql, laNguoiLam, thay, viet, xacNhan: viet && b.trang_thai === 'mo', vuot: thay && !thayLuat };
+  return { ql, laNguoiLam, thay, viet, xacNhan: viet && b.trang_thai === 'mo' };
 }
 
 /** Em đang học lớp (lúc đọc) — một câu. */
