@@ -136,7 +136,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
     kyVong: !chiCot && !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
-    w: !chiCot,
+    /* NHẸ HƠN (PTA rà #1998): cột W (máy tính) ẩn khi cả lưới chưa em nào có W — không còn cột nền tô trống. */
+    w: !chiCot && data.rows.some((r) => r.result.verdicts?.some((x: { skill: string; band?: number | null }) => x.skill === 'writing' && x.band != null)),
     ovr: !chiCot,
     kq: !anKetQua,
     chiKq: !!chiCot,
@@ -151,10 +152,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const goiYO = (s: string) => (s === 'listening' || s === 'reading'
     ? t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })
     : t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) }));
-  /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. GD-3: trong panel việc cột ô 112, Kết quả 132,
+  /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. GD-3 → NHẸ HƠN (v23 C1, panel 75 %): trong panel việc cột ô 88, Kết quả 168,
      cột tên lấy phần còn lại (index.css `.luoi-trong-panel`). */
   const trongPanel = useContext(OTrongPanel);
-  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 112 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
+  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 88 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: chiCot ? 140 : 230,   /* V6 K8c: lưới vài cột vừa 375 (phần dư 1440 vẫn chia theo `deu`) */ goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
@@ -165,7 +166,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 132 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
+    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 168 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */

@@ -7,7 +7,7 @@ import { t } from '@shared/i18n/index.ts';
 
 /**
  * NHẬP ĐIỂM MỘT LỚP TẠI CHỖ (OV-15b mục 5, C16; mockup 2 khung 4) — thay tab Test › Điểm theo lớp. Mở từ ⋯ hàng lớp (Học viên & Lớp),
- * nút Nhập điểm của hồ sơ lớp, và link cũ `/test/diem-lop?lop=`. Chọn lượt / môn trong panel (`DiemTheoLop chonMon`); cùng lưới, cùng luật lưu.
+ * nút Nhập điểm của hồ sơ lớp, NHẸ HƠN: panel bảng ~75 % (v23 C1), và link cũ `/test/diem-lop?lop=`. Chọn lượt / môn trong panel (`DiemTheoLop chonMon`); cùng lưới, cùng luật lưu.
  */
 export function PanelNhapDiemLop({ classId, classCode, luot, loc, onDong, quayLai }: {
   classId: number; classCode?: string | null; luot?: string | null; onDong: () => void;
@@ -24,7 +24,7 @@ export function PanelNhapDiemLop({ classId, classCode, luot, loc, onDong, quayLa
     ),
   });
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={classCode ? (loc === 'cu' ? t('Nhập điểm MT cũ · {lop}', { lop: classCode }) : t('Nhập điểm · {lop}', { lop: classCode })) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={classCode ? (loc === 'cu' ? t('Nhập điểm MT cũ · {lop}', { lop: classCode }) : t('Nhập điểm · {lop}', { lop: classCode })) : t('Nhập điểm')} dau={dau} rong="bang" quayLai={quayLai} onDong={onDong}
       /* GD-4b Q58: link `?trong=cu` (nhập MT cũ). Lượt / vai nằm trong `DiemTheoLop` — câu theo lượt (Q1, Q82) không vẽ ở đây. */
       quyChe={loc === 'cu' ? quyCheNhapDiem({ thuong: false, mtCu: true }) : null}>
       <div className="pt-3">

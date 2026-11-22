@@ -301,6 +301,30 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
       'dọn theo dõi thêm tay + lịch sử');
   }));
 
+  await checkAsync('NHẸ HƠN PR-6 · /students/:id/phoi-hop-sos: hai phần Meeting (thanh chấm N58) — người được giao còn hiệu lực / người theo luật, đúng vai; giao cho người đã nghỉ → về người theo luật; câu / dòng ≤ trần', () => thu(async () => {
+    const { soCauSql, soDongSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts') as any;
+    const { TRAN_PHOI_HOP_MEETING } = await import('./tocDoDuong.ts');
+    const sid = moiEm();
+    const { aid, xep } = meeting(sid);
+    giao(ql, 'meeting', xep.id, admin.userId);   // Xếp lịch: giao cho Admin · Kết quả: chưa giao (người theo luật)
+    const coBpxl = nguoiVaiCuaChiNhanh(mbId, 'scheduler').length > 0;
+    const doc = () => { xoaNho(); let r: any; let cau = 0; let dong = 0;
+      chayTrongRequest('GET', () => { const c0 = soCauSql(); const d0 = soDongSql(); r = ph.coordinationOfStudent(gvcn, sid); cau = soCauSql() - c0; dong = soDongSql() - d0; });
+      const a = r.rows.flatMap((x: any) => x.actions).find((x: any) => x.id === aid);
+      return { m: a.meeting, cau, dong };
+    };
+    const { m, cau, dong } = doc();
+    assert(m && m.xepLich && m.ketQua, `thiếu phần: ${JSON.stringify(m)}`);
+    assert(m.xepLich.nguoi === 'GIAOVIEC ADMIN' && m.xepLich.vai === (coBpxl ? 'BPXL' : 'TVV') && m.xepLich.trangThai === 'mo', `Xếp lịch: ${JSON.stringify(m.xepLich)}`);
+    assert(m.ketQua.nguoi === gv.tenVaiTai('ket_qua', mbId) && m.ketQua.nguoi && m.ketQua.vai === 'CX', `Kết quả: ${JSON.stringify(m.ketQua)}`);
+    assert(cau <= TRAN_PHOI_HOP_MEETING.cau && dong <= TRAN_PHOI_HOP_MEETING.dong, `đường hồ sơ (1 Meeting): ${cau} câu / ${dong} dòng > trần ${TRAN_PHOI_HOP_MEETING.cau} / ${TRAN_PHOI_HOP_MEETING.dong}`);
+    console.log(`    · đo /students/:id/phoi-hop-sos (1 Meeting đã xác nhận): ${cau} câu · ${dong} dòng`);
+    /* N58: người được giao đã nghỉ → không hiện tên, về người theo luật (BPXL / TVV của em). */
+    conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(admin.userId);
+    const sau = doc().m.xepLich;
+    assert(sau.nguoi !== 'GIAOVIEC ADMIN' && sau.nguoi === (coBpxl ? gv.tenVaiTai('xep_lich', mbId) : 'GIAOVIEC TVV'), `người nghỉ: ${JSON.stringify(sau)}`);
+  }));
+
   await checkAsync('GV1-12 · (B) phần Meeting: người giữ vai đọc MỘT lần mỗi request, không câu con theo dòng; một em → lọc ngay trong vế', () => thu(() => voiMeeting(async () => {
     for (let i = 0; i < 3; i++) meeting(moiEm());
     const { soCauSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts') as any;

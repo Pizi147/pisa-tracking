@@ -8,7 +8,7 @@
  * Đường của Qa (`/hoc-vien-lop`, `/classes/:id/phan-tich-lop`) và Rc1 (`/cham/can-cham`, `/cham/lich-test`,
  * `/classes/:id/cham`) đã thêm ở Task 4 sau khi rebase lên #69/#70.
  *
- * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`.
+ * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`, `{vp}` (vi phạm MB).
  */
 
 /** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. TU2-5: HDT = Head tutor, chỉ đo đường trang Tutor. */
@@ -390,7 +390,9 @@ export const DUONG_DO: MucDo[] = [
   /* VH-1: hộp Nhóm công việc — một câu nhóm của phạm vi. */
   { trang: 'Công việc', vai: ['QL', 'QT', 'CX'], url: '/mgmt-tasks/nhom' },
   /* VH-1b (N62): khối giao việc N58 (Phụ trách · Hạn · Theo dõi · Mô tả) — panel một việc. */
-  { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/giao-viec/bao_ph/{viecBaoPh}' },   // B2-14: TVV MB (em của TVV) → 200; TVV chi nhánh khác 403: `tocDo.run` B2-14
+  { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/giao-viec/bao_ph/{viecBaoPh}' },
+  /* NHẸ HƠN PR-2b: panel Báo PH — mở một dòng vi phạm thì tải tệp của vi phạm đó (người dùng bấm, một GET mỗi lần mở). */
+  { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/attachments?ownerType=violation&ownerId={vp}' },   // B2-14: TVV MB (em của TVV) → 200; TVV chi nhánh khác 403: `tocDo.run` B2-14
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/meeting/board' },
 
@@ -858,6 +860,7 @@ export const TRAN: Record<string, number> = {
   'CX /mgmt-tasks': 17,   // VH-1: đo 8 (main QL / QT 6: +1 người theo dõi, +1 nhóm)
   'QL /mgmt-tasks/nhom': 10, 'QT /mgmt-tasks/nhom': 10, 'CX /mgmt-tasks/nhom': 10,   // VH-1: đo 3
   'QL /giao-viec/bao_ph/{viecBaoPh}': 20, 'QT /giao-viec/bao_ph/{viecBaoPh}': 20, 'TVV /giao-viec/bao_ph/{viecBaoPh}': 18,   // VH-1b: đo 10 · 10 · 8 (+1 câu Mô tả)
+  'QL /attachments?ownerType=violation&ownerId={vp}': 13, 'QT /attachments?ownerType=violation&ownerId={vp}': 11, 'TVV /attachments?ownerType=violation&ownerId={vp}': 13,   // NHẸ HƠN PR-2b: đo 7 · 5 · 7 (tệp vi phạm khi mở dòng)
   'GVCN /mgmt-tasks': 12,
   'QL /mgmt-tasks?hang=qua-han': 17,
   'QT /mgmt-tasks?hang=qua-han': 17,
@@ -2088,6 +2091,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /mgmt-tasks?hang=qua-han': 172,   // VH-1: đo 122 (main 68)
   'QL /mgmt-tasks/nhom': 55, 'QT /mgmt-tasks/nhom': 55, 'CX /mgmt-tasks/nhom': 55,   // VH-1: hộp Nhóm — đo 5 (1 câu nhóm)
   'QL /giao-viec/bao_ph/{viecBaoPh}': 58, 'QT /giao-viec/bao_ph/{viecBaoPh}': 58, 'TVV /giao-viec/bao_ph/{viecBaoPh}': 56,   // VH-1b: đo 8 · 8 · 6
+  'QL /attachments?ownerType=violation&ownerId={vp}': 55, 'QT /attachments?ownerType=violation&ownerId={vp}': 53, 'TVV /attachments?ownerType=violation&ownerId={vp}': 55,   // NHẸ HƠN PR-2b: đo 5 · 3 · 5
   'QL /meeting/board': 62,   // đo 12
   'QT /meeting/board': 75,   // đo 25
   'QL /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 1313,   // đo 1010
@@ -2297,6 +2301,12 @@ export const TRAN_DONG: Record<string, number> = {
 
 /** AU-2111 P1-01: TVV mở MỘT việc Vận hành được giao (`GET /mgmt-tasks/:id`, cổng khu Công việc + chi tiết) — đo trên seed có dữ liệu (tocDo.run.ts). */
 export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
+
+/**
+ * NHẸ HƠN PR-6: GET /students/:id/phoi-hop-sos có MỘT Meeting CX đã xác nhận (GVCN, em mới MB FT 101) — thêm câu lô `meeting_phan` (+1) và người giữ vai
+ * (`nguoiGiuVai`, một câu mỗi request, chung với /my-work). Đo 23/11: 25 câu · 69 dòng → trần max(đo + 10, ⌈đo × 1,3⌉) câu, max(đo + 50, ⌈đo × 1,3⌉) dòng.
+ */
+export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 export const TRAN_GHI_LO = {
   /**

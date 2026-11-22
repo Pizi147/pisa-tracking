@@ -420,6 +420,22 @@ export function dongThang(bac: number, khai: { bac: number } | null): {
   });
 }
 
+/** NHẸ HƠN PR-6 (v23 ⑧): ô của thanh bước. `dang` = bậc đã xử lý GẦN NHẤT (XM-9) · `ke` = bậc kế (viền đứt "kế tiếp") · `gop` = "…" thay các bậc xa nhất. */
+export type OThang = { kind: string; ngan: string; nhan: string; tt: 'qua' | 'khai' | 'dang' | 'ke' | 'sau' | 'gop'; khai?: boolean; soGop?: number };
+/** Tên ngắn dưới chấm: R1 · R2 · WL1 · R4+M · R5 · WL2 · R7… */
+export const tenNganBac = (kind: string): string => (kind === 'report_4_meeting' ? 'R4+M' : kind.replace(/^report_(\d+)$/, 'R$1').replace(/^wl_(\d+)$/, 'WL$1'));
+/** Luôn 7 ô (mạch chính 6 + Report 7). Đã qua WL 2: "…" + 5 bậc cuối (đến bậc kế) + một bậc sau — vẫn 7 ô, vẫn một hàng (luật gộp cũ). */
+export function oThang(dong: readonly { kind: string; nhan: string; trangThai: 'qua' | 'khai' | 'lan-nay' | 'sau' }[]): OThang[] {
+  const cuoi = dong.reduce((m, b, i) => (b.trangThai === 'qua' || b.trangThai === 'khai' ? i : m), -1);
+  const o: OThang[] = dong.map((b, i) => ({
+    kind: b.kind, ngan: tenNganBac(b.kind), nhan: b.nhan, khai: b.trangThai === 'khai',
+    tt: i === cuoi ? 'dang' : b.trangThai === 'lan-nay' ? 'ke' : b.trangThai,
+  }));
+  if (o.length <= BAC_REPORT_TIEP) return o;
+  const k = kindCuaBac(o.length + 1);
+  return [{ kind: 'gop', ngan: '…', nhan: '…', tt: 'gop', soGop: o.length - 5 }, ...o.slice(-5), { kind: k, ngan: tenNganBac(k), nhan: nhanLoaiXuLy(k), tt: 'sau' }];
+}
+
 /**
  * Rà 11/11 G3-14 — tab Ý thức lớp › Cần làm: MỘT em MỘT dòng + số = em có việc của CHÍNH người xem (cùng tập Công việc của người đó).
  * `nhom`: các nhóm việc theo thứ tự hiện (mỗi dòng: em · là việc của người xem không) · `xong`: dòng "Xong · 7 ngày".

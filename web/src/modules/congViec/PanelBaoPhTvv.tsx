@@ -4,12 +4,12 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, NUT_DONG, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
-import { TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
-import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
+import { TheLoai, TomLanXuLy } from '../yThuc/BangLan.tsx';
 import { DaiChoGvSua, DaiDaLam, DsViPhamBaoPh, HOAN_TAC_MS, KhoiTraLai, TheChoGv, guiTraLai, hoanTacTraLai, rutTraLai, type TraLaiMo, type ViPhamBaoPh } from '../yThuc/TraLai.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -93,7 +93,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const em = { id: it.studentId!, ten: it.studentName };
   const tieuDe = laMeeting ? t('Meeting CX/GĐCN') : it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
-  /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
+  /* NHẸ HƠN PR-2b (v23 P1 `.meta`, luật hạn): đầu panel ghi hạn "21/11/2026 · quá hạn n ngày" (chỗ DUY NHẤT trong panel có "quá hạn n ngày");
+     khối Phụ trách · Hạn chỉ tô màu ngày. Hạn tạm dừng (chờ GV sửa) / việc đã đóng → không ghi. */
   /* TL-2 (N61, PTA chốt): Trả lại chỉ khi máy chủ cho (việc còn mở, phía TVV) + không đang chờ Head duyệt thu hồi + không mở từ tab theo dõi. */
   const traLaiDuoc = !!v?.coTheTraLai && !v.thuHoiCho && !chiXem;
   const dsMo = v?.traLai ?? [];
@@ -103,7 +104,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     ...(v?.coTheGhi && !bo ? [{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }] : []),
   ];
   const dau = {
-    ...dauViec({ em, lop: it.classCode }),
+    ...dauViec({ em, lop: it.classCode, han: v && v.trangThai === 'mo' && !v.choGvSua ? <ChipHan chuThuong loai="viec-van-hanh" han={v.han} /> : null }),
     ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} lopNut={NUT_DONG} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng · NHẸ HƠN: cùng ô 36 × 36 với ✕
   };
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
@@ -218,6 +219,9 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             </div>
           </HopNho>
         )}
+        {/* NHẸ HƠN PR-2b (chủ SP 22/11 mục 6.4): Theo dõi chung của việc Meeting lên đầu, trước các phần. */}
+        {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
+          dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
         {/* GV-2 (mockup v22 G1 / G8b): khối ba dòng ĐẦU thân panel. Meeting: hai phần (Xếp lịch họp · Kết quả meeting) trước, rồi phần "Báo PH" của TVV. */}
         {laMeeting ? <>
           {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
@@ -231,21 +235,17 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           </div>
         )}
         {/* TINH-HINH (mockup v20 C2): GV báo tình hình — đọc nội dung GV gửi trước khi báo PH. */}
-        {(v.tinhHinhId != null || laMeeting) && (v.boiCanh.noiDung || v.boiCanh.nguoiLuu) && (
+        {/* NHẸ HƠN PR-2b (PTA rà #1999): không có nội dung thì không vẽ (trước: Meeting hiện mỗi tên + giờ); Meeting có nhãn "Nội dung gửi TVV". */}
+        {(v.tinhHinhId != null || laMeeting) && v.boiCanh.noiDung && (
           <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{!laMeeting && <TheLoai loai="th" />}
+            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{laMeeting ? <span className="font-semibold">{t('Nội dung gửi TVV')}</span> : <TheLoai loai="th" />}
               {v.boiCanh.nguoiLuu && <b className="font-semibold text-slate-200">{v.boiCanh.nguoiLuu}</b>}{v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>}</span>
             <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">{v.boiCanh.noiDung}</span>
           </div>
         )}
-        {/* Mockup K5b / K8d: dải ①②③ cùng thứ tự tab Ý thức — bước TVV là việc của người ghi. */}
-        {v.tinhHinhId == null && !laMeeting && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
-          [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
-          v.choQlDuyet
-            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ Head duyệt'), v.choQlDuyet.han && t('Head trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
-          [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? (gv.g?.tamDung ? t('hạn tạm dừng') : t('hạn {ngay}', { ngay: shortDate(v.han, hn) })) : null],   // A3-07: cùng nói hạn như khối Hạn (N61)
-        ]} />}
+        {/* NHẸ HƠN PR-6 (v23 P1): một dòng tóm in đậm chỗ chính, thay dải ①②③ (trạng thái / hạn đã ở đầu panel + khối Hạn). */}
+        {v.tinhHinhId == null && !laMeeting && <TomLanXuLy ngayVp={v.boiCanh.viPham.map((x) => x.ngay)} gvcn={v.boiCanh.nguoiLuu ?? null} nhan={bacNgan(v.nhan)}
+          ngayXl={v.boiCanh.ngayLam ?? v.boiCanh.luuLuc ?? null} choHead={v.choQlDuyet ? { han: v.choQlDuyet.han ?? null } : undefined} />}
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
         {v.boiCanh.viPham.length > 0 && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
@@ -253,11 +253,12 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         <BoiCanh dong={[
           [t('Ghi chú GVCN'), v.tinhHinhId == null && !laMeeting && v.boiCanh.ghiChu ? <span className="font-normal">
             <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span> : null],
-          [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
-          [t('Điện thoại'), ph.sdt && (
-            <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
-              <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>
-          )],
+          /* NHẸ HƠN PR-2b (v23 P1 `.ph`): MỘT dòng "Phụ huynh  Tên (mẹ) · ☎ số" — dữ liệu sẵn trong GET panel, không thêm câu; thiếu tên thì chỉ số. */
+          [t('Phụ huynh'), ph.ten || ph.sdt ? <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {ph.ten && <b className="font-semibold">{ph.ten}{ph.quanHe ? ` (${ph.quanHe})` : ''}</b>}
+            {ph.sdt && <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
+              <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>}
+          </span> : null],
         ]} />
         {bo && <BoViec id={v.id} onDong={() => setBo(false)} onDaBo={() => {
           setBo(false); xoaNhap(); reload(); onDaLam();
@@ -268,7 +269,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         {sua && !bo && (
           <>
             <Truong nhan={t('Kết quả')} as="div" loi={lf.loiCua(loiO, 'kq')}>
-              <div {...lf.o(loiO, 'kq')} data-hd="p-bao-ph-kq" tabIndex={-1} className="outline-none"><LuaChonRadio ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
+              <div {...lf.o(loiO, 'kq')} data-hd="p-bao-ph-kq" tabIndex={-1} className="outline-none"><LuaChonRadio doan ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
                 onChange={(k) => { setKq(k); if (tt === 'loi') setTt(null); }} /></div>
             </Truong>
             <Truong nhan={t('Ngày')}><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={hn} /></div></Truong>
@@ -277,8 +278,6 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             </Truong>
           </>
         )}
-        {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
-          dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
         {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n"; chưa có lần ghi thì không vẽ (lời 40). Chủ SP 22/11 ý 12: luôn gập sẵn. */}
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
@@ -324,13 +323,25 @@ function BoViec({ id, onDong, onDaBo }: { id: number; onDong: () => void; onDaBo
  * NHÓM NÚT RADIO (mockup V5 `.lua-chon`, bảng mẫu mục 7): radio thật (↑ ↓ đổi), mục chọn viền + nền nhấn; `disabled` = bước chưa mở.
  * Dùng chung panel Báo PH (Kết quả) và Sau thi (Bước tiếp, Lớp).
  */
-export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo, deu }: {
+export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo, deu, doan }: {
   ten: string; nhan: string; muc: readonly (readonly [K, string])[]; value: K | null; onChange: (k: K) => void; disabled?: boolean;
   /** Chủ SP 18/11 (Bước tiếp #1839) "khung rõ": ô nền surface-2 + viền mạnh, ô đang chọn nền nhấn nhạt. Mặc định giữ kiểu cũ. */
   khungRo?: boolean;
   /** TL-2 (mockup v22 T4a `.cach.ba` / T8a): các ô đều bề ngang một hàng; < 640 px xếp dọc, mỗi ô ≥ 44 px. */
   deu?: boolean;
+  /** NHẸ HƠN PR-2b (v23 P1 `.doan`): nút đoạn liền (lớp `.doan` sẵn có) — vẫn là radio thật (mũi tên, Tab, trình đọc màn hình), ô radio ẩn. */
+  doan?: boolean;
 }) {
+  if (doan) return (
+    <div className="doan max-w-full" role="radiogroup" aria-label={nhan}>
+      {muc.map(([k, chu]) => (
+        <label key={k} className={`relative inline-flex items-center justify-center whitespace-nowrap px-3 text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)] max-sm:flex-1 [&+label]:border-l ${disabled ? 'cursor-default' : 'cursor-pointer'} ${value === k ? 'font-bold text-[color:var(--text)]' : 'font-medium text-dim'}`}
+          style={{ borderColor: 'var(--line-strong)', ...(value === k ? { background: 'var(--accent-soft)', boxShadow: 'inset 0 -2px 0 var(--accent)' } : null) }}>
+          <input type="radio" name={ten} checked={value === k} disabled={disabled} onChange={() => onChange(k)} className="pointer-events-none absolute inset-0 m-0 h-full w-full appearance-none opacity-0" />{chu}
+        </label>
+      ))}
+    </div>
+  );
   return (
     <div className={deu ? 'grid gap-2 sm:auto-cols-fr sm:grid-flow-col' : 'flex flex-wrap gap-2'} role="radiogroup" aria-label={nhan}>
       {muc.map(([k, chu]) => (

@@ -18,7 +18,7 @@ import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } fr
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon } from './baoPhTvv.ts';
-import { baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting } from '../worklist/giaoViec.ts';
+import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, tenVaiTai } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -228,7 +228,39 @@ export type CoordinationAction = {
   noiDungLaHienTai: boolean;
   /** PHOI-HOP-V2 (chủ SP 11/11): Meeting CX/GĐCN đã xác nhận → việc TVV báo gia đình / sắp họp / báo kết quả (bảng `viec_bao_ph`). null = chưa có / việc khác. */
   tvv: TvvMeeting | null;
+  /** NHẸ HƠN PR-6 (N58): hai phần Xếp lịch họp · Kết quả meeting của Meeting CX/GĐCN đã xác nhận (thanh chấm hồ sơ). null = chưa có / việc khác. */
+  meeting?: { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null } | null;
 };
+
+/** Một phần Meeting (N58) cho thanh chấm: trạng thái · người làm / người phụ trách · vai mặc định khi chưa giao ('BPXL' · 'CX' · 'TVV' · 'Head'). */
+export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLuc: string | null; nguoi: string | null; vai: string };
+
+/**
+ * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (meeting_phan + tên). Người phụ trách được giao chỉ hiệu lực khi còn hoạt động + còn vai ở
+ * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `tenVaiTai` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
+ * một câu mỗi request, dùng chung với `/my-work`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
+ */
+export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }> {
+  const out = new Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }>();
+  if (!ids.length) return out;
+  for (const r of db().prepare(
+    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
+            CASE WHEN mp.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('mp.phu_trach_id', 'mp.branch_id')} THEN pt.full_name END AS pt_ten
+       FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
+       LEFT JOIN users xb ON xb.id = mp.xong_boi LEFT JOIN users pt ON pt.id = mp.phu_trach_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
+      WHERE mp.phoi_hop_id IN (${DS_JSON})`,
+  ).all(JSON.stringify(ids)) as any[]) {
+    const xep = r.phan === 'xep_lich';
+    const vaiTen = tenVaiTai(r.phan, r.branch_id ?? null);
+    const vai = vaiTen ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
+    const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,
+      nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? vaiTen ?? (xep ? r.tvv_ten ?? null : null), vai };
+    const m = out.get(r.phoi_hop_id) ?? { xepLich: null, ketQua: null };
+    if (xep) m.xepLich = phan; else m.ketQua = phan;
+    out.set(r.phoi_hop_id, m);
+  }
+  return out;
+}
 
 /** Việc TVV sau Meeting CX của một hành động — ô ③ ở panel Công việc, hồ sơ lớp, hồ sơ HV (TVV ghi tại dòng qua `/y-thuc/bao-ph/ghi`). */
 export type TvvMeeting = {
@@ -403,7 +435,9 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   const conn = db();
   const attachments = countAttachments('sos_coordination_action', rows.map((r) => r.id));
   napTruocPhamVi([...new Set(rows.map((r) => r.student_id as number))]);   // `canManageDiscipline` từng em đọc bộ nhớ, không N+1
-  const tvv = tvvCuaHanhDong(p, rows.filter((r) => laMeetingCx(r.kind) && r.status === 'done').map((r) => r.id as number));   // sau nạp phạm vi: quyền ghi không thêm câu
+  const meetingIds = rows.filter((r) => laMeetingCx(r.kind) && r.status === 'done').map((r) => r.id as number);
+  const tvv = tvvCuaHanhDong(p, meetingIds);   // sau nạp phạm vi: quyền ghi không thêm câu
+  const phanMt = phanMeetingCuaHanhDong(meetingIds);   // NHẸ HƠN PR-6: +1 câu khi có Meeting đã xác nhận
   const byAttempt = new Map<number, any[]>();
   for (const r of rows) byAttempt.set(r.attempt_id, [...(byAttempt.get(r.attempt_id) ?? []), r]);
   const out: CoordinationTurn[] = [];
@@ -476,7 +510,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
         /* GV-2 (N58): cờ theo TỪNG việc — người được giao (còn hiệu lực) làm đúng việc của mình, không thấy nút việc khác của lượt. */
-        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, lamDuoc: quanLy || (r.phu_trach_id === p.userId && duocGiao()) };
+        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, meeting: phanMt.get(r.id) ?? null, lamDuoc: quanLy || (r.phu_trach_id === p.userId && duocGiao()) };
         if (r.kind !== 'bao_ph_tvv' || !noiDungCua) return x;
         /* PR-PHH: việc đã xong → bản chụp lúc xác nhận; dòng cũ (chưa có bản chụp) → nội dung hiện tại + cờ. */
         const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;

@@ -70,6 +70,7 @@
  "web/src/modules/congViec/PanelBaoPhTvv.tsx",
  "web/src/modules/congViec/PanelChamSpeaking.tsx",
  "web/src/modules/congViec/PanelMeeting.tsx",
+ "web/src/modules/congViec/PanelNhapDiemTuan.tsx",
  "web/src/modules/congViec/PanelSauThi.tsx",
  "web/src/modules/congViec/PanelTraLai.tsx",
  "web/src/modules/congViec/PanelViec.tsx",

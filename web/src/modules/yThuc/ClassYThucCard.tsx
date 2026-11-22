@@ -13,7 +13,7 @@ import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
-import { ThangVach, ThangYThuc } from './ThangYThuc.tsx';
+import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
 import { NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
@@ -634,12 +634,8 @@ function ThangEm({ sid, ten, homNay, onKhai, onLichSu }: { sid: number; ten: str
   const { data: hv, error, reload } = useApi<YThucHocVien>(`/students/${sid}/y-thuc`, [sid]);
   return (
     <>
-      {/* GD-6 (lời 28, 36): thang vạch chung. */}
-      <span className="flex flex-wrap items-center gap-3">
-        <b className="text-[14px] font-bold text-slate-100">{t('Thang · {ten}', { ten })}</b>
-        {hv && <ThangVach dong={hv.dongThang} />}
-      </span>
-      {error ? <LoiTaiNho chu={error.message} onRetry={reload} className="px-0 py-1" /> : !hv ? <Skeleton rows={2} /> : <ThangYThuc d={hv} homNay={homNay} />}
+      {/* NHẸ HƠN PR-6 (v23 ⑧ Y2): hộp thang = thanh bước 7 ô + các lần xử lý (gập khi > 3). */}
+      {error ? <LoiTaiNho chu={error.message} onRetry={reload} className="px-0 py-1" /> : !hv ? <Skeleton rows={2} /> : <ThangYThuc d={hv} homNay={homNay} phu={ten} lanXuLy khung={false} />}
       <span className="flex items-center justify-between gap-3">
         <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={onLichSu}>{t('Lịch sử của em ›')}</button>
         {hv?.canManage && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onKhai}>{t('Khai / sửa cấp bậc')}</button>}
