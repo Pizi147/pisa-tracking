@@ -26,7 +26,7 @@ Khung: `thiet-ke/v23/cong-viec-gv|tvv|admin|head.html` (+ ghi chú). Đặc tả
 | A1 panel | Cột Hạn chỉ tô màu ngày (bỏ ⚠), không cắt | `PanelLopAdmin` `MucNgay` | `admin-panel-*` | KHỚP |
 | A1 panel | Chân "Nhắc GV" | — | — | KHÁC: đường Nhắc đã bỏ (OV-12h, `/my-work/nhac` 404) — giữ "Nhập điểm ›", không làm máy chủ mới |
 | G3, H3 (375) | Đầu nhóm một dòng ("Progress / Final Test") | `DaiNhom`: tên 16 / 700 nowrap, số "n việc" chữ phụ, biểu tượng ẩn ở 375 (dùng chung mọi danh sách có `DaiNhom`) | `*-375-sang.png` | KHỚP |
-| C1 (panel-cham-diem) | Panel bảng 75 % → cột trái 330 px, dòng gọn không nút; đầu nhóm dính không đè panel (PR-4 báo) | `data-pn="bang"` (KhungPanel) + `:has()` ở trang; cột trái `isolate`, cột phải `z-20` | `gv-panel-bang-gia-lap-1440-toi.png` | KHỚP |
+| C1 (panel-cham-diem) | Panel bảng 75 % → cột trái 330 px, dòng gọn không nút; đầu nhóm dính không đè panel (PR-4 báo) | `data-pn="bang"` (KhungPanel) + `:has()` ở trang; cột trái `isolate`, cột phải `z-20` | `gv11-panel-cham-mock-1440-toi.png` (panel chấm thật sau PR-4, GV 11 BC FT 205: cột trái 330 px tới x=350, panel từ x=360, tên em đủ) | KHỚP |
 | — | Dải chỉ số TVV (5 ô) | — | — | BỎ (chủ SP mục 0) |
 | — | Ô biểu tượng đầu dòng việc | — | — | BỎ (60-30-10, mockup không có) |
 
@@ -57,4 +57,4 @@ Khung: `thiet-ke/v23/cong-viec-gv|tvv|admin|head.html` (+ ghi chú). Đặc tả
 - Còn: `/tong-quan/tvv/em` vẫn tính `chiSo` (dải đã bỏ) — đề xuất PR máy chủ sau bỏ phần đó cho nhẹ.
 
 ## Ảnh
-`{gv,tvv,admin,head}-1440-toi.png` · `-1280-toi.png` · `-375-sang.png` · `admin-panel-1440-toi.png` · `gv-panel-bang-gia-lap-1440-toi.png` (panel giả lập rộng bảng — panel lưới tuần 75 % đến từ PR-4). Admin chụp bằng Admin Monbay (id 26): Admin Cẩm Phả demo không có việc.
+`{gv,tvv,admin,head}-1440-toi.png` · `-1280-toi.png` · `-375-sang.png` · `admin-panel-1440-toi.png` · `gv11-panel-cham-mock-1440-toi.png` (panel chấm 75 % thật sau #1998). Admin chụp bằng Admin Monbay (id 26): Admin Cẩm Phả demo không có việc.
