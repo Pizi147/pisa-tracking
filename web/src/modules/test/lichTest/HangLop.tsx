@@ -177,7 +177,7 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
         const mo = moCua(l);
         /* Việc xong không nơi nào còn báo hạn: hạn chỉ khi còn bài (người có phân công: bài của mình). */
         const con = l.phan ? l.conBaiCuaToi : l.conBai;
-        const han = con > 0 ? <Han loai="nhap-diem" han={l.han} trongBang={!gon} khongDau /> : null;
+        const han = con > 0 ? <Han loai="nhap-diem" han={l.han} trongBang={!gon} /> : null;
         const { phu: dotPhu, nhanChinh } = chuDot(l.luot);
         const conCho = l.phan ? '' : chuConCho(l.gvMon, l.chuongTrinh);
         const tienDo = <TienDo so={`${l.daCham} / ${l.tong}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })} ti={l.tong ? l.daCham / l.tong : 0} />;

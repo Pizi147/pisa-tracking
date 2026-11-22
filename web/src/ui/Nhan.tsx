@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { deadlineView, mucHan, ngay as ngayHien, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type BadgeTab, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
-import { IconCanhBao, IconKhong } from './BieuTuong.tsx';
+import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -14,10 +14,12 @@ const BADGE_HAN = 'inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-n
 const MUC_BADGE_HAN = { qua: 'gap-1 shrink-0 border-[rgb(var(--late-line-rgb))] bg-late-bg text-late', gan: 'bg-soon-bg text-soon shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' } as const;
 /** Lớp của badge hạn — cho chỗ cần dáng này trên phần tử khác `span` (badge bấm được `BadgeViec`). */
 export const lopBadgeHan = (muc: keyof typeof MUC_BADGE_HAN) => `${muc === 'qua' ? CHIP_NHAN : BADGE_HAN} ${MUC_BADGE_HAN[muc]}`;
-/** Luật hạn NHẸ HƠN: dấu ⚠ đứng trước hạn đã qua — đỏ / vàng khó phân biệt với người mù màu, nên quá hạn có thêm một hình, không chỉ màu. */
-export const DauQuaHan = () => <><IconCanhBao className="mr-1" /><span className="sr-only">{t('quá hạn')} </span></>;
-/** Lớp chữ hạn theo `mucHan`: xa = chữ phụ · sắp (hôm nay → còn ≤ 2 ngày) = vàng · quá = đỏ. */
-export const LOP_MUC_HAN = { xa: 'font-medium text-dim', sap: 'font-semibold text-soon', qua: 'font-semibold text-late' } as const;
+/** HAN-BO-DAU (luật V22, chủ SP 14/11: hạn không biểu tượng): hạn đã qua KHÔNG ⚠ — dấu ngoài màu chữ là nền đỏ nhạt (`LOP_MUC_HAN.qua`);
+ *  trình đọc màn hình vẫn nghe "quá hạn". */
+export const DauQuaHan = () => <span className="sr-only">{t('quá hạn')} </span>;
+/** Lớp chữ hạn theo `mucHan` — một quy ước toàn web: xa = chữ phụ · sắp (hôm nay → còn ≤ 2 ngày) = vàng · quá = chữ đỏ + NỀN ĐỎ NHẠT bo nhẹ
+ *  (đỏ / vàng khó phân biệt với người mù màu → thêm nền; lề âm + đệm ngang bằng nhau, đệm dọc không đội cao dòng). */
+export const LOP_MUC_HAN = { xa: 'font-medium text-dim', sap: 'font-semibold text-soon', qua: 'font-semibold text-late -mx-1 rounded bg-late-bg px-1 py-px' } as const;
 /** TL-2 (N61, mockup v22 `.tag.cho-gv`): thẻ nền lam "Chờ GV sửa" / "tạm dừng" — chữ + nền (không chỉ màu), một dáng mọi nơi. */
 export function NhanChoGv({ children, title }: { children: ReactNode; title?: string }) {
   return <span title={title} className={`${CHIP_TRON} shrink-0 bg-doing-bg text-doing`}>{children}</span>;
