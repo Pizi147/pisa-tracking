@@ -42,3 +42,14 @@ Critique: **35 / 40**, không P0 / P1.
 | 5 cột "MT0 → Final" khó hiểu (hai thang khác nhau) | bỏ; thay **Final** đúng thang của lớp (lớp thường %, FT band) + cột riêng **Kỳ vọng FT** (✓ Đạt / Head cân nhắc / —); mốc MT0 chỉ ở dòng "Kỳ vọng FT · MT0 ≥ 5.5 mỗi kỹ năng" + ⓘ |
 
 Bảng em mới: tick 44 · Học viên 1fr · Final 96 · Kết quả 112 · Kỳ vọng FT 136 · Bước tiếp 180 · Lớp mới 150 · Tuần 124. 375: dòng phụ "Final 78 % · bước tiếp · lớp".
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 5 điểm hai cột Final + MT0 (nếu có), không cột kết quả | bảng: tick · Học viên · **Final** (%, thang lớp) · **MT0** (band, "—" nếu không có) · Kỳ vọng FT · Bước tiếp · Lớp mới · Tuần; bỏ cột Kết quả (nhóm Đạt / Không đạt vẫn tách) |
+| 5 bấm điểm tổng hiện đủ kỹ năng | điểm Final là nút → hộp nổi (bậc 2) L R W S + dòng MT0 đủ kỹ năng; K1 vẽ hộp đang mở ở Hồ Quang Minh |
+| 5 "đủ 16 em" vô lý (không giới hạn sĩ số) | lỗi thật: "MB FOU 15 đã kết thúc — chọn lớp khác" + "mất kết nối" · Thử lại |
+| 2 luật hạn | "hạn chốt 28/11/2026" |
+
+Bảng em mới: tick 44 · Học viên 1fr · Final 96 · MT0 80 · Kỳ vọng FT 136 · Bước tiếp 180 · Lớp mới 150 · Tuần 124.

@@ -40,3 +40,7 @@ Critique: **36 / 40**, không P0 / P1.
 |---|---|---|
 | 1 bấm vi phạm hiện mô tả (cả ở Ý thức) | Y1 | khối "Vi phạm chưa xử lý" thành danh sách nút, một dòng mở: Nhóm · Người ghi · Mô tả (`StudentYThucSection.tsx`) |
 | 4 chữ dài | Y1 | dòng phụ Meeting tách 2 dòng, tên người / giờ họp đậm; mô tả vi phạm tách câu, số đậm |
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+- Luật hạn: mọi ngày dd/mm/yyyy, hạn vàng khi còn ≤ 2 ngày, đỏ quá hạn; "quá hạn n ngày" chỉ ở dòng Công việc / đầu panel (hồ sơ HV · Phối hợp SOS chỉ tô đỏ ngày). Thang 375: ngày dưới chấm ẩn (rê / bấm xem), "kế tiếp" giữ.

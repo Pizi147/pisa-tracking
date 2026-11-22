@@ -43,3 +43,12 @@ Mockup: [`cong-viec-admin.html`](cong-viec-admin.html) · ảnh `anh/cong-viec-a
 - [XM-5] Dòng lớp có › mở từng em (hai tầng trong một loại). Chủ SP chưa nói rõ có cần; giữ vì Admin cần biết em nào thiếu.
 
 Critique: **34 / 40** (vẽ lại sau đổi hướng), không P0 / P1. P2: cột người phụ trách 190 px có thể cắt tên hai GV ("GV A · B") — PR dùng `title`.
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 6 không dàn cả trang; bấm hiện panel bên cạnh gọn | danh sách **556 px bên trái** như GV / TVV (dòng "lớp / em · thiếu gì" · hạn, không cột người phụ trách); bấm dòng lớp → **panel 58 %**: bảng từng em · còn thiếu (W1 / W2) · **người phụ trách** · hạn dd/mm/yyyy; bấm dòng em → panel em (A2). 375: danh sách → panel toàn màn (A3a, A3b) |
+| 2 luật hạn | danh sách giữ "quá hạn n ngày"; bảng trong panel chỉ tô đỏ ngày |
+
+- [XM-5] cũ (dòng lớp mở em ngay dưới) **thay** bằng panel bên cạnh — đóng.

@@ -63,3 +63,13 @@ Critique (impeccable, tự chấm): **35 / 40** — không P0 / P1. P2: ô "Kế
 
 - Đầu + chân + khối Phụ trách = 52 + 48 + 52 = 152 px (> 120 của nghiệm thu cũ) — chủ SP chọn đưa khối lên trên; vẫn không cuộn với việc ngắn ở 1440.
 - Bảng thao tác: khối Phụ trách không còn "thêm 1 bấm" → [XM-1] đóng.
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+**LUẬT HẠN (khung chung, ghi trong `v23.css`):** mọi ngày hiện đủ **dd/mm/yyyy** (hạn, ngày thi, ngày ghi, lịch sử, vi phạm); mã tuần (W2 OCT) giữ cho tuần thi / tuần học. Hạn tô màu: chữ thường = còn xa · **vàng** = hôm nay → còn ≤ 2 ngày (đề xuất PTA) · **đỏ** = quá hạn. Chữ "quá hạn n ngày" CHỈ ở dòng việc danh sách Công việc + đầu panel việc; bảng báo cáo / hồ sơ / khối Phụ trách chỉ tô đỏ ngày. Đã rà cả 8 màn.
+
+| Góp ý | Sửa |
+|---|---|
+| 1 khối Phụ trách: hạn đủ ngày tháng năm + màu | `.pht1` hạn "21/11/2026" đỏ (bỏ "quá hạn 2 ngày" trùng với đầu panel) |
+| 1 panel bảng không cần nhận xét MT | P2 bỏ cột Nhận xét MT — chỉ L R W1 W2 S · Overall · Kết quả |
+| 2 luật hạn mọi màn | như trên |

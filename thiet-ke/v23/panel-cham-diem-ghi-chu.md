@@ -42,3 +42,7 @@ Critique: **36 / 40**, không P0 / P1.
 |---|---|
 | 4 chữ dài | ⓘ điểm huỷ tách 2 dòng (ai huỷ · giờ đậm / lý do xám, số buổi đậm) · lỗi trong hộp nhập: "Chưa lưu được" đậm, bước tiếp xuống dòng |
 | 2 khối Phụ trách | không áp — nhập điểm là ngoại lệ chủ SP nêu |
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+- Luật hạn: mọi ngày dd/mm/yyyy, hạn vàng khi còn ≤ 2 ngày, đỏ quá hạn; "quá hạn n ngày" chỉ ở dòng Công việc / đầu panel (hồ sơ HV · Phối hợp SOS chỉ tô đỏ ngày). Thang 375: ngày dưới chấm ẩn (rê / bấm xem), "kế tiếp" giữ.

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="v23.css">
 <style>
-/* MỘT bộ cột cố định cho MỌI bảng lớp trên trang: chevron 36 · Lớp 220 · Đợt 1fr · Kỹ năng 132 · Hạn chấm 116 · Tiến độ 150 · Trạng thái 150.
+/* MỘT bộ cột cố định cho MỌI bảng lớp trên trang: chevron 36 · Lớp 220 · Đợt 1fr · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180 (bỏ Kỹ năng — vòng 2).
    Lưới mở dưới hàng dùng CÙNG cột đầu (36 + 220 = tên HV) → tên em thẳng mã lớp; ô điểm 76 đều → các lớp thẳng cột. */
 .the { background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:clip; }
 .the + .the { margin-top:16px; }
@@ -62,7 +62,7 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 <div class="trang">
   <header class="dau-mk">
     <h1>v23 · ⑥ Lịch Test tuần — một bộ cột cố định cho mọi bảng lớp, lưới mở cùng cột tên, các lớp thẳng hàng</h1>
-    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 1 "Luật bảng chung", 3 "Lịch Test tuần" · ý chủ SP 22/11 số <b>1</b> (cột lôm côm: chỗ tên dài, chỗ kết quả dài — thống nhất cho cân đối) và <b>13</b>. Dữ liệu dựng giống ảnh chủ SP: hai khối <b>Quá hạn chấm</b> · <b>Test tuần này</b>.</p>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 1 "Luật bảng chung", 3 "Lịch Test tuần" · ý chủ SP 22/11/2026 số <b>1</b> (cột lôm côm: chỗ tên dài, chỗ kết quả dài — thống nhất cho cân đối) và <b>13</b>. Dữ liệu dựng giống ảnh chủ SP: hai khối <b>Quá hạn chấm</b> · <b>Test tuần này</b>.</p>
     <p>Dữ liệu bịa: Head <b>Nguyễn Thanh Mai</b> · Monbay · tuần <b>W4 NOV</b> (23/11/2026).</p>
     <nav class="muc-mk" aria-label="Mục lục khung">
       <a href="#l1">L1 · 1440</a><a href="#l2">L2 · 375</a><a href="#l3">L3 · Rỗng · lỗi</a>
@@ -72,7 +72,7 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 
   <section class="khu" id="l1">
     <h2>L1 · QL · Test · Lịch Test tuần W4 NOV (1440 tối)</h2>
-    <p class="ghi"><span class="so-mk">1</span>hai thẻ, <b>cùng một colgroup</b>: Lớp 220 · Đợt 1fr · Kỹ năng 150 · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180 → hai thẻ thẳng cột · <span class="so-mk">2</span>lớp: mã đậm (link hồ sơ lớp) + GV chữ nhỏ dưới; tên lớp / em không cắt · <span class="so-mk">3</span>bấm hàng = mở <b>lưới dưới hàng</b> (G4): cột đầu đúng bằng chevron + Lớp → tên em thẳng mã lớp; 6 cột số (L R W1 W2 S Overall) <b>chia đều phần còn lại</b>, Kết quả <b>trần 180</b> (góp ý 3: cột kết quả không còn rộng quá) · <span class="so-mk">4</span>một điểm màu mỗi hàng: chip "Quá hạn chấm" (nền đỏ) HOẶC hạn đỏ — không cả hai · tiến độ là số + vạch xám mảnh (không màu) · <span class="so-mk">5</span>tiêu đề cột không có nút; chọn tuần ‹ W4 NOV › ở đầu trang (giữ) · mã tuần một dòng.</p>
+    <p class="ghi"><span class="so-mk">1</span>hai thẻ, <b>cùng một colgroup</b>: Lớp 220 · Đợt 1fr · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180 → hai thẻ thẳng cột (bỏ cột Kỹ năng — vòng 2 ý 3) · <span class="so-mk">2</span>lớp: mã đậm (link hồ sơ lớp) + GV chữ nhỏ dưới; tên lớp / em không cắt · <span class="so-mk">3</span>bấm hàng = mở <b>lưới dưới hàng</b> (G4): cột đầu đúng bằng chevron + Lớp → tên em thẳng mã lớp; 6 cột số (L R W1 W2 S Overall) <b>chia đều phần còn lại</b>, Kết quả <b>trần 180</b> (góp ý 3: cột kết quả không còn rộng quá) · <span class="so-mk">4</span>một điểm màu mỗi hàng: chip "Quá hạn chấm" (nền đỏ) HOẶC hạn đỏ — không cả hai · tiến độ là số + vạch xám mảnh (không màu) · <span class="so-mk">5</span>tiêu đề cột không có nút; chọn tuần ‹ W4 NOV › ở đầu trang (giữ) · mã tuần một dòng.</p>
     <div class="hang-khung"><figure><figcaption>L1 · 1440 · tối · hai khối, mỗi khối mở một lớp</figcaption>
       <p class="cap-doi">Đổi: mỗi khối một bộ cột tự co (tên lớp dài chỗ này, kết quả dài chỗ kia) → <b>một bộ cột cố định</b> · lưới mở cột tên lệch → <b>cùng cột tên</b>, ô điểm đều.</p>
       <div class="man toi cao" data-web>
@@ -85,11 +85,11 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
           <div class="the">
             <div class="the-dau xau"><h2>Quá hạn chấm</h2><span class="dim">3 lớp · 21 bài</span></div>
             <table class="bang lt">
-              <colgroup><col class="c-chev"><col class="c-lop"><col class="c-dot"><col class="c-ky"><col class="c-han"><col class="c-td"><col class="c-tt"></colgroup>
-              <thead><tr><th></th><th>Lớp</th><th>Đợt</th><th>Kỹ năng</th><th>Hạn chấm</th><th>Tiến độ</th><th>Trạng thái</th></tr></thead>
+              <colgroup><col class="c-chev"><col class="c-lop"><col class="c-dot"><col class="c-han"><col class="c-td"><col class="c-tt"></colgroup>
+              <thead><tr><th></th><th>Lớp</th><th>Đợt</th><th>Hạn chấm</th><th>Tiến độ</th><th>Trạng thái</th></tr></thead>
               <tbody>
-                <tr class="lop" aria-expanded="true"><td><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 101</a><span class="gv">GV Vũ Thu Lan</span></td><td>Mock Test · <span class="chip tuan">W3 NOV</span></td><td>L R W1 W2 S</td><td class="so">21/11</td><td><span class="tdo" style="--p:69%">9 / 13<i></i></span></td><td><span class="chip qua">Quá hạn 2 ngày</span></td></tr>
-                <tr><td colspan="7" class="luoi-o"><div class="lg-wrap">
+                <tr class="lop" aria-expanded="true"><td><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 101</a><span class="gv">GV Vũ Thu Lan</span></td><td>Mock Test · <span class="chip tuan">W3 NOV</span></td><td class="so"><span class="han qua">21/11/2026</span></td><td><span class="tdo" style="--p:69%">9 / 13<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
+                <tr><td colspan="6" class="luoi-o"><div class="lg-wrap">
                   <table class="lg">
                     <colgroup><col class="c-chev"><col class="c-ten"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
                     <thead><tr><th></th><th>Học viên</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>S</th><th>Overall</th><th>Kết quả</th></tr></thead>
@@ -100,8 +100,8 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
                       <tr><td></td><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td><button class="od huy">5.0</button></td><td><button class="od huy">5.0</button></td><td><button class="od huy">5.0</button></td><td><button class="od huy">4.5</button></td><td><button class="od huy">5.0</button></td><td class="mo">—</td><td><span class="kq huy">Đã huỷ · vắng 2 lần</span></td></tr>
                     </tbody>
                   </table></div></td></tr>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 104</a><span class="gv">GV Vũ Thu Lan · Hà Quốc Bảo</span></td><td>Mock Test · <span class="chip tuan">W3 NOV</span></td><td>W1 W2</td><td class="so">21/11</td><td><span class="tdo" style="--p:80%">8 / 10<i></i></span></td><td><span class="chip qua">Quá hạn 2 ngày</span></td></tr>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 112</a><span class="gv">GV Đỗ Minh Quân</span></td><td>Progress Test 1 · <span class="chip tuan">W3 NOV</span></td><td>L R</td><td class="so">22/11</td><td><span class="tdo" style="--p:50%">6 / 12<i></i></span></td><td><span class="chip qua">Quá hạn 1 ngày</span></td></tr>
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 104</a><span class="gv">GV Vũ Thu Lan · Hà Quốc Bảo</span></td><td>Mock Test · <span class="chip tuan">W3 NOV</span></td><td class="so"><span class="han qua">21/11/2026</span></td><td><span class="tdo" style="--p:80%">8 / 10<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 112</a><span class="gv">GV Đỗ Minh Quân</span></td><td>Progress Test 1 · <span class="chip tuan">W3 NOV</span></td><td class="so"><span class="han qua">22/11/2026</span></td><td><span class="tdo" style="--p:50%">6 / 12<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -109,12 +109,12 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
           <div class="the">
             <div class="the-dau"><h2>Test tuần này</h2><span class="dim">5 lớp · W4 NOV</span></div>
             <table class="bang lt">
-              <colgroup><col class="c-chev"><col class="c-lop"><col class="c-dot"><col class="c-ky"><col class="c-han"><col class="c-td"><col class="c-tt"></colgroup>
-              <thead><tr><th></th><th>Lớp</th><th>Đợt</th><th>Kỹ năng</th><th>Hạn chấm</th><th>Tiến độ</th><th>Trạng thái</th></tr></thead>
+              <colgroup><col class="c-chev"><col class="c-lop"><col class="c-dot"><col class="c-han"><col class="c-td"><col class="c-tt"></colgroup>
+              <thead><tr><th></th><th>Lớp</th><th>Đợt</th><th>Hạn chấm</th><th>Tiến độ</th><th>Trạng thái</th></tr></thead>
               <tbody>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FOU 12</a><span class="gv">GV Vũ Thu Lan</span></td><td>Progress Test 2 · <span class="chip tuan">W4 NOV</span></td><td>L R W1 W2 S</td><td class="so han nay">hôm nay</td><td><span class="tdo" style="--p:0%">0 / 14<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
-                <tr class="lop" aria-expanded="true"><td><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 104</a><span class="gv">GV Vũ Thu Lan · Hà Quốc Bảo</span></td><td>Progress Test 2 · <span class="chip tuan">W4 NOV</span></td><td>L R W1 W2 S</td><td class="so">27/11</td><td><span class="tdo" style="--p:33%">3 / 9<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
-                <tr><td colspan="7" class="luoi-o"><div class="lg-wrap">
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FOU 12</a><span class="gv">GV Vũ Thu Lan</span></td><td>Progress Test 2 · <span class="chip tuan">W4 NOV</span></td><td class="so"><span class="han nay">23/11/2026</span></td><td><span class="tdo" style="--p:0%">0 / 14<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
+                <tr class="lop" aria-expanded="true"><td><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 104</a><span class="gv">GV Vũ Thu Lan · Hà Quốc Bảo</span></td><td>Progress Test 2 · <span class="chip tuan">W4 NOV</span></td><td class="so">27/11/2026</td><td><span class="tdo" style="--p:33%">3 / 9<i></i></span></td><td><span class="dim">Đang chấm</span></td></tr>
+                <tr><td colspan="6" class="luoi-o"><div class="lg-wrap">
                   <table class="lg">
                     <colgroup><col class="c-chev"><col class="c-ten"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
                     <thead><tr><th></th><th>Học viên</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>S</th><th>Overall</th><th>Kết quả</th></tr></thead>
@@ -124,9 +124,9 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
                       <tr><td></td><td><a class="ten-hv" href="#">Hoàng Thị Minh Nguyệt</a></td><td><button class="od">7.0</button></td><td><button class="od">7.5</button></td><td><button class="od">7.0</button></td><td><button class="od">6.5</button></td><td><button class="od">7.0</button></td><td class="so"><b>7.0</b></td><td><span class="kq dat">✓ Đạt</span></td></tr>
                     </tbody>
                   </table></div></td></tr>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FOU 15</a><span class="gv">GV Trần Hải Nam</span></td><td>Mini Test · <span class="chip tuan">W4 NOV</span></td><td>R</td><td class="so">26/11</td><td><span class="tdo" style="--p:100%">11 / 11<i></i></span></td><td><span class="kq dat">✓ Đủ điểm</span></td></tr>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB PRE 7</a><span class="gv">GV Lâm Bảo Trâm</span></td><td>Final Test · <span class="chip tuan">W4 NOV</span></td><td>L R W1 W2 S</td><td class="so">28/11</td><td><span class="tdo" style="--p:0%">0 / 8<i></i></span></td><td><span class="dim">Chưa thi</span></td></tr>
-                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 116 (Sáng T7)</a><span class="gv">GV Đỗ Minh Quân</span></td><td>Mock Test · <span class="chip tuan">W4 NOV</span></td><td>L R W1 W2 S</td><td class="so">29/11</td><td><span class="tdo" style="--p:0%">0 / 15<i></i></span></td><td><span class="dim">Chưa thi</span></td></tr>
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FOU 15</a><span class="gv">GV Trần Hải Nam</span></td><td>Mini Test · <span class="chip tuan">W4 NOV</span></td><td class="so">26/11/2026</td><td><span class="tdo" style="--p:100%">11 / 11<i></i></span></td><td><span class="kq dat">✓ Đủ điểm</span></td></tr>
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB PRE 7</a><span class="gv">GV Lâm Bảo Trâm</span></td><td>Final Test · <span class="chip tuan">W4 NOV</span></td><td class="so">28/11/2026</td><td><span class="tdo" style="--p:0%">0 / 8<i></i></span></td><td><span class="dim">Chưa thi</span></td></tr>
+                <tr class="lop"><td><svg class="chev"><use href="#i-chev"/></svg></td><td><a class="ma" href="#">MB FT 116 (Sáng T7)</a><span class="gv">GV Đỗ Minh Quân</span></td><td>Mock Test · <span class="chip tuan">W4 NOV</span></td><td class="so">29/11/2026</td><td><span class="tdo" style="--p:0%">0 / 15<i></i></span></td><td><span class="dim">Chưa thi</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -148,20 +148,20 @@ table.lg { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
             <div class="the">
               <div class="the-dau xau"><h2>Quá hạn chấm</h2><span class="dim">3 lớp</span></div>
               <div class="lc375">
-                <div class="h" aria-expanded="true"><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 101</a><span class="chip qua">Quá hạn 2 ngày</span><span class="p2">Mock <span class="chip tuan">W3 NOV</span> · L R W S · <span class="so">9 / 13</span></span></div>
+                <div class="h" aria-expanded="true"><svg class="chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 101</a><span class="han qua">hạn 21/11/2026</span><span class="p2">Mock <span class="chip tuan">W3 NOV</span> · <span class="so">9 / 13</span></span></div>
                 <div class="em cot"><span>Học viên</span><span>L</span><span>R</span><span>W1</span><span>W2</span><span>S</span></div>
                 <div class="em"><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a><button class="od">6.5</button><button class="od">7.0</button><button class="od">6.0</button><button class="od">6.0</button><button class="od">6.0</button></div>
                 <div class="em"><a class="ten-hv" href="#">Tạ Minh Khoa</a><button class="od trong">—</button><button class="od trong">—</button><button class="od trong">—</button><button class="od trong">—</button><button class="od">5.5</button></div>
                 <div class="em"><a class="ten-hv" href="#">Mai Tuệ Nhi</a><button class="od vang">−</button><button class="od vang">−</button><button class="od vang">−</button><button class="od vang">−</button><button class="od vang">−</button></div>
-                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 104</a><span class="chip qua">Quá hạn 2 ngày</span><span class="p2">Mock <span class="chip tuan">W3 NOV</span> · W1 W2 · <span class="so">8 / 10</span></span></div>
-                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 112</a><span class="chip qua">Quá hạn 1 ngày</span><span class="p2">Progress 1 <span class="chip tuan">W3 NOV</span> · L R · <span class="so">6 / 12</span></span></div>
+                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 104</a><span class="han qua">hạn 21/11/2026</span><span class="p2">Mock <span class="chip tuan">W3 NOV</span> · <span class="so">8 / 10</span></span></div>
+                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FT 112</a><span class="han qua">hạn 21/11/2026</span><span class="p2">Progress 1 <span class="chip tuan">W3 NOV</span> · <span class="so">6 / 12</span></span></div>
               </div>
             </div>
             <div class="the">
               <div class="the-dau"><h2>Test tuần này</h2><span class="dim">5 lớp</span></div>
               <div class="lc375">
-                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FOU 12</a><span class="han nay">hạn hôm nay</span><span class="p2">Progress 2 <span class="chip tuan">W4 NOV</span> · L R W S · <span class="so">0 / 14</span></span></div>
-                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FOU 15</a><span class="kq dat">✓ Đủ điểm</span><span class="p2">Mini <span class="chip tuan">W4 NOV</span> · R · <span class="so">11 / 11</span></span></div>
+                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FOU 12</a><span class="han nay">hạn 23/11/2026</span><span class="p2">Progress 2 <span class="chip tuan">W4 NOV</span> · <span class="so">0 / 14</span></span></div>
+                <div class="h"><svg class="chev"><use href="#i-chev"/></svg><a class="ma" href="#" style="font-weight:700;color:var(--text)">MB FOU 15</a><span class="kq dat">✓ Đủ điểm</span><span class="p2">Mini <span class="chip tuan">W4 NOV</span> · <span class="so">11 / 11</span></span></div>
               </div>
             </div>
           </div>

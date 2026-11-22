@@ -38,3 +38,11 @@ Critique: **35 / 40**, không P0 / P1.
 | Góp ý | Sửa |
 |---|---|
 | 3 cột cân đối hơn, Kết quả rộng quá | bảng lớp: Kỹ năng 150 · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180; lưới mở: 6 cột số (L R W1 W2 S Overall) **chia đều**, Kết quả **180** — trùng đúng cột Trạng thái phía trên → hai tầng thẳng hàng |
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 3 bỏ cột "Kỹ năng" | bảng lớp: Lớp 220 · Đợt 1fr · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180 (375 bỏ "L R W S" ở dòng phụ) |
+| 2 luật hạn (bảng báo cáo) | cột Hạn chấm: ngày dd/mm/yyyy tô đỏ / vàng; Trạng thái "Đang chấm" — bỏ chip "Quá hạn n ngày" (đầu thẻ "Quá hạn chấm" đã nói) |
+| 4 TVV xem Lịch Test tuần | việc code (quyền `test.view` + menu), không vẽ |

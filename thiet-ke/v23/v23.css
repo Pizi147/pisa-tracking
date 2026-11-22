@@ -389,3 +389,14 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .vpd-ct { grid-template-columns:120px minmax(0,1fr); }
 .dt .vpd-ct { grid-template-columns:1fr; }
 .dt .pht1 .them { width:40px; justify-content:center; }
+
+/* ===== LUẬT HẠN (chủ SP 22/11 vòng 2) =====
+   Mọi ngày hiện đủ dd/mm/yyyy (hạn, ngày thi, ngày ghi, lịch sử). Mã tuần (W2 OCT) giữ cho tuần thi / tuần học.
+   Hạn tô màu: chữ thường = còn xa · .nay vàng = hôm nay → còn ≤ 2 ngày · .qua đỏ = quá hạn.
+   "quá hạn n ngày" CHỈ ở dòng việc danh sách Công việc + đầu panel việc; bảng báo cáo / hồ sơ / khối Phụ trách chỉ tô đỏ ngày. */
+.vpd > button { grid-template-columns:84px 28px minmax(0,1fr) auto 16px; }
+.dt .vpd > button { grid-template-columns:78px 26px minmax(0,1fr) 16px; }
+.vpd-ct { padding-left:132px; }
+.dt .vpd-ct { padding-left:12px; }
+.ls li { grid-template-columns:120px minmax(0,1fr); }
+.dt .bac li:not(.ke) .duoi { display:none; }

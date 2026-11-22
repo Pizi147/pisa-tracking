@@ -35,3 +35,7 @@ Mockup: [`cong-viec-tvv.html`](cong-viec-tvv.html) · ảnh `anh/cong-viec-tvv-*
 - [XM-3] Bước tiếp ghi "gợi ý theo kết quả" trong ô (chữ nhỏ) — là dữ liệu `goiYSauThi`, không phải chú thích tĩnh; bỏ nếu chủ SP thấy thừa.
 
 Critique: **35 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
+
+- Luật hạn: mọi ngày dd/mm/yyyy, hạn vàng khi còn ≤ 2 ngày, đỏ quá hạn; "quá hạn n ngày" chỉ ở dòng Công việc / đầu panel (hồ sơ HV · Phối hợp SOS chỉ tô đỏ ngày). Thang 375: ngày dưới chấm ẩn (rê / bấm xem), "kế tiếp" giữ.
