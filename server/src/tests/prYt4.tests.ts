@@ -1164,10 +1164,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     /* Y-THUC-V2 (mockup K8b): việc yt_xem mở panel gọn PanelXemViPham (dải ①②③ + vi phạm mới), không nhét cả tab HV. */
     assert(/<PanelXemViPham key=\{it\.key\} studentId=\{it\.studentId!\}/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc yt_xem');
   });
-  check('YT4 (10) · Tab HV (TINH-HINH v20 A4 → GD-7 ③ K4a): hai tab nhỏ, một bảng Đang chờ + Lịch sử gập (LichSuGap), cùng dòng DongLan với tab lớp, lọc loại + phạm vi, không ô tick', () => {
+  check('YT4 (10) · Tab HV (TINH-HINH v20 A4 → GD-7 ③ K4a → HV-YT-BO-TAB-CON v23 Y1): hết tab nhỏ, Phối hợp SOS ngay dưới thang, một bảng Đang chờ + Lịch sử gập (LichSuGap), cùng dòng DongLan với tab lớp, lọc loại + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    assert(/<TabNho/.test(s) && /<DongLan/.test(s) && /<DauCotEm[^>]*khongHv/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s) && /t\('Đang chờ'\)/.test(s) && /<LichSuGap so=\{soTong\}/.test(s) && !/t\('Cả quá trình'\)/.test(s), 'bố cục');
-    assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'nhac-nho'/.test(s) && /key: 'tinh-hinh'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'tab nhỏ + lọc, không tick');
+    assert(!/<TabNho/.test(s) && /<BangPhoiHopHoSo[^>]*tieuDe=\{tenPhoiHop\}/.test(s) && /coord\.data\?\.rows\.length/.test(s) && /<DongLan/.test(s) && /<DauCotEm[^>]*khongHv/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s) && /t\('Đang chờ'\)/.test(s) && /<LichSuGap so=\{soTong\}/.test(s) && !/t\('Cả quá trình'\)/.test(s), 'bố cục');
+    assert(/key: 'vi-pham'/.test(s) && /key: 'nhac-nho'/.test(s) && /key: 'tinh-hinh'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'lọc, không tick');
     assert(!/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ không gọi violation-warning');
   });
   check('YT4 (10) · Luật v3 đã gỡ khỏi miền chung: không còn chín loại/chuỗi thư/cảnh báo mềm/bốn chip/patch PA', () => {
