@@ -81,7 +81,7 @@ type Profile = any;
  *
  * Toàn bộ dữ liệu thuộc về MỘT lộ trình. Đổi lộ trình ở đầu trang là đổi cả trang — không
  * bao giờ trộn hai lộ trình vào một khung nhìn, vì Target và thang điểm của chúng khác nhau.
- */
+ */
 /** GD-7: em của hồ sơ — điền sẵn cho "+ Task" và panel việc (lớp đang học, Tạm dừng thì lớp giữ chỗ). */
 const emCuaHoSo = (data: any) => ({ id: data.id as number, ten: data.fullName as string, lopId: (data.currentClass?.id ?? data.dauHoSo?.thongTin?.lopId ?? null) as number | null, lop: (data.currentClass?.code ?? data.dauHoSo?.thongTin?.lop ?? null) as string | null });
 
