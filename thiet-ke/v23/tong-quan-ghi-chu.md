@@ -82,3 +82,9 @@ Critique (tự chấm): **35 / 40**, không P0 / P1. P2: Tình hình ở 375 xu�
 - Bấm: dòng lớp = mở / gập tại chỗ; hàng việc = panel việc đó; mã lớp = hồ sơ lớp; "Xem hết ›" = trang.
 
 - Chủ SP (trong phiên): panel "Điểm chưa đủ" đổi thành **bảng cột cố định**: Lớp 120 · Bài Test 1fr · Thiếu 72 (số, giữa) · Người phụ trách · số bài 230 (mỗi người một dòng) · Hạn 116; hàng tổng "4 lớp · 25" khớp ô.
+
+### Thêm vòng 3 — ma trận "Lớp cần chú ý" + chip kỹ năng (chủ SP, PTA chốt) — THAY mục "dòng gập" ở trên
+
+- **Lớp cần chú ý = ma trận lớp × loại việc.** Admin: Điểm · Báo cáo PH · Lịch thi · Hồ sơ. Head / QT: Case chưa PA · Điểm · Meeting · SOS 2–3. Mỗi ô một số ngắn ("6 bài", "4 em"); tô theo hạn: đỏ quá hạn · vàng ≤ 2 ngày · ô trống = không có việc (không ghi "0"); cột SOS không có hạn → chữ thường. Tối đa 5 lớp gấp nhất + "Xem hết ›". Cột lớp 180, các cột loại chia đều, căn giữa. 375 giữ ma trận (4 cột hẹp 58 px). Bỏ dòng gập / hàng việc dài.
+- **Bấm ô ma trận → panel tại chỗ** đúng lớp + loại: bảng em · người phụ trách (mỗi người một dòng) + chip kỹ năng · hạn dd/mm/yyyy (khung T2d: MB FT 101 × Điểm = 6 bài · 3 em). Mã lớp = hồ sơ lớp; "Xem hết ›" = trang Công việc đã lọc.
+- **Chip kỹ năng nhỏ** (mỗi kỹ năng một ô vuông viền mảnh, như trang khác): ở panel "Điểm chưa đủ" cạnh người phụ trách ("GV Vũ Thu Lan · [L][R][W1][W2] · 4"), ở dòng việc chấm của Công việc Admin / Head, ở panel lớp Admin.

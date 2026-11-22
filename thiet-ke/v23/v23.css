@@ -403,3 +403,7 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 /* danh sách trái co theo khung khi panel 58 % mở (1280: ~490 px) — không bị panel đè */
 .man { container-type:inline-size; }
 .man .cv-luoi { grid-template-columns:min(556px, calc(42cqw - 48px)) minmax(0,1fr) !important; }
+
+/* chip kỹ năng nhỏ, mỗi kỹ năng một ô (chủ SP: "box nhỏ kĩ năng") */
+.kn-s { display:inline-flex; gap:3px; vertical-align:middle; }
+.kn-s .chip { height:20px; min-width:22px; padding:0 4px; font-size:11px; }
