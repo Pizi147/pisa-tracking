@@ -2103,13 +2103,16 @@ const bangChiNhanh = (): { id: number; code: string; name: string }[] =>
 
 /**
  * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
- * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`). Việc chưa phân công / việc khác: chỉ theo dõi.
+ * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`);
+ * Phối hợp SOS = `DISCIPLINE_MANAGE` của lớp. Việc chưa phân công / việc khác: chỉ theo dõi.
  */
 export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkItem) => boolean {
   const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!), coKhoa(CASE_MO_DA_NAP) ? nho(CASE_MO_DA_NAP, () => []) : undefined);
   return (it) => {
     if (it.ownerId === null) return false;   // việc chưa có người giữ (chưa phân công): không "làm thay" ai
     if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
+    /* SUA-QL-PHOIHOP (luật Phối hợp SOS, chủ SP 11/11): GVCN làm, QL / Quản trị theo dõi + làm thay — cùng quyền máy chủ kiểm khi lưu (`requireLam` → DISCIPLINE_MANAGE). */
+    if (it.group === 'phoi_hop_sos') return !!it.classId && can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId: it.classId });
     const c = it.caseId ? ctx.get(it.caseId) : undefined;
     return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);
   };
