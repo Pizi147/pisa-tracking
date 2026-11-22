@@ -10,7 +10,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, boVaiBpxl, boVaiCx, can, coVaiCx, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, boVaiBpxl, boVaiCx, can, coQuyenBuocTiepCtx, coVaiCx, editableSkills, isCoreTeacherOf, qlDiem, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -158,6 +158,8 @@ export type WorkItem = {
   choGvSua?: true;
   /** TL-2 (mockup v22 T4a): việc "Vi phạm bị trả lại" — tên người trả (thẻ "{tên} trả"). */
   nguoiTra?: string | null;
+  /** N64: id người trả (cờ làm thay — người trả không tự làm việc trả lại của mình). */
+  nguoiTraId?: number | null;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
@@ -2119,6 +2121,19 @@ export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkI
     if (it.group === 'yt_xu_ly' || it.group === 'yt_thuc_hien') return !!it.classId && can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId: it.classId, studentId: it.studentId ?? undefined });
     /* N64 (PTA 22/11): Bàn giao (chuyển lớp · môn · đổi GV) — Head lớp (nguồn) điền / xác nhận thay, không hỏi; cùng quyền máy chủ (`quyenBanGiao` / `quyenViec` → `coTheRaLenh`). */
     if (it.group === 'ban_giao') return !!it.classId && coTheRaLenh(boVaiCx(p), it.classId);
+    /* N64 (PTA rà #1983 — "mọi loại việc"): cờ = phép kiểm máy chủ khi lưu, theo lớp của dòng (đã có, không câu thêm; em khác chi nhánh lớp hiếm — máy chủ vẫn kiểm lại).
+       · Khai bậc · Phối hợp (baoph:) · Hỏi tình hình: `requireManageDiscipline` / `canManageDiscipline` → DISCIPLINE_MANAGE.
+       · Trả lại: `coTheLam` = DISCIPLINE_MANAGE trừ chính người trả. · Bước tiếp / Thi thật: `coQuyenBuocTiep` (+ GVCN lớp cuối cho thi thật).
+       · Xem NX S: `quyenPhuTrachS` (không SOS_EDIT). · Mini Test: `quyenGhiMiniTest` (REQUEST_APPROVE · GVCN; không SOS_EDIT). · Chốt ngày thi: `luuLichThi` → STUDENT_EDIT / STUDENT_EDIT_INFO. */
+    const lop = it.classId ? { classId: it.classId } : null;
+    if (it.group === 'khai_bac' || it.group === 'phoi_hop' || it.group === 'yt_hoi_tinh_hinh') return !!lop && can(p, PERMISSIONS.DISCIPLINE_MANAGE, lop);
+    if (it.group === 'yt_tra_lai') return !!lop && can(p, PERMISSIONS.DISCIPLINE_MANAGE, lop) && it.nguoiTraId !== p.userId;
+    if (it.group === 'buoc_tiep') return !!lop && coQuyenBuocTiepCtx(p, lop);
+    if (it.group === 'thi_that') return !!lop && (coQuyenBuocTiepCtx(p, lop) || isCoreTeacherOf(p, lop.classId));
+    if (it.group === 'xem_nx_s') return !!lop && (isCoreTeacherOf(p, lop.classId) || can(p, PERMISSIONS.SCORE_OVERRIDE, lop) || qlDiem(p, lop));
+    /* PTA rà #1989 P1: KHÔNG tin cờ đặt sẵn trên dòng — ở "Của một GV" cờ đó là của GV đang được xem (CX thấy form, lưu 403). "Tất cả" vẫn OR cờ sẵn ở nơi gọi. */
+    if (it.group === 'mini_test') return !!lop && (can(p, PERMISSIONS.REQUEST_APPROVE, lop) || isCoreTeacherOf(p, lop.classId));
+    if (it.key.startsWith('chot-ngay-thi:')) return !!lop && (can(p, PERMISSIONS.STUDENT_EDIT, lop) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, lop));
     const c = it.caseId ? ctx.get(it.caseId) : undefined;
     return !!c && nhomViecCua(it.group) === 'case-hoc-thuat' && can(p, PERMISSIONS.SOS_EDIT, c);
   };

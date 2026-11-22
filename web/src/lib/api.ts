@@ -109,9 +109,8 @@ export function onInvalidate(fn: InvalidateListener) {
 let hoiXacNhan: ((cau: string, nut?: string) => Promise<boolean>) | null = null;
 /* Một hộp một lúc: hai request cùng cần hỏi (gõ nhanh hai ô) → hỏi lần lượt, không hộp sau đè hộp trước (promise treo). */
 let hangHoi: Promise<unknown> = Promise.resolve();
-const hoiLanLuot = (cau: string, nut?: string, daCo?: () => boolean): Promise<boolean> => {
-  /* Đề xuất 2: hai request cùng chờ một câu của phiếu đang mở (`apiNho`) — câu trước vừa đồng ý thì câu sau không hỏi lại. */
-  const p = hangHoi.then(() => (daCo?.() ? true : hoiXacNhan ? hoiXacNhan(cau, nut) : false));
+const hoiLanLuot = (cau: string, nut?: string): Promise<boolean> => {
+  const p = hangHoi.then(() => (hoiXacNhan ? hoiXacNhan(cau, nut) : false));
   hangHoi = p.catch(() => undefined);
   return p;
 };
@@ -126,7 +125,7 @@ export function datHoiXacNhan(fn: (cau: string, nut?: string) => Promise<boolean
   return () => { if (hoiXacNhan === fn) hoiXacNhan = null; };
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan: readonly string[] = [], dongY?: Set<string>): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan: readonly string[] = []): Promise<T> {
   let res: Response;
   try {
     const headers: Record<string, string> = {};
@@ -159,7 +158,7 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     const nut = typeof payload?.details?.nut === 'string' ? dich(payload.details.nut) : undefined;
     const ma = payload?.details?.canXacNhan && typeof payload.details.ma === 'string' ? payload.details.ma as string : null;
     if (res.status === 409 && ma && !xacNhan.includes(ma) && hoiXacNhan) {
-      if (await hoiLanLuot(cau, nut, () => !!dongY?.has(ma))) { dongY?.add(ma); return request<T>(method, path, body, isForm, [...xacNhan, ma], dongY); }   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
+      if (await hoiLanLuot(cau, nut)) return request<T>(method, path, body, isForm, [...xacNhan, ma]);   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
       /* Người dùng bấm Đóng / Esc = KHÔNG làm, không phải lỗi: dấu `huy` + câu trung tính; Toast bỏ qua, 409 xung đột thật vẫn là lỗi. */
       throw new ApiError(res.status, cauHuy(), payload?.details, true);
     }
@@ -180,21 +179,6 @@ export const api = {
   del: <T,>(path: string) => request<T>('DELETE', path),
   upload: <T,>(path: string, form: FormData) => request<T>('POST', path, form, true),
 };
-
-/**
- * Đề xuất 2 (S4-LUAT, chủ SP 20/11): câu hỏi xác nhận (`canXacNhan`) đã đồng ý được NHỚ theo phiếu đang mở — vd Head điền thay bàn giao: hỏi MỘT lần cho
- * cả phiếu, không hỏi lại ở từng ô. Mỗi lần gửi vẫn mang mã đã đồng ý (máy chủ vẫn kiểm từng lần). Đóng phiếu → `quenXacNhan(khoa)`: mở lại thì hỏi lại.
- */
-const daDongY = new Map<string, Set<string>>();
-export const quenXacNhan = (khoa: string) => { daDongY.delete(khoa); };
-export function apiNho(khoa: string) {
-  const nho = () => daDongY.get(khoa) ?? daDongY.set(khoa, new Set()).get(khoa)!;
-  const goi = <T,>(method: string, path: string, body?: unknown) => { const s = nho(); return request<T>(method, path, body, false, [...s], s); };
-  return {
-    post: <T,>(path: string, body?: unknown) => goi<T>('POST', path, body),
-    put: <T,>(path: string, body?: unknown) => goi<T>('PUT', path, body),
-  };
-}
 
 export async function cachedGet<T>(path: string): Promise<T> {
   if (cache.has(path)) return cache.get(path) as T;

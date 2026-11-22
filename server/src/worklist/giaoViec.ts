@@ -853,8 +853,8 @@ const MEETING_SONG = `JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id A
 const COT_MEETING = `'meeting', mp.id, x.student_id, mp.phu_trach_id, mp.giao_boi, NULL, mp.han_chon, NULL, mp.phoi_hop_id, NULL, NULL, x.kind, NULL, (SELECT MAX(c.sos_level) FROM sos_cases c WHERE c.attempt_id = x.attempt_id), mp.branch_id, COALESCE(x.performed_on, mp.tao_luc), mp.phan, NULL,
               (SELECT y.ngay_gio FROM meeting_phan y WHERE y.phoi_hop_id = mp.phoi_hop_id AND y.phan = 'xep_lich' AND y.trang_thai = 'xong'), NULL, NULL`;
 /** TL-1 (N61): vi phạm / lần xử lý bị trả lại — `kind` = tên vi phạm (hoặc loại xử lý), `ten` = tên tự đặt của xử lý, `pb` = tên người trả, `tao` = lúc trả. */
-/* `vai_id` = người nhận theo luật (`nguoi_nhan`, dòng "Tất cả" của Head). LEFT JOIN trong vế — không câu con theo dòng (rà #1927). */
-const COT_TRA_LAI = `SELECT 'tra_lai', t.id, t.student_id, t.phu_trach_id, t.giao_boi, COALESCE(t.han_chon, t.han), t.han_chon, t.ly_do, t.violation_id, t.measure_id, NULL,
+/* `bl` = id người trả (cờ làm thay N64); `vai_id` = người nhận theo luật (`nguoi_nhan`, dòng "Tất cả" của Head). LEFT JOIN trong vế — không câu con theo dòng (rà #1927). */
+const COT_TRA_LAI = `SELECT 'tra_lai', t.id, t.student_id, t.phu_trach_id, t.giao_boi, COALESCE(t.han_chon, t.han), t.han_chon, t.ly_do, t.violation_id, t.measure_id, t.nguoi_tra,
               COALESCE(NULLIF(tx.ten, ''), tx.description, tm.kind), tm.custom_name, NULL, tu.full_name, t.tra_luc, NULL, t.nguoi_nhan, NULL, NULL, NULL
          FROM vi_pham_tra_lai t LEFT JOIN violations tx ON tx.id = t.violation_id LEFT JOIN discipline_measures tm ON tm.id = t.measure_id LEFT JOIN users tu ON tu.id = t.nguoi_tra`;
 /**
@@ -1019,7 +1019,7 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     return { ...chung, key: `yt_tra_lai:${r.id}`, group: 'yt_tra_lai', urgency: urgencyOf(r.han, today), contextLabel: ten,
       reason: `${r.pb ?? 'TVV'} trả lại: ${r.nhan}`, tieuDe: `${caLan ? 'Lần xử lý' : 'Vi phạm'} bị trả lại · ${r.full_name}`, phu: ten,
       actionLabel: 'Xử lý', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), due: r.han, statusLabel: 'Chờ GV sửa', viecId: r.id,
-      nguoiTra: r.pb ?? null };   // TL-2 (mockup v22 T4a): thẻ "{tên} trả" trên dòng
+      nguoiTra: r.pb ?? null, nguoiTraId: r.bl ?? null };   // TL-2 (mockup v22 T4a): thẻ "{tên} trả" trên dòng
   }
   if (r.loai === 'phoi_hop') {
     const han = hanPhoiHop(r.kind, r.tao, r.han_chon, r.pb ?? null);

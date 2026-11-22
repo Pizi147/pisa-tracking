@@ -490,11 +490,17 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
     }));
 
     await checkAsync('TL-20 · Head "Tất cả" thấy việc trả lại của GV (đứng tên người giữ); Head chi nhánh khác không; em Tạm dừng → việc ẩn, quay lại → hiện', () => thu(async () => {
-      const sid = moiEm(); const { vids } = xuLy(sid);
+      const sid = moiEm(); const { vids } = xuLy(sid, 2);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;
       xoaNho();
       const tc = ((myWork(loadPrincipal(ql.userId), { nguoi: 'tat-ca' }) as any).items ?? []).find((x: any) => x.key === `yt_tra_lai:${id}`);
       assert(tc && !tc.mine && tc.ownerId === gvbm.userId, `Head Tất cả: ${JSON.stringify(tc)}`);
+      /* N64 (PTA rà #1989): id người trả đi lên từ SQL; Head làm thay được (DISCIPLINE_MANAGE) — trừ việc do chính Head trả. */
+      assert(tc.nguoiTraId === tvv.userId && tc.lamThay === true, `cờ làm thay: ${JSON.stringify({ tra: tc.nguoiTraId, lt: tc.lamThay })}`);
+      const id2 = (await tra(ql, { violationId: vids[1] })).json.id;
+      xoaNho();
+      const tc2 = ((myWork(loadPrincipal(ql.userId), { nguoi: 'tat-ca' }) as any).items ?? []).find((x: any) => x.key === `yt_tra_lai:${id2}`);
+      assert(tc2 && tc2.nguoiTraId === ql.userId && tc2.lamThay === false, `Head tự trả → không cờ: ${JSON.stringify(tc2 && { tra: tc2.nguoiTraId, lt: tc2.lamThay })}`);
       xoaNho();
       assert(!((myWork(loadPrincipal(P.cpManager.userId), { nguoi: 'tat-ca' }) as any).items ?? []).some((x: any) => x.key === `yt_tra_lai:${id}`), 'Head CP không thấy');
       conn.prepare(`UPDATE students SET status = 'paused' WHERE id = ?`).run(sid);

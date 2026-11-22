@@ -201,7 +201,7 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
       assert(r.status === 403, `CX đổi tiến độ lớp: ${r.status} ${r.json?.error}`);
       const p = loadPrincipal(idCxCp);
       assert(!duocSuaLichLop(p, lop), 'CX không sửa lịch lớp');
-      const q = quyenBanGiao(p, { lop_nguon_id: lop, han_gvcn: null }, 'listening');
+      const q = quyenBanGiao(p, { lop_nguon_id: lop }, 'listening');
       assert(!q.ghiMon && !q.xacNhan && !q.xacNhanThay, `CX bàn giao thay: ${JSON.stringify(q)}`);
       const bg = one(`SELECT b.id FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id WHERE c.branch_id = ? ORDER BY b.id LIMIT 1`, CP)?.id;
       if (bg) { r = await goi('PUT', `/ban-giao-gv/${bg}/gop-y`, cxCp, { gopY: 'N52 thử' }); assert(r.status === 403, `CX góp ý bàn giao GV: ${r.status} ${r.json?.error}`); }
