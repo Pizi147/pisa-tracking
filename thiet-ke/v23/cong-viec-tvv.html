@@ -14,6 +14,9 @@
 .hvt .so-viec { font:600 var(--c14) var(--phong-so); color:var(--accent); }
 .hvt .so-viec.qua { color:var(--bad); }
 .hvt .mo { font-size:var(--c13); }
+.hvt tr.nh-lop td { background:var(--surface-2); height:34px; padding-top:4px; padding-bottom:4px; font-size:var(--c13); border-top:1px solid var(--line-strong); }
+.hvt tr.nh-lop b { font-weight:700; color:var(--text); }
+.dt .hvt .ten-hv { white-space:normal; }
 .tim { height:32px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen); color:var(--text-faint); font-size:var(--c13); padding:0 10px; display:inline-flex; align-items:center; gap:6px; width:200px; font-weight:400; }
 .dt .tim { width:100%; height:44px; font-size:16px; }
 .diem4 { display:grid; grid-template-columns:repeat(4, 72px) 88px; gap:8px; align-items:end; }
@@ -47,7 +50,7 @@
 
   <section class="khu" id="t1">
     <h2>T1 · TVV · tab Bổ sung hồ sơ · khung phải "HV của tôi" (1440 tối)</h2>
-    <p class="ghi"><span class="so-mk">1</span>đầu trang một dòng "Công việc · 6 việc · 2 quá hạn" · <span class="so-mk">2</span>theo loại việc (chủ SP 22/11/2026): đầu nhóm nổi "Bổ sung hồ sơ · 2 việc"; dòng nói <b>em · còn thiếu gì</b> trước, lớp ở dòng phụ · hạn · một nút · <span class="so-mk">3</span><b>HV của tôi</b> gọn: tên (không cắt) · lớp · <b>một</b> chip trạng thái · cột "Việc" là số (bấm = lọc danh sách trái theo em — giữ); ô "Tìm em" ở đầu thẻ (giữ) · <span class="so-mk">4</span>trạng thái chỉ một chip theo ưu tiên: SOS 2–3 &gt; Thi {ngày} / Đã thi · chờ KQ &gt; SOS 1 &gt; trống · <span class="so-mk">5</span>bỏ cột "Việc cần làm" chữ dài — thay số.</p>
+    <p class="ghi"><span class="so-mk">1</span>đầu trang một dòng "Công việc · 6 việc · 2 quá hạn" · <span class="so-mk">2</span>theo loại việc (chủ SP 22/11/2026): đầu nhóm nổi "Bổ sung hồ sơ · 2 việc"; dòng nói <b>em · còn thiếu gì</b> trước, lớp ở dòng phụ · hạn · một nút · <span class="so-mk">3</span><b>HV của tôi</b> gọn, <b>nhóm theo lớp</b> (đầu nhóm: lớp · số em — chủ SP vòng 3): tên (không cắt) · <b>một</b> chip trạng thái · cột "Việc" là số (bấm = lọc danh sách trái theo em — giữ); ô "Tìm em" ở đầu thẻ (giữ) · <span class="so-mk">4</span>trạng thái chỉ một chip theo ưu tiên: SOS 2–3 &gt; Thi {ngày} / Đã thi · chờ KQ &gt; SOS 1 &gt; trống · <span class="so-mk">5</span>bỏ cột "Việc cần làm" chữ dài — thay số.</p>
     <div class="hang-khung"><figure><figcaption>T1 · 1440 · tối · có việc</figcaption>
       <p class="cap-doi">Đổi: dải số → <b>một dòng đếm</b> · HV của tôi 5 cột (tên · lớp · trạng thái · việc cần làm · quá hạn) → <b>4 cột</b>, một chip · chữ 15 → 14.</p>
       <div class="man toi" data-web>
@@ -67,19 +70,9 @@
             <div class="ds">
               <div class="ds-dau"><b>HV của tôi</b><span>38 em</span><span class="phai"><span class="tim"><svg class="ic"><use href="#i-tim"/></svg>Tìm em</span></span></div>
               <table class="bang hvt">
-                <colgroup><col class="c-ten"><col class="c-lop"><col class="c-tt"><col class="c-viec"></colgroup>
-                <thead><tr><th>Học viên</th><th>Lớp</th><th>Trạng thái</th><th class="phai-c">Việc</th></tr></thead>
-                <tbody>
-                  <tr><td><a class="ten-hv" href="#">Kiều Thanh Tâm</a></td><td>MB FOU 12</td><td><span class="chip sos2">SOS 2</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Phan Đức Duy</a></td><td>MB FT 104</td><td><span class="chip sos1">SOS 1</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td>MB FT 101</td><td><span class="chip">Thi 05/12/2026</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Trần Minh Khang</a></td><td>MB FT 101</td><td><span class="chip">Đã thi · chờ KQ</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td>MB FT 101</td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td>MB FT 104</td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Vương Thị Thanh Trúc</a></td><td>MB FT 101</td><td></td><td class="phai-c"><span class="mo">—</span></td></tr>
-                  <tr><td><a class="ten-hv" href="#">Hồ Quang Minh</a></td><td>MB FOU 12</td><td></td><td class="phai-c"><span class="mo">—</span></td></tr>
-                  <tr><td colspan="4"><button class="nut nut-ma nut-nho" style="margin-left:-8px">30 em khác ›</button></td></tr>
-                </tbody>
+                <colgroup><col class="c-ten"><col class="c-tt"><col class="c-viec"></colgroup>
+                <thead><tr><th>Học viên</th><th>Trạng thái</th><th class="phai-c">Việc</th></tr></thead>
+                <tbody><tr class="nh-lop"><td colspan="3"><b>MB FOU 12</b> <span class="dim">· 12 em</span></td></tr><tr><td><a class="ten-hv" href="#">Kiều Thanh Tâm</a></td><td><span class="chip sos2">SOS 2</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr><tr><td><a class="ten-hv" href="#">Hồ Quang Minh</a></td><td></td><td class="phai-c"><span class="mo">—</span></td></tr><tr class="nh-lop"><td colspan="3"><b>MB FT 101</b> <span class="dim">· 14 em</span></td></tr><tr><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td><span class="chip">Thi 05/12/2026</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr><tr><td><a class="ten-hv" href="#">Trần Minh Khang</a></td><td><span class="chip">Đã thi · chờ KQ</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr><tr><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr><tr><td><a class="ten-hv" href="#">Vương Thị Thanh Trúc</a></td><td></td><td class="phai-c"><span class="mo">—</span></td></tr><tr class="nh-lop"><td colspan="3"><b>MB FT 104</b> <span class="dim">· 12 em</span></td></tr><tr><td><a class="ten-hv" href="#">Phan Đức Duy</a></td><td><span class="chip sos1">SOS 1</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr><tr><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr><tr><td colspan="3"><button class="nut nut-ma nut-nho" style="margin-left:-8px">Xem đủ 38 em ›</button></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -155,13 +148,9 @@
               <div class="ds-dau"><b>HV của tôi</b><span>38 em</span></div>
               <div style="padding:8px 12px;border-bottom:1px solid var(--line)"><span class="tim"><svg class="ic"><use href="#i-tim"/></svg>Tìm em</span></div>
               <table class="bang hvt">
-                <colgroup><col class="c-ten"><col style="width:104px"><col style="width:48px"></colgroup>
+                <colgroup><col class="c-ten"><col style="width:112px"><col style="width:48px"></colgroup>
                 <thead><tr><th>Học viên</th><th>Trạng thái</th><th class="phai-c">Việc</th></tr></thead>
-                <tbody>
-                  <tr><td><span class="hv2"><a class="ten-hv" href="#">Kiều Thanh Tâm</a><small>MB FOU 12</small></span></td><td><span class="chip sos2">SOS 2</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr>
-                  <tr><td><span class="hv2"><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a><small>MB FT 101</small></span></td><td><span class="chip">Thi 05/12/2026</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                  <tr><td><span class="hv2"><a class="ten-hv" href="#">Mai Tuệ Nhi</a><small>MB FT 101</small></span></td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr>
-                </tbody>
+                <tbody><tr class="nh-lop"><td colspan="3"><b>MB FOU 12</b> <span class="dim">· 12 em</span></td></tr><tr><td><a class="ten-hv" href="#">Kiều Thanh Tâm</a></td><td><span class="chip sos2">SOS 2</span></td><td class="phai-c"><span class="so-viec qua">1</span></td></tr><tr class="nh-lop"><td colspan="3"><b>MB FT 101</b> <span class="dim">· 14 em</span></td></tr><tr><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td><span class="chip">Thi 05/12/2026</span></td><td class="phai-c"><span class="so-viec">1</span></td></tr><tr><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td></td><td class="phai-c"><span class="so-viec">1</span></td></tr></tbody>
               </table>
             </div>
           </div>

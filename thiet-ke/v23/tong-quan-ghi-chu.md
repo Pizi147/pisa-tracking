@@ -48,3 +48,28 @@ Thành phần web: `web/src/modules/worklist/TongQuanV5.tsx` (khung trang, chọ
 - [XM-17] Admin không có "Lớp cần chú ý" (khối Lớp còn thiếu thay); CX không có khối Giáo viên.
 
 Critique (tự chấm): **35 / 40**, không P0 / P1. P2: Tình hình ở 375 xuống hai hàng — vẫn một khối.
+
+## Góp ý chủ SP 22/11 vòng 3 (qua PTA Plan) — đã sửa
+
+**Luật bấm (mọi vai):** ô số = **panel tại chỗ** có đúng danh sách tạo ra số (cùng nguồn, cùng số dòng — panel "GV quá hạn" 12 việc = 12 dòng); chữ **"›"** = đổi trang tới đúng trang đã lọc; tên / mã = hồ sơ. Khung "panel mở": T1c · T2c · T3c · T4c.
+
+| Vai | Bấm | Mở | Lọc / nội dung |
+|---|---|---|---|
+| Head / QT | ô **GV quá hạn** | panel | việc quá hạn của mọi GV, nhóm theo GV (tên · số việc), dòng "lớp / em · thiếu gì · hạn"; bấm dòng = làm thay trong panel (N64); chân "Công việc "Của GV" ›" |
+| Head / QT | ô **Chờ duyệt** | panel | yêu cầu chờ duyệt (như khối Chờ duyệt); bấm dòng = duyệt trong panel; chân "Công việc · Chờ duyệt ›" |
+| Head / QT | ô **Em SOS cần chú ý** | panel | em SOS 2–3: tên · lớp · SOS · việc còn treo; chân "Học viên & Lớp ›" (lọc SOS 2–3) |
+| QT | ô **Việc hệ thống** | panel | tài khoản chờ / lỗi nhập; chân "Quản trị ›" |
+| Head / QT | khối Giáo viên: **số quá hạn** | panel | việc quá hạn của GV đó (cùng panel "GV quá hạn", lọc 1 GV) |
+| Head / QT | khối Giáo viên: **"3 chấm"…** | panel | lọc GV + loại |
+| Head / QT | khối Chờ duyệt: dòng | panel | mở yêu cầu đó; "Công việc ›" = trang Công việc · Chờ duyệt |
+| Head / QT | Lớp cần chú ý: mã lớp / "Học viên & Lớp ›" | trang | hồ sơ lớp / HV & Lớp lọc lớp có vấn đề |
+| Admin | ô **Điểm chưa đủ** | panel | lớp thiếu điểm: "lớp · thiếu n bài · hạn", người phụ trách **mỗi người một dòng** (Speaking của Mock = "GV Speaking"); chân "Công việc · Điểm ›" |
+| Admin | ô **Báo cáo PH chưa đủ** / **Lịch thi chưa chốt** / **Hồ sơ thiếu** | panel | danh sách đúng loại, như trên; chân "Công việc · {loại} ›" |
+| Admin | Lớp còn thiếu: dòng / "Xem hết ›" | panel / trang | dòng = panel lớp (như Công việc Admin A1); "Xem hết ›" = trang Công việc Admin tab Tất cả |
+| CX | ô **Em SOS 2–3** · **Meeting chờ kết quả** · **Chưa chốt bước tiếp** | panel | danh sách đúng loại; bấm dòng = làm trong panel (ghi kết quả meeting / chốt bước tiếp); chân "Công việc · {loại} ›" |
+| CX | Em cần chú ý: tên / "Xem hết ›" | trang | hồ sơ HV / HV & Lớp lọc "cần chú ý" |
+| mọi vai | **Tình hình**: Đạt MT · SOS · Thi tháng này · Đạt Target | panel | panel giải thích số (V11, giữ) — tên, phạm vi, kỳ, danh sách đúng tập, Cách tính trong ⓘ |
+| mọi vai | ô **0** | — | không bấm |
+
+- Khối Giáo viên bỏ cột "quá hạn lâu nhất" (chủ SP vòng 3) — chỉ tên · số quá hạn · loại.
+- Speaking của Mock / MT: chấm chéo, không chỉ định người → không tính quá hạn cho GV cụ thể; ở danh sách thiếu điểm ghi "GV Speaking".

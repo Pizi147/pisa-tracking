@@ -39,3 +39,11 @@ Mockup: [`cong-viec-head.html`](cong-viec-head.html) · [`tong-quan-head-gv.html
 - [XM-13] GV 0 quá hạn vẫn liệt kê mờ ở cuối (tối đa vài dòng + "n GV không có việc quá hạn") để Head thấy đủ người; bỏ được nếu chủ SP muốn chỉ GV có quá hạn.
 
 Critique (tự chấm): Công việc Head **35 / 40** · khối Giáo viên **35 / 40** — không P0 / P1.
+
+## Góp ý chủ SP 22/11 vòng 3 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 3 nút phạm vi đặt chỗ khác, tab loại việc giống GV / TVV | **Của tôi · Của GV · Tất cả** lên hàng đầu trang **cạnh tiêu đề** (không đặt góc phải vì panel mở sẽ che); bên dưới **hàng tab loại việc giống trang GV** (Chấm điểm · Chấm Speaking · Case học thuật · Ý thức · Vận hành · Chờ duyệt) — đổi phạm vi chỉ đổi số trên tab. Áp cho mọi vai có nút phạm vi (QL, Quản trị, CX). Tab dài hơn cột 556 → cuộn ngang, mép phải mờ |
+| 2 nhiều người phụ trách | ở danh sách / panel có cột người phụ trách: mỗi người một dòng; Speaking của Mock = "GV Speaking" |
+| 5 khối GV bỏ "quá hạn lâu nhất" | `tong-quan-head-gv.html` chỉ tên · số quá hạn · loại; số / loại bấm = panel (luật bấm Tổng quan) |

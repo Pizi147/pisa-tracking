@@ -52,3 +52,9 @@ Critique: **34 / 40** (vẽ lại sau đổi hướng), không P0 / P1. P2: cộ
 | 2 luật hạn | danh sách giữ "quá hạn n ngày"; bảng trong panel chỉ tô đỏ ngày |
 
 - [XM-5] cũ (dòng lớp mở em ngay dưới) **thay** bằng panel bên cạnh — đóng.
+
+## Góp ý chủ SP 22/11 vòng 3 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 2 nhiều người phụ trách → xuống dòng; Mock Speaking là "GV Speaking" | panel lớp: em thiếu nhiều kỹ năng của nhiều người → cột "Còn thiếu" và "Người phụ trách" mỗi dòng một cặp (L R W1 W2 ↔ GV Vũ Thu Lan; S ↔ GV Speaking); 375 dòng phụ tách 2 dòng |

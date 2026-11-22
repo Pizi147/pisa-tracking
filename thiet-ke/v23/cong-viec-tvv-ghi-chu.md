@@ -39,3 +39,9 @@ Critique: **35 / 40**, không P0 / P1.
 ## Góp ý chủ SP 22/11 vòng 2 (qua PTA Plan) — đã sửa
 
 - Luật hạn: mọi ngày dd/mm/yyyy, hạn vàng khi còn ≤ 2 ngày, đỏ quá hạn; "quá hạn n ngày" chỉ ở dòng Công việc / đầu panel (hồ sơ HV · Phối hợp SOS chỉ tô đỏ ngày). Thang 375: ngày dưới chấm ẩn (rê / bấm xem), "kế tiếp" giữ.
+
+## Góp ý chủ SP 22/11 vòng 3 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 1 bảng HV của tôi xếp theo lớp | nhóm theo lớp: hàng nhóm "MB FOU 12 · 12 em" (nền nhạt), em trong nhóm: tên · một chip trạng thái · số việc; bỏ cột Lớp (đã ở đầu nhóm). 375 cùng kiểu. "Xem đủ 38 em ›" |
