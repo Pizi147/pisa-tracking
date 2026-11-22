@@ -563,7 +563,7 @@ export function QuickReport({
             {/* PR-O-CHON: gõ tên rồi chọn ở danh sách bên dưới, như mọi ô chọn người — chỉ học viên của lớp. */}
             <ChonNguoi id={o('hoc-vien').id} onBlur={o('hoc-vien').onBlur} invalid={!!loiCua('hoc-vien')} nhom="nhan_vien" choToi={false} choNgoai={false}
               ariaLabel={t('Học viên')} placeholder={t('Gõ tên học viên…')}
-              ds={students.map((st) => ({ id: st.id, ten: st.name }))}
+              ds={students.map((st) => ({ id: st.id, ten: st.name, phu: st.code ?? undefined }))}
               value={studentId ? { kieu: 'tai_khoan', id: studentId, ten: tenChon ?? '…' } : null}
               onChange={(v) => onPickStudent?.(v?.kieu === 'tai_khoan' ? v.id : 0)} />
           </Truong>

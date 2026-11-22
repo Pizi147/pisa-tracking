@@ -203,7 +203,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                 )}
               </Khoi>
             )}
-            <Khoi tieuDe={t('Vi phạm · {length}', { length: d.viPham.length })}>
+            <Khoi tieuDe={t('{n} vi phạm', { n: d.viPham.length })}>
               {d.coTheSua && !sua && <button type="button" className="btn btn-sm self-start" onClick={moSua}>{t('Sửa vi phạm')}</button>}
               {sua ? (
                 <>

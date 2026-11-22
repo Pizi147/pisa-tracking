@@ -11,7 +11,7 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
 | Dày ở đâu (GV / TVV) | Cả bốn: chip / nhãn màu · dải số đầu trang · chữ phụ / Quy chế · panel hẹp, cuộn nhiều. Theo quy tắc **60-30-10**; **giữ badge tính chất** |
 | Dải số đầu trang GV / TVV | Chỉ còn "n việc · m quá hạn" |
 | Panel làm việc | Cao từ dưới thanh menu tới đáy, rộng ~55–60 %, đầu panel 1 dòng, chân mỏng |
-| Công việc Admin | **Theo lớp**: "lớp còn thiếu gì" trước, người phụ trách sau |
+| Công việc Admin | ~~Theo lớp~~ → chủ SP 22/11: "Thôi công việc vẫn nên để phân loại theo loại công việc đi chứ không để theo lớp nữa nhé, còn nếu làm theo lớp thì cần phải phân biệt rõ ràng đầu mục việc ra" → **theo loại việc**, mỗi dòng "còn thiếu gì" trước, người phụ trách sau |
 | Cách làm | **Sửa khung chung trước**: một bộ mockup chung → PR khung chung → mỗi màn một PR |
 
 ## 1. Nguyên tắc nhìn (mọi màn)
@@ -65,10 +65,11 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
   - Dòng việc: tên (đậm) · một dòng phụ · hạn (đỏ chỉ khi quá hạn) · một nút.
   - Mỗi lớp một dòng (SUA-2211-B đã tách "Cả lớp").
   - Bảng "HV của tôi" (TVV) gọn: tên · lớp · một chip trạng thái.
-- **Công việc Admin (theo lớp):**
-  - Mỗi lớp một dòng tóm tắt thứ còn thiếu, ví dụ "MB FT 101 · thiếu 5 điểm W2 SEP · thiếu 2 Báo cáo PH · 1 em chưa có lịch thi".
-  - Bấm mở mới thấy từng em và người phụ trách (tên nhỏ cuối dòng). Lớp đủ thì ẩn.
-  - Tab: Theo lớp · Vận hành · Đang theo dõi.
+- **Công việc MỌI VAI — THEO LOẠI VIỆC (chủ SP 22/11: "công việc của admin? ý tôi là công việc của tất cả mọi vai ấy chứ?"):**
+  - Mọi vai (GV, GVCN, TVV, Head, QL, Admin, CX, BPXL, QT) giữ phân loại theo loại việc như hiện nay (tab / nhóm: Chấm điểm · Case · Ý thức & Phối hợp · Báo PH · Sau thi · Bổ sung hồ sơ · Vận hành…), KHÔNG gom theo lớp.
+  - Đầu mục mỗi loại việc tách bạch rõ: tiêu đề nhóm nổi + số việc · quá hạn; không trộn loại việc trong một dòng.
+  - Trong một loại việc: mỗi dòng một lớp / em cụ thể (không "Cả lớp"), nói **thứ còn thiếu trước** (vd "MB FT 101 · W2 SEP · thiếu 5 điểm"). Người phụ trách ghi nhỏ cuối dòng, chỉ khi người xem không phải người phụ trách (Head / QL / Admin / CX xem "Tất cả").
+- **Riêng Admin (ý 15):** góc nhìn vận hành — đủ điểm / đủ báo cáo / lịch thi / hồ sơ trước, người phụ trách sau; tối giản bớt chip / chữ phụ, bớt phần GV-centric (số liệu theo GV để ở Head).
   - Head giữ phần GV như hiện nay.
   - Dữ liệu dùng chung nguồn đếm với `/my-work` (cùng hàm). Mockup + kế hoạch code phải ước câu / dòng Turso, và không thêm câu theo từng lớp.
 - **Panel chấm điểm:**
@@ -92,7 +93,7 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
 
 1. Chủ SP duyệt đặc tả này.
 2. Session mockup (Opus 5.5 · medium; B: Sonnet 5.5 · high) vẽ `thiet-ke/v23/`:
-   - Màn: khung panel (việc thường + bảng) · Công việc GV · Công việc TVV · Công việc Admin theo lớp · panel chấm điểm · Lịch Test tuần · Cuối khoá · thang Ý thức.
+   - Màn: khung panel (việc thường + bảng) · Công việc GV · Công việc TVV · Công việc Admin theo loại việc · panel chấm điểm · Lịch Test tuần · Cuối khoá · thang Ý thức.
    - Mỗi màn 1440 tối + 375 sáng, đủ trạng thái: rỗng / có việc / quá hạn / đang lưu / lỗi.
    - Cổng chất lượng mockup: critique ≥ 35, không P0 / P1. PTA rà theo từng ý của tệp này trước khi gửi.
    - Chủ SP duyệt mockup.
@@ -108,5 +109,5 @@ Nguồn: chủ SP 22/11, 16 ý kèm 11 ảnh demo main (nguyên văn ở `plan.m
 - Đầu + chân panel cộng lại ≤ ~120 px.
 - Dòng việc GV / TVV: ≤ 2 chip, ≤ 1 điểm màu nổi; đầu trang chỉ "n việc · m quá hạn".
 - Lịch Test: các lớp thẳng cột; tên HV không cắt ở mọi bảng (đo `do-khung` / `do-bang` 1440 · 1280 · 375).
-- Admin: lớp đủ không hiện; số "thiếu" khớp số ở hồ sơ lớp / Công việc (cùng hàm).
+- Admin: theo loại việc, đầu mục tách rõ; việc đủ không hiện; số "thiếu" khớp hồ sơ lớp / Công việc (cùng hàm).
 - Chữ thường 14 px khắp nơi; không tràn ngang ở 375.

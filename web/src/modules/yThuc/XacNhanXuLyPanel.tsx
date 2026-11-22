@@ -362,7 +362,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           </p>
         </div>
           <div>
-            {nhanO(t('Vi phạm đưa vào · {n}', { n: chon.size }))}
+            {nhanO(t('{n} vi phạm đưa vào', { n: chon.size }))}
             {tick.length + cuHon.length === 0 ? (
               <p className="m-0 text-sm text-slate-300">{t('Em không còn vi phạm nào chưa xử lý.')}</p>
             ) : (

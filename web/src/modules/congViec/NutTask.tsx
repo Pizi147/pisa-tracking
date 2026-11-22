@@ -52,7 +52,8 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   /** GD-6 ([XM-7] mockup ②): hồ sơ lớp truyền em của lớp đã nạp (`/roster`) — chọn em tìm tại chỗ, chỉ nhóm "Lớp này", không request. */
   dsEm?: EmLop[];
   /** GD-8 (④ R4.5, [XM-7]): TVV ở trang đầu — Hỏi tình hình chọn em trong danh sách em của mình đã nạp (không tìm `lop=toi`). */
-  dsHoi?: { id: number; ten: string }[];
+  /** `phu`: lớp đang học — dòng phụ trong ô chọn (chủ SP 22/11 ý 3: không chỉ tên). */
+  dsHoi?: { id: number; ten: string; phu?: string }[];
 }) {
   const neo = useRef<HTMLSpanElement>(null);
   const [loai, setLoai] = useState<Loai | null>(null);

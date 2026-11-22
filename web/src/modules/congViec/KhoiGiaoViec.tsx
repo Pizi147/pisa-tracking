@@ -5,6 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { NUT_DONG, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { NoiTren } from '../../ui/NoiTren.tsx';
 import { CHIP_NGUOI, NUT_X_CHIP } from '../../ui/Nhan.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -298,21 +299,19 @@ function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: R
 }
 
 /**
- * HỘP NHỎ nổi ngay dưới khối (mockup G3a / G4a): đặt tuyệt đối trong khối (không portal — danh sách đổi cao không làm hộp nhảy), mép phải thẳng nút.
+ * HỘP NHỎ nổi ngay dưới khối (mockup G3a / G4a), mép phải thẳng nút. SUA-2211-A (chủ SP 22/11 ý 7): vẽ ra lớp trên cùng (`NoiTren`) neo một mốc vô hình
+ * đúng chỗ cũ — thân panel cuộn không cắt hộp; thiếu chỗ dưới thì lật lên / thấp lại + cuộn trong.
  * Bấm ngoài / Esc (khi ô chọn người không tự xử lý Esc) → đóng, focus về nút mở. < 640 px: hết bề ngang khối.
  */
 export function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; onDong: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  const neo = useRef<HTMLSpanElement>(null);
   const bam = useBamNgoai(true, onDong, ref);
-  /* Hộp mở sát đáy vùng cuộn của panel → cuộn vừa đủ để thấy cả hộp (danh sách + chân Giao). */
-  useEffect(() => {
-    const cuon = () => ref.current?.scrollIntoView({ block: 'nearest' });
-    cuon();
-    const h = setTimeout(cuon, 400);   // danh sách tải sau ~250 ms (ô chọn trễ) — hộp cao thêm
-    return () => clearTimeout(h);
-  }, []);
   return (
-    <div ref={ref} {...bam} role="dialog" aria-label={nhan} aria-modal="false"
+    <>
+    {/* Mốc neo vô hình đúng chỗ hộp cũ (mép phải khối, rộng 420 / hết khối khi hẹp). */}
+    <span ref={neo} aria-hidden className={`pointer-events-none absolute right-0 h-0 w-[420px] max-w-full ${tren}`} />
+    <NoiTren ref={ref} neo={neo} canh="phai" cach={4} rongNeo {...bam} role="dialog" aria-label={nhan} aria-modal="false"
       onKeyDown={(e) => {
         if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); onDong(); return; }
         /* Tab vòng trong hộp — focus không lọt ra panel phía sau (PTA rà #1930). */
@@ -323,8 +322,9 @@ export function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: s
         if (e.shiftKey && document.activeElement === dau) { e.preventDefault(); cuoi.focus(); }
         else if (!e.shiftKey && document.activeElement === cuoi) { e.preventDefault(); dau.focus(); }
       }}
-      className={`absolute right-0 z-30 mt-1 w-[420px] max-w-full rounded-xl border ${tren}`}
-      style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)', boxShadow: 'var(--bong-noi)' }}>{children}</div>
+      className="rounded-xl border"
+      style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)', boxShadow: 'var(--bong-noi)' }}>{children}</NoiTren>
+    </>
   );
 }
 

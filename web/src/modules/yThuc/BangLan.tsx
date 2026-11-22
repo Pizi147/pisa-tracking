@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { NoiTren } from '../../ui/NoiTren.tsx';
 import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
@@ -65,12 +66,13 @@ export function NhomLan({ chu, dem, i, tong, children }: { chu: string; dem: Rea
 }
 
 /** Hộp thông tin khi rê / focus tên vi phạm (chủ SP 11/11) — chỉ máy có chuột; chạm (375) thì mở tại chỗ. Dữ liệu đã nạp. */
-function HopVp({ v, homNay }: { v: VpDong; homNay: string }) {
+function HopVp({ v, homNay, neo }: { v: VpDong; homNay: string; neo: RefObject<HTMLElement | null> }) {
   const truong: [string, ReactNode][] = [
     [t('Nhóm'), v.nhom], [t('Xảy ra'), ngay(v.ngay, homNay)], [t('Người ghi'), v.nguoiGhi], [t('Mô tả'), v.moTa || null], [t('Trạng thái'), v.nhanTrangThai ? dich(v.nhanTrangThai) : null],
   ];
   return (
-    <span role="tooltip" className="pointer-events-none invisible absolute left-0 top-full z-30 mt-2 grid w-[min(400px,80vw)] gap-2 rounded-[10px] border px-3.5 py-3 text-left opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 [@media(hover:none)]:hidden"
+    /* SUA-2211-A (chủ SP 22/11 ý 5): vẽ ra lớp trên cùng — khung khối / panel / đáy trang không cắt; thiếu chỗ dưới thì lật lên. */
+    <NoiTren neo={neo} cach={8} role="tooltip" className="pointer-events-none grid w-[min(400px,80vw)] gap-2 rounded-[10px] border px-3.5 py-3 text-left shadow-xl [@media(hover:none)]:hidden"
       style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
       <b className="flex items-start text-[15px] font-bold text-slate-100"><ChipMon skill={v.skill} /><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></b>
       <span className="grid grid-cols-[6.5rem_minmax(0,1fr)]">
@@ -82,6 +84,22 @@ function HopVp({ v, homNay }: { v: VpDong; homNay: string }) {
         ))}
       </span>
       <span className="text-xs text-slate-500">{t('Bấm để mở · Sửa · Xoá')}</span>
+    </NoiTren>
+  );
+}
+
+/** Tên vi phạm (bấm → mở tại chỗ) + hộp thông tin khi rê / focus. */
+function TenVp({ v, homNay, mo, onMo }: { v: VpDong; homNay: string; mo: boolean; onMo: () => void }) {
+  const neo = useRef<HTMLSpanElement>(null);
+  const [re, setRe] = useState(false);
+  return (
+    <span ref={neo} className="relative min-w-0" onMouseEnter={() => setRe(true)} onMouseLeave={() => setRe(false)}
+      onFocus={() => setRe(true)} onBlur={() => setRe(false)}>
+      <button type="button" aria-expanded={mo} onClick={onMo}
+        className="flex min-w-0 appearance-none items-start border-0 bg-transparent p-0 text-left text-sm font-medium text-slate-100 hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
+        <ChipMon skill={v.skill} /><span className="min-w-0 break-words"><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></span>
+      </button>
+      {re && !mo && <HopVp v={v} homNay={homNay} neo={neo} />}
     </span>
   );
 }
@@ -95,13 +113,7 @@ function DsVp({ ds, homNay, moId, onMo, chiTiet }: { ds: VpDong[]; homNay: strin
         <li key={v.id} className="border-t border-dashed py-2 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
           <span className="grid grid-cols-[44px_minmax(0,1fr)] items-start gap-x-2">
             <span className="pt-px text-[13px] font-semibold tabular-nums text-slate-400 max-sm:pt-3">{ngay(v.ngay, homNay)}</span>
-            <span className="group relative min-w-0">
-              <button type="button" aria-expanded={moId === v.id} onClick={() => onMo(v.id)}
-                className="flex min-w-0 appearance-none items-start border-0 bg-transparent p-0 text-left text-sm font-medium text-slate-100 hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
-                <ChipMon skill={v.skill} /><span className="min-w-0 break-words"><TenDich chu={v.ten} nguon={{ bang: 'violations', id: v.id, cot: 'ten' }} /></span>
-              </button>
-              {moId !== v.id && <HopVp v={v} homNay={homNay} />}
-            </span>
+            <TenVp v={v} homNay={homNay} mo={moId === v.id} onMo={() => onMo(v.id)} />
           </span>
           {moId === v.id && <div className="mt-2 pl-[52px] max-sm:pl-0">{chiTiet(v)}</div>}
         </li>
@@ -256,7 +268,9 @@ export function ChipBac({ bac, ten, children }: { bac: number; ten: string; chil
   const nhan = chuMoc(bac);
   const [mo, setMo] = useState(false);
   const hop = useRef<HTMLSpanElement>(null);
-  useBamNgoai(mo, () => setMo(false), hop);
+  const nut = useRef<HTMLButtonElement>(null);
+  const noi = useRef<HTMLDivElement>(null);
+  useBamNgoai(mo, () => setMo(false), hop, noi);
   useEffect(() => {
     if (!mo) return;
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMo(false); };
@@ -265,16 +279,16 @@ export function ChipBac({ bac, ten, children }: { bac: number; ten: string; chil
   }, [mo]);
   return (
     <span ref={hop} className="relative inline-block max-w-full">
-      <button type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={`${t('Thang xử lý vi phạm')} · ${ten} · ${nhan}`} onClick={() => setMo((x) => !x)}
+      <button ref={nut} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={`${t('Thang xử lý vi phạm')} · ${ten} · ${nhan}`} onClick={() => setMo((x) => !x)}
         /* KHONG-TRAN-CHU (chủ SP 15/11): mốc dài ("REPORT 4 + MEETING CX/GĐCN") xuống dòng TRONG khung — cao tự giãn, căn trái, ▾ giữ cuối; không cao cố định. */
         className={`inline-flex min-h-6 max-w-full items-center gap-1 rounded-md border bg-transparent px-2 py-[3px] text-left text-xs leading-snug appearance-none max-sm:min-h-11 ${bac > 0 ? 'font-semibold text-slate-100' : 'font-medium text-slate-400'}`} style={{ borderColor: 'var(--line-strong)' }}>
         <span className="min-w-0">{nhan}</span><span aria-hidden className="shrink-0 text-xs text-slate-500">▾</span>
       </button>
       {mo && (
-        <span role="dialog" aria-label={t('Thang xử lý vi phạm')} className="absolute left-0 top-full z-40 mt-2 grid w-[min(460px,85vw)] gap-2.5 rounded-[10px] border px-3.5 py-3 shadow-xl"
+        <NoiTren ref={noi} neo={nut} cach={8} role="dialog" aria-label={t('Thang xử lý vi phạm')} className="grid w-[min(460px,85vw)] gap-2.5 rounded-[10px] border px-3.5 py-3 shadow-xl"
           style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           {children(() => setMo(false))}
-        </span>
+        </NoiTren>
       )}
     </span>
   );
@@ -380,7 +394,7 @@ export function DongEmGon({ id, hv, mo, children }: { id: string; hv: ReactNode;
 
 /** TINH-HINH (mockup v20): nhãn loại dòng trong khối em — chữ + nền, không chỉ màu. Vi phạm · Nhắc nhở (viền đứt) · Tình hình · TVV hỏi. */
 export function TheLoai({ loai, so }: { loai: 'vp' | 'nn' | 'th' | 'hoi'; so?: number }) {
-  const chu = loai === 'vp' ? (so ? t('Vi phạm · {n}', { n: so }) : t('Vi phạm')) : loai === 'nn' ? t('Nhắc nhở') : loai === 'th' ? t('Tình hình') : t('TVV hỏi');
+  const chu = loai === 'vp' ? (so ? t('{n} vi phạm', { n: so }) : t('Vi phạm')) : loai === 'nn' ? t('Nhắc nhở') : loai === 'th' ? t('Tình hình') : t('TVV hỏi');
   const lop = loai === 'th' ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)]'
     : loai === 'hoi' ? 'border-[color:var(--line-strong)] bg-doing-bg text-doing'
     : loai === 'nn' ? 'border-dashed border-[color:var(--line-strong)] bg-transparent text-slate-500'

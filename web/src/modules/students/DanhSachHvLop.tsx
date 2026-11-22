@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { MuiTenMo, boQuaNutCon } from '../../ui/HangNhom.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { NoiTren } from '../../ui/NoiTren.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -88,34 +89,32 @@ function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: 
  * Hộp vẽ qua portal `position: fixed` theo vị trí nút — khung bảng (cuộn ngang, thẻ `overflow-hidden`) không cắt hộp.
  */
 function HopNho({ nut, nhan, nutLop, children, rong }: { nut: ReactNode; nhan: string; nutLop: string; children: ReactNode; rong?: boolean }) {
-  const [cho, setCho] = useState<{ top: number; left: number; width?: number } | null>(null);
+  const [mo, setMo] = useState(false);
   const nutRef = useRef<HTMLButtonElement>(null);
-  const hopRef = useRef<HTMLSpanElement>(null);
-  const mo = cho !== null;
-  const qua = useBamNgoai(mo, () => setCho(null), nutRef, hopRef);
+  const hopRef = useRef<HTMLDivElement>(null);
+  /* Mockup 375 (`.dt .hop-tc`): hộp ô kỹ năng trải hết dải 5 môn, dưới hàng ô — neo cả dải, không lệch theo ô. */
+  const neo = useRef<HTMLElement | null>(null);
+  const qua = useBamNgoai(mo, () => setMo(false), nutRef, hopRef);
   useEffect(() => {
     if (!mo) return undefined;
-    const dong = () => setCho(null);
-    const phim = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setCho(null); nutRef.current?.focus(); } };
+    const dong = () => setMo(false);
+    const phim = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setMo(false); nutRef.current?.focus(); } };
     window.addEventListener('scroll', dong, true);
     window.addEventListener('resize', dong);
     document.addEventListener('keydown', phim, true);
     return () => { window.removeEventListener('scroll', dong, true); window.removeEventListener('resize', dong); document.removeEventListener('keydown', phim, true); };
   }, [mo]);
   const bat = () => {
-    if (mo) { setCho(null); return; }
-    const r = nutRef.current!.getBoundingClientRect();
-    const rongHop = rong ? 300 : 260;
-    /* Mockup 375 (`.dt .hop-tc`): hộp ô kỹ năng trải hết dải 5 môn, dưới hàng ô — không lệch theo ô, không chạm mép phải. */
-    const dai = window.innerWidth < 640 ? nutRef.current!.closest('.hvl-dai-kn')?.getBoundingClientRect() : undefined;
-    if (dai) { setCho({ top: r.bottom + 6, left: dai.left, width: dai.width }); return; }
-    setCho({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - rongHop - 8)) });
+    if (mo) { setMo(false); return; }
+    const dai = window.innerWidth < 640 ? nutRef.current!.closest<HTMLElement>('.hvl-dai-kn') : null;
+    neo.current = dai ?? nutRef.current;
+    setMo(true);
   };
   return (
     <>
       <button ref={nutRef} type="button" className={nutLop} aria-expanded={mo} aria-label={nhan} onClick={bat} {...qua}>{nut}</button>
-      {cho && createPortal(
-        <span ref={hopRef} className={`hop-nho ${rong ? 'hop-nho-rong' : ''}`} role="dialog" aria-label={nhan} style={cho} {...qua}>{children}</span>, document.body)}
+      {/* SUA-2211-A: `NoiTren` — sát đáy màn thì lật lên, không bị cắt. */}
+      {mo && <NoiTren ref={hopRef} neo={neo} rongNeo={neo.current !== nutRef.current} className={`hop-nho ${rong ? 'hop-nho-rong' : ''}`} role="dialog" aria-label={nhan} {...qua}>{children}</NoiTren>}
     </>
   );
 }

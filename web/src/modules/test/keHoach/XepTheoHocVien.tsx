@@ -8,6 +8,8 @@ import { useToast } from '../../../ui/Toast.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { ChonLop } from '../../../ui/ChonLop.tsx';
+import { NoiTren } from '../../../ui/NoiTren.tsx';
+import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
 import {
   KY_NANG_KE_HOACH, mondayOfDate, tenMon, tenMonNgan, thuTuLuuLuot, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type LoiTruong, type OKyNang,
@@ -536,14 +538,18 @@ function OTuan({ t, doi, homNay, nhan, onTuan }: { t: Tuan | undefined; doi: boo
 /** Nút ⋯ của một hàng: một thao tác (bỏ thay đổi / bỏ MT mới trong nháp). */
 function MenuDong({ nhan, aria, onClick }: { nhan: string; aria: string; onClick: () => void }) {
   const [mo, setMo] = useState(false);
+  const nut = useRef<HTMLButtonElement>(null);
+  const hop = useRef<HTMLDivElement>(null);
+  useBamNgoai(mo, () => setMo(false), nut, hop);
   return (
     <span className="relative inline-block">
-      <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" aria-label={aria} aria-expanded={mo}
+      <button ref={nut} type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" aria-label={aria} aria-expanded={mo}
         onClick={() => setMo((v) => !v)}>⋯</button>
+      {/* SUA-2211-A: menu vẽ ra lớp trên cùng — bảng cuộn / đáy panel không cắt. */}
       {mo && (
-        <span className="absolute right-0 top-full z-10 mt-1 block rounded-lg border p-1 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+        <NoiTren ref={hop} neo={nut} canh="phai" cach={4} className="rounded-lg border p-1 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] whitespace-nowrap sm:min-h-[32px]" onClick={() => { setMo(false); onClick(); }}>{nhan}</button>
-        </span>
+        </NoiTren>
       )}
     </span>
   );

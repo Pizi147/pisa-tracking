@@ -214,6 +214,25 @@
   }
   input, select, textarea, button { font-family: inherit; font-size: inherit; }
   table { border-collapse: separate; border-spacing: 0; }
+
+  /* SUA-2211-A (chủ SP 22/11 ý 10): ô tick / radio MỘT kiểu theo theme — nền ô nhập, viền ô nhập, chọn = nền nhấn + dấu màu chữ-trên-nhấn; không còn ô trắng
+     mặc định trình duyệt. Cỡ mặc định 16; nơi gọi đặt `h-[18px] w-[18px]`… vẫn thắng (lớp tiện ích sau lớp base). */
+  input[type='checkbox'], input[type='radio'] {
+    appearance: none; -webkit-appearance: none; flex: none; display: inline-block; position: relative; width: 16px; height: 16px; margin: 0; padding: 0;
+    border: 1.5px solid var(--o-nhap-vien); border-radius: 4px; background: var(--o-nhap-nen); color: var(--accent-ink); cursor: pointer; vertical-align: -3px;
+    transition: background-color .12s, border-color .12s;
+  }
+  input[type='radio'] { border-radius: 50%; }
+  input[type='checkbox']::before { content: ''; position: absolute; inset: 15%; background: currentColor; transform: scale(0); transition: transform .1s;
+    clip-path: polygon(14% 44%, 0 59%, 40% 100%, 100% 22%, 86% 8%, 39% 69%); }
+  input[type='checkbox']:indeterminate::before { clip-path: inset(40% 0 40% 0); }
+  input[type='radio']::before { content: ''; position: absolute; inset: 22%; border-radius: 50%; background: var(--accent); transform: scale(0); transition: transform .1s; }
+  input[type='checkbox']:checked, input[type='checkbox']:indeterminate { background: var(--accent); border-color: var(--accent); }
+  input[type='checkbox']:checked::before, input[type='checkbox']:indeterminate::before, input[type='radio']:checked::before { transform: scale(1); }
+  input[type='radio']:checked { border-color: var(--accent); }
+  input[type='checkbox']:not(:disabled):hover, input[type='radio']:not(:disabled):hover { border-color: var(--accent); }
+  input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: .45; cursor: not-allowed; }
+  @media (forced-colors: active) { input[type='checkbox'], input[type='radio'] { appearance: auto; -webkit-appearance: auto; } }
 }
 
 @layer components {

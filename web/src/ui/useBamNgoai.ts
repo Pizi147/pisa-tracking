@@ -16,6 +16,7 @@ export function useBamNgoai(mo: boolean, onNgoai: (e: MouseEvent) => void, ...tr
       if (quaCay.current === e) return;
       const t = e.target as Node;
       if (trong.some((r) => r.current?.contains(t))) return;   // RefObject ổn định: closure lần mở là đủ
+      if ((t as Element).closest?.('[data-noi-tren]')) return;   // SUA-2211-A: hộp nổi lớp trên cùng (`NoiTren`, danh sách ô chọn) của hộp con — không phải "ngoài"
       cb.current(e);
     };
     document.addEventListener('mousedown', bam);

@@ -279,8 +279,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         )}
         {laMeeting && gv.g && meet.phan && <DongTheoDoi rieng ds={[...meet.phan, gv.g]} reload={() => { gv.reload(); meet.reload(); }}
           dat={(ds) => { meet.dat(ds.filter((x) => x.loai === 'meeting')); const b = ds.find((x) => x.loai === 'bao_ph'); if (b) gv.dat(b); }} />}
-        {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n" mở sẵn; chưa có lần ghi thì không vẽ (lời 40). */}
-        <LichSuGap so={lichSu.length} moSan>
+        {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n"; chưa có lần ghi thì không vẽ (lời 40). Chủ SP 22/11 ý 12: luôn gập sẵn. */}
+        <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
         </LichSuGap>
       </div>
