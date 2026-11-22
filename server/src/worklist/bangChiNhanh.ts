@@ -207,7 +207,7 @@ export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: Ch
   const r = tinh(p, f);
   const gon = (h: any): HangBang => ({
     khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon), ...('gvcn' in h ? { gvcn: h.gvcn } : {}),
-    ...(f.chuY && h.loai === 'chi-nhanh' ? { sos23: [...new Set([...h.tap.sos2, ...h.tap.sos3])].sort((a: number, b: number) => a - b) } : {}),
+    ...(f.chuY ? { sos23: [...new Set([...h.tap.sos2, ...h.tap.sos3])].sort((a: number, b: number) => a - b) } : {}),
   });
   return { cheDo: r.cheDo, hang: r.hang.map(gon), conLai: r.hangConLai && gon(r.hangConLai), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId,
     ...(f.chuY ? { phanRa: r.phanRa } : {}) };

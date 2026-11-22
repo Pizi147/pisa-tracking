@@ -18,7 +18,7 @@ const KHONG = [{ ten: 'Nhập điểm, ghi Case, PA', cua: 'việc của GV' }, 
 const VIEC_CX: ViecHd[] = [
   {
     id: 'xem-so', ten: 'Xem Tổng quan mỗi sáng', nhom: 'hv',
-    loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
+    loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/', chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
     buoc: ['Mở <b>Tổng quan</b>: đầu trang chọn <b>Chi nhánh</b> (mặc định tất cả) và khung Fast Track / Lớp thường khi có cả hai.',
       'Năm ô: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3 ›</b> · <b>Chờ KQ thi thật ›</b> · <b>Chưa chốt bước tiếp ›</b>; bấm ô mở danh sách (hai ô đầu chỉ Fast Track).',
       'Dưới ô: bảng <b>Theo chi nhánh</b> (chọn chi nhánh ở ô <b>Chi nhánh</b>) hoặc <b>Lớp cần chú ý</b> khi đã chọn chi nhánh.'],

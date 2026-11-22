@@ -4,13 +4,10 @@ import { LopCuaToi } from '../congViec/LopCuaToi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, nhoChiNhanh, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { LichSapToi } from './Highlights.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import {
-  DauTrangTq, lienKetTq, thamSoTq, TongQuanCxV5, TongQuanQlV5, TongQuanQtV5, type TongQuanV5Data,
-} from './TongQuanV5.tsx';
+import { DauTrangTq, lienKetTq, OViecCuaToi, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
+import { TongQuanAdmin, TongQuanCx, TongQuanHead } from './TongQuanVai.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -35,9 +32,7 @@ export default function OverviewPage() {
   const vai = nav?.hvCuaToi ? 'tvv'
     : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
-  const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
-  /* Lời 49 (chủ SP 15/11): đầu trang Admin là phạm vi như QL ("Monbay · W3 SEP"), không "Mock Test". `/ref/branches` là đường tĩnh có bản nhớ (BranchFilter dùng chung) — 0 request thêm. */
-  const dsCn = useApi<{ id: number; name: string }[]>(vai === 'admin' ? '/ref/branches' : null).data;
+  const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' || vai === 'admin' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   /* BPXL-1 (N57): Chuyên viên Xếp lịch (không kèm vai GV) — trang đầu = Kế hoạch Test. Dải 4 số lặng: PR BPXL-2. */
@@ -61,18 +56,17 @@ export default function OverviewPage() {
   /* N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor → trang đầu mở thẳng Tutor (thay câu "nhờ Quản trị cấp thêm vai Giáo viên" — A3-17);
      người kèm vai GV đi nhánh 'gv' ở trên (N43). Không có Tutor (GV chưa có lớp) → khung rỗng như cũ. */
   if (vai === 'ht') return nav?.tutor ? <Navigate to="/tutor" replace /> : trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
-  if (vai === 'admin') {
-    /* GD-14 (⑧ T5): Lịch sắp tới sang cột phải 400 (khối phụ mọi vai cùng một chỗ). */
-    const cn = branchId ? dsCn?.find((b) => b.id === branchId) : dsCn?.length === 1 ? dsCn[0] : null;
-    return trang(cn?.name ?? (dsCn && dsCn.length > 1 ? t('Tất cả chi nhánh') : ''), <MockTestAdmin branchId={branchId} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
-  }
+  /*
+   * NHẸ HƠN PR-3 (mockup v23 T1–T4): Head / QL · Quản trị · Admin · CX cùng khung "Cần xử lý" + khối chính; một GET `/tong-quan/v5` (SOS, Tình hình) +
+   * `/my-work` Công việc "Tất cả" (Head / QT / Admin) — Admin bỏ khối Mock Test + Lịch sắp tới ([XM-P3-3]; Lịch tuần ở link đầu trang).
+   */
   const d = v5.data;
   const phamVi = d?.tenChiNhanh ?? t('Tất cả chi nhánh');
   const than = v5.error ? <ErrorState message={v5.error.message} hint={v5.error.hint} status={v5.error.status} onRetry={v5.reload} />
     : !d ? <Skeleton rows={8} />
-      : vai === 'cx' ? <TongQuanCxV5 d={d} onChiNhanh={setBranchId} />
-        : d.lop ? <TongQuanQlV5 d={d} />
-          : <TongQuanQtV5 d={d} onChiNhanh={setBranchId} />;
+      : vai === 'cx' ? <TongQuanCx d={d} congTac={congTac} />
+        : vai === 'admin' ? <TongQuanAdmin d={d} congTac={congTac} />
+          : <TongQuanHead d={d} congTac={congTac} />;
   /* [XM 4] chủ SP 11/11: CX giữ quyền sửa (+ Thêm học viên, + Lớp, Sửa thông tin) → đầu trang không ghi "chỉ xem". */
-  return trang(phamVi, than, <>{congTac}{chiNhanh}</>, d?.ky);
+  return trang(phamVi, than, <><OViecCuaToi lienKet />{chiNhanh}</>);
 }

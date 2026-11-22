@@ -566,7 +566,7 @@ const FILE_DA_DICH = [
   ...['ChipKyNang', 'GhiChuLichThi', 'HopKhoiPhucKetQua', 'HopKyNang', 'HopSEx', 'LopKeHoach', 'LuoiKeHoach', 'NganXepHangLoat', 'NganXepLichMt',
     'NganXuatKeHoach', 'TimKeHoach', 'TimLop', 'TuanNho', 'XepTheoHocVien'].map((f) => `web/src/modules/test/keHoach/${f}.tsx`),
   'web/src/modules/test/keHoach/kieu.ts', 'web/src/modules/test/keHoach/taiXlsx.ts',
-  ...['ChonChuongTrinh', 'ManagerTasks', 'MeetingPage', 'MgmtTasksPage', 'MockTestAdmin', 'SignalList', 'TongQuanV5'].map((f) => `web/src/modules/worklist/${f}.tsx`),
+  ...['ChonChuongTrinh', 'ManagerTasks', 'MeetingPage', 'MgmtTasksPage', 'SignalList', 'TongQuanV5', 'TongQuanVai'].map((f) => `web/src/modules/worklist/${f}.tsx`),
 ];
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */

@@ -10,6 +10,7 @@ export async function runPrUiTongQuanTests(t: any) {
   const { loadPrincipal, can } = await import('../permissions.ts');
   const hv: any = await import('../worklist/hvCuaToi.ts');
   const { demoToday } = await import('../demoConfig.ts');
+  const { myWork } = await import('../worklist/mywork.ts');
   console.log('\nV5 · UI-TONG-QUAN — số Tổng quan = Báo cáo, Σ tử / Σ mẫu theo chi nhánh, panel theo lớp, quyền');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
 
@@ -33,6 +34,35 @@ export async function runPrUiTongQuanTests(t: any) {
     const dat = r.chiNhanh.reduce((s: number, c: any) => s + c.datMt.dat, 0), mau = r.chiNhanh.reduce((s: number, c: any) => s + c.datMt.mau, 0);
     assert(dat <= r.datMt.dat && mau <= r.datMt.mau, `Σ chi nhánh ${dat}/${mau} > tổng ${r.datMt.dat}/${r.datMt.mau}`);
     assert(r.chiNhanh.reduce((s: number, c: any) => s + c.casePa.mo, 0) === r.casePa.mo, 'Σ Case mở chi nhánh ≠ tổng');
+  });
+
+  /* NHẸ HƠN PR-3: mọi số Giáo viên / Lớp cần chú ý lọc từ `dong` Công việc "Tất cả" (CHÍNH `myWork` của `/my-work?nguoi=tat-ca`) — số ô = số dòng panel = số Công việc. */
+  check('NHẸ HƠN PR-3 · GV quá hạn = Công việc "Của GV" quá hạn (demDongViec); Σ theo GV / loại = tổng; ô ma trận = việc trong panel; SOS 2–3 lớp = id em', () => {
+    const homNay = demoToday();
+    for (const p of [P.mbManager, P.admin]) {
+      const r: any = myWork(p, { nguoi: 'tat-ca', tachCuaToi: true });
+      const qh = d.quaHanCuaGv(r.dong);
+      const cv = d.demDongViec(r.dong.filter((x: any) => !x.mine)).quaHan;
+      assert(qh.length === cv, `GV quá hạn ${qh.length} ≠ Công việc "Của GV" ${cv}`);
+      const nhom = d.nhomTheoGv(qh);
+      assert(nhom.reduce((s: number, g: any) => s + g.viec.length, 0) === qh.length, 'Σ việc theo GV ≠ tổng');
+      for (const g of nhom) assert(g.loai.reduce((s: number, [, n]: [string, number]) => s + n, 0) === g.viec.length, `${g.owner}: Σ loại ≠ số quá hạn`);
+      for (const h of d.maTranLop(r.dong, ['case', 'diem', 'meeting', 'bcph'], homNay)) {
+        assert(Object.values(h.o).some((o: any) => o.muc !== 'xa'), `${h.classCode}: không có ô quá hạn / sắp đến mà vẫn hiện`);
+        for (const [c, o] of Object.entries(h.o) as [string, any][]) {
+          assert(o.viec.every((x: any) => x.classId === h.classId && d.cotLopCua(x) === c), `${h.classCode} · ${c}: việc lạc ô`);
+          const so = c === 'diem' ? o.viec.reduce((s: number, x: any) => s + (x.soBai ?? 0), 0) : o.viec.length;
+          assert(o.so === so, `${h.classCode} · ${c}: ô ${o.so} ≠ panel ${so}`);
+        }
+      }
+    }
+    const ql = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' });
+    for (const l of ql.lop) assert(l.sos23Ids.length === l.sos[1] + l.sos[2], `${l.ma}: id SOS 2–3 ${l.sos23Ids.length} ≠ ${l.sos[1] + l.sos[2]}`);
+    assert(!('tre' in ql) && !('caseGv' in ql), 'Tổng quan còn trả Trễ chấm / caseGv (đã bỏ — khối GV đọc Công việc)');
+    const qt = v5.tongQuanV5(P.admin, { branchId: null, ct: 'ft' });
+    const s23 = qt.chiNhanh.reduce((s: number, c: any) => s + c.sos23, 0);
+    assert(qt.lopCn.reduce((s: number, l: any) => s + l.sos[1] + l.sos[2], 0) === s23, 'Σ SOS 2–3 lớp (Toàn hệ thống) ≠ Σ chi nhánh');
+    assert(qt.sos[1] + qt.sos[2] === s23, `SOS 2 + 3 cả phạm vi ${qt.sos[1] + qt.sos[2]} ≠ Σ chi nhánh ${s23}`);
   });
 
   check('UI-TONG-QUAN · quyền: GV không đọc Tổng quan V5; chỉ TVV đọc /tong-quan/tvv; TVV mẫu 0 Báo PH → tong 0 (web "Chưa có dữ liệu")', () => {
