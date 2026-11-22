@@ -531,14 +531,14 @@ export const TU_TVV: TuHd[] = [
 ];
 
 const THU_TU = ['xem-viec', 'xem-thi-thang', 'bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'chot-ngay-thi', 'bo-sung', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'lich-su',
-  'loc-hv', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'bao-cao-ph-lop', 'phan-tich'];
+  'loc-hv', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'bao-cao-ph-lop'];
 
 export const HD_TVV: HuongDan = {
   viec: [],
   lam: THU_TU.map((id) => [...VIEC_TVV, ...VIEC_RIENG_TVV].find((v) => v.id === id)!),
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xem-viec', 'xem-thi-thang', 'loc-hv'] },
-    { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'bao-cao-ph-lop'] },
+    { nhip: 'Hằng tháng', viec: ['xuat-ds', 'bao-cao-ph-lop'] },
     { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
   ],
   /* HD3-3: tab "Trường hợp" của TVV (15 mục 4.7) — nguồn từng câu ở `docs/anh/hd3-3-tvv-cx/khop-khac.md`. */
@@ -556,14 +556,6 @@ export const HD_TVV: HuongDan = {
       { id: 'tvv-cv-hv', ten: 'HV của tôi · + Task', buoc: ['Chưa chọn việc: khung phải là <b>HV của tôi</b> — em · lớp · tình trạng (Thi dd/mm · Đã thi · chờ KQ · SOS) · nút <b>Báo PH · n</b>, <b>Sau thi · n</b>… mở việc ngay tại trang; quá hạn màu đỏ.',
         'Em không việc, không tình trạng gập ở <b>n em khác</b>; ô <b>Tìm em</b> lọc cả nhóm gập.', '<b>+ Task</b> › <b>Hỏi tình hình học tập</b>: chọn em của bạn, gõ câu hỏi, gửi GVCN.'] },
       { id: 'tvv-cv-loc', ten: 'Lọc việc', buoc: ['<b>Lọc theo hạn</b>: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b>.', '<b>Lọc thêm</b>: chi nhánh, khung Fast Track / Lớp thường.'] }],
-    },
-    {
-      id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Công việc', duong: CV } },
-      khongLam: [KHONG_GV],
-      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); không có tab Giáo viên, Ý thức.',
-        'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.', '<b>Xuất Excel</b> ở hàng lọc (tab Chi nhánh thêm <b>In</b>).'],
-        chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: [HV],

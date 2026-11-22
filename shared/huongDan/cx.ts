@@ -87,7 +87,7 @@ export const HD_CX: HuongDan = {
         { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông: khối <b>Việc cần làm</b> (Kết quả meeting, việc được giao cho bạn) và khối <b>Cập nhật</b>.'] },
       ],
     },
-    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, /* GD-8: TVV không còn Tổng quan (Trước = Công việc) — CX còn. */ dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> · <b>Ý thức</b> (Phân tích V2), như Head.',
+    { /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không còn Phân tích — màn này chỉ của CX. */ id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'], khongLam: [KHONG[0]], dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> · <b>Ý thức</b> (Phân tích V2), như Head.',
       'Mọi chi nhánh; <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang; <b>Xuất Excel</b> ở hàng lọc.'],
       chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }] },
     manTutor('cx'),

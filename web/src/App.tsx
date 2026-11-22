@@ -426,7 +426,7 @@ export default function App() {
           {/* TU12 (TU2-6): trang Tutor mở lại cho người có `tutor.view`; GV (không quyền) gõ /tutor → về trang đầu. */}
           <Route path="/tutor" element={nav.tutor ? <TutorPage /> : <Navigate to="/" replace />} />
           <Route path="/tutor/*" element={<Navigate to="/tutor" replace />} />
-          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin, TVV và CX')} />} />
+          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin và CX')} />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/luu-tru" element={<LuuTruPage />} />

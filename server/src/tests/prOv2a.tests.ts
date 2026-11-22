@@ -15,6 +15,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
   const { ROLE_PERMISSIONS } = await import('../seed/data.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { soHocVien } = await import('../worklist/hvCuaToi.ts');
+  const { migratePrTvvPt } = await import('../migrate/prTvvPt.ts');
+  const { phamViPhanTich } = await import('../phanTich/phamVi.ts');
   console.log('\nPR-OV2a · vai TVV / CX / Admin, quyền, đổi góc nhìn');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -134,7 +136,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     const bang: [string, (p: any) => boolean, boolean[]][] = [
       ['Xem HV', (p) => can(p, 'student.view', hs), [true, true, true, true, true, true, true]],
       ['Xem Case · PA (attempt.view + case.view)', (p) => can(p, 'attempt.view', hs) && can(p, 'case.view', hs), [true, true, true, true, true, true, true]],
-      ['Tổng quan · Phân tích', (p) => can(p, 'analysis.view', { anyScope: true }), [true, true, true, false, false, true, true]],
+      ['Tổng quan · Phân tích (chủ SP 22/11: TVV không)', (p) => can(p, 'analysis.view', { anyScope: true }), [true, true, true, false, false, false, true]],
       ['Phần GV (Phân tích theo GV, hồ sơ GV)', (p) => can(p, 'analysis.view_teacher', { anyScope: true }), [true, true, true, false, false, false, true]],
       ['Test (3 tab)', (p) => can(p, 'test.view', cs), [true, true, true, true, true, false, true]],
       ['Xếp/dời lịch MT', (p) => can(p, 'plan.week', cs), [true, true, true, false, false, false, false]],
@@ -161,7 +163,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       const n = navOf((v as any)[k]);
       /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV có Công việc chỉ việc của mình — không Chấm điểm / duyệt / Vận hành. N52: CX có Test, Công việc (xem / làm thay,
          không hộp Chờ duyệt, không Vận hành), phần GV. */
-      if (k === 'TVV') assert(!n.test && n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.students && n.analysis && !(n as any).phanTichGv, `${k}: ${JSON.stringify(n)}`);
+      if (k === 'TVV') assert(!n.test && n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.students && !n.analysis && !(n as any).phanTichGv, `${k}: ${JSON.stringify(n)}`);
       else assert(n.test && n.work && n.workCx && !n.workApprove && !n.workOps && n.students && n.analysis && (n as any).phanTichGv && !n.admin, `${k}: ${JSON.stringify(n)}`);
     }
     const a = navOf(v.Admin);
@@ -171,6 +173,22 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     const gv = navOf(v.GVBM);
     assert(gv.test && gv.work && !gv.analysis, `GV đổi: ${JSON.stringify(gv)}`);
   });
+
+  check('SUA-2211-B · TVV không xem Phân tích: nav không có mục, mọi đường /phan-tich 403; migrate gỡ analysis.view của vai TVV đúng một lần, vai khác giữ', () => thu(() => {
+    const v = V();
+    assert(!navOf(v.TVV).analysis, 'nav TVV còn Phân tích');
+    assert(loi(() => phamViPhanTich(v.TVV, null, null))?.status === 403, 'phamViPhanTich TVV không 403');
+    assert(!loi(() => phamViPhanTich(v.CX, null, null)), 'CX mất Phân tích');
+    const tvvId = one("SELECT id FROM roles WHERE key = 'consultant'").id; const ptId = one("SELECT id FROM permissions WHERE key = 'analysis.view'").id;
+    conn.prepare('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?,?)').run(tvvId, ptId);
+    conn.prepare("DELETE FROM demo_config WHERE key = 'pr_tvv_bo_phan_tich_at'").run();
+    const ap: string[] = []; migratePrTvvPt(conn, ap);
+    assert(ap.length === 1 && !one('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?', tvvId, ptId), `migrate chưa gỡ: ${ap}`);
+    assert(one("SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id WHERE r.key = 'cx' AND rp.permission_id = ?", ptId), 'CX bị gỡ nhầm');
+    conn.prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)').run(tvvId, ptId);
+    const ap2: string[] = []; migratePrTvvPt(conn, ap2);
+    assert(!ap2.length && one('SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?', tvvId, ptId), 'chạy lần hai lại gỡ (Quản trị cấp lại phải giữ)');
+  }));
 
   check('OV2a-4 · Admin: Công việc chỉ nhóm Chấm điểm (kể cả "Tất cả trong phạm vi")', () => {
     const w = mywork.myWork(loadPrincipal(idAdmin), { nguoi: 'tat-ca' });
@@ -252,6 +270,9 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['TVV Yêu cầu', tv, 'GET', '/yeu-cau'],
         ['TVV sửa Target', tv, 'PATCH', `/cycles/${chuKy}`, { targetScore: 7, lyDo: 'thử' }],
         ['CX phân công GV', cx, 'PUT', `/classes/${lop}/teachers`, { slots: [] }],
+        /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không có khu Phân tích — mọi đường /phan-tich/* 403 (cả đường vốn trả rỗng, cả đổi hoa thường). */
+        ['TVV Phân tích', tv, 'GET', `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['TVV Báo cáo', tv, 'GET', '/phan-tich/bao-cao'],
+        ['TVV Thi thật (đổi hoa thường)', tv, 'GET', '/PHAN-TICH/thi-that'], ['TVV Ý thức PT', tv, 'GET', '/phan-tich/y-thuc'],
       ];
       const sai: string[] = [];
       for (const [ten, ck, m, url, body] of mong) {
@@ -262,7 +283,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       const duoc: [string, string, string][] = [
         ['TVV hồ sơ HV', tv, `/students/${em}`], ['TVV hồ sơ lớp', tv, `/classes/${lop}/overview`], ['TVV hồ sơ lượt', tv, `/attempts/${luot}`],
         ['TVV Ý thức HV', tv, `/students/${em}/y-thuc`], ['TVV Case của HV', tv, `/cases?studentId=${em}`], ['TVV điểm cả lớp', tv, `/classes/${lop}/diem-theo-luot`],
-        ['Admin Ý thức HV', a, `/students/${em}/y-thuc`], ['Admin Case', a, `/cases?studentId=${em}`], ['TVV Phân tích', tv, `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`],
+        ['Admin Ý thức HV', a, `/students/${em}/y-thuc`], ['Admin Case', a, `/cases?studentId=${em}`],
         ['CX Phân tích tổng hợp', cx, `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['CX hồ sơ HV', cx, `/students/${em}`],
         ['Admin Lịch Test', a, '/cham/lich-test'], ['Admin Công việc', a, '/my-work?nguoi=tat-ca'],
         /* N52 (chủ SP 18/11): CX xem Test, Công việc, phần GV như QL. */
