@@ -6,6 +6,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useDemYeuCau, useDuongViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { CHIP_SOS, CHIP_VUONG, LOP_MUC_HAN, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -148,13 +149,13 @@ function LoaiGv({ loai, onLoai }: { loai: [string, number][]; onLoai: (k: string
       {hien.map(([k, n], i) => (
         <span key={k} className="inline-flex items-center whitespace-nowrap">
           {i > 0 && <span className="px-1 text-faint" aria-hidden>·</span>}
-          <button type="button" onClick={() => onLoai(k)} className="cursor-pointer rounded border-0 bg-transparent px-0.5 text-slate-200 hover:underline max-sm:min-h-[44px]">
+          <button type="button" onClick={() => onLoai(k)} className={`${VUNG_BAM_SO} cursor-pointer rounded border-0 bg-transparent px-0.5 text-slate-200 hover:underline`}>
             <b className="tabular-nums text-slate-100">{n}</b> {nhanLoaiTq(k)}
           </button>
         </span>
       ))}
       {!het && loai.length > TOI_DA_LOAI && (
-        <button type="button" onClick={() => setHet(true)} className={`${CHIP_VUONG} ml-1 cursor-pointer bg-transparent text-dim hover:text-slate-100 max-sm:min-h-[44px]`}
+        <button type="button" onClick={() => setHet(true)} className={`${CHIP_VUONG} ${VUNG_BAM_SO} ml-1 cursor-pointer bg-transparent text-dim hover:text-slate-100`}
           aria-label={t('Thêm {n} loại', { n: loai.length - TOI_DA_LOAI })}>+{loai.length - TOI_DA_LOAI}</button>
       )}
     </span>
@@ -170,7 +171,7 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
   const lopCua = (ds: Dong[]) => [...new Set(ds.map((x) => x.classCode).filter(Boolean))].slice(0, 3).join(' · ');
   const tenGvO = (g: (typeof nhom)[number]) => (g.ownerId ? <Link to={`/giao-vien/${g.ownerId}`} className="ten-ho-so font-semibold">{tenGv(g)}</Link> : <span className="font-semibold italic text-dim">{tenGv(g)}</span>);
   const soGvO = (g: (typeof nhom)[number]) => (
-    <button type="button" onClick={() => moGv(g)} className="min-h-[36px] min-w-[36px] cursor-pointer rounded border-0 bg-transparent px-2 text-base font-bold tabular-nums text-late hover:underline max-sm:min-h-[44px] max-sm:min-w-[44px]"
+    <button type="button" onClick={() => moGv(g)} className={`${VUNG_BAM_SO} cursor-pointer rounded border-0 bg-transparent px-2 text-base font-bold tabular-nums text-late hover:underline`}
       aria-label={t('{ten}: {n} việc quá hạn', { ten: tenGv(g), n: g.viec.length })}>{g.viec.length}</button>
   );
   const moGv = (g: (typeof nhom)[number], loai?: string) => onMo({
@@ -191,8 +192,9 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
             phuCua={(g, c) => (c.key === 'gv' ? [lopCua(g.viec), tenCn?.(g.viec[0].cn)].filter(Boolean).join(' · ') : null)}
             theRieng={(g) => (
               <>
-                <div className="flex items-center justify-between gap-3">{tenGvO(g)}{soGvO(g)}</div>
-                <LoaiGv loai={g.loai} onLoai={(k) => moGv(g, k)} />
+                {/* 375 gọn (~48 px, mockup T1b): tên + số một hàng, loại ngay dưới; vùng chạm 44 px bằng lớp phủ `VUNG_BAM_SO` (không đội cao hàng). */}
+                <div className="flex items-center justify-between gap-3 leading-tight">{tenGvO(g)}{soGvO(g)}</div>
+                <div className="mt-0.5 leading-tight"><LoaiGv loai={g.loai} onLoai={(k) => moGv(g, k)} /></div>
               </>
             )} />
           {nhom.length > hien.length && (
@@ -222,8 +224,8 @@ function OMaTran({ o, cot, lop, onBam }: { o: HangLop<Dong>['o'][CotLop]; cot: C
   /* Dấu thêm cho quá hạn = NỀN ĐẶC (không ⚠ — PTA rà #2002): đặc đỏ · viền vàng · chữ thường — khác hình, không chỉ khác màu. */
   const lopO = o.muc === 'qua' ? `${CHIP_VUONG} border-transparent bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]` : o.muc === 'sap' ? `${CHIP_VUONG} border-[rgb(var(--soon-line-rgb))] text-soon` : 'px-1 text-sm font-semibold text-slate-100';
   return (
-    <button type="button" onClick={onBam} aria-label={nhan} title={nhan} className={`${lopO} cursor-pointer hover:underline max-sm:min-h-[36px]`}>
-      <span className="sm:hidden">{so}</span><span className="max-sm:hidden">{chu}</span>
+    <button type="button" onClick={onBam} aria-label={nhan} title={nhan} className={`${lopO} cursor-pointer whitespace-nowrap hover:underline max-sm:min-h-[36px] max-sm:px-1`}>
+      {chu}
     </button>
   );
 }
