@@ -860,6 +860,9 @@ export function moveableSkills(p: Principal, classId: number, skills: readonly s
  * PHẠM VI MỞ RA MẶC ĐỊNH. Ai có dạy thì thấy việc của mình trước — người vừa dạy vừa quản
  * vẫn mở ở "việc của tôi", vì việc của mình mới là thứ không ai làm thay được.
  */
+/** N65 (chủ SP 22/11): trang XEM chung — Head / Quản trị (kể cả kiêm GV) luôn thấy cả phạm vi theo quyền, không có "Lớp tôi dạy". CX / BPXL / Admin giữ như cũ. */
+export const laHeadHoacQt = (p: Principal): boolean => p.roleKeys.some((k) => k === 'manager' || k === 'system_admin');
+
 export function defaultWorkScope(p: Principal): WorkScope {
   const today = demoToday();
   return p.assignments.some((a) => activeAt(a, today)) ? 'mine' : 'managed';

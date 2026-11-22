@@ -12,7 +12,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, laHeadHoacQt, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { lichMtCua, missingForStudent } from './schedule.ts';
@@ -74,7 +74,7 @@ export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?
       WHERE s.consultant_user_id = ? AND s.archived_at IS NULL`,
   ).all(p.userId) as any[]).map((r) => r.class_id as number));
   const coThe = phamViCoThe({
-    dayLop: phanCong.length > 0, capChiNhanh: scope.branchIds.length > 0,
+    dayLop: phanCong.length > 0 && !laHeadHoacQt(p), capChiNhanh: scope.branchIds.length > 0,
     toanHeThong: scope.all, soChiNhanh: scope.branchIds.length, cuaToi: lopCuaToi.size > 0,
   });
   /* Chi nhánh người xem CÓ THỂ THẤY — dùng lại cho cả "chọn chi nhánh đang xem" (dưới) lẫn "+ Lớp mới" (điểm a rà soát cuối). */

@@ -8,7 +8,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runChamDiemTests(t: YThucTestKit) {
-  const { check, assert, assertThrows, conn, TODAY, P, classId } = t;
+  const { check, checkAsync, assert, assertThrows, conn, TODAY, P, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   console.log('\nPR-Rc1/PR-UX1 · Lịch Test + lưới chấm');
 
@@ -699,6 +699,20 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(ql.coPhanCong === false && ql.phamVi === 'tat-ca', `QL không dạy lớp nào → luôn Tất cả: ${ql.phamVi}`);
     assert(ql.lop.length > 0, 'QL thấy lớp');
     assert(ql.lop.every((l: any) => !['cho-ban', 'cho-gv-khac'].includes(l.nhan.loai)), 'QL không có nhãn "của ai"');
+  });
+
+  await checkAsync('N65 · Head / Quản trị kiêm GV: Lịch Test luôn Tất cả (phamVi=cua-toi cũ bị bỏ qua), HV & Lớp không có "Lớp tôi dạy"; GV thuần giữ', async () => {
+    const { phamViTrang } = await import('../classes/hocVienLop.ts');
+    for (const base of [P.mbManager, P.admin]) {
+      const kiemDay = { ...base, assignments: P.coreTeacher.assignments };
+      const r = cham.lichTest(kiemDay, tuanId(TUAN_NAY), null, TODAY, { phamVi: 'cua-toi' });
+      assert(r.phamVi === 'tat-ca' && r.coPhamViRong === false && r.coPhanCong === false, `${base.roleKeys}: ${r.phamVi}/${r.coPhamViRong}`);
+      assert(r.lop.length === cham.lichTest(base, tuanId(TUAN_NAY), null, TODAY).lop.length, 'kiêm dạy thấy đúng bấy nhiêu lớp như không dạy');
+      const pv = phamViTrang(kiemDay, { phamVi: 'toi' }, TODAY);
+      assert(!pv.coThe.includes('toi') && pv.dangDung !== 'toi', `HV & Lớp: ${pv.coThe}/${pv.dangDung}`);
+    }
+    const gvPv = phamViTrang(P.coreTeacher, { phamVi: 'toi' }, TODAY);
+    assert(gvPv.coThe.includes('toi') && gvPv.dangDung === 'toi', 'GV thuần giữ "Lớp tôi dạy"');
   });
 
   check('PR-UX1 · Nhãn + tự mở theo người xem; lớp thường hai bài cùng tuần → hai hàng', () => {
