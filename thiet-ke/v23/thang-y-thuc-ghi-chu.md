@@ -33,3 +33,10 @@ Mockup: [`thang-y-thuc.html`](thang-y-thuc.html) · ảnh `anh/thang-y-thuc-*.pn
 - [XM-10] Phối hợp SOS dùng lại chấm của thang thay ô ①②③ rời (PHOI-HOP-SOS-V2). Sửa theo PTA rà #1977: đúng **N58** — ba phần Xếp lịch (BPXL) · Kết quả (CX, TVV nhập hộ) · Báo PH (TVV) độc lập, không thứ tự, nên không vẽ vạch nối giữa ba phần; không BPXL → TVV, không CX → Head (chữ dưới chấm đổi theo người thật).
 
 Critique: **36 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Khung | Sửa |
+|---|---|---|
+| 1 bấm vi phạm hiện mô tả (cả ở Ý thức) | Y1 | khối "Vi phạm chưa xử lý" thành danh sách nút, một dòng mở: Nhóm · Người ghi · Mô tả (`StudentYThucSection.tsx`) |
+| 4 chữ dài | Y1 | dòng phụ Meeting tách 2 dòng, tên người / giờ họp đậm; mô tả vi phạm tách câu, số đậm |

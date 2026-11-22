@@ -35,3 +35,10 @@ Mockup: [`panel-cham-diem.html`](panel-cham-diem.html) · ảnh `anh/panel-cham-
 - [XM-6] Overall ở lưới khi chỉ có W1 / W2 riêng: Writing band = (W1 + 2·W2) / 3 do máy chủ tính (giữ) — mockup không thêm cột "W".
 
 Critique: **36 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 4 chữ dài | ⓘ điểm huỷ tách 2 dòng (ai huỷ · giờ đậm / lý do xám, số buổi đậm) · lỗi trong hộp nhập: "Chưa lưu được" đậm, bước tiếp xuống dòng |
+| 2 khối Phụ trách | không áp — nhập điểm là ngoại lệ chủ SP nêu |

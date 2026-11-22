@@ -49,6 +49,17 @@ Mockup: [`khung-panel.html`](khung-panel.html) · CSS chung mới: [`v23.css`](v
 
 ## [XM]
 
-- [XM-1] Khối Phụ trách gập sẵn → đổi người / sửa hạn thêm một bấm. Đặc tả chốt gập; nếu chủ SP muốn hạn quá hạn luôn thấy thì đã có trên đầu panel.
+- ~~[XM-1] Khối Phụ trách gập sẵn~~ → đóng: chủ SP góp ý 2 đưa lên ngay dưới đầu panel (việc liên phòng ban).
 
 Critique (impeccable, tự chấm): **35 / 40** — không P0 / P1. P2: ô "Kết quả" dạng đoạn chọn hơi dài ở 1440 (đã sửa canh trái).
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Khung | Sửa | Thành phần web |
+|---|---|---|---|
+| 1 bấm từng vi phạm vẫn hiện mô tả (luật cũ) | P1, P3a | danh sách vi phạm là nút; mở ngay dưới dòng: Nhóm · Ngày · người ghi · Mô tả · Tệp (vẽ một dòng đang mở) | `PanelBaoPhTvv.tsx` danh sách vi phạm (`.vpd`, như `.vp-dong` v22) |
+| 2 việc liên phòng ban: Phụ trách · Hạn · Theo dõi lên trên | P1, P3a, P3b | `.pht1` một hàng ngay dưới đầu panel (375: 3 dòng gọn), không gập; Đổi / Sửa hạn / ✕ / + bấm thẳng. **Trừ nhập điểm.** Lịch sử vẫn gập | `KhoiPhuTrach` (v22 N58) đặt trong `KhungPanel` ngay sau đầu |
+| 4 chữ dài cần đậm / tách dòng | P1, P2, P3b | dòng tóm vi phạm đậm số / người / bậc · nhận xét MT đậm kỹ năng · Lịch sử mỗi mục 2 dòng (ai làm gì đậm, nội dung xám) · mô tả vi phạm tách câu | `.chu-dai`, `.ls .noi` |
+
+- Đầu + chân + khối Phụ trách = 52 + 48 + 52 = 152 px (> 120 của nghiệm thu cũ) — chủ SP chọn đưa khối lên trên; vẫn không cuộn với việc ngắn ở 1440.
+- Bảng thao tác: khối Phụ trách không còn "thêm 1 bấm" → [XM-1] đóng.

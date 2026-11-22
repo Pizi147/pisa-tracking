@@ -29,6 +29,12 @@ Mockup: [`lich-test.html`](lich-test.html) · ảnh `anh/lich-test-*.png`. Đặ
 
 ## [XM]
 
-- [XM-7] Cột "Đợt" chiếm phần còn lại (1fr) nên rộng ở 1440; nếu chủ SP thấy trống, PR có thể chuyển 1fr sang cột Lớp (tên lớp dài kiểu "MB FT 116 (Sáng T7)").
+- [XM-7] Cột "Đợt" vẫn là phần co giãn (1fr) ở bảng lớp; lưới mở dùng phần đó cho ô điểm nên không còn trống.
 
 Critique: **35 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 3 cột cân đối hơn, Kết quả rộng quá | bảng lớp: Kỹ năng 150 · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180; lưới mở: 6 cột số (L R W1 W2 S Overall) **chia đều**, Kết quả **180** — trùng đúng cột Trạng thái phía trên → hai tầng thẳng hàng |

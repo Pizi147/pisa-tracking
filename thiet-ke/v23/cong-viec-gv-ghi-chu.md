@@ -36,3 +36,10 @@ Mockup: [`cong-viec-gv.html`](cong-viec-gv.html) · ảnh `anh/cong-viec-gv-*.pn
 - [XM-2] Khối cây ba tầng V18 (nhóm → em → việc) cho Case / Ý thức thành dòng phẳng "em · còn thiếu gì" + lớp ở dòng phụ — theo đặc tả 22/11 (dòng phụ chỉ giữ em / lớp / tuần / số bài). Nếu chủ SP muốn giữ khối em (một em nhiều việc), PR màn có thể gom bằng thứ tự, không thêm tầng.
 
 Critique: **35 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 4 chữ dài | khối nguồn Case: điểm hai lần trước đậm; ô Mô tả là chữ người dùng gõ (không định dạng) |
+| 2 khối Phụ trách | Mô tả Case / Chọn PA là việc học thuật (N58 không áp) → giữ khối gập |

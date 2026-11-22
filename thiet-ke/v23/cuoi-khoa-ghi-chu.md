@@ -7,7 +7,7 @@ Mockup: [`cuoi-khoa.html`](cuoi-khoa.html) · ảnh `anh/cuoi-khoa-*.png`. Đặ
 | Ý / mục | Khung | Thành phần web |
 |---|---|---|
 | Thanh thao tác một hàng: chọn → Bước tiếp → Lớp → Tuần | K1, K3 | `CuoiKhoaLop.tsx` thanh chọn (ô chọn tất cả · "n em đã chọn" · 3 ô · "Áp cho n em") |
-| Dòng em gọn: tên · điểm gọn · bước tiếp · lớp mới | K1 | bảng 7 cột cố định (tick 44 · tên 1fr · MT0 → Final 176 · Kết quả 112 · Bước tiếp 180 · Lớp mới 150 · Tuần 124) |
+| Dòng em gọn: tên · điểm gọn · bước tiếp · lớp mới | K1 | bảng 7 cột cố định (tick 44 · tên 1fr · Final 96 · Kết quả 112 · Kỳ vọng FT 136 · Bước tiếp 180 · Lớp mới 150 · Tuần 124) |
 | Bỏ "+ Ghi chú"; ghi chú cũ vẫn hiện | K1 | bỏ nút; `gc` chữ nhỏ dưới tên |
 | Kỳ vọng FT một dòng | K1, K3 | khối Kỳ vọng FT → một dòng + ⓘ |
 | Ô tick theo theme (SUA-2211-A) | K1–K3 | `.tick` |
@@ -34,3 +34,11 @@ Mockup: [`cuoi-khoa.html`](cuoi-khoa.html) · ảnh `anh/cuoi-khoa-*.png`. Đặ
 - [XM-8] Ghi chú cũ hiện dưới tên nhưng không sửa được ở đây nữa — sửa qua ⋯ của em (đường cũ "sửa ở ⋯ Chuyển lớp… của em"). Xác nhận chủ SP chấp nhận.
 
 Critique: **35 / 40**, không P0 / P1.
+
+## Góp ý chủ SP 22/11 (qua PTA Plan) — đã sửa
+
+| Góp ý | Sửa |
+|---|---|
+| 5 cột "MT0 → Final" khó hiểu (hai thang khác nhau) | bỏ; thay **Final** đúng thang của lớp (lớp thường %, FT band) + cột riêng **Kỳ vọng FT** (✓ Đạt / Head cân nhắc / —); mốc MT0 chỉ ở dòng "Kỳ vọng FT · MT0 ≥ 5.5 mỗi kỹ năng" + ⓘ |
+
+Bảng em mới: tick 44 · Học viên 1fr · Final 96 · Kết quả 112 · Kỳ vọng FT 136 · Bước tiếp 180 · Lớp mới 150 · Tuần 124. 375: dòng phụ "Final 78 % · bước tiếp · lớp".
