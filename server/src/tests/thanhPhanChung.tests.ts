@@ -70,7 +70,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/hiện 7 ngày từ ngày lớp đủ/.test(xbc) && /7 ngày, "thiếu n em"/.test(xbc), 'câu Q83 phải theo luật 7 ngày của viecXuatBaoCaoPh');
     assert(/Tới Thứ Hai tuần bắt đầu mới thi\s*\*?\s*hành/.test(doc('server/src/classes/lenhChuyen.ts')), 'câu Q74 theo luật thi hành lệnh (Thứ Hai tuần bắt đầu)');
     const ck = doc('web/src/modules/classes/CuoiKhoaLop.tsx');
-    assert(/quyCheChotLoTrinh\(/.test(ck) && /<DongQuyChe qc=\{qcChot\}/.test(ck), 'Cuối khoá có dòng quy chế ở chân QL');
+    assert(/quyCheChotLoTrinh\(/.test(ck) && /<NutLuat label=\{t\('Quy chế'\)\} phai>\{qcChot\.chu/.test(ck) && !/<DongQuyChe/.test(ck), 'Cuối khoá: câu quy chế trong ⓘ đầu trang (NHẸ HƠN: bỏ hàng Quy chế ở chân)');
     assert(/⚠ \{t\('Ghi lý do ngắn'\)\}/.test(ck), 'GIỮ cảnh báo chặn từng dòng "Ghi lý do ngắn" (không phải chú thích)');
     assert(/<NutLuat phai label=\{t\('Xuất báo cáo PH'\)\}>\{quyCheXuatBaoCaoPh\(/.test(doc('web/src/modules/classes/TabBaoCaoPh.tsx')), 'ⓘ Q83 cạnh nút Xuất');
   });

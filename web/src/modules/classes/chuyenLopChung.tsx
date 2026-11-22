@@ -35,11 +35,12 @@ export function NutHomNay({ homNay, chon, onClick, nho }: { homNay: string | nul
 }
 
 /** Ô tuần chỉ nhận Thứ Hai từ TUẦN SAU trở đi (Q5) — `tuanChon` do máy chủ trả (`tuanChonDuoc`). `rong`: không chặn trên (tuần xem lại của Tạm dừng học (bảo lưu)). */
-export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong }: {
+export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong, gon }: {
   tuanChon: string[]; value: string; onChange: (v: string) => void; ariaLabel: string; chuaChon?: string; rong?: boolean;
+  /** NHẸ HƠN PR-5: ô gọn trong cột bảng — nút lịch trong ô, ngày của tuần vào `title` (hàng cao đều). */ gon?: boolean;
 }) {
   return <ONgay kieu="tuan" moc="dau" value={value} onChange={onChange} toiThieu={tuanChon[0] ?? null} toiDa={rong ? null : tuanChon[tuanChon.length - 1] ?? null}
-    ariaLabel={ariaLabel} goiY={chuaChon} />;
+    ariaLabel={ariaLabel} goiY={chuaChon} gon={gon} nutTrong={gon} />;
 }
 
 /**
