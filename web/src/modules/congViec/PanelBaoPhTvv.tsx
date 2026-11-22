@@ -236,9 +236,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           </div>
         )}
         {/* TINH-HINH (mockup v20 C2): GV báo tình hình — đọc nội dung GV gửi trước khi báo PH. */}
-        {(v.tinhHinhId != null || laMeeting) && (v.boiCanh.noiDung || v.boiCanh.nguoiLuu) && (
+        {/* NHẸ HƠN PR-2b (PTA rà #1999): không có nội dung thì không vẽ (trước: Meeting hiện mỗi tên + giờ); Meeting có nhãn "Nội dung gửi TVV". */}
+        {(v.tinhHinhId != null || laMeeting) && v.boiCanh.noiDung && (
           <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{!laMeeting && <TheLoai loai="th" />}
+            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{laMeeting ? <span className="font-semibold">{t('Nội dung gửi TVV')}</span> : <TheLoai loai="th" />}
               {v.boiCanh.nguoiLuu && <b className="font-semibold text-slate-200">{v.boiCanh.nguoiLuu}</b>}{v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>}</span>
             <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">{v.boiCanh.noiDung}</span>
           </div>
@@ -258,11 +259,12 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         <BoiCanh dong={[
           [t('Ghi chú GVCN'), v.tinhHinhId == null && !laMeeting && v.boiCanh.ghiChu ? <span className="font-normal">
             <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span> : null],
-          [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
-          [t('Điện thoại'), ph.sdt && (
-            <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
-              <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>
-          )],
+          /* NHẸ HƠN PR-2b (v23 P1 `.ph`): MỘT dòng "Phụ huynh  Tên (mẹ) · ☎ số" — dữ liệu sẵn trong GET panel, không thêm câu; thiếu tên thì chỉ số. */
+          [t('Phụ huynh'), ph.ten || ph.sdt ? <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {ph.ten && <b className="font-semibold">{ph.ten}{ph.quanHe ? ` (${ph.quanHe})` : ''}</b>}
+            {ph.sdt && <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
+              <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>}
+          </span> : null],
         ]} />
         {bo && <BoViec id={v.id} onDong={() => setBo(false)} onDaBo={() => {
           setBo(false); xoaNhap(); reload(); onDaLam();
@@ -273,7 +275,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         {sua && !bo && (
           <>
             <Truong nhan={t('Kết quả')} as="div" loi={lf.loiCua(loiO, 'kq')}>
-              <div {...lf.o(loiO, 'kq')} data-hd="p-bao-ph-kq" tabIndex={-1} className="outline-none"><LuaChonRadio ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
+              <div {...lf.o(loiO, 'kq')} data-hd="p-bao-ph-kq" tabIndex={-1} className="outline-none"><LuaChonRadio doan ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
                 onChange={(k) => { setKq(k); if (tt === 'loi') setTt(null); }} /></div>
             </Truong>
             <Truong nhan={t('Ngày')}><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={hn} /></div></Truong>
@@ -327,13 +329,25 @@ function BoViec({ id, onDong, onDaBo }: { id: number; onDong: () => void; onDaBo
  * NHÓM NÚT RADIO (mockup V5 `.lua-chon`, bảng mẫu mục 7): radio thật (↑ ↓ đổi), mục chọn viền + nền nhấn; `disabled` = bước chưa mở.
  * Dùng chung panel Báo PH (Kết quả) và Sau thi (Bước tiếp, Lớp).
  */
-export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo, deu }: {
+export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo, deu, doan }: {
   ten: string; nhan: string; muc: readonly (readonly [K, string])[]; value: K | null; onChange: (k: K) => void; disabled?: boolean;
   /** Chủ SP 18/11 (Bước tiếp #1839) "khung rõ": ô nền surface-2 + viền mạnh, ô đang chọn nền nhấn nhạt. Mặc định giữ kiểu cũ. */
   khungRo?: boolean;
   /** TL-2 (mockup v22 T4a `.cach.ba` / T8a): các ô đều bề ngang một hàng; < 640 px xếp dọc, mỗi ô ≥ 44 px. */
   deu?: boolean;
+  /** NHẸ HƠN PR-2b (v23 P1 `.doan`): nút đoạn liền (lớp `.doan` sẵn có) — vẫn là radio thật (mũi tên, Tab, trình đọc màn hình), ô radio ẩn. */
+  doan?: boolean;
 }) {
+  if (doan) return (
+    <div className="doan max-w-full" role="radiogroup" aria-label={nhan}>
+      {muc.map(([k, chu]) => (
+        <label key={k} className={`relative inline-flex items-center justify-center whitespace-nowrap px-3 text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)] max-sm:flex-1 [&+label]:border-l ${disabled ? 'cursor-default' : 'cursor-pointer'} ${value === k ? 'font-bold text-[color:var(--text)]' : 'font-medium text-dim'}`}
+          style={{ borderColor: 'var(--line-strong)', ...(value === k ? { background: 'var(--accent-soft)', boxShadow: 'inset 0 -2px 0 var(--accent)' } : null) }}>
+          <input type="radio" name={ten} checked={value === k} disabled={disabled} onChange={() => onChange(k)} className="pointer-events-none absolute inset-0 m-0 h-full w-full appearance-none opacity-0" />{chu}
+        </label>
+      ))}
+    </div>
+  );
   return (
     <div className={deu ? 'grid gap-2 sm:auto-cols-fr sm:grid-flow-col' : 'flex flex-wrap gap-2'} role="radiogroup" aria-label={nhan}>
       {muc.map(([k, chu]) => (

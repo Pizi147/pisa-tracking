@@ -15,6 +15,10 @@ Mockup: `khung-panel.html` P1 / P3 (`.pht1`, `.vpd`, `.chu-dai`) + đặc tả `
 | Meeting: theo dõi chung của cả việc | `DongTheoDoi rieng` lên ĐẦU thân panel (trước bối cảnh / các phần), cùng dáng dải | meeting-1440, meeting-375 | KHỚP (trước đó nằm cuối panel) |
 | `.vpd`: bấm vi phạm, mở ngay dưới dòng: Nhóm · Ngày · người ghi · Mô tả · Tệp | `DsViPhamBaoPh` / `DongVp` (`yThuc/TraLai.tsx`, PTA giao PR-2b): Nhóm (`nhom` mới từ máy chủ, cùng câu) · tên đậm · **ngày giờ** · **người ghi** · buổi · Mô tả tách câu, số in đậm · Tệp tải khi mở dòng | p1, p3 | KHỚP. Seed không có mô tả / tệp vi phạm, nên ảnh chỉ thấy Nhóm + Ngày |
 | `.chu-dai`: chữ dài in đậm người / số / hạn, tách dòng | mô tả vi phạm: tách câu, đậm số; ngày + người ghi đậm | p1 | KHỚP một phần. Dòng tóm "3 vi phạm · GVCN … REPORT" là `TienTrinh` (`yThuc/BangLan.tsx`, tệp PR-6), không sửa ở đây |
+| `.doan` Kết quả "Đã báo PH \| Chưa liên hệ được" (PTA rà #1999 ①) | `LuaChonRadio doan` dùng lớp `.doan` sẵn có; vẫn là radio thật (mũi tên / Tab / trình đọc), ô radio ẩn, viền focus trên nhãn; 375 hai nút chia đều | p1, meeting | KHỚP |
+| Chân: trạng thái lưu bên trái (PTA rà ②) | đã có sẵn `ChuLuu` (Chưa lưu · Đang lưu… · ✓ Đã lưu hh:mm · lỗi) ở Báo PH / Trả lại; chỉ hiện khi đã gõ (chưa gõ thì không có gì để lưu). Ảnh chụp sau khi gõ để thấy "Chưa lưu" như mockup | p1, meeting, tra-lai | KHỚP (không đổi mã) |
+| Khối bối cảnh Meeting (PTA rà ③) | trước: thẻ chỉ có tên + giờ người xác nhận, không nội dung → giờ không có nội dung thì không vẽ; có thì nhãn "Nội dung gửi TVV" | meeting | SỬA |
+| `.ph` "Phụ huynh Tên (mẹ) · ☎ số" một dòng (PTA rà ④) | gộp hai dòng "Phụ huynh" + "Điện thoại" thành một dòng "Phụ huynh"; tên lấy từ dữ liệu panel đang nạp (`lienHe`, +0 câu). Seed không có tên PH cho các em này nên ảnh chỉ thấy số | p1, meeting | KHỚP |
 | Lịch sử gập sẵn | `LichSuGap` (đã gập sẵn) | p3 | GIỮ |
 | ⋯ · ✕ cùng ô 36, thẳng hàng | đo 1440: ⓘ / ⋯ / ✕ tâm y = 122,5 (lệch 0); 375: 214 (lệch 0); ✕ trong chip theo dõi lệch 0 so với tâm chip | — | KHỚP |
 
