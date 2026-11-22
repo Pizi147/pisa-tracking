@@ -559,9 +559,8 @@ export function HoTroHocVienTab() {
   const chiXemCx = (it: WorkItem) => laCx && !it.mine && it.ownerId === null && it.group === 'score';
   const theoDoi = (it: WorkItem) => !!data?.chiXem || (!it.mine && it.ownerId !== null) || chiXemCx(it);
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
-  /* N56 ① (chủ SP 20/11, sửa N33 ③): việc của người khác mà mình làm thay được (`lamThay` máy chủ) mở THẲNG form + dải "Bạn đang làm thay …";
-     "Chỉ xem" về tóm tắt (nhớ theo việc), ở đó "Làm thay" mở lại form. Không có quyền → tóm tắt như cũ. Quyền máy chủ không đổi. */
-  const [chiXem, setChiXem] = useState<string | null>(null);
+  /* N56 ① → N64 (chủ SP 22/11 "cứ làm luôn"): việc của người khác mà mình làm thay được (`lamThay` máy chủ) mở THẲNG form + dải "Bạn đang làm thay …";
+     không nút "Làm thay" / "Chỉ xem". Không có quyền → tóm tắt chỉ đọc. Quyền máy chủ không đổi. */
   /* GV-2 (N58): việc giao được (Báo PH · Meeting) có cờ quyền từ máy chủ ở chính panel — mở THẲNG panel như việc của mình (`theoDoiChon` false; nhãn đầu panel vẫn "Theo dõi") (khối Phụ trách: Head / CX "Đổi"; không quyền ghi thì form chỉ xem), không tóm tắt. */
   const coKhoiGiao = !!chon && /^(bao_ph_yt|phoi_hop_tvv|meeting_xep_lich|meeting_ket_qua)$/.test(chon.group) && !chon.con?.length;
   const theoDoiViec = !!chon && theoDoi(chon);
@@ -570,15 +569,15 @@ export function HoTroHocVienTab() {
      lưới — sửa được (quyền máy chủ từng ô) thì nhập ngay, không thì chỉ xem; không tóm tắt + nút "Nhập hộ". */
   const moThang = theoDoiChon && chon.group === 'score';
   const coLamThay = !!(chon as { lamThay?: boolean } | null)?.lamThay;
-  const khoaPanel = theoDoiChon && !moThang && (!coLamThay || chiXem === chon?.key);
-  const dangLamThay = theoDoiChon && coLamThay && (moThang || chiXem !== chon?.key);
+  const khoaPanel = theoDoiChon && !moThang && !coLamThay;
+  const dangLamThay = theoDoiChon && coLamThay;
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking') : /^(meeting_|phoi_hop_tvv$)/.test(chon.group) ? t('Meeting CX/GĐCN')   // GV-2 (mockup v22 G8): "Việc · Meeting CX/GĐCN"
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
     loai: `${dangLamThay ? t('Làm thay') : chiXemCx(chon) ? t('Chỉ xem') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null, chiXem: chiXemCx(chon),
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
     /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
-    daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} /> : undefined,
+    daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} /> : undefined,
   } : null;
 
   /* Tên nhóm cho thẻ "Hết việc" — cùng nhãn tab (QL: "Việc quản lý"). */
@@ -812,9 +811,9 @@ export function HoTroHocVienTab() {
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => boChuRoi(dong)}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value><NhanTruongDam.Provider value>
-                {/* N56 ① (sửa N33 ③): làm thay được → form ngay, dải vàng "Bạn đang làm thay … · Chỉ xem"; tóm tắt chỉ đọc khi không có quyền hoặc bấm "Chỉ xem". */}
+                {/* N64: làm thay được → form ngay, dải vàng "Bạn đang làm thay …"; tóm tắt chỉ đọc khi không có quyền. */}
                 {khoaPanel ? (
-                  <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} onDong={dong} onLamThay={() => setChiXem(null)}
+                  <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} onDong={dong}
                     onTiep={keTiep ? () => mo(keTiep) : null} tenTiep={viecVuaLuu.ten} />
                 ) : <>
                 <DauViecCongViec.Provider value={dauPanel}>
@@ -896,12 +895,11 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
 }
 
 /**
- * THEO DÕI (N33 ③ → N56 ①, U01 #5 · khung A2 / C4): việc của người khác — không làm thay được, hoặc đã bấm "Chỉ xem" ở dải làm thay (trừ Nhập điểm / Chấm Speaking — mở thẳng lưới, CV-SUA-1011) — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
- * Phụ trách); thân = Việc · Phương án · Tới đâu · Gần nhất (Case đọc một lần — cùng câu form làm thay sẽ đọc); chân = Việc tiếp › + **Làm thay** (nút chính)
- * khi máy chủ báo `lamThay` (quyền thật: Case `SOS_EDIT`, điểm `editableSkills`), không có quyền → một câu ai làm được.
+ * THEO DÕI (N33 ③ → N56 ① → N64, U01 #5 · khung A2 / C4): việc của người khác mà người xem KHÔNG làm thay được (`lamThay` false; Nhập điểm / Chấm Speaking mở thẳng lưới — CV-SUA-1011) — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
+ * Phụ trách); thân = Việc · Phương án · Tới đâu · Gần nhất (Case đọc một lần); chân = Việc tiếp › + một câu ai làm được.
  */
-function TomTatTheoDoi({ it, loai, onDong, onLamThay, onTiep, tenTiep }: {
-  it: WorkItem & { lamThay?: boolean }; loai: string; onDong: () => void; onLamThay: () => void; onTiep: (() => void) | null; tenTiep: string | null;
+function TomTatTheoDoi({ it, loai, onDong, onTiep, tenTiep }: {
+  it: WorkItem & { lamThay?: boolean }; loai: string; onDong: () => void; onTiep: (() => void) | null; tenTiep: string | null;
 }) {
   const { data } = useApi<CaseDetail>(it.caseId !== null ? `/cases/${it.caseId}` : null, [it.caseId]);
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
@@ -924,8 +922,7 @@ function TomTatTheoDoi({ it, loai, onDong, onLamThay, onTiep, tenTiep }: {
           [t('Phụ trách'), it.owner],
         ] }}
         chan={{ huy: null, trai: tenTiep && onTiep ? <span className="ten-hv text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
-          phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
-          chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{t('Làm thay')}</button> : undefined }}>
+          phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined }}>
         <div className="pt-3">
           <TruongDoc dong={[
             [t('Việc'), iv ? null : dich(it.reason)],   // PA có thì lý do việc = mô tả PA — không lặp
@@ -958,12 +955,11 @@ function NhomGap({ k, nhan, children }: { k: string; nhan: string; children: Rea
   );
 }
 
-/** U01 #5 / #11 (khung A3): đang LÀM THAY — dải vàng trên panel việc, "Chỉ xem" (mockup "Thôi, chỉ xem" — từ điển S3 không dùng "Thôi") về lại tóm tắt (còn chữ thì hỏi như đổi việc). */
-function DaiLamThay({ ai, onThoi }: { ai: string; onThoi: (() => void) | null }) {
+/** U01 #5 / #11 (khung A3): đang LÀM THAY — dải vàng trên panel việc. N64: không nút "Chỉ xem" (mở là làm). */
+function DaiLamThay({ ai }: { ai: string }) {
   return (
     <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
       <b className="font-semibold text-soon">{t('Bạn đang làm thay {ai}.', { ai })}</b>
-      {onThoi && <button type="button" className="link ml-auto min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onThoi}>{t('Chỉ xem')}</button>}
     </div>
   );
 }
