@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Công việc Admin · v23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v23.css">
+<style>
+/* Admin = khung như GV / TVV: danh sách gọn bên trái (556), bấm dòng lớp / em → panel 58 % bên cạnh có từng em + người phụ trách */
+.cv-luoi { display:grid; grid-template-columns:556px minmax(0,1fr); gap:24px; align-items:start; }
+.ct-em col.c-ten { width:auto; } .ct-em col.c-thieu { width:150px; } .ct-em col.c-ai { width:210px; } .ct-em col.c-han { width:120px; }
+.ct-em .ai { font-size:var(--c13); color:var(--text-dim); }
+.ct-em .ai b { color:var(--text); font-weight:600; }
+.nhieu { display:grid; gap:6px; justify-items:start; }
+.dt .ct-em col.c-ai { width:0; } .dt .ct-em th:nth-child(3), .dt .ct-em td:nth-child(3) { display:none; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v23 · ④ Công việc Admin — theo loại việc; danh sách gọn bên trái, bấm dòng mở panel từng em + người phụ trách</h1>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 0, 3 · chủ SP 22/11/2026: theo loại việc (không gom theo lớp) · vòng 2 ý 6: <i>"liệu có cần dàn trải hết cả trang… thu gọn được để khi bấm vào hiện panel bên cạnh gọn gàng?"</i> · ý 15 (vận hành trước, người phụ trách sau).</p>
+    <p>Dữ liệu bịa: Admin MT <b>Trịnh Ngọc Ánh</b> · Monbay · hôm nay <b>thứ Hai 23/11/2026 · W4 NOV</b>.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#a1">A1 · Danh sách + panel lớp</a><a href="#a2">A2 · Panel một em</a><a href="#a3">A3 · 375</a><a href="#a4">A4 · Rỗng · lỗi</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="a1">
+    <h2>A1 · Admin · Công việc · tab Tất cả — bấm "MB FT 101 · thiếu 5 bài" → panel từng em (1440 tối)</h2>
+    <p class="ghi"><span class="so-mk">1</span>bố cục như GV / TVV: danh sách <b>556 px bên trái</b>, panel 58 % mở bên cạnh — không dàn cả trang (vòng 2 ý 6) · <span class="so-mk">2</span>tab = loại việc; "Tất cả" xếp mỗi loại một nhóm, <b>đầu mục nổi</b> + "n việc · m quá hạn" · <span class="so-mk">3</span>dòng: <b>lớp / em · còn thiếu gì</b> đậm · dòng phụ loại bài · hạn (chữ "quá hạn n ngày" ở danh sách Công việc — luật hạn) · không cột người phụ trách ở danh sách (để panel) · <span class="so-mk">4</span>panel lớp: bảng từng em — thiếu kỹ năng (W1 / W2 tách) · <b>người phụ trách — nhiều người thì mỗi người một dòng, khớp dòng kỹ năng; Speaking của Mock ghi "GV Speaking"</b> (chấm chéo, không chỉ định người — chủ SP vòng 3) · hạn dd/mm/yyyy tô màu; "Nhắc GV" (nếu thao tác đang có cho Admin); bấm tên em = hồ sơ · <span class="so-mk">5</span>việc đủ không hiện; cuối nhóm "9 lớp đủ điểm tuần này".</p>
+    <div class="hang-khung"><figure><figcaption>A1 · 1440 · tối · panel lớp mở</figcaption>
+      <p class="cap-doi">Đổi: danh sách dàn hết 1440 + cột người phụ trách → <b>danh sách 556 bên trái + panel</b> có từng em và người phụ trách.</p>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Công việc <span class="so-nav">14</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">NA</span>Trịnh Ngọc Ánh</span></span></div>
+        <div class="noi-dung">
+          <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>14</b> việc · <span class="qua"><b>8</b> quá hạn</span></span></div>
+          <div class="cv-luoi">
+            <div>
+              <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Tất cả</button><button class="tab" role="tab" aria-selected="false">Điểm <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Báo cáo PH <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Lịch thi <span class="bd">2</span></button><button class="tab" role="tab" aria-selected="false">Hồ sơ <span class="bd">3</span></button></div>
+              <div class="ds">
+                <div class="ds-dau"><b>Điểm chưa nhập</b><span>6 việc · <span class="qua-chu">5 quá hạn</span></span></div>
+                <div class="dong ngan chon"><div class="chu"><span class="t">MB FT 101 · thiếu 6 bài</span><span class="p">Mock W3 NOV · <span class="kn-s"><span class="chip ky">L</span><span class="chip ky">R</span><span class="chip ky">W1</span><span class="chip ky">W2</span><span class="chip ky">S</span></span></span></div><span class="han qua">quá hạn 2 ngày</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FT 104 · thiếu 2 bài</span><span class="p">Mock W3 NOV · <span class="kn-s"><span class="chip ky">W1</span><span class="chip ky">W2</span></span></span></div><span class="han qua">quá hạn 2 ngày</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FT 112 · thiếu 6 bài</span><span class="p">Progress 1 W3 NOV · <span class="kn-s"><span class="chip ky">L</span><span class="chip ky">R</span></span></span></div><span class="han qua">quá hạn 1 ngày</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FOU 12 · thiếu 11 bài</span><span class="p">Progress 2 W4 NOV · <span class="kn-s"><span class="chip ky">L</span><span class="chip ky">R</span></span></span></div><span class="han nay">hạn hôm nay</span></div>
+                <div class="ds-dau"><b>Báo cáo PH tháng 11</b><span>3 việc · <span class="qua-chu">1 quá hạn</span></span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FT 101 · thiếu nhận xét 4 em</span><span class="p">Nhận xét cuối tháng</span></div><span class="han qua">quá hạn 1 ngày</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FOU 15 · thiếu nhận xét 2 em</span><span class="p">Nhận xét cuối tháng</span></div><span class="han nay">hạn 25/11/2026</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">MB FT 101 · chưa xuất báo cáo PH</span><span class="p">việc của bạn</span></div><span class="han">hạn 28/11/2026</span></div>
+                <div class="ds-dau"><b>Lịch thi</b><span>2 việc</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">Nguyễn Hoàng Bảo Ngọc · chưa chốt ngày thi</span><span class="p">MB FT 101</span></div><span class="han">hạn 30/11/2026</span></div>
+              </div>
+            </div>
+            <div></div>
+          </div>
+        </div>
+        <section class="pn" aria-label="Điểm Mock Test · MB FT 101">
+          <div class="pn-dau">
+            <h2>Điểm chưa nhập · Mock W3 NOV</h2>
+            <div class="meta"><a href="#">MB FT 101</a><span>6 bài · 3 em</span><span class="han qua">quá hạn 2 ngày · hạn 21/11/2026</span></div>
+            <span class="goc"><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          </div>
+          <div class="pn-than">
+            <div class="ds">
+              <table class="bang ct-em">
+                <colgroup><col class="c-ten"><col class="c-thieu"><col class="c-ai"><col class="c-han"></colgroup>
+                <thead><tr><th>Học viên</th><th>Còn thiếu</th><th>Người phụ trách</th><th>Hạn</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="ten-hv" href="#">Tạ Minh Khoa</a></td><td><span class="nhieu"><span class="kn-s"><span class="chip ky">L</span><span class="chip ky">R</span><span class="chip ky">W1</span><span class="chip ky">W2</span></span><span class="chip ky">S</span></span></td><td class="ai"><span class="nhieu"><span>GV <b>Vũ Thu Lan</b></span><span>GV Speaking</span></span></td><td><span class="han qua">21/11/2026</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Ngô Bảo Châu</a></td><td><span class="chip ky">W2</span></td><td class="ai">GV <b>Vũ Thu Lan</b></td><td><span class="han qua">21/11/2026</span></td></tr>
+                  <tr><td><a class="ten-hv" href="#">Lý Hải Đăng</a></td><td><span class="chip ky">S</span></td><td class="ai">GV Speaking</td><td><span class="han qua">21/11/2026</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <details class="gap"><summary><svg class="chev"><use href="#i-chev"/></svg><span class="ten-gap">Lịch sử</span><span class="tom"><span>đợt mở 16/11/2026 · 9 / 14 bài đã nhập</span></span></summary></details>
+          </div>
+          <div class="pn-chan"><span class="luu">GV nhập · Admin chỉ xem</span><span class="phai"><button class="nut">Nhắc GV</button></span></div>
+        </section>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="a2">
+    <h2>A2 · Bấm dòng một em (Lịch thi) → panel em, người phụ trách là TVV</h2>
+    <p class="ghi"><span class="so-mk">1</span>việc theo em mở panel 58 %: thân là thứ còn thiếu + người phụ trách; Admin không làm được thì chân nói "ai làm" (V11) · <span class="so-mk">2</span>hạn còn 7 ngày: chữ thường.</p>
+    <div class="hang-khung"><figure><figcaption>A2 · 1440 · tối · panel một em</figcaption>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Công việc <span class="so-nav">14</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">NA</span>Trịnh Ngọc Ánh</span></span></div>
+        <div class="noi-dung">
+          <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>14</b> việc · <span class="qua"><b>8</b> quá hạn</span></span></div>
+          <div class="cv-luoi"><div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Tất cả</button><button class="tab" role="tab" aria-selected="false">Điểm <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Báo cáo PH <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="true">Lịch thi <span class="bd">2</span></button></div>
+            <div class="ds">
+              <div class="ds-dau"><b>Lịch thi</b><span>2 việc</span></div>
+              <div class="dong ngan chon"><div class="chu"><span class="t">Nguyễn Hoàng Bảo Ngọc · chưa chốt ngày thi</span><span class="p">MB FT 101</span></div><span class="han">hạn 30/11/2026</span></div>
+              <div class="dong ngan"><div class="chu"><span class="t">Hoàng Thị Minh Nguyệt · chưa chốt ngày thi</span><span class="p">MB FOU 15</span></div><span class="han">hạn 02/12/2026</span></div>
+            </div>
+          </div><div></div></div>
+        </div>
+        <section class="pn" aria-label="Chốt ngày thi · Nguyễn Hoàng Bảo Ngọc">
+          <div class="pn-dau">
+            <h2>Chốt ngày thi</h2>
+            <div class="meta"><a href="#">Nguyễn Hoàng Bảo Ngọc</a><a href="#">MB FT 101</a><span>hạn 30/11/2026</span></div>
+            <span class="goc"><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          </div>
+          <div class="pht1"><span><span class="lb">Phụ trách</span>TVV <b>Đặng Hải Yến</b></span><span><span class="lb">Hạn</span><span class="han">30/11/2026</span></span><span><span class="lb">Theo dõi</span><span class="dim">chưa có</span></span></div>
+          <div class="pn-than">
+            <div class="nguon" style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:8px">
+              <span class="lb">Còn thiếu</span><span><b>Ngày thi IELTS</b></span>
+              <span class="lb">Dự kiến</span><span>tháng <b>12/2026</b> · Target <b>6.5</b></span>
+              <span class="lb">Mock gần nhất</span><span>MT3 · <span class="chip tuan">W3 NOV</span> · Overall <b>6.5</b></span>
+            </div>
+            <details class="gap"><summary><svg class="chev"><use href="#i-chev"/></svg><span class="ten-gap">Lịch sử</span><span class="tom"><span>1 mục · việc sinh 16/11/2026</span></span></summary></details>
+          </div>
+          <div class="pn-chan"><span class="luu">TVV Đặng Hải Yến chốt · Admin chỉ xem</span><span class="phai"><button class="nut">Đóng</button></span></div>
+        </section>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="a3">
+    <h2>A3 · 375 sáng — danh sách; chạm dòng mở panel toàn màn</h2>
+    <div class="hang-khung">
+      <figure><figcaption>A3a · 375 · sáng · danh sách</figcaption>
+        <div class="dt sang cao" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>14</b> việc · <span class="qua"><b>8</b> quá hạn</span></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Tất cả</button><button class="tab" role="tab" aria-selected="false">Điểm <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Báo cáo PH <span class="bd do">3</span></button></div>
+            <div class="ds">
+              <div class="ds-dau"><b>Điểm chưa nhập</b><span>6 · <span class="qua-chu">5 quá hạn</span></span></div>
+              <div class="dong ngan"><div class="chu"><span class="t">MB FT 101 · thiếu 5 bài</span><span class="p">Mock W3 NOV</span></div><span class="han qua">quá hạn 2 ngày</span></div>
+              <div class="dong ngan"><div class="chu"><span class="t">MB FOU 12 · thiếu 14 bài</span><span class="p">Progress 2 W4 NOV</span></div><span class="han nay">hôm nay</span></div>
+              <div class="ds-dau"><b>Báo cáo PH</b><span>3 · <span class="qua-chu">1 quá hạn</span></span></div>
+              <div class="dong ngan"><div class="chu"><span class="t">MB FT 101 · thiếu nhận xét 4 em</span><span class="p">tháng 11</span></div><span class="han qua">quá hạn 1 ngày</span></div>
+              <div class="dong ngan"><div class="chu"><span class="t">MB FOU 15 · thiếu nhận xét 2 em</span><span class="p">tháng 11</span></div><span class="han nay">25/11/2026</span></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>A3b · 375 · sáng · panel lớp</figcaption>
+        <div class="dt sang" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <section class="pn">
+            <div class="pn-dau">
+              <button class="vuong quay" aria-label="Quay lại danh sách"><svg class="ic"><use href="#i-lui"/></svg></button>
+              <h2>Điểm chưa nhập · Mock W3 NOV</h2>
+              <span class="goc"><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+              <div class="meta"><a href="#">MB FT 101</a><span>5 bài</span><span class="han qua">quá hạn 2 ngày</span></div>
+            </div>
+            <div class="pn-than">
+              <div class="ds">
+                <div class="dong ngan"><div class="chu"><span class="t">Tạ Minh Khoa</span><span class="p">GV Vũ Thu Lan · <span class="kn-s"><span class="chip ky">L</span><span class="chip ky">R</span><span class="chip ky">W1</span><span class="chip ky">W2</span></span></span><span class="p">GV Speaking · <span class="chip ky">S</span></span></div><span class="han qua">21/11/2026</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">Ngô Bảo Châu</span><span class="p">GV Vũ Thu Lan · <span class="chip ky">W2</span></span></div><span class="han qua">21/11/2026</span></div>
+                <div class="dong ngan"><div class="chu"><span class="t">Lý Hải Đăng</span><span class="p">GV Speaking · <span class="chip ky">S</span></span></div><span class="han qua">21/11/2026</span></div>
+              </div>
+            </div>
+            <div class="pn-chan"><span class="luu">Admin chỉ xem</span><span class="phai"><button class="nut">Nhắc GV</button></span></div>
+          </section>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="a4">
+    <h2>A4 · Rỗng (không còn thiếu gì) · lỗi tải</h2>
+    <div class="hang-khung">
+      <figure><figcaption>A4a · 1440 · tối · rỗng (cắt 760 px)</figcaption>
+        <div class="man toi" data-web style="width:760px;height:360px">
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Công việc</span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>2</b> việc</span></div>
+            <div class="tabs" role="tablist" style="width:556px"><button class="tab" role="tab" aria-selected="false">Tất cả</button><button class="tab" role="tab" aria-selected="true">Điểm</button><button class="tab" role="tab" aria-selected="false">Vận hành <span class="bd">2</span></button></div>
+            <div class="ds" style="width:556px"><div class="het-viec"><svg class="ic"><use href="#i-ok"/></svg><b>15 lớp đã đủ điểm tuần này</b><button class="nut nut-nho">Vận hành · 2 việc ›</button></div></div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>A4b · 375 · sáng · lỗi tải</figcaption>
+        <div class="dt sang" data-web style="height:360px">
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Tất cả</button><button class="tab" role="tab" aria-selected="false">Điểm</button></div>
+            <div class="bao loi" style="flex-wrap:wrap"><b>Không tải được việc.</b><span class="dim">Kiểm tra mạng rồi thử lại.</span><button class="nut nut-nho">Thử lại</button></div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+<script src="v23.js"></script>
+</body>
+</html>

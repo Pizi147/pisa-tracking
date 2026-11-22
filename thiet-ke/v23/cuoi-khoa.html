@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuối khoá · v23</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v23.css">
+<style>
+/* THANH THAO TÁC MỘT HÀNG: [ô chọn tất cả] n em đã chọn · Bước tiếp ▾ · Lớp ▾ · Tuần ▾ · Áp cho n em  ……  Lọc */
+.thanh { display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); flex-wrap:nowrap; }
+.thanh.co-chon { border-color:var(--accent); background:color-mix(in srgb, var(--accent-soft) 70%, var(--surface)); }
+.thanh .so-chon { font-weight:600; white-space:nowrap; min-width:92px; }
+.thanh .o-chon { min-width:0; }
+.thanh .mui { color:var(--text-faint); }
+.thanh .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.kv-ft { display:flex; align-items:center; gap:8px; min-height:40px; padding:0 12px; border:1px solid var(--line); border-radius:8px; font-size:var(--c14); white-space:nowrap; overflow:hidden; }
+.kv-ft .lb { font-weight:600; color:var(--text); }
+.kv-ft > span + span:not(.nut-i)::before { content:"·"; margin:0 8px 0 0; color:var(--text-faint); }
+.kv-ft .nut-i { margin-left:auto; }
+/* bảng em: tick 44 · Học viên 1fr · Final 100 · MT0 100 (giữa, cùng cỡ) · Kỳ vọng FT 124 · Bước tiếp 168 · Lớp mới 140 · Tuần 116 → tên ≥ 260 */
+.ck col.c-tick { width:44px; } .ck col.c-ten { width:auto; } .ck col.c-diem { width:100px; } .ck col.c-kq { width:100px; } .ck col.c-kv { width:124px; } .ck col.c-buoc { width:168px; } .ck col.c-lop { width:140px; } .ck col.c-tuan { width:116px; }
+.ck td { height:48px; }
+.ck th:first-child, .ck td:first-child { padding-left:14px; padding-right:0; }
+.ck tr.chon td { background:var(--accent-soft); }
+.ck tr.nh td { background:var(--surface-2); height:40px; border-top:1px solid var(--line-strong); font:600 var(--c13) var(--phong); color:var(--text); }
+.ck tr.nh td span.dim { font-weight:500; margin-left:6px; }
+.ck .diem { font:500 var(--c13) var(--phong-so); color:var(--text-dim); letter-spacing:.01em; }
+.ck .diem b { color:var(--text); font-weight:600; font-size:var(--c14); }
+.so-f { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:72px; height:30px; padding:0 8px; border:1px solid var(--line-strong); background:transparent; border-radius:6px; font:600 var(--c14) var(--phong-so); color:var(--text); cursor:pointer; }
+.so-f.dat { color:var(--ok); border-color:var(--ok-vien); }
+.so-f.chua { color:var(--bad); border-color:var(--bad-vien); }
+.so-f:hover, .so-f.mo-hop { background:var(--accent-soft); box-shadow:0 0 0 2px var(--accent-soft); }
+.hop-kn { position:absolute; z-index:7; width:300px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 10px 28px var(--bong); padding:10px 12px; display:grid; gap:8px; font-size:var(--c13); }
+.hop-kn b { font-weight:700; }
+.hop-kn .kn { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; text-align:center; }
+.hop-kn .kn span { display:grid; gap:2px; padding:6px 0; border:1px solid var(--line); border-radius:6px; font:600 var(--c14) var(--phong-so); }
+.hop-kn .kn span.dat { color:var(--ok); border-color:var(--ok-vien); } .hop-kn .kn span.chua { color:var(--bad); border-color:var(--bad-vien); }
+.hop-kn .kn small { font:600 var(--c12) var(--phong); color:var(--text-faint); }
+.ck .o-chon { height:32px; width:100%; font-size:var(--c13); }
+.ck .o-chon.trong { color:var(--text-faint); }
+.ck .gc { display:block; font-size:var(--c12); color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ck tr.loi td { background:var(--bad-nen); }
+.ck .loi-chu { font-size:var(--c12); display:block; }
+.ck tr.chot td { color:var(--text-dim); }
+/* 375: thẻ em hai dòng */
+.ck375 .em { display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:4px 8px; align-items:center; padding:10px 12px; border-top:1px solid var(--line); }
+.ck375 .em.chon { background:var(--accent-soft); }
+.ck375 .em .ten-hv { font-weight:600; color:var(--text); }
+.ck375 .em .p2 { grid-column:2 / -1; display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:var(--c13); color:var(--text-dim); }
+.ck375 .nh { display:flex; align-items:center; gap:8px; min-height:40px; padding:0 12px; background:var(--surface-2); border-top:1px solid var(--line-strong); font:600 var(--c13) var(--phong); }
+.thanh-dt { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 12px; border-top:1px solid var(--accent); background:color-mix(in srgb, var(--accent-soft) 70%, var(--surface)); }
+.thanh-dt .so-chon { grid-column:1 / -1; font-weight:600; display:flex; align-items:center; gap:10px; }
+.thanh-dt .o-chon { width:100%; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v23 · ⑦ Cuối khoá — thanh thao tác một hàng, dòng em gọn, bỏ "+ Ghi chú", kỳ vọng FT một dòng, ô tick theo theme</h1>
+    <p>Đặc tả: <code>docs/superpowers/specs/2026-11-22-nhe-hon-design.md</code> mục 3 "Cuối khoá" · ý chủ SP 22/11/2026 số <b>10</b> (tick box lạc quẻ; sắp xếp lôm côm; nút ghi chú lạc quẻ, không cần thiết). Khung: <a href="khung-panel.html">① panel bảng 75 %</a>.</p>
+    <p>Dữ liệu bịa: Head <b>Nguyễn Thanh Mai</b> · lớp <b>MB FOU 14</b> (12 em) · lớp kế MB FOU 15 · hôm nay <b>23/11/2026 · W4 NOV</b>.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#k1">K1 · 1440 đang chọn</a><a href="#k2">K2 · Lỗi một phần</a><a href="#k3">K3 · 375</a><a href="#k4">K4 · Đã chốt hết</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="k1">
+    <h2>K1 · Head · hồ sơ lớp MB FOU 14 → Cuối khoá (panel 75 %) — 3 em đang chọn (1440 tối)</h2>
+    <p class="ghi"><span class="so-mk">1</span><b>thanh thao tác một hàng</b> đúng thứ tự làm: ô chọn tất cả · "3 em đã chọn" › Bước tiếp ▾ › Lớp ▾ › Tuần ▾ · "Áp cho 3 em"; phải: Lọc · khi chưa chọn em nào thanh chỉ còn ô chọn + Lọc (không nút mờ) · <span class="so-mk">2</span><b>kỳ vọng FT gọn một dòng</b>: mốc · số em đạt · số em Head cân nhắc · ⓘ luật · <span class="so-mk">3</span>dòng em: tick · tên (link) · <b>Final</b> đúng thang của lớp (lớp thường %) · <b>MT0</b> (band, "—" nếu không có) — <b>bấm điểm mở hộp đủ kỹ năng</b> (vòng 2 ý 5) — <b>tô màu đạt / trượt</b>: xanh ✓ (Final ≥ 60 %, MT0 ≥ mốc 5.0) · đỏ ✗ dưới mốc (chủ SP 22/11, có dấu để không chỉ dựa màu); hai cột điểm cùng cỡ 100, căn giữa; bỏ cột Kết quả (nhóm Đạt / Không đạt đã nói) · <b>Kỳ vọng FT</b> (Đạt / Head cân nhắc / —, tính từ MT0 — mốc ở dòng đầu bảng) · Bước tiếp ▾ · Lớp mới ▾ · Tuần ▾ — bỏ cột "MT0 → Final" (hai thang khác nhau, góp ý 5) — sửa tại dòng như hiện nay · <span class="so-mk">4</span><b>bỏ nút "+ Ghi chú"</b> (chủ SP); ghi chú cũ nếu có hiện chữ nhỏ dưới tên · <span class="so-mk">5</span>nhóm theo kết quả (Đạt · Không đạt · Chờ Final) — hàng nhóm có tick "chọn cả nhóm" (giữ) · <span class="so-mk">6</span>ô tick vẽ theo theme (nền ô, viền o-vien, chọn = nền nhấn + dấu ✓) · <span class="so-mk">7</span>chân: "Nháp — chỉ Head thấy" · Lưu nháp · Chốt · 8 em.</p>
+    <div class="hang-khung"><figure><figcaption>K1 · 1440 · tối · panel Cuối khoá, 3 em chọn</figcaption>
+      <p class="cap-doi">Đổi: thanh chọn hai tầng + nút rải rác → <b>một hàng theo thứ tự làm</b> · khối kỳ vọng FT nhiều dòng → <b>một dòng</b> · "+ Ghi chú" mỗi dòng → <b>bỏ</b> · ô tick trình duyệt → <b>ô theo theme</b>.</p>
+      <div class="man toi" data-web>
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m">Công việc</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Phân tích</span><span class="m">Test</span>
+          <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">TM</span>Nguyễn Thanh Mai</span></span></div>
+        <div class="noi-dung"><div class="dau-trang"><h1>MB FOU 14</h1><span class="dem">12 em · GVCN Đinh Thu Hằng</span></div></div>
+        <div class="lop-tren"></div>
+        <section class="pn rong" aria-label="Cuối khoá · MB FOU 14">
+          <div class="pn-dau">
+            <h2>Cuối khoá · MB FOU 14</h2>
+            <div class="meta"><span>12 em</span><span>Final W3 NOV</span><span>hạn chốt 28/11/2026</span></div>
+            <span class="goc"><button class="nut-i" aria-label="Luật Cuối khoá"><svg class="ic"><use href="#i-i"/></svg></button><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+          </div>
+          <div class="pn-than" style="gap:12px">
+            <div class="kv-ft"><span class="lb">Kỳ vọng FT</span><span><b class="so">4</b> em đạt</span><span><b class="so">2</b> em Head cân nhắc</span><button class="nut-i" aria-label="Luật kỳ vọng FT"><svg class="ic"><use href="#i-i"/></svg></button></div>
+            <div class="thanh co-chon">
+              <span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn tất cả" id="tatca" data-mot-phan></span>
+              <span class="so-chon">3 em đã chọn</span>
+              <span class="mui">›</span><span class="o-chon" style="width:170px">Lên FOU 15</span>
+              <span class="mui">›</span><span class="o-chon" style="width:150px">MB FOU 15</span>
+              <span class="mui">›</span><span class="o-chon" style="width:120px">W1 DEC</span>
+              <button class="nut nut-chinh">Áp cho 3 em</button>
+              <span class="phai"><button class="nut nut-ma">Bỏ chọn</button><button class="nut"><svg class="ic"><use href="#i-loc"/></svg>Lọc</button></span>
+            </div>
+            <div class="ds">
+              <table class="bang ck">
+                <colgroup><col class="c-tick"><col class="c-ten"><col class="c-diem"><col class="c-kq"><col class="c-kv"><col class="c-buoc"><col class="c-lop"><col class="c-tuan"></colgroup>
+                <thead><tr><th></th><th>Học viên</th><th class="so-c">Final</th><th class="so-c">MT0</th><th>Kỳ vọng FT</th><th>Bước tiếp</th><th>Lớp mới</th><th>Tuần</th></tr></thead>
+                <tbody>
+                  <tr class="nh"><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn cả nhóm Đạt" data-mot-phan></span></td><td colspan="7">Đạt <span class="dim">8 em</span></td></tr>
+                  <tr class="chon"><td><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Lê Phương Anh"></span></td><td><a class="ten-hv" href="#">Lê Phương Anh</a></td><td class="so-c"><button class="so-f dat" aria-label="Final 78 % — xem điểm từng kỹ năng">✓ 78 %</button></td><td class="so-c"><button class="so-f dat" aria-label="MT0 5.0 — xem điểm từng kỹ năng">✓ 5.0</button></td><td><span class="kq dat">✓ Đạt</span></td><td><span class="o-chon">Lên FOU 15</span></td><td><span class="o-chon">MB FOU 15</span></td><td><span class="o-chon">W1 DEC</span></td></tr>
+                  <tr class="chon"><td><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Bùi Ngọc Hân"></span></td><td><a class="ten-hv" href="#">Bùi Ngọc Hân</a></td><td class="so-c"><button class="so-f dat" aria-label="Final 72 % — xem điểm từng kỹ năng">✓ 72 %</button></td><td class="so-c"><button class="so-f chua" aria-label="MT0 4.5 — xem điểm từng kỹ năng">✗ 4.5</button></td><td><span class="dim">Head cân nhắc</span></td><td><span class="o-chon">Lên FOU 15</span></td><td><span class="o-chon">MB FOU 15</span></td><td><span class="o-chon">W1 DEC</span></td></tr>
+                  <tr class="chon"><td><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Hồ Quang Minh"></span></td><td><a class="ten-hv" href="#">Hồ Quang Minh</a><span class="gc">PH xin học ca tối</span></td><td class="so-c"><button class="so-f dat mo-hop" aria-label="Final 84 % — xem điểm từng kỹ năng">✓ 84 %</button></td><td class="so-c"><button class="so-f dat" aria-label="MT0 5.5 — xem điểm từng kỹ năng">✓ 5.5</button></td><td><span class="kq dat">✓ Đạt</span></td><td><span class="o-chon">Lên FT</span></td><td><span class="o-chon">MB FT 118</span></td><td><span class="o-chon">W1 DEC</span></td></tr>
+                  <tr><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Đỗ Khánh Linh"></span></td><td><a class="ten-hv" href="#">Đỗ Khánh Linh</a></td><td class="so-c"><button class="so-f dat" aria-label="Final 78 % — xem điểm từng kỹ năng">✓ 78 %</button></td><td class="so-c mo">—</td><td><span class="kq dat">✓ Đạt</span></td><td><span class="o-chon trong">Chưa có hướng</span></td><td><span class="o-chon trong">—</span></td><td><span class="o-chon trong">—</span></td></tr>
+                  <tr><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Nguyễn Hoàng Bảo Ngọc"></span></td><td><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a></td><td class="so-c"><button class="so-f dat" aria-label="Final 78 % — xem điểm từng kỹ năng">✓ 78 %</button></td><td class="so-c"><button class="so-f dat" aria-label="MT0 5.0 — xem điểm từng kỹ năng">✓ 5.0</button></td><td><span class="kq dat">✓ Đạt</span></td><td><span class="o-chon trong">Chưa có hướng</span></td><td><span class="o-chon trong">—</span></td><td><span class="o-chon trong">—</span></td></tr>
+                  <tr class="nh"><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn cả nhóm Không đạt"></span></td><td colspan="7">Không đạt <span class="dim">3 em</span></td></tr>
+                  <tr><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Tạ Minh Khoa"></span></td><td><a class="ten-hv" href="#">Tạ Minh Khoa</a></td><td class="so-c"><button class="so-f chua" aria-label="Final 46 % — xem điểm từng kỹ năng">✗ 46 %</button></td><td class="so-c"><button class="so-f chua" aria-label="MT0 4.0 — xem điểm từng kỹ năng">✗ 4.0</button></td><td><span class="mo">—</span></td><td><span class="o-chon">Học lại FOU 14</span></td><td><span class="o-chon">MB FOU 16</span></td><td><span class="o-chon">W2 DEC</span></td></tr>
+                  <tr><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Ngô Bảo Châu"></span></td><td><a class="ten-hv" href="#">Ngô Bảo Châu</a></td><td class="so-c"><button class="so-f chua" aria-label="Final 58 % — xem điểm từng kỹ năng">✗ 58 %</button></td><td class="so-c mo">—</td><td><span class="dim">Head cân nhắc</span></td><td><span class="o-chon trong">Chưa có hướng</span></td><td><span class="o-chon trong">—</span></td><td><span class="o-chon trong">—</span></td></tr>
+                  <tr class="nh"><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn cả nhóm Chờ Final"></span></td><td colspan="7">Chờ Final <span class="dim">1 em</span></td></tr>
+                  <tr><td><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Mai Tuệ Nhi"></span></td><td><a class="ten-hv" href="#">Mai Tuệ Nhi</a></td><td class="so-c mo">chưa thi</td><td class="so-c mo">—</td><td><span class="mo">—</span></td><td><span class="o-chon trong">Chưa có hướng</span></td><td><span class="o-chon trong">—</span></td><td><span class="o-chon trong">—</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="hop-kn" style="left:256px;top:460px"><b>Final · Hồ Quang Minh · 84 %</b><div class="kn"><span class="dat"><small>L</small>86 %</span><span class="dat"><small>R</small>82 %</span><span class="dat"><small>W</small>80 %</span><span class="dat"><small>S</small>88 %</span></div><span class="dim">MT0 <span class="chip tuan">W3 SEP</span> · Overall <b>5.5</b><br>L <b style="color:var(--ok)">6.0</b> · R <b style="color:var(--ok)">5.5</b> · W <b style="color:var(--ok)">5.0</b> · S <b style="color:var(--ok)">5.5</b> — mốc 5.0</span></div>
+          <div class="pn-chan"><span class="luu nhap">Nháp — chỉ Head thấy · 4 em chưa có hướng</span><span class="phai"><button class="nut">Lưu nháp</button><button class="nut nut-chinh">Chốt · 8 em</button></span></div>
+        </section>
+      </div>
+    </figure></div>
+  </section>
+
+  <section class="khu" id="k2">
+    <h2>K2 · Sau "Chốt" — lỗi một phần (dòng lỗi nêu lý do, nút Thử lại n em) · đang chuyển</h2>
+    <p class="ghi"><span class="so-mk">1</span>em chốt xong: chữ xám, tick khoá ("Đã chốt · không chọn được"), hướng / lớp hiện chữ thường · <span class="so-mk">2</span>em lỗi: nền đỏ nhạt cả dòng, lý do dưới tên ("Chưa chuyển được: MB FOU 15 đã kết thúc — chọn lớp khác"; hoặc mất kết nối → Thử lại) — đường sửa ngay ở dòng · <span class="so-mk">3</span>chân: "2 em chưa lưu — xem lý do ở dòng" · "Thử lại 2 em" (giữ chữ hiện có) · <span class="so-mk">4</span>đang chuyển: nút chính "Đang chuyển… 5/8 em".</p>
+    <div class="hang-khung" style="flex-direction:column">
+      <figure><figcaption>K2a · cắt panel · tối · lỗi một phần</figcaption>
+        <div class="man toi" data-web style="width:1080px;height:330px">
+          <div class="pn-than" style="padding:16px 20px">
+            <div class="ds">
+              <table class="bang ck">
+                <colgroup><col class="c-tick"><col class="c-ten"><col class="c-diem"><col class="c-kq"><col class="c-kv"><col class="c-buoc"><col class="c-lop"><col class="c-tuan"></colgroup>
+                <thead><tr><th></th><th>Học viên</th><th class="so-c">Final</th><th class="so-c">MT0</th><th>Kỳ vọng FT</th><th>Bước tiếp</th><th>Lớp mới</th><th>Tuần</th></tr></thead>
+                <tbody>
+                  <tr class="chot"><td><span class="vung-tick"><input type="checkbox" class="tick" disabled aria-label="Đã chốt"></span></td><td><a class="ten-hv" href="#" style="color:var(--text-dim)">Lê Phương Anh</a></td><td class="so-c"><button class="so-f dat" aria-label="Final 78 % — xem điểm từng kỹ năng">✓ 78 %</button></td><td class="so-c"><button class="so-f dat" aria-label="MT0 5.0 — xem điểm từng kỹ năng">✓ 5.0</button></td><td><span class="kq dat">✓ Đạt</span></td><td>Lên FOU 15</td><td>MB FOU 15</td><td class="so">W1 DEC</td></tr>
+                  <tr class="loi"><td><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Bùi Ngọc Hân"></span></td><td><a class="ten-hv" href="#">Bùi Ngọc Hân</a><span class="loi-chu">Chưa chuyển được: MB FOU 15 đã kết thúc — chọn lớp khác</span></td><td class="so-c"><button class="so-f dat" aria-label="Final 72 % — xem điểm từng kỹ năng">✓ 72 %</button></td><td class="so-c"><button class="so-f chua" aria-label="MT0 4.5 — xem điểm từng kỹ năng">✗ 4.5</button></td><td><span class="dim">Head cân nhắc</span></td><td><span class="o-chon">Lên FOU 15</span></td><td><span class="o-chon o loi" style="height:32px;min-height:32px;padding:0 30px 0 12px">MB FOU 15</span></td><td><span class="o-chon">W1 DEC</span></td></tr>
+                  <tr class="loi"><td><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Hồ Quang Minh"></span></td><td><a class="ten-hv" href="#">Hồ Quang Minh</a><span class="loi-chu">Chưa chuyển được: mất kết nối</span></td><td class="so-c"><button class="so-f dat" aria-label="Final 84 % — xem điểm từng kỹ năng">✓ 84 %</button></td><td class="so-c"><button class="so-f dat" aria-label="MT0 5.5 — xem điểm từng kỹ năng">✓ 5.5</button></td><td><span class="kq dat">✓ Đạt</span></td><td><span class="o-chon">Lên FT</span></td><td><span class="o-chon">MB FT 118</span></td><td><span class="o-chon">W1 DEC</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="pn-chan" style="margin-top:auto"><span class="luu loi">2 em chưa lưu — xem lý do ở dòng</span><span class="phai"><button class="nut">Đóng</button><button class="nut nut-chinh">Thử lại 2 em</button></span></div>
+        </div>
+      </figure>
+      <div class="mau-chan toi" style="width:1080px;background:var(--surface);border:1px solid var(--line);border-radius:6px"><div class="pn-chan" style="border-top:0"><span class="luu"></span><span class="phai"><button class="nut" disabled>Lưu nháp</button><button class="nut nut-chinh dang-luu" disabled>Đang chuyển… 5/8 em</button></span></div></div>
+    </div>
+  </section>
+
+  <section class="khu" id="k3">
+    <h2>K3 · 375 sáng — thẻ em hai dòng, thanh thao tác dính đáy khi có chọn</h2>
+    <p class="ghi"><span class="so-mk">1</span>dòng em: tick · tên · kết quả (dòng 1) · Final % · bước tiếp · lớp (dòng 2); chạm tên = hồ sơ, chạm dòng = sửa hướng ở hộp nhỏ (bậc 2) · <span class="so-mk">2</span>khi có chọn: thanh "3 em đã chọn" + Bước tiếp / Lớp / Tuần lưới 2 cột dính trên chân · <span class="so-mk">3</span>kỳ vọng FT một dòng, chữ cắt bằng … nếu thiếu chỗ, đủ trong ⓘ.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K3 · 375 · sáng · Cuối khoá, có chọn</figcaption>
+        <div class="dt sang" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="nut-tt"><svg class="ic"><use href="#i-menu"/></svg></span></div>
+          <section class="pn rong">
+            <div class="pn-dau">
+              <button class="vuong quay" aria-label="Quay lại hồ sơ lớp"><svg class="ic"><use href="#i-lui"/></svg></button>
+              <h2>Cuối khoá · MB FOU 14</h2>
+              <span class="goc"><button class="vuong" aria-label="Thêm thao tác"><svg class="ic"><use href="#i-ba"/></svg></button><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span>
+              <div class="meta"><span>12 em</span><span>hạn chốt 28/11/2026</span></div>
+            </div>
+            <div class="pn-than" style="padding:12px 12px 0;gap:10px">
+              <div class="kv-ft"><span class="lb">Kỳ vọng FT</span><span><b class="so">4</b> đạt</span><span><b class="so">2</b> cân nhắc</span><button class="nut-i" aria-label="Luật kỳ vọng FT"><svg class="ic"><use href="#i-i"/></svg></button></div>
+              <div class="ds ck375">
+                <div class="nh" style="border-top:0"><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn cả nhóm Đạt" data-mot-phan></span>Đạt <span class="dim" style="font-weight:500">8 em</span></div>
+                <div class="em chon"><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Lê Phương Anh"></span><a class="ten-hv" href="#">Lê Phương Anh</a><span class="kq dat">✓ Đạt</span><span class="p2"><span class="so">Final <b style="color:var(--ok)">✓ 78 %</b> · MT0 <b style="color:var(--ok)">✓ 5.0</b></span> · Lên FOU 15 · MB FOU 15</span></div>
+                <div class="em chon"><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Bùi Ngọc Hân"></span><a class="ten-hv" href="#">Bùi Ngọc Hân</a><span class="kq dat">✓ Đạt</span><span class="p2"><span class="so">Final <b style="color:var(--ok)">✓ 72 %</b> · MT0 <b style="color:var(--bad)">✗ 4.5</b></span> · Lên FOU 15 · MB FOU 15</span></div>
+                <div class="em chon"><span class="vung-tick"><input type="checkbox" class="tick" checked aria-label="Chọn Hồ Quang Minh"></span><a class="ten-hv" href="#">Hồ Quang Minh</a><span class="kq dat">✓ Đạt</span><span class="p2"><span class="so">Final <b style="color:var(--ok)">✓ 84 %</b> · MT0 <b style="color:var(--ok)">✓ 5.5</b></span> · Lên FT · MB FT 118</span></div>
+                <div class="em"><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Chọn Nguyễn Hoàng Bảo Ngọc"></span><a class="ten-hv" href="#">Nguyễn Hoàng Bảo Ngọc</a><span class="kq dat">✓ Đạt</span><span class="p2"><span class="so">Final <b>78 %</b></span> · <span class="mo">Chưa có hướng</span></span></div>
+              </div>
+            </div>
+            <div class="thanh-dt"><span class="so-chon"><span class="vung-tick"><input type="checkbox" class="tick" aria-label="Bỏ chọn tất cả" data-mot-phan></span>3 em đã chọn</span><span class="o-chon">Lên FOU 15</span><span class="o-chon">MB FOU 15</span><span class="o-chon">W1 DEC</span><button class="nut nut-chinh">Áp cho 3 em</button></div>
+            <div class="pn-chan"><span class="luu nhap">Nháp</span><span class="phai"><button class="nut">Lưu nháp</button><button class="nut nut-chinh">Chốt · 8</button></span></div>
+          </section>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k4">
+    <h2>K4 · Mọi em đã chốt (rỗng) — giữ chữ "Mọi em đã chốt"</h2>
+    <div class="hang-khung">
+      <figure><figcaption>K4 · cắt panel · tối · đã chốt hết</figcaption>
+        <div class="man toi" data-web style="width:1080px;height:300px">
+          <section class="pn rong" style="position:static;width:100%;height:100%;box-shadow:none;border:0">
+            <div class="pn-dau"><h2>Cuối khoá · MB FOU 14</h2><div class="meta"><span>12 em</span><span>chốt 22/11/2026</span></div><span class="goc"><button class="vuong" aria-label="Đóng"><svg class="ic"><use href="#i-x"/></svg></button></span></div>
+            <div class="pn-than"><div class="het-viec"><svg class="ic"><use href="#i-ok"/></svg><b>Mọi em đã chốt</b><span>Đã chuyển 11 em sang lớp mới · 1 em Tạm dừng</span></div></div>
+            <div class="pn-chan"><span class="luu da">✓ Đã chốt 12 em <button class="nut nut-ma">Hoàn tác</button></span><span class="phai"><button class="nut">Đóng</button></span></div>
+          </section>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+<script src="v23.js"></script>
+</body>
+</html>
