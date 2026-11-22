@@ -1,4 +1,4 @@
-import type { ExamPlan, LichThi, LienHe, NhanYThucEm } from '@shared/domain/index.ts';
+import type { DiemHv, ExamPlan, LichThi, LienHe, NhanYThucEm } from '@shared/domain/index.ts';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -52,6 +52,8 @@ export type RosterRow = {
   skills: string[] | null;
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean } | null;
   standingLine: string | null;
+  /** SUA-2211-B: điểm lượt gần nhất (`diemTuStanding`, máy chủ) — panel Đạt MT / SOS đầu hồ sơ lớp. */
+  diemHv?: DiemHv | null;
   sosLevel: number | null; provisional: boolean;
   /** OV-9: em KCK dưới kỳ vọng — chip trung tính "Dưới kỳ vọng · KCK". */
   kckDuoi?: boolean;

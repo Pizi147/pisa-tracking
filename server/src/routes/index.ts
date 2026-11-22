@@ -158,6 +158,8 @@ export const api = Router();
  * theo đường; ghi điểm / xếp lịch vẫn tự kiểm quyền riêng. `/yeu-cau?studentId=` (đầu hồ sơ HV, hồ sơ lượt) không phải khu Công việc.
  */
 const KHU_TEST = [/^\/cham\/lich-test\/?$/, /^\/diem-theo-lop(\/|$)/, /^\/ke-hoach-test(\/|$)/];
+/** SUA-2211-B (chủ SP 22/11 ý 14): khu Phân tích cần `analysis.view` — TVV (không quyền này) 403 ở MỌI đường `/phan-tich/*`, kể cả đường vốn trả rỗng khi không phạm vi. */
+const KHU_PHAN_TICH = /^\/phan-tich(\/|$)/;
 const KHU_VIEC = [/^\/my-work(\/|$)/, /^\/mgmt-tasks(\/|$)/, /^\/meeting(\/|$)/, /^\/tasks(\/|$)/, /^\/signals\/?$/, /^\/yeu-cau\/dem\/?$/];
 /** UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV không có `work.view` vẫn đọc `GET /my-work` — route trả CHỈ việc TVV của chính mình (`NHOM_VIEC_TVV`). */
 const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
@@ -179,6 +181,7 @@ api.use((req, _res, next) => {
   /* Express so đường KHÔNG phân biệt hoa thường (`/MY-WORK` vẫn tới `/my-work`) — so bản chữ thường, không thì đổi chữ là lọt chặn. */
   const duong = req.path.toLowerCase();
   const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
+  if (KHU_PHAN_TICH.test(duong) && !can(p, PERMISSIONS.ANALYSIS_VIEW, { anyScope: true })) { next(forbidden('Vai trò của bạn không có khu Phân tích.')); return; }
   const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
   if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method))) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));

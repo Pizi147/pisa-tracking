@@ -101,7 +101,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * Tạm dừng / Quay lại / Thôi học, kết quả thi thật (`student.edit_more`). Học thuật vẫn của GV / QL. Không Test, không Công việc.
    * OV-13p (chủ SP 16/10): tạo lớp (`class.create`, chi nhánh của grant) + thêm học viên (`student.add`) — KHÔNG phân công GV (`class.assign`).
    */
-  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
+  consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'class.create', 'student.add'],   // chủ SP 22/11: TVV không xem Phân tích
   /*
    * CX — N52 (chủ SP 18/11): theo 1 / nhiều chi nhánh (grant không chi nhánh = toàn hệ thống). XEM mọi thứ như Quản lý (Test, Công việc, Phân tích cả
    * phần giáo viên, thống kê Ý thức). SỬA = phía TVV (người quản lý TVV): mọi quyền TVV (`VAI_PHIA_TVV`, `permissions.ts`) + Ý thức + tạo / sửa lớp, thêm HV,

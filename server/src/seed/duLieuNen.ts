@@ -91,6 +91,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_cx_n52_quyen_at', now, now);
   /* TU2-1 (TU12): như trên — CX dựng từ ROLE_PERMISSIONS đã có `tutor.view`; `migratePrTutor2` không chạy phần quyền trên DB mới. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_tutor2_cx_tutor_view_at', now, now);
+  /* SUA-2211-B: vai TVV dựng từ ROLE_PERMISSIONS đã không có `analysis.view` — `migratePrTvvPt` không chạy trên DB mới. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_tvv_bo_phan_tich_at', now, now);
   /* HOTFIX-3: như trên cho `prOv1b` (dọn "-" cũ) — khoá trước, migrate chỉ ghi khoá trên DB cũ. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov1b_da_chay', now, now);
   /* PR-MT-VANG-RESET (N38 L5): DB mới đã theo luật chọn tuần = lần vắng 0 — khoá trước, migrate chỉ đặt lại một lần trên DB cũ. */

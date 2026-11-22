@@ -51,37 +51,22 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assert(h[0].actionLabel === '3 em' && new Set(h[0].con.map((c: any) => c.studentId)).size === 3, `3 em: ${h[0].actionLabel}`);
   });
 
-  check('OV13c-3 · Nhập điểm gom theo tuần thi qua nhiều lớp: "Nhập điểm · W2 SEP · n bài", con = từng lớp; khác tuần / chấm chéo không gộp theo tuần', () => {
+  check('OV13c-3 · SUA-2211-B (chủ SP 22/11 ý 9): Nhập điểm theo tuần thi — MỖI LỚP MỘT DÒNG (không còn dòng "Cả lớp · n lớp"); cùng lớp + cùng tuần gộp "Nhập điểm · W2 SEP · n bài"', () => {
     const s = (o: Record<string, unknown>) => v({ key: 'score:10|mock|p1|u7', group: 'score', studentId: null, studentName: 'Lớp CP FT 139', caseSos: undefined, sos: undefined,
       tieuDe: 'Nhập điểm Reading', phu: 'Reading', contextLabel: 'MT3 W2 SEP', soBai: 4, count: 4, ...o });
-    const g = d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'CP FT 140', soBai: 5 })], nhan);
-    assert(g.length === 1 && g[0].tieuDe === 'Nhập điểm · W2 SEP · 9 bài' && g[0].contextLabel === '2 lớp' && g[0].classId === null, `dòng tuần: ${JSON.stringify(g.map((x: any) => [x.tieuDe, x.contextLabel, x.classId]))}`);
-    /* AUDIT-1611 P1-02: dòng gộp mang TỔNG bài của lớp con (không giữ 4 của lớp đầu); bài quá hạn cũng tổng. */
+    const hai = d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'CP FT 140', soBai: 5, cn: 2 })], nhan);
+    assert(hai.length === 2 && hai.every((x: any) => !x.con && x.classId !== null) && hai.every((x: any) => !/lớp$/.test(x.contextLabel ?? '')), `hai lớp phải hai dòng: ${JSON.stringify(hai.map((x: any) => [x.key, x.contextLabel]))}`);
+    const g = d.gopViecTheoLop([s({}), s({ key: 'score:10|regular|p1|u7', soBai: 5, phu: 'Listening' })], nhan);
+    assert(g.length === 1 && g[0].tieuDe === 'Nhập điểm · W2 SEP · 9 bài' && g[0].contextLabel === null && g[0].classId === 10 && g[0].classCode === 'CP FT 139', `dòng tuần một lớp: ${JSON.stringify(g.map((x: any) => [x.tieuDe, x.contextLabel, x.classId]))}`);
+    /* AUDIT-1611 P1-02: dòng gộp mang TỔNG bài của việc con; bài quá hạn cũng tổng. */
     assert(g[0].soBai === 9 && g[0].baiQuaHan === 0, `soBai dòng gộp: ${g[0].soBai} / quá hạn ${g[0].baiQuaHan}`);
-    const q = d.gopViecTheoLop([s({ urgency: 'overdue' }), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'CP FT 140', soBai: 5 })], nhan);
-    assert(q[0].soBai === 9 && q[0].baiQuaHan === 4 && d.demBai(q).quaHan === 4, `bài quá hạn dòng gộp: ${q[0].baiQuaHan}`);
-    assert(g[0].con.length === 2 && g[0].con.every((c: any) => c.conTen.startsWith(c.classCode)), `con theo lớp: ${g[0].con.map((c: any) => c.conTen)}`);
-    assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p2|u7', classId: 11, tuanThi: '2026-09-14' })], nhan).length === 2, 'khác tuần: hai dòng');
-    assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, ownerId: 9 })], nhan).length === 2, 'khác người giữ: hai dòng');
+    const q = d.gopViecTheoLop([s({ urgency: 'overdue' }), s({ key: 'score:10|regular|p1|u7', soBai: 5 })], nhan);
+    assert(q[0].soBai === 9 && q[0].baiQuaHan === 4 && d.demBai(q).quaHan === 4 && q[0].contextLabel === '4 bài quá hạn', `bài quá hạn dòng gộp: ${q[0].baiQuaHan} / ${q[0].contextLabel}`);
+    assert(d.gopViecTheoLop([s({}), s({ key: 'score:10|mock|p2|u7', tuanThi: '2026-09-14' })], nhan).length === 2, 'khác tuần: hai dòng');
+    assert(d.gopViecTheoLop([s({}), s({ key: 'score:10|regular|p1|u9', ownerId: 9 })], nhan).length === 2, 'khác người giữ: hai dòng');
     assert(d.khoaGopCua(s({ key: 'score:10|mock|p1|u0|cc', ownerId: null })) === 'gop:score:10:u0|cc', 'chấm chéo: khoá lớp như cũ, giữ đuôi |cc (RA-LUONG-1)');
     const ccGop = d.gopViecTheoLop([s({ key: 'score:10|mock|p1|u0|cc', ownerId: null }), s({ key: 'score:10|mock|p2|u0|cc', ownerId: null, tuanThi: '2026-09-07' })], nhan);
     assert(ccGop.length === 1 && d.laViecChamCheo(ccGop[0]), `RA-LUONG-1: dòng gộp chấm chéo phải là việc chấm chéo: ${ccGop.map((x: any) => x.key)}`);
-  });
-
-  check('OV13c-3b · chủ SP 07/11 (mục 8): dòng tuần nhiều lớp ở 2 chi nhánh (`cn` null) — dải CN chỉ lớp + bài CN đó (dựng lại tiêu đề / số); CN không có lớp nào → không dòng', () => {
-    const s = (o: Record<string, unknown>) => v({ key: 'score:10|mock|p1|u7', group: 'score', studentId: null, studentName: 'Lớp CP FT 139', caseSos: undefined, sos: undefined,
-      tieuDe: 'Nhập điểm Reading', phu: 'Reading', contextLabel: 'MT3 W2 SEP', soBai: 4, count: 4, cn: 1, ...o });
-    const g = d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'HD FT 1', soBai: 5, cn: 2 }),
-      s({ key: 'score:12|mock|p1|u7', classId: 12, classCode: 'HD FT 2', soBai: 3, cn: 2 })], nhan);
-    assert(g.length === 1 && g[0].cn === null && g[0].tieuDe === 'Nhập điểm · W2 SEP · 12 bài', `Tất cả: ${JSON.stringify(g.map((x: any) => [x.tieuDe, x.cn]))}`);
-    const b = d.dongTheoChiNhanh(g, 2);
-    assert(b.length === 1 && b[0].key === g[0].key && b[0].tieuDe === 'Nhập điểm · W2 SEP · 8 bài' && b[0].contextLabel === '2 lớp'
-      && b[0].con.length === 2 && b[0].con.every((c: any) => c.cn === 2), `CN 2: ${JSON.stringify(b.map((x: any) => [x.tieuDe, x.contextLabel, x.con?.length]))}`);
-    const a = d.dongTheoChiNhanh(g, 1);
-    assert(a.length === 1 && a[0].key === 'score:10|mock|p1|u7' && a[0].soBai === 4, `CN 1 (một lớp → việc lẻ): ${JSON.stringify(a.map((x: any) => [x.key, x.soBai]))}`);
-    assert(d.dongTheoChiNhanh(g, 3).length === 0, 'CN không có lớp: còn dòng');
-    const le = s({ key: 'mgmt:1', group: 'mgmt', classId: null, cn: null, tuanThi: null });
-    assert(d.dongTheoChiNhanh([le], 2)[0] === le, 'việc không gắn lớp / không có con: giữ nguyên');
   });
 
   check('OV13c-4 · /my-work: Nhập điểm theo tuần thi (khoá có tuần, tuần trong dòng phụ); Case SOS FT cùng tuần + SOS → một dòng, số em trên dòng = số em trong dòng', () => thu(() => {
@@ -89,6 +74,8 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     const phang = (w.dong as any[]).flatMap((x) => x.con ?? [x]);
     const diem = phang.filter((x) => x.group === 'score' && x.tuanThi);
     assert(diem.length > 0 && diem.every((x) => /\|p\d+\|/.test(x.key) && x.contextLabel.endsWith(d.tuanLich(x.tuanThi))), `Nhập điểm theo tuần: ${diem.slice(0, 3).map((x) => `${x.key} ${x.contextLabel}`)}`);
+    /* SUA-2211-B: không dòng Nhập điểm nào gom nhiều lớp. */
+    assert((w.dong as any[]).every((x) => !(x.group === 'score' && x.con && new Set(x.con.map((c: any) => c.classId)).size > 1)), 'còn dòng Nhập điểm nhiều lớp');
     for (const r of (w.dong as any[]).filter((x) => x.con && x.group === 'score' && x.key.startsWith('gop:score:t'))) {
       const bai = r.con.reduce((n: number, c: any) => n + (c.soBai ?? 0), 0);
       assert(r.actionLabel === `${bai} bài` && r.soBai === bai, `dòng ${r.key}: ${r.actionLabel} / soBai ${r.soBai} ≠ ${bai} bài`);

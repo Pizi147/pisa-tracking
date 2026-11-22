@@ -32,6 +32,7 @@ import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { luuPhanCong } from './phanCongGv.ts';
 import { theoGvcnCuaLop } from '../worklist/giaoViec.ts';
+import { diemTuStanding } from '../worklist/diemDong.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -669,6 +670,8 @@ export function classRoster(p: Principal, classId: number, q?: string) {
        */
       standing: standing.get(s.id) ?? null,
       standingLine: standing.has(s.id) ? standingLine(standing.get(s.id)!) : null,
+      /** SUA-2211-B (chủ SP 22/11 ý 8): dòng điểm lượt gần nhất (cùng hàm panel một em, 0 câu) — panel "Đạt MT" đầu hồ sơ lớp ghi L R W S · Overall / KV. */
+      diemHv: standing.has(s.id) ? diemTuStanding(standing.get(s.id)!) : null,
       /** OV-10b: liên hệ — cột Phụ huynh của TVV / CX (mọi vai xem được ở hồ sơ HV). */
       lienHe: { phone: s.phone ?? null, parentName: s.parent_name ?? null, parentRelation: s.parent_relation ?? null, parentPhone: s.parent_phone ?? null },
       /** Giữ tên cũ cho các màn đang đọc, nhưng nay lấy từ KẾT QUẢ BÀI chứ không từ case. */

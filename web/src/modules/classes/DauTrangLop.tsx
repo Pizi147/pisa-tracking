@@ -10,6 +10,7 @@ import type { DongSoLieu } from '../../ui/SoLieu.tsx';
 import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { api, invalidate, khopTienTo, onInvalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
@@ -342,15 +343,21 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const em = roster.data.filter((r) => r.status === 'active' && !r.archived);
   const sos = ([1, 2, 3] as const).map((m) => [m, em.filter((r) => (r.sosLevel ?? 0) === m || (m === 3 && (r.sosLevel ?? 0) > 3)).length] as [number, number]).filter(([, n]) => n > 0);
   /* GD-4 e: dòng panel ô số "Đạt" / "SOS" dựng từ roster đã nạp (không request) — tên em link hồ sơ, dòng phụ lượt / mức. */
-  const dong = (r: RosterRow, sub: string, ketQua?: 'dat' | 'chua'): DongSoLieu => ({ id: r.id, title: r.fullName, sub, href: duongHoSoHocVien(r.id), em: { id: r.id, ten: r.fullName }, ketQua });
-  const sosDong = em.filter((r) => (r.sosLevel ?? 0) > 0).sort((a, b) => (b.sosLevel ?? 0) - (a.sosLevel ?? 0)).map((r) => dong(r, `SOS ${Math.min(r.sosLevel ?? 0, 3)}`));
+  /* SUA-2211-B (chủ SP 22/11 ý 8 "Panel 'Đạt MT' vẫn chỉ hiện tên…"): mỗi dòng mang điểm lượt gần nhất (`diemHv` của roster — L R W S ✓/✗ · Overall / KV),
+     Target ở dòng phụ, chip SOS — cùng dữ liệu đã nạp, 0 request. */
+  const dong = (r: RosterRow, sub: string, ketQua?: 'dat' | 'chua'): DongSoLieu => ({
+    id: r.id, title: r.fullName, href: duongHoSoHocVien(r.id), em: { id: r.id, ten: r.fullName }, ketQua, diemHv: r.diemHv ?? null,
+    sub: [r.cycle?.target != null ? `Target ${fmtBand(r.cycle.target)}` : null, sub].filter(Boolean).join(' · '),
+    sos: (r.sosLevel ?? 0) > 0 ? { muc: Math.min(r.sosLevel ?? 0, 3), tam: r.provisional } : null,
+  });
+  const sosDong = em.filter((r) => (r.sosLevel ?? 0) > 0).sort((a, b) => (b.sosLevel ?? 0) - (a.sosLevel ?? 0)).map((r) => dong(r, ''));
   /* Kết luận máy chủ (`standing` → `ketQuaGanNhat`, cùng ô Kết quả của bảng): mẫu = em có lượt đủ điểm, đạt = `dat`. */
   const moiEm = em.map((r) => [r, (r as { standing?: KetQuaVao | null }).standing] as const).filter((x): x is readonly [RosterRow, KetQuaVao] => !!x[1] && x[1].scored >= x[1].required && !!x[1].attemptLabel);
   const moi = moiEm.map(([, k]) => k);
   const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
   const dat = moi.length ? {
     nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
-    dong: moiEm.map(([r, k]) => dong(r, dich(k.attemptLabel!), ketQuaGanNhat(k).dat ? 'dat' : 'chua')),
+    dong: moiEm.map(([r, k]) => dong(r, r.diemHv ? '' : dich(k.attemptLabel!), ketQuaGanNhat(k).dat ? 'dat' : 'chua')),
   } : null;
   const homNayTuan = homNay ?? '9999';
   /* MT0-THEO-EM: `mt:0` = MT0 em mang từ lớp thường (thi ở lớp cũ) — không là lượt của lớp FT. */
