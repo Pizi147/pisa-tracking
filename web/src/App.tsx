@@ -426,19 +426,19 @@ export default function App() {
           {/* TU12 (TU2-6): trang Tutor mở lại cho người có `tutor.view`; GV (không quyền) gõ /tutor → về trang đầu. */}
           <Route path="/tutor" element={nav.tutor ? <TutorPage /> : <Navigate to="/" replace />} />
           <Route path="/tutor/*" element={<Navigate to="/tutor" replace />} />
-          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin, TVV và CX')} />} />
+          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin và CX')} />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/luu-tru" element={<LuuTruPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
           {/* Trang riêng của một Case — máy chủ sinh link này trong thông báo và Việc cần làm, nên phải giữ. */}
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
-          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL và CX')} />} />
+          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL, CX và TVV')} />} />
           {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
           {/* OV-11i (TE-12): TVV / CX (không `nav.test`) mở thẳng lưới nhập điểm → Tổng quan, như `/test`. */}
           {/* UI-LICH-TUAN: lưới cũ thành chuyển hướng về Lịch tuần / panel Nhập điểm lớp (`duongNhapDiemCu`). */}
-          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL và CX')} />} />
-          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL và CX')} />} />
+          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL, CX và TVV')} />} />
+          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, BPXL, CX và TVV')} />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/luot-test/:id" element={<LuotThuongPage />} />
           <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin, TVV, CX và BPXL')} />} />

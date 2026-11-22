@@ -13,6 +13,7 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const pc: any = await import('../classes/phanCongGv.ts');
   const bg: any = await import('../classes/banGiaoGv.ts');
+  const mw: any = await import('../worklist/mywork.ts');
   const banGiao: any = await import('../classes/banGiao.ts');
   const standing: any = await import('../students/standing.ts');
   const dai: any = await import('../classes/daiChuyenLop.ts');
@@ -249,13 +250,20 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     assert(ph.trangThai === 'xong' && ph.em.length === 2 && !ph.nguoiXem.viet && ph.xacNhan, 'B đọc');
     assert(maLoi(() => bg.xacNhanBanGiaoGv(a, v.id))?.status === 409, 'xác nhận lần hai 409');
   }));
-  check('B2 · QL điền thay khi quá hạn → dien_thay = 1; chưa quá hạn mà có người viết → 403', () => thu(() => {
+  check('B2 · N64: QL điền thay cả khi người được giao còn hạn — không hỏi (200), dien_thay = 1, phiếu báo lamThay (tên người được giao); quá hạn cũng vậy', () => thu(() => {
     luu(X, { listening: gB });
     const v = viecCua(X)[0];
-    assert(maLoi(() => bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' }))?.status === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
-    conn.prepare(`UPDATE ban_giao_gv SET han = ? WHERE id = ?`).run(addDays(TODAY, -1), v.id);
+    const ph = bg.phieuBanGiaoGv(QL, v.id);
+    assert(ph.nguoiXem.lamThay?.ten && ph.nguoiXem.lamThay.ten === one(`SELECT u.full_name n FROM ban_giao_gv b JOIN users u ON u.id = b.nguoi_lam WHERE b.id = ?`, v.id).n, `lamThay: ${JSON.stringify(ph.nguoiXem)}`);
+    assert(bg.phieuBanGiaoGv(loadPrincipal(v.nguoi_lam ?? gA), v.id).nguoiXem.lamThay === null, 'người được giao: không dải');
+    /* Công việc: cờ lamThay của dòng bàn giao = cùng quyền máy chủ — Head lớp true, Head chi nhánh khác / GV khác false. */
+    const dong = { group: 'ban_giao', classId: X, ownerId: v.nguoi_lam ?? gA, studentId: null, caseId: null } as any;
+    assert(mw.lamThayCua(QL, [dong])(dong) && !mw.lamThayCua(P.cpManager, [dong])(dong) && !mw.lamThayCua(loadPrincipal(gB), [dong])(dong), 'lamThay ban_giao theo coTheRaLenh');
     bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' });
-    assert(one(`SELECT dien_thay FROM ban_giao_gv_em WHERE ban_giao_id = ?`, v.id).dien_thay === 1, 'điền thay');
+    assert(one(`SELECT dien_thay, nguoi_ghi FROM ban_giao_gv_em WHERE ban_giao_id = ?`, v.id).dien_thay === 1, 'điền thay');
+    conn.prepare(`UPDATE ban_giao_gv SET han = ? WHERE id = ?`).run(addDays(TODAY, -1), v.id);
+    bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'y' });
+    assert(one(`SELECT noi_dung FROM ban_giao_gv_em WHERE ban_giao_id = ?`, v.id).noi_dung === 'y', 'quá hạn: vẫn ghi');
   }));
   check('B2 · phieuBanGiaoGv số câu không tăng theo số em (2 em vs 12 em)', () => thu(() => {
     luu(X, { listening: gB });

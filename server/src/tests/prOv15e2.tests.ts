@@ -2,7 +2,7 @@
  * PHÉP KIỂM OV-15e2 — sửa lẻ sau rà OV-15e (#462):
  *  · lượt Mock của Kết quả thi / Báo cáo không còn subquery tương quan theo từng lượt (lọc "có band" sau khi nạp điểm), đầu ra trùng khít;
  *  · link cũ chỉ có `?tg=…` mở Test + SOS;
- *  · Báo cáo qua HTTP cho TVV (chi nhánh của grant) và CX (toàn hệ thống): 200, số trong phạm vi, panel = số.
+ *  · Báo cáo qua HTTP: TVV 403 (SUA-2211-B), CX (lọc chi nhánh / toàn hệ thống): 200, số trong phạm vi, panel = số.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -65,7 +65,7 @@ export async function runPrOv15e2Tests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); xoaNho(); }
   });
 
-  await checkAsync('OV15e2-3 · Báo cáo HTTP cho TVV (grant CP) và CX (toàn hệ thống): 200, số trong phạm vi, panel số = số ô; đo Kết quả thi', async () => {
+  await checkAsync('OV15e2-3 · Báo cáo HTTP: TVV 403 (SUA-2211-B), CX (lọc CP / toàn hệ thống) 200, số trong phạm vi, panel số = số ô; đo Kết quả thi', async () => {
     const vai = (k: string) => one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? AND ur.status = 'active' ORDER BY ur.user_id LIMIT 1`, k).id as number;
     const TVV = vai('consultant'), CX = vai('cx');
     const may = createApp().listen(0);
@@ -76,25 +76,20 @@ export async function runPrOv15e2Tests(t: YThucTestKit) {
         return { status: res.status, json: await res.json().catch(() => null) as any };
       };
       const k = `ct=ft&kieu=tuan&tu=${RONG.tu}&den=${RONG.den}`;
-      const tvv = await goi(TVV, `/phan-tich/bao-cao?${k}`);
+      /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không có khu Phân tích — 403 mọi đường. CX: CX lọc CP ⊆ CX toàn hệ thống, chỉ lớp CP; panel số = số ô. */
+      assert((await goi(TVV, `/phan-tich/bao-cao?${k}`)).status === 403, 'TVV Báo cáo → 403');
       const cxCp = await goi(CX, `/phan-tich/bao-cao?branchId=${CP}&${k}`);
       const cx = await goi(CX, `/phan-tich/bao-cao?${k}`);
-      assert(tvv.status === 200 && cxCp.status === 200 && cx.status === 200, `TVV ${tvv.status} · CX ${cxCp.status}/${cx.status}`);
-      assert((await goi(TVV, `/phan-tich/bao-cao?branchId=${MB}&${k}`)).status === 403, 'TVV hỏi chi nhánh ngoài grant → 403');
-      /* TVV (grant CP) = CX lọc CP: cùng số ở mọi khối; CX toàn hệ thống ≥ phần CP. */
-      for (const khoi of ['test', 'sos', 'mock'] as const) {
-        const { gvQuaHan: _a, ...a } = tvv.json[khoi] ?? {}; const { gvQuaHan: _b, ...b } = cxCp.json[khoi] ?? {};
-        assert(JSON.stringify(a) === JSON.stringify(b), `${khoi}: TVV ${JSON.stringify(a)} ≠ CX·CP ${JSON.stringify(b)}`);
-      }
-      assert(cx.json.test.hvDaThi >= tvv.json.test.hvDaThi && cx.json.test.hvDaThi > 0, `CX ${cx.json.test.hvDaThi} · TVV ${tvv.json.test.hvDaThi}`);
+      assert(cxCp.status === 200 && cx.status === 200, `CX ${cxCp.status}/${cx.status}`);
+      assert(cx.json.test.hvDaThi >= cxCp.json.test.hvDaThi && cx.json.test.hvDaThi > 0, `CX ${cx.json.test.hvDaThi} · CX·CP ${cxCp.json.test.hvDaThi}`);
       const lopCp = new Set((conn.prepare('SELECT id FROM classes WHERE branch_id = ?').all(CP) as any[]).map((r) => r.id));
-      for (const h of tvv.json.sos?.hang ?? []) assert(lopCp.has(h.classId), `TVV thấy lớp ngoài CP: ${h.lop}`);
-      for (const [uid, bc] of [[TVV, tvv.json], [CX, cx.json]] as [number, any][]) {
-        const o = async (ma: string) => (await goi(uid, `/phan-tich/bao-cao/o?${k}&o=${encodeURIComponent(ma)}`)).json;
+      for (const h of cxCp.json.sos?.hang ?? []) assert(lopCp.has(h.classId), `CX·CP thấy lớp ngoài CP: ${h.lop}`);
+      for (const [q, bc] of [[`branchId=${CP}&`, cxCp.json], ['', cx.json]] as [string, any][]) {
+        const o = async (ma: string) => (await goi(CX, `/phan-tich/bao-cao/o?${q}${k}&o=${encodeURIComponent(ma)}`)).json;
         const so: [string, number][] = [['hv-da-thi', bc.test.hvDaThi], ['bai-da-cham', bc.test.baiDaCham], ['bai-qua-han', bc.test.quaHan],
           ...bc.test.gvQuaHan.map((g: any) => [`gv:${g.khoa}`, g.bai] as [string, number]),
           ...(bc.sos?.hang ?? []).flatMap((h: any) => [1, 2, 3].map((m) => [`sos:${h.classId}:${m}`, h[`sos${m}`]] as [string, number]))];
-        for (const [ma, n] of so) { const p = await o(ma); assert(p.n === n && p.rows.length === n, `${uid} ${ma}: panel ${p.n}/${p.rows.length} ≠ ${n}`); }
+        for (const [ma, n] of so) { const p = await o(ma); assert(p.n === n && p.rows.length === n, `CX ${q || 'tất cả'} ${ma}: panel ${p.n}/${p.rows.length} ≠ ${n}`); }
       }
       /* Đo (dòng đọc Turso): QL Kết quả thi Mock — câu SQL + dòng trả về; số lượt mà EXISTS cũ phải dò điểm. */
       const c0 = soCauSql(), d0 = soDongSql();

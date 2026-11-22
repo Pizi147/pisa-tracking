@@ -287,4 +287,41 @@ export async function runPrOv12hTests(t: any) {
     phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
     assert(viecTvv(id).trang_thai === 'bo', 'việc người dùng đã bỏ không tự mở lại');
   }));
+
+  /* SUA-QL-PHOIHOP (chủ SP 22/11, luật Phối hợp SOS 11/11): dòng gộp nhiều em của GVCN — QL / Quản trị ở góc nhìn QL thấy `lamThay` và làm thay được;
+     Head chi nhánh khác, GVBM: 403, DB không đổi. */
+  const { apGocNhin } = await import('../auth.ts');
+  check('SQP-1 · QL + Quản trị (góc nhìn QL) làm thay dòng Phối hợp SOS gộp 2 em; Head CP / GVBM 403', () => thu(() => {
+    const a = meeting(addDays(TODAY, -1));
+    const sid2 = em(), cy2 = get('SELECT id FROM learning_cycles WHERE student_id = ?', sid2).id;
+    const aid2 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 1, 'mock', ?, 'done', ?)`)
+      .run(cy2, sid2, LOP, new Date().toISOString()).lastInsertRowid);
+    const id2 = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?,?, 'cx_meeting_student', 1, 'pending', ?)`)
+      .run(aid2, sid2, new Date().toISOString()).lastInsertRowid);
+    /* Quản trị kiêm QL chi nhánh MB, đang xem bằng góc nhìn Quản lý (như `auth.ts` dựng principal của phiên). */
+    conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, (SELECT id FROM roles WHERE key = 'manager'), (SELECT branch_id FROM classes WHERE id = ?), 'active', ?)`)
+      .run(P.admin.userId, LOP, new Date().toISOString());
+    xoaNho();
+    const qt = apGocNhin(loadPrincipal(P.admin.userId), 'manager');
+    assert(qt.gocNhin === 'manager' && qt.grants.every((g: any) => g.roleKey === 'manager'), 'góc nhìn QL');
+    for (const [ten, p] of [['QL', P.mbManager], ['QT góc nhìn QL', qt]] as const) {
+      const it = dongPhoiHop(p, { nguoi: 'tat-ca' });
+      assert(it && it.count === 2 && !it.mine && it.ownerId === gvcn().userId && it.lamThay === true, `${ten} dòng gộp: ${JSON.stringify(it && { n: it.count, m: it.mine, lt: it.lamThay })}`);
+      const rows = phoiHop.coordinationOfClass(p, LOP).rows;
+      assert(rows.filter((r: any) => [a.studentId, sid2].includes(r.studentId)).length === 2 && rows.every((r: any) => r.canAct), `${ten} thấy 2 em, làm được`);
+    }
+    const truoc = () => get('SELECT status, performed_by FROM sos_coordination_actions WHERE id = ?', id2);
+    for (const [ten, p] of [['Head CP', P.cpManager], ['GVBM', P.subjectTeacher]] as const) {
+      assert(maLoi(() => phoiHop.confirmCoordination(p, id2, { performedOn: TODAY, note: 'Đã họp với gia đình em' })) === 403, `${ten} phải 403`);
+      assert(maLoi(() => phoiHop.removeCoordination(p, id2, { reasonCode: 'not_needed' })) === 403, `${ten} Bỏ việc phải 403`);
+      assert(truoc().status === 'pending', `${ten}: DB không đổi`);
+    }
+    assert(!mywork.lamThayCua(P.cpManager, [dongPhoiHop(P.mbManager, { nguoi: 'tat-ca' })])(dongPhoiHop(P.mbManager, { nguoi: 'tat-ca' })), 'Head CP: lamThay false');
+    phoiHop.confirmCoordination(P.mbManager, a.id, { performedOn: TODAY, note: 'QL họp với gia đình em' });
+    phoiHop.confirmCoordination(qt, id2, { performedOn: TODAY, note: 'QT họp với gia đình em' });
+    assert(get('SELECT status, performed_by FROM sos_coordination_actions WHERE id = ?', a.id).performed_by === P.mbManager.userId, 'QL: người làm = QL');
+    assert(truoc().status === 'done' && truoc().performed_by === P.admin.userId, `QT: ${JSON.stringify(truoc())}`);
+    xoaNho();
+    assert(!dongPhoiHop(P.mbManager, { nguoi: 'tat-ca' }), 'làm xong cả 2 em: hết dòng');
+  }));
 }

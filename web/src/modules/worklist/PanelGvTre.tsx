@@ -200,7 +200,7 @@ function ViewEm({ g, d, toi, loai, veNhan, onLui, onNhap, onDong }: {
       chan={{
         huy: null,
         trai: chuChan ? <span className="text-[13px] text-slate-400 [text-wrap:pretty]">{chuChan}</span> : undefined,
-        chinh: d.nhapHo && d.classId && d.luot ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-0" onClick={onNhap}>{cuaToi ? t('Nhập điểm') : t('Nhập hộ')}</button> : undefined,
+        chinh: d.nhapHo && d.classId && d.luot ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-0" onClick={onNhap}>{t('Nhập điểm')}</button> : undefined,
       }}>
       {d.classId && d.luot ? <BangEm d={d} /> : <p className="m-0 pt-3 text-sm text-slate-300">{t('Bài này không thuộc lớp nào — mở ở hồ sơ lượt Test.')}</p>}
       {d.classId && (

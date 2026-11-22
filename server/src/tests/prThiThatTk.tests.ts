@@ -145,7 +145,10 @@ export async function runPrThiThatTkTests(t: any) {
   check('THI-THAT · quyền Theo GV: TVV không có khối + panel 403; CX và QL có', () => thu(() => {
     const { f } = dung();
     const tvv = vai('consultant'), cx = vai('cx');
-    assert(tk.thiThatTab(tvv, { ...f, branchId: null }).thongKe.gv === null, 'TVV: gv null');
+    /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không còn `analysis.view` — cả tab Thi thật 403 (trước: tab có, khối Theo GV null). */
+    let maTab = 0;
+    try { tk.thiThatTab(tvv, { ...f, branchId: null }); } catch (e: any) { maTab = e.status ?? e.statusCode ?? 0; }
+    assert(maTab === 403, `TVV tab → 403 (được ${maTab})`);
     let ma = 0;
     try { tk.oThiThat(tvv, { ...f, branchId: null, o: `gv:${P.w1Teacher.userId}:w1:hv` }); } catch (e: any) { ma = e.status ?? e.statusCode ?? 0; }
     assert(ma === 403, `TVV → 403 (được ${ma})`);

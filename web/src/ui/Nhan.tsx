@@ -68,6 +68,21 @@ export function lopSos(muc: number, tam?: boolean): string {
   if (muc === 2) return `${vien} border-sos2 bg-[color:var(--sos2-nen)] text-sos2-chu`;
   return `${vien} ${tam ? 'border-sos3' : 'border-[color:var(--sos3-vien)]'} bg-[color:var(--sos3-nen)] text-[color:var(--sos3-tren)]`;
 }
+/**
+ * Ô ĐIỂM ĐÃ HUỶ (SUA-2211-B, chủ SP 22/11 ý 11 "thể hiện rõ hơn thay vì có mỗi 1 chữ 'đã hủy' ở dưới… lôm côm, lệch"): MỘT chip trung tính "Đã huỷ"
+ * cao 22 px, đứng giữa ô, cùng hàng với ô khác — lý do (vắng 2 lần, Head từ chối dời…) ở title / tên đọc màn. Dùng ở lưới FT, lưới lớp thường, panel nhập điểm.
+ */
+export function ChipDaHuy({ ly, onMo }: { ly?: string | null;
+  /** PTA [XM] 22/11: ô người xem nhập được — chip là nút, bấm / Tab vào thành ô nhập (gõ điểm = tự khôi phục, Hoàn tác ở toast). */
+  onMo?: () => void }) {
+  const chu = ly ? `${t('Đã huỷ')} · ${ly}` : t('Đã huỷ');
+  const lop = `${CHIP_VUONG} border-muted-line bg-muted-bg text-muted`;
+  if (onMo) {
+    const nhan = `${chu} — ${t('bấm để nhập điểm')}`;
+    return <button type="button" title={nhan} aria-label={nhan} onClick={onMo} onFocus={onMo} className={`${lop} cursor-text hover:border-[color:var(--accent)] max-sm:min-h-[44px]`}>{t('Đã huỷ')}</button>;
+  }
+  return <span title={chu} aria-label={chu} className={lop}>{t('Đã huỷ')}</span>;
+}
 /** Khung chip SOS (cùng họ góc 4 px với kết quả — C23). */
 export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded px-2 text-xs font-semibold leading-none tabular-nums';
 

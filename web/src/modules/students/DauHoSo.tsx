@@ -129,7 +129,7 @@ const DONG_VIEC = 'grid min-h-[56px] grid-cols-[28px_minmax(0,1fr)_auto] items-c
 /**
  * THANH "VIỆC CẦN LÀM" (GD-7, mockup ③ K1 `.vl-hs` + ⑤ B — dòng việc chuẩn, lời 24): MỘT thẻ nhóm — dải "Việc cần làm · n việc · n quá hạn" rồi ĐỦ việc của
  * NGƯỜI XEM với em (máy chủ `viecHocVien.ts`: Case, Ý thức, Nhập điểm, Trả lời tình hình…), quá hạn lên đầu. Dòng: ô vuông · tên việc ngắn · thẻ phụ
- * (kỹ năng → kỳ / tuần → số) · viên hạn · nút động từ; lớp + tên em đã ở đầu hồ sơ nên không lặp ([XM-1]). ≥ 1024 hai cột dòng; 375 một cột.
+ * (kỹ năng → kỳ / tuần → số) · viên hạn · nút động từ; lớp + tên em đã ở đầu hồ sơ nên không lặp ([XM-1]). Một cột (SUA-2211-B), không title trùng chữ nút.
  * Bấm dòng = panel việc tại chỗ (nơi gọi — `onLam`). Người xem không có việc → không vẽ (T72).
  */
 export function ThanhViec({ viec, onLam, dangMo }: {
@@ -150,9 +150,10 @@ export function ThanhViec({ viec, onLam, dangMo }: {
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{ds.length}<span className="max-sm:sr-only">&nbsp;{t('việc')}</span></span>
         {quaHan > 0 && <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>}
       </h2>
-      <ul className="m-0 grid list-none p-0 lg:grid-cols-2">
+      {/* SUA-2211-B (chủ SP 22/11 ý 2): một cột — dòng việc dàn hết chiều ngang như dòng ở Công việc (hai cột để một việc chỉ chiếm nửa trái). */}
+      <ul className="m-0 grid list-none p-0">
         {ds.map((x, i) => (
-          <li key={x.key} className={`min-w-0 ${i > 0 ? 'border-t' : ''} ${i === 1 ? 'lg:border-t-0' : ''} ${i % 2 === 1 ? 'lg:border-l' : ''}`} style={{ borderColor: 'var(--line)' }}>
+          <li key={x.key} className={`min-w-0 ${i > 0 ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <DongViecHs x={x} onLam={onLam} dangMo={dangMo === x.key} />
           </li>
         ))}
@@ -171,7 +172,7 @@ function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; d
   const the = thePhu([chu.slice(ten.length).replace(/^[\s·]+/, ''), ...(x.the ?? []).map((th) => dichChu(th))]).map(bacNgan);
   const bam = x.mo ? () => onLam(x) : undefined;
   return (
-    <div data-hd="hs-viec" data-khoa={x.key} onClick={bam} title={chu}
+    <div data-hd="hs-viec" data-khoa={x.key} onClick={bam}
       className={`${DONG_VIEC} ${bam ? 'cursor-pointer hover:bg-[color:var(--accent-soft)]' : ''} ${dangMo ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''}`}>
       <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)] max-sm:self-start"><IconNhom k="ca-lop" /></span>
       <span className="grid min-w-0 gap-px">
