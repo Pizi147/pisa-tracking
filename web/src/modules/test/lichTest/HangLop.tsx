@@ -57,6 +57,14 @@ export const TienDo = ({ so, title, ti }: { so: ReactNode; title?: string; ti?: 
  */
 export const COT_LICH_TEST = [256, null, 140, 180, 180] as const;
 export const ColLichTest = () => <colgroup>{COT_LICH_TEST.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>;
+/** Hàng tiêu đề cột chung (v23 L1: MỌI nhóm có đầu cột, cùng chữ) — khối Quá hạn chấm đổi cột 4 thành "Còn lại" (chỉ biết số bài còn nợ). */
+export const DauCotLichTest = ({ cot4 = t('Tiến độ') }: { cot4?: string }) => (
+  <thead>
+    <tr className="lt-cot">
+      <th>{t('Lớp')}</th><th>{t('Đợt')}</th><th>{t('Hạn chấm')}</th><th>{cot4}</th><th>{t('Trạng thái')}</th>
+    </tr>
+  </thead>
+);
 
 /**
  * LICH-TEST-GON (chủ SP 19/11: "chữ MT# nhìn rối"): ĐỢT CHÍNH của lớp (đông em nhất) ghi MỘT lần — "MT3 · 5 em"; lượt khác (MT cũ, vắng dời) chỉ một dòng phụ
@@ -145,19 +153,13 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
   return (
     <table className="lt-bang w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
       {gon ? <colgroup><col /></colgroup> : <ColLichTest />}
-      {!gon && (
-        <thead>
-          <tr className="lt-cot">
-            <th>{t('Lớp')}</th><th>{t('Đợt')}</th><th>{t('Hạn chấm')}</th><th>{t('Tiến độ')}</th><th>{t('Trạng thái')}</th>
-          </tr>
-        </thead>
-      )}
+      {!gon && <DauCotLichTest />}
       {lop.map((l) => {
         const k = khoaHang(l);
         const mo = moCua(l);
         /* Việc xong không nơi nào còn báo hạn: hạn chỉ khi còn bài (người có phân công: bài của mình). */
         const con = l.phan ? l.conBaiCuaToi : l.conBai;
-        const han = con > 0 ? <Han loai="nhap-diem" han={l.han} /> : null;
+        const han = con > 0 ? <Han loai="nhap-diem" han={l.han} trongBang={!gon} /> : null;
         const { phu: dotPhu, nhanChinh } = chuDot(l.luot);
         const conCho = l.phan ? '' : chuConCho(l.gvMon, l.chuongTrinh);
         const tienDo = <TienDo so={`${l.daCham} / ${l.tong}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })} ti={l.tong ? l.daCham / l.tong : 0} />;

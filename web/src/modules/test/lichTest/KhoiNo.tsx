@@ -8,7 +8,7 @@ import { chuOChuaLuu } from '@shared/domain/index.ts';
 import type { DongNoLop } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { useManHinh } from '../../../ui/TheDong.tsx';
-import { COT_LICH_TEST, ColLichTest, DongConCho, DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
+import { COT_LICH_TEST, ColLichTest, DauCotLichTest, DongConCho, DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** OV-11e (TE-7): số bài của người xem — người có phân công chỉ đếm phần của mình (dải số, badge khối, cột Còn cùng số). */
@@ -70,6 +70,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
         {/* GD-11a (⑦ A1): hàng Quá hạn cùng bộ cột với hàng lớp (Lớp · Đợt · Hạn · số bài · nút — NHẸ HƠN bỏ Môn) — các bảng thẳng cột. */}
         <table className="lt-bang w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           {gon ? <colgroup><col /></colgroup> : <ColLichTest />}
+          {!gon && <DauCotLichTest cot4={t('Còn lại')} />}
           <tbody>
             {ds.map(({ d, xong }, i) => {
               const dangMo = dongMo?.d.key === d.key;
@@ -87,7 +88,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
               const conCho = chuConCho(d.gvMon, d.chuongTrinh);   /* LICH-TEST-GON: ai còn chờ — dòng nhỏ trong phần lớp đã mở, không cột */
               const so = xong ? <Vien muc="xong">{t('Đã chấm')}</Vien> : <TienDo so={conCua(d)} />;
               /* NHẸ HƠN (luật hạn, v23 L1): bảng chỉ tô màu ngày (đỏ + ⚠ quá hạn) — không chip "quá hạn n ngày" (đầu khối đã nói Quá hạn chấm). */
-              const han = xong ? null : <Han loai="nhap-diem" han={d.han} />;
+              const han = xong ? null : <Han loai="nhap-diem" han={d.han} trongBang={!gon} />;
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const dot = chuDot(d.luot);
               const maLop = <Link to={`/hoc-vien/lop/${d.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link>;

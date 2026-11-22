@@ -5,7 +5,8 @@ import { LuoiTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { DauViecCongViec, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { MuiChev } from '../../ui/HangNhom.tsx';
-import { dauViec } from '../../ui/KhuonViec.tsx';
+import { ChuLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { gioVnNay } from './gioVn.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { duongCham, type Cham } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
@@ -56,6 +57,9 @@ export function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: W
   const [tieuDe] = useState(() => (chiXem ? (motLop && it.tieuDe ? t('Điểm {skills}', { skills: dich(it.tieuDe.replace(/^Nhập điểm /, '')) }) : t('Điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }))
     : motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
+  /* NHẸ HƠN (v23 C1 chân "✓ Đã lưu 15:40 · 9 / 16 bài"): giờ lưu ô gần nhất (ô đang lưu / lỗi báo ngay tại ô — không lặp ở chân). */
+  const [luc, setLuc] = useState<string | null>(null);
+  const daLuu = () => { setLuc(gioVnNay()); onDaLam(); };
   const periodId = lop[0].periodId ?? null;
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
@@ -68,17 +72,20 @@ export function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: W
   const luoiLop = (x: WorkItem, lopKhung: string) => (
     <LuoiTrongPanel className={lopKhung}>
       <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
+                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={daLuu} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
                     emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
     </LuoiTrongPanel>
   );
+  const trai = luc ? <span className="text-[13px]"><ChuLuu tt="da" luc={luc} />{motLop && demBai ? <span className="tabular-nums text-dim"> · {t('còn {con} / {tong} bài', demBai)}</span> : null}</span> : null;
+  const chanTiep = chanViecTiep(onTiep, false);
+  const chan = chanTiep || trai ? { ...(chanTiep ?? { huy: null }), trai } : undefined;
   return (
     /* NHẸ HƠN (v23 C1): panel bảng ~75 % (`rong="bang"`). */
-    <KhungPanel hd="nhap-diem" rong="bang" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
+    <KhungPanel hd="nhap-diem" rong="bang" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
       {chiXem && <p className="m-0 pt-2 text-[13px] text-dim">{t('Chỉ xem · GV / Head nhập')}</p>}
-      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
+      {(
       /* NHẸ HƠN (v23 C1 `.kl` → `.pc-kl` ở index.css): MỖI LỚP MỘT KHỐI — đầu khối nổi (nền surface-2, vạch nhấn trái, mã lớp 16 / 700) · đợt + tuần · kỹ năng của bạn · số bài.
          Bấm đầu khối gập / mở (giữ: lưới chỉ tải khi mở — không thêm request). Không cắt chữ, xuống dòng khi chật. */
       <ul className="m-0 grid list-none gap-2 p-0 pt-3">

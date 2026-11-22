@@ -1,6 +1,7 @@
-import { deadlineView, mucHan, ngayTheoGioVN, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, mucHan, ngay, ngayTheoGioVN, type DeadlineKind } from '@shared/domain/index.ts';
 import { DauQuaHan, LOP_MUC_HAN } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * MỌI HẠN ĐỀU CÓ LOẠI (HE_GIAO_DIEN §4, đóng lỗi F11).
@@ -18,7 +19,7 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
  *
  * Toàn bộ câu chữ nằm ở `deadlineView` (`shared/domain/display.ts`), mức ở `mucHan` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
  */
-export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo }: {
+export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo, trongBang }: {
   loai: DeadlineKind;
   /** Hạn đang hiệu lực, dạng `2026-09-23`. `null` = chưa đặt. */
   han: string | null;
@@ -36,12 +37,22 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo
   soNgay?: boolean;
   /** Việc của người khác: không tô màu (⚠ vẫn giữ — nói nghĩa không bằng màu). */
   mo?: boolean;
+  /** NHẸ HƠN (NH4, v23 Lịch Test `.han`): ô bảng có đầu cột "Hạn chấm" — CHỈ ngày dd/mm/yyyy tô màu, không chữ "hạn", không ⚠;
+   *  quá hạn thêm nền đỏ nhạt (dấu không chỉ bằng màu chữ). Chữ đầy đủ ở tooltip. */
+  trongBang?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai, due: han, originalDue: hanGoc, reschedule: hen, today: homNay });
   const goc = hanGoc && ngayTheoGioVN(hanGoc) ? hanGoc : han;
   const muc = loai === 'du-kien-ket-thuc' || !goc ? 'xa' : mucHan(goc, homNay);
   const title = v.text + (v.title ? ` · ${v.title}` : '');
+  if (trongBang) {
+    return (
+      <span title={title} className={`whitespace-nowrap text-[13px] tabular-nums ${mo ? LOP_MUC_HAN.xa : LOP_MUC_HAN[muc]} ${muc === 'qua' && !mo ? '-mx-1.5 rounded bg-late-bg px-1.5 py-0.5' : ''}`}>
+        {muc === 'qua' && <span className="sr-only">{t('quá hạn')} </span>}{han ? ngay(han) : v.han}
+      </span>
+    );
+  }
   return (
     <span title={title} className="text-[13px] tabular-nums text-dim">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}

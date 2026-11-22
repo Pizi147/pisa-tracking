@@ -136,7 +136,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
     kyVong: !chiCot && !(data.rows.length > 0 && data.rows.every((r) => r.mt0Sos)),
-    w: !chiCot,
+    /* NHẸ HƠN (PTA rà #1998): cột W (máy tính) ẩn khi cả lưới chưa em nào có W — không còn cột nền tô trống. */
+    w: !chiCot && data.rows.some((r) => r.result.verdicts?.some((x: { skill: string; band?: number | null }) => x.skill === 'writing' && x.band != null)),
     ovr: !chiCot,
     kq: !anKetQua,
     chiKq: !!chiCot,

@@ -1904,8 +1904,11 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .pc-kl-dau:hover .pc-kl-ma { color: var(--accent); }
   .pc-kl-ma { font-size: 16px; font-weight: 700; white-space: nowrap; }
   .pc-kl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; font-size: 14px; color: var(--text-dim); }
-  .pc-kl-meta > * + *::before { content: '·'; margin: 0 8px; color: var(--text-faint); }
+  .pc-kl-meta > :not(:last-child)::after { content: '·'; margin: 0 8px; color: var(--text-faint); }   /* dấu cuối mục: xuống dòng không mở đầu bằng "·" */
   .pc-kl-meta b { font-weight: 600; color: var(--text); }
+  /* NHẸ HƠN (PTA rà #1998): panel bảng 75 % — lưới lớp thường gọn bỏ cột đệm cuối (A1-14, cho panel 720 cũ): cột Học viên lấy phần còn lại, ô điểm sát mép phải. */
+  .luoi-trong-panel .luoi-thuong-gon .bang > colgroup > col:last-child { width: 0 !important; }
+  .luoi-trong-panel .luoi-thuong-gon .bang > :is(thead, tbody) > tr > :last-child:empty { padding: 0; }
   .lt-the { display: grid; gap: 6px; padding: 6px 0; font-weight: 400; }
   .lt-the .h1 { display: flex; align-items: center; gap: 8px; } .lt-the .h1 > .lt-td, .lt-the .h1 > .lt-vien { margin-left: auto; }
   .lt-the .h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 14px; } .lt-the .h2 b { font-weight: 600; }
