@@ -94,7 +94,7 @@ export async function runPrHdTests(t: any) {
     };
     quet(path.join(ROOT, 'web/src'));
     /* (đường, data-hd, vai thấy): "Lớp tôi dạy" ở Công việc chỉ GV (`laGv`, HoTroHocVienTab); Tổng quan QT mặc định Tất cả chi nhánh (bảng Theo chi nhánh). */
-    const CHI_VAI: [string, string, string[]][] = [['/cong-viec', 'tq-lop-toi-day', ['gv']], ['/', 'tq-can-xu-ly', ['ql']], ['/', 'tq-lop-chu-y', ['ql']], ['/', 'tq-gv-tre', ['ql']]];
+    const CHI_VAI: [string, string, string[]][] = [['/cong-viec', 'tq-lop-toi-day', ['gv']], ['/', 'tq-can-xu-ly', ['ql', 'qt', 'cx', 'admin']], ['/', 'tq-lop-chu-y', ['ql', 'qt', 'admin']], ['/', 'tq-gv', ['ql', 'qt']]];
     const loi: string[] = [];
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
       for (const m of hd.moiMuc(h)) {

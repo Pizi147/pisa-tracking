@@ -19,9 +19,9 @@ export async function runPrTqViecCuaToiTests(t: any) {
     const than = (ten: string) => s.slice(s.indexOf(`export function ${ten}(`), s.indexOf('\n}\n', s.indexOf(`export function ${ten}(`)));
     /* GD-4 e: TVV dùng ô của dải mỏng (`<OViecCuaToi dai />`) — cùng component, cùng nguồn số. */
     /* GD-8: TVV — dải 5 chỉ số nay ở đầu Công việc (`DaiChiSoTvv`), ô Việc không link (đang ở Công việc). */
-    for (const ten of ['TongQuanQlV5', 'DaiChiSoTvv']) assert(/<OViecCuaToi( dai)?( khongBam)? \/>/.test(than(ten)), `${ten} thiếu ô Việc của tôi`);
-    /* Admin: ô đứng đầu dải ô Mock Test (4 ô một hàng). */
-    assert(/<OViecCuaToi \/>/.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/worklist/MockTestAdmin.tsx'), 'utf8')), 'MockTestAdmin (Tổng quan Admin) thiếu ô Việc của tôi');
+    assert(/<OViecCuaToi( dai)?( khongBam)? \/>/.test(than('DaiChiSoTvv')), 'DaiChiSoTvv thiếu ô Việc của tôi');
+    /* NHẸ HƠN PR-3 ([XM-P3-5]): Tổng quan Head / Quản trị / Admin / CX (mockup v23 — không còn dải ô) giữ "Việc của tôi ›" dạng link đầu trang, cùng component. */
+    assert(/<OViecCuaToi lienKet \/>/.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/worklist/OverviewPage.tsx'), 'utf8')), 'Tổng quan thiếu link Việc của tôi');
     /* Không GET /my-work riêng: đọc `summary` khung App đã tải cho badge (context) — hết lần gọi đôi. */
     assert(/function OViecCuaToi\([^)]*\)[\s\S]{0,300}useSoViecCuaToi\(\)/.test(s) && !/useApi<[^>]*>\([^)]*'\/my-work'/.test(s), 'ô đọc số từ khung App, Tổng quan không GET /my-work');
     assert(/<ViecCuaToiCtx\.Provider value=\{viecGv\?\.summary \?\? null\}>/.test(fs.readFileSync(path.join(ROOT, 'web/src/App.tsx'), 'utf8')), 'App cấp số Việc của tôi');
