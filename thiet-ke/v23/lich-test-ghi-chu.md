@@ -46,3 +46,7 @@ Critique: **35 / 40**, không P0 / P1.
 | 3 bỏ cột "Kỹ năng" | bảng lớp: Lớp 220 · Đợt 1fr · Hạn chấm 140 · Tiến độ 180 · Trạng thái 180 (375 bỏ "L R W S" ở dòng phụ) |
 | 2 luật hạn (bảng báo cáo) | cột Hạn chấm: ngày dd/mm/yyyy tô đỏ / vàng; Trạng thái "Đang chấm" — bỏ chip "Quá hạn n ngày" (đầu thẻ "Quá hạn chấm" đã nói) |
 | 4 TVV xem Lịch Test tuần | việc code (quyền `test.view` + menu), không vẽ |
+
+## N65 (plan.md 1.6, chủ SP 22/11)
+
+Head / Quản trị ở trang XEM (Lịch Test tuần, xem điểm, Kế hoạch Test chỉ xem, HV & Lớp) luôn thấy tất cả, **không có nút "Lớp tôi dạy"**. Mockup `lich-test.html` không có nút đó (đã kiểm) — không phải sửa; PR code bỏ nút nếu web đang có cho Head / QT.

@@ -60,6 +60,31 @@
 .dt .mtr col.c-lop { width:auto; } .dt .mtr col.c-o { width:58px; } .dt .o-mt { min-width:0; width:52px; padding:0 2px; font-size:12px; }
 .dt .mtr th { font-size:12px; white-space:normal; line-height:1.2; }
 .dt .mtr th:first-child, .dt .mtr td:first-child { padding-left:10px; } .dt .mtr td, .dt .mtr th { padding-left:2px; padding-right:2px; }
+.c-hai { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:16px; align-items:stretch; }
+.c-hai > .khoi { display:flex; flex-direction:column; } .c-hai > .khoi + .khoi { margin-top:0; }
+.c-mt { flex:none; }
+.c-mt col.c-lop { width:132px; } .c-mt col.c-o-col { width:auto; }
+.c-mt th { height:36px; }
+.c-mt td { height:42px; padding-top:2px; padding-bottom:2px; }
+.c-mt .ma-l { font-weight:700; color:var(--text); }
+.c-o { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-width:72px; height:30px; border:0; background:none; padding:0 8px; border-radius:6px; font:600 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; color:var(--text); }
+.c-o:hover { background:var(--accent-soft); }
+.c-o.dang-mo { background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); }
+.cham { display:inline-block; width:9px; height:9px; border-radius:50%; flex:none; }
+.cham.qua { background:var(--bad); } .cham.nay { background:transparent; box-shadow:inset 0 0 0 2px var(--soon); }
+.c-chu { margin-top:auto; display:flex; gap:6px 18px; align-items:center; padding:10px 14px; border-top:1px solid var(--line); font-size:var(--c12); color:var(--text-faint); }
+.c-chu > span { display:inline-flex; align-items:center; gap:6px; }
+.th-doc a { flex:1; display:grid; grid-template-columns:1fr auto; align-content:center; gap:0 10px; padding:8px 16px; border-top:1px solid var(--line); color:var(--text) !important; text-decoration:none !important; }
+.th-doc .ds-dau + a { border-top:0; }
+.th-doc a:hover { background:var(--accent-soft); }
+.th-doc .lb { font-size:var(--c13); color:var(--text-dim); } .th-doc a b { grid-row:1 / span 2; grid-column:2; align-self:center; font:700 var(--c20) var(--phong-so); }
+.th-doc .phu { font-size:var(--c12); color:var(--text-faint); }
+.th-doc .s2 { color:var(--sos2-chu); } .th-doc .s3 { color:var(--bad); }
+.th-doc .ds-dau .dim { font-size:var(--c12); }
+.dt .c-hai { grid-template-columns:1fr; }
+.dt .c-mt col.c-lop { width:92px; } .dt .c-mt th { font-size:12px; white-space:normal; line-height:1.2; }
+.dt .c-mt td, .dt .c-mt th { padding-left:2px; padding-right:2px; } .dt .c-mt td:first-child, .dt .c-mt th:first-child { padding-left:10px; }
+.dt .c-o { min-width:0; gap:4px; padding:0 2px; font-size:13px; }
 .hai { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:16px; align-items:start; margin-bottom:16px; }
 .hai:has(> :only-child) { grid-template-columns:minmax(0,1fr); }
 .khoi { background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:clip; }
@@ -155,7 +180,7 @@
 <body>
 <div class="trang">
   <header class="dau-mk">
-    <h1>v23 · Lớp cần chú ý — 3 phương án (A · B · C) để chủ SP chọn</h1>
+    <h1>v23 · Lớp cần chú ý — 3 phương án (A · B · C) · <span style="color:#1f7a4d">CHỦ SP ĐÃ CHỌN C</span> (22/11) — trang này giữ làm lưu</h1>
     <p>Chủ SP 22/11 về ma trận: "cũng chưa được, nhìn vẫn cứ kiểu gì ấy, đổi tiếp". Cùng dữ liệu, cùng khung Tổng quan Admin. Luật bấm giữ: bấm → panel tại chỗ; "›" = trang đã lọc.</p>
     <nav class="muc-mk" aria-label="Mục lục"><a href="#paA">A · Việc gấp nhất</a><a href="#paB">B · Thẻ lớp</a><a href="#paC">C · Ma trận gọn</a>
       <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span></nav>

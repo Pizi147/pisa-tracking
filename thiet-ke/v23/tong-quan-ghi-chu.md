@@ -88,3 +88,21 @@ Critique (tự chấm): **35 / 40**, không P0 / P1. P2: Tình hình ở 375 xu�
 - **Lớp cần chú ý = ma trận lớp × loại việc.** Admin: Điểm · Báo cáo PH · Lịch thi · Hồ sơ. Head / QT: Case chưa PA · Điểm · Meeting · SOS 2–3. Mỗi ô một số ngắn ("6 bài", "4 em"); tô theo hạn: đỏ quá hạn · vàng ≤ 2 ngày · ô trống = không có việc (không ghi "0"); cột SOS không có hạn → chữ thường. Tối đa 5 lớp gấp nhất + "Xem hết ›". Cột lớp 180, các cột loại chia đều, căn giữa. 375 giữ ma trận (4 cột hẹp 58 px). Bỏ dòng gập / hàng việc dài.
 - **Bấm ô ma trận → panel tại chỗ** đúng lớp + loại: bảng em · người phụ trách (mỗi người một dòng) + chip kỹ năng · hạn dd/mm/yyyy (khung T2d: MB FT 101 × Điểm = 6 bài · 3 em). Mã lớp = hồ sơ lớp; "Xem hết ›" = trang Công việc đã lọc.
 - **Chip kỹ năng nhỏ** (mỗi kỹ năng một ô vuông viền mảnh, như trang khác): ở panel "Điểm chưa đủ" cạnh người phụ trách ("GV Vũ Thu Lan · [L][R][W1][W2] · 4"), ở dòng việc chấm của Công việc Admin / Head, ở panel lớp Admin.
+
+## Chủ SP chọn phương án C (22/11) — đã đưa vào Tổng quan
+
+- **Admin (T2):** "Lớp cần chú ý" = ma trận gọn ~60 % (lớp × Điểm · Báo cáo PH · Lịch thi · Hồ sơ) + **Tình hình đứng cạnh** (4 số dọc, đổi FT / Lớp thường) — hai khối **cân đáy** (lưới `align-items:stretch`, ma trận đẩy chú giải xuống đáy, mỗi số Tình hình chia đều chiều cao). Bỏ hàng Tình hình ngang ở dưới.
+- **Head / Quản trị (T1, T4):** hàng trên Giáo viên + Chờ duyệt (giữ); hàng dưới = ma trận C (Case chưa PA · Điểm · Meeting · SOS 2–3) + Tình hình cạnh. CX (T3) không có khối lớp → giữ Tình hình ngang.
+- Ô: chấm **đặc = quá hạn**, **vòng rỗng = ≤ 2 ngày** (dataviz: đỏ / vàng dự án không phân biệt được với người mù màu đỏ-lục — ΔE 1,4 ở nền sáng) + chú giải; SOS (không có hạn) = số không chấm; ô trống = không có việc. Số `tabular-nums`, `aria-label` "lớp · loại · số · quá hạn / sắp đến".
+- Cột lớp 132 px, 4 cột loại chia đều, căn giữa; hàng 42 px. Bấm ô → panel đúng lớp + loại có chip kỹ năng (T2d).
+- 375: ma trận (cột lớp 92 px, 4 cột hẹp), Tình hình 2 × 2 bên dưới; Head 375 có thêm ma trận trên khối Giáo viên.
+
+### impeccable (chạy lại trên Tổng quan 4 vai)
+
+- `detect` (layout + toàn bộ): còn **side-tab** = vạch trái đầu nhóm `.ds-dau` (luật V18 / V21 đã duyệt — giữ), **design-system-color / font** = token v21 + Be Vietnam Pro / Inter đã khoá (giữ), **cramped-padding** ở thanh menu / đầu nhóm liền mép có chủ ý; không còn chữ < 12 px.
+- `layout` + `polish`: Tình hình không còn lệch trên (lỗi margin), tiêu đề Tình hình về 16 px như mọi đầu nhóm, hai khối cân đáy.
+- `critique` (Nielsen, tự chấm): **Head 35 · Admin 36 · CX 35 · Quản trị 35 / 40**, không P0 / P1.
+
+## XM — chủ SP DUYỆT hết (22/11: "các XM chắc tôi duyệt hết")
+
+XM-15 (bỏ ô % đúng hạn / Chưa làm / Báo PH đúng hạn khỏi Tổng quan) · XM-16 ("Chỉ số của tôi" sang Công việc) · XM-17: **bỏ phần "Admin không có Lớp cần chú ý"** (Admin đã có — phương án C); phần "CX không có khối Giáo viên" giữ.
