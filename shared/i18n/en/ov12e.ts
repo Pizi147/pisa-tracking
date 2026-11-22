@@ -27,7 +27,7 @@ export const EN_OV12E = {
   'PA đã kết thúc': 'PA ended',
   'Cũ hơn · Đã ghi nhận ({n})': 'Older · Acknowledged ({n})',
   'Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {bac}.': 'Approving an off-scale proposal does not change the level — next level stays {bac}.',
-  'Vi phạm đưa vào · {n}': 'Incidents included · {n}',
+  '{n} vi phạm đưa vào': '{n} incidents included',
   '{n} vi phạm': '{n} incidents',
   /* Hotfix 15/10 */
   'Trang gặp lỗi khi hiển thị.': 'This page failed to display.',

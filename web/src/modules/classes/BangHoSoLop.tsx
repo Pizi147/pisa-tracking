@@ -1,6 +1,6 @@
 import { ChipXetLaiDong } from './xetLaiChung.tsx';
-import { Fragment, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { Fragment, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { NoiTren } from '../../ui/NoiTren.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
@@ -301,21 +301,18 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
  * cố định dưới ô — khung cuộn của bảng không cắt. Không dòng nào (ô chỉ có band) → chỉ vẽ ô, không thẻ.
  */
 function TheTieuChi({ dong, children }: { dong: { nhan: string; d: [string, string][]; band: number | null }[]; children: ReactNode }) {
-  const [cho, setCho] = useState<CSSProperties | null>(null);
+  const [re, setRe] = useState(false);
+  const neo = useRef<HTMLSpanElement>(null);
   if (!dong.length) return <>{children}</>;
-  const hien = (e: { currentTarget: HTMLElement }) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setCho({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left + r.width / 2 - 150, window.innerWidth - 308)) });
-  };
+  /* SUA-2211-A: `NoiTren` — sát đáy màn thì lật lên, không bị cắt. */
   return (
-    <span className="inline-block" onMouseEnter={hien} onMouseLeave={() => setCho(null)} onFocus={hien} onBlur={() => setCho(null)}>
+    <span ref={neo} className="inline-block" onMouseEnter={() => setRe(true)} onMouseLeave={() => setRe(false)} onFocus={() => setRe(true)} onBlur={() => setRe(false)}>
       {children}
-      {cho && createPortal(
-        <span role="tooltip" style={cho}
-          className="pointer-events-none fixed z-50 grid gap-1 whitespace-nowrap rounded-lg border bg-[color:var(--surface)] px-3 py-2 text-left text-[13px] font-medium tabular-nums text-dim shadow-xl [border-color:var(--line-strong)]">
+      {re && (
+        <NoiTren neo={neo} role="tooltip"
+          className="pointer-events-none grid gap-1 whitespace-nowrap rounded-lg border bg-[color:var(--surface)] px-3 py-2 text-left text-[13px] font-medium tabular-nums text-dim shadow-xl [border-color:var(--line-strong)]">
           {dong.map((x) => <span key={x.nhan}><DongTieuChi nhan={x.nhan} d={x.d} band={x.band} /></span>)}
-        </span>,
-        document.body,
+        </NoiTren>
       )}
     </span>
   );

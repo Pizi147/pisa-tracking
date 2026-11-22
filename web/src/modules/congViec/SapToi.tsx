@@ -4,6 +4,8 @@ import { addDaysIso, duongLichTest, mondayOfDate, tuanLich } from '@shared/domai
 import { t } from '@shared/i18n/index.ts';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { NoiTren } from '../../ui/NoiTren.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { VUNG_BAM_SO, LOP_OSO } from '../../ui/SoLieu.tsx';
 import type { TestSapToi } from './LopCuaToi.tsx';
@@ -31,7 +33,9 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
     document.addEventListener('keydown', esc);
     return () => document.removeEventListener('keydown', esc);
   }, [mo]);
-  useEffect(() => { if (mo !== null) goc.current?.querySelector<HTMLElement>('[role=dialog] a, [role=dialog] button')?.focus(); }, [mo]);   // XM-8: tiêu điểm vào hộp
+  const dt = useDienThoai();
+  const hopEl = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (mo !== null) hopEl.current?.querySelector<HTMLElement>('a, button')?.focus(); }, [mo]);   // XM-8: tiêu điểm vào hộp
   if (!homNay) return null;
   const tuanToi = tuanLich(addDaysIso(mondayOfDate(homNay), 7), homNay), tuanNay = tuanLich(mondayOfDate(homNay), homNay);
   const lopTest = (testSapToi ?? []).filter((x) => x.testKeTiep && (x.testKeTiep.endsWith(tuanToi) || x.testKeTiep.endsWith(tuanNay)));
@@ -50,8 +54,9 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
   }
   if (!cum.length) return null;
   const GIAI_THICH = t('Việc sẽ có trong 7 ngày tới, chưa thành việc — không tính vào số việc.');
-  const hop = (c: Cum) => (
-    <div role="dialog" aria-label={c.hop} className="absolute left-0 top-full z-20 mt-1 w-[min(22rem,calc(100vw-2rem))] rounded-lg border p-3 shadow-lg max-sm:static max-sm:mt-0 max-sm:w-auto max-sm:rounded-none max-sm:border-0 max-sm:border-t max-sm:shadow-none"
+  /* SUA-2211-A: 1440 hộp nổi lớp trên cùng (`NoiTren`, neo ô số vừa bấm) — không bị cắt; 375 nằm tại chỗ dưới hàng bấm. */
+  const hop = (c: Cum, taiCho: boolean) => (
+    <NoiTren ref={hopEl} neo={nutMo} taiCho={taiCho} role="dialog" aria-label={c.hop} className="w-[min(22rem,calc(100vw-2rem))] rounded-lg border p-3 shadow-lg max-sm:w-auto max-sm:rounded-none max-sm:border-0 max-sm:border-t max-sm:shadow-none"
       style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
       <div className="mb-1.5 flex items-center justify-between gap-2 max-sm:hidden">
         <h3 className="m-0 text-[14px] font-bold text-[color:var(--text)]">{c.hop}</h3>
@@ -60,7 +65,7 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
       </div>
       <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[14px]">{c.dong.map((d, i) => <li key={i}>{d}</li>)}</ul>
       {c.chan && <div className="mt-2 border-t pt-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>{c.chan}</div>}
-    </div>
+    </NoiTren>
   );
   const bam = (k: string, e: React.MouseEvent<HTMLElement>) => { nutMo.current = e.currentTarget; setMo(mo === k ? null : k); };
   return (
@@ -72,7 +77,7 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
           <span key={c.khoa} className="relative inline-flex items-baseline gap-1.5 whitespace-nowrap border-l px-3.5 text-dim" style={{ borderColor: 'var(--line)' }}>
             {c.ten}
             <button type="button" aria-expanded={mo === c.khoa} aria-label={c.nhan} onClick={(e) => bam(c.khoa, e)} className={`${VUNG_BAM_SO} ${LOP_OSO} px-1`}>{c.so}</button>
-            {mo === c.khoa && hop(c)}
+            {mo === c.khoa && !dt && hop(c, false)}
           </span>
         ))}
         <span className="ml-auto"><NutLuat label={t('Giải thích Sắp tới')} phai>{GIAI_THICH}</NutLuat></span>
@@ -95,7 +100,7 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
               style={{ borderColor: 'var(--line)', ...(mo === c.khoa ? { background: 'var(--accent-soft)' } : {}) }}>
               <span>{c.ten}</span><span className="font-bold tabular-nums text-[color:var(--accent)]">{c.so}</span>
             </button>
-            {mo === c.khoa && hop(c)}
+            {mo === c.khoa && dt && hop(c, true)}
           </div>
         ))}
       </div>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { api } from '../lib/api.ts';
 import { BaoOTrongNhan } from './ONgay.tsx';
 import { ToKhop } from './ToKhop.tsx';
+import { NoiTren } from './NoiTren.tsx';
 import { useDienThoai } from './TheDong.tsx';
 import { buocDanhSach, chotChuGo, docChuoiGanDay, locNguoiChon, skillShort, themGanDay, xepGanDay, type MucGanDay, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
@@ -289,6 +290,10 @@ export function ChonNguoi({
   useLayoutEffect(() => { bao?.(coO ? oId : null); return () => bao?.(null); }, [bao, oId, coO]);
 
   /* Chỉ khi VỪA chuyển sang sửa (bấm ✕ / ô) mới focus + mở; lúc vẽ đầu thì không, trừ `tuMo`. */
+  /* SUA-2211-A: neo danh sách nổi = khung ô (`.oc`), không cả vùng (dòng lỗi dưới ô). Trong hộp chọn GV thì danh sách nằm trong hộp (CSS `.pc-chon`). */
+  const neoDs = useMemo(() => ({ get current() { return box.current?.querySelector<HTMLElement>('.oc') ?? box.current; } }), []);
+  const [trongHop, setTrongHop] = useState(false);
+  useLayoutEffect(() => { setTrongHop(!!box.current?.closest('.pc-hop.pc-chon')); }, []);
   const suaTruoc = useRef(tuMo ? false : editing);
   useEffect(() => {
     if (editing && !suaTruoc.current) {
@@ -484,9 +489,11 @@ export function ChonNguoi({
     </div>
   );
 
+  /* SUA-2211-A (chủ SP 22/11 ý 7): danh sách NỔI vẽ ra lớp trên cùng (`NoiTren`) — thân panel / hộp / bảng cuộn không cắt, thiếu chỗ dưới thì lật lên.
+     Danh sách nằm trong hộp (`tinh`, hộp chọn GV `.pc-chon`, màn 375) giữ tại chỗ. */
   const danhSach = open && (
     /* mousedown không lấy focus khỏi ô gõ (Safari không focus nút khi bấm) → rời ô không chạy trước cú bấm chọn. */
-    <div id={`${uid}-listbox`} role="listbox" aria-label={tieuDe ?? ariaLabel} aria-multiselectable={nhieu ? true : undefined} aria-busy={loading || undefined}
+    <NoiTren neo={neoDs} rongNeo cach={4} taiCho={tinh || manMo || trongHop} id={`${uid}-listbox`} role="listbox" aria-label={tieuDe ?? ariaLabel} aria-multiselectable={nhieu ? true : undefined} aria-busy={loading || undefined}
       onMouseDown={(e) => e.preventDefault()} className={`oc-ds${tinh && !manMo ? ' tinh' : ''}`}>
       {day && <div className="oc-rong tran" role="status"><b>{t('Tối đa {n} {dv} một lần', { n: nhieu!.toiDa, dv: donVi })}</b></div>}
       {options.map((opt, i) => {
@@ -531,7 +538,7 @@ export function ChonNguoi({
       })}
       {!choNgoai && !them && trangThai}
       {chanChu && <div className="oc-chan">{chanChu}</div>}
-    </div>
+    </NoiTren>
   );
 
   const ten = tieuDe ?? ariaLabel ?? t('Chọn');

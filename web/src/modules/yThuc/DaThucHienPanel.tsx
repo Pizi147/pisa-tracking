@@ -105,7 +105,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
           </label>
         )}
       </Khoi>
-      <Khoi tieuDe={t('Vi phạm được xử lý · {length}', { length: m.viPham.length })}>
+      <Khoi tieuDe={t('{n} vi phạm được xử lý', { n: m.viPham.length })}>
         <p className="m-0 text-xs text-slate-400">{m.viPham.map((v) => `${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}`).join(' · ') || '—'}</p>
       </Khoi>
     </KhungPanel>
