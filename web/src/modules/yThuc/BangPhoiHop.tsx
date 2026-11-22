@@ -292,7 +292,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
 
 /** Ô ③: Nội dung GVCN ghi (2 dòng + Xem đủ); Meeting CX: TVV báo gì — chờ / chưa liên hệ được / đã báo; người có quyền thấy nút Ghi kết quả. */
 function OKetQua({ a, tvv, du, onDu, onGhi, anHan = false }: { a: CoordAction; tvv: boolean; du: boolean; onDu: () => void; onGhi: () => void;
-  /** Hồ sơ: hạn Báo PH đã ở cột hạn của dòng. */ anHan?: boolean }) {
+  /** Hồ sơ: hạn Báo PH đã ở cột hạn, nút Ghi kết quả / Sửa ở cột nút của dòng. */ anHan?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const v = a.tvv;
   const chu = (s: string | null) => s ? (
@@ -311,8 +311,8 @@ function OKetQua({ a, tvv, du, onDu, onGhi, anHan = false }: { a: CoordAction; t
           : <Nhan tone="doing">{v.coTheGhi ? t('Chờ bạn báo PH') : v.tvv ? t('Chờ {ten}', { ten }) : t('Chưa có TVV — GVCN báo')}</Nhan>}
         {v.trangThai === 'mo' && !anHan && <HanEm han={v.han} />}
         {chu(v.lan?.ghiChu ?? null)}
-        {v.coTheGhi && v.trangThai === 'mo' && <button type="button" className="btn btn-primary btn-sm mt-1 min-h-[44px] sm:min-h-[30px]" onClick={onGhi}>{t('Ghi kết quả')}</button>}
-        {v.coTheGhi && v.trangThai === 'xong' && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" onClick={onGhi}>{t('Sửa')}</button>}
+        {!anHan && v.coTheGhi && v.trangThai === 'mo' && <button type="button" className="btn btn-primary btn-sm mt-1 min-h-[44px] sm:min-h-[30px]" onClick={onGhi}>{t('Ghi kết quả')}</button>}
+        {!anHan && v.coTheGhi && v.trangThai === 'xong' && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" onClick={onGhi}>{t('Sửa')}</button>}
       </span>
     );
   }
@@ -467,8 +467,10 @@ function FormBo({ id, tvv, onDong, onXong }: { id: number; tvv: number | null; o
  * Meeting CX/GĐCN (N58): "GVCN xác nhận" rồi ba phần ĐỘC LẬP Xếp lịch (BPXL) · Kết quả (CX) · Báo PH (TVV); việc chỉ của GVCN một chấm.
  * Người có việc làm tại chỗ (GVCN / QL: Xác nhận; TVV: Ghi kết quả). Dữ liệu = request sẵn có của tab (ba phần Meeting nạp theo lô ở máy chủ).
  */
-export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo }: {
+export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo, phamVi }: {
   turns: CoordTurn[]; cot1: 'hocVien' | 'luot'; onChanged: () => void; onGoAcademic?: () => void;
+  /** Chữ phạm vi ("mọi lượt") gắn vào dải đầu của lượt đầu tiên — không đứng riêng một hàng (PTA rà #2000). */
+  phamVi?: string;
   /** GV-CU-BO-TRO [XM-2]: em người xem không mở được hồ sơ (người dạy bổ trợ chỉ xem lớp) — tên chữ thường. */
   khongMo?: ReadonlySet<number>;
 }) {
@@ -479,16 +481,16 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo 
   const vua = (id: number) => (co: boolean) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(id); else n.delete(id); return n; });
   return (
     <div className="text-sm [container-type:inline-size]" aria-label={t('Phối hợp SOS')}>
-      {ds.map((luot) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} />)}
+      {ds.map((luot, i) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} phamVi={i === 0 ? phamVi : undefined} />)}
     </div>
   );
 }
 
 const LINK_NHO = 'link inline-flex min-h-[44px] appearance-none items-center border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0';
 
-function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo }: {
+function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, phamVi }: {
   luot: CoordTurn; cot1: 'hocVien' | 'luot'; vuaLuu: ReadonlySet<number>; vua: (id: number) => (co: boolean) => void; onChanged: () => void; onGoAcademic?: () => void;
-  khongMo?: ReadonlySet<number>;
+  khongMo?: ReadonlySet<number>; phamVi?: string;
 }) {
   /* Lượt đã xong (hồ sơ HV) gập một dòng, "Xem việc ▸" mở tại chỗ. */
   const [mo, setMo] = useState(!(cot1 === 'luot' && luot.summary.complete));
@@ -505,6 +507,7 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo }:
         <DiemMotDong th={luot.the} anLuot={cot1 === 'luot'} />
         <Nhan tone={xong ? 'ok' : 'doing'}>{t('{label} việc xong', { label: luot.summary.label })}</Nhan>
         <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {phamVi && <span className="text-[13px] text-dim">{phamVi}</span>}
           {!mo && <button type="button" className={LINK_NHO} aria-expanded={false} onClick={() => setMo(true)}>{t('Xem việc ▸')}</button>}
           {luot.canAct && !luot.nhanDot && !them && <button type="button" className={LINK_NHO} onClick={() => setThem(true)}>{t('+ Thêm việc')}</button>}
           {onGoAcademic && <button type="button" className={LINK_NHO} onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
@@ -535,7 +538,7 @@ function tienDoViec(a: CoordAction): { o: ONut[]; aria: string; doc: boolean; ph
   if (!laMeetingCx(a.kind)) {
     const phu: ReactNode[] = xn ? [<>{t('GVCN')} {a.performerName && <b className={DAM}>{a.performerName}</b>} · <b className={DAM}>{ngayXn}</b></>]
       : a.status === 'removed' ? [daBo(a)] : [t('GVCN · chưa xác nhận')];
-    return { o: [gvcn], aria: gvcn.title ?? '', doc: false, phu };
+    return { o: [{ ...gvcn, tenNgan: undefined }], aria: gvcn.title ?? '', doc: false, phu };   // một chấm: ô đủ rộng cho tên đủ
   }
   const m = a.meeting;
   const v = a.tvv;
@@ -578,6 +581,7 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
   const han = a.status === 'pending' ? a.han ?? null : a.tvv?.trangThai === 'mo' ? a.tvv.han : null;
   const td = tienDoViec(a);
   const boDi = a.status === 'removed';
+  const ghiTvv = a.status === 'done' && !!a.tvv?.coTheGhi && (a.tvv.trangThai === 'mo' || a.tvv.trangThai === 'xong');
   const nen = vua ? 'bg-[rgb(var(--ok-bg-rgb)/0.7)]' : mo === 'xac-nhan' || mo === 'ghi' ? 'bg-[color:var(--accent-soft)]' : '';
   return (
     <div className={`grid min-h-16 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_112px_auto] items-center gap-x-4 gap-y-2 border-t px-4 py-2.5 first:border-t-0 [@container(max-width:760px)]:grid-cols-[minmax(0,1fr)_auto] [@container(max-width:760px)]:px-3 ${nen}`}
@@ -598,7 +602,9 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
       <span className={`[@container(max-width:760px)]:col-start-2 [@container(max-width:760px)]:row-start-1 [@container(max-width:760px)]:self-start [@container(max-width:760px)]:text-right`}>
         {han ? <HanEm han={han} soNgay={false} /> : a.status === 'pending' && <span className="text-[13px] text-faint">{t('không hạn')}</span>}
       </span>
-      <span className={`flex items-center justify-end gap-1.5 [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-3 [@container(max-width:760px)]:[&>.btn-primary]:flex-1`}>
+      <span className={`flex flex-nowrap items-center justify-end gap-1.5 [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-3 [@container(max-width:760px)]:[&>.btn-primary]:flex-1 [@container(max-width:760px)]:[&>.btn-primary]:justify-center`}>
+        {/* PTA rà #2000: nút TVV của Meeting đứng ở cột nút (nút chính trước), thẳng hàng "Xác nhận" các dòng trên. */}
+        {ghiTvv && mo !== 'ghi' && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-[32px] ${a.tvv!.trangThai === 'mo' ? 'btn-primary min-w-[96px]' : ''}`} onClick={() => setMo('ghi')}>{a.tvv!.trangThai === 'mo' ? t('Ghi kết quả') : t('Sửa kết quả')}</button>}
         {a.status === 'pending' && lam && mo !== 'xac-nhan' && <button type="button" className="btn btn-primary btn-sm min-h-[44px] min-w-[96px] sm:min-h-[32px]" onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>}
         {a.status === 'pending' && lam === false && <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
         {a.status === 'done' && lam && mo !== 'xac-nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}

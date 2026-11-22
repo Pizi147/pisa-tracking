@@ -279,16 +279,18 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
 
       {phan === 'phoi-hop' ? (
         <div className="pb-1">
-          <div className="flex justify-end border-b px-4 py-2 text-[13px] text-slate-400 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>{t('mọi lượt')}</div>
           {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
             : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
             /* PHOI-HOP-V2 PR-2 (mockup #1368 K7): cùng bảng với hồ sơ lớp, cột đầu là Lượt. */
-            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic}
+            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic} phamVi={t('mọi lượt')}
                 onChanged={() => { coord.reload(); }} />}
         </div>
       ) : (
         <>
-          <div className="border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+          {/* NHẸ HƠN PR-6 (v23 ⑧ Y1, PTA rà #2000): ≥ 1280 hai cột — Thang (trái) · Đang chờ (phải, = "Vi phạm chưa xử lý" của khung); hẹp hơn xếp dọc.
+              Cột phải là khung đo riêng (`container`) để dòng chờ vẽ dạng thẻ theo bề rộng cột, không theo cả khối. */}
+          <div className="grid items-start border-b min-[1280px]:grid-cols-2" style={{ borderColor: 'var(--line)' }}>
+          <div className="px-4 py-3 max-sm:px-3">
             {/* NHẸ HƠN PR-6 (v23 ⑧ Y1): khối thang luôn hiện — thanh bước 7 ô (thay dải "Đã tới" + thang vạch + "Thang ▾"); Xác nhận / Sửa cấp bậc ở đầu khối,
                 các nút của em ở chân khối. */}
             <ThangYThuc d={d} homNay={homNay}
@@ -306,6 +308,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
 
           {/* GD-7 (③ K4a, R3.5 — đồng bộ tab lớp): MỘT bảng của chính em — đầu cột một lần · "Đang chờ" (vạch vàng trái) · "Lịch sử · n" gập tại khối
               ([XM-4], một kiểu lịch sử GD-4c) với lọc loại · Lộ trình | Cả lịch sử · Mọi nhóm bên trong. */}
+          <div className="min-w-0 border-t [container-type:inline-size] min-[1280px]:border-l min-[1280px]:border-t-0" style={{ borderColor: 'var(--line)' }}>
           <DauCotEm ph={iBaoPh} khongHv />
           <div className="flex flex-wrap items-baseline gap-x-2.5 px-4 pb-1 pt-3 max-sm:px-3">
             <h3 className="m-0 text-[14px] font-bold text-slate-100">{t('Đang chờ')}</h3><span className="text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n: soCanLam })}</span>
@@ -315,6 +318,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           ) : (
             <div className="shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">{kCho}{kVua}{kDx}{kTh}{kTvv}{kThMo}</div>
           )}
+          </div>
+          </div>
 
           <div id={`yt-ls-${studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
             <LichSuGap so={soTong} moSan={moLs} onMo={setMoLs} className="!rounded-none !border-0 !bg-transparent">

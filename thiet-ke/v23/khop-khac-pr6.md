@@ -13,11 +13,11 @@ Mockup: `thang-y-thuc.html` Y1 – Y4 + ghi chú (XM-9, XM-10, góp ý chủ SP 
 | Sau WL 2: ô đầu "…", vẫn 7 ô (Y4) | `oThang`: "…" + 5 bậc cuối + một bậc sau | phép kiểm | KHỚP |
 | Đề xuất chờ: ô kế tiếp ghi "chờ Head" (Y4) · đề xuất ngoài thang (WL 3) | chữ dưới ô kế · đề xuất ngoài thang: một dòng dưới thang "Đề xuất WARNING LETTER 3 · chờ Head" | — | KHỚP (ngoài thang: dòng chữ thay chip cuối, vì 7 ô cố định) |
 | Khối `.kt`: đầu "Thang xử lý vi phạm · FT" + "Xác nhận cấp bậc vi phạm" + ⓘ · chân "n vi phạm chưa xử lý" + hai nút cùng cỡ | `ThangYThuc` khối mới · hồ sơ HV: khối luôn hiện (thay dải "Đã tới" + thang vạch + "Thang ▾") | y1-thang | KHỚP |
-| Hai cột: thang | "Vi phạm chưa xử lý" (Y1) | hồ sơ giữ MỘT bảng "Đang chờ" + "Lịch sử" (mockup v20 A4 đã duyệt — nơi có Xác nhận xử lý / Đã xem / Báo PH tại dòng) | y1-thang | KHÁC — giữ thao tác; thang thu về ≤ 640 px để ô không giãn |
+| Hai cột: thang | "Vi phạm chưa xử lý" (Y1) | ≥ 1280 hai cột: Thang (trái) · "Đang chờ" (phải, khung đo riêng — dòng chờ vẽ dạng thẻ theo cột); hẹp hơn xếp dọc. Lịch sử dưới, hết bề ngang. Giữ tab con Tình hình / Phối hợp SOS (đỡ đọc Turso) | y1-thang | KHỚP (PTA rà #2000) |
 | Vi phạm bấm mở mô tả dưới dòng: Nhóm · Người ghi (đậm tên + ngày) · Mô tả · Tệp (góp ý 1) | `DsVp` (`BangLan.tsx`, dùng chung hồ sơ HV + tab Ý thức lớp): khối mở nền nhấn nhạt — Nhóm · Người ghi rồi `ChiTietViPham` (Mô tả + Dịch · Tệp · Lần xử lý · Sửa / Xoá / Trả lại) | y1-vi-pham | KHỚP |
 | Cột ngày vi phạm dd/mm/yyyy | 44 → 80 px | y1-vi-pham | KHỚP |
 | Phối hợp SOS: dải lượt `.luot-dau` (SOS · MT2 · Overall / kỳ vọng · Học thuật ›) | `KhoiLuot`: dải nền `surface-2` trên các việc (thay ô gộp trái 22 %) · giữ x/y việc xong, + Thêm việc, Xem việc ▸ | y1-phoi-hop, y3-phoi-hop | KHỚP |
-| Dòng việc `.ph-dong`: tên + dòng phụ · thanh chấm · hạn · một nút | `DongViecHoSo` (mới) — lưới 4 cột; < 760 px ba hàng (tên + hạn / chấm / nút) | y1-phoi-hop, y3-phoi-hop | KHỚP |
+| Dòng việc `.ph-dong`: tên + dòng phụ · thanh chấm · hạn · một nút | `DongViecHoSo` (mới) — lưới 4 cột; nút TVV "Ghi kết quả" / "Sửa kết quả" ở cột nút (nút chính trước Sửa · ⋯), thẳng hàng "Xác nhận"; < 760 px: tên → dòng phụ (+ chip) → chấm → MỘT hàng nút | y1-phoi-hop, y3-phoi-hop | KHỚP |
 | Meeting N58: "GVCN xác nhận" nối, rồi Xếp lịch (BPXL) · Kết quả (CX) · Báo PH (TVV) độc lập, vạch dọc đứt, chữ dưới = người thật (không BPXL → TVV, không CX → Head) | `tienDoViec` + `ThanhBuoc doc` · máy chủ `phanMeetingCuaHanhDong` (vai mặc định như `giaoViec.ts` `vaiTai`) | y1-phoi-hop | KHỚP |
 | Dòng phụ Meeting 2 dòng, tên người / giờ họp đậm (góp ý 4) · 375 một dòng gọn | `phu` / `phuNgan` | y1-phoi-hop, y3-phoi-hop | KHỚP |
 | Việc chỉ GVCN: một chấm | `tienDoViec` một ô | y1-phoi-hop | KHỚP |
@@ -40,9 +40,10 @@ Mockup: `thang-y-thuc.html` Y1 – Y4 + ghi chú (XM-9, XM-10, góp ý chủ SP 
 | Phối hợp: TVV Ghi kết quả / Sửa · Xem đủ ghi chú · Nội dung gửi TVV | ô "Kết quả" | dưới dòng phụ | GIỮ |
 | + Thêm việc · Học thuật › · Xem việc ▸ (lượt đã xong) | ô gộp trái | dải lượt | GIỮ |
 | Đầu cột "Lượt · Việc · Đã làm · Kết quả" | có | bỏ (khung không có; mỗi dòng tự nói) | BỎ — không phải thao tác |
+| Chữ "mọi lượt" (Phối hợp SOS hồ sơ) | hàng riêng góc phải | trong dải đầu lượt đầu tiên, cạnh + Thêm việc / Học thuật › | GIỮ (đổi chỗ) |
 
 ## Turso
-- `/students/:id/phoi-hop-sos`, `/classes/:id/phoi-hop-sos`: **+1 câu chỉ khi có Meeting CX đã xác nhận** (lô `meeting_phan WHERE phoi_hop_id IN (json_each)`, câu con vai trong cùng câu); 2 dòng / Meeting + vài dòng `user_roles`. Seed không có Meeting đã xác nhận → số đo trần hiện tại không đổi (trần `tocDoDuong.ts` còn dư ≥ 2 câu).
+- `/students/:id/phoi-hop-sos`, `/classes/:id/phoi-hop-sos`: chỉ khi có Meeting CX đã xác nhận: **+1 câu** lô `meeting_phan WHERE phoi_hop_id IN (json_each)` (tên + `HOAT_DONG_O` cho người được giao, trong cùng câu) + câu người giữ vai `nguoiGiuVai` (giaoViec.ts, nhớ theo request, chung với /my-work). Phép kiểm `prGiaoViec` (Meeting đã xác nhận, một phần giao / một phần theo luật, người nghỉ → về luật): đo **25 câu · 69 dòng**, trần `TRAN_PHOI_HOP_MEETING` 35 / 119.
 - Thang, vi phạm, hộp Y2: +0 câu (dữ liệu đã nạp).
 
 ## [XM] / để sau

@@ -2292,6 +2292,12 @@ export const TRAN_DONG: Record<string, number> = {
 /** AU-2111 P1-01: TVV mở MỘT việc Vận hành được giao (`GET /mgmt-tasks/:id`, cổng khu Công việc + chi tiết) — đo trên seed có dữ liệu (tocDo.run.ts). */
 export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
 
+/**
+ * NHẸ HƠN PR-6: GET /students/:id/phoi-hop-sos có MỘT Meeting CX đã xác nhận (GVCN, em mới MB FT 101) — thêm câu lô `meeting_phan` (+1) và người giữ vai
+ * (`nguoiGiuVai`, một câu mỗi request, chung với /my-work). Đo 23/11: 25 câu · 69 dòng → trần max(đo + 10, ⌈đo × 1,3⌉) câu, max(đo + 50, ⌈đo × 1,3⌉) dòng.
+ */
+export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
+
 export const TRAN_GHI_LO = {
   /**
    * TD-GHI (chủ SP 18/11): lưu điểm — trần = đo + 10 câu (chặt hơn max(đo + 10, ⌈đo × 1,3⌉): giữ phần vừa giảm), dòng ⌈đo × 1,3⌉. Đo bộ demo (QL, lượt FT

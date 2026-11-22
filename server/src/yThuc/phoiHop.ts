@@ -18,7 +18,7 @@ import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } fr
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon } from './baoPhTvv.ts';
-import { baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting } from '../worklist/giaoViec.ts';
+import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, tenVaiTai } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -236,25 +236,25 @@ export type CoordinationAction = {
 export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLuc: string | null; nguoi: string | null; vai: string };
 
 /**
- * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (câu con vai tính trong cùng câu, không theo dòng ở JS).
- * Vai mặc định như `giaoViec.ts` (`vaiTai`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
+ * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (meeting_phan + tên). Người phụ trách được giao chỉ hiệu lực khi còn hoạt động + còn vai ở
+ * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `tenVaiTai` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
+ * một câu mỗi request, dùng chung với `/my-work`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
  */
 export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }> {
   const out = new Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }>();
   if (!ids.length) return out;
-  const VAI = (key: string) => `(SELECT uu.full_name FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users uu ON uu.id = ur.user_id
-      WHERE r.key = '${key}' AND ur.status = 'active' AND uu.status = 'active' AND uu.deleted_at IS NULL AND (ur.branch_id IS NULL OR ur.branch_id IS mp.branch_id) ORDER BY ur.user_id LIMIT 1)`;
   for (const r of db().prepare(
-    `SELECT mp.phoi_hop_id, mp.phan, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, pt.full_name AS pt_ten, tv.full_name AS tvv_ten,
-            CASE mp.phan WHEN 'xep_lich' THEN ${VAI('scheduler')} ELSE ${VAI('cx')} END AS vai_ten
+    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
+            CASE WHEN mp.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('mp.phu_trach_id', 'mp.branch_id')} THEN pt.full_name END AS pt_ten
        FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
        LEFT JOIN users xb ON xb.id = mp.xong_boi LEFT JOIN users pt ON pt.id = mp.phu_trach_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
       WHERE mp.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
     const xep = r.phan === 'xep_lich';
-    const vai = r.vai_ten ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
+    const vaiTen = tenVaiTai(r.phan, r.branch_id ?? null);
+    const vai = vaiTen ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
     const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,
-      nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? r.vai_ten ?? (xep ? r.tvv_ten ?? null : null), vai };
+      nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? vaiTen ?? (xep ? r.tvv_ten ?? null : null), vai };
     const m = out.get(r.phoi_hop_id) ?? { xepLich: null, ketQua: null };
     if (xep) m.xepLich = phan; else m.ketQua = phan;
     out.set(r.phoi_hop_id, m);
