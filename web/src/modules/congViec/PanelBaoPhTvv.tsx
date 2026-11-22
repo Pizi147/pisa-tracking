@@ -8,8 +8,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
-import { TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
-import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
+import { TheLoai, TomLanXuLy } from '../yThuc/BangLan.tsx';
 import { DaiChoGvSua, DaiDaLam, DsViPhamBaoPh, HOAN_TAC_MS, KhoiTraLai, TheChoGv, guiTraLai, hoanTacTraLai, rutTraLai, type TraLaiMo, type ViPhamBaoPh } from '../yThuc/TraLai.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -238,14 +237,9 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">{v.boiCanh.noiDung}</span>
           </div>
         )}
-        {/* Mockup K5b / K8d: dải ①②③ cùng thứ tự tab Ý thức — bước TVV là việc của người ghi. */}
-        {v.tinhHinhId == null && !laMeeting && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
-          [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
-          v.choQlDuyet
-            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ Head duyệt'), v.choQlDuyet.han && t('Head trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
-          [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? (gv.g?.tamDung ? t('hạn tạm dừng') : t('hạn {ngay}', { ngay: shortDate(v.han, hn) })) : null],   // A3-07: cùng nói hạn như khối Hạn (N61)
-        ]} />}
+        {/* NHẸ HƠN PR-6 (v23 P1): một dòng tóm in đậm chỗ chính, thay dải ①②③ (trạng thái / hạn đã ở đầu panel + khối Hạn). */}
+        {v.tinhHinhId == null && !laMeeting && <TomLanXuLy ngayVp={v.boiCanh.viPham.map((x) => x.ngay)} gvcn={v.boiCanh.nguoiLuu ?? null} nhan={bacNgan(v.nhan)}
+          ngayXl={v.boiCanh.ngayLam ?? v.boiCanh.luuLuc ?? null} choHead={v.choQlDuyet ? { han: v.choQlDuyet.han ?? null } : undefined} />}
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
         {v.boiCanh.viPham.length > 0 && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}

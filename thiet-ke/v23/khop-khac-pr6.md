@@ -23,6 +23,7 @@ Mockup: `thang-y-thuc.html` Y1 – Y4 + ghi chú (XM-9, XM-10, góp ý chủ SP 
 | Việc chỉ GVCN: một chấm | `tienDoViec` một ô | y1-phoi-hop | KHỚP |
 | Hạn: dd/mm/yyyy tô màu, không "quá hạn n ngày" ở hồ sơ | `HanEm soNgay={false}` (luật hạn PR-1: `mucHan` + ⚠); Meeting đã xác nhận: hạn phần Báo PH ở cột hạn | y1-phoi-hop | KHỚP |
 | Hộp thang (Y2): thanh bước + các lần xử lý, gập khi > 3 | hộp chip bậc tab Ý thức lớp (`ClassYThucCard` `ThangEm`): `ThangYThuc lanXuLy khung={false}` — bỏ dòng "Thang · tên" + thang vạch trùng | — | KHỚP |
+| Panel Báo PH (khung-panel P1, PTA giao thêm từ PR-2b): MỘT dòng tóm in đậm "3 vi phạm · 09/11 – 18/11 · GVCN … đã xử lý REPORT 2 ngày …" thay dải Vi phạm · GVCN xử lý · TVV báo PH | `TomLanXuLy` (mới, `BangLan.tsx`) · `PanelBaoPhTvv.tsx` chỉ đổi chỗ gọi (dữ liệu đã nạp, +0 câu); chờ Head: "đề xuất REPORT 2 · Chờ Head duyệt · Head trả lời trước …" | p1-bao-ph | KHỚP — trạng thái / hạn Báo PH (ô ③ cũ) đã ở đầu panel + khối Hạn |
 | Nút "Xem" ở dòng Meeting (Y1) | — | — | KHÁC — web chưa có panel Meeting mở từ hồ sơ; ba phần làm ở Công việc (PanelMeeting). [XM] cho PTA |
 
 ## Thao tác TRƯỚC → SAU

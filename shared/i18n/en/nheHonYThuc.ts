@@ -18,4 +18,5 @@ export const EN_NHE_HON_Y_THUC = {
   'Tiến độ: đã xong {a}; chờ {b}': 'Progress: done {a}; waiting {b}',
   'đã xếp lịch': 'scheduled',
   'chờ {ds}': 'waiting on {ds}',
+  'đã xử lý': 'actioned',
 } satisfies Record<string, Dich>;

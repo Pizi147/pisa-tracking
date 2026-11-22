@@ -271,6 +271,30 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
   );
 }
 
+/**
+ * NHẸ HƠN PR-6 (v23 khung-panel P1, thay `TienTrinh` ở panel Báo PH): MỘT dòng tóm, chỗ chính in đậm —
+ * "**3 vi phạm** · 09/11/2026 – 18/11/2026 · GVCN **Đinh Thu Hằng** đã xử lý **REPORT 2** ngày 19/11/2026". Chờ Head duyệt: "đề xuất **REPORT 2** · chờ Head duyệt".
+ * Trạng thái / hạn Báo PH đã ở đầu panel + khối Phụ trách · Hạn — không lặp.
+ */
+export function TomLanXuLy({ ngayVp, gvcn, nhan, ngayXl, choHead }: {
+  ngayVp: string[]; gvcn: string | null; nhan: string; ngayXl: string | null;
+  /** Đề xuất đang chờ Head: hạn Head trả lời (null = không hạn). undefined = đã xử lý. */
+  choHead?: { han: string | null };
+}) {
+  const ds = [...ngayVp].sort();
+  const B = 'font-semibold text-[color:var(--text)]';
+  return (
+    <p className="m-0 text-[13px] leading-relaxed text-dim">
+      <b className={B}>{t('{n} vi phạm', { n: ds.length })}</b>
+      {ds.length > 0 && <span className="tabular-nums"> · {ngay(ds[0])}{ds.length > 1 && ds[0] !== ds[ds.length - 1] ? ` – ${ngay(ds[ds.length - 1])}` : ''}</span>}
+      {' · '}{gvcn && <>{t('GVCN')} <b className={B}>{gvcn}</b> </>}
+      {choHead
+        ? <>{t('đề xuất')} <b className={B}>{nhan}</b> · {t('Chờ Head duyệt')}{choHead.han && <> · {t('Head trả lời trước {ngay}', { ngay: ngay(choHead.han) })}</>}</>
+        : <>{t('đã xử lý')} <b className={B}>{nhan}</b>{ngayXl && <> {t('ngày {ngay}', { ngay: ngay(ngayXl) })}</>}</>}
+    </p>
+  );
+}
+
 /** Mốc vi phạm dưới tên em (chủ SP 12/11): "REPORT 1", "WARNING LETTER 1"… viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm". Cùng `bac` với thang. */
 export const chuMoc = (bac: number, coViPham = true): string => nhanMocViPham(bac, dich) ?? (coViPham ? t('Chưa có mốc') : t('Chưa có vi phạm'));   // PTA 12/11: có vi phạm mà chưa tới mốc → "Chưa có mốc"
 
