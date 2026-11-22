@@ -111,11 +111,22 @@ function DsVp({ ds, homNay, moId, onMo, chiTiet }: { ds: VpDong[]; homNay: strin
     <ul className="m-0 list-none p-0">
       {ds.map((v) => (
         <li key={v.id} className="border-t border-dashed py-2 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
-          <span className="grid grid-cols-[44px_minmax(0,1fr)] items-start gap-x-2">
-            <span className="pt-px text-[13px] font-semibold tabular-nums text-slate-400 max-sm:pt-3">{ngay(v.ngay, homNay)}</span>
+          <span className="grid grid-cols-[80px_minmax(0,1fr)] items-start gap-x-2">
+            <span className="whitespace-nowrap pt-px text-[13px] font-medium tabular-nums text-dim max-sm:pt-3">{ngay(v.ngay)}</span>
             <TenVp v={v} homNay={homNay} mo={moId === v.id} onMo={() => onMo(v.id)} />
           </span>
-          {moId === v.id && <div className="mt-2 pl-[52px] max-sm:pl-0">{chiTiet(v)}</div>}
+          {/* NHẸ HƠN PR-6 (v23 ⑧ Y1 `.vpd-ct`, chủ SP 22/11 "bấm từng vi phạm thì vẫn hiện mô tả"): mở dưới dòng — Nhóm · Người ghi (đậm tên + ngày)
+              rồi Mô tả · Tệp · Lần xử lý (`ChiTietViPham`). Dữ liệu dòng đã nạp; chi tiết đọc khi mở như cũ. */}
+          {moId === v.id && (
+            <div className="mt-2 grid gap-2.5 rounded-lg px-3 py-2.5 text-sm ml-[88px] max-sm:ml-0" style={{ background: 'color-mix(in srgb, var(--accent-soft) 45%, var(--surface))' }}>
+              <span className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-1.5 max-sm:grid-cols-1 max-sm:gap-y-0.5">
+                {v.nhom && <><span className="text-[13px] text-dim">{t('Nhóm')}</span><span className="text-[color:var(--text)] max-sm:mb-1">{v.nhom}</span></>}
+                <span className="text-[13px] text-dim">{t('Người ghi')}</span>
+                <span className="text-[color:var(--text)]">{v.nguoiGhi && <><b className="font-semibold">{v.nguoiGhi}</b> · </>}<b className="font-semibold tabular-nums">{ngay(v.ngay)}</b></span>
+              </span>
+              {chiTiet(v)}
+            </div>
+          )}
         </li>
       ))}
     </ul>
@@ -257,6 +268,30 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
         </li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * NHẸ HƠN PR-6 (v23 khung-panel P1, thay `TienTrinh` ở panel Báo PH): MỘT dòng tóm, chỗ chính in đậm —
+ * "**3 vi phạm** · 09/11/2026 – 18/11/2026 · GVCN **Đinh Thu Hằng** đã xử lý **REPORT 2** ngày 19/11/2026". Chờ Head duyệt: "đề xuất **REPORT 2** · chờ Head duyệt".
+ * Trạng thái / hạn Báo PH đã ở đầu panel + khối Phụ trách · Hạn — không lặp.
+ */
+export function TomLanXuLy({ ngayVp, gvcn, nhan, ngayXl, choHead }: {
+  ngayVp: string[]; gvcn: string | null; nhan: string; ngayXl: string | null;
+  /** Đề xuất đang chờ Head: hạn Head trả lời (null = không hạn). undefined = đã xử lý. */
+  choHead?: { han: string | null };
+}) {
+  const ds = [...ngayVp].sort();
+  const B = 'font-semibold text-[color:var(--text)]';
+  return (
+    <p className="m-0 text-[13px] leading-relaxed text-dim">
+      <b className={B}>{t('{n} vi phạm', { n: ds.length })}</b>
+      {ds.length > 0 && <span className="tabular-nums"> · {ngay(ds[0])}{ds.length > 1 && ds[0] !== ds[ds.length - 1] ? ` – ${ngay(ds[ds.length - 1])}` : ''}</span>}
+      {' · '}{gvcn && <>{t('GVCN')} <b className={B}>{gvcn}</b> </>}
+      {choHead
+        ? <>{t('đề xuất')} <b className={B}>{nhan}</b> · {t('Chờ Head duyệt')}{choHead.han && <> · {t('Head trả lời trước {ngay}', { ngay: ngay(choHead.han) })}</>}</>
+        : <>{t('đã xử lý')} <b className={B}>{nhan}</b>{ngayXl && <> {t('ngày {ngay}', { ngay: ngay(ngayXl) })}</>}</>}
+    </p>
   );
 }
 

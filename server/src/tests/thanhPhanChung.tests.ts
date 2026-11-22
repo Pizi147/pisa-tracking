@@ -419,7 +419,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/<DaiChiSo nhan=\{t\('Số của lớp'\)\}>/.test(s) && /\{bConLai\.hien\.map\(nutBadge\)\}/.test(s) && /\{chipBadge\}(?:(?!<ODai|<\/DaiChiSo>)[\s\S])*<\/DaiChiSo>/.test(s), 'badge lớp phải ở cuối dải số');
     assert(!/tvvChinhCuaLop|tomTat\?\.tvv/.test(s), 'còn TVV ở đầu trang (lời 25)');
     assert(/soViecQuaHan: laVaiQuanLy\(session\?\.roles\) \? soViecQuaHan : 0/.test(s), '[XM-2] GV còn badge "việc quá hạn của lớp"');
-    assert(/<ThangVach dong=\{hv\.dongThang\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'tab Ý thức lớp thiếu thang vạch (lời 28, 36)');
+    /* NHẸ HƠN PR-6 (v23 ⑧ Y2): hộp thang tab lớp = thanh bước (`ThangYThuc`) + các lần xử lý — thay dòng thang vạch (lời 28, 36). */
+    assert(/<ThangYThuc d=\{hv\} homNay=\{homNay\} phu=\{ten\} lanXuLy khung=\{false\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'hộp thang tab Ý thức lớp thiếu thanh bước');
   });
   check('GD-6 rà PTA · chip lớp "loại · số" MỘT thành phần (hồ sơ lớp + Học viên & Lớp); badge tab là số; tab Báo cáo PH chỉ nhãn; ⋯ thẻ em chung; TVV không dưới tên em tab Ý thức', () => {
     const b = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 7, missingSkills: [], soBaiChoCham: 21, needScoresTitle: null, phase: 'running', missingCount: 3, soChoDuyet: 8, soViecQuaHan: 2 });
