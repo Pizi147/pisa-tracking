@@ -15,7 +15,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ENTRY_SKILLS, nhanBai, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
-import { conThieuFt, dotGvCham, duongDotTest, duongHoSoHocVien, type NguCanhDs } from '@shared/domain/index.ts';
+import { conThieuFt, dotGvCham, duongDotTest, duongHoSoHocVien, lyDoHuy, type NguCanhDs } from '@shared/domain/index.ts';
+import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { Level } from '../../ui/ui.tsx';
 import {
@@ -353,8 +354,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    * bằng nhau) → trống (OV-13f: không hiện mã HV).
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
+  /* SUA-2211-B (chủ SP 22/11 ý 11): môn đã huỷ chưa điểm = chip "Đã huỷ" thay ô nhập (như lưới) — Khôi phục ở ⋯. */
+  const huy = dung && s!.progress === 'cancelled';
   const phu = (cell.khongDuThi ? t('Vắng') : null)
-    ?? (dung && canEdit ? chuDung : null)
+    ?? (dung && canEdit && !huy ? chuDung : null)
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? t('Làm bài {tuan}', { tuan: cell.tuanHienTai }) : null)
@@ -369,7 +372,8 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={trong ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {(dung && !canEdit) || !s ? (
+        {huy ? <span className="inline-flex min-h-11 items-center"><ChipDaHuy ly={lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' })} /></span>
+        : (dung && !canEdit) || !s ? (
           <span className="inline-flex items-center gap-1">
             <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? t('không có lịch')}`}>
               {chuDung ?? '—'}

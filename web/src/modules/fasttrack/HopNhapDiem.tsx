@@ -21,6 +21,7 @@
  */
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { OKhongHoc } from '../../ui/ODiem.tsx';
+import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useContext, useState, type ReactNode } from 'react';
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { CHU_O_THIEU, chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, type NguoiChon } from '@shared/domain/index.ts';
@@ -125,7 +126,8 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
   const hai = (a: string, b: string) => ({ chu: a, phu: b });
   if (c.progress === 'cancelled') {
     const ly = lyDoHuyO(c);   // Rulebook §21.4 T5: "Đã huỷ" kèm lý do
-    return { ...(ly ? hai(t('Đã huỷ'), ly) : { chu: t('Đã huỷ') }), doc: ly ? `${t('Đã huỷ')} · ${ly}` : t('Đã huỷ'), kieu: 'huy' };
+    /* SUA-2211-B (chủ SP 22/11 ý 11): MỘT dòng — chip "Đã huỷ" giữa ô, cùng hàng ô khác; lý do ở title / tên đọc màn (không dòng chữ dưới ô). */
+    return { chu: t('Đã huỷ'), doc: ly ? `${t('Đã huỷ')} · ${ly}` : t('Đã huỷ'), kieu: 'huy' };
   }
   if (vangGoc && c.daChot?.doiSang) return { ...hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chưa dời')), doc: t('Vắng, chưa dời'), kieu: 'vang' };
@@ -167,7 +169,7 @@ function DongDau({ cell, thiBu = false }: { cell: Cell; thiBu?: boolean }) {
 const KIEU_O = {
   vang: 'border-[color:rgb(var(--muted-line-rgb))] text-[13px] text-[color:rgb(var(--muted-rgb))]',
   trong: 'border-dashed border-[color:var(--accent)]',
-  huy: 'border-dotted text-slate-500',
+  huy: '!border-muted-line bg-muted-bg text-xs font-semibold text-muted',   // SUA-2211-B: cùng dáng `ChipDaHuy`
   /* OV-11a (CA3-2): Không dự thi — hai dòng chữ như ô Vắng, màu trung tính (trạng thái cuối, không phải việc). */
   chot: 'text-[13px] text-slate-400',
 } as const;
@@ -222,16 +224,16 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     return (
       <span className="inline-flex flex-col items-center">
         <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
-          title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
+          title={h.kieu === 'huy' ? h.doc : cell.noShow?.text ?? lyDoChiDoc(cell)}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
-          {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
+          {vang ? t('Vắng') : h.kieu === 'huy' ? <ChipDaHuy ly={lyDoHuyO(cell)} /> : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
         {phu}
       </span>
     );
   }
   const nhanO = `${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`;
-  const tieuDeO = cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
+  const tieuDeO = h.kieu === 'huy' ? h.doc : cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
   if (trongPanel) {
     /* GD-3 (mockup v21 K2 `.od`): ô 96 × 44 viền liền (trống cũng viền liền), số 15 / 600 + dòng phụ 12 ("27 câu", "→ W4 SEP") NẰM TRONG ô. */
     return (
@@ -251,7 +253,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
       <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog"
         aria-label={`${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`}
         className={`o-sua inline-flex max-w-full items-center justify-center gap-1 tabular-nums ${lon ? 'min-h-[44px] min-w-[60px] text-base font-semibold' : 'h-8 min-w-16 px-1.5'} ${h.kieu ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}
-        title={cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }))}
+        title={tieuDeO}
         onClick={() => onMo(!mo)}>
         {kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}
       </button>

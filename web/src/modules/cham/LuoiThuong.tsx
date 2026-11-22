@@ -14,7 +14,8 @@ import { thongBaoVang } from './thongBaoVang.ts';
 import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
-import type { DinhNghiaCot } from '@shared/domain/index.ts';
+import { lyDoHuy, type DinhNghiaCot } from '@shared/domain/index.ts';
+import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
@@ -490,6 +491,17 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             <OBang key={k} c={cc[k]} className="group relative text-slate-500" data-kn={k} tabIndex={0}
               title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>
               <span className="inline-flex items-baseline gap-1 whitespace-nowrap">{tuanLich(s.weekStart, homNay)}{menuO(k)}</span>
+            </OBang>
+          );
+        }
+        /* SUA-2211-B (chủ SP 22/11 ý 11): môn ĐÃ HUỶ chưa có điểm — chip "Đã huỷ" giữa ô, cùng hàng (lý do ở title); ⋯ luôn hiện (Khôi phục ở đó). */
+        if (dung && s!.progress === 'cancelled') {
+          return (
+            <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
+              <span className="inline-flex items-center justify-center gap-1">
+                <ChipDaHuy ly={lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' })} />
+                {menuO(k, true)}
+              </span>
             </OBang>
           );
         }
