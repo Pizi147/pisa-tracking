@@ -73,3 +73,10 @@ Critique (tự chấm): **35 / 40**, không P0 / P1. P2: Tình hình ở 375 xu�
 
 - Khối Giáo viên bỏ cột "quá hạn lâu nhất" (chủ SP vòng 3) — chỉ tên · số quá hạn · loại.
 - Speaking của Mock / MT: chấm chéo, không chỉ định người → không tính quá hạn cho GV cụ thể; ở danh sách thiếu điểm ghi "GV Speaking".
+
+### Thêm vòng 3 — "Lớp cần chú ý" (chủ SP, PTA chốt)
+
+- Admin: "Lớp còn thiếu" đổi tên **"Lớp cần chú ý"** (một khái niệm một tên với Head / Quản trị).
+- Mỗi lớp **một dòng gập sẵn**: lớp · n việc · hạn sớm nhất (dd/mm/yyyy, vàng / đỏ). Bấm dòng mở **mỗi việc một hàng** (vd "Điểm Mock W3 NOV · thiếu 6 bài", "Báo cáo PH tháng 11 · thiếu nhận xét 4 em") + hạn riêng + người phụ trách nhỏ cuối hàng (nhiều người mỗi người một dòng). Vẽ MB FT 101 đang mở.
+- Chỉ lớp có việc quá hạn / sắp đến (≤ 2 ngày), lớp gấp nhất lên đầu, tối đa 5 + "Xem hết ›" → Công việc đã lọc; lớp chỉ có việc còn xa không hiện. Head / Quản trị dùng cùng kiểu.
+- Bấm: dòng lớp = mở / gập tại chỗ; hàng việc = panel việc đó; mã lớp = hồ sơ lớp; "Xem hết ›" = trang.
