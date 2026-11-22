@@ -47,7 +47,7 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
     const doc = (f: string) => fs.readFileSync(f, 'utf8');
     assert(/summary\?\.canLamNgay/.test(doc('web/src/App.tsx')), 'badge App đọc summary.canLamNgay');
     /* DEM-VIEC (chủ SP 18/11): nút "Của tôi" / "Của GV" / "Tất cả" đều không số — đầu trang "n việc · m quá hạn" là số duy nhất của danh sách. */
-    assert(!/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /nhan: LOC_NGUOI_VIEC_LABEL\[k\], so: null \}/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'nút lọc người không số');
+    assert(!/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /nhan: LOC_NGUOI_VIEC_LABEL\[k\], so: k === 'gv' \? soGvQuaHan \|\| null : null/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'nút lọc người: chỉ "Của GV" có số (quá hạn — NHẸ HƠN PR-2a)');
     /* CV-TAB: đầu trang đếm demDongViec(items); badge tab đếm dòng nhìn thấy (badgeTab ∘ dongTab — CVT-2 so tổng với demDongViec). */
     assert(/demDongViec\(items\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /badgeTab\(dongCuaTab\(cuaBan\(items\), k\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'đầu nhóm đếm demDongViec');
   });

@@ -473,7 +473,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
         /* NHẸ HƠN (v23 P1): ≥ 1024 panel tại chỗ BÁM MÉP PHẢI từ ngay dưới thanh menu tới đáy, 58 % (bảng 75 %) — danh sách trái (cột
            min(556 px, 42 % − 48 px) ở nơi gọi) vẫn thấy, bấm dòng khác = đổi việc. < 1024 giữ thẻ trong luồng trang (375 toàn màn). */
-        style={{ '--pn-top': `${top}px` } as CSSProperties}
+        style={{ '--pn-top': `${top}px` } as CSSProperties} data-pn={laBang ? 'bang' : 'viec'}
         className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl ${laBang ? 'lg:w-[75%]' : 'lg:w-[58%]'} ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>

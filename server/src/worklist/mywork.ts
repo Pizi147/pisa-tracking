@@ -138,6 +138,8 @@ export type WorkItem = {
   kns?: string[];
   /** Nhập điểm: kỹ năng có ô quá hạn (≤ `kns`) — `viecQuaHan` đếm theo đây, không theo cả dòng (nợ #528). */
   knsQuaHan?: string[];
+  /** NHẸ HƠN PR-2a: Nhập điểm, chỉ Admin — từng em còn thiếu kỹ năng nào (panel lớp). */
+  emThieu?: { id: number; ten: string; kns: string[] }[];
   /** OV-5a: số bài của dòng Nhập điểm (một kỹ năng của một em) — dòng phạm vi "m bài cần chấm". */
   soBai?: number;
   /** GD-1: việc chung Chấm Speaking — số bài quá hạn của nhóm (đầu tab). */
@@ -676,7 +678,7 @@ export type BaiChuaCham = {
  * KHOÁ mỗi dòng kèm hậu tố người phụ trách (`|u…`) — để cùng một khoá dù nhìn từ Quản lý hay
  * từ chính giáo viên (nút Nhắc dựa vào khoá này để tìm lại đúng dòng).
  */
-export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: number | null | undefined) => string | null, dongs: BaiChuaCham[]): WorkItem[] {
+export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: number | null | undefined) => string | null, dongs: BaiChuaCham[], kemEm = false): WorkItem[] {
   const buckets = new Map<string, ScoreBucket>();
   for (const d of dongs) {
     const testLabel = d.kind && d.kind !== 'mock'
@@ -755,6 +757,8 @@ export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: num
       kns: [...new Set(list.map((b) => b.skill))],
       knsQuaHan: [...new Set(list.filter((b) => b.quaHan).map((b) => b.skill))],
       soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
+      /* NHẸ HƠN PR-2a: panel lớp Admin — từng em · kỹ năng còn thiếu (dữ liệu đã có trong RAM, +0 câu; chỉ Admin để GET của GV không nặng thêm). */
+      ...(kemEm ? { emThieu: [...students].map(([id, ten]) => ({ id, ten, kns: [...new Set(list.filter((b) => b.students.has(id)).map((b) => b.skill))].sort((x, y) => thuMon(x) - thuMon(y)) })) } : {}),
       ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
       due, tuanThi: first.weekStart, periodId: first.periodId, kind: first.kind ?? 'mock',
       statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
@@ -971,7 +975,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 
   // ---------------------------------------------------------------- 1. nhập điểm
-  const gomBaiChuaCham = (dongs: BaiChuaCham[]): WorkItem[] => gomBaiNhapDiem(p, today, ctCua, dongs);
+  const gomBaiChuaCham = (dongs: BaiChuaCham[]): WorkItem[] => gomBaiNhapDiem(p, today, ctCua, dongs, xemViec === 'cham-diem');
 
   const minhDongs: BaiChuaCham[] = [];
   for (const a of attempts as any[]) {

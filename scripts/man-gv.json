@@ -69,6 +69,7 @@
  "web/src/modules/congViec/PaDangChay.tsx",
  "web/src/modules/congViec/PanelBaoPhTvv.tsx",
  "web/src/modules/congViec/PanelChamSpeaking.tsx",
+ "web/src/modules/congViec/PanelLopAdmin.tsx",
  "web/src/modules/congViec/PanelMeeting.tsx",
  "web/src/modules/congViec/PanelSauThi.tsx",
  "web/src/modules/congViec/PanelTraLai.tsx",
