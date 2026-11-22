@@ -74,6 +74,8 @@ export type LichTest = {
   /** PR-MT (K2-32): MT lịch sử chưa nhập theo lớp — dòng nhắc mờ cuối trang. */
   /** SV-S-EXPERT: lượt S Ex của tuần đang xem (không vào dải số / nợ) — cột S Ex của lưới FT. */
   sEx: (DongSEx & { studentId: number; ten: string; classId: number | null })[];
+  /** LT-DONG-GV (v23 L1): classId → tên GV đang dạy (thứ tự L R W S, trùng tên một lần) — dòng "GV …" dưới mã lớp ở cả hai nhóm. */
+  gvLop: Record<number, string[]>;
   nhacLichSu: { classId: number; classCode: string; soEm: number; href: string; luot: { so: number; soEm: number; href: string }[] }[];
 };
 

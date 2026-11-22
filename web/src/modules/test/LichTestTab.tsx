@@ -374,7 +374,7 @@ export function LichTestTab() {
               onBam={bamSo} dangTaiNo={!quaHan} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
-            <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
+            <KhoiNo no={noTab} gvLop={data.gvLop} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
               dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
               onMoDong={(d, viTri) => {
                 /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
@@ -388,7 +388,7 @@ export function LichTestTab() {
               <NhomDau id="lich-test-k3-than" rong={!lopTab.length} mo={moKhoi.k3 && lopTab.length > 0} onMo={() => thuKhoi('k3')}
                 tieuDe={data.laTuanNay ? t('Test tuần này') : t('Test {maTuan}', { maTuan })} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}
-                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
+                <HangLop lop={lopTab} gvLop={data.gvLop} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
               </NhomDau>
               {/* GD-11a (⑦ A5): tuần không có Test — một dòng trong nhóm (Quá hạn chấm vẫn ở trên). */}
