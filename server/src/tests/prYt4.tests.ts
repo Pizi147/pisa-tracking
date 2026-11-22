@@ -139,6 +139,17 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(t2.map((x) => x.nhan).join('|') === 'Report 1|Report 2|WL 1|Report 4 + Meeting CX/GĐCN|Report 5|WL 2|Report 7', t2.map((x) => x.nhan).join('|'));
     assert(d.dongThang(3, { bac: 2 }).map((x) => x.trangThai).join() === 'khai,khai,qua,lan-nay,sau,sau,sau', 'qua sau khai');
   });
+  check('NHẸ HƠN PR-6 · oThang: bậc nổi (dang) = bậc đã xử lý gần nhất, bậc kế "ke", luôn 7 ô', () => {
+    const tt = (bac: number, khai: { bac: number } | null) => d.oThang(d.dongThang(bac, khai)).map((x) => x.tt).join();
+    assert(tt(0, null) === 'ke,sau,sau,sau,sau,sau,sau', `chưa xử lý: ${tt(0, null)}`);
+    assert(tt(2, null) === 'qua,dang,ke,sau,sau,sau,sau', `R2: ${tt(2, null)}`);
+    assert(tt(2, { bac: 2 }) === 'khai,dang,ke,sau,sau,sau,sau' && d.oThang(d.dongThang(2, { bac: 2 }))[1].khai === true, `khai: ${tt(2, { bac: 2 })}`);
+    assert(tt(3, { bac: 2 }) === 'khai,khai,dang,ke,sau,sau,sau', `khai + qua: ${tt(3, { bac: 2 })}`);
+    assert(tt(6, null) === 'qua,qua,qua,qua,qua,dang,ke', `WL 2: ${tt(6, null)}`);
+    const t8 = d.oThang(d.dongThang(8, null));
+    assert(t8.length === 7 && t8.map((x) => x.ngan).join() === '…,R5,WL2,R7,R8,R9,R10' && t8.map((x) => x.tt).join() === 'gop,qua,qua,qua,dang,ke,sau' && t8[0].soGop === 4, JSON.stringify(t8));
+    assert(d.oThang(d.dongThang(1, null)).map((x) => x.ngan).join() === 'R1,R2,WL1,R4+M,R5,WL2,R7', 'tên ngắn');
+  });
   check('YT4 (1) · Sau WL 2 thang không có đỉnh: Report 7, 8, 9… (số = bậc), không cần QL; WL 3 ngoài thang', () => {
     assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7' && d.bacKeTiep(7).kind === 'report_8', 'bậc kế');
     assert(d.bacCuaLoai('report_5') === 5 && d.bacCuaLoai('wl_2') === 6 && d.bacCuaLoai('report_9') === 9 && d.bacCuaLoai('report_3') === 0 && d.bacCuaLoai('wl_3') === 0, 'bậc của loại');
@@ -1089,11 +1100,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       assert(!tepYt.some((x) => docW(`${YT}/${x}`).includes(`./${f}.tsx`)), `còn import ${f}`);
     }
   });
-  /* UI-Y-THUC-HV (mockup v7 chủ SP duyệt 28/10 thay luật 02/10 ở màn hẹp): từ sm MỘT dòng + mờ mép; dưới sm xuống dòng, đủ tên bậc. */
-  check('YT4 (8) · Thang: khối ≥ 600 px MỘT dòng (+ mờ mép), hẹp hơn xuống dòng đủ tên; dấu tích là SVG (không ký tự ✓)', () => {
+  /* NHẸ HƠN PR-6 (v23 ⑧, thay UI-Y-THUC-HV): thanh bước — lưới ô bằng nhau, KHÔNG xuống dòng ở mọi cỡ (cả 375); tên ngắn một dòng, tên đủ ở title / ⓘ. */
+  check('YT4 (8) · Thang: thanh bước lưới ô bằng nhau, không xuống dòng (cả 375); dấu tích là SVG (không ký tự ✓)', () => {
     const s = docW(`${YT}/ThangYThuc.tsx`);
-    const thang = /<ol[^>]*>/.exec(s)?.[0] ?? '';
-    assert(/\[@container\(min-width:600px\)\]:flex-nowrap/.test(thang) && /whitespace-nowrap/.test(thang) && /\[@container\(min-width:600px\)\]:\[mask-image/.test(thang) && /\bflex-wrap\b/.test(thang), 'một dòng từ sm, xuống dòng dưới sm');
+    const thang = /<ol aria-label=\{aria\}[^>]*>/.exec(s)?.[0] ?? '';
+    assert(/\bgrid\b/.test(thang) && /repeat\(\$\{o\.length\}, minmax\(0, 1fr\)\)/.test(thang) && !/flex-wrap/.test(thang) && /whitespace-nowrap/.test(s), 'lưới ô bằng nhau, không xuống dòng');
     assert(!/hidden sm:inline/.test(s) && /<DauTich/.test(s) && !/✓/.test(boChuThich(s)), 'đủ tên + SVG');
     assert(/<svg/.test(docW(`${YT}/NhanViPham.tsx`)) && /strokeWidth="1.5"/.test(docW(`${YT}/NhanViPham.tsx`)), 'SVG nét 1.5');
   });

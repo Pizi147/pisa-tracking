@@ -13,9 +13,9 @@ import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
-import { ThangVach, ThangYThuc } from './ThangYThuc.tsx';
+import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
-import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, chuMoc, type VpDong } from './BangLan.tsx';
+import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -71,7 +71,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [nhomVp, setNhomVp] = useState('');
   const [moVp, setMoVp] = useState<string | null>(null);
   const [moDu, setMoDu] = useState<number | null>(null);
-  const [thang, setThang] = useState(false);
   const [baoPh, setBaoPh] = useState<{ viecId: number; han: string } | null>(null);
   /* Phản hồi tại chỗ sau "Đã xem" (F03): khối ở lại, Hoàn tác + Xem lại — không chỉ toast. */
   const [vuaXem, setVuaXem] = useState<{ ids: number[]; luc: string } | null>(null);
@@ -271,7 +270,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const soTong = d.dongThoiGian.filter((x) => (x.loai === 'vi-pham' ? x.trangThai === 'da_ghi_nhan' : x.status === 'done' || x.status === 'thu_hoi')).length
     + d.tinhHinh.filter((x) => x.trangThai !== 'mo').length;
   const nhanChuoi = d.chuoi.nhan.startsWith('lớp thường') ? d.chuoi.nhan.replace('lớp thường', t('Lớp thường')) : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
-  const xuLyCuoi = d.hang.xuLyGanNhat;
 
   return (
     <section ref={dauRef} className="card scroll-mt-24 overflow-clip [container-type:inline-size]" aria-label={t('Ý thức & Phối hợp')}>
@@ -290,30 +288,20 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         </div>
       ) : (
         <>
-          {/* Dải mốc: "Đã tới" + MỐC VIẾT HOA (③ K4a duyệt 15/11 — thay "không Đã tới" 12/11) · thang vạch · Bậc kế · Thang ▾ · thao tác. */}
           <div className="border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
-                {d.bac > 0 && <span>{t('Đã tới')}</span>}
-                <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
-                {/* GD-4d (chủ SP 15/11, ③ K1 / K4a): thang mini dạng vạch — mốc WL là vạch đỏ dày, không chữ trong thanh; đủ tên ở "Thang ▾". */}
-                <ThangVach dong={d.dongThang} />
-                {xuLyCuoi && <span className="tabular-nums">{ngay(xuLyCuoi.ngay, homNay)}</span>}
-                <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{bacDu(dich(d.keTiep.nhan))}</b></span>
-                <button type="button" aria-expanded={thang} className={LINK} onClick={() => setThang((x) => !x)}>{thang ? `${t('Thang')} ▴` : `${t('Thang')} ▾`}</button>
-              </span>
-              <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">
-                {d.coTheKhai && <button type="button" className="btn h-9 max-sm:h-11" onClick={() => mo({ loai: 'khai', studentId })}>{t('Khai / sửa cấp bậc')}</button>}
-                {!d.coTheKhai && d.canSuaKhai && <button type="button" className="btn h-9 max-sm:h-11" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>{t('Khai / sửa cấp bậc')}</button>}
-                {d.coTheHoi && <button ref={neoHoi} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
+            {/* NHẸ HƠN PR-6 (v23 ⑧ Y1): khối thang luôn hiện — thanh bước 7 ô (thay dải "Đã tới" + thang vạch + "Thang ▾"); Xác nhận / Sửa cấp bậc ở đầu khối,
+                các nút của em ở chân khối. */}
+            <ThangYThuc d={d} homNay={homNay}
+              onKhai={d.coTheKhai ? () => mo({ loai: 'khai', studentId }) : undefined}
+              onSuaKhai={!d.coTheKhai && d.canSuaKhai ? () => mo({ loai: 'khai', studentId, sua: true }) : undefined}
+              chan={(d.coTheHoi || d.coTheBao || d.canRecord) && <>
+                {d.coTheHoi && <button ref={neoHoi} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]"
                   onClick={() => setHop({ neo: neoHoi, che: { loai: 'hoi', em: { id: studentId, ten: d.ten }, gvcn: d.gvcn } })}>{t('Hỏi tình hình')}</button>}
-                {d.coTheBao && <button ref={neoBao} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
+                {d.coTheBao && <button ref={neoBao} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]"
                   onClick={() => setHop({ neo: neoBao, che: { loai: 'bao', em: [{ id: studentId, ten: d.ten, tvv: d.tvv }] } })}>{t('Báo tình hình')}</button>}
                 {/* ③ K4a: cùng tên mục "+ Task" — "+ Vi phạm / Nhắc nhở" (form có Nhắc nhở), nút viền như hai nút cạnh. */}
-                {d.canRecord && <button type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Vi phạm / Nhắc nhở')}</button>}
-              </span>
-            </div>
-            {thang && <div className="mt-3"><ThangYThuc d={d} homNay={homNay} onKhai={d.canManage && d.coTheKhai ? () => mo({ loai: 'khai', studentId }) : undefined} /></div>}
+                {d.canRecord && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Vi phạm / Nhắc nhở')}</button>}
+              </>} />
           </div>
 
           {/* GD-7 (③ K4a, R3.5 — đồng bộ tab lớp): MỘT bảng của chính em — đầu cột một lần · "Đang chờ" (vạch vàng trái) · "Lịch sử · n" gập tại khối

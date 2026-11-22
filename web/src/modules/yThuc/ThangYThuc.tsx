@@ -1,145 +1,179 @@
-import { Fragment } from 'react';
+import type { ReactNode } from 'react';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { bacDu, ngay } from '@shared/domain/index.ts';
+import { bacDu, ngay, oThang, type OThang } from '@shared/domain/index.ts';
 import { DauTich } from './NhanViPham.tsx';
 import type { BacThangDong, YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
- * THANG XỬ LÝ VI PHẠM — khối riêng có viền, nổi bật (chủ sản phẩm 02/10): tiêu đề nhỏ · thang MỘT dòng · hai nút lớn.
- * `✓ Report 1 → [Report 2 · lần này] → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7` (V4-8, Q27-11, mockup M6). Sau WL 2 thang
- * tăng mãi (Report 7, 8…); WL 3 và phương án khác ở NGOÀI thang — chỉ qua nút Đề xuất QL duyệt.
- *
- * Bậc đã qua có dấu tích; bậc xác nhận từ trước (trước khi dùng web) mờ hơn + `title` "xác nhận dd/mm · người"; bậc kế tô nhấn;
- * Dưới `sm`, bậc đã qua thu thành dấu tích để cả thang vẫn một dòng; tràn thì mờ dần (mọi cỡ), không xuống hàng. Em đã qua WL 2 (thang
- * dài hơn mạch chính): các bậc xa nhất gộp thành `…`, luôn còn thấy vài bậc vừa qua và bậc kế tiếp.
- *
- * Nút: `Xác nhận xử lý` (bậc kế ở ngay trên thang nên nút KHÔNG lặp tên bậc) và `Đề xuất QL duyệt` cùng cỡ, cạnh nhau. Xử lý được cả
- * khi em mới có MỘT vi phạm (GV muốn report luôn) — giống hồ sơ lớp. Có đề xuất đang chờ / đã duyệt thì ẩn (việc đó ở thanh việc).
+ * THANG XỬ LÝ VI PHẠM — NHẸ HƠN PR-6 (mockup `thiet-ke/v23/thang-y-thuc.html` Y1–Y4): khối `.kt` — đầu (tên · chuỗi · Xác nhận cấp bậc · ⓘ) ·
+ * THANH BƯỚC 7 ô bằng nhau, không bao giờ xuống dòng (cả 375) · các lần xử lý (hộp thang, gập khi > 3) · chân (số vi phạm chưa xử lý · hai nút cùng cỡ).
+ * Ô: đã qua ✓ chấm đặc xám · ĐANG Ở = bậc đã xử lý gần nhất (XM-9, chấm nhấn to) · kế tiếp viền đứt · khai viền đứt + ✓ mờ · sau chấm rỗng.
+ * Sau WL 2: ô đầu "…" thay các bậc xa nhất (`oThang`). WL 3 và phương án khác ở NGOÀI thang — chỉ qua nút Đề xuất Head duyệt.
+ * Nút: `Xác nhận xử lý` · `Đề xuất Head duyệt` — có đề xuất đang chờ / đã duyệt thì ẩn (việc đó ở thanh việc).
  */
-/** Mạch chính (Report 1 … WL 2) = 6 bậc; thang dài hơn 6 + ô kế tiếp thì em đã qua WL 2. */
-const BAC_MACH_CHINH = 6;
 /** Chấm hồng = việc của tôi (mockup `.cua-toi`, cùng tab lớp). */
 const CUA_TOI = <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--hong)] align-middle" />;
-/** Khi gộp: số bậc vừa qua còn hiện, trước ô kế tiếp. */
-const BAC_HIEN_SAU_WL2 = 3;
+const LINK = 'link inline-flex min-h-[44px] appearance-none items-center border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0';
 
-export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuLyChinh = true }: {
-  d: Pick<YThucHocVien, 'dongThang' | 'chuoi' | 'khai' | 'coTheKhai' | 'canManage' | 'keTiep' | 'deXuat' | 'viPham'>;
+export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuLyChinh = true, phu, chan, lanXuLy = false, khung = true }: {
+  d: Pick<YThucHocVien, 'dongThang' | 'chuoi' | 'khai' | 'coTheKhai' | 'canManage' | 'keTiep' | 'deXuat' | 'viPham' | 'dongThoiGian'>;
   homNay: string;
   /** Có khi người xem xác nhận được cấp bậc từ trước (Q7, Q8). */
   onKhai?: () => void;
-  /** UI-Y-THUC-HV: "Sửa cấp bậc" ở góc phải khối (người được sửa cấp bậc đã xác nhận). */
+  /** "Sửa cấp bậc" ở đầu khối (người được sửa cấp bậc đã xác nhận). */
   onSuaKhai?: () => void;
   onXuLy?: () => void;
   onDeXuat?: () => void;
   /** Việc chính lúc này là Xác nhận xử lý (nút chính). false khi chỉ còn vi phạm Mới — việc chính là Ghi nhận. */
   xuLyChinh?: boolean;
+  /** Chữ mờ cạnh tên khối (mặc định: chuỗi — "FT" / "Lớp thường"); hộp thang: tên em · lớp. */
+  phu?: string;
+  /** Hồ sơ HV: các nút của em (Khai, Hỏi / Báo tình hình, + Vi phạm) ở chân khối, cạnh hai nút xử lý. */
+  chan?: ReactNode;
+  /** Hộp thang (Y2): danh sách các lần xử lý (ngày · bậc · người), gập sẵn khi > 3. */
+  lanXuLy?: boolean;
+  /** false = không viền khối (đặt trong hộp đã có viền). */
+  khung?: boolean;
 }) {
   const nhanChuoi = d.chuoi.nhan.replace('lớp thường', t('lớp thường'));
-  const khaiTitle = d.khai ? t('xác nhận {ngay}{x}{x2}', { ngay: ngay(d.khai.luc, homNay), x: d.khai.boi ? ` · ${d.khai.boi}` : '', x2: d.khai.ghiChu ? ` — ${d.khai.ghiChu}` : '' }) : undefined;
-  /* UX-G G5: không có vi phạm nào chưa xử lý xong thì không có gì để xác nhận / đề xuất — ẩn cả hai nút (≥ 1 vi phạm là hiện, quyết định 02/10). */
   const coViPhamMo = d.viPham.some((v) => v.trangThai !== 'da_xu_ly');
+  const soCho = d.viPham.filter((v) => v.trangThai !== 'da_xu_ly').length;
   const coNut = d.canManage && !d.deXuat && coViPhamMo;
   const xuLyDuoc = coNut && !!onXuLy;
-  const rutGon = d.dongThang.length > BAC_MACH_CHINH + 1;
-  const hien = rutGon ? d.dongThang.slice(-(BAC_HIEN_SAU_WL2 + 1)) : d.dongThang;
-  /* So phần tên trước " +" — bậc gộp "Report 4 + Meeting CX/GĐCN" vẫn khớp đề xuất "Report 4" (không hiện hai bậc). */
+  const coNutXuLy = coNut && (xuLyDuoc || !!onDeXuat);
+  /* Ngày của ô đã qua = lần xử lý xong gần nhất cùng loại (dữ liệu đã nạp, không thêm câu). */
+  const xl = d.dongThoiGian.filter((x): x is Extract<typeof x, { loai: 'xu-ly' }> => x.loai === 'xu-ly' && x.status === 'done').sort((a, b) => b.ngay.localeCompare(a.ngay));
+  const ngayCua = (kind: string) => xl.find((x) => x.kind === kind);
+  const khaiTitle = d.khai ? t('xác nhận {ngay}{x}', { ngay: ngay(d.khai.luc), x: d.khai.boi ? ` · ${d.khai.boi}` : '' }) : undefined;
+  /* So phần tên trước " +" — bậc gộp "Report 4 + Meeting CX/GĐCN" vẫn khớp đề xuất "Report 4". */
   const goc = (x: string) => x.split(' +')[0].trim();
-  const deXuatTrenThang = !!d.deXuat && hien.some((b) => b.trangThai === 'lan-nay' && goc(b.nhan) === goc(d.deXuat!.nhan));
+  const deXuatTrenThang = !!d.deXuat && goc(d.keTiep.nhan) === goc(d.deXuat.nhan);
+  const nhanDeXuat = d.deXuat ? (d.deXuat.status === 'cho_duyet' ? t('chờ Head') : t('Head đã duyệt')) : null;
+  const o = oThang(d.dongThang).map((x): ONut => {
+    const ten = x.tt === 'gop' ? t('{x} bậc trước đó đã xử lý', { x: x.soGop ?? 0 }) : bacDu(dich(x.nhan));
+    const lan = x.tt === 'qua' || x.tt === 'dang' ? ngayCua(x.kind) : undefined;
+    const duoi = x.khai ? t('khai') : lan ? ngay(lan.ngay) : x.tt === 'ke' ? (deXuatTrenThang ? nhanDeXuat : t('kế tiếp')) : null;
+    const title = x.khai ? `${ten} · ${khaiTitle ?? t('xác nhận từ trước')}` : lan ? `${ten} · ${ngay(lan.ngay)}${lan.nguoi ? ` · ${lan.nguoi}` : ''}` : x.tt === 'ke' ? `${ten} · ${duoi}` : ten;
+    return { key: x.kind, ten: x.ngan, duoi, title, tt: x.tt === 'gop' ? 'qua' : x.tt, khai: x.khai, ngayDuoi: !!lan };
+  });
+  const dang = oThang(d.dongThang).find((x) => x.tt === 'dang');
+  const aria = t('Thang xử lý vi phạm: {a}, kế tiếp {b}', { a: dang ? t('đang ở {x}', { x: bacDu(dich(dang.nhan)) }) : t('chưa xử lý lần nào'), b: bacDu(dich(d.keTiep.nhan)) });
+  const lanDs = xl.slice(0, 20);
   return (
-    <section className="surface-2 space-y-2 rounded-[10px] border px-3.5 py-2.5 [container-type:inline-size]" style={{ borderColor: 'var(--line-strong)' }}
+    <section className={`[container-type:inline-size] ${khung ? 'rounded-[10px] border' : ''}`} style={{ borderColor: 'var(--line)', background: khung ? 'var(--surface)' : undefined }}
       aria-label={t('Thang xử lý vi phạm ({nhanChuoi})', { nhanChuoi })}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <h3 className="m-0 text-[12px] font-semibold text-slate-400">{t('Thang xử lý vi phạm · {nhanChuoi}', { nhanChuoi })}</h3>
-        {d.coTheKhai && onKhai ? (
-          <p className="m-0 text-[12px] text-slate-400">
-            {t('Đã có mức độ vi phạm từ trước?')}{' '}
-            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={onKhai}>{t('Xác nhận cấp bậc vi phạm')}</button>
-          </p>
-        ) : d.khai && onSuaKhai ? (
-          <p className="m-0 text-[12px] text-slate-400">
-            {t('Đã xác nhận cấp bậc vi phạm{x} ngày {ngay}.', { x: d.khai.bac > 0 ? t(' (bậc {bac})', { bac: d.khai.bac }) : '', ngay: ngay(d.khai.luc, homNay) })}{' '}
-            <button type="button" className="link inline-flex items-center appearance-none border-0 bg-transparent p-0 min-h-[44px] sm:min-h-0" onClick={onSuaKhai}>{t('Sửa cấp bậc')}</button>
-          </p>
-        ) : null}
-      </div>
-      {/* UI-Y-THUC-HV (mockup v7 `.thang`, `@container 600`): khối rộng ≥ 600 px MỘT dòng, tràn thì mờ dần ở mép phải (PR-S3F #12);
-          hẹp hơn (375, panel Công việc) xuống dòng, đủ tên từng bậc — đo theo chính khối, không theo màn. */}
-      <ol className="m-0 flex w-full min-w-0 list-none flex-wrap items-center gap-x-1.5 gap-y-1.5 p-0 text-[13px] whitespace-nowrap [@container(min-width:600px)]:flex-nowrap [@container(min-width:600px)]:overflow-hidden [@container(min-width:600px)]:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)]">
-        {rutGon && (
-          <li className="shrink-0 text-slate-500" aria-label={t('{x} bậc trước đó đã xử lý', { x: d.dongThang.length - hien.length })}>…</li>
-        )}
-        {hien.map((b, i) => (
-          <Fragment key={b.kind}>
-            {(i > 0 || rutGon) && <li aria-hidden className="shrink-0 text-slate-600">→</li>}
-            {b.trangThai === 'lan-nay' && deXuatTrenThang ? <ChipDeXuat d={d} /> : <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} coDeXuat={!!d.deXuat} />}
-          </Fragment>
-        ))}
-        {/* Mockup `.bac.de-xuat`: đề xuất đang chờ / đã duyệt nằm ngay trên thang (viền đứt vàng) — đề xuất chính là bậc kế thì vẽ tại bậc đó,
-            đề xuất ngoài thang (WL 3, phương án khác) nối ở cuối; bậc kế tiếp không còn "lần này". */}
-        {d.deXuat && !deXuatTrenThang && (
-          <>
-            <li aria-hidden className="shrink-0 text-slate-600">→</li>
-            <ChipDeXuat d={d} />
-          </>
-        )}
-      </ol>
-      {coNut && (xuLyDuoc || onDeXuat) && (
-        <div className="flex flex-wrap items-center gap-2">
-          {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{xuLyChinh && CUA_TOI}{t('Xác nhận xử lý')}</button>}
-          {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất Head duyệt')}</button>}
-          {/* ⓘ = giải thích (luật V5): hai nút khác nhau ở đâu — thay câu dài cạnh nút. */}
-          <NutLuat label={t('Xác nhận hay Đề xuất?')}>
-            {t('Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất Head duyệt: Head duyệt trước khi làm (WL, phương án khác).')}
+      <div className={`flex min-h-12 flex-wrap items-center gap-x-2.5 gap-y-1 border-b py-1.5 pr-2 ${khung ? 'pl-4 max-sm:pl-3' : 'pl-0'}`} style={{ borderColor: 'var(--line)' }}>
+        <h3 className="m-0 text-sm font-bold text-[color:var(--text)]">{t('Thang xử lý vi phạm')}</h3>
+        <span className="text-[13px] text-dim">{phu ?? nhanChuoi}</span>
+        <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {d.coTheKhai && onKhai ? <button type="button" className={LINK} title={t('Đã có mức độ vi phạm từ trước?')} onClick={onKhai}>{t('Xác nhận cấp bậc vi phạm')}</button>
+            : d.khai && onSuaKhai ? <button type="button" className={LINK} title={khaiTitle} onClick={onSuaKhai}>{t('Sửa cấp bậc')}</button> : null}
+          {/* ⓘ = tên đầy đủ các bậc (thay chữ dài trên thang) + luật nút (Y2c). */}
+          <NutLuat label={t('Tên đầy đủ các bậc')} phai>
+            <span className="block text-[13px] font-semibold text-[color:var(--text)]">{t('Thang xử lý vi phạm')}</span>
+            <span className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-2 gap-y-0.5">
+              {oThang(d.dongThang).filter((x) => x.tt !== 'gop').map((x) => <span key={x.kind} className="contents"><b className="font-semibold">{x.ngan}</b><span>{bacDu(dich(x.nhan))}</span></span>)}
+            </span>
+            <span className="block">{t('Xác nhận xử lý: lưu ngay bậc kế tiếp. WL 3, phương án khác: qua Đề xuất Head duyệt.')}</span>
           </NutLuat>
+        </span>
+      </div>
+      <div className={`grid gap-3.5 py-4 ${khung ? 'px-4 max-sm:px-2' : 'px-0'}`}>
+        {/* Khung v23: thang ở cột / hộp ~560 px — khối rộng (hồ sơ một cột) không kéo giãn các ô. */}
+        <ThanhBuoc o={o} aria={aria} className="w-full max-w-[640px]" />
+        {d.deXuat && !deXuatTrenThang && (
+          <p className="m-0 text-[13px] text-dim">
+            {t('Đề xuất')} <b className="font-semibold text-[color:var(--text)]">{bacDu(dich(d.deXuat.nhan))}</b> · {nhanDeXuat}
+          </p>
+        )}
+        {lanXuLy && lanDs.length > 0 && (lanDs.length > 3 ? (
+          <details className="rounded-lg border" style={{ borderColor: 'var(--line)' }}>
+            <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 text-sm font-semibold text-[color:var(--text)]">
+              {t('Các lần xử lý')}
+              <span className="text-[13px] font-normal text-dim">{t('{n} lần · mới nhất {ngay} {nhan}', { n: lanDs.length, ngay: ngay(lanDs[0].ngay), nhan: bacDu(dich(lanDs[0].nhan)) })}</span>
+            </summary>
+            <div className="border-t px-3" style={{ borderColor: 'var(--line)' }}><DsLan ds={lanDs} /></div>
+          </details>
+        ) : <DsLan ds={lanDs} />)}
+      </div>
+      {(coNutXuLy || chan) && (
+        <div className={`flex flex-wrap items-center gap-2 border-t py-2.5 ${khung ? 'px-4 max-sm:px-3' : 'px-0'}`} style={{ borderColor: 'var(--line)' }}>
+          {coNutXuLy && soCho > 0 && <span className="text-[13px] text-dim">{t('{n} vi phạm chưa xử lý', { n: soCho })}</span>}
+          <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>*]:flex-1 max-sm:[&>*]:justify-center">
+            {chan}
+            {coNutXuLy && onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất Head duyệt')}</button>}
+            {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{xuLyChinh && CUA_TOI}{t('Xác nhận xử lý')}</button>}
+          </span>
         </div>
       )}
     </section>
   );
 }
 
-function ChipDeXuat({ d }: { d: Pick<YThucHocVien, 'deXuat'> }) {
-  if (!d.deXuat) return null;
+function DsLan({ ds }: { ds: Extract<YThucHocVien['dongThoiGian'][number], { loai: 'xu-ly' }>[] }) {
   return (
-    <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
-      {bacDu(dich(d.deXuat.nhan))} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ Head') : t('Head đã duyệt')}
-    </li>
+    <ul className="m-0 list-none p-0">
+      {ds.map((x) => (
+        <li key={x.id} className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 border-t py-1.5 text-[13px] first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+          <time className="text-xs tabular-nums text-faint">{ngay(x.ngay)}</time>
+          <span className="min-w-0"><b className="font-semibold text-[color:var(--text)]">{bacDu(dich(x.nhan))}</b>{x.nguoi && <span className="text-dim"> · {x.nguoi}</span>}{x.soViPham > 0 && <span className="text-dim"> · {t('{n} vi phạm', { n: x.soViPham })}</span>}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function BacO({ b, title, coDeXuat }: { b: BacThangDong; title?: string; coDeXuat: boolean }) {
-  const daQua = b.trangThai === 'qua' || b.trangThai === 'khai';
-  /* V5 (mockup `.bac`, cùng chip ThangNho tab lớp): đã qua ✓ viền xanh lá · lần này viền nhấn đậm · còn lại viền mảnh. */
-  const lanNay = b.trangThai === 'lan-nay' && !coDeXuat;
-  /* GD-4a (chủ SP lời 28 ý 3; mockup ③ `.vach-bac b.wl`): mốc WL 1 / WL 2 NỔI hơn bậc Report — nhãn đỏ đậm; đã qua: nền đỏ đặc. Ở mọi nơi hiện thang. */
-  const wl = /\bWL \d|WARNING LETTER/i.test(b.nhan);
-  const lop = wl
-    ? (daQua ? 'border border-transparent bg-[rgb(var(--late-rgb))] px-[7px] font-bold text-[color:var(--surface)]'
-      : `border border-late-line bg-late-bg px-[7px] font-bold text-late ${lanNay ? 'shadow-[0_0_0_1px_rgb(var(--late-rgb))]' : ''}`)
-    : lanNay
-    ? 'border border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-[7px] font-bold text-[color:var(--accent)]'
-    : b.trangThai === 'khai' ? 'border border-ok-line px-[7px] text-ok opacity-75'
-    : b.trangThai === 'qua' ? 'border border-ok-line px-[7px] text-ok'
-    : 'border border-[color:var(--line)] px-[7px] text-faint';
-  /* GD-4d (lời 35, ⑤ H5): danh sách "Thang ▾" là nơi QUYẾT đọc — tên bậc viết đủ, viết hoa (WARNING LETTER 1). */
-  const ten = bacDu(dich(b.nhan));
-  const moTa = b.trangThai === 'lan-nay' ? t('{nhan}, lần xử lý kế tiếp', { nhan: ten })
-    : daQua ? `${t('{nhan}, đã xử lý{x}', { nhan: ten, x: b.trangThai === 'khai' ? t(' (cấp bậc xác nhận từ trước)') : '' })}${title ? ` — ${title}` : ''}`
-    : ten;
+/** Một ô của thanh bước. `cho` = phần đang chờ người làm (Phối hợp SOS N58, chấm nhấn nhạt). */
+export type ONut = { key: string; ten: string; /** Tên khi khối < 420 px (375). */ tenNgan?: string; duoi?: ReactNode; title?: string; tt: Exclude<OThang['tt'], 'gop'> | 'cho'; khai?: boolean;
+  /** Chữ dưới là ngày (ẩn khi khối hẹp < 420 px — rê / bấm ⓘ xem); "kế tiếp" luôn hiện. */ ngayDuoi?: boolean };
+
+const CHAM: Record<ONut['tt'], string> = {
+  qua: 'h-5 w-5 border-[color:var(--text-faint)] bg-[color:var(--text-faint)] text-[color:var(--surface)]',
+  dang: 'h-6 w-6 border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--surface)] shadow-[0_0_0_4px_var(--accent-soft)]',
+  khai: 'h-5 w-5 border-dashed border-[color:var(--text-faint)] bg-transparent text-faint',
+  ke: 'h-5 w-5 border-dashed border-[color:var(--accent)] bg-[color:var(--surface)]',
+  cho: 'h-6 w-6 border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[0_0_0_4px_var(--accent-soft)]',
+  sau: 'h-5 w-5 border-[color:var(--line-strong)] bg-[color:var(--surface)]',
+};
+const TEN: Record<ONut['tt'], string> = {
+  qua: 'text-dim', khai: 'text-dim', dang: 'text-[13px] font-bold text-[color:var(--text)]', ke: 'text-[color:var(--accent)]',
+  cho: 'font-bold text-[color:var(--text)]', sau: 'text-faint',
+};
+
+/**
+ * THANH BƯỚC (v23 `.bac`) — MỘT thành phần cho thang Ý thức và Phối hợp SOS: ô bằng nhau trên một vạch, chấm + tên ngắn + chữ nhỏ dưới, không xuống dòng.
+ * `doc` (N58, XM-10): ô đầu nối, các ô sau ĐỘC LẬP (không vạch nối, vạch dọc đứt ngăn sau ô đầu).
+ */
+export function ThanhBuoc({ o, aria, doc = false, className = '' }: { o: ONut[]; aria: string; doc?: boolean; className?: string }) {
   return (
-    <li className={`inline-flex shrink-0 items-center gap-1 rounded py-px ${lop}`} title={title} aria-label={moTa}>
-      {daQua && <DauTich />}
-      <span>{ten}</span>
-      {b.trangThai === 'lan-nay' && <span className="font-normal">{lanNay ? t('· lần này') : t('· kế tiếp')}</span>}
-    </li>
+    <ol aria-label={aria} className={`m-0 grid list-none p-0 [container-type:inline-size] ${className}`} style={{ gridTemplateColumns: `repeat(${o.length}, minmax(0, 1fr))` }}>
+      {o.map((x, i) => {
+        const noi = i > 0 && doc === false;
+        const vachDam = x.tt === 'qua' || x.tt === 'dang' || x.tt === 'cho';
+        return (
+          <li key={x.key} title={x.title} aria-current={x.tt === 'dang' ? 'step' : undefined}
+            className={`relative grid min-w-0 content-start justify-items-center gap-1.5 pt-0.5 ${noi ? `before:absolute before:left-[-50%] before:right-1/2 before:top-[13px] before:h-0.5 before:content-[''] ${vachDam ? 'before:bg-[color:var(--text-faint)]' : 'before:bg-[color:var(--line-strong)]'}` : ''} ${doc && i === 1 ? 'border-l border-dashed' : ''}`}
+            style={doc && i === 1 ? { borderColor: 'var(--line-strong)' } : undefined}>
+            <span className="relative z-[1] grid h-6 w-6 place-items-center">
+              <i className={`grid place-items-center rounded-full border-2 not-italic ${CHAM[x.tt]}`}>{(x.tt === 'qua' || x.tt === 'dang' || x.tt === 'khai') && <DauTich className="h-3 w-3" />}</i>
+            </span>
+            {/* Trình đọc màn hình đọc `title` đầy đủ (sr-only) — tên ngắn / chữ dưới chỉ để nhìn. */}
+            <span aria-hidden className={`max-w-full truncate whitespace-nowrap text-xs font-semibold ${TEN[x.tt]} ${x.tenNgan ? '[@container(max-width:419px)]:hidden' : ''}`}>{x.ten}</span>
+            {x.tenNgan && <span aria-hidden className={`hidden max-w-full truncate whitespace-nowrap text-xs font-semibold [@container(max-width:419px)]:block ${TEN[x.tt]}`}>{x.tenNgan}</span>}
+            {x.duoi && <span aria-hidden className={`-mt-1 max-w-full truncate whitespace-nowrap text-xs font-medium tabular-nums ${x.tt === 'dang' ? 'text-dim' : 'text-faint'} ${x.ngayDuoi ? '[@container(max-width:419px)]:hidden' : ''}`}>{x.duoi}</span>}
+            <span className="sr-only">{x.title}</span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
 /**
  * GD-4d — THANG DẠNG VẠCH (⑤ D1a, ③ K1 / K4a `.vach-bac`; chủ SP 15/11: "không để chữ WARNING LETTER vào trong progress bar, chỉ khác màu và nổi bật hơn").
- * MỘT thành phần cho mọi nơi hiện thang mini (hồ sơ HV, panel Xác nhận xử lý). Vạch thường 22 × 5 (375: 14), đã tới màu nhấn, bậc kế nhạt;
- * mốc WL = vạch ĐỎ dày 9, dài 30 (375: 20), đã tới thêm viền mờ đỏ. KHÔNG chữ trong thanh — tên bậc (viết đủ) ở `aria-label` / `title`, đủ tên ở "Thang ▾".
+ * Thang mini (panel Xác nhận xử lý, dòng em). Vạch thường 22 × 5 (375: 14), đã tới màu nhấn, bậc kế nhạt;
+ * mốc WL = vạch ĐỎ dày 9, dài 30 (375: 20). KHÔNG chữ trong thanh — tên bậc (viết đủ) ở `aria-label` / `title`.
  */
 export function ThangVach({ dong }: { dong: readonly BacThangDong[] }) {
   const ten = (b: BacThangDong) => bacDu(dich(b.nhan));
