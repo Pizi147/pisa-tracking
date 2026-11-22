@@ -105,7 +105,7 @@ export async function runPrUxGTests(t: YThucTestKit) {
     assert(cuoi >= 110, `cột nút = ${cuoi}`);
     assert(/<ColLichTest \/>/.test(s) && /w-full justify-center/.test(s), 'hàng Quá hạn: bộ cột chung + nút hết bề rộng cột');
     const hl = doc('web/src/modules/test/lichTest/HangLop.tsx');
-    assert(!/className="lt-gc"/.test(s + hl) && !/t\('Còn chờ'\)/.test(hl) && COT_SO === 6, 'Lịch Test: không cột "Còn chờ" (6 cột — LICH-TEST-GON)');
+    assert(!/className="lt-gc"/.test(s + hl) && !/t\('Còn chờ'\)/.test(hl) && COT_SO === 5, 'Lịch Test: không cột "Còn chờ", không cột Môn (5 cột — LICH-TEST-GON, NHẸ HƠN)');
     assert(s.includes('<DongConCho ds={conCho} />') && hl.includes('<DongConCho ds={conCho} />'), 'Quá hạn + hàng lớp: ai còn chờ là MỘT dòng nhỏ trong phần lớp đã mở (điện thoại không có tooltip)');
   });
 

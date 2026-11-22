@@ -219,7 +219,8 @@ export type ViecBaoPhView = {
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
-type ViPhamXuLy = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; nguoiGhi: string | null; ghiLuc: string | null; daSua: boolean };
+/** NHẸ HƠN PR-2b: `nhom` = mã nhóm vi phạm (`violations.category`, đã đọc cùng câu) — panel Báo PH mở dòng hiện "Nhóm". */
+type ViPhamXuLy = { id: number; ngay: string; ten: string; moTa: string; skill: string | null; nhom: string; nguoiGhi: string | null; ghiLuc: string | null; daSua: boolean };
 function viPhamXuLy(measureId: number | null): ViPhamXuLy[] {
   if (!measureId) return [];
   /* TL-2 (mockup v22 T1 / T6b): người ghi + lúc ghi + "đã sửa" (GV sửa rồi gửi lại) đọc CÙNG câu — panel mở chi tiết vi phạm không cần request thêm. */
@@ -230,7 +231,7 @@ function viPhamXuLy(measureId: number | null): ViPhamXuLy[] {
       WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
   ).all(measureId) as any[]).map((r) => {
     const tm = tachTenMoTa(r.ten, r.description, r.category);   // VI-PHAM-MO: cùng chữ với các danh sách vi phạm khác; mô tả mở tại chỗ, không request thêm
-    return { id: r.id as number, ngay: r.occurred_on as string, ten: tm.ten || ((VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.category] ?? String(r.category)), moTa: tm.moTa, skill: r.skill ?? null,
+    return { id: r.id as number, ngay: r.occurred_on as string, ten: tm.ten || ((VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.category] ?? String(r.category)), moTa: tm.moTa, skill: r.skill ?? null, nhom: String(r.category),
       nguoiGhi: r.nguoi_ghi ?? null, ghiLuc: r.created_at ?? null, daSua: !!r.da_sua };
   });
 }
