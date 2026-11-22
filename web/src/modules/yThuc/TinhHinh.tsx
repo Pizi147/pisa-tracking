@@ -129,13 +129,13 @@ export function BuocTinhHinh({ x, homNay, tvv, gvcn, f }: { x: TinhHinhView; hom
   );
 }
 
-export type EmTinhHinh = { id: number; ten: string; tvv: string | null };
+export type EmTinhHinh = { id: number; ten: string; tvv: string | null; /** dòng phụ ô chọn (lớp) */ phu?: string };
 /** GD-4d (dòng 40d, ⑤ F3 / ① K5c): ô chọn em do nơi mở vẽ ("+ Task" dùng ô tìm mẫu A) — hộp giữ danh sách em, gửi, Hoàn tác. */
 export type ChonEmTinhHinh = (p: { em: EmTinhHinh[]; setEm: Dispatch<SetStateAction<EmTinhHinh[]>>; luu: boolean }) => ReactNode;
 
 export type CheDoHop =
   | { loai: 'bao'; em: EmTinhHinh[]; chonThem?: EmTinhHinh[]; chonEm?: ChonEmTinhHinh }
-  | { loai: 'hoi'; em: { id: number; ten: string } | null; ds?: { id: number; ten: string }[]; gvcn: string | null }
+  | { loai: 'hoi'; em: { id: number; ten: string } | null; ds?: { id: number; ten: string; phu?: string }[]; gvcn: string | null }
   | { loai: 'sua'; x: TinhHinhView }
   | { loai: 'tra-loi'; x: TinhHinhView };
 
@@ -218,7 +218,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
           {chonThem ? (
             <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" choToi={false} choNgoai={false} disabled={luu}
-              ariaLabel={t('Chọn em')} tieuDe={t('Học viên')} placeholder={t('Gõ tên em…')} ds={chonThem.map((c) => ({ id: c.id, ten: c.ten }))}
+              ariaLabel={t('Chọn em')} tieuDe={t('Học viên')} placeholder={t('Gõ tên em…')} ds={chonThem.map((c) => ({ id: c.id, ten: c.ten, phu: c.phu }))}
               nhieu={{ chon: em.map((e) => ({ id: e.id, ten: e.ten })), toiDa: toiDaEm, donVi: t('em'),
                 onDoi: (ds) => setEm(ds.map((x) => em.find((e) => e.id === x.id) ?? chonThem.find((c) => c.id === x.id)!).filter(Boolean)) }} />
           ) : (

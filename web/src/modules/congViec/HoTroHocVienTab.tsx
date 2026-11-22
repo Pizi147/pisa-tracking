@@ -534,7 +534,7 @@ export function HoTroHocVienTab() {
   /* GD-1: GV có lớp. GD-8 (④ R4.5, [XM-7]): TVV luôn có "+ Task" = Hỏi tình hình học tập (em chọn từ HV của tôi đã nạp). */
   const coTask = (laGv && dongLop.length > 0) || laTvv;
   const nutTask = (noi: 'dau' | 'noi') => (laTvv
-    ? <NutTask noi={noi} muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten }))} />
+    ? <NutTask noi={noi} muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten, phu: e.lop.map((l) => l.ma).join(', ') || undefined }))} />
     : <NutTask noi={noi} />);
   const tenCn = useTenChiNhanh(laTvv);
   /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */

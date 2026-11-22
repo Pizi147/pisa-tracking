@@ -36,7 +36,6 @@ export const EN_TINH_HINH_UI = {
   'Tình hình': 'Update',
   'Tình hình / Ý thức': 'Updates / Conduct',
   'Tình hình học tập / Ý thức': 'Learning updates / Conduct',
-  'Vi phạm · {n}': 'Incidents · {n}',
   'tới {ngay}': 'until {ngay}',
   '{n} nhắc nhở · không việc chờ': ((b) => `${b.n} reminder${Number(b.n) === 1 ? '' : 's'} · nothing pending`) as Dich,
   'Đã báo PH · {ngay}': 'Parent told · {ngay}',
