@@ -9,7 +9,7 @@
  * giữ việc thì không gộp: mỗi dòng một nút Nhắc cho đúng một người. Thẻ Chờ duyệt không phải dòng việc (hộp riêng).
  * OV-12c: bỏ gom Xác nhận nguyên nhân theo kỹ năng + lượt (OV-5a) — Case MT lấy nguyên nhân từ nhận xét (không còn việc đó).
  * OV-13c (chủ SP 15/10, Q4): Case SOS FT — Xác nhận PA, Mô tả Case — gộp theo lớp + TUẦN THI + MỨC SOS (không cần cùng MT); Thêm PA vẫn từng
- * dòng. Nhập điểm gộp theo TUẦN THI qua mọi lớp của cùng người giữ việc (lưới Lịch Test) — mỗi em con là một lớp của tuần đó.
+ * dòng. Nhập điểm gộp theo TUẦN THI trong MỘT lớp của cùng người giữ việc (SUA-2211-B: bỏ dòng "Cả lớp · n lớp" qua nhiều lớp).
  * GD-20c: Ghi kết quả PA gộp theo lớp + kỳ (hạn kỳ) — dòng gộp mở lưới (`moCaDong` ở web).
  */
 import { tuanLich } from './hienThiNgay.ts';
@@ -75,7 +75,8 @@ const theoTuanThi = (it: ViecGopDuoc) => it.group === 'score' && !!it.tuanThi &&
 /** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Giao diện dùng để giữ việc vừa xong trong dòng gộp của nó. */
 export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (!gopDuoc(it)) return null;
-  if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:u${it.ownerId ?? 0}:${it.khung ?? ''}`;
+  /* SUA-2211-B (chủ SP 22/11 ý 9 "'cả lớp'? Không có ý nghĩa… Đồng bộ hết chia ra từng lớp đi"): Nhập điểm theo tuần thi gom TRONG MỘT LỚP — mỗi lớp một dòng. */
+  if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:c${it.classId}:u${it.ownerId ?? 0}:${it.khung ?? ''}`;
   const k = khoaDongGop(it.group, it.classId!, it.ownerId);
   /* RA-LUONG-1: dòng gộp chấm chéo (QL "Tất cả", gom theo lớp) giữ đuôi `|cc` như việc lẻ — không thì nó lọt vào Chấm điểm (không đếm) và mở panel Nhập điểm cả dòng. */
   if (laViecChamCheo(it)) return `${k}|cc`;
@@ -153,20 +154,17 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     const chung = [...new Set(nhom.map((x) => x.contextLabel))];
     const href = [...new Set(nhom.map((x) => x.href))];
     const chuQuaHan = quaHan ? `${quaHan} ${donVi} quá hạn` : null;
-    /* OV-13c: dòng tuần thi (Nhập điểm nhiều lớp) · dòng Case SOS (lượt · tuần · mức SOS). */
+    /* OV-13c: dòng tuần thi (Nhập điểm một lớp) · dòng Case SOS (lượt · tuần · mức SOS). */
     const tuan = theoTuanThi(it) ? tuanLich(it.tuanThi) : null;
-    const lop = [...new Set(nhom.map((x) => x.classId))];
     const sos = it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? it : null;
     const dong = {
       ...it,
       key: k, urgency: dau.urgency, due,
       studentId: null, studentName: tuan ?? `Lớp ${it.classCode ?? ''}`.trim(),
-      /* CV-TAB b: dòng tuần nhiều lớp ở > 1 chi nhánh không mang thẻ chi nhánh (`cn`) của lớp đầu. */
-      ...(tuan && lop.length > 1 ? { classId: null, classCode: null, ...(new Set(nhom.map((x) => (x as { cn?: number | null }).cn)).size > 1 ? { cn: null } : {}) } : {}),
       attemptId: null, attemptNo: null, caseId: null, level: null, nhac: undefined,
       tieuDe: `${nhanLoai} · ${tuan ?? it.classCode ?? ''} · ${chuSo}`,
       contextLabel: tuan
-        ? [chuQuaHan, lop.length > 1 ? `${lop.length} lớp` : it.classCode].filter(Boolean).join(' · ')
+        ? chuQuaHan   // SUA-2211-B: dòng tuần là MỘT lớp — mã lớp đã ở tên dòng
         : sos
           ? [chuQuaHan ?? chung.filter(Boolean).sort().join(', '), sos.tuanThi ? tuanLich(sos.tuanThi) : null, sos.sos ? `SOS ${sos.sos}` : null].filter(Boolean).join(' · ')
           : chuQuaHan ?? (chung.length === 1 ? chung[0] : null),
@@ -175,25 +173,12 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
       count: nhom.length, actionLabel: chuSo,
       reason: chuSo,
       href: href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
-      con: tuan ? con.map((c) => ({ ...c, conTen: [c.classCode, c.conTen].filter(Boolean).join(' · ') })) : con,
+      con,
     } as unknown as DongGop<T>;
     out.push(dong);
   }
   return out.map((x, i) => ({ x, i })).sort((a, b) => nang(a.x.urgency) - nang(b.x.urgency)
     || (a.x.due && b.x.due ? a.x.due.localeCompare(b.x.due) : a.x.due ? -1 : b.x.due ? 1 : 0) || a.i - b.i).map((x) => x.x);
-}
-
-/**
- * Chủ SP 07/11 (mục 8, thay ponytail #1130): dải chi nhánh của Công việc — dòng tuần nhiều lớp ở > 1 chi nhánh (`cn` null, `con` mang `cn` từng lớp)
- * dựng lại CHỈ với việc của chi nhánh `cn` (cùng `gopViecTheoLop`, dữ liệu đã nạp — 0 câu). Việc không gắn lớp (`cn` null, không `con`) giữ nguyên.
- */
-export function dongTheoChiNhanh<T extends ViecGopDuoc & { cn?: number | null; con?: readonly T[] }>(ds: readonly T[], cn: number): T[] {
-  return ds.flatMap((x) => {
-    if (x.cn != null || !x.con?.some((c) => c.cn != null)) return [x];
-    const con = x.con.filter((c) => c.cn == null || c.cn === cn);
-    const nhan = x.tieuDe.split(' · ')[0];   // tên loại việc của dòng gộp (`${nhan} · tuần · số`)
-    return con.length ? (gopViecTheoLop(con, () => nhan) as T[]) : [];
-  });
 }
 
 /* MOCKUP-1111 màn 1 (dải Việc của tôi hồ sơ lớp) — mockup v8: tên kỹ năng trong ô việc viết tắt "L · R" — ô một dòng. */
