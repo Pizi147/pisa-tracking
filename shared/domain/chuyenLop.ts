@@ -345,7 +345,8 @@ export type PhieuBanGiaoDto = {
   homNay: string;
   /** `ql`: Quản lý lớp nguồn — OV-7a: sửa được phiếu đã xác nhận cả sau ngày thi hành. */
   /** `monDay` (#8): môn người xem dạy ở lớp nguồn — nút "Viết" thay "Điền thay". */
-  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; monDay: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean };
+  /** N64: `lamThay` = Head làm thay GVCN (panel hiện dải, không hỏi). */
+  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; monDay: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean; lamThay: { ten: string | null } | null };
   tong: number; daXacNhan: number; hanGvcn: string | null;
   /** Tên em có `hanGvcn` (hạn sớm nhất trong các em chưa xác nhận). */
   hanGvcnEm: string | null;

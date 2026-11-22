@@ -877,6 +877,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 6 · việc Ý thức thật có hạn + Tổng quan + chuyển lớp
   const myworkSvc: any = await import('../worklist/mywork.ts');
+  const authN64: any = await import('../auth.ts');
   const ltSvc: any = await import('../classes/luatLoTrinh.ts');
   const viec = (who: any, key: string, o: Record<string, unknown> = {}) => (myworkSvc.myWork(who, o).items as any[]).find((x) => x.key === key);
 
@@ -908,6 +909,38 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s2 = hv(); const ids2 = ba3(s2);
     deXuatGui(gvcn, s2, 'suspension', ids2);
     assert(!viec(gvcn, `yt_xu_ly:${s2}`), 'đã gửi đề xuất');
+  });
+  /* N64 (chủ SP 22/11 "Có, làm thay" — thay SV-SO1 "QL chỉ theo dõi"): QL / Quản trị ở góc nhìn QL làm thay "Xử lý vi phạm" của GVCN —
+     cờ `lamThay` = đúng quyền máy chủ kiểm khi lưu (DISCIPLINE_MANAGE); Head chi nhánh khác / GVBM: cờ false, lưu 403, DB không đổi. */
+  check('N64 · Xử lý vi phạm: QL + QT (góc nhìn QL) lamThay true, lưu 200 ghi đúng người làm; Head CP / GVBM lamThay false, 403, DB không đổi', () => {
+    const { apGocNhin } = authN64;
+    conn.exec('SAVEPOINT n64');
+    try {
+      const sid = hv(); const ids = ba3(sid); const s2 = hv(); const ids2 = ba3(s2);
+      conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, (SELECT id FROM roles WHERE key = 'manager'), ?, 'active', ?)`)
+        .run(P.admin.userId, mbId, new Date().toISOString());
+      xoaNho();
+      const qt = apGocNhin(loadPrincipal(P.admin.userId), 'manager');
+      for (const [ten, p, s] of [['QL', P.mbManager, sid], ['QT góc nhìn QL', qt, s2]] as const) {
+        const it = viec(p, `yt_xu_ly:${s}`, { nguoi: 'tat-ca' });
+        assert(it && !it.mine && it.ownerId === gvcn.userId && it.lamThay === true, `${ten}: ${JSON.stringify(it && { m: it.mine, o: it.ownerId, lt: it.lamThay })}`);
+      }
+      const dong = viec(P.mbManager, `yt_xu_ly:${sid}`, { nguoi: 'tat-ca' });
+      const soLan = () => (conn.prepare('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ?').get(sid) as any).n as number;
+      for (const [ten, p] of [['Head CP', P.cpManager], ['GVBM', gvbm]] as const) {
+        assert(!myworkYt.lamThayCua(p, [dong])(dong), `${ten}: lamThay false`);
+        assert(loiCua(() => xl(p, sid, ids)).status === 403, `${ten} phải 403`);
+        assert(soLan() === 0, `${ten}: DB không đổi`);
+      }
+      const a = xl(P.mbManager, sid, ids);
+      const b = xl(qt, s2, ids2);
+      const m = (id: number) => conn.prepare('SELECT created_by, confirmed_by FROM discipline_measures WHERE id = ?').get(id) as any;
+      assert(m(a.id).created_by === P.mbManager.userId && m(a.id).confirmed_by === P.mbManager.userId, `QL: người làm = QL ${JSON.stringify(m(a.id))}`);
+      assert(m(b.id).created_by === P.admin.userId && m(b.id).confirmed_by === P.admin.userId, `QT: người làm = QT ${JSON.stringify(m(b.id))}`);
+      assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'discipline.handle' AND entity_id = ? AND actor_user_id = ?`).get(a.id, P.mbManager.userId), 'nhật ký ghi QL');
+      xoaNho();
+      assert(!viec(P.mbManager, `yt_xu_ly:${sid}`, { nguoi: 'tat-ca' }) && !viec(gvcn, `yt_xu_ly:${sid}`), 'làm thay xong: việc hết ở cả QL lẫn GVCN');
+    } finally { conn.exec('ROLLBACK TO n64'); conn.exec('RELEASE n64'); xoaNho(); }
   });
   check('YT4 (6) · LG-11: vi phạm người khác ghi KHÔNG sinh việc "Xem vi phạm mới" (Công việc + hồ sơ em); "Đã xem" ở tab Ý thức vẫn chạy (web cũ)', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);

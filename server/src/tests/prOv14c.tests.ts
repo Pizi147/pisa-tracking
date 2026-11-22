@@ -248,6 +248,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(/const theId = [^\n]*!xemMotGv/.test(tab), 'panel duyệt (?the=) vẫn mở khi xem một GV');
     /* Việc Chấm Speaking của GV đang xem (OV14c-12) là dòng theo dõi — không nút động từ (brief 7). */
     /* UI-CV-V12 S5: nút một dòng — "Nhập điểm" (tên nhóm "Speaking chấm chéo" đã nói). */
-    assert(/laViecChamCheo\(it\) && !xem \? t\('Nhập điểm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Nhập điểm"');
+    /* N64: dòng theo dõi không quyền → không nút (vế đầu); chấm chéo / điểm làm thay → "Nhập điểm". */
+    assert(/laViecChamCheo\(it\) \|\| \(xem && it\.group === 'score'\) \? t\('Nhập điểm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Nhập điểm"');
   });
 }

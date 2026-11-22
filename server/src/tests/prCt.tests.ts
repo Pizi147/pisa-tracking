@@ -593,7 +593,11 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monR).dien_thay === 1, 'GVCN điền thay');
     assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(301))) === 400, 'rỗng / quá dài');
     assert(maLoi(() => bg.ghiMon(gvcn5, l.id, 'khong_co_mon', 'x')) === 400, 'môn không có ở lớp nguồn');
-    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'Head ghi')) === 409, 'GV lớp chuyển đến 403; RKC-4b: QL (chưa quá hạn) được hỏi (409)');
+    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403, 'GV lớp chuyển đến 403');
+    /* N64 (PTA 22/11): Head (GVCN còn hạn) ghi luôn, không hỏi — điền thay, người ghi = Head. */
+    bg.ghiMon(P.mbManager, l.id, monL, 'Head ghi thay');
+    const hm = get(`SELECT dien_thay, nguoi_ghi FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monL);
+    assert(hm.dien_thay === 1 && hm.nguoi_ghi === P.mbManager.userId, `Head ghi thay: ${JSON.stringify(hm)}`);
     assert(maLoi(() => bg.ghiMon(gvcn5, lenhCua(em5[3]).id, monL, 'dừng học hẳn')) === 400, 'lệnh Dừng học hẳn không có phiếu');
   });
   check('GD-20b · gỡ câu môn vừa chèn (Hoàn tác "Chèn cho n em"): khớp → xoá + nhật ký; đã sửa → giữ (false); GV lớp chuyển đến → 403', () => {
@@ -784,10 +788,10 @@ export async function runPrCtTests(t: YThucTestKit) {
     const e2 = hocVien(n5, 'FOU', false).sid;
     ra(P.mbManager, n5, 'cuoi-khoa', [dongCua(e2, 'len_lop', d5)]);
     const l2 = lenhCua(e2);
-    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'Head xác nhận sớm không được phép.')) === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
-    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(t.addDays(TODAY, -1), l2.id);
-    bg.xacNhanBanGiao(P.mbManager, l2.id, 'Quá hạn 3 ngày, Head xác nhận thay.');
-    assert(lenhCua(e2).xac_nhan_thay === 1, 'quá hạn → QL thay được');
+    /* N64 (PTA 22/11): GVCN còn hạn — Head làm thay luôn, không hỏi; phiếu báo lamThay (tên GVCN) cho dải "Đang giao cho …". */
+    assert(bg.phieuBanGiao(P.mbManager, { lenhId: l2.id }).nguoiXem.lamThay?.ten, 'phiếu: lamThay có tên GVCN');
+    bg.xacNhanBanGiao(P.mbManager, l2.id, 'GVCN còn hạn, Head xác nhận thay luôn.');
+    assert(lenhCua(e2).xac_nhan_thay === 1, 'còn hạn → QL thay được, ghi "xác nhận thay"');
     assert(maLoi(() => bg.xacNhanBanGiao(P.cpManager, lenhCua(e).id, 'Head chi nhánh khác không được xác nhận.')) === 403, 'QL chi nhánh khác 403');
   });
   check('CT (5h) · số câu SQL của phiếu cả lớp KHÔNG tăng theo số em (3 em vs 30 em)', () => {
