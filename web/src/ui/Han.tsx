@@ -19,7 +19,7 @@ import { t } from '@shared/i18n/index.ts';
  *
  * Toàn bộ câu chữ nằm ở `deadlineView` (`shared/domain/display.ts`), mức ở `mucHan` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
  */
-export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo, trongBang }: {
+export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo, trongBang, khongDau }: {
   loai: DeadlineKind;
   /** Hạn đang hiệu lực, dạng `2026-09-23`. `null` = chưa đặt. */
   han: string | null;
@@ -40,6 +40,8 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo
   /** NHẸ HƠN (NH4, v23 Lịch Test `.han`): ô bảng có đầu cột "Hạn chấm" — CHỈ ngày dd/mm/yyyy tô màu, không chữ "hạn", không ⚠;
    *  quá hạn thêm nền đỏ nhạt (dấu không chỉ bằng màu chữ). Chữ đầy đủ ở tooltip. */
   trongBang?: boolean;
+  /** NH4 (v23 Lịch Test #l2 `.han`): thẻ 375 — giữ chữ "hạn 21/11/2026" tô màu nhưng không ⚠ (trình đọc màn hình vẫn nghe "quá hạn"). */
+  khongDau?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai, due: han, originalDue: hanGoc, reschedule: hen, today: homNay });
@@ -57,7 +59,7 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo
     <span title={title} className="text-[13px] tabular-nums text-dim">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
       <span className={`whitespace-nowrap ${mo ? LOP_MUC_HAN.xa : LOP_MUC_HAN[muc]}`}>
-        {muc === 'qua' && <DauQuaHan />}{v.han}{soNgay && v.quaHan && <> · {v.quaHan}</>}
+        {muc === 'qua' && (khongDau ? <span className="sr-only">{t('quá hạn')} </span> : <DauQuaHan />)}{v.han}{soNgay && v.quaHan && <> · {v.quaHan}</>}
       </span>
       {v.hen && <> · {v.hen}</>}
       {ghiChu && <> · {ghiChu}</>}

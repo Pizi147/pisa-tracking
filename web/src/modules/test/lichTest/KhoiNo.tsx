@@ -90,7 +90,7 @@ export function KhoiNo({ no, gvLop, mo, onMo, dongMo, onMoDong, hep, onDaLuu, kn
               const conCho = chuConCho(d.gvMon, d.chuongTrinh);   /* LICH-TEST-GON: ai còn chờ — dòng nhỏ trong phần lớp đã mở, không cột */
               const so = xong ? <Vien muc="xong">{t('Đã chấm')}</Vien> : <TienDo so={conCua(d)} />;
               /* NHẸ HƠN (luật hạn, v23 L1): bảng chỉ tô màu ngày (đỏ + ⚠ quá hạn) — không chip "quá hạn n ngày" (đầu khối đã nói Quá hạn chấm). */
-              const han = xong ? null : <Han loai="nhap-diem" han={d.han} trongBang={!gon} />;
+              const han = xong ? null : <Han loai="nhap-diem" han={d.han} trongBang={!gon} khongDau />;
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const dot = chuDot(d.luot);
               const maLop = (
