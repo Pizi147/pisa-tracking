@@ -30,7 +30,7 @@ Mockup: [`cong-viec-head.html`](cong-viec-head.html) · [`tong-quan-head-gv.html
 
 - Công việc "Của GV" = cùng `/my-work?nguoi=tat-ca` đang có (đo audit 21/11: **50–51 câu · ~1 200 dòng**), lọc quá hạn / sắp đến tại máy → +0 câu.
 - **Khối Giáo viên ở Tổng quan (PTA chốt 22/11):** +0 câu — dùng lại dữ liệu GV đang có trong `tong-quan/v5`, tách theo loại trong câu đang có; không tách được thì bỏ cột "Loại" (loại xem ở Công việc "Của GV"). Không gọi `/my-work?nguoi=tat-ca`, không chạy myWork tất cả trong Tổng quan. Chi tiết: [`tong-quan-head-gv-ghi-chu.md`](tong-quan-head-gv-ghi-chu.md).
-- Số khớp: số GV ở Tổng quan = số dòng quá hạn của GV đó ở Công việc "Của GV" (cùng `demDongViec`).
+- Số khớp: số quá hạn của GV ở Tổng quan (từ `tong-quan/v5`) phải bằng số dòng quá hạn của GV đó ở Công việc "Của GV" — PR code dùng chung điều kiện "quá hạn" (một hàm) và kiểm khớp trên bản chép.
 
 ## [XM]
 

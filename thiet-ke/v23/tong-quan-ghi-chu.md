@@ -37,7 +37,7 @@ Thành phần web: `web/src/modules/worklist/TongQuanV5.tsx` (khung trang, chọ
 
 ## Nguồn số + Turso
 
-- Mọi số cùng hàm với Công việc / Phân tích: Cần xử lý = `demDongViec` trên `/my-work` (cùng tập); Tình hình = các chỉ số đang có trong `tong-quan/v5`.
+- Mọi số cùng hàm với Công việc / Phân tích: ô "Cần xử lý" về việc của chính người xem = `demDongViec` trên `/my-work` đã nạp; ô "GV quá hạn" (Head / QT) = dữ liệu GV đang có trong `tong-quan/v5`; Tình hình = các chỉ số đang có trong `tong-quan/v5`.
 - **Đường `tong-quan/v5` hiện ~35 câu, tới ~3 170 dòng (CX).** Mục tiêu: **không thêm câu**. Bỏ ô "% đúng hạn / Chưa làm / Báo PH đúng hạn" khỏi Tổng quan giảm câu; số "Cần xử lý" lấy từ cùng tập việc `/my-work` mà app đã gọi cho badge Công việc (`App.tsx`) — dùng lại dữ liệu đã nạp, không gọi lần hai.
 - Khối Giáo viên (Head / QT): **+0 câu** — dùng lại dữ liệu GV đang có trong `tong-quan/v5`, tách loại trong câu đang có; không tách được thì bỏ cột "Loại" (PTA chốt 22/11, xem [`tong-quan-head-gv-ghi-chu.md`](tong-quan-head-gv-ghi-chu.md)).
 
