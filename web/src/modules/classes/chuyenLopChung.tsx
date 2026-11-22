@@ -1,7 +1,7 @@
 import { api } from '../../lib/api.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
-import { thuNgay } from '@shared/domain/index.ts';
+import { ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -31,15 +31,16 @@ export const KHOI_VANG = { borderColor: 'rgb(var(--soon-line-rgb))', background:
 /** OV-13l (mockup bước tiếp mục 4): lựa chọn ĐẦU của ô Tuần bắt đầu — "Ngay hôm nay · T5 15/10" = chuyển ngay khi lưu, không hoàn tác. */
 export function NutHomNay({ homNay, chon, onClick, nho }: { homNay: string | null; chon: boolean; onClick: () => void; nho?: boolean }) {
   if (!homNay) return null;
-  return <NutChon nho={nho} chon={chon} onClick={onClick}>{t('Ngay hôm nay')} <span className="tabular-nums text-slate-400">{thuNgay(homNay, homNay)}</span></NutChon>;
+  return <NutChon nho={nho} chon={chon} onClick={onClick}>{t('Ngay hôm nay')} <span className="tabular-nums text-slate-400">{ngay(homNay)}</span></NutChon>;
 }
 
 /** Ô tuần chỉ nhận Thứ Hai từ TUẦN SAU trở đi (Q5) — `tuanChon` do máy chủ trả (`tuanChonDuoc`). `rong`: không chặn trên (tuần xem lại của Tạm dừng học (bảo lưu)). */
-export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong }: {
+export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong, gon }: {
   tuanChon: string[]; value: string; onChange: (v: string) => void; ariaLabel: string; chuaChon?: string; rong?: boolean;
+  /** NHẸ HƠN PR-5: ô gọn trong cột bảng — nút lịch trong ô, ngày của tuần vào `title` (hàng cao đều). */ gon?: boolean;
 }) {
   return <ONgay kieu="tuan" moc="dau" value={value} onChange={onChange} toiThieu={tuanChon[0] ?? null} toiDa={rong ? null : tuanChon[tuanChon.length - 1] ?? null}
-    ariaLabel={ariaLabel} goiY={chuaChon} />;
+    ariaLabel={ariaLabel} goiY={chuaChon} gon={gon} nutTrong={gon} />;
 }
 
 /**
