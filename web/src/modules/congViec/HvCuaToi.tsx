@@ -146,8 +146,8 @@ function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: bo
           const lop = `inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold no-underline max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
             ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 !text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`;
           const vien = c.quaHan ? undefined : { borderColor: 'var(--line-strong)' };
-          /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — chip sang hồ sơ em (Sửa thông tin ở đầu hồ sơ của TVV), không số. */
-          if (!c.dau) return <Link key={c.nhom} to={duongHoSoHocVien(e.id)} className={lop} style={vien} aria-label={`${nhan} · ${e.ten}`}>{nhan}<span aria-hidden> ›</span></Link>;
+          /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — chip sang hồ sơ em, không số. SUA-2211-B: `?viec=bo-sung` mở sẵn panel Bổ sung hồ sơ ở đó. */
+          if (!c.dau) return <Link key={c.nhom} to={duongHoSoHocVien(e.id, { viec: 'bo-sung' })} className={lop} style={vien} aria-label={`${nhan} · ${e.ten}`}>{nhan}<span aria-hidden> ›</span></Link>;
           return (
             <button key={c.nhom} type="button" onClick={() => onMo(c.dau!)} className={lop} style={vien}
               aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${nhan} · ${c.so} · ${e.ten}`}>

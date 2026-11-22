@@ -81,7 +81,10 @@ type Profile = any;
  *
  * Toàn bộ dữ liệu thuộc về MỘT lộ trình. Đổi lộ trình ở đầu trang là đổi cả trang — không
  * bao giờ trộn hai lộ trình vào một khung nhìn, vì Target và thang điểm của chúng khác nhau.
- */
+ */
+/** GD-7: em của hồ sơ — điền sẵn cho "+ Task" và panel việc (lớp đang học, Tạm dừng thì lớp giữ chỗ). */
+const emCuaHoSo = (data: any) => ({ id: data.id as number, ten: data.fullName as string, lopId: (data.currentClass?.id ?? data.dauHoSo?.thongTin?.lopId ?? null) as number | null, lop: (data.currentClass?.code ?? data.dauHoSo?.thongTin?.lop ?? null) as string | null });
+
 export default function StudentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -176,6 +179,18 @@ export default function StudentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, p.dot, p.kn, p.muc]);
 
+  /* SUA-2211-B (chủ SP 22/11 ý 2 "vào trang HS HV từ trang công việc… lại phải bấm thêm mới hiện thông tin HV để sửa"): `?viec=bo-sung` (chip Bổ sung hồ sơ
+     ở Công việc) mở SẴN panel của đúng việc trong "Việc cần làm" — một lần khi hồ sơ về, rồi bỏ tham số (Quay lại / F5 không mở lại). */
+  useEffect(() => {
+    if (!data || p.viec !== 'bo-sung' || p.caseId != null) return;
+    const ds: Viec[] = data.dauHoSo?.viec?.cuaBan ?? [];
+    const x = ds.find((v) => v.loai === p.viec);
+    const w = x ? viecSangPanel(x, emCuaHoSo(data)) : null;
+    if (w) setViecMo({ it: w, ds });
+    const next = new URLSearchParams(params); next.delete('viec'); setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!data, p.viec]);
+
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 
@@ -185,7 +200,7 @@ export default function StudentDetailPage() {
   const lopTruocSau: { id: number; code: string } | null = data.currentClass ? { id: data.currentClass.id, code: data.currentClass.code }
     : data.status === 'inactive' && tt?.lopId ? { id: tt.lopId, code: tt.lop } : null;
   /* Mở đúng đợt (`?dot=`) hoặc do bấm trong trang — ngăn Case dùng chung một chỗ (Q9). */
-  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec === 'thi-that' ? undefined : p.viec } : openCase;
+  const ngan: OpenCase = p.caseId != null ? { caseId: p.caseId, paId: p.paId, viec: p.viec === 'thi-that' || p.viec === 'bo-sung' ? undefined : p.viec } : openCase;
   /* PR-TK: `?tong-ket=<cycleId>` mở ngăn Tổng kết lộ trình (Lưu trữ, hồ sơ lớp, link chia sẻ); `?viec=thi-that` (việc nhắc GVCN) mở ngăn Kết quả thi thật. */
   const xoaThamSo = (...ks: string[]) => { const next = new URLSearchParams(params); ks.forEach((k) => next.delete(k)); setParams(next, { replace: true }); };
   const moTongKet = (cid: number) => { const next = new URLSearchParams(params); next.set('tong-ket', String(cid)); setParams(next, { replace: true }); };
@@ -228,8 +243,7 @@ export default function StudentDetailPage() {
 
   /** N48: người xem vào hồ sơ CHỈ nhờ ngoại lệ lớp cũ (máy chủ `chiXemLopCu`) — nhãn + dải chỉ xem; quyền ghi máy chủ đã tắt. */
   const lopCu = data.viewer?.lopCu as { den: string; lopCu: string | null; tu: string | null; lopMoi: string | null; gvcn: string | null } | null | undefined;
-  /* GD-7: em của hồ sơ — điền sẵn cho "+ Task" và panel việc. */
-  const emHs = { id: data.id, ten: data.fullName, lopId: data.currentClass?.id ?? tt?.lopId ?? null, lop: data.currentClass?.code ?? tt?.lop ?? null };
+  const emHs = emCuaHoSo(data);
   const dsViec: Viec[] = data.dauHoSo?.viec?.cuaBan ?? [];
   /**
    * Bấm một việc ở "Việc cần làm" (③ R3.2, [XM-3]): CÙNG panel việc của Công việc, nổi phải, tại hồ sơ (không nhảy tab). Việc không có panel (Báo PH → tab
