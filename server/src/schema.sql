@@ -2101,9 +2101,10 @@ CREATE INDEX idx_ycd_loai_doi_tuong_cho ON yeu_cau_duyet (loai, doi_tuong_id) WH
 CREATE INDEX ix_notifications_dedup ON notifications (dedup_key);
 
 /*
- * KHAI BẬC Ý THỨC TRƯỚC KHI DÙNG WEB (PR-YT4, H5, T27): "em đã bị xử lý tới bậc n" — một dòng mỗi (em, chuỗi thang). Bậc hiện tại =
- * max(bậc các lần xử lý xong trong chuỗi, bậc khai). `chuoi_cycle_id` = lộ trình ĐẦU của chuỗi (chuoiThang). GVCN khai; chỉ QL sửa,
- * và chỉ khi chuỗi chưa có lần xử lý nào.
+ * KHAI / SỬA CẤP BẬC VI PHẠM (PR-YT4, H5, T27 · N66 · N70): "bậc em đã tới" — một dòng mỗi (em, chuỗi thang). Bậc hiện tại theo MỐC (N66):
+ * lần khai / sửa mới hơn lần xử lý xong gần nhất = bậc đã tới (nâng hoặc hạ); lần xử lý xong sau mốc đẩy tiếp. `chuoi_cycle_id` = lộ trình ĐẦU của
+ * chuỗi lúc khai (chuoiThang). `thang`: 'YYYY-MM' hoặc 'YYYY-MM-DD' (N70 — ngày hoặc tháng, đúng dạng đã nhập). Khai LẦN ĐẦU: GVCN / Head / Quản trị
+ * áp ngay, kể cả khi chuỗi đã có lần xử lý trên web. SỬA: Head / Quản trị / CX áp ngay; GVCN → thẻ `sua_khai_bac` chờ duyệt (yeu_cau_duyet), duyệt mới ghi vào đây.
  */
 CREATE TABLE y_thuc_khai_bac (
   id INTEGER PRIMARY KEY,
