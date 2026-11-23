@@ -136,6 +136,7 @@ export function quyCheDuyet(loai: LoaiYeuCau, han: string | null, homNay: string
   switch (loai) {
     case 'y_thuc': return ghep(conChu, t('hết hạn máy chốt theo GVCN'), t('từ chối cần lý do'));
     case 'thu_hoi_y_thuc': return ghep(conChu, t('hết hạn máy chốt theo GVCN'), t('duyệt thì bậc tính lại'));
+    case 'sua_khai_bac': return ghep(conChu, t('hết hạn máy chốt theo GVCN'), t('từ chối cần lý do'));
     case 'giu_pa_gv': return ghep(conChu, t('quá hạn máy chốt theo PA của GV'));
     case 'de_xuat_pa': case 'khong_theo_doi': case 'xin_xoa': case 'sua_thong_tin':
       return ghep(t('Hạn {n} ngày', { n: hanNgay }), t('quá hạn vẫn chờ'), t('từ chối cần lý do'));

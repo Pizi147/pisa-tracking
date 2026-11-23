@@ -84,10 +84,14 @@ export type YThucHocVien = {
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
   /** MA-QL-VIEC: QL / Quản trị áp thẳng cách khác Nâng 1 bậc (máy chủ `yThucHocVien`). */
   qlApThang?: boolean;
+  /** N70: người xem sửa bậc đã khai thì gửi Head duyệt (GVCN) — Head / Quản trị áp ngay. */
+  suaKhaiCanDuyet?: boolean;
   chuoi: { nhan: string; cycleIds: number[]; soXuLy: number };
   bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number };
   dongThang: BacThangDong[];
-  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean } | null;
+  /** `thang`: 'YYYY-MM' hoặc 'YYYY-MM-DD' (N70). `cho`: yêu cầu sửa bậc đang chờ Head — bậc ở đây vẫn là bậc cũ. */
+  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean;
+    cho?: { id: number; bac: number; thang: string | null; ghiChu: string; han: string | null; nguoiXin: number | null } | null } | null;
   nhom: NhomEm | null; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
   daBaoQl: boolean;
@@ -177,9 +181,12 @@ export type EmLo = {
   xuLy: { duoc: boolean; lyDo: ChuKhoa | null; soViPham: number; tomTat: string };
   ghiNhan: { duoc: boolean; lyDo: ChuKhoa | null; soMoi: number };
   /** Bậc đã khai (0 = "Chưa có xử lý vi phạm"), null = chưa khai. */
-  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null; luc: string | null };
+  capBac: { duoc: boolean; lyDo: ChuKhoa | null; khai: number | null; luc: string | null;
+    /** N70: yêu cầu sửa bậc đang chờ Head (bậc xin · hạn). */ cho?: { id: number; bac: number; han: string | null } | null };
 };
 export type BangLo = { classId: number; classCode: string; canManage: boolean; laQl: boolean; em: EmLo[] };
 export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[];
   /** KHAI-BAC-LO: bậc khai trước khi lưu (null = chưa khai) + bậc vừa lưu — để Hoàn tác cả lô. */
-  truoc?: { bac: number; thang: string | null; ghiChu: string } | null; bac?: number };
+  truoc?: { bac: number; thang: string | null; ghiChu: string } | null; bac?: number;
+  /** N70: em đã khai, GVCN sửa → đã gửi Head duyệt (chưa áp); Hoàn tác = rút thẻ `ycId`. */
+  guiDuyet?: true; ycId?: number };

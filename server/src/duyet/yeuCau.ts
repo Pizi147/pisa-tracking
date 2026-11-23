@@ -421,7 +421,7 @@ export const soLichSuYeuCau = (id: number): number =>
  * không đọc lộ trình / Case như `standingFor`) + số Lịch sử (đã đếm trong câu đọc thẻ — `so_lich_su`).
  */
 /** Chủ SP 11/11: "những vấn đề liên quan đến ý thức thì đừng nhét thêm điểm" — thẻ Ý thức không có dòng điểm / chip SOS (và không đọc lượt cho chúng). */
-const LOAI_Y_THUC: ReadonlySet<string> = new Set(['y_thuc', 'thu_hoi_y_thuc', 'bao_len_y_thuc']);
+const LOAI_Y_THUC: ReadonlySet<string> = new Set(['y_thuc', 'thu_hoi_y_thuc', 'bao_len_y_thuc', 'sua_khai_bac']);
 function ganBoiCanh(the: TheYeuCauDto[], rows: any[]) {
   if (!the.length || diemHvKhiKiem.tat) return;
   const coDiem = (x: TheYeuCauDto) => x.hocVienId != null && !LOAI_Y_THUC.has(x.loai);
