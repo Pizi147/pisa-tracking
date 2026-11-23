@@ -105,7 +105,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
       </span>
       <span className={`grid min-w-0 content-center justify-items-start text-[13px] ${O_HAN}`}>
         {/* Quá hạn theo cờ máy chủ (`quaHan` — Báo PH "Chờ GV sửa" không quá hạn), không tự so ngày. */}
-        {d.trangThai === 'mo' && d.han ? (d.quaHan || d.han >= hn ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : <span className="whitespace-nowrap tabular-nums text-dim">{t('hạn {ngay}', { ngay: shortDate(d.han, hn) })}</span>) : d.xongLuc ? <span className="tabular-nums text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}
+        {d.trangThai === 'mo' && d.han ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : d.xongLuc ? <span className="tabular-nums text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}
       </span>
       <span className={`flex min-w-0 items-center whitespace-nowrap text-[13px] font-medium ${d.trangThai === 'mo' ? 'text-dim' : 'text-ok'} ${O_NUT}`}>
         {d.trangThai === 'xong' && <span aria-hidden>✓&nbsp;</span>}{dich(d.nhanTrangThai)}
