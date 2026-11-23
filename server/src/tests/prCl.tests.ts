@@ -468,7 +468,7 @@ export async function runPrClTests(t: YThucTestKit) {
     for (const [lopHt, pct] of [[BE2, '46 %'], [FOU2, '72 %']] as const) {
       const it = v.find((x) => x.key === `xetlai:${lopHt.id}`);
       assert(it && it.tieuDe === `Xét lại lộ trình · ${lopHt.code} · ${it.count} em` && it.reason === 'Final chưa khớp hướng đã chốt' && it.due === addDays(THU_HAI, 13)
-        && it.classId === lopHt.id && it.actionLabel === 'Xét lại ›' && it.href === `/hoc-vien/lop/${lopHt.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
+        && it.classId === lopHt.id && it.actionLabel === 'Xét lại' && it.href === `/hoc-vien/lop/${lopHt.id}?viec=xet-lai` && it.ownerId === null, JSON.stringify(it));
       assert(it.contextLabel.includes(pct), `contextLabel: ${it.contextLabel}`);
     }
     assert(v.filter((x) => x.key === `xetlai:${FOU2.id}`).length === 1, 'một việc mỗi lớp hiện tại');
