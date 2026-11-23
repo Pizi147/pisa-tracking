@@ -796,6 +796,25 @@
     .chan-dinh-375 { position: sticky; z-index: 20; bottom: calc(env(safe-area-inset-bottom) - 23px); }
     html[data-ban-phim] .chan-dinh-375 { bottom: calc(var(--ban-phim) - 80px); }
   }
+  /*
+   * PANEL-GON (chủ SP 24/11): panel bảng / lưới rộng theo nội dung — chỉ thân (`.pn-than`: lưới, cột tên) quyết bề rộng; đầu, tab, chân, dải
+   * làm thay không đẩy panel rộng ra (tiêu đề dài thì xuống dòng trong bề rộng của lưới).
+   * Cột danh sách Công việc (`cv-ds`, ≥ 1024 khi panel mở) hẹp hơn 460 px → dòng việc bỏ nút, hạn sát tên (thay luật "panel bảng → 330 px" của PR-2a).
+   */
+  [data-pn="bang"] > :not(.pn-than) { contain: inline-size; }
+  [data-pn="viec"] > .pn-than { container: pn / inline-size; }   /* panel việc rộng cố định — thân cho nội dung hỏi bề rộng (`.dd`) */
+  /* Bảng `width: 100%` làm khung co-theo-nội-dung giãn hết chỗ — trong panel bảng: bảng đo bằng tổng cột (min-width của `Bang`, ô điểm 88),
+     rồi giãn (flex) lấp đủ panel khi panel ở sàn 600. */
+  @media (min-width: 640px) {
+    [data-pn="bang"] .pn-than .table-scroll:has(> table.bang) { display: flex; }
+    [data-pn="bang"] .pn-than .table-scroll > table.bang { width: 0; flex: 1 0 auto; }
+    /* Cột linh hoạt ở sàn 140 (bảng không còn giãn hết 75 %): chữ dài xuống dòng thay vì cắt "…" (như `.pn-bang`). */
+    [data-pn="bang"] .pn-than .bang td[data-linh] { white-space: normal; overflow-wrap: break-word; }
+  }
+  @container cv-ds (max-width: 459px) {
+    [data-hd="cv-dong"] { grid-template-columns: minmax(0, 1fr) auto !important; }
+    .o-nut { display: none !important; }
+  }
   /* AU-GON A1-10 / B3-21: nút nổi "+ Task" (60 px, cách đáy 80) không che hàng cuối danh sách — đệm đáy main = 80 + 60 + 16. */
   @media not all and (min-width: 640px) { html:has([data-fab-task]) #noi-dung { padding-bottom: 9.75rem; scroll-padding-bottom: 9.75rem; } }
   html[data-ban-phim] [data-thanh-duoi] { display: none; }
@@ -1401,6 +1420,10 @@
     .dd.pt .lu { grid-column: 1; }
     .dd.pt .ov { grid-column: 2; }
     .dd.pt .k { grid-row: auto; }
+  }
+  /* PANEL-GON: panel việc 600 px (thân là container `pn`) — lượt + 4 môn + Tổng không vừa một hàng thì Tổng xuống hàng riêng, không đè môn. */
+  @media (min-width: 640px) {
+    @container pn (max-width: 640px) { .dd .ov { grid-column: 1 / -1; justify-self: start; } }
   }
   /* Chip xu hướng (Tiến bộ kỹ năng · PA cải thiện) — ▲ ▼ CHỈ ở đây (tiến độ so lượt trước), ký hiệu luôn đi kèm chữ. */
   .xh { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 3px; min-width: 92px; height: 22px; padding: 0 7px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--text-dim); }

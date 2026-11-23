@@ -138,7 +138,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
         <VienNhom.Provider value={vien}>
-        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0) }}>
+        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? c.rong ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (

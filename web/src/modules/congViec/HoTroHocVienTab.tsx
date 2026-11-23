@@ -640,10 +640,9 @@ export function HoTroHocVienTab() {
     </>
   );
   return (
-    /* PR-2a (PR-4 báo): panel bảng 75 % (`data-pn="bang"`) mở → đầu trang + danh sách thu về 330 px (v23 panel-cham-diem C1). */
-    <div className="space-y-3 lg:[&:has([data-pn=bang])>div:first-child]:max-w-[330px] lg:[&:has([data-pn=bang])_[data-hd=cv-dong]]:grid-cols-[minmax(0,1fr)_auto] lg:[&:has([data-pn=bang])_.o-nut]:hidden">
-      {/* NHẸ HƠN: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024), panel 58 % bám mép phải không che nút lọc / + Task. */}
-      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(556px,calc(42vw-48px))]' : ''}`}>
+    <div className="space-y-3">
+      {/* NHẸ HƠN + PANEL-GON: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024) = phần còn lại cạnh panel (`--pn-w`, KhungPanel đo), không che nút lọc / + Task. */}
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[max(260px,calc(100vw-var(--pn-w,600px)-48px))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
@@ -732,10 +731,11 @@ export function HoTroHocVienTab() {
       </div>
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
-      {/* NHẸ HƠN (v23 `.cv-luoi`, chủ SP 22/11): danh sách trái = min(556 px, 42 % − 48 px) — panel 58 % bám mép phải (KhungPanel tại chỗ) không đè (1280: ~490 px). */}
+      {/* PANEL-GON (chủ SP 24/11, thay v23 `.cv-luoi` 42 %): danh sách trái = phần còn lại cạnh panel (100vw − `--pn-w` − 48) — panel 600 / bảng theo nội dung
+          bám mép phải không đè; cột hẹp < 460 thì dòng bỏ nút (`cv-ds`, index.css). Đầu nhóm dính trong cột `isolate` (#2001). */}
       {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(556px,calc(42vw-48px))_minmax(0,1fr)] lg:[&:has([data-pn=bang])]:grid-cols-[330px_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
-        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[max(260px,calc(100vw-var(--pn-w,600px)-48px))_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
             <DanhSachViec nho={uid != null ? `u${uid}:xong` : undefined} muc={dsXong} dem={new Map(dsXong.map((m) => [m.key, { n: m.items.length, quaHan: 0 }]))} soHien={10}

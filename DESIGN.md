@@ -147,6 +147,7 @@ components:
 | NH6 | **Luật bảng chung:** cột tên đủ rộng, tên HV không cắt (N55) · cột số / điểm hẹp và đều · cột kết quả co theo nội dung · không điều khiển trong tiêu đề bảng · mã tuần một dòng (Lịch Test, hồ sơ lớp, Phân tích, lưới điểm) | đặc tả mục 1 |
 | NH7 | **Công việc mọi vai chia theo loại việc**, đầu mục mỗi loại tách bạch (tiêu đề nhóm + số việc · quá hạn). Nút phạm vi Của tôi / Của GV / Tất cả ở hàng riêng. Làm thay = mở là làm, không nút / hộp trung gian (N64) | đặc tả mục 3; N64 |
 | NH8 | **Panel việc:** khối Phụ trách · Hạn · Theo dõi ở phần trên, không thanh cố định riêng; người theo dõi chật → vài tên + "+n người", bấm mở tại chỗ | đặc tả mục 6 |
+| NH9 | **Bề rộng panel (chủ SP 24/11 "panel to quá" — thay 58 % / 75 % của v23):** panel việc **một cỡ 600 px** · panel bảng / lưới (chấm điểm, Báo PH viết, Điểm chưa đủ…) **rộng theo nội dung** = cột tên + n ô (ô điểm 88) + cột kết quả, sàn 600, trần 75 %, không khoảng trống bên phải lưới · Công việc ≥ 1024: danh sách trái lấy phần còn lại (dưới 460 px thì dòng bỏ nút) · 375 toàn màn. Chữ không cắt "…" khi panel hẹp lại (xuống dòng) | plan.md mục 4 (24/11); `KhungPanel` |
 
 ## Luật V5 (22–24/10 — mockup `thiet-ke/v5/` #507–#510 + `docs/superpowers/specs/2026-10-22-overhaul-v5/` `04`, `10`; đã vào mã #528–#561)
 
