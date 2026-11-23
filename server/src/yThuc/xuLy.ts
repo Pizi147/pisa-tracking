@@ -327,6 +327,13 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
   const nguoi = nguoiThucHien(p, v);
   const them = String(v.note ?? '').trim();
   tx(() => {
+    /* N66 (PTA rà #2016): GVCN sửa cấp bậc SAU khi đề xuất bậc thang này được tạo → đề xuất tính theo bậc cũ, ghi xong có thể nhảy qua bậc giữa.
+       Chặn 409, không tự huỷ đề xuất (GVCN / Head mở lại: Rút / Thu hồi rồi đề xuất theo bậc mới). Ngoài thang không đổi bậc → không chặn. */
+    const em = emCua(m.student_id);
+    const doiBacSau = !!em.khai && em.khai.moc > String(m.created_at ?? '');
+    if ((THANG as readonly string[]).includes(m.kind) && (doiBacSau || !deXuatHopLe(m.kind, em.bac))) {
+      throw conflict('Bậc em đã đổi (GVCN sửa cấp bậc) — mở lại.', { bac: em.bac });
+    }
     const doi = db().prepare(
       `UPDATE discipline_measures SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, confirmed_by = ?, confirmed_at = ?,
               note = CASE WHEN ? = '' THEN note ELSE COALESCE(note || char(10), '') || ? END, updated_at = ?

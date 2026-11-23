@@ -133,7 +133,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   for (const r of conn.prepare(
     `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, k.sua_luc, u.full_name AS boi
        FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
-       LEFT JOIN users u ON u.id = k.khai_boi
+       LEFT JOIN users u ON u.id = COALESCE(k.sua_boi, k.khai_boi)   /* PTA rà #2016: người + ngày = lần sửa mới nhất */
       WHERE lc.student_id IN (${ph})`).all(json) as any[]) {
     const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
     a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status, resetBac: !!r.reset_bac_y_thuc });
@@ -220,7 +220,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       nhanChuoi: !route ? 'lớp thường' : chuoi.length > 1 ? `lớp thường → ${route}` : route,
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
-        bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
+        bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: mocKhai!,
         /* N50 (8) (chủ SP 16/11, A1-21): GVCN tự sửa bậc đã khai mọi lúc (lịch sử ở nhật ký) — thay "chỉ QL sửa sau khi có lần xử lý trên web". */
         coTheSua: true, cycleId: khaiRow.chuoi_cycle_id, moc: mocKhai!,
       } : null,

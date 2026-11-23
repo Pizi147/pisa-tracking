@@ -112,6 +112,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (1) · bậc: max(lần xử lý xong, khai); ngoài thang không đẩy; bậc kế không bao giờ hết', () => {
     assert(d.bacHienTai([{ kind: 'report_1' }, { kind: 'meeting_cx' }], 2) === 2, 'khai thắng');
     assert(d.bacHienTai([{ kind: 'wl_1' }], null) === 3 && d.bacHienTai([], null) === 0, 'từ kind');
+    /* N66: mốc. Khai sau lần xử lý → khai (hạ được); lần xử lý sau khai → max; mốc khai cũ chỉ-ngày = đầu ngày (lần cùng ngày vẫn đẩy). */
+    const x = (kind: string, moc: string | null) => ({ kind, moc });
+    assert(d.bacHienTai([x('report_2', '2026-09-10T03:00:00.000Z')], 1, '2026-09-11T03:00:00.000Z') === 1, 'khai sau: hạ');
+    assert(d.bacHienTai([x('report_2', '2026-09-12T03:00:00.000Z')], 1, '2026-09-11T03:00:00.000Z') === 2, 'xử lý sau: max');
+    assert(d.bacHienTai([x('wl_1', '2026-09-14T09:00:00.000Z')], 2, '2026-09-14') === 3 && d.bacHienTai([x('wl_1', '2026-09-13T09:00:00.000Z')], 2, '2026-09-14') === 2, 'mốc chỉ-ngày');
+    assert(d.bacHienTai([x('wl_1', null)], 1, '2026-09-14T00:00:00.000Z') === 3 && d.bacHienTai([x('wl_1', '2026-01-01')], 1, null) === 3, 'thiếu mốc: tính như cũ');
     assert(d.bacKeTiep(2)!.kind === 'wl_1' && d.bacKeTiep(0)!.kind === 'report_1' && d.bacKeTiep(0)!.bac === 1, 'kế');
     assert(d.bacKeTiep(5).kind === 'wl_2' && d.bacKeTiep(6).kind === 'report_7', 'sau WL 2 là Report 7, không hết thang');
   });
@@ -1064,6 +1070,23 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(!da().includes(d2.id), 'đã duyệt chưa thực hiện');
     xuLy.daThucHien(gvcn, d2.id, { performedOn: TODAY });
     assert(da().includes(d2.id), 'Đã thực hiện thì tính');
+  });
+  /* N66 (PTA rà #2016): đề xuất bậc thang tạo trước khi GVCN sửa cấp bậc → "Đã thực hiện" 409, không ghi, đề xuất còn nguyên. */
+  check('N66 · đề xuất vượt bậc (WL 1) đã duyệt, GVCN sửa cấp bậc sau đó → Đã thực hiện 409, DB không đổi; ngoài thang vẫn ghi được', () => {
+    const sid = hv(); xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    const d = deXuatGui(gvcn, sid, 'wl_1', [ghiVp(gvbm, sid)]);
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', d.id).id);
+    conn.prepare(`UPDATE discipline_measures SET created_at = '2026-01-01T00:00:00.000Z' WHERE id = ?`).run(d.id);
+    xuLy.khaiBac(gvcn, sid, { bac: 0, ghiChu: 'Thực ra chưa xử lý lần nào' });
+    const l = loiCua(() => xuLy.daThucHien(gvcn, d.id, { performedOn: TODAY }));
+    const st = (conn.prepare('SELECT status FROM discipline_measures WHERE id = ?').get(d.id) as any).status;
+    assert(l.status === 409 && /Bậc em đã đổi/.test(l.msg) && st === 'da_duyet' && em(sid).bac === 0, JSON.stringify({ l, st }));
+    const s2 = hv(); const d2 = deXuatGui(gvcn, s2, 'suspension', [ghiVp(gvbm, s2)]);
+    yc.duyetYeuCau(P.mbManager, theCho('y_thuc', d2.id).id);
+    conn.prepare(`UPDATE discipline_measures SET created_at = '2026-01-01T00:00:00.000Z' WHERE id = ?`).run(d2.id);
+    xuLy.khaiBac(gvcn, s2, { bac: 2, ghiChu: 'R2 bản giấy' });
+    xuLy.daThucHien(gvcn, d2.id, { performedOn: TODAY });
+    assert((conn.prepare('SELECT status FROM discipline_measures WHERE id = ?').get(d2.id) as any).status === 'done', 'ngoài thang: ghi được');
   });
   check('YT4 (7) · bien-phap-theo-loai: mười loại (+ report_tiep = Report 7+, loai-cu cho dòng cũ, Q2) tách riêng; lọc kind; tổng = bien-phap-da-thuc-hien', () => {
     const sid = hv(); xl(gvcn, sid, [ghiVp(gvbm, sid)]); const r2 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);

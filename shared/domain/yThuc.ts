@@ -322,6 +322,7 @@ export function chuoiThang(cycles: readonly { id: number; seq: number; route: st
  * Bậc hiện tại; 0 = chưa bậc nào. Ngoài thang không đẩy. Không khai → max bậc các lần xử lý xong trong chuỗi.
  * N66 (chủ SP 24/11): có khai → khai là "bậc đã tới" lúc lưu (nâng hoặc hạ) — chỉ lần xử lý xong SAU mốc khai (`moc` > `khaiMoc`) đẩy tiếp (max).
  * `moc` / `khaiMoc` null (dữ liệu cũ, gọi không mốc) → lần đó vẫn tính (như trước N66: max).
+ * Dòng khai cũ chỉ có NGÀY ('2026-09-14') so chuỗi với ISO = đầu ngày: lần xử lý cùng ngày vẫn đẩy (trước N66 khai luôn đứng trước lần xử lý — giữ max như cũ).
  */
 export function bacHienTai(xuLyDone: readonly { kind: string; moc?: string | null }[], khaiBac: number | null, khaiMoc: string | null = null): number {
   const sau = khaiBac === null || !khaiMoc ? xuLyDone : xuLyDone.filter((x) => !x.moc || x.moc > khaiMoc);
