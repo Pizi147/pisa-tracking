@@ -1466,25 +1466,39 @@
   .dai-cs-2nhom .dai-cs-nhom:not(:first-child) { border-top: 1px solid var(--line); }
   .dai-cs-2nhom .dai-cs-nhom + .dai-cs-o + .dai-cs-o { border-left: 1px solid var(--line); }
 }
-/* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
+/* PT-a (mockup v19 `.os`, 12/11; thay bằng SO-TRON 24/11 bên dưới): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx);
    màu chỉ cho ô cần làm: đỏ = quá hạn (`text-bad` / `text-late`; V22 không biểu tượng), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
    Số 0 / "—" không phải nút (OSo) → mờ, không hộp. Số trong chip (SOS, `SO_TRONG_CHIP` → `!text-inherit`) giữ dáng chip. Panel (portal) nằm ngoài vùng → giữ dáng cũ. Tổng quan / hồ sơ lớp: PR riêng (XM-6). */
-.o-so-hop .so-bam:not([class~="!text-inherit"]) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 40px; height: 30px; padding: 0 9px; border-radius: 7px;
-  border: 1px solid var(--os-vien); background: var(--os-nen); color: var(--os-chu); font-weight: 600; line-height: 1; vertical-align: middle; white-space: nowrap;
-  transition: background-color .12s ease-out, border-color .12s ease-out; }
+/* SO-TRON (chủ SP 24/11, mockup v24 `phan-tich-panel-so.html` A1; DESIGN NH9): số bấm được trong vùng `.o-so-hop` = CHỮ SỐ TRƠN căn giữa, không ô viền / nền.
+   Màu theo nghĩa: số đếm · Đạt xanh dương (`--accent`) · Vượt xanh lá (`text-kq-vuot`) · Chưa đạt / quá hạn đỏ (`text-kq-duoi` · `text-bad` · `text-late`) · chờ vàng (`text-soon`).
+   Rê / focus = gạch chân + nền nhạt; đang mở = thêm viền 1 px cùng màu số. Vùng bấm vô hình 32 × 32 (≤ 639: 44 × 44, ::after). Số 0 / "—" không phải nút (OSo) → mờ.
+   Ngoại lệ DUY NHẤT còn ô viền: cột SOS 1 / 2 / 3 (`so-m1..3`, chủ SP: "để màu không hiện không rõ ràng"). Số trong chip (`!text-inherit`) giữ dáng chip. */
+.o-so-hop .so-bam:not([class~="!text-inherit"]) { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 22px; padding: 0 4px; border-radius: 6px;
+  border: 0; background: transparent; color: var(--accent); font-weight: 600; line-height: 1; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;
+  transition: background-color .12s ease-out; }
+.o-so-hop td .so-bam:not([class~="!text-inherit"]) { font-size: 15px; }
 .o-so-hop .so-bam:not(:hover, :focus-visible) { text-decoration-line: none; }
-.o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--os-re); border-color: var(--accent); }
-.o-so-hop .so-bam[aria-expanded="true"] { border: 2px solid var(--accent); padding: 0 8px; background: var(--accent-soft); }
-.o-so-hop .so-bam:is(.text-bad, .text-late) { background: var(--os-do-nen); border-color: var(--os-do-vien); color: var(--os-do-chu); font-weight: 700; }
-.o-so-hop .so-bam.text-soon { background: var(--os-vang-nen); border-color: var(--os-vang-vien); color: var(--os-vang-chu); }
-/* Chủ SP rà #1490 (bỏ XM-7): ô SOS 1 · 2 · 3 bảng SOS tô màu theo mức như chip SOS (MAU-MUC: SOS 1 rỗng viền vàng · SOS 2 nền cam · SOS 3 nền đỏ chữ trắng). */
+.o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--accent-soft); text-decoration-line: underline; text-underline-offset: 3px; }
+.o-so-hop .so-bam[aria-expanded="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px currentColor; }
+.o-so-hop .so-bam:is(.text-bad, .text-late) { color: rgb(var(--bad-rgb)); }
+.o-so-hop .so-bam.text-soon { color: rgb(var(--soon-rgb)); }
+.o-so-hop .so-bam.text-kq-vuot { color: rgb(var(--kq-vuot-rgb)); }
+.o-so-hop .so-bam.text-kq-duoi { color: rgb(var(--kq-duoi-rgb)); }
+.o-so-hop .so-bam.text-kq-bang { color: rgb(var(--kq-bang-rgb)); }
+/* Chủ SP rà #1490 + 24/11: ô SOS 1 · 2 · 3 bảng SOS tô màu theo mức như chip SOS (SOS 1 rỗng viền vàng · SOS 2 nền cam · SOS 3 nền đỏ chữ trắng) — 40 × 28 (≤ 639: 44 × 44). */
+.o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3):not([class~="!text-inherit"]) { min-width: 40px; height: 28px; padding: 0 9px; border: 1px solid; border-radius: 7px; }
 .o-so-hop .so-bam.so-m1 { background: transparent; border-color: rgb(var(--sos1-rgb)); color: rgb(var(--sos1-chu-rgb)); }
 .o-so-hop .so-bam.so-m2 { background: var(--sos2-nen); border-color: rgb(var(--sos2-rgb)); color: rgb(var(--sos2-chu-rgb)); }
 .o-so-hop .so-bam.so-m3 { background: var(--sos3-nen); border-color: var(--sos3-vien); color: var(--sos3-tren); font-weight: 700; }
-.o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3):is(:hover, :focus-visible) { filter: brightness(1.15); }
-.o-so-hop .so-bam.text-kq-vuot { color: rgb(var(--kq-vuot-rgb)); }
-.o-so-hop .so-bam.text-kq-duoi { color: rgb(var(--kq-duoi-rgb)); }
-.o-so-hop .text-xs .so-bam { min-width: 26px; height: 22px; padding: 0 6px; border-radius: 5px; }
+.o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3):is(:hover, :focus-visible) { filter: brightness(1.15); text-decoration-line: none; }
+.o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3)[aria-expanded="true"] { box-shadow: none; border-width: 2px; padding: 0 8px; }
+/* Số giữa câu (dòng phụ `.text-xs`, "vào 3 · kết thúc 1"): bỏ ô — chữ số đậm màu nhấn, giữ gạch chân (chỉ màu không đủ phân biệt link trong chữ, WCAG 1.4.1). */
+.o-so-hop :is(.text-xs, .text-sm) .so-bam:not([class~="!text-inherit"]) { display: inline; min-width: 0; height: auto; padding: 0; font-size: inherit; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; vertical-align: baseline; }
+/* Vùng bấm vô hình 32 × 32 (≤ 639: 44 × 44) bằng ::after — hình số không đổi, dòng bảng không phình. */
+.o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *, [class~="!text-inherit"])::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 32px); height: 32px; transform: translate(-50%, -50%); }
+@media (max-width: 639px) {
+  .o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *, [class~="!text-inherit"])::after { width: max(100%, 44px); height: 44px; }
+}
 /* PTA rà #1710: số PHỤ trong dòng phụ ô chỉ số ("trong 58 đang mở") — chữ số gạch chân màu nhấn, không hộp (mockup ⑧ T1 / T7). */
 .o-so-hop .so-bam.so-bam.so-phu { height: auto; min-width: 0; padding: 0; border: 0; background: none; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; }
 /* Số lớn thẻ chỉ số (`DaiChiSo` `.chi-so-gt`, `SoTo` `.so-chinh`) — chủ SP rà #1490 (thay XM-5): KHÔNG hộp. Vẫn là nút: màu nhấn, rê / focus gạch chân,
@@ -1496,8 +1510,8 @@
 .o-so-hop :is(.chi-so-gt .so-bam.so-bam, .so-bam.so-bam.so-chinh):is(.text-bad, .text-late)::before { font-size: .6em; margin-right: 4px; }
 .o-so-hop :is(.chi-so-gt .so-bam.so-bam, .so-bam.so-bam.so-chinh).text-soon { color: rgb(var(--soon-rgb)); }
 /* Ô vàng "đang chờ" không bấm được (số 0) — cùng dáng hộp vàng, chủ SP rà #1490: "Chưa có KQ" để trong box như mockup. */
-.o-so-hop .o-so-tinh { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 30px; padding: 0 9px; border-radius: 7px; vertical-align: middle;
-  border: 1px solid var(--os-vang-vien); background: var(--os-vang-nen); color: var(--os-vang-chu); font-weight: 600; font-variant-numeric: tabular-nums; }
+.o-so-hop .o-so-tinh { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 22px; vertical-align: middle;
+  color: rgb(var(--soon-rgb)); font-weight: 600; font-variant-numeric: tabular-nums; }
 /* Cặp hộp % + phân số mờ (`CapSo`): lưới hai cột — hộp căn phải, phân số căn trái, mọi dòng thẳng nhau. */
 /* PT-a (mockup v19 khung 2a): dòng nhóm lớp trong panel bài chấm (`BangLuotPanel`) — nền hàng lớn, vạch trái, chữ tràn qua ô trống bên phải, không bấm. */
 .bang tr.hang-nhom-lop { background: var(--hang-lon-bg); cursor: default; }

@@ -229,7 +229,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   /** `vua` 1180 px: panel bàn giao (mockup v11 — bảng hai cột không trải hết 1440). */
-  rong?: 'viec' | 'hep' | 'rong' | 'vua' | 'toan' | /** PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ bài chấm của một GV — 640. */ 'so' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang' | /** TU2-6 (mockup Ⓣ2 P1): panel một người dạy — 880. */ 'nguoi-day';
+  rong?: 'viec' | 'hep' | 'rong' | 'vua' | 'toan' | /** PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ bài chấm của một GV — 640. */ 'so' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang' | /** TU2-6 (mockup Ⓣ2 P1): panel một người dạy — 880. */ 'nguoi-day' | /** SO-720 (chủ SP 24/11, mockup v24 `phan-tich-panel-so.html` B0): panel số của Phân tích — 720, cao THEO NỘI DUNG, KHÔNG nền mờ (trang bên trái vẫn đọc / bấm được, bấm số khác thì đổi nội dung); thân sát mép, không chân. ≤ 639 toàn màn. */ 'so720';
   tabs?: ReactNode; ngCanh?: ReactNode;
   /** N64: dải làm thay của chính panel (vd bàn giao: "Đang giao cho … — bạn làm thay") — cùng chỗ, thắng dải chung của Công việc. */
   daiLamThay?: ReactNode;
@@ -279,7 +279,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   /* M6 6b-2 (khu K D6): một chuỗi view một bề rộng — panel trong chuỗi `XemCha` lấy bề rộng của chuỗi khi không tự đặt. */
   const chuoi = useContext(XemCha);
   const rong = rongRieng ?? chuoi?.rong ?? 'viec';
-  const laBang = rong === 'bang' || rong === 'vua' || rong === 'so';
+  const la720 = rong === 'so720';   // SO-720: không nền mờ, không khoá cuộn trang, cao theo nội dung
+  const laBang = rong === 'bang' || rong === 'vua' || rong === 'so' || la720;
   const top = useDayThanhTren();
   /* NEN-PANEL (K12): panel ngoài cùng của việc — ô `useNhap` còn chữ → coi là đang sửa như `chan.daSua`. */
   const nhap = useContext(NhapCuaPanel);
@@ -317,11 +318,11 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   }, [id, longTrong, taiCho]);
 
   useEffect(() => {
-    if (taiCho) return undefined;
+    if (taiCho || la720) return undefined;
     const cu = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = cu; };
-  }, [taiCho]);
+  }, [taiCho, la720]);
 
   useEffect(() => {
     if (taiCho) return undefined;   // tại chỗ: Esc chỉ khi focus trong panel (`onKeyDown` dưới)
@@ -405,7 +406,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   const dauMot = (
     <header className={`flex min-h-[52px] shrink-0 flex-wrap items-center gap-x-3.5 gap-y-0.5 border-b py-1.5 pr-2 max-sm:pr-1 ${trongCot ? 'pl-0' : 'pl-5 max-sm:pl-4'}`} style={{ borderColor: 'var(--line)' }}>
       {nutLui}
-      <h2 className={`m-0 min-w-0 font-bold leading-snug text-slate-100 max-sm:flex-1 max-sm:py-2 sm:max-w-full sm:shrink-0 ${trongCot ? 'text-[14px]' : 'text-[16px]'}${dau?.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau?.tieu ?? tieuDe}</h2>
+      <h2 className={`m-0 min-w-0 font-bold leading-snug text-slate-100 max-sm:flex-1 max-sm:py-2 ${la720 ? 'flex-1 sm:py-1' : 'sm:max-w-full sm:shrink-0'} ${trongCot ? 'text-[14px]' : 'text-[16px]'}${dau?.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau?.tieu ?? tieuDe}</h2>
       {meta.length > 0 && (
         <div className="-ml-1 min-w-0 overflow-x-clip pl-1 text-sm leading-snug text-dim max-sm:order-3 max-sm:basis-full max-sm:pb-1">
           <p className="m-0 -ml-5 flex flex-wrap items-center gap-y-0.5">
@@ -435,7 +436,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
-        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe || la720 ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : la720 ? 'overflow-y-auto overscroll-contain' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
@@ -477,6 +478,19 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl ${laBang ? 'lg:w-[75%]' : 'lg:w-[58%]'} ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
+    );
+  }
+  if (la720) {
+    /* SO-720 (mockup v24 B0): bọc `pointer-events-none` — chỉ panel nhận chuột; trang bên trái vẫn bấm được. Cao theo nội dung, tối đa tới đáy; ≤ 639 toàn màn. */
+    return createPortal(
+      <div className={`pointer-events-none fixed inset-x-0 !mt-0 ${z} flex items-start justify-end`} style={{ top, bottom: 'var(--ban-phim, 0px)' }}>
+        <div ref={khung} tabIndex={-1} role="dialog" aria-label={tieuDe} data-pn="so720"
+          className="pointer-events-auto relative flex max-h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 max-sm:h-full max-sm:border-l-0 sm:w-[720px] sm:max-w-full sm:border-b"
+          style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+          {voi(than)}
+        </div>
+      </div>,
+      document.body,
     );
   }
   return createPortal(
