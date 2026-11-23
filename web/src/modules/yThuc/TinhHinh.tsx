@@ -278,8 +278,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
  * PANEL CÔNG VIỆC "Tình hình học tập" của GVCN (mockup v20 F2 / F4): câu TVV hỏi + ô Kết quả (10–500) → Lưu · gửi TVV. GVCN hỏi GVBM ngoài web rồi ghi.
  * Lưu xong: dòng ở lại, "✓ Đã trả lời · Bạn" + Hoàn tác (≤ 2 phút) · Việc tiếp ›.
  */
-export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, onTiep }: {
-  id: number; ten: string; lop: string | null; cauHoi: string; han: string | null; onDong: () => void; onDaLam: () => void; onTiep?: (() => void) | null;
+export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, dau, onDong, onDaLam, onTiep }: {
+  id: number; ten: string; lop: string | null; cauHoi: string; han: string | null; /** R4 P2: đầu panel từ dòng việc (hạn / quá hạn n ngày · tên em link · lớp). */ dau?: Parameters<typeof KhungPanel>[0]['dau']; onDong: () => void; onDaLam: () => void; onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -308,7 +308,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   /* F03: đang gửi thì ✕ / Esc chưa đóng — không hỏi "Bỏ chữ" cho câu trả lời máy chủ đang nhận. */
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
+    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} dau={dau} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
       quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
       chan={{ conThieu: lf.conThieu(loiO),
         /* GD-18 (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · "Lưu · gửi TVV" · "Lưu · việc tiếp ›" (chính); mở lẻ → "Lưu · gửi TVV" (chính). */
@@ -320,7 +320,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
       <div className="flex flex-col gap-4 pt-4">
         {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDaLam} />}
         <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-          <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && !gv.g && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
+          <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && !gv.g && !dau && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
           <NoiDungTinhHinh chu={cauHoi} />
         </div>
         {xong ? (
