@@ -2609,6 +2609,7 @@ api.post('/phoi-hop-sos/:id/confirm', requireAuth, wrap((req) => {
   const b = (req.body ?? {}) as Record<string, any>;
   return phoiHopSvc.confirmCoordination(principalOf(req), pInt(req, 'id'), {
     performedOn: b.performedOn ?? null, note: b.note ?? null, performerName: b.performerName ?? null,
+    ...(b.updatedAt === undefined ? {} : { updatedAt: typeof b.updatedAt === 'string' ? b.updatedAt : null }),   // L3-web
   });
 }));
 /* OV-7a: Đưa lại Cần xử lý (việc đã xong) · Khôi phục (việc đã bỏ). */

@@ -118,6 +118,16 @@ export async function runPrR1Tests(t: any) {
     assert(ma(xn) === null && one('SELECT status, updated_at FROM sos_coordination_actions WHERE id = ?', x.id).updated_at, 'việc chờ (updated_at NULL) không xác nhận được — so-và-đổi sai');
     /* Lần sau: đã xong → sửa (OV-7a), so với updated_at vừa ghi. */
     assert(ma(xn) === null, 'sửa việc đã xong (updated_at có giá trị) lỗi');
+    /* L3-web: panel gửi `updatedAt` đã thấy — người khác lưu lần lượt (không cùng lúc) vẫn 409, DB không đổi; đúng bản → lưu; null khớp việc chưa từng sửa. */
+    const truoc = one('SELECT note, updated_at FROM sos_coordination_actions WHERE id = ?', x.id);
+    const voi = (updatedAt: string | null, note: string) => () => ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note, updatedAt });
+    assert(ma(voi('2000-01-01T00:00:00.000Z', 'Bản cũ đã thấy — phải bị chặn vì người khác vừa lưu.')) === 409, 'updatedAt cũ không 409');
+    assert(JSON.stringify(one('SELECT note, updated_at FROM sos_coordination_actions WHERE id = ?', x.id)) === JSON.stringify(truoc), '409 mà DB đã đổi');
+    assert(ma(voi(null, 'Bản null trong khi việc đã có updated_at — phải bị chặn.')) === 409, 'updatedAt null khi DB có giá trị không 409');
+    const v = voi(truoc.updated_at, 'Đúng bản đã thấy — lưu được, ghi chú mới.')();
+    assert(v.note === 'Đúng bản đã thấy — lưu được, ghi chú mới.' && v.updatedAt && v.updatedAt !== truoc.updated_at, `đúng bản: ${JSON.stringify(v)}`);
+    dat('pending', null);
+    assert(ma(voi(null, 'Việc chưa từng sửa (updated_at NULL), panel gửi null — lưu được.')) === null, 'null khớp NULL không lưu được');
   }));
 
   const ab: any = await import('../fasttrack/absence.ts');

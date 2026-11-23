@@ -217,6 +217,8 @@ export type CoordinationAction = {
   preset: boolean; status: CoordinationStatus; statusLabel: string;
   performedOn: string | null; performedBy: number | null; performerName: string | null; note: string | null;
   removeReasonCode: string | null; removeReasonLabel: string | null; removeReasonText: string | null; removedAt: string | null;
+  /** L3-web: bản panel đã thấy — gửi lại khi xác nhận (`confirmCoordination`) để 409 nếu người khác vừa lưu. */
+  updatedAt: string | null;
   attachmentCount: number;
   /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) · quá hạn khi còn Cần xử lý và hôm nay > hạn. Việc khác: null · false. */
   han: string | null; quaHan: boolean;
@@ -350,7 +352,7 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     performedOn: r.performed_on ?? null, performedBy: r.performed_by ?? null, performerName: r.performer_name ?? null, note: r.note ?? null,
     removeReasonCode: r.remove_reason_code ?? null,
     removeReasonLabel: r.remove_reason_code ? COORDINATION_REMOVE_REASON_LABEL[r.remove_reason_code as CoordinationRemoveReason] ?? r.remove_reason_code : null,
-    removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
+    removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null, updatedAt: r.updated_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
     han, quaHan: r.status === 'pending' && han !== null && han < demoToday(),
     hanMacDinh, hanChon: r.han_chon ?? null,   // GV-1: việc không hạn có thể có hạn đặt tay
@@ -746,9 +748,11 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
  * học thuật, không phải của Phối hợp). Người thực hiện mặc định là người xác nhận; ghi `performerName` khi việc do người khác làm (CS, GĐCN…).
  * OV-7a: việc ĐÃ XONG lưu lại được (sửa ngày / ghi chú / người) — cùng form, cùng kiểm; Báo PH chụp lại nội dung; nhật ký giữ bản trước.
  */
-export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null }): CoordinationAction {
+export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null;
+  /** L3-web: `updatedAt` của bản panel đã thấy (null = việc chưa từng sửa). Không gửi (web cũ) → chỉ so-và-đổi trong giao dịch như R1. */ updatedAt?: string | null }): CoordinationAction {
   const r = loadAction(id);
   requireLam(p, r);
+  if (input.updatedAt !== undefined && (input.updatedAt ?? null) !== (r.updated_at ?? null)) throw conflict('Việc vừa được người khác cập nhật — tải lại.');
   /* RKC-3a: việc NGƯỜI DÙNG bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước.
      R1-L3: việc HỆ THỐNG bỏ (mức SOS đổi, lượt huỷ) theo điểm — không xác nhận tay, như `moLaiCoordination`. */
   if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
