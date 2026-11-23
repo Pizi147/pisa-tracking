@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutDongPanel } from '../../ui/KhuonViec.tsx';
@@ -15,7 +15,7 @@ import { TenDich } from '../../ui/ChuDich.tsx';
 import { ChipMon, TienTrinh, chuMoc } from './BangLan.tsx';
 import { CanLamEm } from './khoiYThuc.tsx';
 import { usePanelYThuc } from './panelYThuc.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type YThucHocVien } from './kieu.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const XacNhanXuLyPanel = lazyHop(() => import('./XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
 
@@ -42,7 +42,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam, onTiep = null 
   if (!d) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
   const moi = d.viPham.filter((v) => v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem')).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);
   const ids = moi.map((v) => v.id);
-  const lamMoi = () => { DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); reload(); onDaLam(); };
+  const lamMoi = () => { lamMoiYThucCua({ studentIds: [studentId] }); reload(); onDaLam(); };
   /** `tiep`: lưu xong sang việc kế (GD-4d) thay vì đóng. */
   const daXem = async (tiep?: () => void) => {
     setBusy(true);

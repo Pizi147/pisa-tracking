@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState } from '../../ui/ui.tsx';
@@ -10,7 +10,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon, bacDu } from '@shared/domain/index.ts';
 import { NutDongPanel } from '../../ui/KhuonViec.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type XuLyView } from './kieu.ts';
+import { lamMoiYThucCua, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -61,7 +61,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
     try {
       await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined, ...(laMeeting ? { phDu } : {}) });
       onDone?.();
-      DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
+      lamMoiYThucCua({ studentIds: [m.studentId] });
       const chu = t('Đã ghi {nhan} cho {ten} — {length} vi phạm chuyển sang Đã xử lý.', { nhan: m.nhan, ten: m.ten, length: m.viPham.length });
       toast.push('ok', chu);
       if (taiCho || onTiep) setDaLuu(chu); else onClose();

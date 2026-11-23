@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'rea
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { BoLocDoan, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
 import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -19,7 +19,7 @@ import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TheLoai, type VpDon
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type BaoPhLan, type DongThoiGianYt, type TinhHinhView, type ViPhamV4, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type BaoPhLan, type DongThoiGianYt, type TinhHinhView, type ViPhamV4, type YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
 
@@ -108,7 +108,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !d) return <Skeleton rows={5} />;
 
-  const lamMoi = () => { DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); reload(); };
+  const lamMoi = () => { lamMoiYThucCua({ studentIds: [studentId] }); reload(); };
   /* Đã xem (N34): không lên bậc, vẫn tính 3 vi phạm / 2 tuần. Bỏ xem = đảo lại (luật không khoá cứng). */
   const daXem = async (ids: number[], bo = false) => {
     setDangGhi(true);

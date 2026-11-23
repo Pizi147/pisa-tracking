@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { ApiError, api } from '../../lib/api.ts';
+import { lamMoiYThucTheo } from '../yThuc/kieu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
@@ -57,8 +58,11 @@ const thaoTacChung: ThaoTacKhoi = {
   themTheoDoi: (g, ids) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }),
   boTheoDoi: async (g, userId) => { const r = await api.del<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${userId}`); return r && 'loai' in r ? r : g; },
 };
-/** Sau mọi thao tác giao việc: danh sách việc + tab Đang theo dõi + hồ sơ HV đọc lại. */
-export const lamMoiGiaoViec = () => { for (const k of ['/my-work', '/tong-quan', '/students', '/y-thuc', '/classes']) invalidate(k); };
+/**
+ * Sau mọi thao tác giao việc: danh sách việc + tab Đang theo dõi + hồ sơ HV đọc lại. R3-T5 (rà 24/11): biết em (`sid`) → `/students` chỉ hồ sơ đúng em
+ * (`lamMoiYThucTheo`), không tải lại hồ sơ em khác đang mở; `/classes` giữ rộng (không rõ lớp — trang Công việc không gắn đường lớp nào).
+ */
+export const lamMoiGiaoViec = (sid?: number | null) => lamMoiYThucTheo(['/my-work', '/tong-quan', '/students', '/y-thuc', '/classes'], { studentIds: [sid] });
 /** P1-02 (AUDIT-2111): Đổi người / Hoàn tác đổi người — báo danh sách Công việc giữ panel (việc rời "Của tôi"), KHÔNG qua `onDaDoi` (không tính "xong"). */
 export const BaoDaGiao = createContext<(() => void) | null>(null);
 
@@ -120,9 +124,9 @@ export function KhoiGiaoViec({ g: gGoc, mo = true, dat, reload, gon, chiHan, anT
   const nutDoi = useRef<HTMLButtonElement>(null);
   const [vuaGiao, setVuaGiao] = useState<{ chu: string; het: number } | null>(null);
   const [loi, setLoi] = useState<Loi | null>(null);
-  const daDoi = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(); onDaDoi?.(); };
+  const daDoi = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(moi.studentId); onDaDoi?.(); };
   const baoDaGiao = useContext(BaoDaGiao);
-  const daGiao = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(); baoDaGiao?.(); };
+  const daGiao = (moi: KhoiGv) => { dat(moi); lamMoiGiaoViec(moi.studentId); baoDaGiao?.(); };
 
   const ten = (n: Nguoi) => n.ten ?? t('(đã xoá)');
   const nguoiPt = g.phuTrach.length ? g.phuTrach.map(ten).join(', ') : thaoTac.trong ?? t('Head chi nhánh');
@@ -407,7 +411,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
   const suaDuoc = ds.some((g) => g.coTheSuaTheoDoi);
   const goi = async (f: (g: KhoiGv) => Promise<KhoiGv> | null) => {
     const moi = await Promise.all(ds.map(async (g) => (await f(g)) ?? g));
-    dat(moi); lamMoiGiaoViec();
+    dat(moi); lamMoiGiaoViec(ds.length === 1 ? ds[0].studentId : null);
   };
   const bo = async (n: Nguoi) => {
     try {
@@ -491,7 +495,7 @@ export function DaiChiXem({ g, onBo }: { g: KhoiGv; onBo: () => void }) {
   const [dang, setDang] = useState(false);
   const bo = async () => {
     setDang(true);
-    try { await api.del(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${session?.user?.id}`); lamMoiGiaoViec(); toast.push('ok', t('Đã bỏ theo dõi')); onBo(); }
+    try { await api.del(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${session?.user?.id}`); lamMoiGiaoViec(g.studentId); toast.push('ok', t('Đã bỏ theo dõi')); onBo(); }
     catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDang(false); }
   };
   return (

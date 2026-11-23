@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
@@ -10,7 +10,7 @@ import { ErrorState } from '../../ui/ui.tsx';
 import { ChipBac } from './KhaiBacLoPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, luuRoiTiep, nhanLoaiXuLy, quyCheKhaiBac, bacDu } from '@shared/domain/index.ts';
-import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Khai tối đa bậc 6 (WL 2) — hết mạch chính; Report 7+ chỉ đi tiếp trên web. OV-13d: bậc 0 "Chưa có xử lý vi phạm" đứng đầu (Sửa giữ được bậc 0). */
@@ -75,7 +75,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
       if (laSua) await api.put(`/students/${studentId}/y-thuc/khai-bac`, { ...body, bacCu: d.khai?.bac });
       else await api.post(`/students/${studentId}/y-thuc/khai-bac`, body);
       onDone?.();
-      DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
+      lamMoiYThucCua({ studentIds: [studentId] });
       const chu = t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: bacDu(tenBac(bac)), ten: d.ten, nhanLoaiXuLy2: bacDu(nhanLoaiXuLy(kindCuaBac(bac + 1))) });
       toast.push('ok', chu);
       if (taiCho || onTiep) setDaLuu(chu); else onClose();   // V12 ①: có việc kế → "Lưu" ở lại, "✓ Đã lưu" + Việc tiếp ›

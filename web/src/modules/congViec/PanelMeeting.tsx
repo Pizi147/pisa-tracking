@@ -120,13 +120,13 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
     setDang(true); setLoi(null);
     try {
       const moi = await api.post<KhoiGv>(`${duongGiaoViec('meeting', g.id)}/xong`, { ngayGio: xep && ngay ? `${ngay}${gio ? ` ${gio}` : ''}` : null, ketQua: kq.trim() || null });
-      setSua(false); dat(moi); lamMoiGiaoViec();
+      setSua(false); dat(moi); lamMoiGiaoViec(g.studentId);
       if (!xong) setVuaXong(Date.now() + 10_000); else toast.push('ok', t('Đã lưu'));
     } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); if (e?.status === 409) reload(); } finally { setDang(false); }
   };
   const hoanTac = async () => {
     setVuaXong(null);
-    try { dat(await api.post<KhoiGv>(`${duongGiaoViec('meeting', g.id)}/mo-lai`)); lamMoiGiaoViec(); toast.push('ok', t('Đã hoàn tác')); }
+    try { dat(await api.post<KhoiGv>(`${duongGiaoViec('meeting', g.id)}/mo-lai`)); lamMoiGiaoViec(g.studentId); toast.push('ok', t('Đã hoàn tác')); }
     catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); reload(); }
   };
   const ai = xong ? [m.nhapHoBoi ? t('{ten} nhập hộ CX', { ten: m.nhapHoBoi }) : m.xongBoi, m.xongLuc ? lucVn(m.xongLuc) : null].filter(Boolean).join(' · ')
