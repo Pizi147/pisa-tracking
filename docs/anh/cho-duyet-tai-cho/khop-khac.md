@@ -66,7 +66,7 @@ KHỚP hình ảnh ước tính ≥ 90 % (cột, cỡ / đậm chữ, cao dòng,
 - Phần mở của MỌI loại thẻ là một lưới nhãn · giá trị (cột nhãn 120 px, giá trị tới 72 ký tự, nên đoạn dài gãy dòng cùng một chỗ ở mọi thẻ): Điểm · Đề xuất / Câu hỏi · n vi phạm · n bằng chứng · Sau khi duyệt · Hạn tự chốt · link hồ sơ cuối lưới. ⓘ quy chế đứng cạnh nhãn nó giải thích.
 - `KhoiDuyetYThuc` có chế độ `luoi`: ngày vi phạm dd/mm/yyyy một dòng, chip kỹ năng sau ngày, người ghi / mô tả dòng dưới; tên tệp bằng chứng là link ngay tại giá trị (ảnh xem trước giữ).
 - 375: tên em một dòng, chip SOS xuống tầng hai, mã lớp ở tầng hai ("MB FT 101 · Speaking"), tên việc dài xuống dòng trong khung (không cắt).
-- Ảnh thêm: `8-xin-y-kien-tra-loi` · `9-doi-lich-chon-tuan` (1440 + 375); `2-mo-mot-dong` là thẻ Đề xuất PA. Thẻ Sửa cấp bậc (`sua_khai_bac`, #2058 đã gộp main): `10-sua-cap-bac` — cùng lưới, "Hạn tự chốt" đếm ngược như thẻ Ý thức (chữ lỗi dấu "Th?c ra" là do tạo dữ liệu demo bằng curl, không phải web).
+- Ảnh thêm: `8-xin-y-kien-tra-loi` · `9-doi-lich-chon-tuan` (1440 + 375); `2-mo-mot-dong` là thẻ Đề xuất PA. Thẻ Sửa cấp bậc (`sua_khai_bac`, #2058 đã gộp main): `10-sua-cap-bac` — cùng lưới, "Hạn tự chốt" đếm ngược như thẻ Ý thức.
 
 ## 4. Khác mockup — lý do ([XM] cho PTA Plan)
 
