@@ -85,7 +85,7 @@ export async function runPrOv5bTests(t: YThucTestKit) {
   check('OV5b (8) · tên nguồn từ URL: trang + bộ lọc đang dùng', () => {
     const n = (u: string) => { const x = d.tenNguon(u); return x.chiTiet ? `${x.ten} | ${x.chiTiet}` : x.ten; };
     assert(n('/cong-viec?loc=qua-han&nhom=case-hoc-thuat') === 'Công việc | Quá hạn · Case học thuật', n('/cong-viec?loc=qua-han&nhom=case-hoc-thuat'));
-    assert(n('/cong-viec/van-hanh') === 'Công việc | Vận hành', n('/cong-viec/van-hanh'));
+    assert(n('/cong-viec/van-hanh') === 'Công việc | Bảng giao việc', n('/cong-viec/van-hanh'));
     assert(n('/') === 'Tổng quan' && n('/test/lich?periodId=5') === 'Lịch Test tuần' && n('/test/diem-lop') === 'Điểm theo lớp', 'Tổng quan, Test');
     assert(n('/phan-tich?goc=hieu-qua-pa') === 'Phân tích | SOS', n('/phan-tich?goc=hieu-qua-pa'));   // Phân tích V2: Hiệu quả PA gộp vào SOS
     assert(n('/hoc-vien?q=Minh') === 'Học viên & Lớp | “Minh”', n('/hoc-vien?q=Minh'));

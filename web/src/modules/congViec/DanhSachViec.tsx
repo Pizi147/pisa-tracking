@@ -150,7 +150,7 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
   /** `lamThay` (AUDIT-1611 P1-03): dòng làm thay trong mục — vẽ nhưng không vào `n`. */
   dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>;
   soHien: number;
-  /** Đầu bên phải dải mục đầu (QL "Việc quản lý": Vận hành ›). */
+  /** Đầu bên phải dải mục đầu (QL "Việc quản lý": Tất cả việc đã giao ›) — đầu mục "Việc được giao"; không có mục đó thì một dòng cuối danh sách. */
   dauPhai?: ReactNode;
   /** UI-CV-TVV (P1): luật của tab (vd hạn Báo PH) — ⓘ ở dải mục đầu, không thành câu trên màn. */
   luat?: ReactNode;
@@ -192,11 +192,10 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
         return (
           <section key={m.key} data-muc={m.key} className="card cvA-sub overflow-clip p-0" aria-label={m.label}>
             <DaiNhom k={ICON_MUC[m.key] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
-              trungTinh={chung} chevSauTen dieuKhien={dongGap ? undefined : maMuc} luat={i === 0 ? luat : undefined}
-              phu={d.quaHan > 0 || !!d.lamThay || (dauPhai && i === 0) ? <>
+              phuPhai={giao ? dauPhai : undefined} trungTinh={chung} chevSauTen dieuKhien={dongGap ? undefined : maMuc} luat={i === 0 ? luat : undefined}
+              phu={d.quaHan > 0 || !!d.lamThay ? <>
                 {d.quaHan > 0 && <span className="font-bold tabular-nums text-late">{d.quaHan} {t('quá hạn')}</span>}
                 {!!d.lamThay && <span className="font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
-                {i === 0 && dauPhai}
               </> : null} />
             {!dongGap && <div id={maMuc} className="cvA-sub">
             <ul className="cvA-sub">
@@ -217,6 +216,7 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
           </section>
         );
       })}
+      {dauPhai && !muc.some((m) => m.key === 'giao') && <div className="flex justify-end px-1">{dauPhai}</div>}
     </div></div>
   );
 }
@@ -226,8 +226,8 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
  * tên 15 / 700, chip đếm vuông có đơn vị, phụ 13; dính khi cuộn (thẻ cha `overflow-clip`, không `overflow-hidden`). Bấm tên = gập / mở. Dùng chung cho
  * "Chờ bạn duyệt" và "Việc quản lý" rỗng ở `HoTroHocVienTab` — mọi nhóm cùng dáng.
  */
-export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false, chevPhai = false, chevSauTen = false, dieuKhien }: {
-  k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; trungTinh?: boolean;
+export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, phuPhai, trungTinh = false, chevPhai = false, chevSauTen = false, dieuKhien }: {
+  k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; phuPhai?: ReactNode; trungTinh?: boolean;
   /** TU2-4 (mockup Ⓣ1 D1, duyệt 19/11): chevron ở mép phải dải (sau ⓘ) thay vì ngay sau tên — chỉ khối "PA đang chạy". */
   chevPhai?: boolean;
   /** GAP-MO (mockup v22 G6): chevron sát tên, TRƯỚC chip đếm — dải mục của danh sách việc. */
@@ -243,7 +243,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false,
     /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · số quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
        CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
        ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
-    <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
+    <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[14px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:flex-wrap max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
       style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} aria-controls={dieuKhien} onClick={onMo}
         className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
@@ -256,6 +256,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false,
       </button>
       {luat && <span className="relative z-[1] inline-flex">{luat}</span>}
       {phu && <span className="relative z-[1] flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
+      {phuPhai && <span className="relative z-[1] ml-auto shrink-0 whitespace-nowrap text-[13px] max-sm:basis-full max-sm:pb-2 max-sm:text-right">{phuPhai}</span>}
       {chevPhai && <span aria-hidden className="pointer-events-none ml-auto inline-flex pr-1">{chev}</span>}
     </h2>
   );

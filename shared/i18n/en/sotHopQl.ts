@@ -80,7 +80,7 @@ export const EN_SOT_HOP_QL = {
   'Kỳ': 'Period',
   'Kỳ báo cáo': 'Report period',
   'Đọc lại cả tháng chứa tuần đang chọn — chỉ để đọc': 'Review the whole month of the selected week — read only',
-  'Giao việc ở Vận hành ›': 'Assign in Operations ›',
+  'Giao việc ở Bảng giao việc ›': 'Assign on the Assigned tasks board ›',
   'Lọc chi nhánh': 'Filter branch',
   '{ten} kèm Tutor part-time': '{ten} plus Tutor part-time',
   'Đang đọc cả tháng': 'Reading the whole month',

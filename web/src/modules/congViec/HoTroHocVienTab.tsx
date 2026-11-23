@@ -762,7 +762,7 @@ export function HoTroHocVienTab() {
           {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
           {tab === 'theo-doi' && <DsTheoDoi chon={theo} onMo={(d) => boChuRoi(() => moTheo(d))} onCo={setTheoDong} nho={uid != null ? `u${uid}:theo-doi` : undefined} />}
           {data && !data.scopeEmpty && tab !== 'duyet' && tab !== 'theo-doi' && mucs.length === 0 && (
-            /* Tab "Việc quản lý" rỗng: một dòng + lối "Vận hành ›" (bảng đầy đủ); "+ Giao việc" đã ở đầu trang. */
+            /* Tab "Việc quản lý" rỗng: một dòng + lối "Tất cả việc đã giao ›" (bảng đầy đủ); "+ Giao việc" đã ở đầu trang. */
             <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : tab === 'van-hanh' && coVanHanh ? t('Không có việc quản lý nào của bạn') : t('Không còn việc đang mở')}
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : tab === 'van-hanh' && coVanHanh ? loiVanHanh : undefined} /></Card>
           )}
@@ -1013,9 +1013,9 @@ function DaBoQua({ ds, homNay, onKhoiPhuc }: { ds: ViecDaBoQua[]; homNay: string
   );
 }
 
-/** Lối tới bảng Vận hành (màn đầy đủ): đầu bên phải nhóm "Việc quản lý", hoặc trong trạng thái rỗng. "+ Giao việc" chỉ ở đầu trang (N62). Họp đơn vị tạm ẩn (`HOP_DON_VI_BAT`). */
+/** Lối tới Bảng giao việc (màn đầy đủ): đầu bên phải nhóm "Việc được giao" (không có nhóm đó: dòng cuối danh sách), hoặc trong trạng thái rỗng. "+ Giao việc" chỉ ở đầu trang (N62). Họp đơn vị tạm ẩn (`HOP_DON_VI_BAT`). */
 function LoiVanHanh({ cn }: { cn: number | null }) {
-  return <Link to={`/cong-viec/van-hanh${cn ? `?cn=${cn}` : ''}`} className="link max-sm:py-3">{t('Vận hành ›')}</Link>;
+  return <Link to={`/cong-viec/van-hanh${cn ? `?cn=${cn}` : ''}`} className="link max-sm:py-3">{t('Tất cả việc đã giao ›')}</Link>;
 }
 
 /** UI-CV-TVV (P1): luật hạn của nhóm việc TVV — ⓘ cạnh số đầu nhóm (mockup ghi thành chữ "· hạn 23:59 ngày lưu + 4"). */
