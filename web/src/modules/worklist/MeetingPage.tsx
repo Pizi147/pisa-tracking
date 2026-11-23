@@ -151,7 +151,7 @@ export function MeetingBoard() {
               muc={[{ key: 'tuan', nhan: t('Tuần') }, { key: 'thang', nhan: t('Tháng'), title: t('Đọc lại cả tháng chứa tuần đang chọn — chỉ để đọc') }]} />
           </span>
           {/* Câu 1 = A (K1-36): MỘT cửa giao việc ở Vận hành — ở đây chỉ còn đường dẫn. */}
-          <Link to="/cong-viec/van-hanh?tao=1" className="link text-xs sm:ml-auto">{t('Giao việc ở Vận hành ›')}</Link>
+          <Link to="/cong-viec/van-hanh?tao=1" className="link text-xs sm:ml-auto">{t('Giao việc ở Bảng giao việc ›')}</Link>
         </div>
         {luaChonCn.length > 0 && (
           <div className="flex min-w-0 max-w-full items-center gap-1.5">
