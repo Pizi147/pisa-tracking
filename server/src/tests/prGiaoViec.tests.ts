@@ -218,6 +218,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const k = gv.xongPhanMeeting(tvv, kq.id, { ketQua: 'Gia đình đồng ý kèm em thêm' });
     assert(k.meeting.trangThai === 'xong' && k.meeting.nhapHoBoi === 'GIAOVIEC TVV', 'TVV nhập hộ');
     assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', bpId).trang_thai === 'mo', 'Báo PH độc lập');
+    gv.moLaiPhanMeeting(ql, xep.id);   // N67: Xếp lịch họp đã tự xong theo Kết quả — mở lại để thử quyền / sửa hạn / ngày giờ
     assert(await ma(() => gv.xongPhanMeeting(gvbm, xep.id, {})) === 403, 'GVBM (không phụ trách) → 403');
     assert(await ma(() => gv.suaHan(gvbm, 'meeting', xep.id, { han: TODAY, hanCu: null })) === 403, 'GVBM sửa hạn phần Meeting → 403');
     gv.suaHan(gvcn, 'meeting', xep.id, { han: addDays(TODAY, 2), hanCu: null });   // N34 ①: GVCN sửa hạn được
@@ -238,6 +239,39 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(sau.find((r) => r.phan === 'ket_qua').trang_thai === 'xong' && sau.find((r) => r.phan === 'xep_lich').trang_thai === 'bo', JSON.stringify(sau));
     assert(!items(cx).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'phần đã đóng rời /my-work');
   })));
+
+  await checkAsync('N67 · Kết quả meeting xong → Xếp lịch họp tự xong (lịch sử, rời /my-work); Hoàn tác Kết quả → về như trước; Xếp lịch người làm đã Hoàn thành giữ; mở lại Meeting', () => thu(async () => {
+    const sid = moiEm();
+    const { aid, xep, kq } = meeting(sid);
+    const tt = () => mot('SELECT trang_thai, xong_boi, xong_luc, ngay_gio FROM meeting_phan WHERE id = ?', xep.id);
+    const lan = () => hang(`SELECT truong FROM viec_giao_lan WHERE loai = 'meeting' AND ref_id = ? ORDER BY id`, xep.id).map((r) => r.truong);
+    const coDong = () => items(ql, { nguoi: 'tat-ca' }).some((x) => x.key === `meeting_xep_lich:${xep.id}`);
+    assert(coDong(), 'trước: Xếp lịch họp là việc ở /my-work');
+    gv.xongPhanMeeting(cx, kq.id, { ketQua: 'Gia đình đồng ý' });
+    assert(tt().trang_thai === 'xong' && tt().xong_boi == null && tt().xong_luc, `tự xong: ${JSON.stringify(tt())}`);
+    assert(lan().join() === 'tu_xong', `lịch sử: ${lan()}`);
+    assert(!coDong(), 'Xếp lịch tự xong rời /my-work');
+    const k = gv.xemMeeting(ql, aid).phan.find((g: any) => g.id === xep.id);
+    assert(k.meeting.trangThai === 'xong' && k.lichSu.some((l: any) => l.truong === 'tu_xong'), 'panel: Xếp lịch xong + lịch sử');
+    gv.xongPhanMeeting(cx, kq.id, { ketQua: 'Sửa kết quả' });   // sửa Kết quả đã xong: không đụng Xếp lịch
+    assert(lan().join() === 'tu_xong', `sửa Kết quả không ghi thêm: ${lan()}`);
+    gv.moLaiPhanMeeting(cx, kq.id);
+    assert(tt().trang_thai === 'mo' && tt().xong_luc == null && lan().join() === 'tu_xong,tu_mo_lai' && coDong(), `Hoàn tác Kết quả → Xếp lịch về như trước: ${JSON.stringify(tt())} ${lan()}`);
+    /* Người làm đã Hoàn thành Xếp lịch (có ngày giờ) → Hoàn tác Kết quả không đụng. */
+    gv.xongPhanMeeting(ql, xep.id, { ngayGio: `${TODAY} 15:00` });
+    gv.xongPhanMeeting(cx, kq.id, {});
+    gv.moLaiPhanMeeting(cx, kq.id);
+    assert(tt().trang_thai === 'xong' && tt().xong_boi === ql.userId && tt().ngay_gio === `${TODAY} 15:00`, `Xếp lịch người làm giữ: ${JSON.stringify(tt())}`);
+    /* Mở lại Meeting (Đưa lại → xác nhận lại) mà Kết quả vẫn xong → Xếp lịch tự xong. */
+    gv.moLaiPhanMeeting(ql, xep.id);
+    gv.xongPhanMeeting(cx, kq.id, {});
+    gv.moLaiPhanMeeting(ql, xep.id);   // người làm mở lại Xếp lịch sau khi tự xong → chưa xong
+    assert(tt().trang_thai === 'mo', 'mở lại tay Xếp lịch');
+    ph.moLaiCoordination(gvcn, aid);
+    assert(tt().trang_thai === 'bo', 'đưa về Cần xử lý → Xếp lịch đã bỏ');
+    ph.confirmCoordination(gvcn, aid, { performedOn: TODAY, note: 'Xác nhận lại' });
+    assert(tt().trang_thai === 'xong' && tt().xong_boi == null && lan().at(-1) === 'tu_xong', `mở lại Meeting, Kết quả vẫn xong → tự xong: ${JSON.stringify(tt())} ${lan()}`);
+  }));
 
   await checkAsync('GV1-7 · đổi TVV / đổi GVCN thật (luuPhanCong + Hoàn tác): theo dõi `tvv` / `gvcn` chuyển theo, `gv_ghi` giữ', () => thu(async () => {
     const sid = moiEm(); const id = baoPhViPham(sid);

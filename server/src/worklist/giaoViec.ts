@@ -693,6 +693,11 @@ export function moPhanMeeting(phoiHopId: number, studentId: number, baoPhId: num
       .run(phoiHopId, phan, branchId, luc).changes;
   }
   db().prepare(`UPDATE meeting_phan SET trang_thai = 'mo', branch_id = ? WHERE phoi_hop_id = ? AND trang_thai = 'bo'`).run(branchId, phoiHopId);   // mở lại: chi nhánh hiện tại
+  /* N67: mở lại mà Kết quả meeting vẫn xong (giữ kết quả) → Xếp lịch họp tự xong như lúc ghi Kết quả. */
+  for (const r of db().prepare(`UPDATE meeting_phan SET trang_thai = 'xong', xong_boi = NULL, xong_luc = ?2, nhap_ho_boi = NULL WHERE phoi_hop_id = ?1 AND phan = 'xep_lich' AND trang_thai = 'mo'
+      AND EXISTS (SELECT 1 FROM meeting_phan k WHERE k.phoi_hop_id = ?1 AND k.phan = 'ket_qua' AND k.trang_thai = 'xong') RETURNING id`).all(phoiHopId, luc) as { id: number }[]) {
+    ghiLan('meeting', r.id, 'tu_xong', null, null, null);
+  }
   if (moi) theoDoiMacDinhMeeting(phoiHopId, studentId, baoPhId);
 }
 
@@ -743,6 +748,13 @@ export function xongPhanMeeting(p: Principal, id: number, body: { ngayGio?: unkn
     if (!sua) {
       baoTheoDoi('meeting', id, p.userId, { suKien: 'ket_qua', tieuDe: v.tieuDe, chiTiet: [ngayGio ? `Họp ${ngayGio.slice(8, 10)}/${ngayGio.slice(5, 7)}${ngayGio.slice(10)}` : null, ketQua].filter(Boolean).join(' · ') || 'Hoàn thành',
         khoa: aid, studentId: v.studentId });
+      /* N67 (chủ SP 24/11): Kết quả meeting xong → Xếp lịch họp chưa xong tự xong (`xong_boi` NULL = tự xong), rời Công việc / quá hạn. */
+      if (v.row.phan === 'ket_qua') {
+        for (const r of db().prepare(`UPDATE meeting_phan SET trang_thai = 'xong', xong_boi = NULL, xong_luc = ?, nhap_ho_boi = NULL
+            WHERE phoi_hop_id = ? AND phan = 'xep_lich' AND trang_thai = 'mo' RETURNING id`).all(nowIso(), v.row.phoi_hop_id) as { id: number }[]) {
+          ghiLan('meeting', r.id, 'tu_xong', null, null, p.userId);
+        }
+      }
     }
   });
   return xemGiaoViec(p, 'meeting', id);
@@ -760,6 +772,13 @@ export function moLaiPhanMeeting(p: Principal, id: number): KhoiGiaoViec {
     }
     ghiLan('meeting', id, 'mo_lai', null, null, p.userId);
     writeAudit({ actorUserId: p.userId, action: 'meeting_phan.mo_lai', entityType: 'meeting_phan', entityId: id, entityLabel: v.tieuDe, before: { trangThai: 'xong' }, after: { trangThai: 'mo' } });
+    /* N67: Hoàn tác Kết quả → Xếp lịch họp đã TỰ xong theo nó về như trước; Xếp lịch người làm đã Hoàn thành / sửa (`xong_boi` có) giữ nguyên. */
+    if (v.row.phan === 'ket_qua') {
+      for (const r of db().prepare(`UPDATE meeting_phan SET trang_thai = 'mo', xong_luc = NULL
+          WHERE phoi_hop_id = ? AND phan = 'xep_lich' AND trang_thai = 'xong' AND xong_boi IS NULL RETURNING id`).all(v.row.phoi_hop_id) as { id: number }[]) {
+        ghiLan('meeting', r.id, 'tu_mo_lai', null, null, p.userId);
+      }
+    }
   });
   return xemGiaoViec(p, 'meeting', id);
 }
