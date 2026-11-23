@@ -30,6 +30,8 @@ export type CoordAction = {
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
   removeReasonCode: string | null; removeReasonLabel: string | null; attachmentCount: number;
+  /** L3-web: bản đã thấy — gửi lại khi xác nhận; người khác vừa lưu → 409, form giữ chữ đang gõ. */
+  updatedAt?: string | null;
   /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) — null với việc khác. */
   han?: string | null;
   /** HAN-BAO-PH (N34 ②): meeting CX — hạn mặc định (tạo + 5) · hạn người dùng chọn (null = mặc định). */
@@ -311,7 +313,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
     setBusy(true);
     try {
       await api.post(`/phoi-hop-sos/${actionId}/confirm`, {
-        performedOn, note: note.trim() || undefined,
+        performedOn, note: note.trim() || undefined, updatedAt: a.updatedAt ?? null,
         performerName: !nguoi || nguoi.kieu === 'toi' ? undefined : nguoi.ten.trim(),
       });
       invalidate('/classes'); invalidate('/students');
