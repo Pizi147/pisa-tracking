@@ -40,7 +40,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',
   'discipline.propose': 'Đề xuất Head duyệt xử lý Ý thức', 'discipline.apply': 'Head áp xử lý Ý thức', 'discipline.performed': 'Đã thực hiện xử lý Ý thức',
   'discipline.not_performed': 'Đưa lần xử lý về Chưa thực hiện', 'discipline.edit_info': 'Sửa ngày / người / mô tả lần xử lý', 'discipline.unacknowledge': 'Bỏ ghi nhận vi phạm',
-  'discipline.declare_level': 'Xác nhận cấp bậc vi phạm từ trước', 'discipline.declare_level_edit': 'Sửa cấp bậc vi phạm', 'discipline.declare_level_undo': 'Hoàn tác cấp bậc vi phạm',
+  'discipline.declare_level': 'Xác nhận cấp bậc vi phạm từ trước', 'discipline.declare_level_edit': 'Sửa cấp bậc vi phạm', 'discipline.declare_level_undo': 'Hoàn tác cấp bậc vi phạm', 'discipline.declare_level_request': 'Gửi Head duyệt sửa cấp bậc vi phạm',
   'discipline.revoke_request': 'Xin thu hồi lần xử lý', 'discipline.revoke': 'Thu hồi lần xử lý', 'discipline.revoke_undo': 'Huỷ thu hồi lần xử lý',   // LUAT-5
   'discipline.measure_undo': 'Hoàn tác Xác nhận xử lý',   // [XM 5] rà 11/11
   'case.owner_assign': 'Gán người phụ trách Case',   // SUA-NO-RA (migrate prCvLoi)

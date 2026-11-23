@@ -164,13 +164,16 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     const sid = moiEm(); const [v1] = nVp(sid, 1);
     xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2 tháng 8, cô Hà gửi' });
     assert(xu.yThucHocVien(gvcn, sid).canSuaKhai === true, 'GVCN thấy Sửa');
-    xu.suaKhaiBac(gvcn, sid, { bac: 3, ghiChu: 'Report 3 tháng 8, cô Hà gửi' });
-    assert(xu.yThucHocVien(P.mbManager, sid).bac === 3, 'GVCN sửa bậc khai');
+    /* N70 (chủ SP 24/11): GVCN sửa bậc đã khai → gửi Head duyệt; Head duyệt mới đổi (chi tiết: prN70). */
+    const g1 = xu.suaKhaiBac(gvcn, sid, { bac: 3, ghiChu: 'Report 3 tháng 8, cô Hà gửi' });
+    assert(g1.guiDuyet === true && xu.yThucHocVien(P.mbManager, sid).bac === 2, 'N70: GVCN sửa → gửi duyệt, bậc giữ');
+    yc.duyetYeuCau(P.mbManager, g1.yeuCauId);
+    assert(xu.yThucHocVien(P.mbManager, sid).bac === 3, 'GVCN sửa bậc khai (Head duyệt)');
     assert(nhatKy('discipline.declare_level_edit', sid).length === 1, 'nhật ký sửa khai');
     xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, performerName: 'Cô Thu', note: 'Đã gọi điện và gửi report cho gia đình' });
     assert(xu.yThucHocVien(P.mbManager, sid).bac === 4, 'xử lý tiếp: bậc 4');
     assert(xu.yThucHocVien(gvcn, sid).canSuaKhai === true && xu.yThucHocVien(P.mbManager, sid).canSuaKhai === true, 'N50 (8): GVCN + QL đều thấy Sửa');
-    xu.suaKhaiBac(gvcn, sid, { bac: 4, ghiChu: 'GVCN sửa sau khi có lần xử lý' });
+    yc.duyetYeuCau(P.mbManager, xu.suaKhaiBac(gvcn, sid, { bac: 4, ghiChu: 'GVCN sửa sau khi có lần xử lý' }).yeuCauId);
     assert(nhatKy('discipline.declare_level_edit', sid).length === 2, 'N50 (8): GVCN sửa sau lần xử lý có nhật ký');
     xu.suaKhaiBac(P.mbManager, sid, { bac: 5, ghiChu: 'Head sửa: em đã qua Report 5 trước khi dùng web' });
     const hv = xu.yThucHocVien(P.mbManager, sid);

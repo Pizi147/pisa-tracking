@@ -75,6 +75,7 @@ function NoiDung({ cycleId, ten, kn: knDau, onDong, ...p }: Props & { kn: KnHop 
   const target = data ? data.target : p.target ?? null;
   const [kn, setKn] = useState<KnHop | null>(knDau);
   const [giai, setGiai] = useState(false);
+  const [hetGv, setHetGv] = useState(false);   // chủ SP 24/11: mỗi kỹ năng hiện 2 GV nhiều tuần nhất, còn lại sau "+ n GV"
   const tuan = (d: string) => tuanLich(d, homNay);
   const khoang = (k: KnHop): KhoangTuanDay | null => (data ? (data.layLai.includes(k) && data.truoc ? data.truoc : data.chinh) : null);
   const kh = khoang(kn ?? 'l');
@@ -152,13 +153,14 @@ function NoiDung({ cycleId, ten, kn: knDau, onDong, ...p }: Props & { kn: KnHop 
         <div key={x}>
           {nhanNhom && <div className="tg-nhom">{nhanNhom}</div>}
           <div className="tg-ds" role="list">
-            {k.gv.map((g, i) => (
+            {(hetGv ? k.gv : k.gv.slice(0, 2)).map((g, i) => (
               <div key={g.userId} role="listitem" className={`tg-dong${g.tuan === max ? ' cao' : ''}`}>
                 <span className="ten"><b>{g.ten}</b><span>{[g.lop.join(' · '), g.chung.length ? t('chung {tuan}', { tuan: g.chung.length === 1 ? tuan(g.chung[0]) : t('{n} tuần', { n: g.chung.length }) }) : null].filter(Boolean).join(' · ')}</span></span>
                 <span className="thanh" aria-hidden><i style={{ width: `${pt[i]}%` }} /></span>
                 <span className="tu">{chuTuan(g.tuan)}/{kh.tong} {t('tuần')}</span><span className="pt">{pt[i]} %</span>
               </div>
             ))}
+            {k.gv.length > 2 && <button type="button" className="link w-full border-0 bg-transparent px-3 py-2 text-left text-[13px] max-sm:min-h-[44px]" aria-expanded={hetGv} onClick={() => setHetGv((x) => !x)}>{hetGv ? t('Thu gọn') : t('+ {n} GV', { n: k.gv.length - 2 })}</button>}
             {k.trong && (
               <div role="listitem" className="tg-dong trong">
                 <span className="ten"><b>{t('Chưa phân công')}</b><span>{k.trong.lop.join(' · ')} · {k.trong.tuan === 1 ? tuan(k.trong.tu) : t('từ {tuan}', { tuan: tuan(k.trong.tu) })}</span></span>

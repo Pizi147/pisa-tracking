@@ -30,7 +30,9 @@ export type EmYThuc = {
   bac: number; keTiep: ReturnType<typeof bacKeTiep>;
   /** `cycleId` = lộ trình dòng khai trỏ tới (sửa / hoàn tác ghi đúng dòng này — N36: chuỗi nối dài thì dòng khai có thể không còn ở đầu chuỗi). */
   khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean; cycleId: number;
-    /** N66: mốc lưu gần nhất (sửa, không thì khai) — lần xử lý xong sau mốc này mới đẩy bậc. */ moc: string } | null;
+    /** N66: mốc lưu gần nhất (sửa, không thì khai) — lần xử lý xong sau mốc này mới đẩy bậc. */ moc: string;
+    /** N70: yêu cầu SỬA bậc của GVCN đang chờ Head (thẻ `sua_khai_bac`, còn khớp bậc lúc gửi) — bậc ở trên vẫn là bậc cũ. */
+    cho: { id: number; bac: number; thang: string | null; ghiChu: string; han: string | null; nguoiXin: number | null } | null } | null;
   /** Em đã từng khai ở chuỗi nào chưa (Q8: không hỏi khai lại). */
   tungKhai: boolean;
   /** Số lần xử lý ĐÃ XONG (`done`) trong chuỗi hiện tại — khai bậc chỉ khi 0 (Q7, H5; rà 11/11 G3-3: đề xuất chờ / bị từ chối không tính). */
@@ -74,6 +76,14 @@ const GVCN_LOP_SQL = (e: string) => `(SELECT ta.user_id FROM teacher_assignments
  * Trạng thái Ý thức của các em (Map theo id). Em không tồn tại vẫn có một dòng rỗng (không vi phạm) để nơi gọi khỏi kiểm null.
  * `homNay` mặc định ngày nghiệp vụ.
  */
+/** N70: thẻ sửa bậc đang chờ CÒN KHỚP dòng khai (cùng lộ trình, bậc lúc gửi = bậc hiện tại) — lệch (Head vừa sửa thẳng) thì coi như không còn chờ; quét đóng thẻ (`chet`). */
+function khaiCho(k: { chuoi_cycle_id: number; bac: number; cho?: string | null }): NonNullable<EmYThuc['khai']>['cho'] {
+  if (!k.cho) return null;
+  const y = JSON.parse(k.cho) as { id: number; han: string | null; nguoiXin: number | null; d: { bacCu?: number; bac?: number; thang?: string | null; ghiChu?: string; cycleId?: number } | null };
+  if (!y.d || y.d.cycleId !== k.chuoi_cycle_id || y.d.bacCu !== k.bac || typeof y.d.bac !== 'number') return null;
+  return { id: y.id, bac: y.d.bac, thang: y.d.thang ?? null, ghiChu: y.d.ghiChu ?? '', han: y.han, nguoiXin: y.nguoiXin };
+}
+
 export function trangThaiYThuc(studentIds: readonly number[], homNay = demoToday()): Map<number, EmYThuc> {
   const ids = [...new Set(studentIds)];
   const khoa = (id: number) => `yt4:${homNay}:${id}`;
@@ -131,7 +141,10 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const lt = new Map<number, { id: number; seq: number; route: string | null; status: string; resetBac: boolean }[]>();
   const kb = new Map<number, any[]>();
   for (const r of conn.prepare(
-    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, k.sua_luc, u.full_name AS boi
+    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, k.sua_luc, u.full_name AS boi,
+            /* N70: thẻ sửa bậc đang chờ của em — câu con theo chỉ mục một-thẻ-chờ (ux_ycd_dang_cho), chỉ ở dòng có khai; không thêm vòng mạng. */
+            CASE WHEN k.id IS NOT NULL THEN (SELECT json_object('id', y.id, 'han', y.han_duyet, 'nguoiXin', y.nguoi_xin, 'd', json(y.du_lieu)) FROM yeu_cau_duyet y
+               WHERE y.loai = 'sua_khai_bac' AND y.doi_tuong_loai = 'hoc_vien_khai_bac' AND y.doi_tuong_id = lc.student_id AND y.trang_thai = 'cho') END AS cho
        FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
        LEFT JOIN users u ON u.id = COALESCE(k.sua_boi, k.khai_boi)   /* PTA rà #2016: người + ngày = lần sửa mới nhất */
       WHERE lc.student_id IN (${ph})`).all(json) as any[]) {
@@ -139,7 +152,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status, resetBac: !!r.reset_bac_y_thuc });
     if (r.bac != null) {
       const k = kb.get(r.student_id) ?? []; kb.set(r.student_id, k);
-      k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, sua_luc: r.sua_luc, boi: r.boi });
+      k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, sua_luc: r.sua_luc, boi: r.boi, cho: r.cho });
     }
   }
   /* Ghi danh hiện tại (đang học hoặc tạm dừng) mới nhất + GVCN đang hiệu lực của lớp đó + trạng thái em + ngày Quay lại gần nhất. */
@@ -222,7 +235,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       khai: khaiRow ? {
         bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: mocKhai!,
         /* N50 (8) (chủ SP 16/11, A1-21): GVCN tự sửa bậc đã khai mọi lúc (lịch sử ở nhật ký) — thay "chỉ QL sửa sau khi có lần xử lý trên web". */
-        coTheSua: true, cycleId: khaiRow.chuoi_cycle_id, moc: mocKhai!,
+        coTheSua: true, cycleId: khaiRow.chuoi_cycle_id, moc: mocKhai!, cho: khaiCho(khaiRow),
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
       soXuLyChuoi: xongChuoi.length,

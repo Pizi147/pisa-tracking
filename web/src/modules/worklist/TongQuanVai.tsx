@@ -206,7 +206,8 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
 /* ───────────── Lớp cần chú ý — ma trận C ───────────── */
 
 const NHAN_COT: Record<CotLop | 'sos', string> = { case: t('Case chưa PA'), diem: t('Điểm thiếu'), meeting: 'Meeting', bcph: t('Báo cáo PH'), sos: t('SOS 2–3') };
-const DON_VI: Record<CotLop, (n: number) => string> = { case: (n) => t('{n} em', { n }), diem: (n) => t('{n} bài', { n }), meeting: (n) => t('{n} em', { n }), bcph: (n) => t('{n} việc', { n }) };
+/* Meeting: số ở ô = số VIỆC (mỗi việc là một phần meeting của lớp, có nhiều em) — ghi "em" làm ô "4 em" lệch 4 dòng việc (4 + 6 + 8 + 3 em). */
+const DON_VI: Record<CotLop, (n: number) => string> = { case: (n) => t('{n} em', { n }), diem: (n) => t('{n} bài', { n }), meeting: (n) => t('{n} việc', { n }), bcph: (n) => t('{n} việc', { n }) };
 const TOI_DA_LOP = 5;
 /**
  * Ô ma trận = CHỈ con số tô màu chữ (chủ SP 24/11: không đơn vị, không badge / nền / viền, không chú thích màu): đỏ quá hạn · vàng sắp đến (≤ 2 ngày) ·
