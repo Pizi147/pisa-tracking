@@ -8,6 +8,7 @@
 import { HD_TVV, LUAT_TVV, TINH_HUONG_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
 import { VIEC_TUTOR, manTutor } from './headTutor.ts';
 import type { HuongDan, ViecHd } from './kieu.ts';
+import { HOP_DON_VI_BAT } from '../domain/hopDonVi.ts';
 
 const HV = '/hoc-vien';
 const CV = '/cong-viec';
@@ -61,7 +62,7 @@ const VIEC_CX: ViecHd[] = [
 
 const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich', 'tutor-xem', 'tutor-xuat'];
 
-export const HD_CX: HuongDan = {
+const HD_CX_DAY: HuongDan = {
   viec: [],
   lam: THU_TU.map((id) => [...VIEC_CX, ...VIEC_TVV, VIEC_TUTOR.xem, VIEC_TUTOR.xuat].find((v) => v.id === id)!),   // TU12: CX xem trang Tutor, xuất số buổi
   tuan: [
@@ -134,3 +135,5 @@ export const HD_CX: HuongDan = {
     { ten: 'Meeting CX/GĐCN', nghia: 'Buổi gặp em (có thể cả phụ huynh) với CX hoặc Giám đốc chi nhánh — SOS 3 hoặc Ý thức bậc 4.' },
   ],
 };
+
+export const HD_CX: HuongDan = HOP_DON_VI_BAT ? HD_CX_DAY : { ...HD_CX_DAY, man: HD_CX_DAY.man.filter((m) => m.id !== 'bao-cao') };

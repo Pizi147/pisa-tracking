@@ -133,7 +133,7 @@ export async function runKhungTests(t: YThucTestKit) {
   });
 
   check('PR-O · R1 Tab Công việc theo quyền (PR-DUYET): QL tab đầu Chờ duyệt; GV Việc học viên + Yêu cầu của tôi', () => {
-    assert(d.tabCongViecHienThi(QL).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `QL: ${d.tabCongViecHienThi(QL)}`);
+    assert(d.tabCongViecHienThi(QL).join(',') === 'cho-duyet,ho-tro,van-hanh', `QL: ${d.tabCongViecHienThi(QL)}`);
     assert(d.tabCongViecHienThi(GV).join(',') === 'ho-tro,yeu-cau', `GV: ${d.tabCongViecHienThi(GV)}`);
     assert(d.tabCongViecTuDuong(undefined) === 'ho-tro' && d.tabCongViecTuDuong('bao-cao') === 'bao-cao' && d.tabCongViecTuDuong('cho-duyet') === 'cho-duyet'
       && d.tabCongViecTuDuong('yeu-cau') === 'yeu-cau' && d.tabCongViecTuDuong('x') === null && d.tabCongViecTuDuong('ho-tro') === null,
@@ -157,11 +157,11 @@ export async function runKhungTests(t: YThucTestKit) {
       ['/hoc-thuat', '', '/phan-tich'], ['/hoc-thuat/', '?goc=y-thuc&cn=2', '/phan-tich?goc=y-thuc&cn=2'],
       ['/hoc-thuat/case/5', '', null],
       ['/tong-hop-tuan', '?branchId=3', '/phan-tich?xem=tuan&cn=3'], ['/tong-hop-tuan', '', '/phan-tich?xem=tuan'],
-      ['/tien-trinh', '?periodId=9', '/cong-viec/bao-cao?periodId=9'], ['/hop-tuan', '', '/cong-viec/bao-cao'],
+      ['/tien-trinh', '?periodId=9', '/cong-viec?periodId=9'], ['/hop-tuan', '', '/cong-viec'],   // Họp đơn vị tạm ẩn (HOP_DON_VI_BAT)
       ['/tien-do-cong-viec', '', '/cong-viec/van-hanh'],
       ['/tien-do-cong-viec', '?viec=12', '/cong-viec/van-hanh?open=12'],
       ['/tien-do-cong-viec', '?open=7&tao=1&nhom=tutor', '/cong-viec/van-hanh?open=7&tao=1&nhom=tutor'],
-      ['/tien-do-cong-viec', '?tab=don-vi&cn=2', '/cong-viec/bao-cao?cn=2'],
+      ['/tien-do-cong-viec', '?tab=don-vi&cn=2', '/cong-viec?cn=2'],
       ['/hoc-vien', '?view=my_scores&classId=7&scope=mine', '/test/lich?classId=7'],
       /* PR-UX1 Q12: Cần chấm gộp vào Lịch Test — giữ lớp, môn, chi nhánh; bỏ `scope`. */
       ['/test/can-cham', '?classId=7&kn=reading&scope=mine&branchId=2', '/test/lich?classId=7&kn=reading&branchId=2'],
@@ -190,7 +190,7 @@ export async function runKhungTests(t: YThucTestKit) {
       const n = navOf(p);
       assert(d.khuVucHienThi(n).length === 6, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích; TU12 (TU2-6): + Tutor
       assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);   // OV-15b: bỏ tab Điểm theo lớp
-      assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
+      assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh', `${ten} tab Công việc: ${tabs(n)}`);
       assert(n.analysis, `${ten} phải thấy Phân tích`);
     }
     assert(navOf(t.P.admin).admin && !navOf(t.P.mbManager).admin, 'Chỉ Quản trị thấy màn Quản trị');
