@@ -46,6 +46,14 @@ export function GiaTriSua({ kieu, nhan, sua = true, mo = false, tieu = false, kh
   );
 }
 
+/* KIEM-R3 W1 (kiểm 24/11): chuột đang nhấn — rời ô bằng chuột thì ô chỉ co lại khi NHẢ (sau click). Co ngay lúc nhấn làm nút bên dưới
+   (vd "Dùng nhận xét này" khi ô Mô tả tự focus) nhảy lên trước khi nhả → cú bấm mất. */
+let chuotDangNhan = false;
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', () => { chuotDangNhan = true; }, true);
+  document.addEventListener('pointerup', () => { chuotDangNhan = false; }, true);
+}
+
 /**
  * Ô GÕ TỰ LƯU (v16 b1 · b2 · k1 · k1b, [XM4]): lưu khi ngừng gõ ~1 giây hoặc rời ô, chỉ khi chữ khác bản đã lưu (không nhân câu theo phím gõ). Chưa đủ luật (ngắn /
  * quá trần N35 / `chan`) → KHÔNG lưu, báo tại ô, chữ giữ. Lỗi lưu → chữ giữ, "⚠ Chưa lưu được … · Thử lại". Esc = bỏ thay đổi chưa lưu. Rời ô khi đã lưu → đóng ô
@@ -101,7 +109,9 @@ export function OGoTuLuu({ dau, toiThieu, toiDa, nhan, mot = false, placeholder,
   }, [v, chan]);   // eslint-disable-line react-hooks/exhaustive-deps
   const roi = async (e: React.FocusEvent) => {
     if (khung.current?.contains(e.relatedTarget as Node | null)) return;   // bấm "Thử lại" trong ô
-    if (await gui()) onDong();
+    if (!(await gui())) return;
+    if (!chuotDangNhan) onDong();
+    else document.addEventListener('pointerup', () => { setTimeout(onDong, 0); }, { once: true });
   };
   const ban = () => { setV(daLuu.current); onDong(); };
   const lopO = 'field w-full';
