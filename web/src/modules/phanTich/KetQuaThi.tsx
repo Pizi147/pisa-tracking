@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -225,12 +225,34 @@ const nhomGv = (gv: DongGvThiWeb[]) => {
   return ds;
 };
 
+/**
+ * Theo GV (chủ SP 24/11): mỗi KỸ NĂNG chỉ hiện 2 GV có tổng tuần dạy nhiều nhất (bằng nhau → theo thứ tự hiện có); GV còn lại gập sau "+ n GV", bấm mở tại chỗ
+ * ("Thu gọn" để gập). Không ngưỡng, số liệu không đổi. `an` = số GV có ít nhất một dòng bị gập.
+ */
+const TOI_DA_GV_KN = 2;
+const nomTong = (gv: DongGvThiWeb[]) => new Set(gv.map((g) => g.userId)).size;
+function useGvHai(gv: DongGvThiWeb[]) {
+  const [het, setHet] = useState(false);
+  const giu = useMemo(() => {
+    const k = new Set<DongGvThiWeb>();
+    for (const kn of new Set(gv.map((g) => g.kn))) [...gv.filter((g) => g.kn === kn)].sort((a, b) => b.tuan - a.tuan).slice(0, TOI_DA_GV_KN).forEach((g) => k.add(g));
+    return k;
+  }, [gv]);
+  const an = new Set(gv.filter((g) => !giu.has(g)).map((g) => g.userId)).size;
+  return { hien: het ? gv : gv.filter((g) => giu.has(g)), an, het, setHet };
+}
+const NutGv = ({ an, het, onBam, cls = '' }: { an: number; het: boolean; onBam: () => void; cls?: string }) => (an > 0 ? (
+  <button type="button" onClick={onBam} aria-expanded={het} className={`link w-full border-0 border-t bg-transparent px-4 py-2.5 text-left text-[13px] max-sm:min-h-[44px] ${cls}`} style={{ borderColor: 'var(--line)' }}>
+    {het ? t('Thu gọn') : t('+ {n} GV', { n: an })}</button>
+) : null);
+
 /** Theo GV (C1, 1440): GV × kỹ năng; tên GV chỉ ở dòng đầu nhóm, kẻ đậm giữa hai GV (M9). */
 function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
-  const nhom = nhomGv(gv);
+  const { hien, an, het, setHet } = useGvHai(gv);
+  const nhom = nhomGv(hien);
   return (
     <Card bodyClass="p-0">
-      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
+      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nomTong(gv) })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
       {!nhom.length ? <p className="m-0 p-4 text-sm text-dim">{t('Chưa có phân công kỹ năng cho HV thi trong khoảng này.')}</p> : (
         <div className="table-scroll">
           <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 600 }}>
@@ -251,6 +273,7 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
               )))}
             </tbody>
           </table>
+          <NutGv an={an} het={het} onBam={() => setHet((x) => !x)} />
         </div>
       )}
     </Card>
@@ -259,13 +282,12 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
 
 /** Theo GV ở 375 (C4): mỗi GV một thẻ, mỗi kỹ năng lưới 6 ô; 3 GV đầu + "Xem n GV còn lại". */
 function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
-  const [het, setHet] = useState(false);
-  const nhom = nhomGv(gv);
-  const hien = het ? nhom : nhom.slice(0, 3);
+  const { hien: dong, an, het, setHet } = useGvHai(gv);
+  const hien = nhomGv(dong);
   const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="whitespace-nowrap text-xs text-dim">{nhan}</span><b className="text-[14px] font-semibold tabular-nums">{gt}</b></span>;
   return (
     <div className="space-y-2">
-      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
+      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nomTong(gv) })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
       {hien.map((n) => (
         <div key={n.userId} className={THE_HV} style={nenThe}>
           <span className="text-[14px] font-semibold">{n.ten}</span>
@@ -280,9 +302,9 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
           ))}
         </div>
       ))}
-      {nhom.length > 3 && (
+      {an > 0 && (
         <button type="button" className="btn min-h-[44px] w-full justify-center" aria-expanded={het} onClick={() => setHet((x) => !x)}>
-          {het ? t('Thu gọn') : t('Xem {n} GV còn lại', { n: nhom.length - 3 })}
+          {het ? t('Thu gọn') : t('+ {n} GV', { n: an })}
         </button>
       )}
     </div>
