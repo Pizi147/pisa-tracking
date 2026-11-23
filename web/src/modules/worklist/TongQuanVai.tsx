@@ -209,23 +209,22 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
 
 /* ───────────── Lớp cần chú ý — ma trận C ───────────── */
 
-const NHAN_COT: Record<CotLop | 'sos', string> = { case: t('Case chưa PA'), diem: t('Điểm'), meeting: 'Meeting', bcph: t('Báo cáo PH'), sos: t('SOS 2–3') };
+const NHAN_COT: Record<CotLop | 'sos', string> = { case: t('Case chưa PA'), diem: t('Điểm thiếu'), meeting: 'Meeting', bcph: t('Báo cáo PH'), sos: t('SOS 2–3') };
 const DON_VI: Record<CotLop, (n: number) => string> = { case: (n) => t('{n} em', { n }), diem: (n) => t('{n} bài', { n }), meeting: (n) => t('{n} em', { n }), bcph: (n) => t('{n} việc', { n }) };
 const TOI_DA_LOP = 5;
 /**
- * Màu ở CHÍNH số (chủ SP 22/11 — không chấm tròn): quá hạn = badge nền đỏ + ⚠ (dấu khác màu, đỏ / vàng khó phân biệt với người mù màu),
- * sắp đến (≤ 2 ngày) = chữ vàng viền mảnh, còn xa = chữ thường; ô trống = không có việc.
+ * Ô ma trận = CHỈ con số tô màu chữ (chủ SP 24/11: không đơn vị, không badge / nền / viền, không chú thích màu): đỏ quá hạn · vàng sắp đến (≤ 2 ngày) ·
+ * thường còn xa. Trình đọc màn nghe đủ "3 em · quá hạn" qua `aria-label`; ô trống = không có việc.
  */
 function OMaTran({ o, cot, lop, onBam }: { o: HangLop<Dong>['o'][CotLop]; cot: CotLop; lop: string; onBam: () => void }) {
   if (!o) return null;
   const so = o.so || o.viec.length;
-  const chu = DON_VI[cot](so);
-  const nhan = `${lop} · ${NHAN_COT[cot]} · ${chu}${o.muc === 'qua' ? ` · ${t('quá hạn')}` : o.muc === 'sap' ? ` · ${t('sắp đến hạn')}` : ''}`;
-  /* Dấu thêm cho quá hạn = NỀN ĐẶC (không ⚠ — PTA rà #2002): đặc đỏ · viền vàng · chữ thường — khác hình, không chỉ khác màu. */
-  const lopO = o.muc === 'qua' ? `${CHIP_VUONG} border-transparent bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]` : o.muc === 'sap' ? `${CHIP_VUONG} border-[rgb(var(--soon-line-rgb))] text-soon` : 'px-1 text-sm font-semibold text-slate-100';
+  const nhan = `${lop} · ${NHAN_COT[cot]} · ${DON_VI[cot](so)}${o.muc === 'qua' ? ` · ${t('quá hạn')}` : o.muc === 'sap' ? ` · ${t('sắp đến hạn')}` : ''}`;
+  const mau = o.muc === 'qua' ? 'text-late' : o.muc === 'sap' ? 'text-soon' : 'text-slate-100';
   return (
-    <button type="button" onClick={onBam} aria-label={nhan} title={nhan} className={`${lopO} cursor-pointer whitespace-nowrap hover:underline max-sm:min-h-[36px] max-sm:px-1`}>
-      {chu}
+    <button type="button" onClick={onBam} aria-label={nhan} title={nhan}
+      className={`${VUNG_BAM_SO} ${mau} cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold tabular-nums hover:underline max-sm:min-h-[36px]`}>
+      {so}
     </button>
   );
 }
@@ -242,14 +241,14 @@ function LopCanChuYC({ hang, cot, sos, onMo, xemHet }: { hang: HangLop<Dong>[]; 
       title={<span className="inline-flex items-baseline gap-2">{t('Lớp cần chú ý')}<span className="text-[13px] font-medium text-dim">{t('{n} lớp', { n: hang.length })}</span></span>}
       action={hang.length > 0 ? <Link to={xemHet} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Xem hết')} ›</Link> : undefined}>
       {!ds.length ? <p className="m-0 px-4 py-6 text-sm text-dim">{t('✓ Không lớp nào có việc quá hạn hay sắp đến hạn.')}</p> : (
-        <div data-hd="tq-lop-chu-y" className="max-sm:[&_th]:whitespace-normal max-sm:[&_th]:px-1 max-sm:[&_th]:text-xs max-sm:[&_td]:px-1 [&_td]:py-1.5">
+        <div data-hd="tq-lop-chu-y" className="max-sm:[&_th]:whitespace-normal max-sm:[&_th]:text-xs [&_td]:py-1.5">
           {/* Mockup C: 375 GIỮ ma trận (không thành thẻ) — `the375={false}`; độ rộng cơ sở vừa 375 (96 + 4 × 62), ≥ 640 phần dư chia theo tỉ lệ (`deu`). */}
           <Bang ten={t('Lớp cần chú ý')} khung={false} the375={false} deu hang={ds} khoa={(h) => h.classId}
             cot={[{ key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 96 }, ...cot.map((c) => ({ key: c, nhan: NHAN_COT[c], kieu: 'so' as const, rong: 62 })),
-              ...(sos ? [{ key: 'sos', nhan: NHAN_COT.sos, kieu: 'so' as const, rong: 62 }] : [])]}
+              ...(sos ? [{ key: 'sos', nhan: NHAN_COT.sos.replace('–', '⁠–⁠'), kieu: 'so' as const, rong: 62 }] : [])]}
             oCua={(h, c) => {
               if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so whitespace-nowrap font-semibold">{h.classCode}</Link>;
-              if (c.key === 'sos') { const x = sos?.get(h.classId); return x?.n ? <OSo giaTri={x.n} nhan={t('{n} em', { n: x.n })} tieuDe={`${t('SOS 2–3')} · ${h.classCode}`} nguon={`/tong-quan/chi-nhanh/sos23?ids=${x.ids.join(',')}`} className="so-chinh text-sm" /> : null; }
+              if (c.key === 'sos') { const x = sos?.get(h.classId); return x?.n ? <OSo giaTri={x.n} tieuDe={`${t('SOS 2–3')} · ${h.classCode}`} nguon={`/tong-quan/chi-nhanh/sos23?ids=${x.ids.join(',')}`} className="so-chinh text-sm font-semibold" /> : null; }
               const k = c.key as CotLop;
               return <OMaTran o={h.o[k]} cot={k} lop={h.classCode} onBam={() => moO(h, k)} />;
             }} />

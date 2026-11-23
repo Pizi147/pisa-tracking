@@ -52,6 +52,7 @@ export const EN_UI_TONG_QUAN = {
   "Đạt Target thi thật": "Real exam target met",
   "đề xuất": "requests",
   "Case chưa PA": "Cases without plan",
+  "Điểm thiếu": "Missing scores",
   "GV": "Teacher",
   "SOS 2–3": "SOS levels 2–3",
   "Mock Test": "Mock tests",
