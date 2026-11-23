@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  LY_DO_SUA_KHAI_LECH, SUA_KHAI_HET_HAN_THEO_GVCN, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  LY_DO_SUA_KHAI_LECH, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -293,7 +293,7 @@ export function guiSuaKhai(p: Principal, hv: { student_code: string }, studentId
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
     if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw conflict('Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
     /* PTA rà #2058: bậc VÀ ngày / tháng đều như dòng khai thì không có gì để Head duyệt (ghi chú là lý do, không phải nội dung sửa). */
-    if (k.bac === em.khai.bac && (k.thang ?? null) === (em.khai.thang ?? null)) throw badRequest('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với bậc đã khai.');
+    if (k.bac === em.khai.bac && (k.thang ?? null) === (em.khai.thang ?? null)) throw badRequest('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với hiện tại.');
     const duLieu: DuLieuSuaKhai = { bacCu: em.khai.bac, bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, cycleId: em.khai.cycleId };
     let id = taoYeuCau(db(), { ...theSuaKhai(studentId), hocVienId: studentId, lopId: em.lopId, nguoiXin: p.userId, lyDo: k.ghiChu, duLieu });
     let ghiDe = false;
@@ -1262,7 +1262,7 @@ export const LY_DO_TU_CHOT_Y_THUC = 'Quá 5 ngày Head chưa duyệt — giữ q
  */
 export function quetYThucHetHan(conn: any, homNay: string): number {
   const ds = conn.prepare(`SELECT id, loai, doi_tuong_id, ly_do, du_lieu, hoc_vien_id, nguoi_xin FROM yeu_cau_duyet
-    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc'${SUA_KHAI_HET_HAN_THEO_GVCN ? ", 'sua_khai_bac'" : ''}) AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
+    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc', 'sua_khai_bac') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
     .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null; nguoi_xin: number | null }[];
   if (!ds.length) return 0;
   tx(() => {

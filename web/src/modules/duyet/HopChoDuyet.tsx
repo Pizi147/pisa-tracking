@@ -20,7 +20,7 @@ import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, SUA_KHAI_HET_HAN_THEO_GVCN, bacDu, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy, hanDuyetNgay, quyCheDuyet,
+  LOAI_YC_META, bacDu, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy, hanDuyetNgay, quyCheDuyet,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -562,7 +562,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
-        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' || y.loai === 'thu_hoi_y_thuc' || (y.loai === 'sua_khai_bac' && SUA_KHAI_HET_HAN_THEO_GVCN) ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
+        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' || y.loai === 'thu_hoi_y_thuc' || y.loai === 'sua_khai_bac' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
           : <span className="flex items-center gap-1.5"><NhanTrangThai t={tt.t} />{y.xuLyLuc && <span className="text-[12px] text-dim">{ngan(y.xuLyLuc)}</span>}</span>}
         {/* audit CV7: người gửi là chính người xem → "Bạn", không vai. */}
         {y.nguoiXin && (y.nguoiXinId != null && y.nguoiXinId === toi ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />)}

@@ -30,11 +30,6 @@ export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_x
 export const LY_DO_RUT = t('Người gửi đã rút');
 /** N70: thẻ sửa cấp bậc tự đóng vì bậc khai đã khác lúc gửi (Head / Quản trị vừa sửa thẳng) — ở shared để `loaiYeuCau.ts` ↔ `yThuc/xuLy.ts` không đọc hằng của nhau lúc nạp (vòng import). */
 export const LY_DO_SUA_KHAI_LECH = t('Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa');
-/**
- * N70 — thẻ sửa cấp bậc QUÁ HẠN duyệt: `true` = máy chốt theo GVCN như thẻ Ý thức (PTA chọn, chờ chủ SP xác nhận); `false` = vẫn chờ Head.
- * MỘT chỗ đổi: quét hết hạn (`quetYThucHetHan`), câu quy chế (`quyCheDuyet`), dòng chữ của thẻ và ô đếm ngược ở Chờ duyệt đều đọc cờ này.
- */
-export const SUA_KHAI_HET_HAN_THEO_GVCN: boolean = true;
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;
@@ -82,7 +77,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   xin_xoa: { phanLoai: 'hoc-thuat', nhan: t('Xin xoá'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* SOS-TAM-PA (chủ SP 11/11): GV giữ PA của mình khác PA quy chế lúc SOS chốt — QL duyệt trong hết ngày gửi + `giu_pa_gv.ngay` (Hạn mặc định, gốc 3; `hanDuyetMacDinh` tính riêng), quá hạn máy chốt theo GV. */
   giu_pa_gv: { phanLoai: 'hoc-thuat', nhan: t('PA khác quy chế'), kieuNut: 'duyet-tu-choi', hanNgay: 4, hangLoat: false },
-  /* N70 (chủ SP 24/11): GVCN SỬA bậc đã khai — một thẻ đang chờ mỗi em (đối tượng `hoc_vien_khai_bac` = em); hạn + hết hạn như thẻ Ý thức (máy chốt theo GVCN). */
+  /* N70 (chủ SP 24/11): GVCN SỬA bậc đã khai — một thẻ đang chờ mỗi em (đối tượng `hoc_vien_khai_bac` = em); hạn + hết hạn như thẻ Ý thức (máy chốt theo GVCN — chủ SP 24/11 chốt "N70: tự áp theo GVCN"). */
   sua_khai_bac: { phanLoai: 'y-thuc', nhan: t('Sửa cấp bậc vi phạm'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
 };
 

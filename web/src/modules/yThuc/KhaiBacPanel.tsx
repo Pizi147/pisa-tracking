@@ -152,7 +152,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
         <div {...lf.o(loi, 'bac')}>
           <ChipBac lon chon={bac} cu={laSua && d.khai ? d.khai.bac : null} onPick={setBac} nhan={t('Bậc đã xử lý')} />
         </div>
-        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{chuaDoi ? t('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với bậc đã khai.') : t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
+        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{chuaDoi ? t('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với hiện tại.') : t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
         {bac !== null && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: bacDu(nhanLoaiXuLy(kindCuaBac(bac + 1))) })}</p>}
       </Khoi>
       <Khoi tieuDe={t('Chi tiết')}>
