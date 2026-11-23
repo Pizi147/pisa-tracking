@@ -15,3 +15,8 @@ Thao tác TRƯỚC → SAU: dải lọc theo bước ở Case → đầu nhóm (
 
 Chống cắt `scripts/kiem-chong-cat.mjs` (bỏ qua nút cuộn): Chi nhánh 15/15, SOS 15/15, Ý thức đạt.
 Sửa CSS: số trong `td` / `th` / `dd` của vùng `.text-sm` không còn bị coi là số giữa câu (trước đó co về 9 × 14 px).
+
+## Sửa theo rà của PTA Plan (B3)
+- Cột Hạn: máy chủ CÓ hạn của Case chờ (`han`) — trước chỉ vẽ khi người xem làm được việc; nay mọi dòng có hạn hiện dd/mm/yyyy tô màu (quá hạn lên đầu nhóm sẵn có). Không dòng nào có hạn thì cột bị bỏ.
+- Dòng một tầng: Học viên (+ lớp) · Case (MT · kỹ năng + chip SOS) · Điểm / KV (5.5 / 6.5, đỏ khi dưới KV) · Phụ trách · Hạn; bỏ "Chưa có mô tả" (mô tả Case ở title ô, mở Case để đọc).
+- SOS › Theo tuần: dòng phụ "14/09 – 20/09 · tuần này" dạng ngắn, không cắt "…".

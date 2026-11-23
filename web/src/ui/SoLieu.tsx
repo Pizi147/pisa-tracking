@@ -234,6 +234,7 @@ function catCau(s: string, toiDa = 170): string {
 type HangCase = { k: string; ten: string; conCho: number; tre: number } | { k: string; r: DongSoLieu & { xong?: string } } | { k: string; them: number; nhom: string };
 const COT_CASE: readonly CotBang[] = [
   { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 168 }, { key: 'case', nhan: t('Case'), kieu: 'chu', linhHoat: true },
+  { key: 'diem', nhan: t('Điểm / KV'), kieu: 'chu', rong: 100 },
   { key: 'gv', nhan: t('Phụ trách'), kieu: 'chu', rong: 130 }, { key: 'han', nhan: t('Hạn'), kieu: 'chip', rong: 112 },
 ];
 
@@ -388,18 +389,19 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           ...hien.map((r) => ({ k: `c:${r.id}`, r }) as HangCase),
           ...(g.dong.length > hien.length ? [{ k: `m:${g.buoc}`, them: g.dong.length - hien.length, nhom: g.buoc } as HangCase] : [])];
       });
+    const cotCase = COT_CASE.filter((c) => c.key !== 'han' || hien.some((r) => hanCua(r)));   // không dòng nào có hạn → bỏ cột (không để cột trống)
     const thuChon = (r: DongSoLieu) => (e: React.KeyboardEvent) => { if (e.key === 'Enter' && e.target === e.currentTarget) moCase(r); };
     return (
-      <Bang<HangCase> ten={t('Case theo bước')} cot={COT_CASE} hang={hang} khoa={(h) => h.k} khung={false} dangMo={(h) => 'r' in h && h.r.id === mo}
+      <Bang<HangCase> ten={t('Case theo bước')} cot={cotCase} hang={hang} khoa={(h) => h.k} khung={false} dangMo={(h) => 'r' in h && h.r.id === mo}
         onHang={(h) => { if ('r' in h) moCase(h.r); }}
         hangRieng={(h) => ('them' in h ? (
-          <tr className="them"><td colSpan={COT_CASE.length} className="px-4 py-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => datMoRong((m) => [...m, h.nhom])}>+ {h.them} Case</button></td></tr>
+          <tr className="them"><td colSpan={cotCase.length} className="px-4 py-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => datMoRong((m) => [...m, h.nhom])}>+ {h.them} Case</button></td></tr>
         ) : 'r' in h ? (
           <tr data-dong={h.r.id} className={`bam ${h.r.id === mo ? 'dang-mo' : ''}`} tabIndex={0} onClick={(e) => { if (!(e.target as Element).closest('a')) moCase(h.r); }} onKeyDown={thuChon(h.r)}>
-            {COT_CASE.map((c) => <OBang key={c.key} c={c}>{oCase(h.r, c.key)}</OBang>)}
+            {cotCase.map((c) => <OBang key={c.key} c={c}>{oCase(h.r, c.key)}</OBang>)}
           </tr>
         ) : (
-          <tr className="nhom-b"><td colSpan={COT_CASE.length} className="px-4 py-2 text-[14px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
+          <tr className="nhom-b"><td colSpan={cotCase.length} className="px-4 py-2 text-[14px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
             {h.ten}<span className="ml-2 inline-flex items-center gap-2 align-middle"><span className={`${CHIP_VUONG} ${h.conCho ? 'text-slate-200' : 'text-ok'}`} style={{ borderColor: 'var(--line-strong)' }} title={h.conCho ? t('{n} Case còn chờ', { n: h.conCho }) : t('Đã xử lý hết')}>{h.conCho || '✓'}</span>
               {h.tre > 0 && <span className="text-[13px] font-medium text-late">{t('{n} quá hạn', { n: h.tre })}</span>}</span>
           </td></tr>
@@ -425,20 +427,20 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       </span>
     );
     if (k === 'case') return (
-      <span className="flex min-w-0 flex-col items-start gap-0.5">
-        {r.deMuc && <span className="text-[14px] font-bold leading-snug text-slate-100">{r.deMuc}</span>}
-        <span className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-0.5">
-          {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
-          <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
-          {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
-          {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
-        </span>
-        <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[fmtBand(r.diemCase.so), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(r.diemCase.kyVong) })]} />}</span>
-        {r.moTa ? <span className="max-w-[68ch] text-[13px] leading-snug text-slate-300 [text-wrap:pretty]">{catCau(r.moTa)}</span> : <span className="text-[13px] italic text-slate-500">{t('Chưa có mô tả')}</span>}
+      /* v24 B3: MỘT dòng — MT · kỹ năng + chip SOS (+ chờ Head); mô tả Case ở title, mở Case để đọc. */
+      <span className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-0.5" title={[r.deMuc, r.moTa].filter(Boolean).join(' — ') || undefined}>
+        {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
+        <span className="min-w-0">{r.kyNang ?? r.title}</span>
+        {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
+        {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
       </span>
     );
+    if (k === 'diem') return r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b>
+      : r.diemCase ? <span className="whitespace-nowrap tabular-nums"><span className={r.diemCase.kyVong != null && r.diemCase.so < r.diemCase.kyVong ? 'font-semibold text-kq-duoi' : 'font-semibold'}>{fmtBand(r.diemCase.so)}</span>{r.diemCase.kyVong != null && <span className="text-dim"> / {fmtBand(r.diemCase.kyVong)}</span>}</span>
+      : <span className="text-faint">—</span>;
     if (k === 'gv') return <span className="text-[13px]">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>;
-    return !r.xong && v?.loaiHan && v.han ? <ChipHan vien loai={v.loaiHan} han={v.han} /> : null;
+    const han = hanCua(r);
+    return !r.xong && han ? <HanDong han={han} loai={v?.loaiHan ?? r.viec?.loaiHan} /> : null;
   };
 
   /* Khối làm tại chỗ của dòng đang mở (Xác nhận PA bấm thẳng · việc khác mở panel làm việc) — dùng chung cho dòng HV và dòng cũ. */
