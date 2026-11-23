@@ -602,7 +602,7 @@ export function HoTroHocVienTab() {
   const theoChon = theo && theoDong && `${theoDong.loai}:${theoDong.refId}` === theo ? theoDong : null;
   /* NHẸ HƠN: panel bám mép phải (KhungPanel tại chỗ, ≥ 1024) đang mở → đầu trang + danh sách bó về cột trái min(556 px, 42 % − 48 px); không mở → bố cục cũ. */
   const coPanel = !!(chon || theId || theoChon);
-  /* KHUÔN A (24/11): danh sách rộng min(680 px, 100vw − 776 px) — chừa 720 px cho panel; vai không có khối phải (Head / QL / Quản trị) chưa mở panel thì danh sách rộng hết khung. */
+  /* KHUÔN A (24/11): chưa mở panel: danh sách rộng hết khung (GV / TVV: cạnh khối phải 420 px); mở panel 720 → danh sách min(680 px, 100vw − 784 px), không co thêm. */
   const coKhoiPhai = laGv || laTvv;
   const moTheo = (d: DongTd) => { setTheoDong(d); setParam('theo', `${d.loai}:${d.refId}`); };
   const dongTheo = () => { setParam('theo', null); lamMoiGiaoViec(); };
@@ -653,7 +653,7 @@ export function HoTroHocVienTab() {
     /* KHUÔN A (24/11): danh sách KHÔNG co khi panel mở — kể cả panel bảng / lưới (bỏ luật cũ "thu về 330 px"). */
     <div className="space-y-3">
       {/* NHẸ HƠN: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024), panel 58 % bám mép phải không che nút lọc / + Task. */}
-      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(680px,calc(100vw-776px))]' : ''}`}>
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(680px,calc(100vw-784px))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
@@ -744,7 +744,7 @@ export function HoTroHocVienTab() {
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* NHẸ HƠN (v23 `.cv-luoi`, chủ SP 22/11): danh sách trái = min(556 px, 42 % − 48 px) — panel 58 % bám mép phải (KhungPanel tại chỗ) không đè (1280: ~490 px). */}
       {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(680px,calc(100vw-776px))_minmax(0,1fr)]' : tab === 'duyet' ? 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]' : coKhoiPhai ? 'lg:grid-cols-[min(680px,calc(100vw-776px))_minmax(0,1fr)]' : ''}`}>
+      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:gap-4' : 'lg:gap-6'} ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(680px,calc(100vw-784px))_minmax(0,1fr)]' : tab === 'duyet' ? 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]' : coKhoiPhai ? 'lg:grid-cols-[minmax(0,1fr)_420px]' : ''}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (

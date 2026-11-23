@@ -44,7 +44,7 @@ export async function runPrViecCuaToiTests(t: any) {
 
   check('G1-13 / G4-18 · dòng vừa xong giữ bản dòng lúc lưu LẦN ĐẦU (tên việc gốc), không bản sau lần lưu cuối', () => {
     assert(/setGiu\(\(m\) => \(m\.has\(it\.key\) \? m : new Map\(m\)\.set\(it\.key, it\)\)\)/.test(nguon('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'daLam giữ bản đầu');
-    assert(/daXong && \(it\.group === 'ban_giao' \|\| viecCaLop\)\) \? null/.test(nguon('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng xong bỏ tiến độ cũ (bàn giao, việc cả lớp)');
+    assert(/daXong && \(it\.group === 'ban_giao' \|\| it\.group === 'chot_len_ft'/.test(nguon('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng xong bỏ tiến độ cũ (bàn giao, việc cả lớp)');
   });
 
   check('G4-23 · hồ sơ lớp: một badge ẩn thì hiện thẳng; chip "+n" không ghi đơn vị "việc"', () => {

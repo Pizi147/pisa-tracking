@@ -47,11 +47,10 @@ export async function runDonHinhTests(t: any) {
   });
   check('CV-0611 · dòng việc gọn: tên "{mã lớp} · {việc}" (không "Cả lớp"), Xét lại lộ trình không liệt kê tên em, "›" chỉ khi dòng chưa có nút', () => {
     const s = doc('web/src/modules/congViec/DanhSachViec.tsx');
-    /* GD-1b (chủ SP lời 24, thay CV-TAB "mã lớp ở dòng phụ"): MỌI dòng "Lớp · tên việc ngắn" — DongViec, DongLop, DongGon qua `voiLop`; dòng phụ không lặp lớp. */
-    assert(!/Cả lớp \{lop\}/.test(s) && (s.match(/voiLop\(it, /g) ?? []).length >= 3 && !/caLop \? it\.classCode/.test(s), 'tên dòng chưa "Lớp · tên việc" ở mọi dáng dòng');
-    assert(/it\.group === 'xet_lai_lo_trinh'( \|\| caTuan)?( \|\| \(daXong && [^?]+\))? \? null/.test(s), 'Xét lại lộ trình còn thẻ tên em');
-    /* AUDIT-UI B5 (V18): 375 ẩn nút, "›" mờ bên phải mọi dòng — "›" sau tên chỉ ≥ 640 và khi dòng chưa có nút. */
-    assert(/it\.group === 'xuat_bc_ph' \|\| nut\) return null/.test(s) && /\u00A0/.test(s), '"›" chưa ẩn khi có nút / chưa dính chữ');
+    /* Khuôn A (24/11): lớp là ô riêng đầu dòng (không "Cả lớp {lop}"); Xét lại lộ trình không liệt kê tên em; "›" chỉ khi dòng mở TRANG, nằm trong lề phải. */
+    assert(!/Cả lớp \{lop\}/.test(s) && /className="cvA-lop"/.test(s), 'lớp chưa là ô riêng đầu dòng');
+    assert(/it\.group === 'xet_lai_lo_trinh' \|\|/.test(s), 'Xét lại lộ trình còn liệt kê tên em');
+    assert(/it\.group !== 'xuat_bc_ph' && !con && !daXong && <MuiDi \/>/.test(s), '"›" chưa chỉ ở dòng mở trang');
   });
   check('CV-0611 · Bổ sung hồ sơ thiếu mở TẠI CHỖ (panel Sửa thông tin từng em, "Lưu · em tiếp ›"), không đổi trang', () => {
     const pv = doc('web/src/modules/congViec/PanelViec.tsx');

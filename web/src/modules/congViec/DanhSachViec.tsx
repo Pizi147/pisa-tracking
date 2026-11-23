@@ -270,25 +270,15 @@ export const BAC_1 = { borderColor: 'var(--o-nhap-vien)' };
 /** Kẻ bậc 2 (v12 S12): giữa hai việc của cùng em, từ chữ tên việc (54 px; 375: 46 px) tới mép phải. `li` cha đã `relative` (`NET_CAY`). */
 export const KeBac2 = () => <span aria-hidden className="absolute left-[46px] right-3 top-0 h-px sm:left-[54px] sm:right-4" style={{ background: 'var(--line)' }} />;
 
-/** v12 S5: nút một dòng — việc Phối hợp (nhãn máy chủ "Mở Phối hợp SOS") rút gọn "Phối hợp" ở dòng việc; panel / trang đích giữ chữ đủ. */
-const laPhoiHop = (it: WorkItem) => it.group === 'phoi_hop' || it.group === 'phoi_hop_sos';
-
-/** Chung của một dòng việc: nút động từ, hạn, đối tượng phụ, trạng thái đã lưu. */
-function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn, anNguoi }: ChungDong) {
+/** Chung của một dòng việc: dòng gộp (`con`), đã xong, đang chọn, người giữ việc. */
+function useDong(it: WorkItem, { chon, xong, moCaDong, nguoiAn, anNguoi }: ChungDong) {
   const con = it.con?.length && !moCaDong(it) ? it.con : null;
-  const xem = theoDoi(it);
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
-  /* brief 7: chế độ theo dõi — không động từ; quyền làm thay thật (`lamThay`) mới có nút — N64: cùng tên hành động như chủ việc (dải trong panel nói là làm thay). */
-  /* U01 #4: nút khay dòng gộp "4 em ▾" — số việc đã ở thẻ phụ. */
-  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : xem && !(it as { lamThay?: boolean }).lamThay ? null
-    : laViecChamCheo(it) || (xem && it.group === 'score') ? t('Nhập điểm') : laPhoiHop(it) ? t('Phối hợp') : dich(it.actionLabel);
-  /* QL Tất cả: người giữ việc đứng dưới hạn (mockup `.h .ai`) — cột "khi nào · ai" thẳng hàng. v12 S3: không lặp điều đã biết — việc của tôi,
-     việc của GV đang xem (`nguoiAn`), bài chấm chéo ("GV chấm chéo" = tên nhóm) không ghi người. */
-  /* PTA rà #2001 (v23 ④): Admin — dòng Điểm không nút (bấm dòng mở panel lớp; "Nhập điểm ›" ở chân panel). */
-  const nutCuoi = anNguoi && it.group === 'score' ? null : nut;
+  /* QL Tất cả: người giữ việc cuối ô chi tiết. v12 S3: không lặp điều đã biết — việc của tôi, việc của GV đang xem (`nguoiAn`),
+     bài chấm chéo ("GV chấm chéo" = tên nhóm), Admin (người phụ trách ở panel lớp) không ghi người. */
   const cc = laViecChamCheo(it) || dich(it.statusLabel) === CHAM_CHEO;
   const nguoi = anNguoi || it.mine || cc || (nguoiAn != null && it.ownerId === nguoiAn) ? null : it.owner ?? (it.ownerId === null && !viecCaLop ? t('Chưa có người') : null);
-  return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nut: nutCuoi, nguoi, viecCaLop };
+  return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nguoi };
 }
 
 /** v12 S13: NGƯỜI = chữ thường mờ (S1: 400) + biểu tượng người — nhận ra không cần đọc, khác tên việc / chip / hạn. */
@@ -409,12 +399,15 @@ const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'y
 const DONG_TU_DAU = /^(Thêm PA(?: học thuật)?|Xác nhận PA|Chọn PA|Xác nhận Case|Mô tả Case|Ghi kết quả PA|Ghi Mini Test|Nhập điểm|Viết Báo cáo PH|Xử lý vi phạm|Bàn giao|Báo PH kết quả Test|Báo PH)(?: |$)/;
 const tenLoaiNgan = (it: WorkItem) => {
   const tg = ({ yt_xu_ly: t('Xử lý vi phạm'), yt_xem: t('Xem vi phạm mới'), yt_thuc_hien: t('Đã thực hiện'), khai_bac: t('Khai cấp bậc'), yt_tra_lai: t('Vi phạm bị trả lại') } as Record<string, string>)[it.group];
-  return tg ?? dich(it.tieuDe.split(' · ')[0]).replace('Thêm PA học thuật', 'Thêm PA').replace('Ghi Mini Test', 'Mini Test');
+  return tg ?? dich(it.tieuDe.split(' · ')[0]).replace(t('Thêm PA học thuật'), t('Thêm PA')).replace(t('Ghi Mini Test'), t('Mini Test'));
 };
 
 /** Các mẩu chi tiết (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). `ghiLoai`: nhóm có nhiều loại việc → mở đầu bằng tên loại. */
-function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean): string[] {
+function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean, daXong: boolean): string[] {
   if (diem) return diem.ct ? [diem.ct] : [];
+  /* 06/11: Xét lại lộ trình không liệt kê tên em (chỉ "n em"); G4-18: dòng vừa xong không ghi tiến độ cũ (bàn giao, việc cả lớp). */
+  const boNgucCanh = it.group === 'xet_lai_lo_trinh' || (daXong && (it.group === 'ban_giao' || it.group === 'chot_len_ft' || it.group === 'ky_vong_dau_ra'));
+  if (boNgucCanh) return ghiLoai ? [tenLoaiNgan(it)] : [];
   const laThe = (x: string) => LA_SO.test(x);
   const phan = (it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe).split(' · ').map((x) => x.trim());
   const meet = it.group.startsWith('meeting_');
@@ -425,7 +418,7 @@ function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, 
   ]).filter((x) => !laThe(x)).filter((x) => !/^SOS \d/.test(x) && x !== it.studentName);
   const hang = [ghiLoai ? tenLoaiNgan(it) : null, ...(gop && LA_GON.has(it.group) && it.group !== 'phoi_hop_sos' ? [] : tenCon), ...(gop && it.group === 'yt_xu_ly' ? [] : phu)]
     .flatMap((x) => (x ? x.split(' · ') : []));
-  return duyNhat(hang).slice(0, 2);   // bốn ô, một dòng chữ: loại (nếu nhóm gộp) / kỹ năng · lượt — nhiều hơn thì ở panel
+  return duyNhat(hang).filter((x) => x !== t('Công việc quản lý')).slice(0, 2);   // bốn ô, một dòng chữ: loại (nếu nhóm gộp) / kỹ năng · lượt — nhiều hơn thì ở panel
 }
 
 /** MỘT DÒNG (mọi loại việc, mọi vai): lớp · ai · chi tiết · hạn. */
@@ -444,7 +437,7 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
   const soEm = diem ? diem.n : gop ? emCon : it.emTen?.length ? it.count ?? it.emTen.length : soTong || it.count || 0;
   const aiChu = motEm ? it.studentName : it.gopLop && it.soBai ? t('{n} bài', { n: it.soBai }) : soEm ? t('{n} em', { n: soEm }) : null;
   const tenViecKl = !it.classCode && !aiChu;   // việc không lớp (Task Vận hành): tên việc chiếm ô lớp + ô em
-  const ct = chiTiet(it, gop, diem, ghiLoai);
+  const ct = chiTiet(it, gop, diem, ghiLoai, daXong);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
   const chu = [...ct, tvv, giao, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
@@ -483,7 +476,7 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
 function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string; conPhu: string } }) {
   const { daXong, dangChon, nguoi } = useDong(it, dong);
   const bam = () => dong.onOpen(it);
-  const chu = [it.conPhu ? dich(it.conPhu) : null, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
+  const chu = [it.conPhu ? dich(it.conPhu).split(' · ').filter((x) => x !== t('Ý thức')).join(' · ') : null, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
   const nutPhu = !daXong ? dong.nutPhu?.(it) : null;
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
