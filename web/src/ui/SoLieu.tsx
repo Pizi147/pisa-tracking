@@ -380,7 +380,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     if (c.key === 'hv') return <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline">{r.em?.ten ?? r.title}</Link>;
     if (c.key === 'lop') return <span className="text-dim">{r.lop ?? (r.sub.split(' · ')[0] || '—')}</span>;
     if (c.key === 'tuan') { const n = r.khaiGiang ? tuanHocTu(r.khaiGiang, homNay) : null; return n ? <span>{t('Tuần {n}', { n })}</span> : <span className="text-faint">—</span>; }
-    if (c.key === 'mt') return d ? <span className="whitespace-nowrap">{d.luot}{d.tuan && <span className="text-dim"> · {tuanLich(d.tuan)}</span>}{d.tam && <span className="text-faint"> · {t('tạm')}</span>}</span> : <span className="text-faint">{t('Chưa có')}</span>;
+    if (c.key === 'mt') { const chu = d ? [d.luot, d.tuan && tuanLich(d.tuan), d.tam && t('tạm')].filter(Boolean).join(' · ') : ''; return d ? <span className="block truncate" title={chu}>{d.luot}{d.tuan && <span className="text-dim"> · {tuanLich(d.tuan)}</span>}{d.tam && <span className="text-faint"> · {t('tạm')}</span>}</span> : <span className="text-faint">{t('Chưa có')}</span>; }
     if (!d || d.overall == null) return <span className="text-faint">—</span>;
     const dat = d.soVoi ? d.overall >= d.soVoi.v : null;
     return <span className="whitespace-nowrap"><span className={`font-semibold ${dat === false ? 'text-kq-duoi' : dat ? lopKq('dat') : ''}`}>{dat === null ? '' : dat ? '✓ ' : '✗ '}{fmtBand(d.overall)}</span>{d.soVoi && <span className="text-dim"> / {fmtBand(d.soVoi.v)}</span>}</span>;

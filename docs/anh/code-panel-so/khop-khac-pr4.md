@@ -11,3 +11,8 @@
 Thao tác: mọi thao tác cũ giữ (link HV / lớp, Xem thêm, tab). Mất: cột Người ghi ở panel vi phạm (mockup bỏ — [XM] cần chủ SP xác nhận nếu muốn giữ).
 Trần câu `tocDoDuong.ts`: không thêm câu (cột `start_date` nằm trong SELECT có sẵn).
 Chống cắt: Chi nhánh và Ý thức đạt.
+
+## Sửa theo rà của PTA Plan
+- Ô MT gần nhất một dòng, cắt "…" + `title` (hết tràn sang Overall / KV).
+- Panel vi phạm của MỘT em: bỏ cột Học viên (B5: Ngày · Vi phạm · Xử lý); panel lớp giữ.
+- Cột "Xử lý": quá hạn → ngày đỏ (`QuaHan`, hạn = hôm nay − n ngày trễ), đã xử lý → chữ thường "Report 1"; hết badge "Quá hạn n ngày" / chip nền (NH4).
