@@ -13,12 +13,13 @@ import { lopKq } from './BieuTuong.tsx';
 import { CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { Bang, OBang, type CotBang } from './Bang.tsx';
+import { BangSoPanel, type CotSo } from './BangSoPanel.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
-import { fmtBand } from '../lib/format.ts';
+import { fmtBand, tuanHocTu } from '../lib/format.ts';
 
 /**
  * KHUNG-LOI (B-02): vùng bấm của số ≥ 24 × 24 px máy tính, 44 × 44 px điện thoại — `after:` canh giữa chữ số (hình chữ không đổi; trước đây
@@ -50,7 +51,7 @@ export type ViecDongSoLieu = {
 /** PR-VAI-a (Q26): dòng Case/PA có người phụ trách + hạn — panel ghi "người · quá hạn n ngày". OV-12e: đầu dòng v3 + việc của dòng. */
 export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
-  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string;
+  em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string; /** SO-720 (B6): ngày khai giảng lớp đang học (dòng HV). */ khaiGiang?: string | null;
   /** TQ-SOS-CN: mức SOS của em (panel SOS 2–3) — badge cạnh tên, cùng dáng chip SOS mọi nơi. */
   sos?: { muc: number; tam: boolean } | null;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
@@ -368,6 +369,20 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     );
   }
 
+  /* SO-720 (B6): danh sách HV thuần (đang học / vào / kết thúc…) → BẢNG có tiêu đề: Học viên · Lớp · Tuần học · MT gần nhất · Overall / KV. Dòng có kết luận, xu hướng,
+     thi thật, SOS hay việc làm được giữ dạng dòng cũ. */
+  const bangHv = !nhomCase && hien.length > 0 && hien.every((r) => r.diemHv !== undefined && r.khaiGiang !== undefined && !r.xuHuong && !r.ketQua && !r.ngayThiThat && !r.sos && !r.viec?.lam);
+  const cotHv: CotSo[] = [{ key: 'hv', nhan: t('Học viên') }, { key: 'lop', nhan: t('Lớp'), can: 'trai' }, { key: 'tuan', nhan: t('Tuần học') }, { key: 'mt', nhan: t('MT gần nhất'), can: 'trai', rong: 168 }, { key: 'ov', nhan: 'Overall / KV', nen: true }];
+  const oHv = (r: DongSoLieu & { xong?: string }, c: CotSo): ReactNode => {
+    const d = r.diemHv;
+    if (c.key === 'hv') return <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline">{r.em?.ten ?? r.title}</Link>;
+    if (c.key === 'lop') return <span className="text-dim">{r.lop ?? (r.sub.split(' · ')[0] || '—')}</span>;
+    if (c.key === 'tuan') { const n = r.khaiGiang ? tuanHocTu(r.khaiGiang, homNay) : null; return n ? <span>{t('Tuần {n}', { n })}</span> : <span className="text-faint">—</span>; }
+    if (c.key === 'mt') return d ? <span className="whitespace-nowrap">{d.luot}{d.tuan && <span className="text-dim"> · {tuanLich(d.tuan)}</span>}{d.tam && <span className="text-faint"> · {t('tạm')}</span>}</span> : <span className="text-faint">{t('Chưa có')}</span>;
+    if (!d || d.overall == null) return <span className="text-faint">—</span>;
+    const dat = d.soVoi ? d.overall >= d.soVoi.v : null;
+    return <span className="whitespace-nowrap"><span className={`font-semibold ${dat === false ? 'text-kq-duoi' : dat ? lopKq('dat') : ''}`}>{dat === null ? '' : dat ? '✓ ' : '✗ '}{fmtBand(d.overall)}</span>{d.soVoi && <span className="text-dim"> / {fmtBand(d.soVoi.v)}</span>}</span>;
+  };
   /* 6c-2 (PTA 28/10, "một danh sách một kiểu mở" + tách nút làm việc / link xem hồ sơ): MỌI dòng có link "Hồ sơ" CÙNG một chỗ — cuối dòng 1 — là link đổi trang
      tới hồ sơ (BO-MUI-TEN 28/10: chữ thay ký hiệu mũi tên — tên em nằm trong nút mở nên không làm link được); thân dòng chỉ bấm được khi có việc mở tại chỗ; dòng chỉ đọc thì thân không bấm. Không còn dòng mà cả dòng là link. */
   const nutHoSo = (r: DongSoLieu) => (
@@ -630,7 +645,8 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
                 tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: laThi ? t('Đạt Target') : t('Đạt'), so: soDat },
                   ...(soVuot ? [{ key: 'vuot' as const, label: `★ ${t('Vượt')}`, so: soVuot }] : [])]} />
             )}
-            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(xt.cat(hienTab)) : <ul className={`m-0 list-none p-0 ${laBaoCao720 ? '' : '-mx-4'}`}>{xt.cat(hienTab).map(veDong)}</ul>}</div>
+            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(xt.cat(hienTab)) : bangHv ? <BangSoPanel ten={tieuDe} cot={cotHv} hang={xt.cat(hienTab)} khoa={(r) => r.id} o={oHv} />
+              : <ul className={`m-0 list-none p-0 ${laBaoCao720 ? '' : '-mx-4'}`}>{xt.cat(hienTab).map(veDong)}</ul>}</div>
             <div className={veNgang}><XemThem {...xt} donVi={nhomCase ? t('Case') : dv ?? t('mục')} /></div>
           </>
         )}
