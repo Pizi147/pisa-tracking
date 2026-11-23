@@ -192,6 +192,7 @@ export const EN_HD_V3B = {
   'Bấm <b>Lịch thi thật ›</b> để xem ngày thi.': 'Press <b>Real exam schedule ›</b> to see the exam dates.',
   'Chọn lớp, đợt rồi xuất; tab <b>Điểm Test</b> xuất kết quả.': 'Pick the class, round, then export; tab <b>Test scores</b> exports the results.',
   'Sửa hoặc xoá một điểm đã có: bấm ô, ghi <b>Lý do sửa</b> (Head, Admin).': 'Edit or delete an existing score: press the cell, write a <b>Reason for edit</b> (Head, Admin).',
+  'Tab <b>Việc quản lý</b> có <b>+ Giao việc</b> ở đầu trang, <b>Vận hành ›</b> ở đầu nhóm.': 'Tab <b>Management tasks</b> has <b>+ Assign task</b> at the top of the page, <b>Operations ›</b> at the top of the group.',
   'Tab <b>Việc quản lý</b> (cuối) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.': 'Tab <b>Management tasks</b> (last) has <b>+ Assign task</b>, <b>Operations ›</b>, <b>Unit meeting ›</b>.',
   'Chọn <b>Của GV</b>, tab <b>Chấm điểm</b>: dòng quá hạn tô đỏ.': 'Pick <b>Teachers\'</b>, tab <b>Marking</b>: overdue rows in red.',
   'Tab <b>Ý thức & Phối hợp</b>, mục <b>Phối hợp SOS</b>: bấm dòng lớp, làm thay GVCN không cần nút riêng.': 'Tab <b>Conduct & SOS</b>, section <b>SOS coordination</b>: tap a class row, do it for the core teacher without a separate button.',
