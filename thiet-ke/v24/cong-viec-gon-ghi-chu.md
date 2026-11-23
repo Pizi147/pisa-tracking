@@ -58,31 +58,31 @@ Hướng đã cân và bỏ: ① **gom theo lớp** (đầu nhóm = lớp, dòng
 
 | # | Tiêu chí | A | B | C | D |
 |---|---|---|---|---|---|
-| 1 | Trạng thái hệ thống | 3 | 3 | 3 | DIEM_D1 |
-| 2 | Khớp thực tế | 3 | 2 | 3 | DIEM_D2 |
-| 3 | Kiểm soát, lối thoát | 3 | 3 | 3 | DIEM_D3 |
-| 4 | Nhất quán | 3 | 2 | 2 | DIEM_D4 |
-| 5 | Ngăn lỗi | 3 | 3 | 3 | DIEM_D5 |
-| 6 | Nhận ra, không phải nhớ | 3 | 3 | 3 | DIEM_D6 |
-| 7 | Hiệu quả | 3 | 3 | 2 | DIEM_D7 |
-| 8 | Tối giản | 3 | 3 | 2 | DIEM_D8 |
-| 10 | Trợ giúp | 2 | 2 | 2 | DIEM_D10 |
-| | **Tổng / 36** | **26** (72 %, Tốt) | **24** (67 %) | **23** (64 %) | DIEM_DT |
+| 1 | Trạng thái hệ thống | 3 | 3 | 3 | 3 |
+| 2 | Khớp thực tế | 3 | 2 | 3 | 3 |
+| 3 | Kiểm soát, lối thoát | 3 | 3 | 3 | 3 |
+| 4 | Nhất quán | 3 | 2 | 2 | 3 |
+| 5 | Ngăn lỗi | 3 | 3 | 3 | 3 |
+| 6 | Nhận ra, không phải nhớ | 3 | 3 | 3 | 3 |
+| 7 | Hiệu quả | 3 | 3 | 2 | 3 |
+| 8 | Tối giản | 3 | 3 | 2 | 2 |
+| 10 | Trợ giúp | 2 | 2 | 2 | 2 |
+| | **Tổng / 36** | **26** (72 %, Tốt) | **24** (67 %) | **23** (64 %) | **25** (69 %) |
 
-Điểm A / B / C chấm ở lượt một (trước khi sửa); người rà chọn **A**. Vấn đề chính được nêu: B — cột đầu lúc là số lúc là tên (P1), dòng con khó phân biệt (P2) · C — lưới vỡ khi mở, đọc zíc-zắc, không quét được theo hạn (P1), tốn chỗ (P2) · A — mã lớp và tên em cùng đậm (P2, đã sửa), chi tiết ở 375 lệch chỗ (P2, đã sửa).
+Điểm A / B / C chấm ở lượt một (trước khi sửa), D ở lượt hai; cả hai lượt người rà chọn **A** cho Công việc và **H1 (mở tại dòng)** cho Chờ duyệt. Vấn đề chính được nêu: B — cột đầu lúc là số lúc là tên (P1), dòng con khó phân biệt (P2) · C — lưới vỡ khi mở, đọc zíc-zắc, không quét được theo hạn (P1), tốn chỗ (P2) · A — mã lớp và tên em cùng đậm (P2, đã sửa), chi tiết ở 375 lệch chỗ (P2, đã sửa) · D — lặp tên việc ở mọi dòng (P1), tới 3 nhãn một dòng (P2), mã lớp lúc đứng đầu lúc đứng sau tên (P2); D dài hơn A 17 % ở 1440, mỗi dòng khoảng 8 mẩu chữ so với 4 của A.
 
-Đã sửa theo lượt rà một: A hạ tên em xuống chữ thường (chỉ mã lớp đậm) · A ở 375 dòng hai luôn "tên · chi tiết" bên trái · B / C dòng con thụt + nền rõ hơn · nút ⓘ ⋯ ✕ cùng cỡ 36, cách đều · panel một cột gập "Đã có điểm" · panel Mock đưa em còn thiếu lên trên · chân panel đếm theo "em" như danh sách · thanh tab 375 mờ dần ở mép phải (còn cuộn).
+Đã sửa theo lượt rà một: A hạ tên em xuống chữ thường (chỉ mã lớp đậm) · A ở 375 dòng hai luôn "tên · chi tiết" bên trái · B / C dòng con thụt + nền rõ hơn · nút ⓘ ⋯ ✕ cùng cỡ 36, cách đều · panel một cột gập "Đã có điểm" · panel Mock đưa em còn thiếu lên trên · chân panel đếm theo "em" như danh sách · thanh tab 375 mờ dần ở mép phải (còn cuộn). Lượt hai: cột mã lớp rộng 124 px cho mã dài ("MB Pre FOU 03") · Chờ duyệt khi Từ chối vẫn thấy chi tiết yêu cầu phía trên ô lý do · sửa khoảng trống ở nút duyệt lô.
 Chưa sửa, ghi lại: tiêu đề panel ở 375 xuống hai dòng (kiểu v23) · ngày vàng ở chế độ sáng gần màu ngày thường (token v23) · thẻ C có "›" làm ngày lệch 17 px.
 
 ## 5. Khung panel chung 720 (bản nháp)
 
 - Đầu **một dòng**: tên việc · em · lớp · hạn (cùng màu hạn như ở dòng việc) · ⓘ · ⋯ · ✕. Thân cuộn. Chân lưu cố định: trạng thái lưu bên trái, **Lưu** + **Lưu · việc tiếp ›** bên phải.
-- **Nhập điểm Pronunciation** (P1, P3): tên · ô `18 /25` (104 × 44, số 16 px, "/25" mờ trong ô) · kết quả ngay cạnh; 2 em còn thiếu ở trên, "Đã có điểm · 10 em" gập. Ô chấm sát tên, không còn nằm tít bên phải.
+- **Nhập điểm Pronunciation** (P1, P3): tên · ô `18 /25` (104 × 44, số 16 px, "/25" mờ trong ô) · kết quả ngay cạnh; 2 em còn thiếu ở trên; "Đã có điểm · 10 em" ở dưới, **mở sẵn, bấm để gập**. Ô chấm sát tên, không còn nằm tít bên phải.
 - **Nhập điểm Mock** (P2): L R W1 W2 S + Overall vừa trong 680 px (cột 76, ô 64 × 44); cột GV chấm là ô, cột người khác chấm là số xám; em còn thiếu ở trên, "Đã đủ điểm" ở dưới. Nhiều cột hơn thì cuộn ngang **trong lưới**, cột tên dính.
 - **Xác nhận Case** (A2 / B2 / C2 / D2): hàng Phụ trách · Theo dõi → nguồn Case (điểm, ngưỡng, lần trước) → Nhóm nguyên nhân → Mô tả → Phương án → Lịch sử (gập).
 - 375: panel toàn màn, cột Kết quả chỉ còn dấu ✓ / ✗; chân chỉ một nút chính.
 - Đối chiếu ảnh thật `docs/anh/ra-panel-cv/`: panel lưới đang 1 080 px, panel khác 764–835 px, nhiều panel trống nửa dưới. Khung 720 phủ được: lưới ≤ 6 cột vừa khít, nhiều hơn thì cuộn trong lưới; form một cột dư chỗ.
-- **Còn trống:** việc nhỏ (P1 chỉ 2 ô) thì nửa dưới panel 720 vẫn trống — hệ quả của "một khung chung". Lượt rà độc lập gợi ý hai mức rộng (≈ 560 cho điểm một cột / Case, 720 cho lưới nhiều cột); chủ SP đã chốt một khung nên **giữ 720**, ghi lại để chủ SP biết có lựa chọn này.
+- **Chỗ cần chủ SP quyết:** việc nhỏ (P1 chỉ 2 ô chấm) trong khung 720 cao hết màn thì hoặc để danh sách "Đã có điểm" mở sẵn cho kín panel (đang vẽ), hoặc gập lại và nửa dưới panel trống. Hai lượt rà độc lập cho hai ý ngược nhau (lượt một: gập cho bớt chữ; lượt hai: gập thì trống 85 %, lời chê "panel to quá" còn rõ hơn). Người rà gợi ý hai mức rộng (≈ 540–560 cho điểm một cột / Case, 720 cho lưới nhiều cột); chủ SP đã chốt một khung nên **giữ 720**.
 
 ## 6. Head: Chờ bạn duyệt + Việc quản lý
 
@@ -97,6 +97,7 @@ Chưa sửa, ghi lại: tiêu đề panel ở 375 xuống hai dòng (kiểu v23)
 
 - Hạn **một kiểu** như Công việc (thay chip "quá hạn 6 ngày" / chữ "hạn 14/09/2026" / hộp vàng "Còn 1 ngày"). Mỗi dòng **2 thao tác** (bỏ "Mở ›" — bấm dòng là mở; link hồ sơ nằm trong phần chi tiết). Tên người gửi một dòng, cố định cột.
 - Thẻ mới "Sửa cấp bậc · R2 → R1" (N70) vào nhóm Ý thức, cùng khuôn.
+- Từ chối ở H1: ô lý do mở ngay dưới chi tiết yêu cầu (vẫn thấy vi phạm / bằng chứng khi viết lý do). Sau Duyệt / Từ chối cần toast Hoàn tác ngắn (chưa vẽ — làm lúc code, theo luật không khoá cứng).
 - Khuyến nghị **H1**: yêu cầu duyệt là việc ngắn, phần lớn quyết được ngay trên dòng; đúng gợi ý chủ SP ("dàn trải ra, 2 nút duyệt – từ chối rõ, bấm vào cho expand").
 - **Việc quản lý** (H4 có việc · H5 rỗng): cùng khuôn A; không còn Họp đơn vị; lối "Vận hành ›" ở đầu nhóm Vận hành; rỗng = "Hết việc quản lý" + "Còn: Chờ bạn duyệt · 5 yêu cầu" + Việc tiếp › + Vận hành ›.
 
@@ -129,6 +130,8 @@ Chưa sửa, ghi lại: tiêu đề panel ở 375 xuống hai dòng (kiểu v23)
 - **[XM9]** Khung 1 của A / B / C / D nối 4 tab chỉ để so đủ 20 việc; web vẫn mỗi tab một phần. Khi panel mở, danh sách cuộn riêng (đáy mờ dần).
 - **[XM10]** Head ở tab Việc quản lý (H4) chưa chọn việc: nửa phải để trống hẳn, bỏ ô nét đứt "Chọn một việc ở danh sách" — Head không có "Lớp của tôi". Cần PTA quyết có đặt gì ở đó không.
 - **[XM11]** H2 (giữ panel) chưa vẽ ô tick duyệt lô; nếu chọn H2 phải thêm cột tick vào dòng.
+- **[XM13]** Dòng Chờ duyệt (H1) giữ thứ tự người trước + vòng chữ đầu như màn chủ SP khen, khác thứ tự lớp trước của A. Muốn đồng bộ tuyệt đối thì đổi H1 sang lớp · em · việc · người gửi · hạn · nút — chờ chủ SP chọn A hay D rồi quyết.
+- **[XM14]** Head đổi tab thì bề rộng danh sách đổi: Chờ duyệt rộng hết trang (H1), Việc quản lý 680 + chỗ cho panel (H4). Hệ quả của "mỗi danh sách một kiểu mở".
 - **[XM12]** D lặp tên việc ở dòng dưới ("Xác nhận Case · Pronunciation") dù đã có ở đầu nhóm — vẽ đúng khuôn Chờ duyệt PTA mô tả; bỏ tên việc thì D gần thành B.
 - Luật craft của impeccable chê vạch trái màu > 1 px; ở đây là luật dự án (G14 dòng đang chọn, dải đầu nhóm v23) nên giữ.
 

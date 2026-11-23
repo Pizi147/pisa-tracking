@@ -48,14 +48,14 @@
 .con .v:hover { background:var(--accent-soft); }
 
 /* A · mỗi dòng một LỚP: mã lớp đậm đứng đầu, thành một cột thẳng */
-.kA .v { grid-template-columns:112px minmax(0,1fr) 160px 120px; }
+.kA .v { grid-template-columns:124px minmax(0,1fr) 160px 120px; }
 .kA .lop { font-weight:700; }
 .kA .ai { font-weight:400; }
 .kA .v.kl .lop { display:none; }
 .kA .v.kl .ai { grid-column:1 / 3; font-weight:600; }
 
 /* B · mỗi dòng một NGƯỜI: tên em đậm đứng đầu, mã lớp là nhãn nhỏ cố định chỗ */
-.kB .v { grid-template-columns:minmax(0,1fr) 112px 160px 120px; }
+.kB .v { grid-template-columns:minmax(0,1fr) 124px 160px 120px; }
 .kB .con .v { padding-left:36px; }
 .kB .v > * { grid-row:1; }
 .kB .ai { grid-column:1; } .kB .lop { grid-column:2; } .kB .ct { grid-column:3; } .kB .cuoi { grid-column:4; }
@@ -103,6 +103,8 @@
 .hang-pv { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding-bottom:4px; }
 .hang-lo { display:flex; align-items:center; gap:12px; min-height:44px; padding:0 12px 0 16px; margin-bottom:10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); font-size:var(--c14); }
 .hang-lo .phai { margin-left:auto; display:flex; gap:8px; }
+.hang-lo .nut { gap:0; }
+.hang-lo .dai { margin-left:.28em; }
 .ds-dau .phai a { font-weight:600; }
 .yc { border-top:1px solid var(--line); }
 .ds-dau + .yc { border-top:0; }
@@ -121,6 +123,7 @@
 .yc .hn { justify-self:end; }
 .yc-nut { display:flex; gap:8px; }
 .yc-nut .nut { min-width:84px; }
+.yc-ct + .yc-tc { border-top:0; padding-top:0; }
 .yc-ct, .yc-tc { display:grid; gap:10px; padding:10px 16px 16px 86px; border-top:1px solid var(--line); background:color-mix(in srgb, var(--accent-soft) 38%, var(--surface)); }
 .kv2 { display:grid; grid-template-columns:120px minmax(0,72ch); gap:8px 12px; font-size:var(--c14); }
 .kv2 > :nth-child(odd) { font-size:var(--c13); color:var(--text-dim); padding-top:1px; }
@@ -213,7 +216,8 @@ table.lc { width:100%; border-collapse:collapse; font-size:var(--c14); }
 .od.p25 { width:104px; height:44px; grid-auto-flow:column; align-items:baseline; justify-content:start; column-gap:3px; padding:0 12px; font-size:var(--c16); }
 .od.p25 small { font-size:var(--c12); }
 .od.p25 .con-o { margin:0 3px 0 1px; align-self:center; }
-.lc tr.da td { height:42px; }
+.lc tr.da td { height:40px; }
+details.gap > table.lc td:first-child { background:none; }
 .lc tr.da td:first-child { font-weight:500; }
 .lc tr.tach td, .lc tr.tach td:first-child { height:36px; background:var(--surface-2); font:600 var(--c13) var(--phong); color:var(--text-dim); text-align:left; padding-left:14px; }
 .lc .diem { display:inline-block; width:104px; padding-left:12px; text-align:left; font:500 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; color:var(--text-dim); }
@@ -495,7 +499,8 @@ function pnP(dt) {
           <tr><td><a href="#">Mai Hải Long</a></td><td class="o-c"><button class="od p25 go" aria-label="Pronunciation · Mai Hải Long">18<span class="con-o"></span><small>/25</small></button></td><td class="kq-c">${kqP(18)}</td></tr>
           <tr><td><a href="#">Phan Đức Duy</a></td><td class="o-c"><button class="od p25 trong" aria-label="Pronunciation · Phan Đức Duy">–<small>/25</small></button></td><td class="kq-c"><span class="kq cho"><span class="chu">Chưa có điểm</span></span></td></tr>
         </tbody></table></div>
-      <details class="gap"><summary>${chev('')}<span class="ten-gap">Đã có điểm</span><span class="tom"><span>${DA_CO_P.length} em</span><span>${DA_CO_P.filter((x) => x[1] < 15).length} chưa đạt</span></span></summary></details>
+      <details class="gap" open><summary>${chev('')}<span class="ten-gap">Đã có điểm</span><span class="tom"><span>${DA_CO_P.length} em</span><span>${DA_CO_P.filter((x) => x[1] < 15).length} chưa đạt</span></span></summary>
+        <table class="lc mot"><colgroup><col class="c-ten"><col><col></colgroup><tbody>${DA_CO_P.map(([ten, d]) => `<tr class="da"><td><a href="#">${ten}</a></td><td class="o-c"><span class="diem">${d}/25</span></td><td class="kq-c">${kqP(d)}</td></tr>`).join('')}</tbody></table></details>
     </div>
     ${chanPn('<span class="luu nhap">Chưa lưu · còn 2 em</span>', NUT_LUU(dt))}
   </section>`;
@@ -535,19 +540,25 @@ const thanhTrenHead = `<div class="tt"><span class="logo"><b>PISA</b><span>TRACK
 const dauHead = (dang, soQl = 11) => `<div class="dau-trang"><h1>Công việc</h1><span class="dem"><b>${5 + soQl}</b> việc · <span class="qua"><b>${soQl ? 8 : 2}</b> quá hạn</span></span></div>
   <div class="hang-pv"><div class="doan"><button class="on">Của tôi</button><button>Của GV</button><button>Tất cả</button></div><span class="o-chon">Lọc thêm</span><button class="nut">+ Giao việc</button></div>
   <div class="tabs" role="tablist">${[['Chờ bạn duyệt', 5, 1], ['Case học thuật'], ['Ý thức & Phối hợp'], ['Việc quản lý', soQl, 1], ['Đang theo dõi']].map(([ten, so, doo]) => `<button class="tab" role="tab" aria-selected="${ten === dang}">${ten}${so ? ` <span class="bd${doo ? ' do' : ''}">${so}</span>` : ''}</button>`).join('')}</div>`;
+const CT_YC = {
+  y2: `<span>Điểm</span><span>Speaking <b class="so">5.0</b> · kỳ vọng <b class="so">6.0</b> · Mock W1 SEP</span>
+      <span>Đề xuất</span><span><b>Bổ trợ Speaking 4 buổi</b> với GV Ngô Bảo Nam, từ W3 SEP. Em trả lời Part 2 ngắn, hay bỏ âm cuối.</span>
+      <span>Sau khi duyệt</span><span>PA chạy từ W3 SEP · GV Ngô Bảo Nam nhận việc Ghi Mini Test</span>
+      <span></span><span><a href="#">Hồ sơ Case ›</a></span>`,
+  y4: `<span>Đề xuất</span><span>Xử lý <b>WL 3</b> — ngoài thang (em đang WL 1)</span>
+      <span>3 vi phạm</span><span><b>03/09/2026</b> Vắng không phép · <b>05/09/2026</b> Không làm bài · <b>10/09/2026</b> Vắng không phép</span>
+      <span>1 bằng chứng</span><span><a href="#">bien-ban-05-09.pdf</a></span>
+      <span>Sau khi duyệt</span><span>Em nhận WL 3 · TVV báo phụ huynh</span>`,
+};
 /* kiểu (i): mở tại dòng. tt = { mo: id đang mở chi tiết, tuChoi: id đang gõ lý do, tick: [id] } */
 function dongYc(y, tt) {
   const mo = tt.mo === y.id; const tc = tt.tuChoi === y.id;
   const nh = y.nh ? y.nh.map((x, i) => `<span class="chip${i ? ' tuan' : ''}">${x}</span>`).join('') : y.phu ?? '';
   return `<div class="yc${mo || tc ? ' mo' : ''}"><div class="yc-dong"><input type="checkbox" class="tick" aria-label="Chọn: ${y.viec} · ${y.ten}"${tt.tick.includes(y.id) ? ' checked' : ''}>
     <button type="button" class="yc-mo" aria-expanded="${mo}"><span class="hinh" aria-hidden="true">${tat(y.ten)}</span><span class="ai">${y.ten}<span class="lop">${y.lop}</span></span><span class="vd"><span class="lop2">${y.lop} · </span>${y.viec}</span><span class="duoi"><span class="nh">${nh}</span><span class="lq">${y.gui} gửi</span></span>${hanChu(y.han)}${chev('xo')}</button>
-    <span class="yc-nut"><button class="nut nut-nho"${tc ? ' disabled' : ''}>Từ chối</button><button class="nut nut-nho nut-chinh"${tc ? ' disabled' : ''}>Duyệt</button></span></div>${mo ? `<div class="yc-ct"><div class="kv2">
-      <span>Điểm</span><span>Speaking <b class="so">5.0</b> · kỳ vọng <b class="so">6.0</b> · Mock W1 SEP</span>
-      <span>Đề xuất</span><span><b>Bổ trợ Speaking 4 buổi</b> với GV Ngô Bảo Nam, từ W3 SEP. Em trả lời Part 2 ngắn, hay bỏ âm cuối.</span>
-      <span>Sau khi duyệt</span><span>PA chạy từ W3 SEP · GV Ngô Bảo Nam nhận việc Ghi Mini Test</span>
-      <span></span><span><a href="#">Hồ sơ Case ›</a></span></div></div>` : ''}${tc ? `<div class="yc-tc"><div class="truong"><span class="lb">Lý do từ chối <span class="sao">*</span></span><span class="o lon go"><span>Thiếu biên bản buổi 05/09/2026 — bổ sung rồi gửi lại.<span class="con"></span></span></span></div><div class="hang"><button class="nut">Huỷ</button><button class="nut nut-chinh">Gửi từ chối</button></div></div>` : ''}</div>`;
+    <span class="yc-nut"><button class="nut nut-nho"${tc ? ' disabled' : ''}>Từ chối</button><button class="nut nut-nho nut-chinh"${tc ? ' disabled' : ''}>Duyệt</button></span></div>${(mo || tc) && CT_YC[y.id] ? `<div class="yc-ct"><div class="kv2">${CT_YC[y.id]}</div></div>` : ''}${tc ? `<div class="yc-tc"><div class="truong"><span class="lb">Lý do từ chối <span class="sao">*</span></span><span class="o lon go"><span>Thiếu biên bản buổi 05/09/2026 — bổ sung rồi gửi lại.<span class="con"></span></span></span></div><div class="hang"><button class="nut">Huỷ</button><button class="nut nut-chinh">Gửi từ chối</button></div></div>` : ''}</div>`;
 }
-const dsYc = (tt) => `<div class="hang-lo"><input type="checkbox" class="tick" data-mot-phan aria-label="Chọn tất cả"><span>Đã chọn <b class="so">${tt.tick.length}</b></span><span class="phai"><button class="nut nut-nho">Bỏ chọn</button><button class="nut nut-nho nut-chinh">Duyệt ${tt.tick.length}<span class="dai">&nbsp;yêu cầu</span></button></span></div>`
+const dsYc = (tt) => `<div class="hang-lo"><input type="checkbox" class="tick" data-mot-phan aria-label="Chọn tất cả"><span>Đã chọn <b class="so">${tt.tick.length}</b></span><span class="phai"><button class="nut nut-nho">Bỏ chọn</button><button class="nut nut-nho nut-chinh">Duyệt ${tt.tick.length}<span class="dai">yêu cầu</span></button></span></div>`
   + YC.map((n) => { const q = demQua(n.ds); return `<section class="ds"><div class="ds-dau"><h3>${n.ten}</h3><span>${n.ds.length} yêu cầu${q ? ` · <span class="qua-chu">${q} quá hạn</span>` : ''}</span></div>${n.ds.map((y) => dongYc(y, tt)).join('')}</section>`; }).join('');
 const TT_YC = { mo: 'y2', tuChoi: 'y4', tick: ['y1', 'y3'] };
 const YC_A = [{ tab: 'x', nhom: YC.map((n) => ({ ten: n.ten, donVi: 'yêu cầu', viec: n.ds.map((y) => ({ id: y.id, lop: y.lop, ten: y.ten, ct: y.viec, han: y.han })) })) }];
