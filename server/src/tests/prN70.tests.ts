@@ -183,4 +183,22 @@ export async function runPrN70Tests(t: YThucTestKit) {
     const hh = lo.loHoanTacCapBac(head, cid, { em: rh.em.map((x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })) });
     assert(hh.em.every((x: any) => x.ok) && khai(cu).bac === 2 && !khai(moi), JSON.stringify(hh));
   }));
+
+  /* Tốc độ (CLAUDE.md "Tốc độ + compute"): thẻ chờ đọc KÈM câu khai sẵn có → mở hồ sơ / bảng lô không thêm câu; lô gửi duyệt nặng hơn lô áp ngay (thẻ + chuông
+     Head) nên web chia lô 4 em khi có em gửi duyệt — khoá trần câu mỗi em. */
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const dem = (fn: () => unknown) => { const truoc = soCauSql(); fn(); return soCauSql() - truoc; };
+  await checkAsync('N70-9 · Tốc độ: hồ sơ Ý thức + bảng lô KHÔNG thêm câu khi em có thẻ sửa bậc đang chờ; lô GVCN gửi Head duyệt ≤ 17 câu / em (lô 4 em)', () => thu(() => {
+    const a = moiEm();
+    xu.khaiBac(gvcn, a, { bac: 2, ghiChu: 'Report 2' });
+    const hs0 = dem(() => hs(gvcn, a)), lo0 = dem(() => lo.loYThucLop(gvcn, cid));
+    xu.suaKhaiBac(gvcn, a, { bac: 1, ghiChu: 'Hạ về Report 1', bacCu: 2 });
+    const hs1 = dem(() => hs(gvcn, a)), lo1 = dem(() => lo.loYThucLop(gvcn, cid));
+    assert(hs(gvcn, a).khai.cho && hs1 === hs0 && lo1 === lo0, `hồ sơ ${hs0} → ${hs1} câu · bảng lô ${lo0} → ${lo1} câu`);
+    const ems = Array.from({ length: 4 }, () => moiEm());
+    for (const sid of ems) xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2' });
+    const n = dem(() => { const r = lo.loCapBac(gvcn, cid, { em: ems.map((studentId) => ({ studentId, bac: 1 })), ghiChu: 'Rà lại hồ sơ giấy' }); assert(r.em.every((x: any) => x.ok && x.guiDuyet), JSON.stringify(r)); });
+    console.log(`      đo: hồ sơ Ý thức ${hs1} câu · bảng lô ${lo1} câu (có / không thẻ chờ như nhau) · lô gửi duyệt ${n} câu / 4 em = ${(n / 4).toFixed(1)}`);
+    assert(n / 4 <= 17, `lô gửi duyệt ${(n / 4).toFixed(1)} câu / em`);
+  }));
 }

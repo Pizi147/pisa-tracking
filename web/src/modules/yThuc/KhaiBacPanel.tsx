@@ -127,7 +127,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
         ...(onTiep ? { huy: null } : {}),
         phu: onTiep ? <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{canDuyet ? t('Gửi Head duyệt') : t('Lưu')}</button></> : undefined,
         chinh: onTiep
-          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{canDuyet ? t('Gửi duyệt · việc tiếp ›') : t('Lưu · việc tiếp ›')}</button>
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{canDuyet ? t('Gửi Head duyệt · việc tiếp ›') : t('Lưu · việc tiếp ›')}</button>
           : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{canDuyet ? t('Gửi Head duyệt') : laSua ? t('Lưu') : t('Xác nhận')}</button>,
       }}>
       {cho && d.khai && (

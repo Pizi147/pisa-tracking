@@ -8,7 +8,7 @@ export const EN_N70 = {
   'Lý do sửa — Head đọc để duyệt': 'Reason for the change — the Head reads it',
   'GVCN đã gửi duyệt': 'Core teacher sent for approval',
   'Mở Chờ duyệt': 'Open Approvals',
-  'Gửi duyệt · việc tiếp ›': 'Send · next task ›',
+  'Gửi Head duyệt · việc tiếp ›': 'Send to Head · next task ›',
   'Gửi Head duyệt · {n} em': 'Send to Head · {n}',
   '{n} em gửi Head duyệt': '{n} sent to Head',
   '{m} em đã gửi Head duyệt': '{m} sent to Head',
@@ -22,6 +22,7 @@ export const EN_N70 = {
   'Yêu cầu sửa bậc của em không còn chờ Head — không hoàn tác em này.': 'This student’s level-change request is no longer pending — not undone.',
   'Sửa bậc đã khai cần Head duyệt — không hoàn tác em này.': 'Changing a declared level needs Head approval — not undone.',
   'Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa': 'The level changed after this was sent — send again if still needed',
+  'Gửi Head duyệt sửa cấp bậc vi phạm': 'Sent incident-level change to Head',
   /* Hướng dẫn (GV: thẻ khai-bac · Head: thẻ duyet-y-thuc) */
   'Chọn <b>Bậc đã xử lý</b> và ngày hoặc tháng.': 'Pick the <b>Level handled</b> and a date or month.',
   'Sửa bậc đã khai: <b>Sửa cấp bậc</b>, ghi <b>Lý do sửa</b>, <b>Gửi Head duyệt</b>; bậc cũ giữ tới khi Head duyệt.': 'To change a declared level: <b>Edit level</b>, fill <b>Reason for the change</b>, <b>Send to Head</b>; the old level stays until approved.',

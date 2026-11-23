@@ -104,7 +104,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     const okMoi: KqEm[] = [];
     setKqHoanTac(new Map());
     try {
-      await guiTheoLo(ids, CO_LO['cap-bac'], (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac`, {
+      /* N70: em gửi Head duyệt tốn nhiều câu hơn em áp ngay (thẻ + chuông Head) → lô nhỏ như Xác nhận xử lý để một lời gọi vừa giờ Netlify. */
+      await guiTheoLo(ids, soGuiDuyet ? CO_LO['xu-ly'] : CO_LO['cap-bac'], (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac`, {
         em: lo.map((sid) => ({ studentId: sid, bac: daGui.get(sid), thang: thangCua(theoId.get(sid)!) })), ghiChu: ghiChu.trim() || undefined,
       }), (em) => {
         okMoi.push(...em.filter((x) => x.ok));

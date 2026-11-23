@@ -1184,9 +1184,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/role="radiogroup" aria-label=\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
-  check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú tuỳ chọn; QL sửa bằng PUT', () => {
+  check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), ngày / tháng tuỳ chọn (N70), ghi chú tuỳ chọn; sửa bằng PUT', () => {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
-    assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && !/GHI_CHU_MIN/.test(s) && /nhan=\{t\('Ghi chú'\)\} tuyChon/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
+    assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && !/GHI_CHU_MIN/.test(s) && /nhan=\{t\('Ghi chú'\)\} tuyChon/.test(s) && /api\.put</.test(s) && /kieu="ngay-hoac-thang"/.test(s), 'khai bậc');
   });
   check('YT4 (8) · + Vi phạm / Nhắc nhở (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);
