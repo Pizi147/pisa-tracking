@@ -12,7 +12,7 @@ Chủ SP 24/11 (plan.md 599 mục 3, trước đó [XM-15] PR-5). Mockup `thiet-
 | — | Nút chọn "Đạt" (sửa kỳ vọng tại dòng, thanh áp) khi đang chọn | `border-doing text-kq-bang` → `border-ok-line text-ok` | — | ĐỒNG BỘ (mockup không vẽ; một nghĩa một màu) |
 | K1, K3 | "Head cân nhắc" (chữ mờ) · "Không đạt" / ✗ (đỏ) | không đổi | các ảnh | GIỮ |
 
-Chỉ đổi trong Cuối khoá. Luật màu chung (DESIGN mục kết quả: ✓ xanh dương = bằng kỳ vọng) vẫn áp ở các màn khác; phép kiểm `prMauKq` không ràng vào tệp này.
+Chỉ đổi trong Cuối khoá. Luật màu chung (DESIGN mục kết quả: ✓ xanh dương = bằng kỳ vọng) vẫn áp ở các màn khác; phép kiểm MK-4 (`prMauKq`) có ngoại lệ chỉ cho `CuoiKhoaLop.tsx`.
 
 ## Thao tác TRƯỚC → SAU
 Không đổi thao tác (chỉ đổi màu).
