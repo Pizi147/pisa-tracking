@@ -196,15 +196,15 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     const plan = all(`EXPLAIN QUERY PLAN SELECT id FROM ban_giao_gv b WHERE b.trang_thai = 'mo' AND (b.nguoi_lam = ? OR b.nguoi_lam IS NULL)`, gA).map((r) => r.detail).join(' | ');
     assert(/ix_bg_gv_mo/.test(plan), plan);
   });
-  check('B1 · GV cũ còn việc mở → xem lớp ngày +30 được; xác nhận xong + quá xem_den → hết', () => thu(() => {
+  check('B1 · GV cũ còn việc mở → xem lớp ngày +45 được; xác nhận xong + quá xem_den → hết', () => thu(() => {
     luu(X, { listening: gB, speaking: gB, gvcn: gB });
     const v = viecCua(X)[0];
-    assert(xemTamCo(loadPrincipal(gA), { classId: X, date: addDays(TODAY, 30) }), 'còn việc mở → xem +30');
+    assert(xemTamCo(loadPrincipal(gA), { classId: X, date: addDays(TODAY, 45) }), 'còn việc mở → xem +45');
     for (const sid of emX) for (const mon of ['listening', 'speaking', 'gvcn']) bg.ghiGopYGv(loadPrincipal(gA), v.id, { studentId: sid, mon, noiDung: 'ok' });
     bg.xacNhanBanGiaoGv(loadPrincipal(gA), v.id);
     xoaNho();
     const a = loadPrincipal(gA);
-    assert(!xemTamCo(a, { classId: X, date: addDays(TODAY, 30) }) && xemTamCo(a, { classId: X, date: addDays(TODAY, 3) }), 'sau xác nhận về mốc 7 ngày');
+    assert(!xemTamCo(a, { classId: X, date: addDays(TODAY, 31) }) && xemTamCo(a, { classId: X, date: addDays(TODAY, 30) }), 'sau xác nhận về mốc 30 ngày (N68)');
   }));
 
   /* ---------------------------------------------------------------- B2 */
@@ -299,7 +299,7 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     xoaNho();
     const pr = { phase: 'running', finalWeekStart: null, startWeekStart: start, totalWeeks: 8 };
     const a = dai.daiLop(loadPrincipal(gA), X, { pr, ft: true, ct: null });
-    assert(a.xemTam && a.xemTam.monNgan.includes('L') && a.xemTam.den === addDays(TODAY, 7) && a.xemTam.banGiao?.tong === 2 && a.xemTam.nguoiMoi.id === gB, JSON.stringify(a.xemTam));
+    assert(a.xemTam && a.xemTam.monNgan.includes('L') && a.xemTam.den === addDays(TODAY, 30) && a.xemTam.banGiao?.tong === 2 && a.xemTam.nguoiMoi.id === gB, JSON.stringify(a.xemTam));
     assert(a.banGiaoGv.length === 1 && a.banGiaoGv[0].vai === 'viet', JSON.stringify(a.banGiaoGv));
     const c = dai.daiLop(loadPrincipal(gC), X, { pr, ft: true, ct: null });
     assert(c.xemTam === null && c.banGiaoGv.length === 0, JSON.stringify(c));

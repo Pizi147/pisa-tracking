@@ -78,8 +78,8 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(d.caseThuocO('FT', 'gvcn', con, 'reading') && !d.caseThuocO('FT', 'gvcn', con, 'listening') && d.caseThuocO('FT', 'gvcn', con, null), 'ô GVCN');
     assert(d.caseThuocO('FT', 'writing1', new Set(), 'writing1') && !d.caseThuocO('FT', 'writing1', new Set(), 'writing2'), 'ô W1');
   });
-  check('A1 · mốc: xemDen 30/10 → 06/11, 02/11 → 09/11; hạn bàn giao 30/10 → 03/11', () => {
-    assert(d.xemDen('2026-10-30') === '2026-11-06' && d.xemDen('2026-11-02') === '2026-11-09', 'xemDen');
+  check('A1 · mốc (N68: 30 ngày): xemDen 30/10 → 29/11, 02/11 → 02/12; hạn bàn giao 30/10 → 03/11', () => {
+    assert(d.xemDen('2026-10-30') === '2026-11-29' && d.xemDen('2026-11-02') === '2026-12-02', 'xemDen');
     assert(d.hanBanGiaoGv('2026-10-30') === '2026-11-03', d.hanBanGiaoGv('2026-10-30'));
   });
   check('A1 · nguoiVietBanGiao: A không nghỉ → gv-cu; A nghỉ → GVCN P; A nghỉ và là GVCN → QL', () => {
@@ -139,11 +139,11 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const cm = all(`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'doi_phan_cong' AND name LIKE 'ix_doi_pc_%'`).map((r) => r.name).sort().join(',');
     assert(cm === 'ix_doi_pc_cho,ix_doi_pc_cu,ix_doi_pc_lop', cm);
   });
-  check('A2 · Ngay hôm nay: QL đổi L X → dòng da_ap; dòng cũ ended effective_to = hôm nay; người mới active từ hôm nay; xem_den = +7', () => thu(() => {
+  check('A2 · Ngay hôm nay: QL đổi L X → dòng da_ap; dòng cũ ended effective_to = hôm nay; người mới active từ hôm nay; xem_den = +30 (N68)', () => thu(() => {
     const r = pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'listening', gB) }] });
     const dong = one(`SELECT * FROM doi_phan_cong WHERE id = ?`, r.lo);
     assert(dong.trang_thai === 'da_ap' && dong.khoa === 'listening' && dong.nguoi_cu === gA && dong.nguoi_moi === gB && dong.lo === r.lo, JSON.stringify(dong));
-    assert(dong.xem_den === addDays(TODAY, 7) && dong.tao_ban_giao === 1, `xem_den ${dong.xem_den}`);
+    assert(dong.xem_den === addDays(TODAY, 30) && dong.tao_ban_giao === 1, `xem_den ${dong.xem_den}`);
     const cu = one(`SELECT * FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' ORDER BY id DESC LIMIT 1`, X, gA);
     const moi = one(`SELECT * FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, X, gB);
     assert(cu.status === 'ended' && cu.effective_to === TODAY && moi?.effective_from === TODAY, JSON.stringify({ cu, moi }));
@@ -298,7 +298,7 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const k1 = pc.apDoiDenHan(TODAY);
     const dong = one(`SELECT * FROM doi_phan_cong WHERE id = ?`, r.lo);
     const moi = one(`SELECT effective_from FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, X, gB);
-    assert(k1.daAp === 1 && dong.trang_thai === 'da_ap' && dong.xem_den === addDays(TODAY, 7) && moi?.effective_from === TODAY && chu(cL) === gB, JSON.stringify({ k1, dong, moi }));
+    assert(k1.daAp === 1 && dong.trang_thai === 'da_ap' && dong.xem_den === addDays(TODAY, 30) && moi?.effective_from === TODAY && chu(cL) === gB, JSON.stringify({ k1, dong, moi }));
     const n = demTa(X);
     const k2 = pc.apDoiDenHan(TODAY);
     assert(k2.daAp === 0 && demTa(X) === n, JSON.stringify(k2));
@@ -372,11 +372,13 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(perm.can(c, PM.ATTEMPT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { classId: X }) && perm.can(c, PM.STUDENT_VIEW, { studentId: emX }), 'xem được');
     assert(!perm.can(c, PM.SCORE_EDIT, { classId: X, skill: 'reading' }) && !perm.can(c, PM.SOS_REPORT, { classId: X }) && !perm.can(c, PM.VIOLATION_RECORD, { classId: X }), 'không sửa');
   }));
-  /* PR-B: còn việc bàn giao mở thì GV cũ xem tới khi xong (lâu hơn của hai mốc) — hai phép kiểm mốc 7 ngày dưới đây lưu KHÔNG tạo việc bàn giao. */
-  check('A5 · hết mốc (hiệu lực + 8 ngày): không xem; PTA 30/10: lớp cũ KHÔNG vào phạm vi danh sách / việc / chỉ số (scopeFor không có lớp)', () => thu(() => {
+  /* PR-B: còn việc bàn giao mở thì GV cũ xem tới khi xong (lâu hơn của hai mốc) — hai phép kiểm mốc 30 ngày (N68) dưới đây lưu KHÔNG tạo việc bàn giao. */
+  check('A5 · hết mốc (hiệu lực + 31 ngày): không xem; PTA 30/10: lớp cũ KHÔNG vào phạm vi danh sách / việc / chỉ số (scopeFor không có lớp)', () => thu(() => {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB), banGiao: { reading: false } }] });
     const c = loadPrincipal(gC);
-    assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 8) }), '+8 không xem');
+    assert(!perm.can(c, PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 31) }), '+31 không xem');
+    conn.prepare(`UPDATE doi_phan_cong SET xem_den = ? WHERE class_id = ? AND nguoi_cu = ?`).run(addDays(TODAY, 7), X, gC);   // N68: dòng cũ lưu mốc 7 ngày
+    assert(perm.can(loadPrincipal(gC), PM.ATTEMPT_VIEW, { classId: X, date: addDays(TODAY, 20) }), 'N68: dòng đã lưu mốc 7 ngày vẫn xem tới 30 ngày (tính lại bằng xemCuDen)');
     for (const q of [PM.ATTEMPT_VIEW, PM.STUDENT_VIEW]) assert(!perm.scopeFor(c, q, TODAY).classIds.includes(X), `scopeFor ${q} không có lớp cũ`);
   }));
   check('A5 · PTA 30/10: Công việc / Tổng quan GV cũ không tính lớp cũ; trang Học viên & Lớp trả lớp cũ ở lopChiXem (Chỉ xem · đã bàn giao), hết mốc thì mất', () => thu(() => {
@@ -390,8 +392,8 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     assert(viec.length === 0, `việc lớp cũ: ${viec.length} (trước ${truoc})`);
     const tr = hvl.danhSachHocVienLop(c, {});
     assert(!tr.rows.some((r: any) => r.id === X), 'không là hàng lớp thường');
-    assert(tr.lopChiXem?.length === 1 && tr.lopChiXem[0].id === X && tr.lopChiXem[0].code === 'MB PCGV-X' && tr.lopChiXem[0].den === addDays(TODAY, 7), JSON.stringify(tr.lopChiXem));
-    assert(perm.lopXemTam(c, addDays(TODAY, 8)).length === 0, 'hết mốc');
+    assert(tr.lopChiXem?.length === 1 && tr.lopChiXem[0].id === X && tr.lopChiXem[0].code === 'MB PCGV-X' && tr.lopChiXem[0].den === addDays(TODAY, 30), JSON.stringify(tr.lopChiXem));
+    assert(perm.lopXemTam(c, addDays(TODAY, 31)).length === 0, 'hết mốc');
   }));
   check('A5 · classOverview của GV cũ đọc được, không có quyền nhập điểm / + Case', () => thu(() => {
     pc.luuPhanCong(QL, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }] });
@@ -595,7 +597,7 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const moi = one(`SELECT effective_from f FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' AND status = 'active'`, X, gB);
     const cu = one(`SELECT effective_to t FROM teacher_assignments WHERE class_id = ? AND user_id = ? AND skill = 'listening' ORDER BY id DESC LIMIT 1`, X, gA);
     const dong = one(`SELECT xem_den FROM doi_phan_cong WHERE id = ?`, r.lo);
-    assert(moi?.f === TODAY && cu?.t === TODAY && dong.xem_den === addDays(TODAY, 7), JSON.stringify({ moi, cu, dong }));
+    assert(moi?.f === TODAY && cu?.t === TODAY && dong.xem_den === addDays(TODAY, 30), JSON.stringify({ moi, cu, dong }));
   }));
   check('PTA-P3 · Huỷ lịch L A→B, rồi đổi NGAY L A→C, Hoàn tác huỷ → 409 (không dựng lại lịch lỗi thời)', () => thu(() => {
     const r = henL(gB);

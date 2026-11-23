@@ -1,7 +1,7 @@
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
-import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan } from '../../../shared/domain/index.ts';
+import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan, xemDen } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { lopXemTam, type Principal } from '../permissions.ts';
@@ -156,7 +156,7 @@ function daiBanGiaoGv(p: Principal, classId: number, ct: string | null, rows: an
   const cua = banGiaoGv.find((x) => !x.xong && rows.some((r) => r.k === 'bgv' && r.a === x.id && r.g === p.userId)) ?? null;
   const xemTam: DaiLop['xemTam'] = con && xt.length ? {
     monNgan: [...new Set(xt.map((r) => nhanCotBg(ct, r.a)))], nguoiMoi: { id: xt[xt.length - 1].c, ten: xt[xt.length - 1].b },
-    tu: xt.map((r) => r.d as string).sort()[0], den: xt.map((r) => r.e as string).sort().reverse()[0],
+    tu: xt.map((r) => r.d as string).sort()[0], den: xt.map((r) => xemDen(r.d as string)).sort().reverse()[0],   // N68: cùng hàm với quyền (`xemCuDen`), không đọc mốc đã lưu
     banGiao: cua ? { id: cua.id, du: cua.du, tong: cua.tong } : null,
   } : null;
   return { banGiaoGv, xemTam };

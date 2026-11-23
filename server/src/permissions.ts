@@ -1,5 +1,5 @@
 import { DS_JSON, db, theoLoJson } from './db.ts';
-import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
+import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, xemCuDen, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoBang } from './platform/nguCanhRequest.ts';
@@ -92,14 +92,14 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
   (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
      FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong,
   (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang,
-  (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.xem_den, d.id)) FROM (SELECT x.class_id, x.hieu_luc, x.id,
-       CASE WHEN EXISTS (SELECT 1 FROM ban_giao_gv b WHERE b.class_id = x.class_id AND b.nguoi_cu = x.nguoi_cu AND b.trang_thai = 'mo') THEN '9999-12-31' ELSE x.xem_den END AS xem_den
+  (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.bg_mo, d.id)) FROM (SELECT x.class_id, x.hieu_luc, x.id,
+       EXISTS (SELECT 1 FROM ban_giao_gv b WHERE b.class_id = x.class_id AND b.nguoi_cu = x.nguoi_cu AND b.trang_thai = 'mo') AS bg_mo
      FROM doi_phan_cong x WHERE x.nguoi_cu = u.id AND x.trang_thai = 'da_ap' AND x.xem_den IS NOT NULL ORDER BY x.id) d) AS u_xem_tam,
   (SELECT json_group_array(json_array(b.sid, (SELECT e.class_id FROM enrollments e WHERE e.student_id = b.sid AND e.status IN ('active', 'paused')
                                                 ORDER BY e.status = 'active' DESC, e.id DESC LIMIT 1))) FROM (
      SELECT DISTINCT sc.student_id AS sid FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
       WHERE iv.performer_user_id = u.id AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done'
-        AND sc.student_id IS NOT NULL) b) AS u_bo_tro`;   // PR-B: còn việc bàn giao mở → xem tới khi xong (lâu hơn của hai mốc) · GV-CU-BO-TRO: chỉ mục idx_iv_nguoi_day_bo_tro
+        AND sc.student_id IS NOT NULL) b) AS u_bo_tro`;   // N68: `xem_den` có = được xem; tới ngày nào tính bằng `xemCuDen` (bàn giao mở → tới khi xong) · GV-CU-BO-TRO: chỉ mục idx_iv_nguoi_day_bo_tro
 
 export function loadPrincipal(userId: number): Principal {
   const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;
@@ -145,7 +145,7 @@ export function principalTuDong(row: any): Principal {
     ngonNgu: row.u_ngon_ngu ?? null,
     daXemHuongDan: Number(row.u_da_xem_hd) || 0,
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
-    xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, den, doiId]) => ({ classId, tu, den, doiId })),
+    xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, bgMo, doiId]) => ({ classId, tu, den: xemCuDen(tu, !!bgMo), doiId })),
     boTro: (row.u_bo_tro ? JSON.parse(row.u_bo_tro) as any[][] : []).map(([studentId, classId]) => ({ studentId, classId: classId ?? null })),
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
@@ -322,7 +322,8 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
     /* TD4: ghi danh + `students.branch_id` MỘT câu (trước hai câu mỗi lô) — em không ghi danh nào vẫn ra một dòng (`trang_thai` NULL). */
     for (const r of db()
       .prepare(
-        `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid, substr(e.ended_at, 1, 10) AS roi
+        `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid, substr(e.ended_at, 1, 10) AS roi,
+                  CASE WHEN e.status IN ('transferred', 'completed') THEN EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND l.trang_thai = 'da_chuyen' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) END AS bg
            FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
           WHERE s.id IN (${DS_JSON})`,
       )
@@ -331,7 +332,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
       if (r.trang_thai == null) continue;
       lopCua.get(r.sid)!.push(r.cid);
       ghiDanh.get(r.sid)!.push({ id: r.eid, class_id: r.cid, status: r.trang_thai });
-      if (LA_ROI_LOP(r.trang_thai) && NGAY_HOP_LE(r.roi)) roiLop.get(r.sid)!.push({ classId: r.cid, ngay: r.roi });
+      if (LA_ROI_LOP(r.trang_thai) && NGAY_HOP_LE(r.roi)) roiLop.get(r.sid)!.push({ classId: r.cid, ngay: r.roi, bgMo: !!r.bg });
       if (r.trang_thai === 'active') {
         coActive.add(r.sid);
         const cu = lopActive.get(r.sid);
@@ -538,26 +539,26 @@ export function lopXemTam(p: Principal, date = demoToday()): { classId: number; 
 
 /**
  * N48 (chủ SP 16/11, audit câu 3): GV KHÔNG dạy em vẫn bị chặn; NGOẠI LỆ theo dõi — GV / GVCN lớp CŨ của em (phân công còn hiệu lực ở ngày em rời lớp đó:
- * chuyển lớp, lên lớp sau Cuối khoá) xem CHỈ ĐỌC hồ sơ em trong `NGAY_XEM_LOP_CU` ngày từ ngày rời. Chỉ `ATTEMPT_VIEW` + `STUDENT_VIEW` có `studentId` (đúng em đó);
+ * chuyển lớp, lên lớp sau Cuối khoá) xem CHỈ ĐỌC hồ sơ em tới `xemCuDen(ngày rời, phiếu bàn giao chuyển lớp chưa xác nhận)` (N68: 30 ngày hoặc tới khi bàn giao xong). Chỉ `ATTEMPT_VIEW` + `STUDENT_VIEW` có `studentId` (đúng em đó);
  * mọi quyền sửa không đổi (ghi theo lớp đang học — GV lớp cũ không có). Mẫu như `xemTamCo` / `boTroTamCo`; hỏi SAU khi quyền thật không cho (0 câu ở đường thường).
  * Ngày rời đọc cùng câu ghi danh `napTruocPhamVi` (danh sách); một em lẻ: một câu nhỏ, nhớ theo request.
  */
-export const NGAY_XEM_LOP_CU = 30;
-type RoiLop = { classId: number; ngay: string };
+type RoiLop = { classId: number; ngay: string; bgMo: boolean };
 const LA_ROI_LOP = (st: string | null | undefined) => st === 'transferred' || st === 'completed';
 /** Rà #1804: `ended_at` trống / sai dạng (dữ liệu cũ) → bỏ dòng (không ngoại lệ), không ném RangeError. */
 const NGAY_HOP_LE = (d: unknown): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d));
 function roiLopCua(studentId: number): RoiLop[] {
   return nho('hv-roi:' + studentId, () => (db().prepare(
-    `SELECT class_id AS classId, substr(ended_at, 1, 10) AS ngay FROM enrollments WHERE student_id = ? AND status IN ('transferred', 'completed') AND ended_at IS NOT NULL`,
-  ).all(studentId) as RoiLop[]).filter((r) => NGAY_HOP_LE(r.ngay)));
+    `SELECT e.class_id AS classId, substr(e.ended_at, 1, 10) AS ngay, EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND l.trang_thai = 'da_chuyen' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) AS bgMo
+       FROM enrollments e WHERE e.student_id = ? AND e.status IN ('transferred', 'completed') AND e.ended_at IS NOT NULL`,
+  ).all(studentId) as any[]).filter((r) => NGAY_HOP_LE(r.ngay)).map((r) => ({ classId: r.classId, ngay: r.ngay, bgMo: !!r.bgMo })));
 }
 /** Lớp cũ người xem dạy em (còn trong hạn xem) — `den` = ngày cuối được xem. null = không phải ngoại lệ lớp cũ. */
 export function lopCuXem(p: Principal, studentId: number, date = demoToday()): { classId: number; den: string } | null {
   if (!p.assignments.length) return null;
   let tot: { classId: number; den: string } | null = null;
   for (const r of roiLopCua(studentId)) {
-    const den = new Date(Date.parse(r.ngay) + NGAY_XEM_LOP_CU * 86_400_000).toISOString().slice(0, 10);
+    const den = xemCuDen(r.ngay, r.bgMo);
     if (date < r.ngay || date > den || !p.assignments.some((a) => a.classId === r.classId && activeAt(a, r.ngay))) continue;
     if (!tot || den > tot.den) tot = { classId: r.classId, den };
   }
