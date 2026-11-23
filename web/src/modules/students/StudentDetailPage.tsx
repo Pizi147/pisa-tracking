@@ -731,7 +731,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
       </div>
     );
   }
-  const so = 'td text-right tabular-nums';
+  const so = 'td text-center tabular-nums';
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[640px]">
@@ -740,10 +740,10 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
             <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này.')}>MT</Th>
             <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp lúc đánh giá')}</Th>
             <Th hint={t('Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.')}>{t('Tuần')}</Th>
-            <Th align="right" hint="Band Listening">L</Th><Th align="right" hint="Band Reading">R</Th>
-            <Th align="right" hint="Band Writing Task 1">W1</Th><Th align="right" hint="Band Writing Task 2">W2</Th><Th align="right" hint="Band Speaking">S</Th>
-            <Th align="right" hint={t('Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.')}>OVR</Th>
-            <Th align="right" hint={t('Mức mong đợi của chính đợt Test đó, tính theo Target tại thời điểm ấy. Đổi Target không chấm lại quá khứ.')}>{t('Kỳ vọng')}</Th>
+            <Th align="center" hint="Band Listening">L</Th><Th align="center" hint="Band Reading">R</Th>
+            <Th align="center" hint="Band Writing Task 1">W1</Th><Th align="center" hint="Band Writing Task 2">W2</Th><Th align="center" hint="Band Speaking">S</Th>
+            <Th align="center" hint={t('Band tổng của lượt, tính theo quy tắc IELTS. Thiếu một kỹ năng thì chưa có Overall.')}>OVR</Th>
+            <Th align="center" hint={t('Mức mong đợi của chính đợt Test đó, tính theo Target tại thời điểm ấy. Đổi Target không chấm lại quá khứ.')}>{t('Kỳ vọng')}</Th>
             <Th hint={t('Tiến độ chấm và kết luận của đợt: số kỹ năng dưới kỳ vọng — chính là mức SOS. Thiếu điểm thì chưa kết luận.')}>{t('Kết quả')}</Th>
           </tr>
         </thead>

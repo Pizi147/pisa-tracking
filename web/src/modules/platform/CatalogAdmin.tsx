@@ -139,7 +139,7 @@ export function CatalogAdmin() {
               <thead>
                 <tr>
                   <th className="th">{t('Chương trình · cách chấm')}</th><th className="th">{t('Môn')}</th><th className="th">{t('Đạt từ')}</th><th className="th">{t('Độ dài')}</th>
-                  <th className="th">{t('Mốc Test')}</th>{quanTri && <th className="th text-right">{t('Lớp đang chạy')}</th>}<th className="th">{t('Còn dùng')}</th>
+                  <th className="th">{t('Mốc Test')}</th>{quanTri && <th className="th text-center">{t('Lớp đang chạy')}</th>}<th className="th">{t('Còn dùng')}</th>
                 </tr>
               </thead>
               {nhom.map((g) => (
@@ -152,7 +152,7 @@ export function CatalogAdmin() {
                     <td className="td whitespace-nowrap">{oNguong(d)}</td>
                     <td className="td whitespace-nowrap">{oDoDai(d)}</td>
                     <td className="td">{oMoc(d)}</td>
-                    {quanTri && <td className="td text-right tabular-nums text-slate-300">{soLop(d)}</td>}
+                    {quanTri && <td className="td text-center tabular-nums text-slate-300">{soLop(d)}</td>}
                     <td className="td">{quanTri ? <CongTacConDung d={d} onDaLuu={() => daLuu(d)} /> : <span className={conDung(d) ? 'text-slate-200' : 'text-slate-400'}>{conDung(d) ? t('Có') : t('Không')}</span>}</td>
                   </tr>
                 ))}
