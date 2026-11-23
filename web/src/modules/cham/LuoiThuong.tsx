@@ -15,7 +15,7 @@ import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, DongTach, OBang } from '../../ui/Bang.tsx';
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
-import { lyDoHuy, type DinhNghiaCot } from '@shared/domain/index.ts';
+import { lyDoHuy, nhanKetQuaLuoi, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
@@ -745,10 +745,10 @@ export function KetQua({ row, sheet, anCase = false, anTyLe = false, motDong = f
     /* PANEL-GON (chủ SP 24/11 "cột cuối chi chít", mockup P1): MỘT dòng ngắn — ✓ Đạt · ✗ Chưa đạt · Chưa có điểm / Chưa đủ điểm (mờ); % tổng (Final,
        Pre FOU) đi sau dấu. Mọi ý phụ (n/m môn đạt, môn còn thiếu, dời tuần, gợi ý, Case, điểm từng môn) vào `title` — không chữ thứ hai trong ô.
        < 640: chỉ dấu ✓ / ✗ / – (`.kq-ngan`). */
-    const xong = row.chip ? row.chip.dat : r.complete && !truot;
-    const dau = r.scored === 0 ? null : truot || (row.chip && !row.chip.dat) ? '✗' : xong ? '✓' : null;
+    const nhan = nhanKetQuaLuoi({ daCham: r.scored, du: r.complete || !!row.chip, dat: row.chip ? row.chip.dat : !truot });
+    const dau = nhan === 'dat' ? '✓' : nhan === 'truot' ? '✗' : null;
     const pt = (laTyLe || khongChiaMon) && r.tyLeTong != null ? ` ${Math.round(r.tyLeTong * 100)}%` : '';
-    const chu = r.scored === 0 ? (r.required === 0 && r.daHuy?.length ? t('Đã huỷ') : t('Chưa có điểm'))
+    const chu = nhan === 'chua-co' ? (r.required === 0 && r.daHuy?.length ? t('Đã huỷ') : t('Chưa có điểm'))
       : dau === '✗' ? `✗ ${t('Chưa đạt')}${pt}` : dau === '✓' ? `✓ ${t('Đạt')}${pt}` : t('Chưa đủ điểm');
     const mau = dau === '✓' ? 'text-kq-bang' : dau === '✗' ? 'text-kq-duoi' : 'text-faint';
     const tieuDe = [row.chip ? dich(row.chip.chu) : kq.chinh, phu?.title, chiTiet,

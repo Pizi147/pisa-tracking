@@ -13,7 +13,7 @@ import { DeadlinePill, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '..
 import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, nhanKetQuaLuoi, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi, LuotChinhContext } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -522,8 +522,9 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           /* PANEL-GON: MỘT dòng — ✓ Đạt · ✗ SOS n · Chưa có điểm / Chưa đủ điểm (mờ); môn còn chờ, SOS tạm, tuần thi ở `title`. < 640 chỉ dấu. */
           const muc = row.result.sosLevel;
           const chot = row.result.chot && muc !== null;
-          const dau = chot ? (muc! <= 0 ? '✓' : '✗') : null;
-          const chu = dau === '✓' ? `✓ ${t('Đạt')}` : dau === '✗' ? `✗ ${sosLabel(muc!)}` : row.result.scoredRequired === 0 ? t('Chưa có điểm') : t('Chưa đủ điểm');
+          const nhan = nhanKetQuaLuoi({ daCham: row.result.scoredRequired, du: chot, dat: chot && muc! <= 0 });
+          const dau = nhan === 'dat' ? '✓' : nhan === 'truot' ? '✗' : null;
+          const chu = dau === '✓' ? `✓ ${t('Đạt')}` : dau === '✗' ? `✗ ${sosLabel(muc!)}` : nhan === 'chua-co' ? t('Chưa có điểm') : t('Chưa đủ điểm');
           const mau = dau === '✓' ? 'text-kq-bang' : dau === '✗' ? 'text-kq-duoi' : 'text-faint';
           const tieuDe = [chot ? sosLabel(muc!) : row.result.provisional && (muc ?? 0) > 0 ? `${sosLabel(muc!)} · ${t('tạm')}` : null,
             tuanChuaToi ? tuanLich(tuanChuaToi) : null, choMon(row)].filter(Boolean).join(' · ');
