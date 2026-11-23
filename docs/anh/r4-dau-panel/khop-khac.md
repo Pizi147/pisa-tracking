@@ -22,6 +22,8 @@ Không mất thao tác nào. Thêm: Thử lại ở lỗi tải lô Ý thức / 
 ## KHÁC / để sau
 - P8: tên em lúc tải chỉ có khi dòng việc mang `con` (dòng gộp bổ sung hồ sơ không luôn có) — khi đó đầu chỉ có lớp; tên hiện khi hồ sơ tải xong, như cũ.
 
-## Ảnh (demo, GVCN 7 Trần Ngọc Hà, tối 1440 · sáng 375)
-`xac-nhan-xu-ly-*` và `lo-y-thuc-*` (truoc | sau): panel đã tải trông như cũ (đã có đầu); phần mới là LÚC TẢI / LỖI / LƯU LỖI — không chụp tĩnh được, đã xem trực tiếp: lúc tải Xác nhận xử lý hiện ngay "Phạm Bảo Ngọc · MB FT 101 · quá hạn 1 ngày".
-KHÁC: P1–P5, P8 cần vai TVV / CX / QL và dữ liệu demo chưa có đủ → chưa chụp ảnh cặp riêng; PTA Plan cần thì chụp theo vai khi rà.
+## Ảnh (demo DB của worktree, tối 1440 · sáng 375; truoc | sau)
+`p1-da-thuc-hien` (GVCN 7) · `p2-tinh-hinh` (GVCN 7) · `p3-sau-thi` (TVV 6) · `p4-meeting` (CX 24) · `p5-bao-ph-kq-test` (TVV 2) · `p8-bo-sung-ho-so` (TVV 29) · `xac-nhan-xu-ly-*` · `lo-y-thuc-*`. Soi: không chữ cắt, không tràn 375, ✕ / ⓘ thẳng hàng.
+Dữ liệu tạo thêm trong DB thử của worktree (không đụng seed chung): Meeting CX đề xuất → Head duyệt (P1), TVV hỏi tình hình em Lê Quang Huy (P2), GVCN xác nhận Meeting CX (P4). Lỡ tay: duyệt thêm đề xuất PA #10 — chỉ trong DB thử.
+Thấy trên ảnh: P1 "hạn 18/09/2026" · P2 "hạn 16/09/2026" (vàng) ở đầu; P3 "hạn 21/09/2026" dòng riêng; P4 "hạn 27/09/2026"; P5 việc không hạn nên đầu có tên em · lớp; P8 đầu chỉ "Sửa thông tin · tên em" vì dòng bổ sung hồ sơ không có lớp (KHÁC, để sau nếu muốn lớp).
+`/ponytail-review`: gọn, không cắt được gì.
