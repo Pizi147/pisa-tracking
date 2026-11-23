@@ -287,7 +287,9 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     : [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
   const hienLoc = loc.length ? hien.filter((r) => loc.includes(buocCuaDong(r))) : hien;
-  const nhom = nhomCase ? BUOC_CASE.map((b) => { const cua = hienLoc.filter((r) => buocCuaDong(r) === b); return { buoc: b, ten: NHAN_BUOC_CASE[b], dong: [...cua.filter((r) => !r.xong && tre(r)), ...cua.filter((r) => r.xong || !tre(r))] }; }).filter((g) => g.dong.length > 0) : null;
+  /* v24 B3: trong nhóm — quá hạn trước, rồi HẠN GẦN TRƯỚC (không hạn cuối), cùng hạn theo tên. */
+  const theoHan = (a: DongSoLieu, b: DongSoLieu) => (hanCua(a) ?? '9999-12-31').localeCompare(hanCua(b) ?? '9999-12-31') || (a.em?.ten ?? a.title).localeCompare(b.em?.ten ?? b.title, 'vi');
+  const nhom = nhomCase ? BUOC_CASE.map((b) => { const cua = hienLoc.filter((r) => buocCuaDong(r) === b); return { buoc: b, ten: NHAN_BUOC_CASE[b], dong: [...cua.filter((r) => !r.xong && tre(r)).sort(theoHan), ...cua.filter((r) => r.xong || !tre(r)).sort(theoHan)] }; }).filter((g) => g.dong.length > 0) : null;
   const thuTu = nhom ? nhom.flatMap((g) => g.dong) : hien;
   /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
      không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. 6b-2: dòng Case có nhóm mở được cả khi chỉ xem / đã xử lý. */

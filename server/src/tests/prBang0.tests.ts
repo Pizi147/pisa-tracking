@@ -174,6 +174,12 @@ export async function runPrBang0Tests(t: YThucTestKit) {
     assert(/rong="so720"/.test(s) && !/chan=\{/.test(s), 'panel bảng dùng khuôn so720, không chân');
   });
 
+  check('SO-720 · Case chưa chốt PA: trong nhóm bước xếp quá hạn trước, rồi hạn gần trước, cùng hạn theo tên', () => {
+    const t = nguon.find((x) => x.f === 'web/src/ui/SoLieu.tsx')?.text ?? '';
+    assert(/const theoHan = \(a: DongSoLieu, b: DongSoLieu\) => \(hanCua\(a\) \?\? '9999-12-31'\)\.localeCompare\(hanCua\(b\) \?\? '9999-12-31'\) \|\| /.test(t), 'hàm so thứ tự hạn gần trước, rồi tên');
+    assert(/\.filter\(\(r\) => !r\.xong && tre\(r\)\)\.sort\(theoHan\), \.\.\.cua\.filter\(\(r\) => r\.xong \|\| !tre\(r\)\)\.sort\(theoHan\)/.test(t), 'quá hạn trước, mỗi nửa xếp theo hạn');
+  });
+
   check('BANG-4 · Bang / ODiem: cỡ chữ trong ô ∈ {12, 13, 14} (thang NHẸ HƠN 22/11; 26 chỉ ODiem lon; 16 ODiem to — hồ sơ lớp V5 "điểm to", UI-HO-SO-LOP; 16 số thẻ lưới 375 `theLuoi` — mockup v8 tong-quan `.luoi-so .g`, V8-TQ)', () => {
     for (const f of ['web/src/ui/Bang.tsx', 'web/src/ui/ODiem.tsx']) {
       const s = nguon.find((x) => x.f === f)?.text;
