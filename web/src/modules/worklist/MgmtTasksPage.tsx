@@ -6,6 +6,7 @@ import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, Field, Forbidden, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { OChonThuong } from '../../ui/OChonThuong.tsx';
 import { KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TrangThaiLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
@@ -254,11 +255,11 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
           </div>
           <label className="flex items-center gap-2 whitespace-nowrap max-sm:contents">
             {t('Trạng thái')}
-            <select className="field max-sm:w-full" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
+            <OChonThuong className="min-w-[150px] max-sm:min-w-0" dangLoc={progress !== 'mo'} value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
               {TRANG_THAI_LOC.map((tt) => (
                 <option key={tt} value={tt}>{TRANG_THAI_LABEL[tt]} ({data?.facets.progress[tt] ?? 0})</option>
               ))}
-            </select>
+            </OChonThuong>
           </label>
           <div className="flex items-center gap-2 max-sm:contents">
             <span className="shrink-0">{t('Người phụ trách')}</span>
