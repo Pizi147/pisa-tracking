@@ -502,6 +502,9 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const kq = bt.chonBuocTiepCoHoanTac(QL, a.cy, { chon: 'hoc_tiep', mucTieu: '7.0', lopMoiId: L2 });
     assert(kq.dao && get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).class_id === L2, `đã chuyển, có dao: ${kq.dao}`);
     assert(loi(() => bt.hoanTacHocTiepDoiLop(P.lrTeacher, a.cy, kq.dao))?.status === 403, 'GV 403');
+    conn.prepare("UPDATE ghi_dao SET luc = ? WHERE id = ?").run(new Date(Date.now() - 16 * 60_000).toISOString(), kq.dao);
+    assert(loi(() => bt.hoanTacHocTiepDoiLop(QL, a.cy, kq.dao))?.status === 409, 'quá 15 phút → 409 (PTA rà #2026)');
+    conn.prepare("UPDATE ghi_dao SET luc = ? WHERE id = ?").run(new Date().toISOString(), kq.dao);
     xoaNho();
     const s = bt.hoanTacHocTiepDoiLop(QL, a.cy, kq.dao);
     const sau = chup();

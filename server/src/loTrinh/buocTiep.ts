@@ -16,7 +16,7 @@
  */
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { chayHenNgay, db, tx } from '../db.ts';
-import { chayCoChup, daoLai, luuGhiDao, type BanGhiDao, type DongChup } from '../platform/ghiDao.ts';
+import { HOAN_TAC_PHUT, chayCoChup, daoLai, luuGhiDao, type BanGhiDao, type DongChup } from '../platform/ghiDao.ts';
 import { dongDaoChuyenNgay } from '../classes/hoanTacChuyenNgay.ts';
 import {
   LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, trangThaiSauThi, tuanHopLe, tuanLich,
@@ -581,6 +581,8 @@ export function hoanTacHocTiepDoiLop(p: Principal, cycleId: number, daoVao: unkn
   const conn = db();
   const g = conn.prepare('SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?').get(Number(daoVao), LOAI_HOC_TIEP_DOI_LOP, 'learning_cycles', cycleId) as BanGhiDao | undefined;
   if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
+  /* PTA rà #2026: cùng hạn với Hoàn tác xếp lịch / thêm HV — quá hạn thì Chuyển lớp (đổi lại bằng đường Chuyển lớp). */
+  if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT} phút — dùng Chuyển lớp để đưa em về lớp cũ.`);
   tx(() => {
     conn.pragma('defer_foreign_keys = ON');
     daoLai(conn, g, p.userId);

@@ -10,6 +10,7 @@ export async function runPrR2HoanTacTests(t: any) {
   const sch: any = await import('../classes/schedule.ts');
   const scl: any = await import('../classes/suaCaLop.ts');
   const intake: any = await import('../classes/intake.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const tutors: any = await import('../tutors/trang.ts');
   const rac: any = await import('../platform/khoiPhucRac.ts');
@@ -199,5 +200,25 @@ export async function runPrR2HoanTacTests(t: any) {
     assert(!d.length, `còn khác sau khôi phục: ${d.join(', ')}`);
     mgmt.updateMgmtTask(P.lrTeacher, v.id, { progress: 'doing', note: 'Đã bắt đầu' });
     assert(ma(() => mgmt.xoaViec(P.mbManager, v.id)) === 400, 'đã có cập nhật → 400');
+  }));
+
+  check('R2-C5b (PTA rà #2026) · người khác chỉ có quyền THÊM HV (GVCN) không bỏ được lô của Head; chính GVCN bỏ được lô mình; em đã có dữ liệu → `failed`, không xoá', () => thu(() => {
+    const L = lop('MB FT 101');
+    const gv = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`, L);
+    assert(gv, 'tiền đề: lớp có GVCN');
+    const GV = loadPrincipal(gv.user_id);
+    const them = (p: any, ten: string) => intake.commitIntake(p, { classId: L, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01', target: 6.5 }] });
+    const rHead = them(P.mbManager, 'R2 Head them');
+    assert(ma(() => intake.hoanTacNhap(GV, rHead.nhap)) === 403, 'GVCN không bỏ được lô của Head');
+    assert(one('SELECT COUNT(*) n FROM students WHERE id = ?', rHead.studentIds[0]).n === 1, '403 mà DB đổi');
+    const rGv = them(GV, 'R2 GVCN them');
+    assert(rGv.added === 1, 'tiền đề: GVCN thêm được');
+    const k = intake.hoanTacNhap(GV, rGv.nhap);
+    assert(k.ok.length === 1 && !k.failed.length, `chính người thêm: ${JSON.stringify(k)}`);
+    const rDl = them(P.mbManager, 'R2 Co du lieu');
+    conn.prepare(`INSERT INTO violations (student_id, category, occurred_on, reported_on, reported_by, description, created_at) VALUES (?, 'conduct', ?, ?, ?, 'Thử', ?)`).run(rDl.studentIds[0], '2026-11-01', '2026-11-01', P.mbManager.userId, '2026-11-01T00:00:00.000Z');
+    const k2 = intake.hoanTacNhap(P.mbManager, rDl.nhap);
+    assert(k2.ok.length === 0 && k2.failed.length === 1 && /đã có dữ liệu/.test(k2.failed[0].message), JSON.stringify(k2));
+    assert(one('SELECT COUNT(*) n FROM students WHERE id = ?', rDl.studentIds[0]).n === 1, 'em có dữ liệu còn nguyên');
   }));
 }
