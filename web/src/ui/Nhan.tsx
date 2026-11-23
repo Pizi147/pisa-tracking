@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { deadlineView, mucHan, ngay as ngayHien, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type BadgeTab, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { IconKhong } from './BieuTuong.tsx';
@@ -207,15 +207,22 @@ export function ChipSoQuaHan({ n }: { n: number }) {
  * MỘT nhãn hạn — luật hạn NHẸ HƠN (chủ SP 22/11, v23 `.han`): quá hạn = chip có nền "quá hạn n ngày" (chữ nói nghĩa, không chỉ màu) ·
  * hôm nay → còn ≤ 2 ngày = CHỮ vàng "hạn 23/11/2026" · xa hơn = chữ phụ. Mức ở MỘT chỗ: `mucHan` (cùng ngưỡng `deadlineView`).
  */
+/** PANEL-GON (v24 mục 4, chủ SP 24/11 "để ngày hạn luôn và màu tương ứng thôi"): trong đầu panel, hạn chỉ là NGÀY tô màu chữ (đỏ quá hạn · vàng gần). */
+export const HanChiNgay = createContext(false);
+
 export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; han: string | null;
   /** Dải sự kiện panel: quá hạn vẫn chip "21/11/2026 · quá hạn n ngày"; chưa quá chỉ ngày. */
   chuThuong?: boolean;
   /** Giữ cho chỗ gọi cũ (viên xám cột hạn) — NHẸ HƠN: hạn không còn là viên, cùng dáng chữ. */
   vien?: boolean }) {
   const { homNay } = useNgayNghiepVu();
+  const chiNgay = useContext(HanChiNgay);
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
   const muc = loai === 'du-kien-ket-thuc' ? 'xa' : mucHan(han, homNay);
+  if (chiNgay) {
+    return <span title={v.text} className={`inline-flex shrink-0 items-center whitespace-nowrap tabular-nums font-semibold ${muc === 'qua' ? 'text-late' : muc === 'sap' ? 'text-soon' : 'text-dim'}`}>{ngayHien(han)}</span>;
+  }
   if (v.tone === 'overdue') {
     const qua = t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 });
     return <BadgeHan muc="qua" title={v.text}>{chuThuong ? `${ngayHien(han)} · ${qua}` : qua}</BadgeHan>;

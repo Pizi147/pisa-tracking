@@ -457,7 +457,7 @@ export function TongQuanAdmin({ d, congTac }: { d: TongQuanV5Data; congTac: Reac
  */
 type HangDiem = { khoa: string; classId: number | null; lop: string; bai: string; thieu: number; han: string | null; nguoi: { ten: string; kns: string[]; n: number }[]; viec: Dong[] };
 const COT_DIEM: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 120 }, { key: 'bai', nhan: t('Bài Test'), kieu: 'chu', linhHoat: true, rong: 190 /* PANEL-GON: sàn của cột linh hoạt — "Progress Test W3 AUG" một dòng */ }, { key: 'thieu', nhan: t('Thiếu'), kieu: 'so', rong: 72 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 120 }, { key: 'bai', nhan: t('Bài Test'), kieu: 'chu', linhHoat: true }, { key: 'thieu', nhan: t('Thiếu'), kieu: 'so', rong: 72 },
   { key: 'nguoi', nhan: t('Người phụ trách · số bài'), kieu: 'chu', rong: 300 }, { key: 'han', nhan: t('Hạn'), kieu: 'tuan', rong: 150 },
 ];
 function PanelDiemAdmin({ diem, onDong }: { diem: Dong[]; onDong: () => void }) {

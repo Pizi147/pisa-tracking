@@ -797,20 +797,31 @@
     html[data-ban-phim] .chan-dinh-375 { bottom: calc(var(--ban-phim) - 80px); }
   }
   /*
-   * PANEL-GON (chủ SP 24/11): panel bảng / lưới rộng theo nội dung — chỉ thân (`.pn-than`: lưới, cột tên) quyết bề rộng; đầu, tab, chân, dải
-   * làm thay không đẩy panel rộng ra (tiêu đề dài thì xuống dòng trong bề rộng của lưới).
+   * PANEL-GON (v24 `cong-viec-gon.html`, chủ SP 24/11): MỘT khung panel 720 (KhungPanel). Thân panel là container `pn` (nội dung hỏi bề rộng: `.dd`).
+   * LUẬT CỘT cho lưới điểm trong panel (`Bang deu` — LuoiFT, LuoiThuong): cột tên 2 phần, mọi cột số / ô nhập 1 phần
+   * → rộng BẰNG NHAU, chia hết bề ngang; cột cuối căn phải sát lề 14. Tổng sàn vượt khung → cuộn ngang TRONG lưới (cột tên dính trái).
    * Cột danh sách Công việc (`cv-ds`, ≥ 1024 khi panel mở) hẹp hơn 460 px → dòng việc bỏ nút, hạn sát tên (thay luật "panel bảng → 330 px" của PR-2a).
    */
-  [data-pn="bang"] > :not(.pn-than) { contain: inline-size; }
-  [data-pn="viec"] > .pn-than { container: pn / inline-size; }   /* panel việc rộng cố định — thân cho nội dung hỏi bề rộng (`.dd`) */
-  /* Bảng `width: 100%` làm khung co-theo-nội-dung giãn hết chỗ — trong panel bảng: bảng đo bằng tổng cột (min-width của `Bang`, ô điểm 88),
-     rồi giãn (flex) lấp đủ panel khi panel ở sàn 600. */
+  [data-pn] > .pn-than { container: pn / inline-size; }
+  /* Tên việc sửa được ở đầu panel (`.sd.tieu`): max-width 100 % làm tên co còn ~300 px, xuống dòng dù dòng còn chỗ — bỏ trần, h2 (max-w-full) giữ trong khung. */
+  @media (min-width: 640px) { [data-pn] > header h2 .sd.tieu { max-width: none; } }
   @media (min-width: 640px) {
-    [data-pn="bang"] .pn-than .table-scroll:has(> table.bang) { display: flex; }
-    [data-pn="bang"] .pn-than .table-scroll > table.bang { width: 0; flex: 1 0 auto; }
-    /* Cột linh hoạt ở sàn 140 (bảng không còn giãn hết 75 %): chữ dài xuống dòng thay vì cắt "…" (như `.pn-bang`). */
-    [data-pn="bang"] .pn-than .bang td[data-linh] { white-space: normal; overflow-wrap: break-word; }
+    [data-pn] .pn-than table.bang[data-deu] col { width: auto !important; }
+    [data-pn] .pn-than table.bang[data-deu] col[data-kieu="ten"] { width: var(--ten-pt) !important; }
   }
+  [data-pn] .pn-than table.bang[data-deu] > * > tr > :last-child:not(:first-child) { text-align: right; padding-right: 14px; }
+  [data-pn] .pn-than table.bang[data-deu] > tbody > tr > :last-child:not(:first-child) > :is(div, span) { width: fit-content; max-width: 100%; margin-left: auto; align-items: flex-end; justify-content: flex-end; }
+  [data-pn] .pn-than table.bang[data-deu] > tbody > tr > :last-child:not(:first-child) [data-phu-odiem] { white-space: normal; text-align: right; }
+  /* 375 trong panel: chỉ cột tên dính (v24 P3 · P4) — Kết quả dính phải (lưới đầy đủ) cùng cột tên dính thì ô điểm giữa bị che. */
+  @media (max-width: 639px) { [data-pn] .pn-than .luoi-thuong .bang :is(th, td)[data-kieu="chip"]:last-child { position: static; } }
+  /* Con trỏ tới ô của việc (cuộn ngang trong lưới) không để ô nằm dưới cột tên dính trái. */
+  [data-pn] .pn-than .table-scroll:has(> table.bang[data-deu]) { scroll-padding-left: 232px; }
+  /* Dòng tách nhóm trong lưới (`DongTach`, v24 `.lc > .tach`): 36 px, nền surface-2, chữ 13 / 600 mờ; nút dính trái khi lưới cuộn ngang. */
+  .bang > tbody > tr.dong-tach > td { height: 36px; padding: 0; border-top: 1px solid var(--line); background: var(--surface-2); }
+  .bang > tbody > tr.dong-tach button { position: sticky; left: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px;
+    border: 0; background: transparent; font: 600 13px/1 inherit; color: var(--text-dim); cursor: pointer; }
+  .bang > tbody > tr.dong-tach button:hover { color: var(--text); }
+  .bang > tbody > tr.dong-tach button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   @container cv-ds (max-width: 459px) {
     [data-hd="cv-dong"] { grid-template-columns: minmax(0, 1fr) auto !important; }
     .o-nut { display: none !important; }
@@ -1421,7 +1432,7 @@
     .dd.pt .ov { grid-column: 2; }
     .dd.pt .k { grid-row: auto; }
   }
-  /* PANEL-GON: panel việc 600 px (thân là container `pn`) — lượt + 4 môn + Tổng không vừa một hàng thì Tổng xuống hàng riêng, không đè môn. */
+  /* PANEL-GON: thân panel hẹp (container `pn` ≤ 640) — lượt + 4 môn + Tổng không vừa một hàng thì Tổng xuống hàng riêng, không đè môn. */
   @media (min-width: 640px) {
     @container pn (max-width: 640px) { .dd .ov { grid-column: 1 / -1; justify-self: start; } }
   }
@@ -1924,6 +1935,8 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   }
   /* NHẸ HƠN (v23 C1 `.kl`): panel chấm nhiều lớp — mỗi lớp một khối viền, đầu khối nổi (nền surface-2, vạch nhấn trái 3 px, mã lớp 16 / 700). */
   .pc-kl { border: 1px solid var(--line-strong); border-radius: 10px; overflow: clip; background: var(--surface); }
+  .luoi-khung { border: 1px solid var(--line); border-radius: 10px; overflow: clip; background: var(--surface); }   /* PANEL-GON v24 `.lc`: lưới một lớp trong panel 720 */
+  .luoi-khung .luoi-cong-cu { padding: 8px 14px 0; }
   .pc-kl-dau { appearance: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; width: 100%; min-height: 52px; padding: 8px 14px 8px 11px; border: 0;
     border-left: 3px solid var(--accent); background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; }
   .pc-kl-dau[aria-expanded='true'] { border-bottom: 1px solid var(--line); }

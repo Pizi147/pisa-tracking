@@ -323,7 +323,6 @@ export function HoTroHocVienTab() {
     const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? pdcMo.current.get(viec) ?? giaoDi.current.get(viec) ?? viecPdcTheoKhoa(data?.paDangChay ?? [], viec, uid ?? null) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
   }, [viec, hienThi, giu, dsGoc, data?.paDangChay]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const luoiRong = !!chon && chon.group === 'ghi_ket_qua_pa' && moCaDong(chon);
   /*
    * Danh sách vẽ: cùng bộ lọc, cộng dải dòng vừa xong. VIEC-XONG-AN (chủ SP 21/11 "công việc nhảy liên tục vị trí"; thay OV-11c CV-3 "chỉ khi panel mở"):
    * trong CÙNG bộ lọc (nguồn · khung · hạn · tab · loại) mỗi dòng giữ vị trí lần đầu thấy — lưu xong / làm một phần (hạn đổi) / tải lại / đóng panel
@@ -404,12 +403,10 @@ export function HoTroHocVienTab() {
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */
   const coChon = !!chon;
   const vuaCo = useRef(coChon);
-  const vuaRong = useRef(luoiRong);
   useLayoutEffect(() => {
-    if (vuaCo.current && !coChon && (window.matchMedia(MAN_HEP).matches || vuaRong.current)) vungCuon()?.scrollTo(0, cuon.current);
+    if (vuaCo.current && !coChon && window.matchMedia(MAN_HEP).matches) vungCuon()?.scrollTo(0, cuon.current);
     vuaCo.current = coChon;
-    vuaRong.current = luoiRong;
-  }, [coChon, luoiRong]);
+  }, [coChon]);
   /* ponytail: "đang hiện" đọc từ DOM — nhóm gập, việc sau "Xem thêm", em của dòng gộp chưa mở không được vẽ; nâng lên state nếu DanhSachViec đổi cách vẽ. */
   const dangHien = (k: string) => !!document.querySelector(`[data-khoa="${CSS.escape(k)}"]`);
   /* CONG-VIEC-2: việc tiếp đi hết nhóm (`viecKeTiepVong`). Hết nhóm → thẻ "Hết việc {nhóm}" + việc đầu nhóm sau (`xoay`: các nhóm sau trước, rồi vòng lên). */
@@ -649,8 +646,8 @@ export function HoTroHocVienTab() {
   );
   return (
     <div className="space-y-3">
-      {/* NHẸ HƠN + PANEL-GON: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024) = phần còn lại cạnh panel (`--pn-w`, KhungPanel đo), không che nút lọc / + Task. */}
-      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[max(260px,calc(100vw-var(--pn-w,600px)-48px))]' : ''}`}>
+      {/* NHẸ HƠN + PANEL-GON: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024) — cùng bề rộng danh sách cạnh panel 720 (v24 `.cv`), không che nút lọc / + Task. */}
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[max(260px,min(680px,calc(100vw-760px)))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
@@ -739,11 +736,10 @@ export function HoTroHocVienTab() {
       </div>
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
-      {/* PANEL-GON (chủ SP 24/11, thay v23 `.cv-luoi` 42 %): danh sách trái = phần còn lại cạnh panel (100vw − `--pn-w` − 48) — panel 600 / bảng theo nội dung
-          bám mép phải không đè; cột hẹp < 460 thì dòng bỏ nút (`cv-ds`, index.css). Đầu nhóm dính trong cột `isolate` (#2001). */}
-      {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[max(260px,calc(100vw-var(--pn-w,600px)-48px))_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
-        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+      {/* PANEL-GON (v24 `.cv`, chủ SP 24/11 — thay v23 42 % và GD-20c "lưới Ghi kết quả PA ẩn danh sách, 1040"): panel MỘT khung 720 bám mép phải,
+          danh sách trái min(680, 100vw − 760) không đè (1440: 680 · 1280: 520); cột hẹp < 460 thì dòng bỏ nút (`cv-ds`, index.css). Đầu nhóm dính trong cột `isolate` (#2001). */}
+      <div className={`lg:grid lg:items-start lg:gap-4 ${coPanel ? 'lg:grid-cols-[max(260px,min(680px,calc(100vw-760px)))_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
             <DanhSachViec nho={uid != null ? `u${uid}:xong` : undefined} muc={dsXong} dem={new Map(dsXong.map((m) => [m.key, { n: m.items.length, quaHan: 0 }]))} soHien={10}

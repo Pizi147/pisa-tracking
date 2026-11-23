@@ -13,7 +13,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
 import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
-import { Bang, OBang } from '../../ui/Bang.tsx';
+import { Bang, DongTach, OBang } from '../../ui/Bang.tsx';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { lyDoHuy, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
@@ -298,6 +299,12 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
   const cotSuaDuoc = (k: string) => data.rows.some((r) => lichCua(r, k)?.canEdit);
+  /* PANEL-GON (v24 P1): trong panel việc 720 — cột Kết quả riêng ở mép phải (luật cột: tên 2 phần, cột môn / Kết quả bằng nhau, index.css) thay
+     "Kết quả dưới tên" (G1-11 `gon`); em còn ô trống lên trên, "Đã có điểm · n em" là dòng gập trong CÙNG lưới. Nhóm chốt lúc mở lưới. */
+  const trongPanel = useContext(OTrongPanel) && !gon;
+  const conOTrong = (r: Row) => skills.some((k) => { const o = oThuong(r, k, data.today); return o.canEdit && o.trong; });
+  const [xongLucMo] = useState(() => new Set(data.rows.filter((r) => !conOTrong(r)).map((r) => r.attemptId)));
+  const [moXong, setMoXong] = useState(true);
 
   const plan = async () => {
     setBusy(true);
@@ -355,13 +362,13 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     /* AUDIT-1611 A1-14: cột đệm cuối nhận phần thừa — tên giữ 200 px, ô điểm ngay sau tên (như lưới FT), không dồn mép phải. */
     { key: 'du', nhan: '', kieu: 'chu', linhHoat: true },
   ] : [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: trongPanel ? 180 : 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
-      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
+      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: trongPanel ? 120 : cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
     ...(laCp ? [{ key: 'pt', nhan: t('% tổng'), kieu: 'phan-tram', goiY: t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.') } as const] : []),
-    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: COT_KQ, goiY: goiYKq },
+    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 120 : COT_KQ, goiY: goiYKq },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* BANG-1 (cấm điều khiển trong tiêu đề): tổng số câu từng môn + "Điền ô trống" là CÔNG CỤ trên bảng, không ở đầu cột.
@@ -387,10 +394,15 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     </div>
   );
 
+  const dsThieu = data.rows.filter((r) => !xongLucMo.has(r.attemptId));
+  const dsXong = data.rows.filter((r) => xongLucMo.has(r.attemptId));
+  const TACH = { attemptId: -1 } as Row;
+  const hangLuoi = trongPanel && dsThieu.length > 0 && dsXong.length > 0 ? [...dsThieu, TACH, ...(moXong ? dsXong : [])] : data.rows;
   return (
     <div className={`luoi-thuong${gon ? ' luoi-thuong-gon' : ''}`}>
-      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
+      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={hangLuoi} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
         hangRieng={(r) => {
+          if (r === TACH) return <DongTach soCot={cotDs.length} nhan={t('Đã có điểm · {n} em', { n: dsXong.length })} mo={moXong} onDoi={() => setMoXong((x) => !x)} />;
           const ri = data.rows.indexOf(r);
           return (
             <DongThuong

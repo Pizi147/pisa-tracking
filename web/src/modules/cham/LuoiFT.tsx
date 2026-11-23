@@ -3,7 +3,7 @@ import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
-import { Bang, OBang } from '../../ui/Bang.tsx';
+import { Bang, DongTach, OBang } from '../../ui/Bang.tsx';
 import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
@@ -176,6 +176,12 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const [gvCotRieng, setGvCot] = useGvChamCot(data.classId, gvCham === undefined ? dot : null, data.gvChamCot);
   const gvCot = gvCham === undefined ? gvCotRieng : gvCham;
   const nutGv = suaS && !!dot && gvCham === undefined;
+  /* PANEL-GON (v24 P2): trong panel việc — em còn ô trống của người xem lên trên, "Đã có điểm · n em" là dòng gập trong CÙNG lưới (mở sẵn).
+     Nhóm chốt lúc mở lưới: nhập xong một em không làm em đó nhảy chỗ. */
+  const conOTrong = (r: (typeof data.rows)[number]) => !r.ngungHoc
+    && r.cells.some((c) => data.editableSkills.includes(c.skill) && hien(c.skill) && conThieuFt(c) && !khacTuanFt(c, tuanDangXem));
+  const [xongLucMo] = useState(() => new Set(data.rows.filter((r) => !conOTrong(r)).map((r) => r.attemptId)));
+  const [moXong, setMoXong] = useState(true);
 
   if (data.rows.length === 0 && hangMo.length === 0 && !sEx?.length) {
     return (
@@ -251,6 +257,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     );
   }
 
+  const dsThieu = rowsHien.filter((r) => !xongLucMo.has(r.attemptId));
+  const dsXong = rowsHien.filter((r) => xongLucMo.has(r.attemptId));
+  const TACH = { attemptId: -1 } as (typeof rowsHien)[number];
+  const hangLuoi = trongPanel && dsThieu.length > 0 && dsXong.length > 0 ? [...dsThieu, TACH, ...(moXong ? dsXong : [])] : rowsHien;
   return (
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
@@ -262,8 +272,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       </div>
     )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
-    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day deu the375={false} khung={false} dinh={gon ? '1440' : false}
-      hangRieng={(r) => (
+    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={hangLuoi} khoa={(r) => r.attemptId} day deu the375={false} khung={false} dinh={gon ? '1440' : false}
+      hangRieng={(r) => (r === TACH ? <DongTach soCot={cotDs.length} nhan={t('Đã có điểm · {n} em', { n: dsXong.length })} mo={moXong} onDoi={() => setMoXong((x) => !x)} /> : (
         <SheetRow
           row={r}
           lop={data.classCode}
@@ -276,7 +286,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           onMo={(s) => moO(r.attemptId, s)}
           onTiep={(s, d, v) => tiep(r.attemptId, s, d, v)}
         />
-      )}
+      ))}
       cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
         <tr key={`mo-${h.studentId}`} data-hv={h.studentId}>
           <OBang c={cc.hv} className="text-slate-500"><Link className="text-slate-500 no-underline hover:underline" title={h.ten} to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></OBang>
