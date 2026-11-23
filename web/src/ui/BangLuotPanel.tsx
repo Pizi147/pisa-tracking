@@ -145,7 +145,8 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const soChua = goc.filter((r) => r.ketQua === 'chua').length, soDat = goc.filter((r) => r.ketQua === 'dat').length;
   const coTab = !tt && soChua > 0 && soDat > 0;   // SO-720: thi thật không tab — một bảng, Chưa đạt lên đầu
   const [tabChon, setTab] = useState<'chua' | 'dat' | null>(null);
-  const tab = tabChon ?? 'chua';
+  /* Mở sẵn tab của CON SỐ vừa bấm (chủ SP / v24 mục 4): ô "Đạt …" (% Đạt MT, Đạt kỳ vọng) → tab Đạt; còn lại → Chưa đạt. */
+  const tab = tabChon ?? (/^Đạt/.test(tieuDe) && soDat > 0 ? 'dat' : 'chua');
   /*
    * DEM-QUA-HAN b (chủ SP 06/11, chốt: "việc đang quá hạn ưu tiên hiện lên, còn việc đã làm rồi cho hẳn sang 1 tab"): tab loại / tuyến việc CHỈ chứa việc còn mở
    * đang quá hạn (số tab = số quá hạn, rỗng ẩn) + tab cuối "Đã làm n" (mọi việc đã làm trong kỳ). Mặc định: tab loại đầu tiên có việc quá hạn, không có thì "Đã làm".
@@ -460,7 +461,8 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'viec') return <Link className={`font-semibold ${LINK}`} to={h.href}>{dich(h.ten)}</Link>;
     if (c.key === 'ten') return h.em ? lkHv(h.em.id, h.em.ten) : mo('—');
     if (c.key === 'lop') return h.lop ? lkLop(h.lop.id, h.lop.ma) : mo('—');
-    if (c.key === 'han') return <span className={`tabular-nums ${ttViec(h) === 'chua' && homNay ? LOP_MUC_HAN[mucHan(h.han ?? '', homNay)] : ''}`}>{ddmm(h.han)}</span>;
+    /* Hạn = ngày dd/mm/yyyy tô màu (24/11): quá hạn đỏ · còn ≤ 2 ngày vàng; việc làm muộn đỏ; đúng hạn màu thường. */
+    if (c.key === 'han') return <span className={`tabular-nums ${ttViec(h) === 'chua' && homNay ? LOP_MUC_HAN[mucHan(h.han ?? '', homNay)] : ttViec(h) === 'muon' ? 'text-late' : ''}`}>{h.han ? ngay(h.han, homNay) : '—'}</span>;
     return ttVc(h);
   };
   /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */
@@ -470,7 +472,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   /* Sổ nghĩa vụ: dòng phụ Việc — loại việc (nhiều loại) · tuần · chi nhánh (xem tổng) · "phân công nhập sau"; Hạn — "hạn gốc …" khi đã đặt lại hạn. */
   const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec'
     ? ([!laBai && nhieuLoai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null, h.chiNhanh ?? null, h.pcNhapSau ? t('phân công nhập sau') : null].filter(Boolean).join(' · ') || null)
-    : c.key === 'han' ? (h.hanGoc ? t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) }) : null) : c.key === 'tt' ? ngayLam(h) : null);
+    : c.key === 'han' ? ([h.hanGoc ? t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) }) : null, ttViec(h) === 'muon' ? ngayLam(h) : null].filter(Boolean).join(' · ') || null) : c.key === 'tt' ? ngayLam(h) : null);
   const COT_VIEC = cotVc.find((c) => c.key === 'viec')!;
   /*
    * PT-a (mockup v19 khung 2a, PTA rà #1486): panel BÀI chấm chia theo lớp ("MB FT 101 · 5 bài") — bỏ cột Lớp. Nhóm theo thứ tự xuất hiện: máy chủ đã xếp quá hạn
@@ -485,7 +487,8 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     for (const h of ds) { const k = h.lop?.ma ?? '—'; (m.get(k) ?? m.set(k, []).get(k)!).push(h); }
     return [...m].flatMap(([lop, xs]): DongVc[] => [{ nhomLop: lop, n: xs.length, id: `nhom:${lop}` }, ...xs]);
   };
-  const cotVcHien = laBai ? cotVc.filter((c) => c.key !== 'lop') : cotVc;
+  /* Cột Trạng thái là HẰNG SỐ (mỗi panel một loại: tên số đã nói) → bỏ; khuôn C1 = Học viên · Bài (+ tuần) · Hạn. */
+  const cotVcHien = cotVc.filter((c) => c.key !== 'tt' && !(laBai && c.key === 'lop'));
   const nhanNhom = (h: NhomLop) => <span className="whitespace-nowrap text-[13px] font-bold text-[color:var(--text)]">{h.nhomLop} <span className="font-medium text-faint">· {t('{n} bài', { n: h.n })}</span></span>;
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
