@@ -331,7 +331,8 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
        Chặn 409, không tự huỷ đề xuất (GVCN / Head mở lại: Rút / Thu hồi rồi đề xuất theo bậc mới). Ngoài thang không đổi bậc → không chặn. */
     const em = emCua(m.student_id);
     const doiBacSau = !!em.khai && em.khai.moc > String(m.created_at ?? '');
-    if ((THANG as readonly string[]).includes(m.kind) && (doiBacSau || !deXuatHopLe(m.kind, em.bac))) {
+    /* Chỉ chặn khi CÓ lần khai / sửa sau đề xuất — bậc đổi vì lần xử lý thường (không ai sửa bậc) không chặn (rkcYThuc RKC3a-3). */
+    if ((THANG as readonly string[]).includes(m.kind) && doiBacSau) {
       throw conflict('Bậc em đã đổi (GVCN sửa cấp bậc) — mở lại.', { bac: em.bac });
     }
     const doi = db().prepare(
