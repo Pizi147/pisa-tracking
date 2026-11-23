@@ -90,7 +90,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
       <span className="cvA-ai"><button type="button" className={`cvA-ten ${d.studentName ? '' : '!font-semibold'}`} aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>
         {d.trangThai === 'xong' && <span aria-hidden className="text-ok">✓ </span>}{ten}</button></span>
       <span className="cvA-ct" title={chu}>{chu}</span>
-      <span className={`cvA-hn ${muc === 'xa' ? '' : muc}`}>{d.trangThai === 'mo' && d.han ? <>{muc === 'qua' && <DauQuaHan />}{shortDate(d.han, hn)}</> : null}</span>
+      <span className={`cvA-hn ${muc === 'xa' ? '' : muc}`}>{d.trangThai === 'mo' && d.han ? <>{muc === 'qua' && <DauQuaHan />}{shortDate(d.han, hn)}</> : d.xongLuc ? <span className="text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}</span>
     </div>
   );
 }
