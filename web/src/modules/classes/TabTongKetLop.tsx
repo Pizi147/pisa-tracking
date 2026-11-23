@@ -101,9 +101,9 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                       <th colSpan={2} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('Thi thật')}</th><th />
                     </tr>
                     <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{t('Đầu vào')}</th><th className="px-3 py-2 text-right font-semibold">Target</th>
+                      <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-center font-semibold">{t('Đầu vào')}</th><th className="px-3 py-2 text-center font-semibold">Target</th>
                       <th className="px-3 py-2 font-semibold">MT</th>
-                      {['L', 'R', 'W1', 'W2', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-right font-semibold">{h}</th>)}
+                      {['L', 'R', 'W1', 'W2', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-center font-semibold">{h}</th>)}
                       <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th><th className="px-3 py-2 font-semibold">{t('Hướng tiếp')}</th>
                     </tr>
                   </thead>
@@ -113,14 +113,14 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                       return (
                         <tr key={d.studentId} onClick={() => mot(d)} className={`h-11 cursor-pointer border-t hover:bg-[color:var(--accent-soft)] ${d.roiSom ? 'hang-mo' : ''}`} style={{ borderColor: 'var(--line)' }}>
                           <td className="px-3">{ten(d)}</td>
-                          <td className="px-3 text-right tabular-nums">{b1(d.dauVao)}</td><td className="px-3 text-right tabular-nums">{b1(d.target)}</td>
+                          <td className="px-3 text-center tabular-nums">{b1(d.dauVao)}</td><td className="px-3 text-center tabular-nums">{b1(d.target)}</td>
                           <td className="whitespace-nowrap px-3 tabular-nums">
                             {d.luotCuoi ? <>{dich(d.luotCuoi.nhan)} <span className="text-slate-500">· {t('{n} lượt', { n: d.soLuot })}</span></> : Gach}
                             {d.luotCuoiHuy && <span className="ml-1.5 text-xs text-late">{t('đã huỷ')}</span>}
                           </td>
                           {/* Chủ SP 12/11: tách W1 · W2 như Tổng kết lộ trình (`diemW12` ở máy chủ). */}
-                          {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w1, d.luotCuoi?.w2, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
-                          <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{d.thiThat?.ovr != null && d.loTrinhId
+                          {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w1, d.luotCuoi?.w2, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-center tabular-nums">{b1(v)}</td>)}
+                          <td className="px-3 text-center font-semibold tabular-nums text-slate-100">{d.thiThat?.ovr != null && d.loTrinhId
                             /* TL-GV (v20, XM-3): bảng chỉ có OVR thi thật → OVR là ô hộp mở hộp tóm tắt 5 kỹ năng (GV nhiều tuần nhất · %). */
                             ? <OTuanDay kn="ovr" cycleId={d.loTrinhId} ten={d.ten} nhan={`OVR ${b1(d.thiThat.ovr)}`}>{b1(d.thiThat.ovr)}</OTuanDay> : b1(d.thiThat?.ovr)}</td>
                           <td className="px-3">{k ? <Nhan tone={k.tone}>{k.chu}</Nhan> : Gach}</td>

@@ -64,7 +64,7 @@ export function XoaHocVienPanel({ studentId, studentName, lop, onClose }: {
                     {d.mat.map((m) => (
                       <tr key={m.khoa} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
                         <td className="py-1 pr-3 text-slate-300">{dich(m.nhan)}</td>
-                        <td className="w-20 py-1 text-right tabular-nums text-slate-100">{m.so}</td>
+                        <td className="w-20 py-1 text-center tabular-nums text-slate-100">{m.so}</td>
                       </tr>
                     ))}
                   </tbody>
