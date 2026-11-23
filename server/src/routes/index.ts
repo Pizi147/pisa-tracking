@@ -593,6 +593,10 @@ const kemTestSapToi = (p: Principal, kq: any, branchId?: number | null) => {
   const { sapToi, paDangChay } = tongQuanSvc.sapToiCuaGv(p, branchId);   // rà #1864: `?branchId` lọc như dòng việc
   return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
 };
+/** `/my-work` mặc định ("Của tôi") — route `/my-work` và phần `cuaToi` của Tổng quan (TQ-QT-NHE A2) gọi CHUNG, JSON y hệt. */
+const viecCuaToi = (p: Principal, branchId: number | null | undefined) => (can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })
+  ? kemTestSapToi(p, nheMyWork(myWork(p, { branchId })), branchId)
+  : kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })), branchId));
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
  * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
@@ -607,7 +611,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   /* UI-CV-TVV: không có khu Công việc (TVV) → chỉ việc TVV của chính mình; không xem việc người khác. */
   if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) {
     if (nguoi === 'tat-ca' || typeof nguoi === 'number') throw forbidden('Bạn chỉ xem được việc của mình.');
-    return kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })), branchId);
+    return viecCuaToi(p, branchId);
   }
 
   if (nguoi === 'tat-ca') {
@@ -616,7 +620,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
-  return kemTestSapToi(p, nheMyWork(myWork(p, { branchId })), branchId);
+  return viecCuaToi(p, branchId);
 }));
 
 /** GV-1 (N58): tab "Đang theo dõi" — việc tôi theo dõi còn mở + vừa xong 7 ngày, chia theo loại. Chỉ gọi khi mở tab (không vào /my-work, không số đếm). */
@@ -2443,8 +2447,12 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
      route `/my-work`) trong CÙNG request: lượt / lịch kỹ năng / điểm đọc một lần cho cả SOS lẫn việc (bộ nhớ request `nhoTheoId`). */
   if (qStr(req, 'kemViec') === '1') {
     const p = principalOf(req);
-    if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null };
-    return { ...tq, viec: nheMyWork(myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true })).dong };
+    /* TQ-QT-NHE A2 (PTA 24/11): `cuaToi=<chi nhánh | 0>` — kèm CHÍNH `/my-work?branchId=` "Của tôi" (cùng hàm `viecCuaToi`) cho badge / chuông của App:
+       trang Tổng quan khỏi một GET `/my-work` riêng (QT toàn hệ thống −41 câu, phần kèm +~18 nhờ bộ nhớ request). Web chỉ xin khi bản badge đã cũ. */
+    const cuaToiCn = qStr(req, 'cuaToi');
+    const cuaToi = cuaToiCn === undefined ? {} : (lenhSvc.quetLenhDenHan(), { cuaToi: viecCuaToi(p, Number(cuaToiCn) || null) });
+    if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null, ...cuaToi };
+    return { ...tq, viec: nheMyWork(myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true })).dong, ...cuaToi };
   }
   return tq;
 }));

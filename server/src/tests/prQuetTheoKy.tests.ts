@@ -123,5 +123,22 @@ export async function runPrQuetTheoKyTests(t: any) {
       console.log(`    câu QL ft: gộp ${gop} · tq ${tq} + bc ${bc} = ${tq + bc}`);
       assert(gop < tq + bc, `gộp ${gop} ≥ ${tq} + ${bc}`);
     });
+
+    /* TQ-QT-NHE A2: Tổng quan kèm "Của tôi" của badge — `cuaToi` = JSON `/my-work` (cùng chi nhánh), phần còn lại = JSON không kèm; quyền như cũ. */
+    U.AD = motNguoi('office_admin');
+    await checkAsync('A2 · /tong-quan/v5?…&kemViec=1&cuaToi=<cn>: cuaToi = JSON /my-work?branchId, phần còn lại = JSON không kèm (QL, QT, Admin × cn / 0); GVCN 403', async () => {
+      const tqUrl = '/tong-quan/v5?ct=ft&gon=1&kemViec=1';
+      for (const [vai, cn] of [['QL', mbId], ['QL', 0], ['QT', 0], ['QT', mbId], ['AD', 0]] as [string, number][]) {
+        assert(U[vai], `seed: không có người vai ${vai}`);
+        const gop = await goi(vai, `${tqUrl}&cuaToi=${cn}`), tq = await goi(vai, tqUrl), mw1 = await goi(vai, cn ? `/my-work?branchId=${cn}` : '/my-work');
+        assert(gop.status === 200 && tq.status === 200 && mw1.status === 200, `${vai} cn=${cn}: mã ${gop.status} / ${tq.status} / ${mw1.status}`);
+        const { cuaToi, ...conLai } = gop.json;
+        assert(JSON.stringify(cuaToi) === JSON.stringify(mw1.json), `${vai} cn=${cn}: cuaToi ≠ /my-work`);
+        assert(JSON.stringify(conLai) === JSON.stringify(tq.json), `${vai} cn=${cn}: phần Tổng quan ≠ không kèm`);
+        assert(!('cuaToi' in tq.json), `${vai}: không xin mà vẫn có cuaToi`);
+      }
+      const g = await goi('GVCN', `${tqUrl}&cuaToi=0`);
+      assert(g.status === 403, `GVCN: ${g.status} (mong 403)`);
+    });
   } finally { server.close(); }
 }

@@ -30,7 +30,7 @@ export type TongQuanV5Data = {
   viec?: unknown[] | null;
 };
 
-export const thamSoTq = (branchId: number | null, ct: ChuongTrinh) => `${branchId ? `branchId=${branchId}` : ''}${thamSoCt(ct)}`.replace(/^&/, '');
+export { thamSoTq } from './duongTongQuan.ts';   // TQ-QT-NHE A2: chuyển sang tệp nhỏ dùng chung với khung App
 
 /* ───────────── khung chung ───────────── */
 

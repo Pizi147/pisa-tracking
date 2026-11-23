@@ -3,7 +3,10 @@ import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { DemYeuCauCtx, ViecCuaToiCtx, useDuongViecCuaToi, type SoViecCuaToi } from './lib/viecCuaToi.ts';
-import { MOI_MY_WORK_MS, henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
+import { MOI_MY_WORK_MS, henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, taiTruocKem, thuLaiNen, useApi } from './lib/useApi.ts';
+import { duongTongQuanV5, vaiTongQuan } from './modules/worklist/duongTongQuan.ts';
+import { useChiNhanhMacDinh } from './ui/Filters.tsx';
+import { khungDaNho } from './ui/CongTacKhung.tsx';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
@@ -334,6 +337,19 @@ export default function App() {
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần; badge nhận bản của trang qua `chiNghe`).
    */
   const duongViec = useDuongViecCuaToi();   // DEM-VIEC: cùng đường Công việc "Của tôi" mặc định (chi nhánh mặc định với QL · Quản trị · Admin · TVV)
+  /*
+   * TQ-QT-NHE A2 (PTA 24/11): ở trang Tổng quan (`/`) của Head / Quản trị / Admin, GET Tổng quan đi TRƯỚC (layout effect chạy trước effect của badge dưới) và kèm
+   * "Của tôi" của badge khi bản badge đã cũ — badge / chuông nhận phần kèm như lời gọi đang bay, khỏi GET `/my-work` riêng (QT toàn hệ thống −41 câu / lần mở).
+   * URL cùng hàm với trang (`duongTongQuanV5`: `cn` trên URL hoặc chi nhánh mặc định, khung đã nhớ) — lệch thì chỉ thêm một GET như cũ, không dùng nhầm bản.
+   * Trang khác: không đổi. Đổi vai / tài khoản: `invalidate(null)` xoá mọi bản, `duongViec` theo vai mới.
+   */
+  const cnTq = useChiNhanhMacDinh();
+  useLayoutEffect(() => {
+    if (location.pathname !== '/' || !duongViec) return;
+    const cn = new URLSearchParams(location.search).get('cn');
+    const goc = duongTongQuanV5(vaiTongQuan(session), cn ? Number(cn) : cnTq, khungDaNho('tong-quan') === 'thuong' ? 'thuong' : 'ft');
+    if (goc?.includes('kemViec=1')) taiTruocKem(goc, duongViec);
+  }, [location.pathname, location.search, duongViec, session, cnTq]);
   const viecGv = useApi<{ summary: SoViecCuaToi } & ViecChuong>(duongViec, [lanViec], { chiNghe: true }).data;
   /* Bản mới đã về (của badge hay của trang) → hết cũ, bỏ hẹn 60 s, mốc 60 s tính lại từ đây. */
   useEffect(() => { henViec.coBan(); }, [viecGv, henViec]);

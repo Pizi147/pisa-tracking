@@ -132,6 +132,28 @@ export function taiTruocGop(goc: string, phan: Record<string, string>): void {
 }
 
 /**
+ * TQ-QT-NHE A2 (PTA 24/11): Tổng quan Head / Quản trị / Admin — MỘT GET `goc` (`…&kemViec=1`) kèm `cuaToi` = CHÍNH `/my-work` "Của tôi" của badge (`phu`, máy chủ
+ * cùng hàm `viecCuaToi`) khi bản badge đã cũ / chưa có. Hai đường nhận phần của mình như lời gọi đang bay (khối gắn sau dùng lại, `chiNghe` của badge nhận bản mới),
+ * nên trang Tổng quan khỏi một GET `/my-work` riêng. Lỗi / thiếu phần kèm → `phu` tự gọi lẻ như cũ. Vô hiệu giữa chừng → `taiVaNho` bỏ phản hồi (theo thế hệ).
+ */
+export function taiTruocKem(goc: string, phu: string): void {
+  if (conMoi(goc) || dangBay.has(goc)) return;
+  const kem = !conMoi(phu) && !dangBay.has(phu);
+  const cn = new URLSearchParams(phu.split('?')[1] ?? '').get('branchId') ?? '0';
+  const bo = api.get<Record<string, unknown>>(kem ? `${goc}&cuaToi=${cn}` : goc);
+  const luc = Date.now();
+  const dat = (path: string, p: Promise<unknown>) => {
+    dangBay.set(path, p);
+    batDauGoi.set(path, luc);
+    const xong = () => { if (dangBay.get(path) === p) { dangBay.delete(path); batDauGoi.delete(path); } };
+    p.then(xong, xong);
+    taiVaNho(path).catch(() => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
+  };
+  dat(goc, bo.then(({ cuaToi: _bo, ...con }) => con));
+  if (kem) dat(phu, bo.then((r) => ('cuaToi' in r ? r.cuaToi : api.get(phu)), () => api.get(phu)));
+}
+
+/**
  * Tải (dùng chung lời gọi đang bay) rồi nhớ bản vừa xem. `null` = có lần xoá trúng đường này sau khi bắt đầu (đổi tài khoản / ghi):
  * bỏ phản hồi, không ghi `daXem` — hook đang gắn đã được `onInvalidate` cho tải lại (PR-CACHE F01, F04).
  */
