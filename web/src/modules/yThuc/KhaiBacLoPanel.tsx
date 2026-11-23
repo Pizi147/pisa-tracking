@@ -14,12 +14,10 @@ import { BAC_0_NHAN, THANG, dsLoi, luuRoiTiep, nhanLoaiXuLy, ngay, quyCheKhaiBac
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { CO_LO, guiTheoLo } from './LoYThucPanel.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
-import { invalidate } from '../../lib/api.ts';
+import { lamMoiYThucCua, type BangLo, type EmLo, type KqEm } from './kieu.ts';
 
 /** Bậc khai được: 0 "Chưa có xử lý vi phạm" + sáu bậc mạch chính (khai tối đa WL 2). */
 const BAC = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
-const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 /** MOCKUP-1111 màn 2: tên ngắn trên chip (tên đủ ở `title`). */
 const NGAN_BAC = [t('Không'), 'R1', 'R2', 'WL1', 'R4', 'R5', 'WL2'];
 export const nganBac = (b: number) => NGAN_BAC[b] ?? dich(BAC[b] ?? '');
@@ -116,7 +114,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false);
-      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoi(); reload(); }
+      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoiYThucCua({ classId }); reload(); }
     }
     return okMoi.length === ids.length;
   };
@@ -130,7 +128,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
       });
       const hong = r.em.filter((x) => !x.ok);
       setLoVua([]); setKq(new Map()); setKqHoanTac(new Map(hong.map((x) => [x.studentId, x])));
-      onDone?.(); lamMoi(); reload();
+      onDone?.(); lamMoiYThucCua({ classId }); reload();
       if (hong.length) toast.push('error', t('{n} em chưa hoàn tác được — thử lại.', { n: hong.length }));
       else toast.push('ok', t('Đã hoàn tác'));
     } catch (e: any) {

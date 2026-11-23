@@ -11,6 +11,18 @@ import { activeClassOf } from '../yThuc/access.ts';
 import { kiemXemCase } from './cases.ts';
 
 /**
+ * R1-L1 (rà 24/11, PTA rà #2024): chủ Case CÒN LÀM = tài khoản đang hoạt động, chưa xoá, còn ÍT NHẤT một vai đang hiệu lực (bất kỳ chi nhánh). Không xét chi nhánh
+ * của Case: GV vai một chi nhánh dạy lớp chi nhánh khác, hoặc em chuyển chi nhánh, vẫn giữ Case (đổi chủ theo lớp do `doiChuTheoLopMoi` lo như cũ).
+ * Không còn làm = "chưa có người": Case vào việc chọn người sẵn có (Công việc `no_owner`, `ganChuCaseThieu`). Không luật mới — không tự đổi chủ lúc xoá / gỡ vai.
+ */
+export const CHU_CON_LAM = (uid: string) => `EXISTS (SELECT 1 FROM users u_c JOIN user_roles ur_c ON ur_c.user_id = u_c.id WHERE u_c.id = ${uid}
+  AND u_c.status = 'active' AND u_c.deleted_at IS NULL AND ur_c.status = 'active')`;
+export const KHONG_CHU_SQL = `(sc.owner_user_id IS NULL OR NOT ${CHU_CON_LAM('sc.owner_user_id')})`;
+/** L1: tên chủ Case `uid` cho hồ sơ — người không còn làm thêm " (đã nghỉ)" (tài khoản đã xoá sẵn có " (đã xoá)" trong tên). */
+export const TEN_CHU_SQL = (uid: string) =>
+  `(SELECT u_n.full_name || CASE WHEN u_n.deleted_at IS NOT NULL OR ${CHU_CON_LAM('u_n.id')} THEN '' ELSE ' (đã nghỉ)' END FROM users u_n WHERE u_n.id = ${uid})`;
+
+/**
  * GỢI Ý NGƯỜI PHỤ TRÁCH CHÍNH cho một Case mới (mục 2.3).
  *
  * Quy tắc do owner chốt, và cố ý rất hẹp:
@@ -69,17 +81,17 @@ export function ganChuCaseThieu(o: {
   /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp.
      DON-LUONG K8: với `studentIds` cùng câu đọc thêm Case CÓ chủ (đổi chủ theo lớp mới — `doiChuTheoLopMoi`), không thêm lượt. */
   const theoEm = o.studentIds?.length ? `AND s.id IN (${o.studentIds.map(() => '?').join(',')})` : '';
-  const tatCa = o.caseThieu?.map((r) => ({ ...r, class_id: r.__cid, owner_user_id: null })) ?? conn.prepare(
-    `SELECT sc.id, sc.category, sc.topic, sc.goc_programme_code, sc.owner_user_id, COALESCE(a.class_id, cur.class_id) AS class_id, cur.class_id AS lop_hien_tai, s.full_name
-            ${theoEm ? `, ${CHU_THEO_LOP_SQL}` : ''}
+  const tatCa = o.caseThieu?.map((r) => ({ ...r, class_id: r.__cid, khong_chu: 1 })) ?? conn.prepare(
+    `SELECT sc.id, sc.category, sc.topic, sc.goc_programme_code, sc.owner_user_id, COALESCE(a.class_id, cur.class_id) AS class_id, cur.class_id AS lop_hien_tai, s.full_name,
+            ${KHONG_CHU_SQL} AS khong_chu${theoEm ? `, ${CHU_THEO_LOP_SQL}` : ''}
        FROM sos_cases sc
        LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
        JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-      WHERE sc.status != 'done' AND ${theoEm ? '1 = 1' : 'sc.owner_user_id IS NULL'} AND sc.tam = 0 AND (? IS NULL OR COALESCE(a.class_id, cur.class_id) = ?) ${theoEm}`,
+      WHERE sc.status != 'done' AND ${theoEm ? '1 = 1' : KHONG_CHU_SQL} AND sc.tam = 0 AND (? IS NULL OR COALESCE(a.class_id, cur.class_id) = ?) ${theoEm}`,
   ).all(o.classId ?? null, o.classId ?? null, ...(o.studentIds ?? [])) as any[];
-  if (theoEm) doiChuTheoLopMoi(tatCa.filter((r) => r.owner_user_id !== null && r.lop_hien_tai !== null), o);
-  const rows = tatCa.filter((r) => r.owner_user_id === null);
+  if (theoEm) doiChuTheoLopMoi(tatCa.filter((r) => !r.khong_chu && r.lop_hien_tai !== null), o);
+  const rows = tatCa.filter((r) => r.khong_chu);
   let n = 0;
   /* PHEP-DO-LO: phân công đọc MỘT lần mỗi lớp (trước: một câu mỗi Case — lô 500 em nhiều lớp N+1). Cùng luật `suggestCaseOwner`. */
   const pc = new Map<number, PhanCong[]>();
@@ -88,9 +100,12 @@ export function ganChuCaseThieu(o: {
     const chu = r.class_id ? chonChuCase(pc.get(r.class_id)!, r.category ?? null)?.user_id ?? null : null;
     if (chu === null) continue;
     /* Chỉ ghi lịch sử khi thật sự gán (người khác vừa gán cùng lúc → 0 dòng đổi, không lịch sử giả). */
-    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, o.luc, r.id).changes !== 1) continue;
-    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', NULL, ?, ?, ?)`)
-      .run(r.id, String(chu), o.actorId, o.luc);
+    /* L1: chủ cũ đã nghỉ → gán đè đúng người cũ đó (người khác vừa đổi → 0 dòng); lịch sử ghi người cũ. */
+    const cu = (r.owner_user_id ?? null) as number | null;
+    if (cu === chu) continue;
+    if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IS ?').run(chu, o.luc, r.id, cu).changes !== 1) continue;
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner_user_id', ?, ?, ?, ?)`)
+      .run(r.id, cu === null ? null : String(cu), String(chu), o.actorId, o.luc);
     if (o.nguon) writeAudit({ actorUserId: o.actorId, action: 'case.owner_assign', entityType: 'case', entityId: r.id, after: { ownerUserId: chu, _nguon: o.nguon } });
     n += 1;
   }
@@ -165,7 +180,7 @@ export function caseChuaCoNguoi(p: Principal, branchId?: number | null, coSan?: 
        LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
        LEFT JOIN classes ac ON ac.id = a.class_id
        LEFT JOIN classes cc ON cc.id = cur.class_id
-      WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND sc.tam = 0 AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}`,   /* N46: như `napCaseMo` của Công việc */
+      WHERE sc.status != 'done' AND ${KHONG_CHU_SQL} AND sc.tam = 0 AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}`,   /* N46: như `napCaseMo` của Công việc */
   ).all() as any[];
   napTruocPhamVi(rows.map((r) => r.eff_student_id));
   return rows.filter((c) => (!branchId || c.eff_branch_id === branchId) && (c.eff_class_id
@@ -283,7 +298,7 @@ const CASE_MO_CUA_LOP = `FROM sos_cases sc ${NOI_CASE_LOP}`;
 
 /** Id Case mở CHƯA có người phụ trách của lớp — tập `ganChuCaseThieu` có thể gán (chụp trước để Hoàn tác). */
 export function caseThieuChuLop(classId: number): number[] {
-  return [...new Set((db().prepare(`SELECT sc.id ${CASE_MO_CUA_LOP} AND sc.owner_user_id IS NULL`).all(classId) as any[]).map((r) => r.id as number))];
+  return [...new Set((db().prepare(`SELECT sc.id ${CASE_MO_CUA_LOP} AND ${KHONG_CHU_SQL}`).all(classId) as any[]).map((r) => r.id as number))];
 }
 
 /**
@@ -299,8 +314,8 @@ export function docViecLo(classIds: readonly number[], nguoiCu: readonly number[
   const cid = 'COALESCE(a.class_id, cur.class_id)';
   const da = new Set<string>();
   for (const r of conn.prepare(
-    `SELECT sc.rowid AS __r, sc.*, ${cid} AS __cid FROM sos_cases sc ${NOI_CASE_MO} AND ${cid} IN (${lop})
-        AND (sc.owner_user_id IS NULL${nguoiCu.length ? ` OR sc.owner_user_id IN (${ph})` : ''}) ORDER BY sc.id`,
+    `SELECT sc.rowid AS __r, sc.*, ${cid} AS __cid, ${KHONG_CHU_SQL} AS __khong_chu FROM sos_cases sc ${NOI_CASE_MO} AND ${cid} IN (${lop})
+        AND (${KHONG_CHU_SQL}${nguoiCu.length ? ` OR sc.owner_user_id IN (${ph})` : ''}) ORDER BY sc.id`,
   ).all(...classIds, ...nguoiCu) as any[]) {
     if (!da.has(`${r.id}|${r.__cid}`)) { da.add(`${r.id}|${r.__cid}`); kq.get(r.__cid)?.cases.push(r); }
   }
@@ -315,8 +330,8 @@ export function docViecLo(classIds: readonly number[], nguoiCu: readonly number[
   }
   return kq;
 }
-/** Dòng đọc ở `docViecLo` → dạng `rowid AS __r, *` của bảng (bỏ cột phụ `__cid` / `__cat`). */
-export const boCotPhu = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== '__cid' && k !== '__cat'));
+/** Dòng đọc ở `docViecLo` → dạng `rowid AS __r, *` của bảng (bỏ cột phụ `__cid` / `__cat` / `__khong_chu`). */
+export const boCotPhu = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== '__cid' && k !== '__cat' && k !== '__khong_chu'));
 
 /**
  * Case / PA SẼ chuyển khi đổi người (KHÔNG ghi) — dùng chung cho xem trước hộp Lưu và lúc áp. Chỉ cặp có người giao + người nhận khác nhau.

@@ -21,7 +21,7 @@ import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound,
 import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
-import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
 import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
@@ -1099,6 +1099,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
     `SELECT t.loai, t.ref_id,
             COALESCE(b.student_id, x.student_id, th.student_id, mx.student_id, tl.student_id) AS sid,
             b.trang_thai AS b_tt, b.han AS b_han, b.han_chon AS b_hc, b.nhan AS b_nhan, b.bo_luc AS b_bo, b.phoi_hop_id AS b_ph, b.tra_lai_id AS b_cho,
+            CASE WHEN b.trang_thai = 'mo' AND b.han_chon IS NULL THEN ${SU_KIEN_TAM_DUNG_SQL('b.student_id')} END AS b_dung,   -- R1-L2: hạn như panel (Tạm dừng → Quay lại)
             tl.trang_thai AS tl_tt, COALESCE(tl.han_chon, tl.han) AS tl_han, tl.xong_luc AS tl_luc, tl.measure_id AS tl_xl, tl.nguoi_nhan AS tl_nhan, nn.full_name AS tl_nhan_ten,
             (SELECT MAX(l.ghi_luc) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id) AS b_xong,
             x.status AS x_tt, x.kind AS x_kind, x.custom_name AS x_ten, x.created_at AS x_tao, x.han_chon AS x_hc, x.pb_moc AS x_pb, x.updated_at AS x_luc,
@@ -1147,7 +1148,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
     let ptIds: number[] | null = null;   // GV-2 ([XM 4]): người theo luật theo VAI → tên người (đầu + "+n"); chỉ ghi vai khi chi nhánh chưa có ai
     let tt: 'mo' | 'xong' | 'bo'; let han: string | null; let luc: string | null; let tieuDe: string; let nhan: string; let ptLuat: string | null; let luatLaToi: boolean;
     if (loai === 'bao_ph') {
-      tt = r.b_tt; han = tt === 'mo' ? hanBaoPhHieuLuc(r.b_han, [], r.b_hc) : r.b_hc ?? r.b_han; luc = tt === 'bo' ? r.b_bo : r.b_xong;
+      tt = r.b_tt; han = tt === 'mo' ? hanBaoPhHieuLuc(r.b_han, khoangTuSuKien(r.b_dung), r.b_hc) : r.b_hc ?? r.b_han; luc = tt === 'bo' ? r.b_bo : r.b_xong;
       tieuDe = r.b_ph ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${r.b_nhan} · ${r.full_name}`;
       nhan = tt === 'xong' ? 'Đã báo PH' : tt === 'bo' ? 'Đã bỏ' : r.b_cho ? CHO_GV_SUA : 'Chưa báo'; ptLuat = r.tvv_ten ?? (r.b_ph && r.gvcn_ten ? r.gvcn_ten : 'Head chi nhánh');
       luatLaToi = r.tvv ? laTvvCuaEm(p, { consultant_user_id: r.tvv, student_id: r.student_id, em_branch: r.em_branch ?? undefined }) : r.b_ph && r.gvcn_id ? r.gvcn_id === p.userId : giu(r.em_branch);
