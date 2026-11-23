@@ -7,7 +7,7 @@ import { boVaiCx, can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '.
 import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { conflict, loi, nowIso } from '../util.ts';
-import { activeClassOf } from '../yThuc/access.ts';
+import { activeClassOf, gvcnCuaEm } from '../yThuc/access.ts';
 import { kiemXemCase } from './cases.ts';
 
 /**
@@ -450,4 +450,71 @@ export function chuyenViecKhiDoi(o: {
   }
   return kq;
 }
+/**
+ * N69 (chủ SP 24/11): người NGHỈ (xoá tài khoản · gỡ hết vai) còn đứng tên → TRONG tx của lần xoá / gỡ vai, việc còn mở người đó đứng tên tự chuyển về người theo luật:
+ *  · Case chưa đóng (chủ) và PA `planned | started` (người thực hiện) → GV đúng kỹ năng của Case ở lớp em ĐANG HỌC → GVCN lớp đó (`chonChuCase`, luật tạo Case).
+ *  · Tín hiệu chờ xác minh (`case_signals` pending) → cùng luật theo hạng mục gợi ý · lần xử lý `preparing` (cũ) / `nhap` (đề xuất đang soạn, v4) → GVCN lớp em đang học.
+ * Không ai hợp lệ (em không đang học, lớp chưa ai) → để nguyên = "chưa có người" (`KHONG_CHU_SQL` — Head nhận việc chọn người, như R1). Lịch sử: Case / PA
+ * `sos_case_history` (owner_user_id · pa_performer), tín hiệu / lần xử lý nhật ký thao tác. Mỗi người nhận MỘT thông báo. Khôi phục tài khoản KHÔNG tự trả lại.
+ * ponytail: một câu lớp đang học mỗi em (đường Quản trị hiếm, ít dòng) — gom lô nếu người nghỉ đứng tên hàng trăm việc.
+ */
+export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIso()): { soCase: number; soPa: number; soTinHieu: number; soXuLy: number } {
+  const conn = db();
+  const pc = new Map<number, PhanCong[]>();
+  const theoLuat = (sid: number | null, category: string | null): number | null => {
+    const lop = sid ? activeClassOf(sid) : null;
+    if (!lop) return null;
+    if (!pc.has(lop)) pc.set(lop, phanCongLop(lop).filter((r) => r.user_id !== userId));
+    return chonChuCase(pc.get(lop)!, category)?.user_id ?? null;
+  };
+  const ten = (id: number) => (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? '—';
+  let tenCuNho: string | null = null;
+  const tenCu = () => (tenCuNho ??= ten(userId));
+  const nhan = new Map<number, { c: number; p: number; t: number; x: number }>();
+  const cong = (u: number, k: 'c' | 'p' | 't' | 'x') => { const v = nhan.get(u) ?? { c: 0, p: 0, t: 0, x: 0 }; v[k] += 1; nhan.set(u, v); };
+  const kq = { soCase: 0, soPa: 0, soTinHieu: 0, soXuLy: 0 };
+  /* MỘT câu đọc cả bốn loại (tài khoản không đứng tên gì: +1 câu cho lần xoá / gỡ vai). */
+  const rows = conn.prepare(
+    `SELECT 'c' AS k, sc.id, sc.id AS case_id, sc.category, COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.owner_user_id = ?1 AND sc.status != 'done'
+     UNION ALL SELECT 'p', iv.id, iv.case_id, sc.category, COALESCE(sc.student_id, a.student_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.performer_user_id = ?1 AND iv.status IN ('planned', 'started')
+     UNION ALL SELECT 't', id, NULL, category, student_id FROM case_signals WHERE owner_user_id = ?1 AND status = 'pending'
+     UNION ALL SELECT 'x', id, NULL, NULL, student_id FROM discipline_measures WHERE owner_user_id = ?1 AND status IN ('preparing', 'nhap')
+     ORDER BY 1, 2`,
+  ).all(userId) as { k: 'c' | 'p' | 't' | 'x'; id: number; case_id: number | null; category: string | null; sid: number | null }[];
+  const ls = rows.length ? conn.prepare('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)') : null;
+  for (const r of rows) {
+    if (r.k === 'x') {
+      const g = r.sid ? gvcnCuaEm(r.sid, demoToday()).gvcn : null;
+      const moi = g !== userId ? g : null;
+      if (moi === null || conn.prepare(`UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')`).run(moi, r.id, userId).changes !== 1) continue;
+      writeAudit({ actorUserId: actorId, action: 'measure.owner_assign', entityType: 'discipline_measure', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
+      cong(moi, 'x'); kq.soXuLy += 1;
+      continue;
+    }
+    const moi = theoLuat(r.sid, r.category);
+    if (moi === null) continue;
+    if (r.k === 'c') {
+      if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?').run(moi, luc, r.id, userId).changes !== 1) continue;
+      ls!.run(r.id, 'owner_user_id', String(userId), String(moi), actorId, luc);
+      cong(moi, 'c'); kq.soCase += 1;
+    } else if (r.k === 'p') {
+      if (conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ? WHERE id = ? AND performer_user_id = ?`).run(moi, luc, r.id, userId).changes !== 1) continue;
+      ls!.run(r.case_id, 'pa_performer', tenCu(), `${tenCu()} → ${ten(moi)} (người cũ nghỉ)`, actorId, luc);
+      cong(moi, 'p'); kq.soPa += 1;
+    } else {
+      if (conn.prepare(`UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'`).run(moi, r.id, userId).changes !== 1) continue;
+      writeAudit({ actorUserId: actorId, action: 'signal.owner_assign', entityType: 'case_signal', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
+      cong(moi, 't'); kq.soTinHieu += 1;
+    }
+  }
+  for (const [u, v] of nhan) {
+    if (u === actorId) continue;
+    const ds = [v.c && `${v.c} Case`, v.p && `${v.p} PA`, v.t && `${v.t} Case chờ xác nhận nguyên nhân`, v.x && `${v.x} lần xử lý`].filter(Boolean).join(' · ');
+    notify({ userId: u, kind: 'case_giao', title: `Bạn nhận việc của ${tenCu().replace(/ \(đã xoá\)$/, '')}: ${ds}`, duong: '/cong-viec', dedupKey: `nguoi_nghi:${userId}:${luc}` });
+  }
+  return kq;
+}
+
 const inHang = (ds: readonly unknown[]) => ds.map(() => '?').join(',');

@@ -44,6 +44,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'discipline.revoke_request': 'Xin thu hồi lần xử lý', 'discipline.revoke': 'Thu hồi lần xử lý', 'discipline.revoke_undo': 'Huỷ thu hồi lần xử lý',   // LUAT-5
   'discipline.measure_undo': 'Hoàn tác Xác nhận xử lý',   // [XM 5] rà 11/11
   'case.owner_assign': 'Gán người phụ trách Case',   // SUA-NO-RA (migrate prCvLoi)
+  'signal.owner_assign': 'Chuyển Case chờ xác nhận nguyên nhân (người cũ nghỉ)',   // N69
+  'measure.owner_assign': 'Chuyển lần xử lý vi phạm (người cũ nghỉ)',   // N69
   'case.owner_change': 'Đổi người phụ trách Case',   // R1-NO-CU (D17)
   'tinh_hinh.gui': 'Gửi tình hình học tập', 'tinh_hinh.sua': 'Sửa tình hình học tập', 'tinh_hinh.rut': 'Rút tình hình học tập',
   'tinh_hinh.hoan_tac': 'Hoàn tác gửi tình hình học tập', 'tinh_hinh.tra_loi': 'Ghi kết quả tình hình học tập', 'tinh_hinh.hoan_tac_tra_loi': 'Hoàn tác kết quả tình hình học tập',   // TINH-HINH

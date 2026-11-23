@@ -92,6 +92,21 @@ export function migratePrGiaoViec(conn: any, applied: string[]) {
         LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = mp.phoi_hop_id WHERE mp.tao_luc = ?`).all(luc) as any[]) theoDoiMacDinhMeeting(r.ph, r.sid, r.bp ?? null);
     if (n) applied.push(`GV-1: sinh ${n} phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) cho Meeting đã xác nhận, Báo PH của TVV còn mở.`);
   }
+  /* N67 (chủ SP 24/11, PTA 24/11 "có bù"): Meeting đã có Kết quả meeting xong mà Xếp lịch họp còn mở → Xếp lịch tự xong (`xong_boi` NULL, `xong_luc` = lúc Kết quả xong)
+     + lịch sử `tu_xong` (người NULL = hệ thống), như ghi Kết quả sau N67. ĐỔI DỮ LIỆU, chạy lặp không đổi (lần sau không còn dòng `mo` khớp). */
+  if (co(conn, 'meeting_phan') && co(conn, 'viec_giao_lan')) {
+    const ds = conn.prepare(
+      `UPDATE meeting_phan SET trang_thai = 'xong', xong_boi = NULL, nhap_ho_boi = NULL,
+              xong_luc = (SELECT k.xong_luc FROM meeting_phan k WHERE k.phoi_hop_id = meeting_phan.phoi_hop_id AND k.phan = 'ket_qua')
+        WHERE phan = 'xep_lich' AND trang_thai = 'mo'
+          AND EXISTS (SELECT 1 FROM meeting_phan k WHERE k.phoi_hop_id = meeting_phan.phoi_hop_id AND k.phan = 'ket_qua' AND k.trang_thai = 'xong')
+       RETURNING id, xong_luc`,
+    ).all() as { id: number; xong_luc: string | null }[];
+    const ghi = conn.prepare(`INSERT INTO viec_giao_lan (loai, ref_id, truong, cu, moi, boi, luc) VALUES ('meeting', ?, 'tu_xong', NULL, NULL, NULL, ?)`);
+    const luc = new Date().toISOString();
+    for (const r of ds) ghi.run(r.id, r.xong_luc ?? luc);
+    if (ds.length) applied.push(`N67: ${ds.length} phần Xếp lịch họp tự xong theo Kết quả meeting đã xong (dữ liệu trước N67).`);
+  }
   /* TD-HEAD-CX (chủ SP 21/11): Báo PH vi phạm ĐANG MỞ thêm bù Head + CX chi nhánh em theo dõi (bỏ dòng hết điều kiện). Tự lành — chạy lại chỉ đổi khi vai / dữ liệu đổi;
      người đã bỏ theo dõi không bị thêm lại. */
   if (co(conn, 'viec_bao_ph') && co(conn, 'viec_theo_doi') && co(conn, 'viec_giao_lan')) {

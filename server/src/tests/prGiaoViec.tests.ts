@@ -705,6 +705,71 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     }
   }));
 
+  await checkAsync('N67 migrate · bù dữ liệu cũ: Kết quả meeting đã xong, Xếp lịch còn mở → tự xong (xong_luc của Kết quả, lịch sử tu_xong); chạy lặp không đổi; chưa có Kết quả không đụng', () => thu(async () => {
+    const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
+    const m = meeting(moiEm());
+    const m2 = meeting(moiEm());
+    const lucKq = '2026-11-20T03:00:00.000Z';
+    conn.prepare(`UPDATE meeting_phan SET trang_thai = 'xong', xong_boi = ?, xong_luc = ? WHERE id = ?`).run(cx.userId, lucKq, m.kq.id);   // dữ liệu trước N67
+    const a: string[] = []; migratePrGiaoViec(conn, a);
+    const x = mot('SELECT trang_thai, xong_boi, xong_luc FROM meeting_phan WHERE id = ?', m.xep.id);
+    assert(x.trang_thai === 'xong' && x.xong_boi == null && x.xong_luc === lucKq, `bù: ${JSON.stringify(x)}`);
+    assert(hang(`SELECT truong, boi FROM viec_giao_lan WHERE loai = 'meeting' AND ref_id = ?`, m.xep.id).some((r) => r.truong === 'tu_xong' && r.boi == null), 'lịch sử tu_xong');
+    assert(a.some((d) => /^N67: \d+ phần/.test(d)), `applied: ${a.join(' | ')}`);
+    assert(mot('SELECT trang_thai FROM meeting_phan WHERE id = ?', m2.xep.id).trang_thai === 'mo', 'chưa có Kết quả: Xếp lịch giữ mở');
+    const b: string[] = []; migratePrGiaoViec(conn, b);
+    assert(!b.some((d) => d.startsWith('N67')), `chạy lại không đổi: ${b.join(' | ')}`);
+  }));
+
+  await checkAsync('N69 · xoá tài khoản / gỡ hết vai → Case / PA / tín hiệu / lần xử lý người nghỉ đứng tên về người theo luật (lịch sử); đổi vai còn vai không chuyển; em không đang học → để nguyên; Khôi phục không trả', () => thu(async () => {
+    const NOW = new Date().toISOString();
+    const gvL = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill = 'listening' ORDER BY id LIMIT 1`, lop)?.user_id ?? null;
+    const cn = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 1 ORDER BY id LIMIT 1`, lop).user_id as number;
+    const luat = gvL ?? cn;
+    const tao = (nghi: number, sid: number) => {
+      const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, topic, category, origin_kind, status, sos_level, title, detected_at, created_at, owner_user_id)
+        VALUES (?, 'listening', 'listening', 'teacher_report', 'open', 1, 'N69', ?, ?, ?)`).run(sid, TODAY, NOW, nghi).lastInsertRowid);
+      const paId = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, preset, moc_quy_che, performer_user_id, created_at)
+        VALUES (?, 'self_study', 'Tự học · 1 tháng', 'planned', 1, 'one_month', ?, ?)`).run(caseId, nghi, NOW).lastInsertRowid);
+      const tinId = Number(conn.prepare(`INSERT INTO case_signals (student_id, category, detected_on, raised_on, verify_due, status, created_at, owner_user_id)
+        VALUES (?, 'listening', ?, ?, ?, 'pending', ?, ?)`).run(sid, TODAY, TODAY, TODAY, NOW, nghi).lastInsertRowid);
+      const xlId = Number(conn.prepare(`INSERT INTO discipline_measures (student_id, kind, status, owner_user_id, created_by, created_at) VALUES (?, 'report_1', 'nhap', ?, ?, ?)`).run(sid, nghi, P.admin.userId, NOW).lastInsertRowid);
+      return { caseId, paId, tinId, xlId };
+    };
+    const chu = (ids: ReturnType<typeof tao>) => [mot('SELECT owner_user_id o FROM sos_cases WHERE id = ?', ids.caseId).o, mot('SELECT performer_user_id o FROM case_interventions WHERE id = ?', ids.paId).o,
+      mot('SELECT owner_user_id o FROM case_signals WHERE id = ?', ids.tinId).o, mot('SELECT owner_user_id o FROM discipline_measures WHERE id = ?', ids.xlId).o];
+    const dung = (ids: ReturnType<typeof tao>, nghi: number, ten: string) => {
+      assert(JSON.stringify(chu(ids)) === JSON.stringify([luat, luat, luat, cn]), `${ten}: ${JSON.stringify(chu(ids))} ≠ ${JSON.stringify([luat, luat, luat, cn])}`);
+      const ls = hang('SELECT field, old_value, new_value FROM sos_case_history WHERE case_id = ? ORDER BY id', ids.caseId);
+      assert(ls.some((r) => r.field === 'owner_user_id' && r.old_value === String(nghi) && r.new_value === String(luat)) && ls.some((r) => r.field === 'pa_performer'), `${ten}: lịch sử ${JSON.stringify(ls)}`);
+      assert(hang(`SELECT action FROM audit_logs WHERE entity_type = 'case_signal' AND entity_id = ? AND action = 'signal.owner_assign'`, ids.tinId).length === 1, `${ten}: nhật ký tín hiệu`);
+    };
+    /* Xoá tài khoản. */
+    const a = taiKhoan('nghi', 'teacher');
+    const ia = tao(a.userId, moiEm());
+    xoaTK.xoaTaiKhoan(P.admin, a.userId);
+    dung(ia, a.userId, 'xoá tài khoản');
+    xoaTK.khoiPhucTaiKhoan(P.admin, a.userId);
+    assert(chu(ia)[0] === luat, 'Khôi phục tài khoản không tự trả Case');
+    /* Gỡ hết vai. */
+    const b = taiKhoan('nghi2', 'teacher');
+    const ib = tao(b.userId, moiEm());
+    accounts.setRoles(P.admin, b.userId, []);
+    dung(ib, b.userId, 'gỡ hết vai');
+    /* Đổi vai, vẫn còn vai → không chuyển. */
+    const c = taiKhoan('nghi3', 'teacher');
+    const ic = tao(c.userId, moiEm());
+    accounts.setRoles(P.admin, c.userId, [{ role: 'consultant', branches: ['MB'] }]);
+    assert(chu(ic).every((x) => x === c.userId), `còn vai: giữ ${JSON.stringify(chu(ic))}`);
+    /* Em không đang học (không ghi danh active) → không có người theo luật → để nguyên (= chưa có người). */
+    const d = taiKhoan('nghi4', 'teacher');
+    const sid = moiEm();
+    const id = tao(d.userId, sid);
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(sid);
+    xoaTK.xoaTaiKhoan(P.admin, d.userId);
+    assert(chu(id).every((x) => x === d.userId), `không ai: để nguyên ${JSON.stringify(chu(id))}`);
+  }));
+
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
