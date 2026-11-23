@@ -2006,6 +2006,10 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .cvA-con .cvA-lop { visibility: hidden; }
   .cvA-act { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 0 20px 10px; }
   .cvA-v.dang-chon { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
+  /* Trang rộng hết khung (≥ 1100 px, vai không có khối phải): ô lớp / ai thu theo nội dung, ô chi tiết ăn phần dư — không để cột "ai" trống hàng trăm px (chủ SP 24/11). */
+  @container (min-width: 1100px) {
+    .cvA { grid-template-columns: max-content max-content minmax(0, 1fr) max-content; }
+  }
   @container (max-width: 599px) {
     .cvA { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
     .cvA-sub { display: block; }

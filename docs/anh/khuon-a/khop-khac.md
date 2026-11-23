@@ -89,3 +89,16 @@ Chi tiết (`.cvA-ct`) là một dòng, `min-width: 0` + cắt "…" nên không
 ## 7. Chưa làm: dải tab "Thêm n ▾" ở 1280 khi mở panel (mockup đợt ba)
 
 Là dải tab (`HangTab`), không thuộc danh sách việc — PTA Plan quyết giao cho PR này hay PR riêng.
+
+## 8. Khoảng trống thừa từng cột (PTA Plan bổ sung)
+
+Đo = bề rộng ô − nội dung dài nhất của cột trong trang (px), 1440, mở hết dòng gộp.
+
+| Trang | Ô ai thừa: trước → sau | Ô lớp thừa: trước → sau |
+|---|---|---|
+| Head Việc quản lý (danh sách 1400) | **443 → 82** (cột 476 → 115; nội dung "1 em" 33) | 255 → 82 (ô lớp rộng hơn nội dung vì dòng việc không lớp chiếm ô lớp + ô ai) |
+| Quản trị · Chấm điểm Tất cả (1400) | 335 → **0** | 255 → 0 |
+| Head · Case Tất cả (1400) | 286 → **0** | 275 → 0 |
+| GV / TVV (danh sách 956, có khối phải) | 115–219 (giữ 4·5·4 như mockup) | 118–156 |
+
+Cách làm: trang rộng ≥ 1100 px (vai không có "Lớp của tôi") ô lớp và ô ai theo nội dung (`max-content`), ô chi tiết ăn phần dư; dưới 1100 px giữ 4·5·4 như mockup. Phần dư chuyển sang giữa ô chi tiết và hạn (chữ chi tiết sát trái, hạn sát phải) — không còn khoảng trống giữa lớp / ai / chi tiết. Lệch cột vẫn 0 px ở 16 trang.
