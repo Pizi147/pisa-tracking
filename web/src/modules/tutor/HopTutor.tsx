@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
@@ -55,9 +56,10 @@ export function HopTutor({ dsChiNhanh, chiNhanhDanhBa, ds, tutor, coBuoi = true,
     if (!tutor) return;
     setGui(true);
     try {
-      await api.del(`/tutors/${tutor.id}`);
+      const r = await api.del<{ thungRacId?: number }>(`/tutors/${tutor.id}`);
       invalidate('/tutors');
-      toast.push('ok', t('Đã xoá tutor {ten}', { ten: tutor.ten }));
+      /* R2 C3: xoá mềm — Hoàn tác = khôi phục Thùng rác (tutor + nhận xét). */
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá tutor {ten}', { ten: tutor.ten }), () => invalidate('/tutors'));
       onXoa?.();
     } catch (e) {
       setHoiXoa(false);

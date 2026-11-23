@@ -177,6 +177,18 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(!mot('SELECT 1 FROM viec_mo_ta WHERE loai = ? AND ref_id = ?', 'bao_ph', id), 'donViec dọn mô tả (id dùng lại không thừa hưởng)');
   }));
 
+  await checkAsync('R2-C13 · việc ĐÃ ĐÓNG: sửa Mô tả được (có lịch sử + 409 so-và-đổi); Hạn vẫn chặn', () => thu(async () => {
+    const id = baoPh(moiEm());
+    gv.suaMoTa(tvv, 'bao_ph', id, { moTa: 'Gọi bố, mẹ đi công tác', moTaCu: null });
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?`).run(id);
+    const k0 = gv.xemGiaoViec(tvv, 'bao_ph', id);
+    assert(k0.mo === false && k0.coTheSuaMoTa === true && k0.coTheSuaHan === false, `cờ việc đóng: ${JSON.stringify([k0.mo, k0.coTheSuaMoTa, k0.coTheSuaHan])}`);
+    const k = gv.suaMoTa(tvv, 'bao_ph', id, { moTa: 'Gọi bố — mẹ đi công tác', moTaCu: 'Gọi bố, mẹ đi công tác' });
+    assert(k.moTa?.noiDung === 'Gọi bố — mẹ đi công tác' && k.lichSu.some((l: any) => l.truong === 'mo_ta'), 'sửa + lịch sử');
+    assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id, { moTa: 'x', moTaCu: 'cũ' })) === 409, 'moTaCu lệch → 409');
+    assert(await ma(() => gv.suaMoTa(tvv2, 'bao_ph', id, { moTa: 'x', moTaCu: 'Gọi bố — mẹ đi công tác' })) === 403, 'người theo dõi vẫn 403');
+  }));
+
   // ---------------------------------------------------------------- rà sâu PTA #1936
   const xoaHV: any = await import('../students/xoaHocVien.ts');
   const ph: any = await import('../yThuc/phoiHop.ts');
@@ -252,7 +264,7 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     /* Việc đã đóng. */
     const sid2 = moiEm(); const id2 = baoPh(sid2);
     bp.ghiKetQuaBaoPh(tvv, { viecIds: [id2], ketQua: 'da_bao', ghiChu: 'Đã gọi phụ huynh, mẹ em nghe máy' });
-    assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id2, { moTa: 'x', moTaCu: null })) === 400, 'việc đã đóng → 400');
+    assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id2, { moTa: 'x', moTaCu: null })) === 200, 'việc đã đóng: R2 C13 — sửa mô tả được');
     /* phoi_hop (GVCN theo luật). */
     const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND a.student_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'talk_family') AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;

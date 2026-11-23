@@ -14,6 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NGUONG_KY_VONG, REGULAR_SKILLS, duongCase, mocThuong, tenMon, tuanLich, type RegularSkill } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
+import { hoanTacKetLuan } from '../students/KetLuanKhoa.tsx';
 
 /** `GET /classes/:id/ket-qua-dau-ra` (server/src/normal/kyVong.ts → kqdrLopFt). Kết quả = giá trị QL đã chốt, hoặc tự Đạt theo MT0 (`tuDong`). */
 type KetQua = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null; tuDong?: true };
@@ -230,7 +231,8 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
       const r: any = await api.put(`/students/${em.id}/ket-luan-ft`, chon === 'dat' ? { dat: true }
         : { dat: false, nguyenNhan: chon, mon: chon === 'trung_tam' ? mon : [], ...(chon === 'hoc_sinh' ? { ghiChu: phuongAn.trim() } : {}) });
       invalidate('/classes'); invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? t('Đã lưu — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã lưu'));
+      hoanTacKetLuan(toast, em.id, k ? { dat: k.dat, nguyenNhan: k.nguyenNhan ?? null, mon: k.mon ?? [], ghiChu: k.ghiChu ?? null } : null,
+        r?.taoCaseTutor ? t('Đã lưu — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã lưu'), onXong);   // R2 C11
       if (r?.luuY) toast.push('info', dich(r.luuY));
       onXong();
     } catch (e: any) { setLoi(e.message); } finally { setBusy(false); }

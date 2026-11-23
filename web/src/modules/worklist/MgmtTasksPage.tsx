@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, Field, Forbidden, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
@@ -507,6 +508,14 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
     ...(data.lichSu ?? []).map((l: any) => ({ luc: (l.luc ?? '').slice(0, 10), ...dongLichSu(l) })),
   ].sort((a, b) => (a.luc < b.luc ? 1 : a.luc > b.luc ? -1 : 0)) : [];
   const conXong = data?.subtasks.filter((x: any) => x.progress === 'done').length ?? 0;
+  /* R2 C8: giao nhầm → Xoá (chưa có cập nhật): Thùng rác + Hoàn tác; đã có cập nhật thì nút ẩn, còn Dừng hẳn. */
+  const xoaViec = async () => {
+    try {
+      const r = await api.del<{ thungRacId?: number }>(`/mgmt-tasks/${data.id}`);
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá việc'), xong);
+      xong(); onClose();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được — thử lại.')); }
+  };
 
   return (
     <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
@@ -515,6 +524,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
         han: data.due ? <ChipHan loai="viec-van-hanh" han={data.due} /> : undefined,
         dong2: [data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ'),
           /* B3-16 (AUDIT-2111): "{tên} giao" chỉ ở chip khối Phụ trách — không lặp ở dòng phụ đầu panel. */
+          data.viewer.canXoa ? <button key="xoa" type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold text-late sm:min-h-0" onClick={() => void xoaViec()}>{t('Xoá việc')}</button> : null,
           data.viewer.canEdit ? <button key="sua" type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setEditing(true)}>{t('Sửa công việc')}</button> : null,
         ].filter(Boolean) as ReactNode[],
       } : undefined}
@@ -1049,7 +1059,18 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
         onDone();
         return;
       }
-      toast.push('ok', parent ? t('Đã thêm việc con') : t('Đã giao việc'));
+      /* R2 C8: giao nhầm → Hoàn tác (Thùng rác) khi chỉ có việc, không việc con / tệp đi kèm. */
+      if (!parent && !vc.length && !tep.length) {
+        const idVua = id, key = `giao-viec-${idVua}`;
+        toast.hoanTac(t('Đã giao việc'), async () => {
+          try {
+            await api.del(`/mgmt-tasks/${idVua}`);   // Thùng rác 30 ngày; người phụ trách vừa cập nhật → máy chủ chặn, nói bước tiếp
+            invalidate('/mgmt-tasks'); invalidate('/my-work'); onDone();
+            toast.push('ok', t('Đã hoàn tác'), { key });
+          } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+        }, { key });
+      }
+      else toast.push('ok', parent ? t('Đã thêm việc con') : t('Đã giao việc'));
       /* Đóng form; giao tiếp là mở lại → giá trị đầu đúng ngữ cảnh lúc đó và khoá gửi mới. */
       onDone(); onClose();
       if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);

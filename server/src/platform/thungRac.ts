@@ -14,7 +14,7 @@ import { LOAI_CUA_BANG } from '../worklist/giaoViec.ts';
  * Tệp trong kho giữ `GIU_NGAY` ngày rồi `donThungRac` (cron) xoá hẳn.
  */
 export const GIU_NGAY = 30;
-export type LoaiRac = 'case' | 'pa' | 'ket_qua_pa' | 'vi_pham' | 'tep' | 'hoc_vien' | 'lop';
+export type LoaiRac = 'case' | 'pa' | 'ket_qua_pa' | 'vi_pham' | 'tep' | 'hoc_vien' | 'lop' | 'tutor' | 'nhan_xet_tutor' | 'viec';
 
 type Dong = Record<string, unknown>;
 type Ban =

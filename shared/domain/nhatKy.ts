@@ -62,7 +62,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',
-  'mgmt_task.create': 'Tạo công việc quản lý', 'mgmt_task.edit': 'Sửa công việc quản lý', 'mgmt_task.hoan_tac_giao': 'Hoàn tác đổi người phụ trách công việc', 'mgmt_task.lap': 'Tạo việc lặp lại theo kỳ',
+  'mgmt_task.create': 'Tạo công việc quản lý', 'mgmt_task.edit': 'Sửa công việc quản lý', 'mgmt_task.hoan_tac_giao': 'Hoàn tác đổi người phụ trách công việc', 'mgmt_task.xoa': 'Xoá công việc (Thùng rác)', 'mgmt_task.lap': 'Tạo việc lặp lại theo kỳ',
   'mgmt_task.dung_lap': 'Dừng lặp công việc', 'mgmt_task.tiep_lap': 'Hoàn tác Dừng lặp', 'task_group.create': 'Tạo nhóm công việc', 'task_group.rename': 'Đổi tên nhóm công việc',
   'task_group.hide': 'Ẩn nhóm công việc', 'task_group.show': 'Hiện nhóm công việc',   // VH-1
   'mt.xuat_excel': 'Xuất Excel kết quả Test', 'ke_hoach.xuat_excel': 'Xuất Excel Kế hoạch Test', 'lich_thi.luu': 'Lưu kết luận lịch thi', 'hoc_vien.xuat_excel': 'Xuất Excel danh sách học viên', 'ke_hoach.xuat_diem': 'Xuất điểm Test',
