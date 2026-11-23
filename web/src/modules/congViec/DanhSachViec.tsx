@@ -16,7 +16,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 type ChungDong = {
   onOpen: (it: WorkItem) => void; chon: string | null; xong: ReadonlySet<string>;
-  moTrang: (it: WorkItem) => boolean; moCaDong: (it: WorkItem) => boolean; nutPhu?: (it: WorkItem) => ReactNode;
+  moTrang: (it: WorkItem) => boolean; moCaDong: (it: WorkItem) => boolean;
   /** V5 (brief 7): việc của người khác — dòng không nút động từ; có nút (tên hành động như chủ việc — N64) khi máy chủ báo `lamThay`. */
   theoDoi: (it: WorkItem) => boolean;
   /** v12 S3: đang xem việc của MỘT GV (id) — dòng của GV đó không lặp tên (dải "Đang xem việc của…" đã nói). */
@@ -441,7 +441,7 @@ const tenLoaiNgan = (it: WorkItem) => {
 /** Các mẩu chi tiết (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). `ghiLoai`: nhóm có nhiều loại việc → mở đầu bằng tên loại. */
 function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean, daXong: boolean): string[] {
   if (diem) return diem.ct ? [diem.ct] : [];
-  if (it.group === 'bo_sung_ho_so') return it.reason ? [dich(it.reason)] : [];   // "Target 1 · Ngày sinh 1" — thiếu gì (mockup V4: "Thiếu Target")
+  if (it.group === 'bo_sung_ho_so') return it.reason ? [t('Thiếu: {x}', { x: it.reason.split(' · ').map((m) => dich(m.replace(/ \d+$/, ''))).join(', ') })] : [];   // reason "Email 1 · Target 1" → "Thiếu: Email, Target"
   /* 06/11: Xét lại lộ trình không liệt kê tên em (chỉ "n em"); G4-18: dòng vừa xong không ghi tiến độ cũ (bàn giao, việc cả lớp). */
   const boNgucCanh = it.group === 'xet_lai_lo_trinh' || (daXong && (it.group === 'ban_giao' || it.group === 'chot_len_ft' || it.group === 'ky_vong_dau_ra'));
   if (boNgucCanh) return ghiLoai ? [tenLoaiNgan(it)] : [];
@@ -479,7 +479,6 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
   const chu = [...ct, tvv, giao, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
-  const hanhDong = daXong || con ? null : dong.nutPhu?.(it);
   const tenNut = tenViecKl ? (it.group === 'bo_sung_ho_so' ? dich(it.tieuDe) : tenViec(tenBoEmGoc(it))) : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
@@ -497,7 +496,6 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
         <span className="cvA-ct" title={chu}>{chu}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="ml-2 text-faint">· {nguoi}</span>}</span>
         <HanA it={it} daXong={daXong} />
         {dong.moTrang(it) && it.group !== 'xuat_bc_ph' && !con && !daXong && <MuiDi />}
-        {hanhDong && <div className="cvA-act" onClick={(e) => e.stopPropagation()}>{hanhDong}</div>}
       </div>
       {con && mo && (
         <ul id={maDs} className="cvA-sub cvA-con" aria-label={dich(it.tieuDe)}>
@@ -513,7 +511,6 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
   const { daXong, dangChon, nguoi } = useDong(it, dong);
   const bam = () => dong.onOpen(it);
   const chu = [it.conPhu ? dich(it.conPhu).split(' · ').filter((x) => x !== t('Ý thức')).join(' · ') : null, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
-  const nutPhu = !daXong ? dong.nutPhu?.(it) : null;
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
       <span className="cvA-lop" aria-hidden />
@@ -524,7 +521,6 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
       </span>
       <span className="cvA-ct" title={chu}>{chu}{nguoi && !daXong && <span className="ml-2 text-faint">· {nguoi}</span>}</span>
       <HanA it={it} daXong={daXong} />
-      {nutPhu && <div className="cvA-act" onClick={(e) => e.stopPropagation()}>{nutPhu}</div>}
     </div>
   );
 }

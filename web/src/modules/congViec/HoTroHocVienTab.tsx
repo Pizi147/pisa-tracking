@@ -29,7 +29,8 @@ import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
 import type { ChiSoTvv } from '../worklist/TongQuanV5.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { DauViecCongViec, KhungTaiCho, NUT_DONG, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { DaiLamThay } from '../../ui/DaiLamThay.tsx';
 import { PanelViec } from './PanelViecLuoi.tsx';
 import { PanelLopAdmin } from './PanelLopAdmin.tsx';
@@ -43,7 +44,6 @@ import { lamTaiCho, moCaDong, soCuaKhoa } from './lamTaiCho.ts';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { BaoHoanTac, DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
@@ -566,6 +566,8 @@ export function HoTroHocVienTab() {
     loai: `${dangLamThay ? t('Làm thay') : chiXemCx(chon) ? t('Chỉ xem') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null, chiXem: chiXemCx(chon),
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
     /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
+    /* Khuôn A (24/11): "Bỏ qua" chuyển từ dòng vào ⋯ đầu panel (chỉ việc máy chủ báo bỏ qua được, không phải việc theo dõi). */
+    ghim: chon.boQuaDuoc && !chon.con?.length && !theoDoiViec ? <MenuDong nhan={t('Thao tác phụ')} lopNut={NUT_DONG} muc={[{ key: 'bo-qua', nhan: t('Bỏ qua việc này'), onChon: () => boQua(chon) }]} /> : undefined,
     daiLamThay: dangLamThay ? <DaiLamThay>{t('Bạn đang làm thay {ai}.', { ai: chon.owner ?? t('người phụ trách') })}</DaiLamThay> : undefined,
   } : null;
 
@@ -745,15 +747,7 @@ export function HoTroHocVienTab() {
             <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
-              /* Khuôn A (24/11): Gia hạn · Không thi (PanelSauThi), Hoàn thành Xếp lịch họp (PanelMeeting), Hoàn thành việc Vận hành (panel Vận hành) đã ở PANEL — dòng chỉ còn
-                 hai nút chưa có chỗ trong panel: Bỏ qua và Xuất lớp ([XM] khop-khac.md). */
-              nutPhu={(x) => (!x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
-                  ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:h-8 sm:min-h-8" aria-label={t('Bỏ qua: {viec}', { viec: dich(x.tieuDe) })}
-                    title={t('Ẩn việc này. Lịch, PA, Case giữ nguyên.')} onClick={() => boQua(x)}>{t('Bỏ qua')}</button>
-                  /* BAO-CAO-PH b: lớp đã đủ — Xuất lớp tải file ngay (dòng thiếu em: nút việc "Báo cáo PH ›" mở tab). */
-                  : x.group === 'xuat_bc_ph' && !x.due && x.classId
-                    ? <NutXuatLopBc lopId={x.classId} dot={x.key.split(':').slice(2).join(':')} />
-                    : null)} />
+            />
           )}
           {/* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. */}
           {data && !data.scopeEmpty && tab === 'case-hoc-thuat' && !!data.paDangChay?.length && (
