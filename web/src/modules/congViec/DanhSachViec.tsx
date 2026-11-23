@@ -6,8 +6,6 @@ import { Level } from '../../ui/ui.tsx';
 import { DauQuaHan, NhanChoGv } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
-import { NutKhongThi } from '../students/NutKhongThi.tsx';
-import { soCuaKhoa } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CASE_CATEGORY_SHORT, CHAM_CHEO, LOAI_HAN_CUA_VIEC, demBai, bacNgan, deadlineView, laViecChamCheo, mucHan, shortDate, type MucTab,
@@ -138,6 +136,43 @@ export const chuDau = (ten: string) => {
 };
 
 /**
+ * NHÓM = ĐỘNG TỪ VIỆC (mockup v24 A1 / V4, chủ SP 24/11): mục gộp nhiều loại ("Mô tả Case" · "Phương án" · "Kết quả PA" · "Lộ trình" · "Vi phạm") tách ở MỨC HIỂN THỊ thành
+ * nhóm theo loại việc — Thêm PA · Xác nhận PA · Ghi Mini Test · Xác nhận Case · Chốt lộ trình… Số đếm tab / badge vẫn theo mục (`chiaMucTab`, `dem`); số ở đầu nhóm con đếm lại từ
+ * chính các dòng (cùng luật `dem`: dòng giữ chỗ vừa xong và dòng làm thay không vào `n`). Khoá gập / mở = khoá nhóm con.
+ */
+const MUC_TACH = new Set(['mo-ta', 'pa', 'kq-pa', 'lo-trinh', 'vi-pham']);
+const loaiNhom = (it: WorkItem): [string, string, number] => {
+  switch (it.group) {
+    case 'ghi_nhan_xet': return ['mo-ta', t('Mô tả Case'), 0];
+    case 'cause': case 'xem_nx_s': return ['xn-case', t('Xác nhận Case'), 1];
+    case 'no_plan': return ['them-pa', t('Thêm PA'), 2];
+    case 'xac_nhan_pa': case 'do_plan': return ['xn-pa', t('Xác nhận PA'), 3];
+    case 'mini_test': return ['mini-test', t('Ghi Mini Test'), 4];
+    case 'ghi_ket_qua_pa': return ['kq-pa', t('Ghi kết quả PA'), 5];
+    case 'chot_len_ft': case 'ky_vong_dau_ra': return ['chot-lo-trinh', t('Chốt lộ trình'), 6];
+    case 'xet_lai_lo_trinh': return ['xet-lai', t('Xét lại lộ trình'), 7];
+    case 'yt_xu_ly': return ['xu-ly', t('Xử lý vi phạm'), 8];
+    case 'yt_thuc_hien': return ['da-lam', t('Đã thực hiện'), 9];
+    case 'khai_bac': return ['khai-bac', t('Khai cấp bậc'), 10];
+    default: return [it.group, dich(it.tieuDe.split(' · ')[0]), 11];
+  }
+};
+type NhomHien = { key: string; mk: string; label: string; items: WorkItem[]; d: { n: number; quaHan: number; lamThay?: number } };
+function tachNhom(muc: readonly MucTab<WorkItem>[], dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>, xong: ReadonlySet<string>): NhomHien[] {
+  return muc.flatMap((m): NhomHien[] => {
+    if (!MUC_TACH.has(m.key)) return [{ key: m.key, mk: m.key, label: m.label, items: m.items, d: m.key === 'cham-cheo' ? demBai(m.items) : dem.get(m.key) ?? { n: 0, quaHan: 0 } }];
+    const theo = new Map<string, { label: string; ord: number; items: WorkItem[] }>();
+    for (const x of m.items) { const [k, label, ord] = loaiNhom(x); (theo.get(k) ?? theo.set(k, { label, ord, items: [] }).get(k)!).items.push(x); }
+    return [...theo].sort(([, a], [, b]) => a.ord - b.ord).map(([k, g]) => {
+      const tinh = g.items.filter((x) => !xong.has(x.key));
+      const lt = tinh.filter((x) => (x as { lamThay?: boolean }).lamThay).length;
+      const dd = tinh.filter((x) => !(x as { lamThay?: boolean }).lamThay);
+      return { key: k === m.key ? k : `${m.key}:${k}`, mk: m.key, label: g.label, items: g.items, d: { n: dd.length, quaHan: dd.filter((x) => x.urgency === 'overdue').length, lamThay: lt || undefined } };
+    });
+  });
+}
+
+/**
  * DANH SÁCH MỘT TAB — AUDIT-UI B4 (chủ SP 08/11, mockup `thiet-ke/2026-11-08-audit-ui-mockup.html` khu B4; thay CV-TAB "một thẻ, mục Quá hạn trên cùng"):
  * MỖI MỤC LOẠI VIỆC MỘT THẺ (`chiaMucTab`, mục rỗng ẩn), quá hạn lên đầu mục. Đầu thẻ = dải nhóm (`.dai-nhom`: nền `--surface-2`, vạch trái 3 px nhấn, 15 / 700)
  * · chip "n việc" · "n quá hạn" đỏ (375 cũng ghi đủ chữ — AU-GON A1-11). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
@@ -166,32 +201,33 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
     setGapSt({ k: khoaNho, s }); ghiGap(khoaNho, s);
   };
   /* Mở panel việc nằm trong mục đang gập (`?viec=`, "Việc tiếp ›") → mục tự mở; chỉ khi việc ĐỔI — người dùng vẫn gập được mục chứa việc đang mở. */
+  const nhom = tachNhom(muc, dem, dong.xong);
   const daMo = useRef<string | null>(null);   // việc đã xử lý — dữ liệu về muộn (`muc` đổi) vẫn tìm được mục, nhưng mỗi việc chỉ tự mở một lần
   useEffect(() => {
     if (!dong.chon) { daMo.current = null; return; }
-    const m = muc.find((x) => x.items.some((y) => y.key === dong.chon || y.con?.some((c) => c.key === dong.chon)));
+    const m = nhom.find((x) => x.items.some((y) => y.key === dong.chon || y.con?.some((c) => c.key === dong.chon)));
     if (!m || daMo.current === dong.chon) return;
     daMo.current = dong.chon;
     if (gap.has(m.key)) datGap(m.key, false);
-  }, [dong.chon, muc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dong.chon, nhom]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* KHUÔN A (24/11): bỏ vạch hạn "Quá hạn / Hạn đến… / Hạn sau…" — quá hạn lên đầu nhóm (máy chủ đã xếp), hạn là ngày tô màu ở mỗi dòng. */
   /* VH-2 (V5): mục "Việc được giao" — nhóm của việc Vận hành xếp theo thứ tự Head sắp, "Không phân loại" cuối; trong nhóm giữ thứ tự hạn. */
   const theoNhom = (ds: WorkItem[]) => ds.map((x, i) => [x, i] as const)
     .sort(([a, i], [b, j]) => (a.nhomViec?.thuTu ?? Infinity) - (b.nhomViec?.thuTu ?? Infinity) || (a.nhomViec?.id ?? 0) - (b.nhomViec?.id ?? 0) || i - j).map(([x]) => x);
   return (
     <div className="cvA-cq"><div className="cvA">
-      {muc.map((m, i) => {
+      {nhom.map((m, i) => {
         const n = soHien + (them[m.key] ?? 0);
-        const giao = m.key === 'giao';
+        const giao = m.mk === 'giao';
         const items = giao ? theoNhom(m.items) : m.items;
-        const nhieuLoai = new Set(m.items.map((x) => x.group)).size > 1;
+        const nhieuLoai = !MUC_TACH.has(m.mk) && new Set(m.items.map((x) => x.group)).size > 1;
         /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
-        const chung = m.key === 'cham-cheo';
-        const dongGap = gap.has(m.key), maMuc = `muc-${m.key}`;
-        const d: { n: number; quaHan: number; lamThay?: number } = chung ? demBai(m.items) : dem.get(m.key) ?? { n: 0, quaHan: 0 };
+        const chung = m.mk === 'cham-cheo';
+        const dongGap = gap.has(m.key), maMuc = `muc-${m.key.replace(':', '-')}`;
+        const d = m.d;
         return (
           <section key={m.key} data-muc={m.key} className="card cvA-sub overflow-clip p-0" aria-label={m.label}>
-            <DaiNhom k={ICON_MUC[m.key] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
+            <DaiNhom k={ICON_MUC[m.mk] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
               phuPhai={giao ? dauPhai : undefined} trungTinh={chung} chevSauTen dieuKhien={dongGap ? undefined : maMuc} luat={i === 0 ? luat : undefined}
               phu={d.quaHan > 0 || !!d.lamThay ? <>
                 {d.quaHan > 0 && <span className="font-bold tabular-nums text-late">{d.quaHan} {t('quá hạn')}</span>}
@@ -216,7 +252,7 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
           </section>
         );
       })}
-      {dauPhai && !muc.some((m) => m.key === 'giao') && <div className="flex justify-end px-1">{dauPhai}</div>}
+      {dauPhai && !nhom.some((m) => m.mk === 'giao') && <div className="flex justify-end px-1">{dauPhai}</div>}
     </div></div>
   );
 }
@@ -396,7 +432,7 @@ const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.leng
 const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'yt_tra_lai']);
 
 /** Đoạn đầu tên việc là ĐỘNG TỪ ("Thêm PA học thuật", "Xác nhận Case", "Nhập điểm …") — tên nhóm đã nói; ở nhóm gộp nhiều loại thì ghi lại bản ngắn ở đầu chi tiết. */
-const DONG_TU_DAU = /^(Thêm PA(?: học thuật)?|Xác nhận PA|Chọn PA|Xác nhận Case|Mô tả Case|Ghi kết quả PA|Ghi Mini Test|Nhập điểm|Viết Báo cáo PH|Xử lý vi phạm|Bàn giao|Báo PH kết quả Test|Báo PH)(?: |$)/;
+const DONG_TU_DAU = /^(Thêm PA(?: học thuật)?|Xác nhận PA|Chọn PA|Xác nhận Case|Mô tả Case|Ghi kết quả PA|Ghi Mini Test|Nhập điểm|Viết Báo cáo PH|Xử lý vi phạm|Bàn giao|Báo PH kết quả Test|Báo PH|Chốt lộ trình|Bổ sung hồ sơ thiếu)(?: |$)/;
 const tenLoaiNgan = (it: WorkItem) => {
   const tg = ({ yt_xu_ly: t('Xử lý vi phạm'), yt_xem: t('Xem vi phạm mới'), yt_thuc_hien: t('Đã thực hiện'), khai_bac: t('Khai cấp bậc'), yt_tra_lai: t('Vi phạm bị trả lại') } as Record<string, string>)[it.group];
   return tg ?? dich(it.tieuDe.split(' · ')[0]).replace(t('Thêm PA học thuật'), t('Thêm PA')).replace(t('Ghi Mini Test'), 'Mini Test');
@@ -405,6 +441,7 @@ const tenLoaiNgan = (it: WorkItem) => {
 /** Các mẩu chi tiết (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). `ghiLoai`: nhóm có nhiều loại việc → mở đầu bằng tên loại. */
 function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean, daXong: boolean): string[] {
   if (diem) return diem.ct ? [diem.ct] : [];
+  if (it.group === 'bo_sung_ho_so') return it.reason ? [dich(it.reason)] : [];   // "Target 1 · Ngày sinh 1" — thiếu gì (mockup V4: "Thiếu Target")
   /* 06/11: Xét lại lộ trình không liệt kê tên em (chỉ "n em"); G4-18: dòng vừa xong không ghi tiến độ cũ (bàn giao, việc cả lớp). */
   const boNgucCanh = it.group === 'xet_lai_lo_trinh' || (daXong && (it.group === 'ban_giao' || it.group === 'chot_len_ft' || it.group === 'ky_vong_dau_ra'));
   if (boNgucCanh) return ghiLoai ? [tenLoaiNgan(it)] : [];
@@ -416,8 +453,9 @@ function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, 
     laViecTvvTheoEm(it) && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : meet ? it.phu : it.contextLabel ?? it.phu,
     it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null,
   ]).filter((x) => !laThe(x)).filter((x) => !/^SOS \d/.test(x) && x !== it.studentName);
+  const bo = (x: string) => { const y = x.replace(/^\d+ (?:em|HV) (?=\S)/, ''); return y === x ? y : y.charAt(0).toUpperCase() + y.slice(1); };   // "1 em chưa chọn" → "Chưa chọn" (số em đã ở ô ai)
   const hang = [ghiLoai ? tenLoaiNgan(it) : null, ...(gop && LA_GON.has(it.group) && it.group !== 'phoi_hop_sos' ? [] : tenCon), ...(gop && it.group === 'yt_xu_ly' ? [] : phu)]
-    .flatMap((x) => (x ? x.split(' · ') : []));
+    .flatMap((x) => (x ? x.split(' · ').map(bo) : []));
   return duyNhat(hang).filter((x) => x !== t('Công việc quản lý')).slice(0, 2);   // bốn ô, một dòng chữ: loại (nếu nhóm gộp) / kỹ năng · lượt — nhiều hơn thì ở panel
 }
 
@@ -436,15 +474,13 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
   const motEm = moiEm || (gop && emCon === 1 && !diem);
   const soEm = diem ? diem.n : gop ? emCon : it.emTen?.length ? it.count ?? it.emTen.length : soTong || it.count || 0;
   const aiChu = motEm ? it.studentName : it.gopLop && it.soBai ? t('{n} bài', { n: it.soBai }) : soEm ? t('{n} em', { n: soEm }) : null;
-  const tenViecKl = !it.classCode && !aiChu;   // việc không lớp (Task Vận hành): tên việc chiếm ô lớp + ô em
+  const tenViecKl = !it.classCode && !motEm;   // việc không lớp (Task Vận hành, Bổ sung hồ sơ gộp nhiều lớp): tên việc chiếm ô lớp + ô em
   const ct = chiTiet(it, gop, diem, ghiLoai, daXong);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
   const chu = [...ct, tvv, giao, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
-  const khongThi = it.group === 'thi_that' && (it.cycleId ?? soCuaKhoa(it.key))
-    ? <NutKhongThi cycleId={(it.cycleId ?? soCuaKhoa(it.key))!} className="btn btn-sm min-h-[44px] justify-center whitespace-nowrap font-semibold sm:h-8 sm:min-h-8" /> : null;
-  const hanhDong = daXong || con ? null : dong.nutPhu?.(it) ?? khongThi;
-  const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : aiChu ?? '';
+  const hanhDong = daXong || con ? null : dong.nutPhu?.(it);
+  const tenNut = tenViecKl ? (it.group === 'bo_sung_ho_so' ? dich(it.tieuDe) : tenViec(tenBoEmGoc(it))) : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
     <div className="cvA-sub">

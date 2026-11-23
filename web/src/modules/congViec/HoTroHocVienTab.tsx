@@ -43,7 +43,6 @@ import { lamTaiCho, moCaDong, soCuaKhoa } from './lamTaiCho.ts';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { BaoHoanTac, DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
@@ -467,7 +466,6 @@ export function HoTroHocVienTab() {
 
   // ------------------------------------------------------------------ lọc người + chip đang lọc (OV-15d, mockup 2 mục 3: 11 lựa chọn → 3)
   const [tenGv, setTenGv] = useState<string | null>(null);
-  const [giaHan, setGiaHan] = useState<WorkItem | null>(null);
   const [giaoViec, setGiaoViec] = useState(false);
   /* BO-QUA-XEP-MT: Bỏ qua (ẩn ngay + toast Hoàn tác) · Khôi phục (khu "Đã bỏ qua"). Chỉ ẩn VIỆC — lịch, PA, Case giữ nguyên; máy chủ kiểm quyền. */
   const doiAnTam = (key: string, an: boolean) => setAnTam((s) => { const n = new Set(s); if (an) n.add(key); else n.delete(key); return n; });
@@ -481,29 +479,6 @@ export function HoTroHocVienTab() {
     guiBoQua(x.key, true)
       .then(() => toast.hoanTac(t('Đã bỏ qua: {viec}', { viec: dich(x.tieuDe) }), () => { void khoiPhuc(x.key); }, { key: `bo-qua-${x.key}` }))
       .catch((e: any) => { doiAnTam(x.key, false); toast.push('error', e?.message ?? t('Chưa bỏ qua được — thử lại.')); });
-  };
-  /* GV-2 ([XM] đã chốt, mockup v22 G8a): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp (không ngày giờ, không kết quả — ghi thêm thì mở panel) + Hoàn tác. */
-  const hoanThanhXepLich = (x: WorkItem) => {
-    const duong = `/giao-viec/meeting/${x.viecId}`;
-    api.post(`${duong}/xong`, {}).then(() => {
-      daLam(x); lamMoiGiaoViec();
-      toast.hoanTac(t('Xong: {viec}', { viec: dich(x.tieuDe) }), () => {
-        api.post(`${duong}/mo-lai`).then(() => { boAnCho(x.key); lamMoiGiaoViec(); }, (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.')));
-      }, { key: `xep-lich-${x.key}` });
-    }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
-  };
-  /* B3-12 (AUDIT-2111, theo mẫu Xếp lịch họp): "Hoàn thành" bấm thẳng trên dòng việc Vận hành được giao (4 bấm → 1) + Hoàn tác về tiến độ trước (so-và-đổi:
-     người khác vừa sửa → 409). Máy chủ chặn / cần hỏi (vd còn việc con mở) → báo lý do + mở panel để cập nhật tiến độ ở đó. */
-  const hoanThanhVanHanh = (x: WorkItem) => {
-    const duong = `/mgmt-tasks/${soCuaKhoa(x.key)}/update`;
-    const truoc = x.tienDo ?? 'not_started';
-    api.post<{ updatedAt: string | null }>(duong, { progress: 'done' }).then((d) => {
-      daLam(x); invalidate('/my-work'); invalidate('/mgmt-tasks');
-      toast.hoanTac(t('Xong: {viec}', { viec: dich(x.tieuDe) }), () => {
-        api.post(duong, { progress: truoc, phienBan: d.updatedAt ?? null }).then(() => { boAnCho(x.key); invalidate('/my-work'); invalidate('/mgmt-tasks'); },
-          (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.')));
-      }, { key: `van-hanh-${x.key}` });
-    }, (e: any) => { toast.push('error', e?.message ?? t('Không lưu được')); boChuRoi(() => mo(x)); });
   };
   const coLoc = loc !== 'tat-ca' || !!loai || typeof nguoi === 'number' || khung !== 'tat-ca';
   const xoaLoc = () => {
@@ -770,17 +745,9 @@ export function HoTroHocVienTab() {
             <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
-              /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
-              nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
-                ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:h-8 sm:min-h-8" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button>
-                /* GV-2 ([XM] đã chốt, mockup v22 G8a): "Hoàn thành" bấm thẳng trên dòng Xếp lịch họp. */
-                : x.group === 'meeting_xep_lich' && x.viecId && !xong.has(x.key) && !theoDoi(x)
-                ? <button type="button" className="btn btn-sm min-h-[44px] justify-center px-2.5 text-[13px] font-semibold sm:h-[30px] sm:min-h-[30px]" onClick={() => hoanThanhXepLich(x)}>{t('Hoàn thành')}</button>
-                /* B3-12: việc Vận hành giao cho tôi, chưa bắt đầu / đang làm (Tạm ngưng, Dừng hẳn cần lý do → panel). */
-                : x.group === 'mgmt' && x.mine && (x.tienDo === 'not_started' || x.tienDo === 'doing') && !xong.has(x.key) && !theoDoi(x)
-                ? <button type="button" className="btn btn-sm min-h-[44px] justify-center px-2.5 text-[13px] font-semibold sm:h-[30px] sm:min-h-[30px]" onClick={() => hoanThanhVanHanh(x)}>{t('Hoàn thành')}</button>
-                /* BO-QUA-XEP-MT: nút phụ cạnh nút việc (cùng mẫu Gia hạn) — chỉ việc máy chủ báo bỏ qua được. */
-                : !x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
+              /* Khuôn A (24/11): Gia hạn · Không thi (PanelSauThi), Hoàn thành Xếp lịch họp (PanelMeeting), Hoàn thành việc Vận hành (panel Vận hành) đã ở PANEL — dòng chỉ còn
+                 hai nút chưa có chỗ trong panel: Bỏ qua và Xuất lớp ([XM] khop-khac.md). */
+              nutPhu={(x) => (!x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
                   ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:h-8 sm:min-h-8" aria-label={t('Bỏ qua: {viec}', { viec: dich(x.tieuDe) })}
                     title={t('Ẩn việc này. Lịch, PA, Case giữ nguyên.')} onClick={() => boQua(x)}>{t('Bỏ qua')}</button>
                   /* BAO-CAO-PH b: lớp đã đủ — Xuất lớp tải file ngay (dòng thiếu em: nút việc "Báo cáo PH ›" mở tab). */
@@ -877,8 +844,6 @@ export function HoTroHocVienTab() {
         </div>
       </div>
 
-      {/* OV-13q: Gia hạn sau thi ngay ở dòng việc — hộp nhỏ đè lên, không đổi việc đang mở. */}
-      {giaHan && <HopGiaHan x={{ cycleId: giaHan.cycleId!, han: giaHan.due, daGiaHan: !!giaHan.daGiaHan }} hocVien={giaHan.studentName} lop={giaHan.classCode} onClose={() => setGiaHan(null)} />}
       {coTask && !chon && !theId && nutTask('noi')}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
     </div>
