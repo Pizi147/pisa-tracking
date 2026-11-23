@@ -240,7 +240,7 @@ export const HD_QL: HuongDan = {
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Xét lại lộ trình', duong: CV },
       loiTat: ['ho-so-lop', 'p-xet-lai'], cung: 'mở cùng panel Xét lại.',
       khiCo: 'Final lệch hướng đã chốt, hoặc Mini Test chưa đạt.',
-      buoc: ['Bấm <b>Xét lại ›</b> ở dòng: panel mở ở hồ sơ lớp.', 'Mỗi em: <b>Tiếp tục FT</b>, <b>Học lại</b> hoặc <b>Tạm dừng / Kết thúc học</b>.', 'Bấm <b>Lưu</b>.'],
+      buoc: ['Bấm <b>Xét lại</b> ở dòng: panel mở ngay tại trang.', 'Mỗi em: <b>Tiếp tục FT</b>, <b>Học lại</b> hoặc <b>Tạm dừng / Kết thúc học</b>.', 'Bấm <b>Lưu</b>.'],
       xong: 'Mọi em có quyết định.',
       han: '{han:xet_lai} tuần bắt đầu lớp mới; hết hạn = Tiếp tục.',
       sai: '<b>Sửa</b> / <b>Hoàn tác</b> tới khi chuyển lớp.',
@@ -431,7 +431,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'final-lech', ten: 'Final khác hướng đã chốt', the: 'xet-lai',
       may: ['Máy sinh việc Xét lại lộ trình ở lớp em đang học.', 'Không quyết tới hạn: em ở lại lớp đang học.'],
-      ban: 'Bấm <b>Xét lại ›</b> ở tab Việc quản lý.',
+      ban: 'Bấm <b>Xét lại</b> ở tab Việc quản lý.',
       tuKhac: ['final', 'xét lại', 'mini test', 'lệch hướng'],
     },
     {

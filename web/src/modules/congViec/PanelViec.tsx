@@ -49,6 +49,7 @@ const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) 
 const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const PanelXetLai = lazyHop(() => import('../classes/PanelXetLai.tsx').then((x) => x.PanelXetLai));
+const StudentPlanPanel = lazyHop(() => import('../students/StudentPlanPanel.tsx').then((x) => x.StudentPlanPanel));
 const BanGiaoPanel = lazyHop(() => import('../classes/BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
 const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
 const BanGiaoGvPanel = lazyHop(() => import('../classes/BanGiaoGvPanel.tsx').then((x) => x.BanGiaoGvPanel));
@@ -135,7 +136,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
   switch (it.group) {
     case 'cause':
       return <NganCase key={it.key} caseId={it.caseId!} viec="xac-nhan" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
-    case 'ghi_nhan_xet':
+    /* R3-W1 (rà 24/11): Xác nhận Case · Speaking (chấm chéo) — cùng phần Mô tả của panel Case (chọn nhận xét chấm chéo / giữ / viết khác), tại chỗ. */
+    case 'ghi_nhan_xet': case 'xem_nx_s':
       return <NganCase key={it.key} caseId={it.caseId!} viec="ghi-nhan-xet" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'xac_nhan_pa':
       if (it.con) return <XacNhanPaLo key={it.key} it={it} onDong={onDong} onDaLam={onDaLam} onMo={onMo} onTiep={onTiep} />;
@@ -202,6 +204,14 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'phoi_hop':
       return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'missing_data':
+      /* R3-W2 (rà 24/11): mốc PA chưa có lịch — Nhập dự kiến thi = panel Chốt ngày thi của lộ trình · Xếp lịch MTn = panel Lịch MT (hàng chưa xếp có nút Xếp lịch). */
+      if (it.key.startsWith('moc:') && it.cycleId) {
+        if (it.kind === 'thi') {
+          return <PanelChotNgayThi key={it.key} cycleId={it.cycleId} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} duKien={null}
+            onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
+        }
+        return <StudentPlanPanel key={it.key} cycleId={it.cycleId} studentName={it.studentName} ratio={false} onClose={onDong} onDone={doi} />;
+      }
       if (it.key.startsWith('chot-ngay-thi:')) {
         return <PanelChotNgayThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} duKien={it.contextLabel} thangDuKien={/thang=(\d{4}-\d{2})/.exec(it.href ?? '')?.[1] ?? null}
           onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
@@ -209,7 +219,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'bo_sung_ho_so':
       return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={lop} ten={(id) => it.con?.find((c) => c.studentId === id)?.studentName ?? ''} onDong={onDong} onDaLam={doi} />;
-    /* P9a: thanh Việc cần làm ở hồ sơ lớp — panel Xét lại tại chỗ (ở Công việc: "Xét lại ›" đổi trang, `lamTaiCho` = false). */
+    /* P9a: panel Xét lại tại chỗ — thanh Việc cần làm ở hồ sơ lớp · R3-T2 (rà 24/11): cả Công việc (trước "Xét lại ›" mở trang lớp, ~125 câu, mất danh sách). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
     case 'no_owner':

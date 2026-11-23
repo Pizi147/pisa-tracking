@@ -41,6 +41,9 @@ export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any
     conn.prepare('UPDATE classes SET lich_mt = ? WHERE id = ?').run(JSON.stringify(Array.from({ length: n + 1 }, (_, i) => 4 * (i + 1))), classId('MB FT 101'));
     const key = `moc:${iv.id}`;
     assert(coViec(key), 'dựng xong phải có việc Xếp lịch MT');
+    /* R3-W2 (rà 24/11): việc mang lộ trình — Công việc mở tại chỗ panel Lịch MT / Chốt ngày thi. */
+    const it = (viec().items as any[]).find((x) => x.key === key);
+    assert(it.cycleId === iv.cycle_id && it.actionLabel === 'Xếp lịch', `việc moc: thiếu cycleId: ${JSON.stringify(it)}`);
     return { key, id: iv.id as number, mt: `mt${iv.attempt_no + 1}` };
   };
 

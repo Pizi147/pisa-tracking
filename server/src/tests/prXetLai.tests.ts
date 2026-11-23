@@ -176,7 +176,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
   const C = kb(64, 'hoc_lai', { thiHanh: true });                         // (c) đang học lại ở FOU_D
   const CHO = kb(40, 'len_lop');                                          // lệnh chưa thi hành → dòng ở lớp CŨ
 
-  check('XL-3 · tập em (a)(b)(c) + lệnh chưa thi hành ở lớp cũ; chốt sau Final không dòng; việc QL = số dòng GET, hạn, nút "Xét lại ›"; QL CP / GVCN / GVBM không việc', () => {
+  check('XL-3 · tập em (a)(b)(c) + lệnh chưa thi hành ở lớp cũ; chốt sau Final không dòng; việc QL = số dòng GET, hạn, nút "Xét lại"; QL CP / GVCN / GVBM không việc', () => {
     for (const [x, ma, lopId] of [[A, 'a', BE_D.id], [B, 'b', BE_D.id], [C, 'c', FOU_D.id], [CHO, 'a', CHO.fou.id]] as const) {
       const e = dong(x.sid);
       assert(e?.lyDo.ma === ma && e.lopHienTai.id === lopId, `${ma}: ${JSON.stringify(e && { lyDo: e.lyDo, lop: e.lopHienTai })}`);
@@ -190,7 +190,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(eb.goiY === 'Head cân nhắc' && eb.boTro && eb.boTro.tong > 0 && eb.boTro.mon.length > 0 && eb.boTro.miniTest.tyLe === null, `B bổ trợ: ${JSON.stringify(eb.boTro)}`);
     const v = viec(QL, BE_D.id);
     const g = trongBoNho(() => xl.xemXetLai(QL, BE_D.id, null));
-    assert(v && v.count === g.em.length && v.count >= 2 && v.actionLabel === 'Xét lại ›' && v.href === `/hoc-vien/lop/${BE_D.id}?viec=xet-lai` && v.due === g.han
+    assert(v && v.count === g.em.length && v.count >= 2 && v.actionLabel === 'Xét lại' && v.href === `/hoc-vien/lop/${BE_D.id}?viec=xet-lai` && v.due === g.han
       && v.tieuDe === `Xét lại lộ trình · ${BE_D.code} · ${v.count} em` && /46 %/.test(v.contextLabel), `việc ${JSON.stringify(v)} · GET ${g.em.length} ${g.han}`);
     assert(g.lopHocLai.FOU?.some((l: any) => l.id === FOU_D.id) && g.lopHocLai.FOU.some((l: any) => l.id === FOU_CP.id)   // Q-RL6: mọi chi nhánh
       && g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_D.id) < g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_CP.id) && !g.chiXem, `lớp học lại (cùng chi nhánh trước): ${JSON.stringify(g.lopHocLai)}`);

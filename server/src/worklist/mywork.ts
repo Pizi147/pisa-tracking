@@ -587,7 +587,7 @@ function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boo
  */
 const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
               COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
+              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, a.cycle_id, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
               cc.lich_mt AS lop_lich_mt, cc.route AS lop_route, lc.route,   -- XEP-MT-NHAC: thieuMt (lịch lớp đang học, như danhSachLop)
               (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co,
               ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi   -- N46: không thành việc; vẫn điền mốc (dienMocQuyChe đọc cùng câu)
@@ -1275,7 +1275,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length, emIds: x.em.map((e) => e.studentId),
       reason: 'Final chưa khớp hướng đã chốt',
-      tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại ›',
+      tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại',   // R3-T2: panel tại chỗ ở Công việc (không đổi trang → không "›")
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
       /* P9a: việc của chính QL đang xem (chỉ người quyết được mới có dòng) — thanh Việc cần làm hồ sơ lớp lấy dòng `mine`. */
       ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa quyết',
@@ -1715,6 +1715,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
           reason: v.reason, tieuDe: v.tieuDe, phu: v.phu,
+          /* R3-W2 (rà 24/11): lộ trình của mốc — Công việc mở tại chỗ panel Chốt ngày thi / Lịch MT (trước sang hồ sơ trơn, tự tìm chỗ). */
+          ...(r.cycle_id ? { cycleId: r.cycle_id as number } : {}), ...(v.thi ? { kind: 'thi' } : {}),
           actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
           ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
         });
