@@ -249,6 +249,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     /* Việc Chấm Speaking của GV đang xem (OV14c-12) là dòng theo dõi — không nút động từ (brief 7). */
     /* UI-CV-V12 S5: nút một dòng — "Nhập điểm" (tên nhóm "Speaking chấm chéo" đã nói). */
     /* N64: dòng theo dõi không quyền → không nút (vế đầu); chấm chéo / điểm làm thay → "Nhập điểm". */
-    assert(/laViecChamCheo\(it\) \|\| \(xem && it\.group === 'score'\) \? t\('Nhập điểm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Nhập điểm"');
+    /* Khuôn A (24/11): không còn cột nút động từ — bấm cả dòng (kể cả dòng chấm chéo / theo dõi) mở panel; dòng không dựng nút "Nhập điểm". */
+    assert(!/t\('Nhập điểm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng việc còn dựng nút động từ "Nhập điểm"');
   });
 }
