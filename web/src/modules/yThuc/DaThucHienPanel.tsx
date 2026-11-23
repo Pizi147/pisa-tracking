@@ -9,7 +9,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon, bacDu } from '@shared/domain/index.ts';
-import { NutDongPanel } from '../../ui/KhuonViec.tsx';
+import { NutDongPanel, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -17,8 +17,10 @@ import { dich, t } from '@shared/i18n/index.ts';
  * ĐÃ THỰC HIỆN (V4-10) — QL đã duyệt đề xuất (WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác), GVCN ghi ngày đã làm (hạn 5 ngày từ ngày
  * duyệt). Ngày từ ngày duyệt tới hôm nay; người thực hiện nhận tên ngoài; ghi chú tuỳ chọn (nối vào mô tả đề xuất).
  */
-export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
+export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null }: {
   measureId: number | null; onClose: () => void; onDone?: () => void;
+  /** R4 P1 / P10: đầu panel từ dòng việc (hạn · tên em link · lớp) — có ngay lúc tải, lúc lỗi, lúc đã lưu. */
+  dau?: Parameters<typeof KhungPanel>[0]['dau'];
   /** Việc kế ở danh sách Công việc (GD-4d) — có thì chân thêm "Lưu · việc tiếp ›". */
   onTiep?: (() => void) | null;
 }) {
@@ -32,18 +34,20 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
   const [phDu, setPhDu] = useState(true);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* R4 P1: lỗi lưu hiện ở chân (⚠ Không lưu được — lý do · Thử lại), chữ đang gõ giữ. */
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
   const taiCho = useContext(KhungTaiCho);
   const [daLuu, setDaLuu] = useState<string | null>(null);
   useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); setPhDu(true); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
-  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
-  if (!m) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} dau={dau} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
+  if (!m) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} dau={dau} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {
     return (
-      <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
+      <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau} onDong={onClose}
         chan={{ huy: null, chinh: onTiep
           ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
           : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
@@ -57,7 +61,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
   const luu = async (): Promise<boolean> => {
     lf.bam();
     if (loiNgay || loiNguoi) return false;
-    setBusy(true);
+    setBusy(true); setLoiLuu(null);
     try {
       await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined, ...(laMeeting ? { phDu } : {}) });
       onDone?.();
@@ -66,15 +70,16 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
       toast.push('ok', chu);
       if (taiCho || onTiep) setDaLuu(chu); else onClose();
       return true;
-    } catch (e: any) { toast.push('error', e.message); return false; } finally { setBusy(false); }
+    } catch (e: any) { setLoiLuu(e.message); return false; } finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau} onDong={onClose}
       quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? bacDu(dich(m.nhan)) : null, laMeeting && phDu) : null}
       ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}{m.quyetLuc ? t(' · Head duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
+        trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
         conThieu: lf.daBam && (loiNgay || loiNguoi) ? [{ nhan: t('Đã thực hiện'), lyDo: loiNgay ?? loiNguoi ?? '' }] : undefined,
         /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕); không có → như cũ. Chỉ khi còn làm được. */
         ...(onTiep && m.status === 'da_duyet' ? {

@@ -47,12 +47,14 @@ type Cach = 'nang' | 'giu' | 'vuot' | 'ngoai';
  * OV-12e (mockup v3 §8): khuôn panel v3 — đầu "Xác nhận xử lý" + chip hạn / tên em (link) · lớp · Ý thức; MỘT khối Cần làm (Bậc xử lý tự điền · vi phạm đưa vào
  * · Ngày * (ô ngày gõ được) · Người * · Mô tả * · nút chính; "Đề xuất QL duyệt" là nút chữ); Bối cảnh: Lần trước · Bậc tiếp theo; chân trạng thái lưu.
  */
-export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, classId, onClose, onDone, onKhai, onTiep }: {
+export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, dau: dauTai, classId, onClose, onDone, onKhai, onTiep }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
   /** Rà 11/11 G3-6: mở từ dòng Đã xem — vi phạm đó tick sẵn (cùng tick mặc định), nằm ở "Cũ hơn" thì mở sẵn nhóm đó. */
   tickThem?: readonly number[];
   /** Mã lớp ở dòng 2 đầu panel (nơi gọi biết). */
   lop?: string | null;
+  /** R4 P10: đầu panel dựng từ dòng việc cho lúc tải / lỗi (đầu không trống). */
+  dau?: Parameters<typeof KhungPanel>[0]['dau'];
   /** S5: lớp của em (nơi gọi biết) — lưu xong chỉ làm mới phần Ý thức của lớp đó; không truyền = mọi `/classes`. */
   classId?: number | null;
   onClose: () => void; onDone?: () => void;
@@ -104,8 +106,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
 
   if (!studentId) return null;
   const tieuDe = t('Xác nhận xử lý');
-  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
-  if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
+  if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
   /* Mockup v20 D1: dòng loại "Việc · Ý thức & Phối hợp"; dòng 2 tên em · lớp · chip hạn (chỉ khi Xác nhận — việc có hạn). */
   const dau = (han: boolean) => {
     const x = dauViec({ em: { id: d.studentId, ten: d.ten }, lop });

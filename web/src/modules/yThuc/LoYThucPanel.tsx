@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { CanLam, NutChu, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { NutChon, Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, CHU_TOI_THIEU, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
@@ -85,8 +85,10 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
 
   const tieuDe = viec === 'xu-ly' ? t('Xác nhận xử lý chung') : viec === 'ghi-nhan' ? t('Ghi nhận') : t('Xác nhận cấp bậc');
   const dau = (n: number) => ({ loai: t('Việc'), han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined, dong2: [<b key="n" className="text-slate-100">{t('{n} em', { n })}</b>, lop ?? data?.classCode ?? null, t('Ý thức')] });
-  if (error) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-bad">{dich(error.message)}</p></KhungPanel>;
-  if (!ds || !data) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
+  /* R4 P7: đầu panel dựng từ props (hạn · lớp) ngay lúc tải / lỗi; lỗi tải có Thử lại. */
+  const dauTai = { loai: t('Việc'), han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined, dong2: [lop ?? null, t('Ý thức')] };
+  if (error) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!ds || !data) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   const moiNhat = (e: EmLo) => data.em.find((x) => x.studentId === e.studentId) ?? e;
   const daXong = (sid: number) => !!kq.get(sid)?.ok;

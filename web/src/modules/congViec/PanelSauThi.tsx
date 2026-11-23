@@ -41,8 +41,10 @@ const coKqCua = (c: any) => !!c && (!!c.thi_that_khong_thi || KN.every((k) => c[
  * SAU-THI-GON (RA đề xuất 15): bản DUY NHẤT ghi KQ thi thật — Công việc, Lịch thi, hồ sơ HV (`quayLai`), Tổng kết; thay `KetQuaThiThatPanel` (ngày thi, lưu thiếu kỹ năng,
  * Hoàn tác sau lưu, Khôi phục ở Lịch sử, Tuần dạy, KET / PET thang Cambridge không Bước tiếp). Đã chọn bước tiếp từ trước → `PanelBuocTiep` (Đổi · Huỷ hẹn · Quay lại học).
  */
-export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep, tenTiep }: {
+export function PanelSauThi({ cycleId, em, lop, han, quayLai, onDong, onDaLam, onTiep, tenTiep }: {
   cycleId: number; em: { id: number; ten: string }; lop: string | null;
+  /** R4 P3: chip hạn của dòng việc ở đầu panel (không request thêm). */
+  han?: ReactNode;
   /** Mở trong ngăn hồ sơ (thay nội dung, dòng "← …") — không panel chồng. */
   quayLai?: { nhan: string; onClick: () => void };
   onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null; tenTiep?: string | null;
@@ -97,7 +99,7 @@ export function PanelSauThi({ cycleId, em, lop, quayLai, onDong, onDaLam, onTiep
   if (c && (!diem || (napLai.current && cy.data && cy.data !== napLai.current))) { napLai.current = null; napDiem(c); }
   const target: number | null = c?.target_score ?? null;
   const dau = dauViec({
-    em, lop,
+    han, em, lop,
     ngCanh: c ? (
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {[kt && `${t('Thang')} ${kt.ten} ${kt.min}–${kt.max}`, ngayThi && (kt ? `${kt.ten} ${ngay(ngayThi, hn)}` : t('thi IELTS {ngay}', { ngay: ngay(ngayThi, hn) })), target !== null && `Target ${kt ? target : fmtBand(target)}`].filter(Boolean).join(' · ')}
