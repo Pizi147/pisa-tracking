@@ -6,12 +6,12 @@ import { DaiDaXoa } from '../cases/TaiCho.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
-import { BadgeHan } from '../../ui/Nhan.tsx';
+import { DauQuaHan, LOP_MUC_HAN } from '../../ui/Nhan.tsx';
 import { IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, ngay, type DeadlineKind } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Mở một Case trong cột (Việc của tôi, chart): `n` đổi → khối Case dựng lại đúng view (`viec`) / cuộn tới PA (`paId`). */
@@ -72,8 +72,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
        ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
     const chuHan = dong(c) ? null
-      : han?.quaHan || han?.ganHan ? <BadgeHan muc={han.quaHan ? 'qua' : 'gan'} title={han.text}>{han.han}</BadgeHan>   // BADGE-QUA-HAN 15/11 (V22: gần hạn = badge vàng)
-      : han ? <span title={han.text} className="inline-flex items-center whitespace-nowrap text-[13px] tabular-nums text-slate-400">{han.han}</span> : null;
+      : han && v?.han ? <span title={han.text} className={`inline-flex items-center whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[han.quaHan ? 'qua' : han.ganHan ? 'sap' : 'xa']}`}>{han.quaHan && <DauQuaHan />}{ngay(v.han)}</span> : null;   // chủ SP 24/11: chỉ ngày tô màu
     /* #3 (G2-04): mọi PA đã khép mà Case chưa xong → "n PA xong · chờ Hoàn thành" (không phải "Chưa có PA"). */
     const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (

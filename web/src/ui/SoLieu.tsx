@@ -1,7 +1,7 @@
 import { Fragment, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { OTuanDay, type KnHop } from './TuanDayGv.tsx';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, BUOC_CASE, NHAN_BUOC_CASE, buocCuaDong, type BuocCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, tenMonNgan, thamSoCt, tuanLich, BUOC_CASE, NHAN_BUOC_CASE, buocCuaDong, type BuocCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
@@ -10,7 +10,7 @@ import { KhungPanel } from './KhungPanel.tsx';
 import { HangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
-import { BadgeHan, CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
+import { CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { Bang, OBang, type CotBang } from './Bang.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
@@ -152,12 +152,9 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
-/** Hạn trong câu tình trạng của dòng: quá hạn badge đỏ "quá hạn n ngày" · còn ≤ 3 ngày badge vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
+/** Hạn trong câu tình trạng của dòng: chỉ ngày tô màu (`ChipHan`). */
 function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
-  const { homNay, ngan } = useNgayNghiepVu();
-  const v = deadlineView({ kind: loai ?? 'viec-van-hanh', due: han, today: homNay });
-  return v.tone === 'overdue' ? <BadgeHan muc="qua">{nhanQuaHan(v.daysOverdue)}</BadgeHan>
-    : v.ganHan ? <BadgeHan muc="gan">{t('hạn {ngay}', { ngay: ngan(han) })}</BadgeHan> : <span className="tabular-nums">{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
+  return <ChipHan loai={loai ?? 'viec-van-hanh'} han={han} />;
 }
 
 /**

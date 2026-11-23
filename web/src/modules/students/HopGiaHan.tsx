@@ -74,9 +74,9 @@ export function NhanSauThi({ s, gon }: { s: { giaiDoan: GiaiDoanSauThi; han: str
   const chu = chuSauThi(s);
   if (!chu) return null;
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
-  const han = !s.han ? null : s.quaHan ? <BadgeHan muc="qua">{t('hạn {ngay}', { ngay: ngay(s.han, homNay) })} · {t('quá hạn')}</BadgeHan> : (
-    <span className="text-xs tabular-nums text-slate-400">
-      {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
+  const han = !s.han ? null : (
+    <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
+      {s.quaHan && <span className="sr-only">{t('quá hạn')} </span>}{[ngay(s.han, homNay), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
     </span>
   );
   /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ: chip viền đỏ + chữ sr-only "quá hạn" (V22: không biểu tượng). */

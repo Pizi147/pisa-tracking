@@ -17,9 +17,9 @@ export const lopBadgeHan = (muc: keyof typeof MUC_BADGE_HAN) => `${muc === 'qua'
 /** HAN-BO-DAU (luật V22, chủ SP 14/11: hạn không biểu tượng): hạn đã qua KHÔNG ⚠ — dấu ngoài màu chữ là nền đỏ nhạt (`LOP_MUC_HAN.qua`);
  *  trình đọc màn hình vẫn nghe "quá hạn". */
 export const DauQuaHan = () => <span className="sr-only">{t('quá hạn')} </span>;
-/** Lớp chữ hạn theo `mucHan` — một quy ước toàn web: xa = chữ phụ · sắp (hôm nay → còn ≤ 2 ngày) = vàng · quá = chữ đỏ + NỀN ĐỎ NHẠT bo nhẹ
- *  (đỏ / vàng khó phân biệt với người mù màu → thêm nền; lề âm + đệm ngang bằng nhau, đệm dọc không đội cao dòng). */
-export const LOP_MUC_HAN = { xa: 'font-medium text-dim', sap: 'font-semibold text-soon', qua: 'font-semibold text-late -mx-1 rounded bg-late-bg px-1 py-px' } as const;
+/** Lớp chữ hạn theo `mucHan` — một quy ước toàn web (chủ SP 24/11): HẠN = NGÀY dd/mm/yyyy tô màu — xa = chữ phụ · sắp (hôm nay → còn ≤ 2 ngày) = vàng · quá = đỏ.
+ *  Không chữ "quá hạn n ngày", không nền / viền, không chú thích màu; trình đọc màn nghe "quá hạn" qua `DauQuaHan`, tooltip có câu đủ. */
+export const LOP_MUC_HAN = { xa: 'font-medium text-dim', sap: 'font-semibold text-soon', qua: 'font-semibold text-late' } as const;
 /** TL-2 (N61, mockup v22 `.tag.cho-gv`): thẻ nền lam "Chờ GV sửa" / "tạm dừng" — chữ + nền (không chỉ màu), một dáng mọi nơi. */
 export function NhanChoGv({ children, title }: { children: ReactNode; title?: string }) {
   return <span title={title} className={`${CHIP_TRON} shrink-0 bg-doing-bg text-doing`}>{children}</span>;
@@ -204,11 +204,10 @@ export function ChipSoQuaHan({ n }: { n: number }) {
   return <span className="inline-flex shrink-0 items-center whitespace-nowrap text-[13px] font-semibold tabular-nums text-late">{t('{n} quá hạn', { n })}</span>;
 }
 /**
- * MỘT nhãn hạn — luật hạn NHẸ HƠN (chủ SP 22/11, v23 `.han`): quá hạn = chip có nền "quá hạn n ngày" (chữ nói nghĩa, không chỉ màu) ·
- * hôm nay → còn ≤ 2 ngày = CHỮ vàng "hạn 23/11/2026" · xa hơn = chữ phụ. Mức ở MỘT chỗ: `mucHan` (cùng ngưỡng `deadlineView`).
+ * MỘT nhãn hạn (chủ SP 24/11): CHỈ ngày dd/mm/yyyy, màu chữ đỏ quá hạn · vàng hôm nay → còn ≤ 2 ngày · xa hơn chữ phụ. Mức ở MỘT chỗ: `mucHan`.
  */
 export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; han: string | null;
-  /** Dải sự kiện panel: quá hạn vẫn chip "21/11/2026 · quá hạn n ngày"; chưa quá chỉ ngày. */
+  /** Giữ cho chỗ gọi cũ — mọi nơi nay chỉ ngày tô màu. */
   chuThuong?: boolean;
   /** Giữ cho chỗ gọi cũ (viên xám cột hạn) — NHẸ HƠN: hạn không còn là viên, cùng dáng chữ. */
   vien?: boolean }) {
@@ -216,13 +215,9 @@ export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; 
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
   const muc = loai === 'du-kien-ket-thuc' ? 'xa' : mucHan(han, homNay);
-  if (v.tone === 'overdue') {
-    const qua = t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 });
-    return <BadgeHan muc="qua" title={v.text}>{chuThuong ? `${ngayHien(han)} · ${qua}` : qua}</BadgeHan>;
-  }
   return (
     <span title={v.text} className={`inline-flex min-h-[22px] shrink-0 items-center whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>
-      {chuThuong ? ngayHien(han) : nhanHan(han, homNay)}
+      {muc === 'qua' && <DauQuaHan />}{ngayHien(han)}
     </span>
   );
 }
