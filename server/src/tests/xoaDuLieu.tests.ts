@@ -681,7 +681,9 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(dem(`SELECT COUNT(*) AS n FROM teacher_assignments WHERE user_id = ? AND status = 'active'`) === 0, 'còn phân công active');
     const ta = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE user_id = ?').get(gv.id) as any;
     assert(ta.status === 'ended' && ta.effective_to === TODAY, JSON.stringify(ta));
-    assert(demDauVetThat(gv.id) === dauVetTruoc, `dấu vết đổi: ${dauVetTruoc} → ${demDauVetThat(gv.id)}`);
+    /* N69: Case người nghỉ đứng tên chuyển về người theo luật (lớp có người) → dấu vết owner_user_id bớt; mọi dấu vết khác giữ. */
+    const caseChuyen = (conn.prepare(`SELECT owner_user_id o FROM sos_cases WHERE id = ?`).get(caseGv) as any).o !== gv.id ? 1 : 0;
+    assert(demDauVetThat(gv.id) === dauVetTruoc - caseChuyen, `dấu vết đổi: ${dauVetTruoc} → ${demDauVetThat(gv.id)} (Case chuyển ${caseChuyen})`);
   });
 
   check('PR-XOA T4 · Tạo lại tài khoản ĐÚNG email cũ được; đăng nhập email cũ + mật khẩu cũ → "Email hoặc mật khẩu không đúng."', () => {
@@ -828,7 +830,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 18 (#1418: +3 câu chụp email phụ / quyền / phân công)', () => {
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 19 (#1418: +3 câu chụp email phụ / quyền / phân công · N69 +1 câu đọc việc đứng tên)', () => {
     const han = taoTK('demhan');
     const mem = taoTK('demmem');
     conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
@@ -838,7 +840,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(user(mem.id)?.status === 'deleted' && user(han.id)?.status === 'deleted', 'tiền đề: cả hai xoá mềm (G5-10)');
     /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
     const them = xoaTK.CAU_DAU_VET.length - 1;
-    assert(nXem <= 8 + them && nMem <= 18 + them && nHan <= 18 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
+    assert(nXem <= 8 + them && nMem <= 19 + them && nHan <= 19 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {

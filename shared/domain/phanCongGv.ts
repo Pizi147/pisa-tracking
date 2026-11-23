@@ -76,9 +76,16 @@ export function demPhanCong(lop: readonly { ft: boolean; slots: readonly SlotPha
   return m;
 }
 
-/** Hạn việc bàn giao: 5 ngày tính cả ngày tạo (hàm chung). GV cũ xem lớp cũ tối thiểu 7 ngày từ hiệu lực. */
+/** Hạn việc bàn giao: 5 ngày tính cả ngày tạo (hàm chung). */
 export const hanBanGiaoGv = (ngayTao: string) => hanTheoNgay(ngayTao, hanTai('ban_giao_doi_gv', ngayTao).ngay);   // QTV2-HAN
 export const xemDen = (hieuLuc: string) => addDaysIso(hieuLuc, hanTai('ban_giao_doi_gv', hieuLuc).xemNgay);
+/** Còn bàn giao mở: xem tới khi xong. */
+export const XEM_TOI_KHI_XONG = '9999-12-31';
+/**
+ * N68 (chủ SP 24/11, gộp N29 + N48): GV / GVCN cũ — đổi phân công (từ ngày hiệu lực) hoặc em chuyển lớp / lên lớp sau Cuối khoá (từ ngày rời) — xem CHỈ ĐỌC
+ * tới ngày này: `xemNgay` ngày (gốc 30) HOẶC tới khi bàn giao xong, lấy mốc muộn hơn. MỘT hàm cho cả hai (`permissions.ts`).
+ */
+export const xemCuDen = (tu: string, banGiaoMo: boolean) => (banGiaoMo ? XEM_TOI_KHI_XONG : xemDen(tu));
 
 /** Ai viết phiếu bàn giao: GV cũ; GV cũ đã nghỉ → GVCN lớp; chính GVCN nghỉ (hoặc lớp không GVCN) → QL chi nhánh (`id` null). */
 export function nguoiVietBanGiao(o: { cuNghi: boolean; nguoiCu: number; gvcn: number | null; gvcnNghi: boolean }): { loai: 'gv-cu' | 'gvcn' | 'ql'; id: number | null } {

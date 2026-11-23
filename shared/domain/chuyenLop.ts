@@ -110,6 +110,11 @@ export function hanBanGiaoLenh(o: { nguonFt: boolean; boiCanh: string; tuanFinal
 
 /** Mọi hướng có phiếu bàn giao trừ Dừng học hẳn (Q16). */
 export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
+/**
+ * Phiếu bàn giao chuyển lớp CÒN LÀ VIỆC (chưa xác nhận) — MỘT biểu thức SQL cho thẻ "Bàn giao quá hạn" (`duyet/loaiYeuCau.ts`) và quyền xem GV cũ (N68,
+ * `permissions.ts`). Lệnh cũ không có phiếu (trước OV-13l: `han_gvcn` NULL — không sinh việc, không ai xác nhận) KHÔNG tính: không mở quyền xem vô hạn.
+ */
+export const PHIEU_BAN_GIAO_MO_SQL = (l: string) => `${l}.trang_thai != 'huy' AND ${l}.huong != 'dung_hoc' AND ${l}.han_gvcn IS NOT NULL AND ${l}.xac_nhan_luc IS NULL`;
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 
