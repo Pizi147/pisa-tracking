@@ -812,6 +812,33 @@
   [data-pn] .pn-than table.bang[data-deu] > * > tr > :last-child:not(:first-child) { text-align: right; padding-right: 14px; }
   [data-pn] .pn-than table.bang[data-deu] > tbody > tr > :last-child:not(:first-child) > :is(div, span) { width: fit-content; max-width: 100%; margin-left: auto; align-items: flex-end; justify-content: flex-end; }
   [data-pn] .pn-than table.bang[data-deu] > tbody > tr > :last-child:not(:first-child) [data-phu-odiem] { white-space: normal; text-align: right; }
+  /* Kết quả lưới lớp thường trong panel (`KetQua motDong`, PTA rà #2072): một dòng chính + dòng phụ mờ một dòng (cắt, đủ chữ ở title) → hàng cao đều.
+     < 640: chỉ dấu ✓ / ✗ / – trong cột hẹp 64, cột tên 140 (P3) — lưới một môn vừa khung, không ló nửa chữ. */
+  /* Ô điểm lớp thường trong panel (mockup P1 `.od.p25`): MỘT khối "18 /25" 44 px — ô số câu đúng + "/" + ô tổng như hậu tố, chung một viền. */
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) {
+    display: inline-flex; align-items: center; justify-content: center; gap: 2px; height: 44px; min-width: 96px; padding: 0 10px;
+    border: 1px solid var(--o-nhap-vien); border-radius: 8px; background: var(--o-nhap-nen); }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input):focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input[class*="border-rose"]) { border-color: rgb(var(--bad-rgb)); }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) > input {
+    height: auto; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none; }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) > input:first-child { width: 34px; text-align: right; font-size: 16px; font-weight: 600; }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) > span { font-size: 12px; color: var(--text-faint); }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) > input:last-child { width: 24px; text-align: left; font-size: 12px; color: var(--text-dim); }
+  [data-pn] .pn-than .luoi-thuong td[data-kieu="diem-ti-le"] span:has(> input + span + input) > input[class*="border-amber"] { color: rgb(var(--soon-rgb)); }
+  /* Dòng cao đều (P1 48–52): ô 44 + đệm 4 trên dưới ở mọi lưới điểm trong panel. */
+  [data-pn] .pn-than table.bang[data-deu] > tbody > tr:not(.dong-tach) > td { padding-top: 4px; padding-bottom: 4px; vertical-align: middle; }
+  [data-pn] .pn-than table.bang[data-deu] > tbody > tr:has([data-phu-odiem]:not(:empty)) > td { height: auto; }   /* "29 câu" nằm TRONG ô 44 — không nâng hàng lên 64 */
+  [data-pn] .pn-than table.bang[data-deu] > tbody > tr.dong-tach > td { padding: 0 !important; }
+  [data-pn] .pn-than table.bang[data-deu] td[data-kieu="ten"] .ten-ho-so { min-height: 0; align-items: center; }   /* 375: tên giữa dòng, không đáy hộp 40 */
+  .kq-mot-dong .kq-ngan { display: none; }
+  @media (max-width: 639px) {
+    [data-pn] .pn-than .kq-mot-dong .kq-day { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* vẫn đọc được bằng trình đọc màn */
+    [data-pn] .pn-than .kq-mot-dong .kq-ngan { display: inline; font-size: 16px; }
+    [data-pn] .pn-than .luoi-thuong table.bang[data-deu] > colgroup > col[data-kieu="ten"] { width: 140px !important; }
+    [data-pn] .pn-than .luoi-thuong table.bang[data-deu] > colgroup > col:last-child { width: 64px !important; }
+    [data-pn] .pn-than .luoi-thuong table.bang[data-deu] { min-width: calc(var(--so-cot) * 136px - 68px) !important; }   /* 140 + môn × 136 + 64 */
+  }
   /* 375 trong panel: chỉ cột tên dính (v24 P3 · P4) — Kết quả dính phải (lưới đầy đủ) cùng cột tên dính thì ô điểm giữa bị che. */
   @media (max-width: 639px) { [data-pn] .pn-than .luoi-thuong .bang :is(th, td)[data-kieu="chip"]:last-child { position: static; } }
   /* Con trỏ tới ô của việc (cuộn ngang trong lưới) không để ô nằm dưới cột tên dính trái. */
@@ -1940,7 +1967,18 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   /* NHẸ HƠN (v23 C1 `.kl`): panel chấm nhiều lớp — mỗi lớp một khối viền, đầu khối nổi (nền surface-2, vạch nhấn trái 3 px, mã lớp 16 / 700). */
   .pc-kl { border: 1px solid var(--line-strong); border-radius: 10px; overflow: clip; background: var(--surface); }
   .luoi-khung { border: 1px solid var(--line); border-radius: 10px; overflow: clip; background: var(--surface); }   /* PANEL-GON v24 `.lc`: lưới một lớp trong panel 720 */
+  .luoi-khung { position: relative; }
   .luoi-khung .luoi-cong-cu { padding: 8px 14px 0; }
+  /* PTA rà #2072: lưới lớp thường — MỘT hàng công cụ trên lưới: trái Tổng số câu + Điền ô trống, phải Mở lưới đầy đủ › · Cả lớp.
+     < 640: hàng nút một dòng (không rải bậc thang), Tổng số câu hàng dưới. */
+  @media (min-width: 640px) {
+    .luoi-khung:has(.cong-cu-tong) .luoi-cong-cu { position: absolute; top: 0; right: 0; z-index: 2; }
+    .luoi-khung:has(.luoi-cong-cu) .cong-cu-tong { padding: 8px 230px 0 14px; min-height: 48px; }
+  }
+  @media (max-width: 639px) {
+    .luoi-khung .luoi-cong-cu { flex-wrap: nowrap; justify-content: space-between; column-gap: 8px; }
+    .luoi-khung .cong-cu-tong { padding-left: 14px; padding-right: 14px; }
+  }
   .pc-kl-dau { appearance: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; width: 100%; min-height: 52px; padding: 8px 14px 8px 11px; border: 0;
     border-left: 3px solid var(--accent); background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; }
   .pc-kl-dau[aria-expanded='true'] { border-bottom: 1px solid var(--line); }

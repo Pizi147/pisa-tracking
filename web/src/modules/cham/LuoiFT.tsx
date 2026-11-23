@@ -166,7 +166,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 168 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
+    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 120 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -406,7 +406,9 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   const { homNay } = useNgayNghiepVu();
   /* LICH-TEST-GON: trong Lịch Test em cùng đợt chính không ghi "MTn ›" (đã ở hàng lớp); em khác: link ở dòng phụ. */
   const luotChinh = useContext(LuotChinhContext);
-  const hienLuot = luotChinh === null || `MT${row.attemptNo}` !== luotChinh;
+  /* PANEL-GON (chủ SP 24/11, mockup P1 · P2): trong panel việc (`trongPanel`) — dòng em MỘT dòng tên (đầu panel đã ghi lượt / tuần): bỏ "MTn ›", dòng thi,
+     ghi chú; giữ dòng vắng (thông tin việc) + dấu lưu. Lượt mở qua tên em → hồ sơ (MT trong hồ sơ). Kết quả một dòng. */
+  const hienLuot = !trongPanel && (luotChinh === null || `MT${row.attemptNo}` !== luotChinh);
   const oHien = row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem));
   const chuVang = oHien.map((c) => chuVangO(c, tuanXem, homNay));
   /* V6 K3: lưới một cột (Chấm Speaking) — "vắng W2 SEP" dưới tên như mockup, ô không lặp. */
@@ -447,9 +449,9 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             ? <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400">MT{row.attemptNo}</span>
             : <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>)}
           <DongVang vang={vangHang} tuan={tuanThi} />
-          {row.phu && <span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
-          <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
-            .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
+          {row.phu && !trongPanel && <span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
+          {!trongPanel && <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
+            .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />}
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
       </OBang>
@@ -516,6 +518,22 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       )}
       {/* Badge ôm sát nội dung: items-start để ô bảng rộng cũng không kéo giãn nó ra. */}
       {cot.kq && <OBang c={cc.kq}>
+        {trongPanel && !row.ngungHoc && !row.mt0Sos && !row.result.kckDuoi ? (() => {
+          /* PANEL-GON: MỘT dòng — ✓ Đạt · ✗ SOS n · Chưa có điểm / Chưa đủ điểm (mờ); môn còn chờ, SOS tạm, tuần thi ở `title`. < 640 chỉ dấu. */
+          const muc = row.result.sosLevel;
+          const chot = row.result.chot && muc !== null;
+          const dau = chot ? (muc! <= 0 ? '✓' : '✗') : null;
+          const chu = dau === '✓' ? `✓ ${t('Đạt')}` : dau === '✗' ? `✗ ${sosLabel(muc!)}` : row.result.scoredRequired === 0 ? t('Chưa có điểm') : t('Chưa đủ điểm');
+          const mau = dau === '✓' ? 'text-kq-bang' : dau === '✗' ? 'text-kq-duoi' : 'text-faint';
+          const tieuDe = [chot ? sosLabel(muc!) : row.result.provisional && (muc ?? 0) > 0 ? `${sosLabel(muc!)} · ${t('tạm')}` : null,
+            tuanChuaToi ? tuanLich(tuanChuaToi) : null, choMon(row)].filter(Boolean).join(' · ');
+          return (
+            <span className="kq-mot-dong inline-flex items-center whitespace-nowrap" title={tieuDe}>
+              <span aria-hidden className={`kq-ngan font-semibold ${mau}`}>{dau ?? '–'}</span>
+              <span className={`kq-day text-[14px] ${dau ? `font-semibold ${mau}` : 'font-medium text-faint'}`}>{chu}</span>
+            </span>
+          );
+        })() : (
         <div className="flex flex-col items-start gap-0.5 min-w-0">
           {/* N-1b: chưa đủ điểm là TẠM — xám, không mang màu mức SOS. OV-1d: em không còn đang học → không "Chờ n" / SOS tạm. */}
           {row.ngungHoc ? (
@@ -546,6 +564,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}
         </div>
+        )}
       </OBang>}
     </tr>
     {sEx?.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={row.studentName} studentId={row.studentId} cotDs={cotDs} cc={cc} />)}

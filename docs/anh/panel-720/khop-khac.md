@@ -42,3 +42,28 @@ Máy dò (tự viết, Playwright 1440): mở 61 việc của 6 vai (GV 7 · 9 �
 - **[XM-3]** Mockup chân "Lưu" + "Lưu · việc tiếp ›"; lưới web tự lưu từng ô nên chân chỉ "Việc tiếp ›" (+ giờ lưu) — giữ.
 - **[XM-4]** Nhóm "Đã có điểm" chốt lúc mở lưới: em vừa nhập xong vẫn đứng ở nhóm trên tới khi mở lại (không nhảy chỗ khi đang gõ).
 - **[XM-5]** Lưới nhiều lớp (một tuần thi nhiều lớp) giữ khối lớp gập / mở (`pc-kl`); mockup chỉ vẽ một lớp.
+
+## Vòng 2 — lưới điểm gọn như P1 (chủ SP 24/11: "cột cuối chi chít… UX/UI phải đồng bộ và đẹp")
+
+Một dáng cho lưới P, Progress L R, Mock trong panel: dòng em một dòng tên, ô điểm một khối, Kết quả một dòng ngắn sát mép phải, dòng cao đều, nhóm "Đã có điểm · n em".
+Đo (Playwright): mọi dòng 52–53 px (1440 lẫn 375; em có dòng "vắng … → …" 53–63), dòng tách 37 px; Kết quả cách mép 14; P 375 vừa khít 341 / 341.
+
+| Thông tin | TRƯỚC (trong ô / dưới ô) | SAU — chuyển đi đâu |
+|---|---|---|
+| Kết quả chính | badge "1/3 môn đạt" / "Chưa nhập điểm" / chip SOS, nhiều dòng | MỘT dòng: ✓ Đạt · ✗ Chưa đạt (Mock: ✗ SOS n) · Chưa có điểm / Chưa đủ điểm (mờ); Final / Pre FOU kèm % · 375: chỉ ✓ / ✗ / – |
+| n/m môn đạt, điểm từng môn | badge + dòng phụ | `title` của ô Kết quả |
+| "còn P chưa chấm · quá hạn", "L dời sang W3 SEP", gợi ý lộ trình | dòng phụ dưới badge | `title` của ô Kết quả (bỏ chữ "quá hạn" — hạn ở đầu panel) |
+| Nhãn Case của em | chip "Case L" cạnh kết quả | `title` của ô Kết quả; Case vẫn ở hồ sơ em / tab Case |
+| Mock: môn còn chờ, SOS tạm, tuần thi | "Chờ L, R" / chip SOS tạm | `title` của ô Kết quả |
+| "Quá hạn 26/08/2026" dưới mỗi ô | dòng chữ dưới ô | bỏ (hạn ở đầu panel); ô có hạn RIÊNG khác hạn chung → `title` của ô |
+| "Progress Test ›" / "MT1 ›", dòng thi, ghi chú dưới tên | dòng phụ dưới tên | bỏ khỏi dòng (đầu panel đã ghi bài · tuần); lượt mở qua tên em → hồ sơ, "Mở lưới đầy đủ ›" |
+| Em vắng, dời tuần (Mock) | dòng "vắng W2 SEP → W3 SEP" | GIỮ dưới tên (thông tin việc) |
+| Dấu lưu / lỗi lưu của dòng | dưới tên | GIỮ (chỉ hiện khi đang lưu / lỗi) |
+| Ô số câu đúng + ô tổng câu | hai ô rời "[ ] / [25]" | MỘT khối 44 px "18 /25" (ô tổng như hậu tố, vẫn sửa được), viền nhấn khi focus; ⋯ chỉ khi rê / focus (điện thoại luôn hiện) |
+| Tổng số câu + Điền ô trống · Mở lưới đầy đủ › · Cả lớp | hai hàng (1440), bậc thang (375) | 1440: MỘT hàng (trái Tổng số câu + Điền ô trống · phải Mở lưới đầy đủ › · Cả lớp) · 375: hàng nút một dòng + hàng Tổng số câu |
+| Chấm ở 375 trong panel | màn từng kỹ năng | lưới (P3 · P4); "Chấm từng kỹ năng" vẫn mở màn cũ |
+
+Ảnh: `cap-cham-p-{1440,1280,375}`, `cap-cham-progress-lr-{1440,1280,375}`, `cap-cham-mock-{1440,1280,375}`, `cap-cham-mock-ca-lop-1440`.
+
+- **[XM-6]** 375 lưới hai môn trở lên (Progress L R, Mock): cuộn ngang trong lưới (cột tên dính) — đúng P4; Progress có hai ô tổng thì "Điền ô trống" xuống dòng thứ hai của hàng Tổng số câu.
+- **[XM-7]** Mock: Kết quả chốt có SOS ghi "✗ SOS n" (chữ đỏ, không chip) — P2 không có cột Kết quả (Overall ✓ / ✗); giữ cột Kết quả vì luật "cột của người xem + Kết quả" ([XM-1]).

@@ -142,7 +142,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
         <table className="bang" data-day={day || undefined} data-chat={chat || undefined} data-deu={deu || undefined} aria-label={ten}
           /* PANEL-GON: `--ten-pt` = phần của cột tên trong luật cột lưới panel 720 (index.css: tên 2 phần, mỗi cột còn lại 1 phần). Chrome bỏ qua
              calc() trộn % với px trên <col> → tính sẵn %; sàn của cột tên vẫn là min-width của bảng (cuộn ngang trong lưới). */
-          style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0), '--ten-pt': `${(200 / (cot.length + 1)).toFixed(3)}%` } as CSSProperties}>
+          style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0), '--ten-pt': `${(200 / (cot.length + 1)).toFixed(3)}%`, '--so-cot': cot.length } as CSSProperties}>
           <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} data-kieu={c.kieu} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (
