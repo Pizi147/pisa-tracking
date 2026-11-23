@@ -36,4 +36,4 @@ Không đổi: số request / câu SQL (không thêm gọi nào), quyền, `Form
 2. Bề rộng panel (835 px): chờ `panel-gon` merge rồi gộp main, không tự đặt.
 3. Chữ đè ở `DanhSachViec` ("Việc con của: …" đè hạn): chuyển `khuon-a-danh-sach`.
 4. Nền đỏ nhạt quá hạn: đã gộp main (#2065) và chụp lại ảnh `sau-*` — hạn quá hạn chỉ còn chữ đỏ.
-5. Tên thẻ trong trang "Việc vận hành" → **"Việc đã giao"** (khớp tên trang; EN "Assigned tasks").
+5. Tên thẻ trong trang "Việc vận hành" → **"Việc được giao"** (phép kiểm prS3Chu cấm "Việc đã giao"; khớp tên nhóm ở tab Việc quản lý).

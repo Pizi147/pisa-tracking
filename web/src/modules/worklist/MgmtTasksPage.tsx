@@ -239,9 +239,9 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         })}
       </DaiChiSo></div>
 
-      <section className="overflow-clip rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} aria-label={t('Việc đã giao')}>
+      <section className="overflow-clip rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} aria-label={t('Việc được giao')}>
         <div className="flex min-h-[52px] flex-wrap items-center gap-2.5 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc đã giao')}</h2>
+          <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc được giao')}</h2>
           <span className="text-sm text-dim">{t('{n} việc', { n: rows.length })}</span>
           <span className="ml-auto"><BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
         </div>

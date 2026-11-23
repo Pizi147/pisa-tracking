@@ -80,7 +80,6 @@ export const EN_HDB = {
   '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.': '<b>Approve n requests</b> or <b>Decline n…</b>.',
   'Việc của GV': 'Teachers\' tasks',
   'Việc vận hành': 'Operations tasks',
-  'Việc đã giao': 'Assigned tasks',
   'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.': 'Four filter numbers: <b>Overdue</b> · <b>Waiting on others</b> · <b>Needs a decision</b> · <b>Recently done (7 days)</b>.',
   '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có người phụ trách, hạn.': '<b>+ Assign task</b>: tasks outside students (materials, tutors…), with an owner and a due date.',
   'Bấm một số để lọc việc.': 'Click a number to filter tasks.',
