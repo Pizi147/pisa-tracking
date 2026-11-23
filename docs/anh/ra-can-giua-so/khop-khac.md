@@ -32,3 +32,26 @@ Không đổi thao tác, số liệu, thứ tự cột. Chỉ đổi căn lề. 
 - Lớp thường · bảng điểm: cột % 64 vs 90 nằm trong lưới chấm (`modules/cham/Luoi*.tsx`, ngoài phạm vi) — ghi nhận, không sửa.
 
 Thao tác TRƯỚC → SAU: không đổi (chỉ độ rộng cột / lưới).
+
+## PR 3 — bổ sung theo rà PTA Plan (1440 tối)
+
+- Hồ sơ GV · Lớp đang dạy / Lớp chủ nhiệm / Việc đang tồn / Yêu cầu đã gửi + LopToiDay: bỏ vùng `.o-so-hop` → số TRƠN căn giữa (bấm được xanh nhấn, quá hạn > 0 đỏ, 0 mờ), không còn ô viền. SOS hiện tại: chip mức + số trơn liền sau (giữ `SosDem`), ba mẩu cách đều 14 px.
+- Cột tên không nuốt bề ngang: `deu` + rộng cơ sở (Lớp 260, Ký năng 130, HV/Chưa nhập/Quá hạn 100, GVCN 160) → phần dư chia theo tỉ lệ. Đo sau: Lớp đang dạy Lớp 428, HV / Chưa nhập / Quá hạn đều 164,5; Lớp chủ nhiệm Lớp 272, ba cột số đều 231, SOS 434 (nội dung ba chip + số cần ~330 — còn gấp ~1,9 cột khác, chấp nhận vì chứa ba mẩu); Em đang bổ trợ thu khung 720 px: Học viên 316, Bổ trợ 230, Mini Test 172.
+- Khoảng thừa sau (rộng cột − nội dung dài nhất, 1440): cột tên 24–164; cột số 95–146 (cột số rộng đều ưu tiên; nội dung 1–2 chữ số); GVCN 153–173. Vượt 40 px ở cột số là hệ quả của "phần dư chia đều" — ghi nhận, không thu thêm vì bảng 6 cột phải kín 1398 px khung.
+- Học viên & Lớp · Lưu trữ: cột "Kết thúc" co giãn 478 px (thừa 394) → `deu`, Lớp 274 / Trình độ 219 / GVCN 274 / HV 164 / Kết thúc 192; nút sát mép phải.
+
+### Trang rà nốt (1440 tối, thừa = rộng cột − nội dung dài nhất)
+
+| Trang · bảng | Số đo | Trạng thái |
+|---|---|---|
+| Học viên & Lớp (danh sách `/hoc-vien`) | không có `<table>`: lưới / thẻ riêng; không cột số lệch | đạt (ảnh `truoc-hvl`) |
+| Hồ sơ lớp FT · Học viên | Học viên 276 / thừa 122; cột điểm đều; cao dòng chỉ lỗi đã biết M3 (mien-do.json) | đạt |
+| Hồ sơ lớp FT · Phân tích lớp (MT1–MT5 235 đều) | 5 cột đều, thừa ~207 (số 3–5 ký tự) — họ bảng Phân tích, chờ mockup số mới | chỉ ghi nhận |
+| Hồ sơ lớp thường · bảng điểm | cột R 90 vs % 64: lưới chấm `Luoi*.tsx` ngoài phạm vi | chỉ ghi nhận |
+| Hồ sơ HV · Mock Test / Tổng kết | số căn giữa (PR 1); Lớp lúc đánh giá 181 / thừa 74, Tuần 191 / 77, Kết quả 280 / 101 | đạt (thừa ≤ 120) |
+| Hồ sơ HV · Lộ trình & lớp | Lộ trình 545 / thừa 348 (cột tên, chữ), Lớp 203, Thời gian 265, Kết quả 260; cột cuối là link "Học thuật ›" sát mép phải | đạt (cột chữ, không số) |
+| Test · Lịch Test, Điểm theo lớp, Kế hoạch lớp, Bảng điểm lớp thường, Nhập điểm | lưới chấm (`modules/cham/Luoi*.tsx`) — ngoài phạm vi | chỉ ghi nhận |
+| Quản trị · bảng người dùng | Email 302 / thừa 93; 5 cột kín khung | đạt |
+| Tutor | xem trên (PR 3); Tài liệu 112 / thừa 66 | đạt |
+
+Thao tác TRƯỚC → SAU: không đổi (chỉ kiểu hiển thị số + độ rộng cột). Ô số vẫn bấm → panel như cũ.

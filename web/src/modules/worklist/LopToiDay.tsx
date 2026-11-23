@@ -31,8 +31,8 @@ export const useHaiKhoi = (bat: boolean): ApiHaiKhoi => useApi<HaiKhoi>(bat ? '/
 export const phuLopDay = (d: HaiKhoi) => new Map(d.day.map((x) => [x.classId, dich((x.khung === 'ft' ? [x.route, x.testKeTiep] : [x.tuanHoc, x.testKeTiep]).filter(Boolean).join(' · '))]));
 
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), dv: t('HV'), kieu: 'diem', rong: 150, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 380 }, { key: 'case', nhan: t('Case đang mở'), kieu: 'diem', rong: 150 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'diem', rong: 150 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 200 }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), dv: t('HV'), kieu: 'diem', rong: 170, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 320 }, { key: 'case', nhan: t('Case đang mở'), kieu: 'diem', rong: 170 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'diem', rong: 170 },
 ];
 
 /**
@@ -67,9 +67,9 @@ export function LopChuNhiem({ api }: { api: ApiHaiKhoi }) {
   /* AUDIT-UI B1: đơn vị ở tiêu đề cột ("Dưới kỳ vọng · HV"), ô chỉ còn số; dòng phụ tên lớp = sĩ số · route. */
   const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ') : null);
   return (
-    <Card bodyClass="p-0 o-so-hop"
+    <Card bodyClass="p-0"
       title={<span className="inline-flex flex-wrap items-center gap-x-2">{ten}<DemDau n={chuNhiem.length} /><NutLuat label={ten}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</NutLuat></span>}>
-      <Bang ten={ten} cot={chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} theLuoi />
+      <Bang ten={ten} deu cot={chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} theLuoi />
     </Card>
   );
 }
