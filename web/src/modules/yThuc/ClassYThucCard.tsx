@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { BoLocDoan, Card, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -18,7 +18,7 @@ import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
 import { NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
@@ -50,8 +50,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   /* Phạm vi Lịch sử (X08) lọc tại trình duyệt theo cờ `trongChuoi` — đổi không đọc lại bảng lớp. */
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
   const board = useApi<BangYThucLop>(`/classes/${classId}/y-thuc`, [classId], { giuCu: true });
-  /* S5 PR B: roster chỉ cho ô chọn em + cờ xem hồ sơ — dùng bản trang lớp đã nạp (không đọc lại khi bản > 10 s); lần ghi vẫn vô hiệu và tải lại. */
-  const roster = useApi<any[]>(`/classes/${classId}/roster`, [], { dungBanLuu: true });
+  /* S5 PR B: roster chỉ cho ô chọn em + cờ xem hồ sơ — dùng bản trang lớp đã nạp (không đọc lại khi bản > 10 s); lần ghi vô hiệu bản lưu, khối khác tải thì nhận bản mới. */
+  const roster = useApi<any[]>(`/classes/${classId}/roster`, [], { dungBanLuu: true, chiNghe: true });   // R3-T5: chỉ lấy tên — không tải lại sau mỗi thao tác Ý thức
   const [includeDone, setIncludeDone] = useState(false);
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}`, [classId, includeDone]);
   /* Phân đoạn ghi vào địa chỉ (`sub`) — sang hồ sơ em rồi Quay lại về đúng chỗ. YT-a: bỏ `Cần làm | Lịch sử` (lịch sử mở trong khối em). */
@@ -157,7 +157,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
       setBusyLo(false);
       const loi = tatCa.filter((x) => !x.ok);
       if (loi.length) toast.push('error', loi.map((x) => `${x.ten}: ${x.loi ? dichChu(x.loi) : ''}`).join(' · '));
-      DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
+      lamMoiYThucCua({ classId, studentIds: tatCa.map((x) => x.studentId) });
       lamMoi();
     }
   };
@@ -168,7 +168,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     setBusyLo(false);
     if (r.some((x) => x.status === 'rejected')) toast.push('error', t('{n} em chưa hoàn tác được — thử lại.', { n: r.filter((x) => x.status === 'rejected').length }));
     setGhiNhanKq(null);
-    DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
+    lamMoiYThucCua({ classId, studentIds: ok.map((x) => x.studentId) });
     lamMoi();
   };
   const okGhiNhan = (ghiNhanKq ?? []).filter((x) => x.ok);
@@ -178,7 +178,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     setDangGhi(studentId);
     try {
       await api.post(`/students/${studentId}/y-thuc/${bo ? 'bo-ghi-nhan' : 'ghi-nhan'}`, { violationIds: ids });
-      DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p));
+      lamMoiYThucCua({ classId, studentIds: [studentId] });
       setVuaXem((c) => {
         const { [studentId]: _cu, ...con } = c;
         return bo || !x ? con : { ...con, [studentId]: { x: { ...x, viPhamCho: x.viPhamCho.filter((v) => ids.includes(v.id)) }, ids, luc: gioVnNay() } };
@@ -355,10 +355,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     onGhiBaoPh: (x) => x.baoPh && setBaoPh({ viecId: x.baoPh.id, studentId: x.studentId, ten: emLop.get(x.studentId)?.ten ?? '', han: x.han ?? homNay }),
     onSua: (x, neo) => setHop({ che: { loai: 'sua', x }, neo }),
     /* Đề xuất 10 (S4-LUAT): rút thẳng (không hộp hỏi của trình duyệt) + toast Hoàn tác — máy chủ `boRutTinhHinh` trả lại đúng trạng thái. */
-    onRut: (x) => { const moi = () => { DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); };
+    onRut: (x) => { const moi = () => { lamMoiYThucCua({ classId }); lamMoi(); };
       void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.hoanTac(t('Đã rút'), () => void api.post(`/tinh-hinh/${x.id}/rut/hoan-tac`, {}).then(moi, (e) => toast.push('error', e.message)), { key: `rut-th-${x.id}` }); moi(); }, (e) => toast.push('error', e.message)); },
     onTraLoi: (x, neo) => setHop({ che: { loai: 'tra-loi', x }, neo }),
-    onHoanTacTraLoi: (x) => void api.post(`/tinh-hinh/${x.id}/tra-loi/hoan-tac`, {}).then(() => { DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); }, (e) => toast.push('error', e.message)),
+    onHoanTacTraLoi: (x) => void api.post(`/tinh-hinh/${x.id}/tra-loi/hoan-tac`, {}).then(() => { lamMoiYThucCua({ classId }); lamMoi(); }, (e) => toast.push('error', e.message)),
   };
   const dongTh = (x: TinhHinhView, ls = false): Dong => {
     const dx = daXuLyTinhHinh(x, homNay);
@@ -603,7 +603,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           onDong={() => setBaoPh(null)} onDaLam={lamMoi} onTiep={null} />
       )}
       {hop && <HopTinhHinh neo={hop.neo} che={hop.che} homNay={homNay} onDong={() => setHop(null)} onXong={lamMoi} />}
-      {duyet && <PanelDuyetXuLy {...duyet} onDong={() => setDuyet(null)} onXong={(chu) => { if (chu) toast.push('ok', dich(chu)); setDuyet(null); DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); lamMoi(); }} />}
+      {duyet && <PanelDuyetXuLy {...duyet} onDong={() => setDuyet(null)} onXong={(chu) => { if (chu) toast.push('ok', dich(chu)); setDuyet(null); lamMoiYThucCua({ classId }); lamMoi(); }} />}
       {panels}
     </Card>
   );

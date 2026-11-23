@@ -131,6 +131,37 @@ export function taiTruocGop(goc: string, phan: Record<string, string>): void {
   }
 }
 
+/** R3-T4: số hook ĐANG GẮN (không `chiNghe`) theo đường — `gopKhiVoHieu` chỉ gộp các đường có người đang xem. */
+const dangGan = new Map<string, number>();
+/** Đánh dấu một hook đang gắn đường `path`; trả hàm gỡ (effect của `useApi`, phép kiểm gọi thẳng). */
+export function ganDuong(path: string): () => void {
+  dangGan.set(path, (dangGan.get(path) ?? 0) + 1);
+  return () => { const n = (dangGan.get(path) ?? 1) - 1; if (n > 0) dangGan.set(path, n); else dangGan.delete(path); };
+}
+/**
+ * R3-T4 (rà 24/11): trang có GET gộp (`/classes/:id/ho-so`) — một lần ghi vô hiệu trúng các đường lẻ của nó (vd `invalidate('/classes')`) thì các đường
+ * ĐANG GẮN tải lại bằng MỘT GET gộp thay vì mỗi đường một GET (máy chủ đọc chung lượt / điểm / Case một lần). Gom mọi `invalidate` cùng lượt chạy
+ * (microtask, trước effect tải lại của hook) — hook tải lại dùng lại lời gọi đang bay. Vô hiệu gộp (`luc`, `xaGop`) bỏ qua: hook có thể không tải lại.
+ * `bo` = các bó (mỗi bó một GET, chạy song song — giữ mỗi request ≤ trần 100 câu của `tocDo`). Trả hàm gỡ.
+ */
+export function gopKhiVoHieu(goc: string, bo: Record<string, string>[]): () => void {
+  const phan = Object.assign({}, ...bo) as Record<string, string>;
+  const trung = new Set<string>();   // đường của bó bị vô hiệu trong lượt chạy này
+  return onInvalidate((prefix, luc) => {
+    if (prefix === null || luc !== undefined) return;
+    const moi = Object.values(phan).filter((p) => khopTienTo(p, prefix));
+    if (!moi.length) return;
+    if (!trung.size) queueMicrotask(() => {
+      for (const b of bo) {
+        const gan = Object.entries(b).filter(([, p]) => trung.has(p) && dangGan.has(p) && !dangBay.has(p));
+        if (gan.length >= 2) taiTruocGop(goc, Object.fromEntries(gan));
+      }
+      trung.clear();
+    });
+    moi.forEach((p) => trung.add(p));
+  });
+}
+
 /**
  * TQ-QT-NHE A2 (PTA 24/11): Tổng quan Head / Quản trị / Admin — MỘT GET `goc` (`…&kemViec=1`) kèm `cuaToi` = CHÍNH `/my-work` "Của tôi" của badge (`phu`, máy chủ
  * cùng hàm `viecCuaToi`) khi bản badge đã cũ / chưa có. Hai đường nhận phần của mình như lời gọi đang bay (khối gắn sau dùng lại, `chiNghe` của badge nhận bản mới),
@@ -326,6 +357,10 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
     }),
     [reload, path, opts.chiNghe],
   );
+  useEffect(() => {
+    if (opts.chiNghe || !path) return undefined;
+    return ganDuong(path);
+  }, [path, opts.chiNghe]);
   useEffect(() => {
     if (!opts.chiNghe || !path) return undefined;
     return ngheBanMoi(path, (d) => setDataState(d as T));

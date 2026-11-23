@@ -3,8 +3,9 @@
  * `board.ts` (`bangYThucLop`). Một chỗ khai, mọi thành phần trong `modules/yThuc/` đọc từ đây.
  */
 import { invalidate, invalidateDung } from '../../lib/api.ts';
-import type { NhomEm, TheYeuCauDto, TrangThaiVp } from '@shared/domain/index.ts';
-import type { ChuKhoa } from '@shared/i18n/index.ts';
+/* Đường tương đối (không `@shared`): phép kiểm máy chủ nạp tệp này (R3-T5, `prCache.tests.ts`). */
+import type { NhomEm, TheYeuCauDto, TrangThaiVp } from '../../../../shared/domain/index.ts';
+import type { ChuKhoa } from '../../../../shared/i18n/index.ts';
 
 export type ViPhamV4 = {
   id: number; studentId: number; studentName: string; classCode: string | null; cycleId: number | null;
@@ -166,6 +167,8 @@ export type BangYThucLop = {
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */
 export const DUONG_LAM_MOI_Y_THUC = ['/violations', '/classes', '/students', '/y-thuc', '/my-work', '/yeu-cau', '/tong-quan', '/metrics'] as const;
+/** R3-T5 (rà 24/11): như `DUONG_LAM_MOI_Y_THUC` nhưng `/classes` / `/students` thu về đúng lớp / em (`lamMoiYThucTheo`) — trước mỗi "Đã xem" tải lại cả hồ sơ lớp đang mở. */
+export const lamMoiYThucCua = (pham: PhamViYThuc) => lamMoiYThucTheo(DUONG_LAM_MOI_Y_THUC, pham);
 
 /** OV-13d: chọn nhiều ở tab Ý thức lớp (`GET /classes/:id/y-thuc/lo`) — khớp `BangLo` / `KqEm` ở `server/src/yThuc/lo.ts`. */
 export type EmLo = {
