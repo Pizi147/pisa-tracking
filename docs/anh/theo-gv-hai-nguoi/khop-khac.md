@@ -6,3 +6,6 @@
 - 375 (thẻ theo GV) cùng luật, thay "3 GV đầu + Xem n GV còn lại".
 - Hộp Tuần dạy (`TuanDayGv.tsx`): danh sách GV mỗi kỹ năng 2 người + "+ n GV" / "Thu gọn"; % vẫn tính trên toàn bộ GV.
 - Luật cột: bảng Theo GV đã chia cân (Giáo viên / Kỹ năng / HV / Điểm TB cố định, ba cột mức chia đều, vừa khung). Hồ sơ GV không dùng bảng này (không có nơi dùng chung khác).
+
+## Hộp Tuần dạy (cả màn, dữ liệu GV GIẢ chèn ở trình duyệt)
+`tuan-day-{1440,375}-{gap,mo}.png` — hộp Tuần dạy của một em (bấm điểm L trong Danh sách kết quả); kỹ năng L có 5 GV: gập = 2 GV + "+ 3 GV", mở = đủ 5 + "Thu gọn". Máy chủ đã xếp `k.gv` theo tuần giảm dần (`tuanDay.ts` sort `b.tuan - a.tuan`, rồi tên) nên `slice(0, 2)` đúng "2 GV dạy nhiều nhất".
