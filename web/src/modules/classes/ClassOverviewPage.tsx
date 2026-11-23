@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { taiTruocGop, useApi } from '../../lib/useApi.ts';
+import { gopKhiVoHieu, taiTruocGop, useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -81,6 +81,15 @@ export default function ClassOverviewPage() {
       ...(tabUrl && tabUrl !== 'hoc-vien' ? {} : { roster: `/classes/${classId}/roster`, diemTheoLuot: duongDiemTheoLuot(Number(classId)) }),
     });
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* R3-T4 (rà 24/11): lưu xong (`invalidate('/classes')`…) → các phần đang hiện tải lại bằng hai GET `ho-so` song song, cùng hai bó lúc mở trang (trước ~6 GET lẻ). */
+  useEffect(() => {
+    if (!classId) return undefined;
+    const id = Number(classId);
+    return gopKhiVoHieu(`/classes/${id}/ho-so`, [
+      { overview: `/classes/${id}/overview`, roster: `/classes/${id}/roster`, diemTheoLuot: duongDiemTheoLuot(id) },
+      { xetLai: duongXetLai(id), viecCuaToi: duongViecLop(id), xoaKetThuc: `/classes/${id}/xoa-ket-thuc`, cases: `/cases?classId=${id}` },
+    ]);
+  }, [classId]);
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* GD-6 (lời 35, V22): badge tab = SỐ, đỏ khi có việc quá hạn của tôi — đọc từ `viec-theo-em` mà dải Việc cần làm đã tải (cùng URL, không thêm lời gọi). */
   const viecLop = useViecLop(data?.id ?? null, !!data && data.status !== 'finished' && params.get('xem') !== 'cuoi-khoa');
