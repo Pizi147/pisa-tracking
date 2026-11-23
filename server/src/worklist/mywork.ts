@@ -1716,7 +1716,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
           reason: v.reason, tieuDe: v.tieuDe, phu: v.phu,
           /* R3-W2 (rà 24/11): lộ trình của mốc — Công việc mở tại chỗ panel Chốt ngày thi / Lịch MT (trước sang hồ sơ trơn, tự tìm chỗ). */
-          ...(r.cycle_id ? { cycleId: r.cycle_id as number } : {}),
+          ...(r.cycle_id ? { cycleId: r.cycle_id as number } : {}), ...(v.thi ? { kind: 'thi' } : {}),
           actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
           ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
         });

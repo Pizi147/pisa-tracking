@@ -206,7 +206,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'missing_data':
       /* R3-W2 (rà 24/11): mốc PA chưa có lịch — Nhập dự kiến thi = panel Chốt ngày thi của lộ trình · Xếp lịch MTn = panel Lịch MT (hàng chưa xếp có nút Xếp lịch). */
       if (it.key.startsWith('moc:') && it.cycleId) {
-        if (it.actionLabel === 'Nhập ngày thi') {
+        if (it.kind === 'thi') {
           return <PanelChotNgayThi key={it.key} cycleId={it.cycleId} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} duKien={null}
             onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
         }
