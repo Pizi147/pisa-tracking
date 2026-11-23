@@ -29,7 +29,7 @@ import { HOP_DON_VI_BAT } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_MUC_CV, HANG_SO, HANG_SO_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
   trangThaiKyGiao, tuanLich, quyCheViecGiao, quyCheViecLap,
   type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc, ngay,
 } from '@shared/domain/index.ts';
@@ -220,7 +220,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
           const n = hangSo[h] ?? 0;
           const active = hang === h;
           return (
-            <ODai key={h} nhan={HANG_SO_LABEL[h]}>
+            <ODai key={h} nhan={h === 'vua-xong' ? t('Hoàn thành 7 ngày') : HANG_SO_LABEL[h]}>
               {n === 0 && !active ? <SoTinh n={0} /> : (
                 <button type="button" aria-pressed={active}
                   className={`${mauOSo(h === 'qua-han' ? 'text-bad' : '')} text-[14px] ${active ? 'rounded bg-[color:var(--accent-soft)] px-1' : ''}`}
@@ -243,26 +243,26 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         <div className="flex min-h-[52px] flex-wrap items-center gap-2.5 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc được giao')}</h2>
           <span className="text-sm text-dim">{t('{n} việc', { n: rows.length })}</span>
-          <span className="ml-auto"><BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
+          <span className="ml-auto max-sm:ml-0 max-sm:w-full"><BranchFilter hetHang branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
         </div>
         {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4) ── */}
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5 text-[13px] text-dim max-sm:grid max-sm:grid-cols-[max-content_minmax(0,1fr)] max-sm:gap-x-3" style={{ borderColor: 'var(--line)' }}>
           {/* A2-06 (AUDIT-2111): ô Nhóm có tìm (N45 — danh sách dài, không cố định); Trạng thái giữ ô thường (5 mục cố định). */}
-          <div className="flex items-center gap-2 whitespace-nowrap max-sm:w-full">
+          <div className="flex items-center gap-2 whitespace-nowrap max-sm:contents">
             <span>{t('Nhóm')}</span>
-            <span className="w-[220px] max-sm:min-w-0 max-sm:flex-1"><OLocNhom nhom={nhom} hangMuc={hangMucCo.map(([k]) => k)} value={locNhom} onChange={(v) => setParam('nhom', v)} /></span>
+            <span className="w-[220px] max-sm:w-auto max-sm:min-w-0"><OLocNhom nhom={nhom} hangMuc={hangMucCo.map(([k]) => k)} value={locNhom} onChange={(v) => setParam('nhom', v)} /></span>
           </div>
-          <label className="flex items-center gap-2 whitespace-nowrap">
+          <label className="flex items-center gap-2 whitespace-nowrap max-sm:contents">
             {t('Trạng thái')}
-            <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
+            <select className="field max-sm:w-full" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
               {TRANG_THAI_LOC.map((tt) => (
                 <option key={tt} value={tt}>{TRANG_THAI_LABEL[tt]} ({data?.facets.progress[tt] ?? 0})</option>
               ))}
             </select>
           </label>
-          <div className="flex items-center gap-2 max-sm:w-full">
+          <div className="flex items-center gap-2 max-sm:contents">
             <span className="shrink-0">{t('Người phụ trách')}</span>
-            <div className="w-60 max-sm:min-w-0 max-sm:flex-1">
+            <div className="w-60 max-sm:w-auto max-sm:min-w-0">
               <ChonNguoi value={assigneeValue}
                 onChange={(v) => setParam('phuTrach', v?.kieu === 'toi' ? 'toi' : v?.kieu === 'tai_khoan' ? String(v.id) : null)}
                 nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Mọi người')} ariaLabel={t('Lọc theo người phụ trách')} />
@@ -277,12 +277,11 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         {rows.length > 0 && (
           <>
             {/* ≥ 640 px: bảng 5 cột (V1). */}
-            <table className="bang-dinh w-full text-sm max-sm:hidden" style={{ tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-              <colgroup>{COT_BANG.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
+            <table className="bang-dinh w-full text-sm max-sm:hidden" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr className="text-left text-xs font-semibold text-faint">
-                  {[t('Việc'), t('Người phụ trách'), t('Hạn'), t('Trạng thái'), t('Việc con')].map((h, i) => (
-                    <th key={h} scope="col" className={`whitespace-nowrap border-b py-2 font-semibold ${i === 0 ? 'pl-4 pr-3' : i === 4 ? 'pl-3 pr-4' : 'px-3'}`} style={{ borderColor: 'var(--line)' }}>{i === 4 ? <span className="block text-right">{h}</span> : h}</th>
+                  {[t('Việc'), t('Người phụ trách'), t('Hạn'), t('Trạng thái')].map((h, i) => (
+                    <th key={h} scope="col" className={`whitespace-nowrap border-b py-2 font-semibold ${i === 0 ? 'pl-4 pr-3' : `w-[1%] pl-8 ${i === 3 ? 'pr-4' : 'pr-0'}`}`} style={{ borderColor: 'var(--line)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -291,7 +290,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
                   const mo = !gap.has(p.khoa);
                   return [
                     <tr key={p.khoa}>
-                      <td colSpan={5} className="border-t p-0" style={{ borderColor: 'var(--line-strong)' }}>
+                      <td colSpan={4} className="border-t p-0" style={{ borderColor: 'var(--line-strong)' }}>
                         <HangNhom p={p} mo={mo} qh={quaHan(p.rows)} onBam={() => doiGap(p.khoa)} />
                       </td>
                     </tr>,
@@ -327,9 +326,6 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
   );
 }
 
-/** NH9 (24/11): cột chia cân hết bề ngang — Việc co giãn (34 %), bốn cột còn lại vừa nội dung; cột cuối căn sát mép phải (lề 16 px). Tổng 100. */
-const COT_BANG = [34, 20, 13, 21, 12];
-
 /** Hàng nhóm (V1 `tr.nh`): cả hàng là nút — chevron sát tên, "n việc · m quá hạn" vẫn hiện khi gập; "Không phân loại" vạch xám. */
 function HangNhom({ p, mo, qh, onBam }: { p: Phan; mo: boolean; qh: number; onBam: () => void }) {
   return (
@@ -349,6 +345,8 @@ function PhuViec({ r, tatCa }: { r: Row; tatCa?: boolean }) {
   const ds: ReactNode[] = [r.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ')];
   if (r.lap && !r.lap.dung) ds.push(<span className="inline-flex items-center gap-1 text-dim"><IcLap />{chuLap(r.lap)}</span>);
   if (r.soTep > 0) ds.push(<span className="inline-flex items-center gap-1"><IcTep />{t('{n} tệp', { n: r.soTep })}</span>);
+  if (r.subTotal > 0) ds.push(<span className="tabular-nums">{t('{xong}/{tong} việc con', { xong: r.subDone, tong: r.subTotal })}</span>);
+  if (r.subOverdueCount > 0) ds.push(<span className="font-semibold tabular-nums text-late" title={r.subOverdueTitles.join(', ')}>{t('{n} quá hạn', { n: r.subOverdueCount })}</span>);
   if (r.classCode) ds.push(r.classCode);
   if (tatCa && r.branchName) ds.push(r.branchName);
   return <span className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-faint">{ds.map((x, i) => <span key={i} className="inline-flex items-center gap-1">{i > 0 && <span aria-hidden>·</span>}{x}</span>)}</span>;
@@ -364,7 +362,7 @@ const bamDong = (onMo: () => void) => ({
 function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean; tatCa: boolean; homNay: string; toi: number | null; onMo: () => void }) {
   /* A2-06: phần trống không ghi "cần: —" / "xem lại —" (chữ thừa bị kẹp cắt). */
   const dongTam = [r.stopReason, r.helpName && t('cần: {ten}', { ten: r.helpName }), r.reviewOn && t('hẹn xem lại {ngay}', { ngay: fmtDate(r.reviewOn) })].filter(Boolean).join(' · ');
-  const phuTrangThai = r.progress === 'paused' ? catDongPhu(dongTam) : r.progress === 'stopped' ? r.stopReason : null;
+  const phuTrangThai = r.progress === 'paused' ? dongTam : r.progress === 'stopped' ? r.stopReason : null;
   const td = 'border-t py-[9px] pl-3 pr-3 align-top';
   const n = soTheoDoi(r, toi);
   return (
@@ -373,24 +371,18 @@ function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean
         <span className="block font-medium text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
         <PhuViec r={r} tatCa={tatCa} />
       </td>
-      <td className={`${td} text-slate-200`} style={{ borderColor: 'var(--line)' }}>
-        <span className="block truncate">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0 text-slate-200`} style={{ borderColor: 'var(--line)' }}>
+        <span className="block max-w-[240px] truncate">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
         {r.assigneeNgoai && <span className="block text-xs text-faint">{t('ngoài hệ thống')}</span>}
         {n > 0 && <span className="mt-0.5 block text-xs text-faint">{t('+{n} theo dõi', { n })}</span>}
       </td>
-      <td className={td} style={{ borderColor: 'var(--line)' }}>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0`} style={{ borderColor: 'var(--line)' }}>
         {r.due ? <HanO han={r.due} xong={dong(r.progress)} /> : <span className="text-xs text-faint">{t('Chưa có hạn')}</span>}
-        {r.hanGoc && <div className="mt-0.5 truncate text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
+        {r.hanGoc && <div className="mt-0.5 max-w-[240px] truncate text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
       </td>
-      <td className={td} style={{ borderColor: 'var(--line)' }}>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-4`} style={{ borderColor: 'var(--line)' }}>
         <NhanViec progress={r.progress} label={r.progressLabel} />
-        {phuTrangThai && <div className="mt-0.5 truncate text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
-      </td>
-      <td className={`${td} pr-4`} style={{ borderColor: 'var(--line)' }}>
-        <div className="text-right">
-          {r.subTotal > 0 && <span className="tabular-nums text-slate-200">{r.subDone} / {r.subTotal}</span>}
-          {r.subOverdueCount > 0 && <div className="mt-0.5 truncate text-xs text-bad" title={r.subOverdueTitles.join(', ')}>{t('{n} việc con quá hạn', { n: r.subOverdueCount })}</div>}
-        </div>
+        {phuTrangThai && <div className="mt-0.5 max-w-[440px] truncate text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
       </td>
     </tr>
   );
