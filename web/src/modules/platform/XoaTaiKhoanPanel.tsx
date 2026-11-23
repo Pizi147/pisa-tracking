@@ -70,7 +70,7 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
                       {d.chiTiet.slice(0, 4).map((c) => (
                         <tr key={c.nhan} className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
                           <td className="py-1 pr-3 text-slate-300 first-letter:uppercase">{dich(c.nhan)}</td>
-                          <td className="w-20 py-1 text-right tabular-nums text-slate-100">{c.so}</td>
+                          <td className="w-20 py-1 text-center tabular-nums text-slate-100">{c.so}</td>
                         </tr>
                       ))}
                     </tbody>

@@ -9,13 +9,13 @@ import { OTuanDay } from './TuanDayGv.tsx';
 import { HangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
-import { BadgeHan } from './Nhan.tsx';
+import { LOP_MUC_HAN } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { useSession } from '../lib/session.tsx';
 import { fmtBand } from '../lib/format.ts';
 import type { ApiError } from '../lib/api.ts';
 import {
-  KN_LUOT_BANG, bacNgan, NHAN_KN_LUOT, OUTCOME_MARK, TAB_VIEC_HAN, TAB_VIEC_HAN_LABEL, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, outcomeLabelFor, tuanLich,
+  KN_LUOT_BANG, bacNgan, NHAN_KN_LUOT, OUTCOME_MARK, TAB_VIEC_HAN, TAB_VIEC_HAN_LABEL, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, mucHan, ngay, outcomeLabelFor, tuanLich,
   type DinhNghiaCot, type DongBaiThuong, type DongPa, type DongViecHan, type TabViecHan, type DongViPham, type DongViPhamEm, type DongViPhamLop, type TrangThaiVp, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -258,7 +258,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: coTuan ? 140 : 170 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 90 }, { key: 'ngay', nhan: t('Ngày thi'), kieu: 'chu', rong: 104 },
     ...KN4.map((k): DinhNghiaCot => (xetH(k) ? { key: k, nhan: k.toUpperCase(), kieu: 'noi-bat', rong: 58, sang: true } : { key: k, nhan: k.toUpperCase(), kieu: 'diem', rong: 58 })),
     { key: 'ovr', nhan: 'OVR', kieu: 'diem', rong: 62, tach: true }, { key: 'tg', nhan: 'Target', kieu: 'so', rong: 66 },
-    ...(coTuan ? [{ key: 'tuan', nhan: t('Tuần dạy'), kieu: 'so', rong: 116 } as DinhNghiaCot] : []),
+    ...(coTuan ? [{ key: 'tuan', nhan: t('Tuần dạy'), kieu: 'so', rong: 104 } as DinhNghiaCot] : []),
   ];
   const oDiemH0 = (h: HH, k: KnThiBang | 'ovr') => {
     const o = k === 'ovr' ? h.ovr : h.kn[k];
@@ -449,14 +449,14 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     const k = ttViec(h);
     return k === 'dung' ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
       : k === 'muon' ? <span className="font-semibold text-late">{t('Làm muộn {n} ngày', { n: h.treNgay ?? 0 })}</span>
-      : <BadgeHan muc="qua">{t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</BadgeHan>;
+      : <span className="font-semibold text-late">{t('Chưa làm')}</span>;   // chủ SP 24/11: quá hạn nói bằng NGÀY tô đỏ ở cột Hạn, không "quá n ngày"
   };
   const ngayLam = (h: HVc) => (h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('đã làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'viec') return <Link className={`font-semibold ${LINK}`} to={h.href}>{dich(h.ten)}</Link>;
     if (c.key === 'ten') return h.em ? lkHv(h.em.id, h.em.ten) : mo('—');
     if (c.key === 'lop') return h.lop ? lkLop(h.lop.id, h.lop.ma) : mo('—');
-    if (c.key === 'han') return <span className="tabular-nums">{ddmm(h.han)}</span>;
+    if (c.key === 'han') return <span className={`tabular-nums ${ttViec(h) === 'chua' && homNay ? LOP_MUC_HAN[mucHan(h.han ?? '', homNay)] : ''}`}>{ddmm(h.han)}</span>;
     return ttVc(h);
   };
   /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */

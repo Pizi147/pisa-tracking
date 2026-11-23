@@ -656,7 +656,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* Luật hạn (NHẸ HƠN): "hạn chốt dd/mm/yyyy" trong dòng meta — thường / vàng ≤ 2 ngày / đỏ + dấu khi quá hạn; không "quá hạn n ngày" ở đây. */
   const mucChot = laQl && moc && daChot < ds.length && h ? mucHan(moc.hanChot, h) : null;
   const chipHan = mucChot && moc && (
-    <span className={`whitespace-nowrap ${LOP_MUC_HAN[mucChot]}`}>{mucChot === 'qua' && <DauQuaHan />}{t('hạn chốt {ngay}', { ngay: ngay(moc.hanChot) })}</span>);
+    <span title={t('hạn chốt {ngay}', { ngay: ngay(moc.hanChot) })} className={`whitespace-nowrap ${LOP_MUC_HAN[mucChot]}`}>{mucChot === 'qua' && <DauQuaHan />}{ngay(moc.hanChot)}</span>);
   const nxDoi = ds.filter((e) => nhanXet[e.id] !== undefined && (nhanXet[e.id].trim() || null) !== (e.nhanXet ?? null)).length;
 
   const tomTat = (() => {

@@ -44,20 +44,20 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
           <table className="w-full min-w-[520px] table-fixed text-sm">
             <thead>
               <tr>
-                <Th align="right" hint={t('Học viên ĐANG HỌC lớp này và có Case chưa xong ở kỹ năng này. Một em có hai Case cùng kỹ năng vẫn là một em.')}>{t('HV gặp vấn đề')}</Th>
-                <Th align="right" hint={t('Mọi Case ở kỹ năng này, kể cả đã xong.')}>Case</Th>
-                <Th align="right" hint={t('Case chưa xong.')}>{t('Đang theo dõi')}</Th>
-                <Th align="right" hint={t('Case có ít nhất một phương án (không tính phương án theo quy chế chưa được xác nhận).')}>{t('Đã có PA')}</Th>
-                <Th align="right" hint={t('Case đã xong → trong đó số Case kết luận tiến bộ rõ hoặc tiến bộ một phần.')}>{t('Xong → Thành công')}</Th>
+                <Th align="center" hint={t('Học viên ĐANG HỌC lớp này và có Case chưa xong ở kỹ năng này. Một em có hai Case cùng kỹ năng vẫn là một em.')}>{t('HV gặp vấn đề')}</Th>
+                <Th align="center" hint={t('Mọi Case ở kỹ năng này, kể cả đã xong.')}>Case</Th>
+                <Th align="center" hint={t('Case chưa xong.')}>{t('Đang theo dõi')}</Th>
+                <Th align="center" hint={t('Case có ít nhất một phương án (không tính phương án theo quy chế chưa được xác nhận).')}>{t('Đã có PA')}</Th>
+                <Th align="center" hint={t('Case đã xong → trong đó số Case kết luận tiến bộ rõ hoặc tiến bộ một phần.')}>{t('Xong → Thành công')}</Th>
               </tr>
             </thead>
             <tbody>
               <tr className="row-hover">
-                <td className="td text-right tabular-nums">{so(tg.hvGapVanDe.length, 'hv', t('Học viên gặp vấn đề'))}</td>
-                <td className="td text-right tabular-nums">{so(tg.caseTatCa.length, 'case', 'Case')}</td>
-                <td className="td text-right tabular-nums">{so(tg.dangTheoDoi.length, 'dang-theo-doi', t('Case đang theo dõi'))}</td>
-                <td className="td text-right tabular-nums">{so(tg.daCoPa.length, 'da-co-pa', t('Case đã có PA'))}</td>
-                <td className="td text-right tabular-nums">
+                <td className="td text-center tabular-nums">{so(tg.hvGapVanDe.length, 'hv', t('Học viên gặp vấn đề'))}</td>
+                <td className="td text-center tabular-nums">{so(tg.caseTatCa.length, 'case', 'Case')}</td>
+                <td className="td text-center tabular-nums">{so(tg.dangTheoDoi.length, 'dang-theo-doi', t('Case đang theo dõi'))}</td>
+                <td className="td text-center tabular-nums">{so(tg.daCoPa.length, 'da-co-pa', t('Case đã có PA'))}</td>
+                <td className="td text-center tabular-nums">
                   {so(tg.daXong.length, 'da-xong', t('Case đã xong'))}<span className="text-slate-500"> → </span>{so(tg.thanhCong.length, 'thanh-cong', t('Case đã xong và thành công'))}
                 </td>
               </tr>
@@ -76,20 +76,20 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
             <thead>
               <tr>
                 <Th>{t('Loại PA')}</Th>
-                <Th align="right" hint={t('Phương án đang làm hoặc chờ kết quả (không tính phương án theo quy chế chưa được xác nhận).')}>{t('Đang thực hiện')}</Th>
-                <Th align="right" hint={t('Phương án đã kết thúc có kết quả xác định — cũng là mẫu số của tỷ lệ.')}>{t('Đã thực hiện')}</Th>
-                <Th align="right" hint={t('Đã kết thúc với kết quả có tiến bộ hoặc tiến bộ một phần.')}>{t('Thành công')}</Th>
-                <Th align="right" hint={t('Thành công trên đã thực hiện.')}>{t('Tỷ lệ')}</Th>
+                <Th align="center" hint={t('Phương án đang làm hoặc chờ kết quả (không tính phương án theo quy chế chưa được xác nhận).')}>{t('Đang thực hiện')}</Th>
+                <Th align="center" hint={t('Phương án đã kết thúc có kết quả xác định — cũng là mẫu số của tỷ lệ.')}>{t('Đã thực hiện')}</Th>
+                <Th align="center" hint={t('Đã kết thúc với kết quả có tiến bộ hoặc tiến bộ một phần.')}>{t('Thành công')}</Th>
+                <Th align="center" hint={t('Thành công trên đã thực hiện.')}>{t('Tỷ lệ')}</Th>
               </tr>
             </thead>
             <tbody>
               {data.plans.map((p) => (
                 <tr key={p.kind} className="row-hover">
                   <td className="td text-slate-100">{dich(p.label)}</td>
-                  <td className="td text-right tabular-nums">{so(p.dangThucHien, 'pa-dang', t('PA {loai} đang thực hiện', { loai: dich(p.label) }), p.kind)}</td>
-                  <td className="td text-right tabular-nums">{so(p.decided, 'pa-da', t('PA {loai} đã thực hiện', { loai: dich(p.label) }), p.kind)}</td>
-                  <td className="td text-right tabular-nums">{so(p.success, 'pa-thanh-cong', t('PA {loai} thành công', { loai: dich(p.label) }), p.kind)}</td>
-                  <td className="td text-right tabular-nums"><TyLe n={p.success} N={p.decided} /></td>
+                  <td className="td text-center tabular-nums">{so(p.dangThucHien, 'pa-dang', t('PA {loai} đang thực hiện', { loai: dich(p.label) }), p.kind)}</td>
+                  <td className="td text-center tabular-nums">{so(p.decided, 'pa-da', t('PA {loai} đã thực hiện', { loai: dich(p.label) }), p.kind)}</td>
+                  <td className="td text-center tabular-nums">{so(p.success, 'pa-thanh-cong', t('PA {loai} thành công', { loai: dich(p.label) }), p.kind)}</td>
+                  <td className="td text-center tabular-nums"><TyLe n={p.success} N={p.decided} /></td>
                 </tr>
               ))}
             </tbody>
