@@ -184,7 +184,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const hangL = pt.cat(tatL);
   const cotL: DinhNghiaCot[] = [
     /* Rộng cột theo mockup v13 A1 (panel 820, ô 14 — `day`, thang lưới điểm G13). */
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 }, { key: 'mt', nhan: 'MT', kieu: 'chu', rong: 104 },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 170 }, { key: 'mt', nhan: 'MT', kieu: 'chu', rong: 104 },
     ...KN.map((k): DinhNghiaCot => (NHAN_KN_LUOT[k] === knNhan ? { key: k, nhan: NHAN_KN_LUOT[k], kieu: 'noi-bat', rong: 58, sang: true } : { key: k, nhan: NHAN_KN_LUOT[k], kieu: 'diem', rong: 58 })),
     { key: 'ovr', nhan: 'OVR', kieu: 'diem', rong: 62, tach: true }, { key: 'kv', nhan: t('Kỳ vọng'), kieu: 'so', rong: 72 },
   ];
@@ -223,7 +223,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   type HT = (typeof tatT)[number];
   const hangT = pt.cat(tatT);
   const cotT: DinhNghiaCot[] = [
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 170 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 190 },
     ...(knNhan ? [] : [{ key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 80 } as DinhNghiaCot]),
     { key: 'truoc', nhan: t('Trước'), kieu: 'chu', rong: 110 }, { key: 'sau', nhan: t('Sau'), kieu: 'chu', rong: 130 },
     { key: 'chenh', nhan: t('Chênh'), kieu: 'so', rong: 76 }, { key: 'kv', nhan: t('Kỳ vọng'), kieu: 'so', rong: 76 },
@@ -555,28 +555,26 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   /* Phạm vi của panel 720: chương trình · kỳ · chi nhánh (kỳ lấy từ chính đường nguồn — cùng bộ lọc của trang). */
   const phamVi720 = tt ? [t('Thi thật'), (() => { try { return nhanKhoang(khoangTuUrl(new URLSearchParams(nguon?.split('?')[1] ?? ''), homNay)).chinh; } catch { return null; } })(),
     data && 'chiNhanh' in data ? data.chiNhanh ?? t('Tất cả chi nhánh') : null,
-    /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ') : '';
+    /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ') : dong2.split(' · ').filter((x) => !/^(dữ liệu đến|data to)/i.test(x)).join(' · ');
   return (
-    <KhungPanel tieuDe={tieuDe} rong={tt ? 'so720' : vk && laBai ? 'so' : vk ? 'rong' : 'bang'} onDong={onDong} loai={loai}
-      dau={tt ? {
+    <KhungPanel tieuDe={tieuDe} rong="so720" onDong={onDong} loai={loai}
+      dau={{
         /* SO-720 (B0): ĐẦU MỘT DÒNG — tên số · tổng + đơn vị (nhấn) · phạm vi (mờ) │ ⓘ ✕; không "dữ liệu đến", không chân "Đóng". */
-        dong2: [], ghim: data?.cachTinh ? <NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat> : undefined,
+        dong2: [],
+        ghim: <>{data?.cachTinh ? <NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat> : null}
+          {/* PT-a: panel sổ nghĩa vụ của một GV → "Hồ sơ GV ›" (đổi trang) ở đầu thay chân. */}
+          {vk && !chiSc && gvPanel > 0 && !nguon?.startsWith('/giao-vien/') ? <Link to={`/giao-vien/${gvPanel}`} className="mx-1 whitespace-nowrap text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Hồ sơ GV')} ›</Link> : null}</>,
         tieu: <><span className="min-w-0">{tieuDe}</span>{data && <span className="text-[14px] font-semibold tabular-nums text-[color:var(--accent)]">{data.dem ?? dem}</span>}
           {phamVi720 && <span className="text-[13px] font-normal text-dim">{phamVi720}</span>}</>,
-      } : { dong2: [dong2],
-      /* BO-CHU-THICH (chủ SP 07/11): "Cách tính" là ⓘ cuối dòng tiêu đề như `NganDanhSach` — không còn khối chữ cuối panel. */
-      tieu: data?.cachTinh ? <><span className="min-w-0">{tieuDe}</span><NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat></> : undefined }}
-      chan={tt ? undefined : { huy: { nhan: t('Đóng'), onClick: onDong },
-        /* PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ của một GV → "Hồ sơ GV ›" (đổi trang) ở chân. */
-        phu: vk && !chiSc && gvPanel > 0 && !nguon?.startsWith('/giao-vien/') ? <Link to={`/giao-vien/${gvPanel}`} className="whitespace-nowrap text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Hồ sơ GV')} ›</Link> : undefined }}>
+      }}>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
-            <div className={tt ? '' : 'pn-bang grid gap-3 pt-3'}>
-              {vk && tabsViec.length > 0 && (
+            <div className={tt ? '' : 'pn-bang grid gap-3 pb-4'}>
+              {false && vk && tabsViec.length > 0 && (
                 /* Sổ nghĩa vụ: 3 tab trạng thái (Chưa làm số đỏ, tab 0 mờ) — cùng dáng tab Chưa đạt · Đạt. */
                 /* GD-4c (H1): tab con trong panel = `HangTab`, badge mờ chỉ đếm (0 → không badge); bài S chéo chung "+n" mờ riêng sau badge. */
-                <HangTab ariaLabel={t('Trạng thái')} value={tabViec} onChange={setTabViec} className="-mt-3"
+                <HangTab ariaLabel={t('Trạng thái')} value={tabViec} onChange={setTabViec} className="px-5 max-sm:px-4"
                   tabs={tabsViec.map((k) => {
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
                     const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && (chiSc || !r.dongViec.sChung)).length;
@@ -589,11 +587,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
               )}
               {coTab && (
                 /* Giữ hai tab Chưa đạt · Đạt của panel cũ (chủ SP 05/11) — cùng dáng tab `NganDanhSach`. */
-                <HangTab ariaLabel={t('Kết quả')} value={tab} onChange={setTab} className="-mt-3"
+                <HangTab ariaLabel={t('Kết quả')} value={tab} onChange={setTab} className="px-5 max-sm:px-4"
                   tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: t('Đạt'), so: soDat }]} />
               )}
               {/* PTA rà #1292: tab Chưa làm chia nhóm → mỗi nhóm có số riêng, bỏ dòng tổng (lẫn với số nhóm). */}
-              {!tt && !(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[14px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}
+              
               {vk
                 /* Sổ nghĩa vụ: tab Chưa làm có bài S chéo chung → hai nhóm "Bài của bạn" / "S chéo chung · chưa ai nhận" (máy chủ xếp nhóm riêng sau). */
                 ? (nhomChung ? [[nhanBaiRieng, false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {
@@ -628,8 +626,8 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                 </section>
               ))
               : tg
-                ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} khung={false} theRieng={theT} />
-                : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theL} />}
+                ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} phuCua={(h, c) => (c.key === 'ten' ? lkLop(h.classId, h.lop) : null)} khung={false} theRieng={theT} />
+                : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : c.key === 'ten' ? lkLop(h.classId, h.lop) : null)} khung={false} theRieng={theL} />}
               {tt ? <div className="px-5 pb-3"><XemThem {...pt} donVi={t('mục')} /></div> : <XemThem {...pt} donVi={t('mục')} />}
             </div>
           )}
