@@ -1,5 +1,5 @@
 import { DS_JSON, db, theoLoJson } from './db.ts';
-import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, xemCuDen, type WorkScope } from '../../shared/domain/index.ts';
+import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, PHIEU_BAN_GIAO_MO_SQL, xemCuDen, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoBang } from './platform/nguCanhRequest.ts';
@@ -323,7 +323,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
     for (const r of db()
       .prepare(
         `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid, substr(e.ended_at, 1, 10) AS roi,
-                  CASE WHEN e.status IN ('transferred', 'completed') THEN EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND l.trang_thai = 'da_chuyen' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) END AS bg
+                  CASE WHEN e.status IN ('transferred', 'completed') THEN ${BAN_GIAO_CHUYEN_MO} END AS bg
            FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
           WHERE s.id IN (${DS_JSON})`,
       )
@@ -544,12 +544,14 @@ export function lopXemTam(p: Principal, date = demoToday()): { classId: number; 
  * Ngày rời đọc cùng câu ghi danh `napTruocPhamVi` (danh sách); một em lẻ: một câu nhỏ, nhớ theo request.
  */
 type RoiLop = { classId: number; ngay: string; bgMo: boolean };
+/** N68: em rời lớp `e.class_id` mà phiếu bàn giao chuyển lớp từ lớp đó còn là việc (cùng hằng với thẻ Bàn giao quá hạn). */
+const BAN_GIAO_CHUYEN_MO = `EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND ${PHIEU_BAN_GIAO_MO_SQL('l')})`;
 const LA_ROI_LOP = (st: string | null | undefined) => st === 'transferred' || st === 'completed';
 /** Rà #1804: `ended_at` trống / sai dạng (dữ liệu cũ) → bỏ dòng (không ngoại lệ), không ném RangeError. */
 const NGAY_HOP_LE = (d: unknown): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d));
 function roiLopCua(studentId: number): RoiLop[] {
   return nho('hv-roi:' + studentId, () => (db().prepare(
-    `SELECT e.class_id AS classId, substr(e.ended_at, 1, 10) AS ngay, EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = e.class_id AND l.trang_thai = 'da_chuyen' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL) AS bgMo
+    `SELECT e.class_id AS classId, substr(e.ended_at, 1, 10) AS ngay, ${BAN_GIAO_CHUYEN_MO} AS bgMo
        FROM enrollments e WHERE e.student_id = ? AND e.status IN ('transferred', 'completed') AND e.ended_at IS NOT NULL`,
   ).all(studentId) as any[]).filter((r) => NGAY_HOP_LE(r.ngay)).map((r) => ({ classId: r.classId, ngay: r.ngay, bgMo: !!r.bgMo })));
 }
