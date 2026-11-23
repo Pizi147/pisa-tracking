@@ -742,7 +742,7 @@ export function HoTroHocVienTab() {
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* NHẸ HƠN (v23 `.cv-luoi`, chủ SP 22/11): danh sách trái = min(556 px, 42 % − 48 px) — panel 58 % bám mép phải (KhungPanel tại chỗ) không đè (1280: ~490 px). */}
       {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(556px,calc(42vw-48px))_minmax(0,1fr)] lg:[&:has([data-pn=bang])]:grid-cols-[330px_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+      <div className={`lg:grid lg:items-start lg:gap-4 ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(556px,calc(42vw-48px))_minmax(0,1fr)] lg:[&:has([data-pn=bang])]:grid-cols-[330px_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
@@ -864,12 +864,12 @@ export function HoTroHocVienTab() {
             /* GD-8 (mockup v21 ④ K1, R4.3): TVV chưa chọn việc → "HV của tôi" (em · lớp · tình trạng · chip Việc cần làm) thay ô "Chọn một việc". */
             <HvCuaToi em={hvTvv.data?.em} viec={dsGoc} dangTai={!hvTvv.error && !hvTvv.data} onMo={(x) => boChuRoi(() => mo(x))}
               loi={hvTvv.error ? <ErrorState message={hvTvv.error.message} hint={hvTvv.error.hint} status={hvTvv.error.status} onRetry={hvTvv.reload} /> : null} />
-          ) : data && !data.scopeEmpty && (mucs.length > 0 || tab === 'duyet') ? (
+          ) : data && !data.scopeEmpty && mucs.length > 0 && tab !== 'duyet' ? (
             /* V8-CV (P2): panel trống, khung viền đứt. v12 S7: chữ ở ĐẦU khung (không rơi giữa trang dài), một câu — bỏ câu "Làm tại đây…" (S4). */
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center"
               style={{ borderColor: 'var(--line-strong)' }}>
               {/* G1-15: mở từ link `?viec=` của việc đã xong / đã đổi — nói rõ, không để panel trống im lặng. */}
-              <p className="m-0 text-[14px] text-dim">{tab === 'duyet' ? t('Chọn một yêu cầu ở danh sách.') : viec ? t('Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
+              <p className="m-0 text-[14px] text-dim">{viec ? t('Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
             </div>
           ) : null}
         </div>

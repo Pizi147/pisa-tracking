@@ -8,7 +8,10 @@ import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NguoiGiu, ThePhu } from '../congViec/DanhSachViec.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { KhoiDuyetYThuc } from '../yThuc/KhoiDuyetYThuc.tsx';
+import { DemNguocYThuc } from './DemNguocYThuc.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -16,7 +19,7 @@ import { useSession } from '../../lib/session.tsx';
 import {
   CASE_DISMISS_REASONS, CHU_TOI_THIEU, bacDu, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
   type TheYeuCauDto, type TruongDeXuat,
-  kyThiCuaChuongTrinh, laDaXuLy,
+  kyThiCuaChuongTrinh, laDaXuLy, quyCheDuyet, hanDuyetNgay,
 } from '@shared/domain/index.ts';
 import { lazyTai } from '../../lib/taiLaiManh.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -37,7 +40,7 @@ const DeXuatSuaPanel = lazyTai(() => import('./DeXuatSuaPanel.tsx').then((m) => 
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan, chanEl }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan, chanEl, dong, lenh, onO }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết).
    *  `huy` = máy chủ báo quyết định vừa rồi còn Huỷ được (Q-RL2c: cờ `coTheHuy` trả về sau Duyệt / Từ chối). */
@@ -59,6 +62,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   /** DUYET-QL (mockup v10 #cv): chân dính của panel duyệt — nút quyết (và nút gửi của ô đang mở) vẽ vào đây qua portal, thân chỉ còn nội dung.
    *  `undefined` = thẻ tự vẽ nút như cũ; `null` = chân chưa gắn (một khung hình). */
   chanEl?: HTMLElement | null;
+  /** CHO-DUYET-TAI-CHO (v24 H1): PHẦN MỞ Ở DÒNG của tab Chờ bạn duyệt — chỉ vẽ chi tiết (cặp nhãn – giá trị) + ô lý do + việc phụ; nút Từ chối / Duyệt do DÒNG giữ,
+   *  gửi lệnh qua `lenh` (`n` tăng mỗi lần bấm). */
+  dong?: boolean;
+  lenh?: { loai: 'duyet' | 'tu-choi' | 'tra-loi'; n: number };
+  /** Ô lý do / trả lời đang mở — dòng khoá nút và không gập khi còn chữ đang gõ. */
+  onO?: (dang: boolean) => void;
 }) {
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
@@ -106,8 +115,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (chanEl !== undefined) oNhap.current?.scrollIntoView({ block: 'center' });
   }, [o]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement, chuDau = '') => {
-    nutMo.current = nut; nutChu.current = nut.textContent; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);
+  const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement | null, chuDau = '') => {
+    nutMo.current = nut; nutChu.current = nut?.textContent ?? nutChu.current; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);
   };
   /* OV-7a: Sửa… — Đề xuất sửa / chuyển lớp mở lại đúng panel cũ; Không cần theo dõi / Ý thức sửa ngay trong thẻ (điền sẵn). */
   const moSua = (nut: HTMLButtonElement) => {
@@ -129,7 +138,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     const nut = nutMo.current;
     if (nut?.isConnected && !nut.disabled) return nut.focus();
     /* Hộp Chờ duyệt: nút quyết ở chân panel (portal) dựng lại khi ô đóng → tìm lại đúng nút theo chữ, không có thì nút đầu. */
-    const nut2 = Array.from((chanEl ?? document.getElementById(`the-${yc.id}`))?.querySelectorAll<HTMLElement>('button:not(:disabled)') ?? []);
+    const nut2 = Array.from((chanEl ?? document.querySelector(dong ? `[data-yc-nut="${yc.id}"]` : `#the-${yc.id}`))?.querySelectorAll<HTMLElement>('button:not(:disabled)') ?? []);
     (nut2.find((x) => x.textContent === nutChu.current) ?? nut2[0]
       ?? document.querySelector<HTMLElement>('[data-the-id] button:not(:disabled)'))?.focus();
   }, 0);
@@ -159,7 +168,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   };
 
   const canGhiChu = !!yc.duLieu?.canGhiChu;
-  const duyet = (nut: HTMLButtonElement) => {
+  const duyet = (nut: HTMLButtonElement | null) => {
     if (yc.duLieu?.moPanelChuyenLop) return setMoChuyenLop(true);
     if (yc.loai === 'lich_thi') return moO('tuan', nut);
     if (canGhiChu) return moO('ghi-chu', nut);
@@ -174,6 +183,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     else if (yc.loai === 'lich_thi') setO({ loai: 'tuan' });
     else if (canGhiChu) setO({ loai: 'ghi-chu' });
   }, [moSan]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* v24 H1: nút của DÒNG (Từ chối / Duyệt / Trả lời) gửi lệnh xuống — cùng đường với nút ở chân panel cũ. */
+  useEffect(() => {
+    if (!lenh || !cho) return;
+    nutChu.current = lenh.loai === 'tu-choi' ? t('Từ chối') : lenh.loai === 'tra-loi' ? t('Trả lời') : t('Duyệt');
+    if (lenh.loai === 'duyet') return duyet(null);
+    setO({ loai: lenh.loai }); setChu(''); setDaBam(false); setLoiMay(null);
+  }, [lenh?.n]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { onO?.(!!o); }, [o]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onO?.(false), []);   // eslint-disable-line react-hooks/exhaustive-deps
   const guiO = () => {
     setDaBam(true);
     if (!o) return;
@@ -213,7 +231,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   /* LUAT-5: thẻ Thu hồi — ô Sửa là "Lý do" (không tối thiểu ký tự, như Từ chối). */
   const thuHoi = yc.loai === 'thu_hoi_y_thuc';
-  const nhanO = o?.loai === 'tu-choi' ? t('Lý do từ chối (người gửi sẽ đọc)') : o?.loai === 'tra-loi' || o?.loai === 'sua-tra-loi' ? t('Câu trả lời cho giáo viên')
+  const nhanO = o?.loai === 'tu-choi' ? (dong ? t('Lý do từ chối') : t('Lý do từ chối (người gửi sẽ đọc)')) : o?.loai === 'tra-loi' || o?.loai === 'sua-tra-loi' ? t('Câu trả lời cho giáo viên')
     : o?.loai === 'sua' ? (thuHoi ? t('Lý do') : t('Mô tả đề xuất')) : t('Ghi chú việc đã xử lý ở màn gốc');
   const suaKtd = o?.loai === 'sua' && yc.loai === 'khong_theo_doi';
   /* Nút mở thêm một bước (chọn tuần / ghi chú) có dấu "…", như Từ chối… — Duyệt trơn là quyết ngay. */
@@ -223,7 +241,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
     : o.loai === 'sua' && !thuHoi && chu.trim().length < CHU_TOI_THIEU ? t('Mô tả cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null;
   /* DUYET-QL: ở chân panel thứ tự như mockup (Từ chối… · Duyệt chính bên phải); thẻ tự vẽ giữ Duyệt trước. */
-  const btnChan = chanEl !== undefined ? 'btn min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0';
+  const btnChan = chanEl !== undefined || dong ? 'btn min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0';
   const nutDuyet = (
     <button key="d" type="button" className={`${btnChan} btn-primary`} disabled={busy || !!o} title={yc.neuDuyet && !panel ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) }) : undefined}
       aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
@@ -244,12 +262,125 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     )}
   </>;
   const nutO = o && <>
-    <button type="button" className={btnChan} onClick={dongO} disabled={busy}>{o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
+    <button type="button" className={btnChan} onClick={dongO} disabled={busy}>{dong ? t('Huỷ') : o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
     <button type="button" className={`${btnChan} ${o.loai === 'rut' ? 'btn-danger' : 'btn-primary'}`} onClick={guiO} disabled={busy}>
       {busy ? t('Đang gửi…') : o.loai === 'tu-choi' ? t('Gửi từ chối') : o.loai === 'tra-loi' ? t('Gửi trả lời') : o.loai === 'tuan' ? t('Trả lời đề nghị dời')
         : o.loai === 'rut' ? t('Rút đề xuất') : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? t('Lưu') : t('Duyệt')}
     </button>
   </>;
+
+  /* Nội dung ô đang mở (Từ chối / Trả lời / Sửa… / Rút) — dùng chung thẻ và phần mở ở dòng. */
+  const noiO = o && (
+    <>
+      {o.loai === 'rut' ? (
+        <p className="m-0 text-[13px] text-slate-300">{t('Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.')}</p>
+      ) : suaKtd ? (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Lý do không cần theo dõi')}>
+            {CASE_DISMISS_REASONS.map((r) => <NutChon key={r} nho chon={lyDoKtd === r} onClick={() => setLyDoKtd(r)}>{CASE_DISMISS_REASON_LABEL[r]}</NutChon>)}
+          </div>
+          <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY={t('Ví dụ: Em ốm cả tuần Test')} loi={daBam ? loiChu : null} />
+          {daBam && !lyDoKtd && <p className="m-0 text-[12px] text-late">{loiChu}</p>}
+        </div>
+      ) : o.loai === 'tuan' ? (
+        <div>
+          <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>{t('Tuần Test mới')}</label>
+          <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel={t('Tuần Test mới')} />
+          <p className="m-0 mt-1 text-xs text-slate-400">{t('Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.')}</p>
+        </div>
+      ) : (
+        <div>
+          <label className={dong ? 'mb-1.5 block text-[13px] font-semibold text-[color:var(--text)]' : 'mb-1 block text-[12px] text-slate-400'} htmlFor={`${uid}-o`}
+            title={dong && o.loai === 'tu-choi' ? t('Người gửi sẽ đọc lý do này') : undefined}>
+            {nhanO} <span className="text-late">*</span>
+          </label>
+          <textarea ref={oNhap} id={`${uid}-o`} rows={dong ? 3 : 2} className="field w-full" value={chu} aria-invalid={!!loiChu}
+            aria-describedby={loiChu ? `${uid}-loi` : undefined} onChange={(e) => setChu(e.target.value)}
+            placeholder={o.loai === 'ghi-chu' ? t('Ví dụ: Đã chuyển sang lớp MB FT 102') : undefined} />
+          {loiChu && <p id={`${uid}-loi`} className="m-0 text-[12px] text-late">{loiChu}</p>}
+        </div>
+      )}
+      {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
+    </>
+  );
+
+  /* CHO-DUYET-TAI-CHO (mockup v24 H1 · H2): phần mở TẠI DÒNG — cặp nhãn – giá trị (Điểm · Đề xuất · Sau khi duyệt · link hồ sơ), ô lý do ngay dưới,
+     việc phụ của người gửi / quản lý. Tiêu đề, em, lớp, hạn, nút Từ chối · Duyệt đã ở DÒNG. */
+  if (dong) {
+    const yThuc = (yc.loai === 'y_thuc' || yc.loai === 'thu_hoi_y_thuc') && yc.doiTuongId != null;
+    const qc = cho ? quyCheDuyet(yc.loai, yc.hanDuyet ?? null, homNay, hanDuyetNgay()) : null;
+    const themPa = coNut && yc.kieuNut === 'tra-loi' && onThemPa && typeof yc.duLieu?.caseId === 'number';
+    /* Quy chế (hạn, "từ chối cần lý do"…): ⓘ cạnh "Sau khi duyệt"; thẻ không có dòng đó thì ⓘ ở hàng việc phụ. */
+    const qcTaiNeu = !!qc && !!yc.neuDuyet && cho && o?.loai !== 'tu-choi';
+    const viecPhu = nguoiGuiSua || chiRut || suaTraLoiDuoc || (!cho && !laNguoiXin && yc.coTheHuy) || tuDuyetDuoc || themPa || (qc && !qcTaiNeu);
+    return (
+      <>
+        <div className="dyc-ct" id={`the-ct-${yc.id}`} data-the-id={yc.id} role="region" aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}>
+          <div className="dyc-kv">
+            {yc.diemHv && <><span>{t('Điểm')}</span><span><DongDiem d={yc.diemHv} />{yc.sos && <span className="ml-2 inline-block align-middle"><ChipSos muc={yc.sos.muc} kyNang={yc.sos.kyNang} tam={yc.sos.tam} dot={yc.diemHv.luot} ten={yc.hocVien} /></span>}</span></>}
+            <span>{yc.kieuNut === 'tra-loi' ? t('Câu hỏi') : t('Đề xuất')}</span>
+            <span>{yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{bacDu(dich(d))}</p>)}</span>
+          </div>
+          {yThuc && cho && <KhoiDuyetYThuc measureId={yc.doiTuongId as number} />}
+          {(yc.neuDuyet && cho && o?.loai !== 'tu-choi') || (yThuc && cho && yc.hanDuyet) || !cho || yc.mo ? (
+            <div className="dyc-kv">
+              {yc.neuDuyet && cho && o?.loai !== 'tu-choi' && <>
+                <span>{t('Sau khi duyệt')}</span>
+                <span>{dich(yc.neuDuyet)}{qcTaiNeu && qc && <span className="ml-1.5 inline-block align-middle"><NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat></span>}
+                  {/* YT-BAO-PH ([XM 1], chủ SP 11/11): PH đã nghe biện pháp sắp thu hồi → mặc định nhờ TVV báo lại; QL bỏ tick khi không cần. */}
+                  {thuHoi && yc.duLieu?.daBaoPh === true && (
+                    <label className="mt-1 flex min-h-[44px] items-center gap-2 sm:min-h-0">
+                      <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={baoLai} disabled={busy} onChange={(e) => setBaoLai(e.target.checked)} />
+                      {t('Nhờ TVV báo lại PH')}
+                    </label>
+                  )}
+                </span>
+              </>}
+              {yThuc && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
+              {!cho && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
+              {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
+            </div>
+          ) : null}
+          {viecPhu && (
+            <div className="dyc-hang items-center">
+              {tuDuyetDuoc && <span className="text-[13px] text-muted" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>{t('Bạn tự gửi · tự duyệt được')}</span>}
+              {themPa && <button type="button" className="btn btn-sm" onClick={() => onThemPa!(yc.duLieu!.caseId as number)}>{t('+ Thêm PA')}</button>}
+              {nguoiGuiSua && <button type="button" className="btn btn-sm" disabled={busy || !!o} aria-expanded={o?.loai === 'sua' || moPanelSua} onClick={(e) => moSua(e.currentTarget)}>{t('Sửa…')}</button>}
+              {(nguoiGuiSua || chiRut) && <button type="button" className="btn btn-sm" disabled={busy || !!o} onClick={(e) => rut(e.currentTarget)}>{busy && !o ? t('Đang rút…') : t('Rút')}</button>}
+              {suaTraLoiDuoc && <button type="button" className="btn btn-sm" disabled={busy || !!o} aria-expanded={o?.loai === 'sua-tra-loi'} onClick={(e) => moO('sua-tra-loi', e.currentTarget, yc.traLoi ?? '')}>{t('Sửa trả lời…')}</button>}
+              {!cho && !laNguoiXin && yc.coTheHuy && <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void huy()}>{busy ? t('Đang huỷ…') : t('Huỷ quyết định')}</button>}
+              {qc && !qcTaiNeu && <NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat>}
+            </div>
+          )}
+        </div>
+        {o && (
+          <div className="dyc-tc" onKeyDown={phim}>
+            <div className="dyc-o space-y-1.5">{noiO}</div>
+            <div className="dyc-hang">{nutO}</div>
+          </div>
+        )}
+        {!o && loiMay && <p role="alert" className="dyc-tc m-0 text-[12px] text-late">{loiMay}</p>}
+        <Suspense fallback={null}>
+          {moPanelSua && yc.hocVienId != null && yc.loai === 'sua_thong_tin' && (
+            <DeXuatSuaPanel studentId={yc.hocVienId} studentName={yc.hocVien ?? ''} lop={yc.lop}
+              hienTai={{ kyThi: kyThiCuaChuongTrinh(yc.duLieu?.kyThi as string | undefined) }}
+              sua={{ id: yc.id, truong: yc.duLieu?.truong as TruongDeXuat, moi: yc.duLieu?.moi == null ? '' : String(yc.duLieu.moi), lyDo: yc.lyDo ?? '' }}
+              onClose={() => setMoPanelSua(false)} onDone={() => onXong(yc.id)} />
+          )}
+          {moPanelSua && yc.hocVienId != null && yc.loai === 'de_xuat_chuyen_lop' && (
+            <ChuyenLopPanel open cheDo="de-xuat" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
+              duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo, resetBac: yc.duLieu?.resetBac === true }}
+              onClose={() => setMoPanelSua(false)} onDone={() => onXong(yc.id)} />
+          )}
+          {moChuyenLop && yc.hocVienId != null && (
+            <ChuyenLopPanel open cheDo="lenh" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
+              duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo, resetBac: yc.duLieu?.resetBac === true }}
+              onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }))} />
+          )}
+        </Suspense>
+      </>
+    );
+  }
 
   return (
     <article id={`the-${yc.id}`} data-the-id={yc.id} aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}
@@ -361,36 +492,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
         </div>
       </div>
 
-      {o && (
+      {o && !dong && (
         <div className="mt-2 space-y-1.5 border-t pt-2" style={{ borderColor: 'var(--line)' }} onKeyDown={phim}>
-          {o.loai === 'rut' ? (
-            <p className="m-0 text-[13px] text-slate-300">{t('Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.')}</p>
-          ) : suaKtd ? (
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Lý do không cần theo dõi')}>
-                {CASE_DISMISS_REASONS.map((r) => <NutChon key={r} nho chon={lyDoKtd === r} onClick={() => setLyDoKtd(r)}>{CASE_DISMISS_REASON_LABEL[r]}</NutChon>)}
-              </div>
-              <OKhac hien={reasonNeedsText(lyDoKtd)} value={chu} onChange={setChu} goiY={t('Ví dụ: Em ốm cả tuần Test')} loi={daBam ? loiChu : null} />
-              {daBam && !lyDoKtd && <p className="m-0 text-[12px] text-late">{loiChu}</p>}
-            </div>
-          ) : o.loai === 'tuan' ? (
-            <div>
-              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-tuan`}>{t('Tuần Test mới')}</label>
-              <ONgay id={`${uid}-tuan`} kieu="tuan" value={tuan || null} onChange={setTuan} toiThieu={homNay} ariaLabel={t('Tuần Test mới')} />
-              <p className="m-0 mt-1 text-xs text-slate-400">{t('Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.')}</p>
-            </div>
-          ) : (
-            <div>
-              <label className="mb-1 block text-[12px] text-slate-400" htmlFor={`${uid}-o`}>
-                {nhanO} <span className="text-late">*</span>
-              </label>
-              <textarea ref={oNhap} id={`${uid}-o`} rows={2} className="field w-full" value={chu} aria-invalid={!!loiChu}
-                aria-describedby={loiChu ? `${uid}-loi` : undefined} onChange={(e) => setChu(e.target.value)}
-                placeholder={o.loai === 'ghi-chu' ? t('Ví dụ: Đã chuyển sang lớp MB FT 102') : undefined} />
-              {loiChu && <p id={`${uid}-loi`} className="m-0 text-[12px] text-late">{loiChu}</p>}
-            </div>
-          )}
-          {loiMay && <p role="alert" className="m-0 text-[12px] text-late">{loiMay}</p>}
+          {noiO}
           {chanEl === undefined && <div className="flex flex-wrap justify-end gap-1.5">{nutO}</div>}
         </div>
       )}
