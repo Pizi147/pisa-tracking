@@ -31,7 +31,7 @@ const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then
 /**
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — YT-a (mockup `thiet-ke/v19/y-thuc.html` A1–A6, chủ SP duyệt #1482 kể cả XM-2 XM-3; nền Y-THUC-V2).
  *
- *   Đầu thẻ: `Vi phạm | Phối hợp SOS` · lọc em `Tất cả | Việc của tôi` · Tìm em · phải: Điểm Mock Test › · Khai / sửa cấp bậc · Chọn nhiều · + Vi phạm / Nhắc nhở.
+ *   Đầu thẻ: `Vi phạm | Phối hợp SOS` · lọc em `Tất cả | Việc của tôi` · Tìm em · phải: Khai / sửa cấp bậc · Chọn nhiều · + Vi phạm / Nhắc nhở.
  *   MỌI em của lớp (`emLop`): em còn bước chưa xong lên đầu (bắt buộc / quá hạn › mới › chờ QL › chờ TVV), MỘT em MỘT khối (`KhoiEm`), mỗi lần một dòng
  *   `Vi phạm · Đã xử lý (GVCN / TVV) · Bước đang làm` (`DongLan`, một nút đúng vai; không phải việc của mình thì "Chờ …"). Rồi các em khác theo tên,
  *   mỗi em một dòng gọn ("✓ Chưa có vi phạm" / "Không có vi phạm chờ"). Thanh "Xem lịch sử · n" mở tại chỗ: Đã xem · Đã xử lý · Đã thu hồi + phạm vi
@@ -42,8 +42,8 @@ const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then
  * Việc / thông báo mở `?tab=y-thuc&hv={id}&mo=xu-ly` (hoặc `mo=khai`, `mo=da-thuc-hien&xl={id}`, `mo=cap-bac&em=…`) → cuộn tới em + panel (một lần);
  * `?sub=phoi-hop` mở phân đoạn Phối hợp. GVBM (K2-39): đọc được, không nút xử lý; vẫn có `+ Vi phạm / Nhắc nhở`.
  */
-/** `thuong`: lớp thường — "Phối hợp" (không có chữ SOS); lớp FT: "Phối hợp SOS" (chủ sản phẩm 02/10). `onDiemMt`: sang tab Học viên, mở bảng điểm (#29). */
-export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId: number; thuong?: boolean; onDiemMt?: () => void }) {
+/** `thuong`: lớp thường — "Phối hợp" (không có chữ SOS); lớp FT: "Phối hợp SOS" (chủ sản phẩm 02/10). */
+export function ClassYThucCard({ classId, thuong = false }: { classId: number; thuong?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
@@ -502,7 +502,6 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
             </>
           ) : (
             <>
-              {onDiemMt && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:hidden" onClick={onDiemMt}>{thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›')}</button>}
               {chonN.bat && <span className="text-[13px] font-semibold text-[color:var(--accent)]">✓ {t('Chọn nhiều')}</span>}
               {/* TINH-HINH: GV / QL báo tình hình cho TVV; TVV hỏi GVCN. */}
               {d.coTheBao && <button ref={neoBao} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
@@ -511,11 +510,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                 onClick={() => setHop({ neo: neoHoi, che: { loai: 'hoi', em: null, ds: d.emLop.map((e) => ({ id: e.studentId, ten: e.ten })), gvcn: d.gvcn } })}>{t('Hỏi tình hình')}</button>}
               {nutGhi}
               {/* Mockup v20: Khai / sửa cấp bậc · Chọn nhiều vào ⋯ (thao tác giữ nguyên). */}
-              {(d.canManage || onDiemMt) && (
+              {d.canManage && (
                 <MenuDong lopNut="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" muc={[
-                  ...(onDiemMt ? [{ key: 'diem-mt', nhan: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onChon: onDiemMt }] : []),
-                  ...(d.canManage ? [{ key: 'cap-bac', nhan: t('Khai / sửa cấp bậc'), onChon: () => setLoMo({ viec: 'cap-bac', ids: null }) },
-                    { key: 'chon-nhieu', nhan: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onChon: batChon }] : []),
+                  { key: 'cap-bac', nhan: t('Khai / sửa cấp bậc'), onChon: () => setLoMo({ viec: 'cap-bac', ids: null }) },
+                  { key: 'chon-nhieu', nhan: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onChon: batChon },
                 ]} />
               )}
             </>

@@ -14,12 +14,15 @@ export function HopNeo({ neo, nhan, rong = 420, onNgoai, lop = 'grid gap-3 p-4',
   /** Mũi nhỏ chỉ vào giữa ô neo (mockup v20) — lật theo hướng mở. */ mui?: boolean; children: ReactNode;
 }) {
   const hop = useRef<HTMLDivElement>(null);
+  const viTriDang = useRef<{ maxH: number | null } | null>(null);
   const ngoai = useRef(onNgoai);
   ngoai.current = onNgoai;   // Esc nghe một lần lúc mở — luôn gọi bản mới nhất (biết "đã đổi" chưa)
   const [viTri, setViTri] = useState<{ top: number; left: number; xuong: boolean; muiX: number; maxH: number | null; canh: boolean } | null>(null);
   const datViTri = () => {
     const r = neo.current?.getBoundingClientRect();
-    const cao = hop.current?.scrollHeight ?? 0;   // cao THẬT của nội dung (kể cả khi đang bị giới hạn `maxHeight`)
+    /* Cao THẬT của nội dung. Chưa bị kẹp `maxHeight` → `offsetHeight`: `scrollHeight` tính cả MŨI (`mui`, nhô ra ngoài hộp ~10 px) nên cao đổi theo việc mũi
+     * nằm ở đâu → vị trí đặt theo cao, cao đổi theo vị trí → vòng lặp vô tận, trang sập (hộp Tuần dạy, 24/11). Đang bị kẹp thì chỉ `scrollHeight` biết nội dung thật. */
+    const cao = (viTriDang.current?.maxH ? hop.current?.scrollHeight : hop.current?.offsetHeight) ?? 0;
     if (!r) return;
     const cach = mui ? 10 : 6;
     /* Mép trên dùng được = dưới thanh đầu trang (thanh xanh luôn hiện, trang cuộn trong `main`) — hộp không đè thanh đầu (PTA rà #1708). */
@@ -41,6 +44,7 @@ export function HopNeo({ neo, nhan, rong = 420, onNgoai, lop = 'grid gap-3 p-4',
     const muiX = r.left + r.width / 2 - left - 6;
     setViTri((v) => (v && v.top === top && v.left === left && v.xuong === xuong && v.muiX === muiX && v.maxH === maxH && v.canh === canh ? v : { top, left, xuong, muiX, maxH, canh }));   // không đổi thì giữ object cũ — không vẽ lại vô tận
   };
+  viTriDang.current = viTri;
   useLayoutEffect(datViTri);   // mỗi lần vẽ: nội dung đổi cao (thêm hàng, hiện lỗi) thì hộp vẫn nằm trong màn
   useEffect(() => {
     const phim = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); ngoai.current(); } };
