@@ -7,6 +7,7 @@ import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 import { VAI_THEO_DOI, donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
+import { chuyenViecNguoiNghi } from '../cases/owner.ts';
 import { duocSuaKyNang } from '../giaoVien/phamVi.ts';
 
 /**
@@ -417,10 +418,11 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
     for (const r of roles) grantRole(conn, userId, r.role, r.branches ?? []);
     if ([...cu.map((g) => g.key), ...roles.map((r) => r.role)].some((k) => VAI_THEO_DOI.has(k))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: thôi / thành Head · CX → dòng theo dõi chuyển theo; không có vai này cả trước lẫn sau → bỏ qua
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): hết vai ở chi nhánh của việc được giao → việc về người theo luật (có lịch sử)
+    const chuyen = roles.length ? null : chuyenViecNguoiNghi(userId, p.userId);   // N69: gỡ HẾT vai = người nghỉ → Case / PA / tín hiệu / lần xử lý về người theo luật; cấp lại vai không tự trả
     writeAudit({
       actorUserId: p.userId, action: 'user_roles_set', entityType: 'users', entityId: userId,
       entityLabel: user.full_name,
-      after: { note: roles.map((r) => `${r.role}:${(r.branches ?? []).join('/') || 'toàn hệ thống'}`).join(' · ') || 'gỡ hết vai' },
+      after: { note: roles.map((r) => `${r.role}:${(r.branches ?? []).join('/') || 'toàn hệ thống'}`).join(' · ') || 'gỡ hết vai', ...(chuyen ? { chuyen } : {}) },
     });
     return { ok: true };
   });

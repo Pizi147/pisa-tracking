@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { sqlNguongMiniTest } from '../platform/cauHinh.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, PHIEU_BAN_GIAO_MO_SQL, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -694,7 +694,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     quet: (conn, homNay) => {
       const tao = conn.prepare(
         `SELECT l.lop_nguon_id AS lop, MIN(l.han_gvcn) AS han, c.branch_id FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
-          WHERE l.trang_thai != 'huy' AND l.huong != 'dung_hoc' AND l.xac_nhan_luc IS NULL AND l.han_gvcn < ?
+          WHERE ${PHIEU_BAN_GIAO_MO_SQL('l')} AND l.han_gvcn < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_ban_giao' AND y.doi_tuong_id = l.lop_nguon_id AND y.trang_thai = 'cho')
           GROUP BY l.lop_nguon_id`,
       ).all(homNay) as any[];

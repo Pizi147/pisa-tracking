@@ -34,8 +34,8 @@ export const HAN_MAC_DINH_GOC = {
   chot_lo_trinh: { tuanLech: -1, thu: 5 },
   /** Bàn giao chuyển lớp: `ngay` ngày tính cả ngày ra lệnh (OV-13l). */
   ban_giao_chuyen_lop: { ngay: 7 },
-  /** Bàn giao đổi GV (N29): hạn `ngay`; GV cũ còn xem lớp cũ thêm `xemNgay`. */
-  ban_giao_doi_gv: { ngay: 5, xemNgay: 7 },
+  /** Bàn giao đổi GV (N29): hạn `ngay`; GV cũ còn xem chỉ đọc thêm `xemNgay` (N68: cả em chuyển lớp — `xemCuDen`). */
+  ban_giao_doi_gv: { ngay: 5, xemNgay: 30 },
   buoc_tiep_sau_thi: { ngay: 7 },
   /** Xét lại lộ trình (N21) a/b/c: thứ `thu` của tuần lệch `tuanLech` so với tuần bắt đầu lớp mới (CN tuần 2). */
   xet_lai: { tuanLech: 1, thu: 8 },

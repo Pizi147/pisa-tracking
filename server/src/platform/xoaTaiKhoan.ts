@@ -19,6 +19,7 @@ import { badRequest, canXacNhan, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
+import { chuyenViecNguoiNghi } from '../cases/owner.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được tài khoản.';
 const DA_XOA = 'Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.';
@@ -260,9 +261,10 @@ export function xoaTaiKhoan(p: Principal, userId: number): { ok: true; cach: 'me
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ?2 WHERE user_id = ?1 AND status = 'active'`)
       .run(userId, homNay);
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): việc giao cho người bị xoá → về người theo luật (có lịch sử); dòng theo dõi giữ (Khôi phục), chuông bỏ người đã xoá
+    const chuyen = chuyenViecNguoiNghi(userId, p.userId);   // N69: Case / PA / tín hiệu / lần xử lý người này đứng tên → người theo luật (Khôi phục không trả lại)
     writeAudit({
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,
-      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds, emailPhu, quyenRieng, phanCong }, after: { cach, soDauVet },
+      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds, emailPhu, quyenRieng, phanCong }, after: { cach, soDauVet, chuyen },
     });
     return { ok: true as const, cach };
   });

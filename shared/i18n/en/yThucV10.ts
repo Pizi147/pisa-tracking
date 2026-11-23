@@ -63,8 +63,6 @@ export const EN_Y_THUC_V10 = {
   'duyệt trước {ngay}': (b) => `approve by ${b.ngay}`,
   'thực hiện trước {ngay}': (b) => `carry out by ${b.ngay}`,
   'việc của TVV': "consultant's task",
-  'Điểm Mock Test ›': 'Mock Test scores ›',
-  'Điểm Test ›': 'Test scores ›',
   'Đã xem là gì': 'What "Seen" means',
   'Đã xem {so} vi phạm · {n} em': (b) => `Seen ${b.so} incident(s) · ${b.n} student(s)`,
   'Đã xem, chưa cần xử lý': 'Seen, no action needed yet',

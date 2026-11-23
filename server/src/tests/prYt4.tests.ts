@@ -1205,7 +1205,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
     assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage \? nutChinh\(t\('Xác nhận xử lý'\)/.test(s)   /* GD-19: \"Đã xem\" bỏ; vi phạm không việc — nút Xác nhận xử lý theo canManage */
-      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
+      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /d\.canManage && \(\s*<MenuDong[\s\S]{0,200}?key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Vi phạm \/ Nhắc nhở/.test(s), '+ Vi phạm / Nhắc nhở');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {

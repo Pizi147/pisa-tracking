@@ -14,6 +14,7 @@ export const EN_UI_CONG_VIEC = {
   '— chế độ theo dõi.': '— watch mode.',
   'Bạn không có việc đang mở.': 'You have no open tasks.',
   'Không còn việc đang mở': 'No open tasks left',
+  'Không có việc quản lý nào của bạn': 'You have no management tasks',
   'Chọn một việc ở danh sách để làm tại đây.': 'Pick a task from the list to work on it here.',
   'người phụ trách': 'the owner',
   'mở {ngan}': 'opened {ngan}',

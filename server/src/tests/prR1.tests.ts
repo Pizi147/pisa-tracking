@@ -39,9 +39,11 @@ export async function runPrR1Tests(t: any) {
       && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
     const tenCon = cases.listCases(P.admin, { studentId: c.sid }).rows.find((r: any) => r.id === c.id)?.ownerName ?? '';
     assert(tenCon && !/đã nghỉ/.test(tenCon), `chủ còn làm mà tên có "(đã nghỉ)": ${tenCon}`);
-    accounts.setRoles(P.admin, c.chu, []);   // gỡ hết vai — `donGiaoHetHieuLuc` không đụng Case (không luật mới)
+    /* N69 (24/11): gỡ hết vai qua `setRoles` nay tự chuyển Case (phép N69 ở prGiaoViec). Ở đây đóng vai THẲNG ở DB — dữ liệu trước N69 / người không có ai thay —
+       để thử trạng thái "chưa có người" của R1. */
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'`).run(c.chu);
     xoaNho();
-    assert(one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'gỡ vai không được tự đổi chủ Case');
+    assert(one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'đóng vai thẳng: chủ Case giữ nguyên');
     assert(coTrong(), 'caseChuaCoNguoi bỏ sót Case chủ đã gỡ vai');
     assert(viec(), 'Công việc thiếu dòng owner: của Case chủ đã gỡ vai');
     const ds = cases.listCases(P.admin, { noOwner: true, studentId: c.sid });

@@ -23,6 +23,7 @@ import { docGap, ghiGap } from '../congViec/DanhSachViec.tsx';
 import { KhoiGiaoViec, type KhoiGv, type ThaoTacKhoi } from '../congViec/KhoiGiaoViec.tsx';
 import { HopNhomViec, KHONG_PHAN_LOAI, OHangMuc, OLocNhom, tenHangMuc, type NhomViec, type NoiViec } from './NhomViec.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { HOP_DON_VI_BAT } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_MUC_CV, HANG_SO, HANG_SO_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
@@ -1073,7 +1074,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
       else toast.push('ok', parent ? t('Đã thêm việc con') : t('Đã giao việc'));
       /* Đóng form; giao tiếp là mở lại → giá trị đầu đúng ngữ cảnh lúc đó và khoá gửi mới. */
       onDone(); onClose();
-      if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
+      if (HOP_DON_VI_BAT && unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
     finally { setBusy(false); }
   };
