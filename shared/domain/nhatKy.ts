@@ -58,6 +58,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
   'discipline.bao_ph_han': 'Sửa hạn báo phụ huynh', 'sos_coordination.han': 'Sửa hạn việc phối hợp SOS',   // HAN-BAO-PH
   'ke_hoach.hang_loat': 'Xếp lịch Test hàng loạt',
+  'ke_hoach.hoan_tac': 'Hoàn tác xếp lịch Test',
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',
   'measure.remove_violation': 'Bỏ vi phạm khỏi PA',

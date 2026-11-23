@@ -446,9 +446,9 @@ export function hoanTacNhap(p: Principal, nhapVao: unknown, homNayIso = nowIso()
   const nhap = Number(nhapVao);
   if (!Number.isInteger(nhap) || nhap <= 0) throw badRequest('Thiếu lô cần hoàn tác.');
   const a = db().prepare(`SELECT entity_id, after_json, created_at FROM audit_logs WHERE id = ? AND action = 'student.bulk_add'`).get(nhap) as any;
-  if (!a) throw notFound('Không còn lô thêm học viên này.');
+  if (!a) throw loiHttp(404, 'Không còn lô thêm học viên này.');
   require_(p, PERMISSIONS.STUDENT_ADD, { classId: a.entity_id }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
-  if (Date.parse(homNayIso) - Date.parse(a.created_at) > HOAN_TAC_PHUT * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT} phút — xoá từng em ở danh sách học viên.`);
+  if (Date.parse(homNayIso) - Date.parse(a.created_at) > HOAN_TAC_PHUT * 60_000) throw loiHttp(409, 'Đã quá {n} phút — xoá từng em ở danh sách học viên.', { n: HOAN_TAC_PHUT });
   const ids = ((JSON.parse(a.after_json ?? '{}').hv ?? []) as { id: number }[]).map((h) => h.id);
   const con = new Set((db().prepare('SELECT id FROM students WHERE id IN (SELECT value FROM json_each(?))').all(JSON.stringify(ids)) as any[]).map((r) => r.id as number));
   const kq = { ok: [] as number[], thungRac: [] as number[], failed: [] as { studentId: number; message: string }[] };

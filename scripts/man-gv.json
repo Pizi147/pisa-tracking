@@ -163,6 +163,7 @@
  "web/src/modules/test/keHoach/NganXuatKeHoach.tsx",
  "web/src/modules/test/keHoach/TimLop.tsx",
  "web/src/modules/test/keHoach/TuanNho.tsx",
+ "web/src/modules/test/keHoach/hoanTacXep.ts",
  "web/src/modules/test/keHoach/kieu.ts",
  "web/src/modules/test/keHoach/taiXlsx.ts",
  "web/src/modules/test/keHoach/xoaMt.ts",
