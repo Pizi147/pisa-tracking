@@ -8,7 +8,7 @@ import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { OSo } from '../../ui/OSo.tsx';
-import { CHIP_SOS, CHIP_VUONG, LOP_MUC_HAN, lopSos } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, CHIP_VUONG, DauQuaHan, LOP_MUC_HAN, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DauViecCongViec, KhungPanel, QuayLaiPanel } from '../../ui/KhungPanel.tsx';
 import { DaiLamThay } from '../../ui/DaiLamThay.tsx';
@@ -18,7 +18,7 @@ import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import type { WorkItem } from './WorkList.tsx';
 import { PhanTram, ChuaCoDl, kyChu, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
 import {
-  daysBetween, laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
+  laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -33,15 +33,11 @@ type ViecTatCa = { dong: Dong[] };
 
 const congViec = (q: string) => `/cong-viec?nguoi=tat-ca${q ? `&${q}` : ''}`;
 
-/**
- * Hạn ở Tổng quan (PTA rà #2002, luật V22 / NH4): chữ dd/mm/yyyy tô theo `mucHan` — KHÔNG ⚠ (dấu hình chỉ ở ô quá hạn của ma trận: nền đặc).
- * `quaHan`: dòng việc / panel việc — quá hạn ghi "quá hạn n ngày" (như mockup T1c), chưa quá hạn ghi ngày.
- */
-function NgayHan({ han, quaHan }: { han: string; quaHan?: boolean }) {
+/** Hạn ở Tổng quan (chủ SP 24/11): CHỈ ngày dd/mm/yyyy tô theo `mucHan` — không "quá hạn n ngày", không nền. */
+function NgayHan({ han }: { han: string }) {
   const { homNay } = useNgayNghiepVu();
   const muc = homNay ? mucHan(han, homNay) : 'xa';
-  const chu = quaHan && muc === 'qua' ? t('quá hạn {n} ngày', { n: daysBetween(han.slice(0, 10), homNay) }) : ngay(han);
-  return <span className={`whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>{chu}</span>;
+  return <span className={`whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
 }
 
 /* ───────────── Ô "Cần xử lý" ───────────── */
@@ -116,7 +112,7 @@ function PanelDsViec({ tieuDe, phu, nhom, chan, onDong }: { tieuDe: string; phu?
                       <span className="block text-sm font-semibold text-slate-100">{tenDong(x)}</span>
                       <span className="block text-[13px] text-dim">{[nhanLoaiTq(loaiTq(x)), x.studentName ? x.classCode : null, x.soBai ? t('thiếu {n} bài', { n: x.soBai }) : null].filter(Boolean).join(' · ')}</span>
                     </span>
-                    {x.due && <span className="shrink-0 text-right"><NgayHan han={x.due} quaHan /></span>}
+                    {x.due && <span className="shrink-0 text-right"><NgayHan han={x.due} /></span>}
                   </>
                 );
                 const lop = 'flex min-h-[48px] w-full items-center justify-between gap-3 border-t px-3.5 py-2 text-left first:border-t-0 hover:bg-[color:var(--accent-soft)]';
