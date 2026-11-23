@@ -107,4 +107,16 @@ export async function runPrR1Tests(t: any) {
     /* Lần sau: đã xong → sửa (OV-7a), so với updated_at vừa ghi. */
     assert(ma(xn) === null, 'sửa việc đã xong (updated_at có giá trị) lỗi');
   }));
+
+  const ab: any = await import('../fasttrack/absence.ts');
+  const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
+  check('L5 · Báo vắng trên lượt đã huỷ mà kiểm lỗi (kỹ năng không có) → lượt vẫn huỷ, không mở lại nửa chừng', () => thu(() => {
+    const a = one(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE a.kind = 'mock' AND a.status = 'planned' AND a.class_id IS NOT NULL ORDER BY a.id LIMIT 1`);
+    assert(a, 'seed thiếu lượt Mock');
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(a.id);
+    let loi: any = null;
+    try { voiXacNhan(() => ab.baoVang(P.admin, a.id, 'khong_co_ky_nang', null)); } catch (e) { loi = e; }
+    assert(loi?.status === 400, `phải 400 (kỹ năng không có): ${loi?.status} ${loi?.message}`);
+    assert(one('SELECT status FROM assessment_attempts WHERE id = ?', a.id).status === 'cancelled', 'lượt đã bị khôi phục dù báo vắng lỗi');
+  }));
 }

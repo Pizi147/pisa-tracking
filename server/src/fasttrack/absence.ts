@@ -791,6 +791,10 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
  * ô (N38): lần 1 dời tuần sau tuần thi, lần 2 huỷ; MT cũ của KỸ NĂNG (`laMtCuKyNang`) → Không dự thi (dấu `no_show_cu`), không chuông. GVCN / Quản lý.
  */
 export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string = demoToday()) {
+  /* R1-L5: khôi phục lượt đã huỷ (hỏi RKC) + các bước kiểm + ghi vắng trong MỘT giao dịch — kiểm lỗi thì lượt không bị mở lại mà vắng không ghi. */
+  return tx(() => baoVangTrong(p, attemptId, skill, lyDo, today));
+}
+function baoVangTrong(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string) {
   const conn = db();
   let a = loadAttempt(attemptId);
   /* NHAP-DIEM-a (chủ SP 14/11 "GV nhập có quyền ghi vắng, bỏ vắng"): + người nhập được ô của kỹ năng — như gõ "-" ở ô. */
