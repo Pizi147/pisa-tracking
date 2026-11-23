@@ -1,0 +1,131 @@
+{
+ "375": {
+  "font": true,
+  "cot": {
+   "dau": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "lechGiuaCacDong": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "cachMepPhaiNoiDung": [
+    null,
+    null,
+    null,
+    null,
+    359,
+    null,
+    null,
+    null,
+    null
+   ],
+   "tdPhaiCachMep": [
+    359,
+    359,
+    359,
+    359,
+    359,
+    359,
+    359,
+    359,
+    359
+   ],
+   "soDong": 9,
+   "tran": false
+  }
+ },
+ "1280": {
+  "font": true,
+  "cot": {
+   "dau": [
+    420.9,
+    247.6,
+    160.9,
+    260,
+    148.6
+   ],
+   "lechGiuaCacDong": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "cachMepPhaiNoiDung": [
+    null,
+    null,
+    null,
+    null,
+    17,
+    null,
+    null,
+    null,
+    null
+   ],
+   "tdPhaiCachMep": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "soDong": 9,
+   "tran": false
+  }
+ },
+ "1440": {
+  "font": true,
+  "cot": {
+   "dau": [
+    475.3,
+    279.6,
+    181.7,
+    293.6,
+    167.8
+   ],
+   "lechGiuaCacDong": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "cachMepPhaiNoiDung": [
+    null,
+    null,
+    null,
+    null,
+    17,
+    null,
+    null,
+    null,
+    null
+   ],
+   "tdPhaiCachMep": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "soDong": 9,
+   "tran": false
+  }
+ }
+}
