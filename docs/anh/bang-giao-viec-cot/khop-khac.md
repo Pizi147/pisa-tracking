@@ -30,10 +30,10 @@ Tỷ lệ `34 · 20 · 13 · 21 · 12 %` (`COT_BANG`), `table-layout: fixed`, đ
 
 Không đổi: số request / câu SQL (không thêm gọi nào), quyền, `Form Giao việc` / `Nhóm…` (đã cân hàng — chỉ chụp lại).
 
-## [XM] — cho PTA Plan
+## [XM] — đã trả lời (PTA Plan)
 
-1. **Dòng mở việc con tại dòng** không tồn tại trong code hiện tại (việc con chỉ ở panel việc cha; bảng chỉ có "n / m"). Không tự thêm — có cần mở việc con ngay dưới dòng cha, thẳng cột, như khuôn A "n em" không?
-2. **Panel còn rộng 835 px (`rong="rong"`)** — chưa 720; tự theo `KhungPanel` khi `panel-gon` merge, không đặt bề rộng riêng.
-3. Dải 4 số lọc đầu trang: đã thẳng hàng, số trơn tô màu, không ô viền thừa → không sửa (`DaiChiSo` dùng chung).
-4. Việc quá hạn trong bảng vẫn còn nền đỏ nhạt do `LOP_MUC_HAN.qua` dùng chung (NH4 24/11: chỉ tô màu chữ) — thuộc PR hạn toàn web của `lop-can-chu-y-so`, không sửa ở đây.
-5. Dòng danh sách Công việc → Vận hành (`DanhSachViec`) của việc con "Việc con của: …" đè lên chữ hạn ở 1440 khi panel mở (thấy ở ảnh `panel-nguoi-nhan`) — thuộc `khuon-a-danh-sach`, báo để tránh trùng.
+1. Mở việc con tại dòng: KHÔNG cần (panel đã liệt kê việc con).
+2. Bề rộng panel (835 px): chờ `panel-gon` merge rồi gộp main, không tự đặt.
+3. Chữ đè ở `DanhSachViec` ("Việc con của: …" đè hạn): chuyển `khuon-a-danh-sach`.
+4. Nền đỏ nhạt quá hạn: đã gộp main (#2065) và chụp lại ảnh `sau-*` — hạn quá hạn chỉ còn chữ đỏ.
+5. Tên thẻ trong trang "Việc vận hành" → **"Việc đã giao"** (khớp tên trang; EN "Assigned tasks").
