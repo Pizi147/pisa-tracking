@@ -338,6 +338,11 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
    * (App tải lại theo lịch của nó). `reload()` vẫn tải thật. Chưa có bản nào → tải như thường (GET đang bay được gộp).
    */
   dungBanLuu?: boolean;
+  /**
+   * T8 (rà 24/11, chủ SP duyệt): khác null → vô hiệu trúng đường chỉ ĐÁNH DẤU CŨ (vd Công việc khi panel việc mở — chuỗi "Lưu · việc tiếp" không tải lại
+   * danh sách sau mỗi lần lưu); giá trị đổi (đóng panel = null, đổi tab / bộ lọc) → tải lại MỘT lần nếu đã cũ. Vô hiệu toàn bộ (đổi tài khoản) vẫn tải ngay.
+   */
+  hoanTaiLai?: string | null;
 } = {}): ApiState<T> {
   const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path)?.d as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
@@ -353,9 +358,15 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
   coDuLieu.current = data !== null;
   useEffect(() => () => { loiNen.delete(reload); }, [reload]);
 
+  const hoan = opts.hoanTaiLai ?? null;
+  const dangHoan = useRef(hoan);
+  dangHoan.current = hoan;
+  const choTai = useRef(false);
   useEffect(
     () => opts.chiNghe ? undefined : onInvalidate((prefix, luc) => {
-      if (canTaiLaiKhiVoHieu(path, prefix, luc, banTu.current)) reload();
+      if (!canTaiLaiKhiVoHieu(path, prefix, luc, banTu.current)) return;
+      if (prefix !== null && dangHoan.current !== null) choTai.current = true;
+      else reload();
     }),
     [reload, path, opts.chiNghe],
   );
@@ -373,9 +384,12 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
       currentPath.current = path; setDataState(daXem.get(path)!.d as T); setFetching(false); setError(null);
       return;
     }
+    choTai.current = false;   // T8: lần tải này bắt đầu sau mọi vô hiệu đang hoãn
     batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu, banTu });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
+  /* T8: đặt SAU effect tải — đổi đường cùng lượt thì lần tải đó đã xoá `choTai`, không tải thêm. */
+  useEffect(() => { if (choTai.current) { choTai.current = false; reload(); } }, [hoan, reload]);
 
   const setData = useCallback((updater: any) => {
     setDataState((prev) => (typeof updater === 'function' ? updater(prev) : updater));
