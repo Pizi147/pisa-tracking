@@ -562,7 +562,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
-        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' || y.loai === 'thu_hoi_y_thuc' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
+        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' || y.loai === 'thu_hoi_y_thuc' || y.loai === 'sua_khai_bac' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
           : <span className="flex items-center gap-1.5"><NhanTrangThai t={tt.t} />{y.xuLyLuc && <span className="text-[12px] text-dim">{ngan(y.xuLyLuc)}</span>}</span>}
         {/* audit CV7: người gửi là chính người xem → "Bạn", không vai. */}
         {y.nguoiXin && (y.nguoiXinId != null && y.nguoiXinId === toi ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />)}

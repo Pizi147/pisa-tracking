@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { bacDu, ngay, oThang, type OThang } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, bacDu, kindCuaBac, ngay, nhanLoaiXuLy, oThang, type OThang } from '@shared/domain/index.ts';
 import { DauTich } from './NhanViPham.tsx';
 import type { BacThangDong, YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -60,6 +60,10 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   const dang = oThang(d.dongThang).find((x) => x.tt === 'dang');
   const aria = t('Thang xử lý vi phạm: {a}, kế tiếp {b}', { a: dang ? t('đang ở {x}', { x: bacDu(dich(dang.nhan)) }) : t('chưa xử lý lần nào'), b: bacDu(dich(d.keTiep.nhan)) });
   const lanDs = xl.slice(0, 20);
+  /* N70: tên ngắn của bậc GVCN xin (như ô thang "R1" · "WL1"); bậc ngoài các ô đang hiện → tên đủ; bậc 0 → "Chưa có xử lý vi phạm". */
+  const bCho = d.khai?.cho?.bac;
+  const bacCho = bCho == null ? '' : bCho === 0 ? dich(BAC_0_NHAN)
+    : oThang(d.dongThang).find((x) => x.kind === kindCuaBac(bCho))?.ngan ?? bacDu(dich(nhanLoaiXuLy(kindCuaBac(bCho))));
   return (
     <section className={`[container-type:inline-size] ${khung ? 'rounded-[10px] border' : ''}`} style={{ borderColor: 'var(--line)', background: khung ? 'var(--surface)' : undefined }}
       aria-label={t('Thang xử lý vi phạm ({nhanChuoi})', { nhanChuoi })}>
@@ -67,6 +71,9 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
         <h3 className="m-0 text-sm font-bold text-[color:var(--text)]">{t('Thang xử lý vi phạm')}</h3>
         <span className="text-[13px] text-dim">{phu ?? nhanChuoi}</span>
         <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* N70 (PTA chốt [XM 4]): yêu cầu sửa bậc của GVCN đang chờ — nói ngay cạnh "Sửa cấp bậc", ai xem hồ sơ cũng thấy (bậc trên thang vẫn là bậc cũ). */}
+          {d.khai?.cho && <span className="whitespace-nowrap text-[13px] font-semibold text-soon" title={d.khai.cho.han ? t('hạn {ngay}', { ngay: ngay(d.khai.cho.han) }) : undefined}>
+            {t('chờ Head duyệt {bac}', { bac: bacCho })}</span>}
           {d.coTheKhai && onKhai ? <button type="button" className={LINK} title={t('Đã có mức độ vi phạm từ trước?')} onClick={onKhai}>{t('Xác nhận cấp bậc vi phạm')}</button>
             : d.khai && onSuaKhai ? <button type="button" className={LINK} title={khaiTitle} onClick={onSuaKhai}>{t('Sửa cấp bậc')}</button> : null}
           {/* ⓘ = tên đầy đủ các bậc (thay chữ dài trên thang) + luật nút (Y2c). */}

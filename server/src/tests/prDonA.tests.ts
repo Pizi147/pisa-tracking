@@ -644,7 +644,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(/khaiDuoc\(em\)/.test(docNguon('server/src/worklist/mywork.ts')) && /coTheKhai: canManage && khaiMoDuoc\(em\)/.test(docNguon('server/src/yThuc/xuLy.ts')), 'việc nhắc / nút khai không qua hàm chung');
     /* PTA rà #2016: panel khai một em — chuỗi đã có khai (người khác vừa khai, 409 → tải lại) thì PUT sửa, không POST mãi. */
     const pn = docNguon('web/src/modules/yThuc/KhaiBacPanel.tsx');
-    assert(/const laSua = !!sua \|\| !!d\?\.khai;/.test(pn) && /if \(laSua\) await api\.put\(/.test(pn), 'panel khai: laSua quyết PUT / POST');
+    assert(/const laSua = !!sua \|\| !!d\?\.khai;/.test(pn) && /laSua \? await api\.put</.test(pn), 'panel khai: laSua quyết PUT / POST');   // N70: lấy kết quả (`guiDuyet`) nên viết dạng `laSua ? put : post`
   });
 
   check('Dọn-a (6g) → OV-12a · 8 hạn Thứ Ba liên tiếp: chữ kỳ ở Cần xử lý (tuanCuaHanGhiKetQua) = kỳ ở tiêu đề form Ghi kết quả (nhanTuanGhiKetQua)', () => {

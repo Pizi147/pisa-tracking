@@ -91,7 +91,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100, prHead: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100, prHead: 100, prN70: 300,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9412,6 +9412,9 @@ await runPrOv13jTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-13d (Ý thức nhiều em cùng lúc: lô xử lý · Ghi nhận · Xác nhận cấp bậc có bậc 0)
 const { runPrOv13dTests } = bocTep('prOv13d', await import('./prOv13d.tests.ts'));
 await runPrOv13dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== N70 (Khai cấp bậc: ngày hoặc tháng · GVCN sửa lại cần Head duyệt — thẻ `sua_khai_bac`)
+const { runPrN70Tests } = bocTep('prN70', await import('./prN70.tests.ts'));
+await runPrN70Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-13h (gỡ chặn cứng người đúng nhiệm vụ — qua HTTP; chạy cuối: không bọc giao dịch)
 const { runPrOv13hTests } = bocTep('prOv13h', await import('./prOv13h.tests.ts'));
 await runPrOv13hTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
