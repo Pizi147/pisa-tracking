@@ -129,7 +129,9 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', moi).bac === 0 && xu.yThucHocVien(gvcn, cu).keTiep.nhan === 'Report 4 + Meeting CX/GĐCN', 'bậc 0 / bậc 3 lưu');
     assert(!viec()?.emIds?.includes(moi) && !viec()?.emIds?.includes(cu), 'sau: hai em thoát việc 14 ngày');
     assert(xu.yThucHocVien(gvcn, moi).keTiep.nhan === 'Report 1', 'bậc 0 → lần kế Report 1');
-    assert(kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 3 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 3, 'N50 (8): GVCN sửa bậc đã khai của em đã xử lý');
+    /* N70 (chủ SP 24/11): GVCN sửa bậc đã khai trong lô → gửi Head duyệt (cần ghi chú chung làm lý do), bậc giữ. */
+    const g = kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 3 }], ghiChu: 'Rà lại hồ sơ giấy' }), ql);
+    assert(g.ok && g.guiDuyet === true && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 2, 'N70: GVCN sửa bậc đã khai → gửi Head duyệt, bậc giữ');
     assert(kq(lo.loCapBac(P.mbManager, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 4, 'QL sửa được');
     /* RKC-3a (thay rà #408 (4)): em Tạm dừng khai được (không ảnh hưởng đầu ra). */
     const td = moiEm();
@@ -147,7 +149,9 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     xu.xacNhanXuLy(gvcn, khoa, { violationIds: nVp(khoa, 1), performedOn: TODAY, note: MO_TA });   // N66: có xử lý trên web vẫn khai được
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }], thang: '2026-13' })) === 400, 'tháng sai → cả lô 400');
 
-    const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }, { studentId: b, bac: 2 }, { studentId: khoa, bac: 1 }], thang: '2026-09', ghiChu: '' });
+    /* N70: lô có em ĐÃ KHAI (b) — Head lưu thì áp ngay + Hoàn tác về bậc cũ; GVCN lưu em đã khai = gửi duyệt (prN70-8). */
+    const head = P.mbManager;
+    const r = lo.loCapBac(head, cid, { em: [{ studentId: a, bac: 3 }, { studentId: b, bac: 2 }, { studentId: khoa, bac: 1 }], thang: '2026-09', ghiChu: '' });
     assert(kq(r, a).ok && kq(r, b).ok && kq(r, khoa).ok, `N66: em đã xử lý trên web cũng lưu: ${JSON.stringify(r)}`);
     assert(kq(r, a).truoc === null && kq(r, a).bac === 3 && kq(r, b).truoc.bac === 1 && kq(r, b).bac === 2, `trả bậc trước / bậc vừa lưu: ${JSON.stringify(r)}`);
     assert(bacDb(a).thang === '2026-09' && /Xác nhận theo lớp/.test(bacDb(a).ghi_chu), `khai mới: tháng chung, ghi chú tự điền: ${JSON.stringify(bacDb(a))}`);
@@ -158,7 +162,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     /* Hoàn tác: a về chưa khai, b về bậc 1 (tháng / ghi chú cũ); GVBM không có quyền lô. */
     const lai = (x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc });
     assert(maLoi(() => lo.loHoanTacCapBac(gvbm, cid, { em: [lai(kq(r, a))] })) === 403, 'GVBM 403');
-    const h = lo.loHoanTacCapBac(gvcn, cid, { em: [lai(kq(r, a)), lai(kq(r, b))] });
+    const h = lo.loHoanTacCapBac(head, cid, { em: [lai(kq(r, a)), lai(kq(r, b))] });
     assert(kq(h, a).ok && kq(h, b).ok, JSON.stringify(h));
     assert(!bacDb(a) && bacDb(b).bac === 1 && bacDb(b).thang === '2026-08', `hoàn tác: ${JSON.stringify([bacDb(a), bacDb(b)])}`);
     /* Bậc đã đổi sau lần lưu (QL sửa) → không đè. */
@@ -166,7 +170,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(!kq(lo.loHoanTacCapBac(gvcn, cid, { em: [lai(kq(r2, c))] }), c).ok && bacDb(c).bac === 4, 'bậc đã đổi → không hoàn tác');
     assert(xu.yThucHocVien(gvcn, a).keTiep.nhan === 'Report 1', 'a về chưa khai: lần kế Report 1');
     /* Không gửi tháng → em đã khai giữ tháng cũ (b về bậc 1 · 2026-08 sau Hoàn tác). */
-    lo.loCapBac(gvcn, cid, { em: [{ studentId: b, bac: 3 }] });
+    lo.loCapBac(head, cid, { em: [{ studentId: b, bac: 3 }] });
     assert(bacDb(b).bac === 3 && bacDb(b).thang === '2026-08', `giữ tháng cũ: ${JSON.stringify(bacDb(b))}`);
     /* Bảo mật: Hoàn tác gửi giả (truoc: null) không xoá được bậc QL đã khai / lần lưu không phải của mình hôm nay. */
     const d = moiEm();

@@ -552,13 +552,16 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (4) · Sửa khai: GVCN + QL sửa được; N50 (8): sau lần xử lý đầu GVCN VẪN sửa (nhật ký), QL vẫn sửa; khai lại (chưa khai) sau lần xử lý → 400', () => {
     const sid = hv();
     xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' });
-    xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' });
-    assert(em(sid).bac === 2, 'GVCN sửa');
+    /* N70 (chủ SP 24/11): GVCN sửa bậc đã khai → gửi Head duyệt, bậc giữ tới khi duyệt (chi tiết: prN70). */
+    const g1 = xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' });
+    assert(g1.guiDuyet === true && em(sid).bac === 1, 'N70: GVCN sửa → gửi Head duyệt, bậc giữ');
+    yc.duyetYeuCau(P.mbManager, g1.yeuCauId);
+    assert(em(sid).bac === 2, 'Head duyệt: GVCN sửa có hiệu lực');
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'Head sửa theo hồ sơ giấy' });
     assert(em(sid).bac === 2, 'QL sửa');
     xl(gvcn, sid, [ghiVp(gvbm, sid)]);
-    xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' });
-    assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8): GVCN sửa sau lần xử lý');
+    yc.duyetYeuCau(P.mbManager, xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' }).yeuCauId);
+    assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8) + N70: GVCN sửa sau lần xử lý (Head duyệt)');
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'Head sửa sau khi đã xử lý' });
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' }).ok === true && em(sid2).bac === 2, 'N66: khai (chưa khai) sau lần xử lý được');
@@ -572,11 +575,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Thực ra mới Report 1' });
     assert(em(sid).bac === 1 && em(sid).keTiep.kind === 'report_2', `hạ: bậc ${em(sid).bac}`);
     assert(xuLy.yThucHocVien(gvcn, sid).canSuaKhai === true && xuLy.yThucHocVien(gvcn, sid).bac === 1, 'hồ sơ cùng bậc, có Sửa');
-    xuLy.suaKhaiBac(gvcn, sid, { bac: 3, ghiChu: 'WL 1 bản giấy', bacCu: 1 });
+    /* N70: sửa bậc đã khai áp ngay chỉ với Head / Quản trị — phép tính bậc theo mốc (N66) giữ nguyên. */
+    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 3, ghiChu: 'WL 1 bản giấy', bacCu: 1 });
     assert(em(sid).bac === 3 && em(sid).keTiep.kind === 'report_4_meeting', 'nâng WL1 → kế Report 4');
     assert(loiCua(() => xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'so-và-đổi', bacCu: 1 })).status === 409 && em(sid).bac === 3, 'bậc đã đổi → 409, không ghi');
     /* Lần xử lý MỚI sau khai: bậc theo max (khai 1, Report 2 mới → 2; lần cũ trước khai không đẩy). */
-    xuLy.suaKhaiBac(gvcn, sid, { bac: 0, ghiChu: 'Chưa có xử lý' });
+    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 0, ghiChu: 'Chưa có xử lý' });
     conn.prepare(`UPDATE y_thuc_khai_bac SET sua_luc = '2026-02-01T00:00:00.000Z' WHERE student_id = ?`).run(sid);
     assert(em(sid).bac === 0 && em(sid).keTiep.kind === 'report_1', 'hạ về 0 dù đã có hai lần');
     const m3 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
