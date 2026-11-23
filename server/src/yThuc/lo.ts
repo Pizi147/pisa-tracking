@@ -5,7 +5,8 @@
  *   Xác nhận xử lý chung   ngày · người · mô tả chung (sửa riêng từng em được); mỗi em tự lấy bậc kế (máy chủ tính). Em chưa bắt buộc / có đề
  *                          xuất chờ QL bị loại kèm lý do — cùng luật việc `yt_xu_ly` ở Công việc (`soBatBuoc > 0 && !coChoDuyet`).
  *   Ghi nhận               mọi vi phạm Mới (kể cả Mới quá hạn) của em; em đang bắt buộc xử lý không Ghi nhận được (V4-2).
- *   Xác nhận cấp bậc       bậc 0 "Chưa có xử lý vi phạm" … WL 2; bậc đã khai GVCN sửa được mọi lúc (N50 câu 8, có nhật ký).
+ *   Xác nhận cấp bậc       bậc 0 "Chưa có xử lý vi phạm" … WL 2; N70 (chủ SP 24/11): em CHƯA khai lưu là áp ngay; em ĐÃ khai — Head / Quản trị áp ngay,
+ *                          GVCN thành yêu cầu chờ Head duyệt từng em (`guiSuaKhai`, kết quả `guiDuyet` + `ycId`; Hoàn tác lô = rút thẻ).
  *
  * Mỗi em đi qua ĐÚNG phần ghi của hàm một em (`luuXuLy` · `luuGhiNhan` · `luuKhai` / `luuSuaKhai`): mỗi em một giao dịch, luật tính lại trong
  * giao dịch, giữ khoá chống gửi trùng (khoá lô + `:{em}`) và `bacDaThay`; lỗi em nào báo riêng em đó, em khác vẫn lưu.

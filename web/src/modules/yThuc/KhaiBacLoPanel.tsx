@@ -120,6 +120,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     } finally {
       setBusy(false);
       if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoiYThucCua({ classId }); if (okMoi.some((x) => x.guiDuyet)) invalidate('/yeu-cau'); reload(); }
+      if (okMoi.length === ids.length) lf.datLai();   // lưu hết → bỏ "Còn n ô cần sửa" của lần bấm trước (ô Bậc mới đã trống đúng nghĩa)
     }
     return okMoi.length === ids.length;
   };
