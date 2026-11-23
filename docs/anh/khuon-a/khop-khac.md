@@ -71,7 +71,7 @@ Không dòng nào xuống dòng ở ô lớp / ai, không tràn ngang trang. Chi
 ## 4. [XM] chờ PTA Plan quyết
 
 - **[XM1] Nhóm = động từ việc — làm ở mức hiển thị.** Mục gộp (Mô tả Case · Phương án · Kết quả PA · Lộ trình · Vi phạm) tách thành Mô tả Case · Xác nhận Case · Thêm PA · Xác nhận PA · Ghi Mini Test · Ghi kết quả PA · Chốt lộ trình · Xét lại lộ trình · Xử lý vi phạm · Đã thực hiện · Khai cấp bậc (`tachNhom` trong `DanhSachViec.tsx`). Số tab / badge / `tongQuan.ts` không đổi; số ở đầu nhóm con đếm lại từ dòng (cùng luật `dem`). Khoá gập / mở = khoá nhóm con (nhóm "Mô tả Case" giữ khoá cũ `mo-ta`; nhóm Phương án / Lộ trình / Vi phạm cũ mất trạng thái gập đã nhớ, về mặc định mở).
-- **[XM2] Nút còn lại trên dòng.** Chỉ **Bỏ qua** và **Xuất lớp** (không có chỗ trong panel): giữ hàng nút nhỏ dưới dòng, chỉ dòng có nút. Đề xuất: Bỏ qua → ⋯ đầu panel (panel-gon); Xuất lớp → bấm dòng tải luôn hoặc nút trong trang lớp.
+- **[XM2] ĐÃ XỬ LÝ (24/11 đêm).** Hàng nút dưới dòng đã bỏ hẳn. **Bỏ qua** → nút đầu panel (`MenuDong` chỉ một mục nên vẽ thành nút chữ "Bỏ qua việc này" cạnh ✕, đúng luật S4-GD); **Xuất lớp** → bấm dòng mở tab Báo cáo PH của lớp (đã có Xuất Excel / PDF lớp ở đó). Ngữ cảnh `DauViecCongViec.ghim` mới ở `KhungPanel.tsx` — **xung đột với #2072 (panel 720) ở KhungPanel.tsx: PR merge sau phải gộp main**.
 - **[XM7] Bổ sung hồ sơ có lớp.** Việc `bo_sung_ho_so` là MỘT dòng gộp theo người giữ (`viecTvv.ts`): máy chủ không trả lớp / tên em / `con`, chỉ `emIds` + `reason` ("Email 1 · Target 1"). Web hiện tên việc chiếm ô lớp + ô em (không ô trống) và chi tiết = thiếu gì. Muốn "lớp · em · Thiếu Target" và mở ra từng em có lớp thì cần máy chủ thêm `con` từng em (lớp, tên, thiếu gì) — PR riêng, đụng đếm việc.
 - **[XM3] Panel.** Khung panel 720 (`KhungPanel`, session panel-gon) chưa vào `main` lúc chụp: ảnh `gv-1440-panel` còn panel 58 % che mép phải danh sách; danh sách đã đúng min(680, 100vw − 784) và không co. Chụp lại khi panel-gon merge.
 - **[XM4] "PA đang chạy", "Đã bỏ qua", "Yêu cầu của tôi", "Lớp của tôi"** không có trong khung → giữ nguyên dáng cũ, dưới danh sách. Muốn đồng bộ thì PR sau.
@@ -102,3 +102,7 @@ Là dải tab (`HangTab`), không thuộc danh sách việc — PTA Plan quyết
 | GV / TVV (danh sách 956, có khối phải) | 115–219 (giữ 4·5·4 như mockup) | 118–156 |
 
 Cách làm: trang rộng ≥ 1100 px (vai không có "Lớp của tôi") ô lớp và ô ai theo nội dung (`max-content`), ô chi tiết ăn phần dư; dưới 1100 px giữ 4·5·4 như mockup. Phần dư chuyển sang giữa ô chi tiết và hạn (chữ chi tiết sát trái, hạn sát phải) — không còn khoảng trống giữa lớp / ai / chi tiết. Lệch cột vẫn 0 px ở 16 trang.
+
+## 9. Thử "Bỏ qua việc này" ở đầu panel (ảnh `gv-1440-panel-bo-qua.png`)
+
+Demo không có việc `boQuaDuoc` thật (chỉ sinh khi Quản lý có PA chạy chưa có mốc MT / ngày thi) và dựng được bằng dữ liệu cần sửa seed, nên thử bằng Playwright chặn `GET /api/my-work` (gắn `boQuaDuoc: true` cho việc "Xác nhận Case · Phan Khánh Linh") và `POST /api/my-work/bo-qua` (trả ok) — KHÔNG đổi DB / seed. Kết quả: mở dòng → đầu panel có nút "Bỏ qua việc này" → bấm: gửi `{key:"cause:56", boQua:true}`, panel đóng, dòng biến khỏi danh sách, toast "Đã bỏ qua: Xác nhận Case · Listening · Phan Khánh Linh" có nút Hoàn tác. Phần máy chủ (`/my-work/bo-qua`, Hoàn tác = `boQua:false`) không đổi so với trước, đã có phép kiểm riêng. Chưa thử với việc `moc:` thật.
