@@ -820,7 +820,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const dai = daiHocVien(p, studentId);
   /*
    * PR-VAI-b (Q5): bảng kỹ năng dựng MỘT lần ở đây, dùng chung cho việc của em (thanh việc), câu tóm tắt và bốn ô — không hai nguồn
-   * "việc gấp nhất". Web vẫn gọi `/skill-board` để vẽ bảng (cùng hàm, cùng dữ liệu).
+   * "việc gấp nhất". R3-T1 (rà 24/11): trả kèm (`bangKyNang`) — web vẽ bảng từ đây, không GET `/skill-board` riêng (+~28 câu mỗi lần mở / sau mỗi việc).
    */
   /* Luôn dựng (kể cả chưa có lộ trình) — `skillSupportBoard` kiểm quyền theo lớp đang học thật (`activeClassOf`, K2-6e): GV chỉ dạy lớp cũ bị chặn cả hồ sơ. */
   const board = skillSupportBoard(p, studentId, selected?.id ?? null) as { rows: any[]; chuongTrinh: string | null };
@@ -888,6 +888,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   });
 
   return {
+    bangKyNang: board,
     id: s.id, studentCode: s.student_code, fullName: s.full_name, dob: s.dob, email: s.email ?? null,
     status: s.status, finishedAt: s.finished_at, archivedAt: s.archived_at,
     consultantName: s.consultant_name, note: s.note,

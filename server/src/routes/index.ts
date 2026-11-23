@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -1254,17 +1254,28 @@ const PHAN_HO_SO_LOP: Record<string, (p: Principal, classId: number) => unknown>
     ownerUserId: null, noOwner: false, cycleId: null,
   }),
 };
+/**
+ * R3-T3 (rà 24/11): `tuy=1` — trang gửi bó phần 2 CÙNG LÚC phần 1 (trước chờ `overview` về để biết phần nào áp dụng). Phần không áp dụng trả `{ status: 204 }`
+ * (web không gọi lẻ lại): việc của tôi / Case cả lớp khi lớp đã kết thúc (tab mặc định Tổng kết), Case cả lớp ở lớp thường, phần người xem không có quyền (403). Lỗi khác vẫn trả như GET lẻ.
+ */
+const boQuaPhanHoSo = (k: string, id: number) => {
+  const lop = lopDayDu().get(id);
+  return (k === 'viecCuaToi' || k === 'cases') && lop?.status === 'finished' || (k === 'cases' && !!lop && !lop.is_fast_track);
+};
 api.get('/classes/:id/ho-so', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req), id = pInt(req, 'id');
+  const tuy = qStr(req, 'tuy') === '1';
   const phan = (qStr(req, 'phan') ?? '').split(',').filter(Boolean);
   if (!phan.length || phan.some((k) => !(k in PHAN_HO_SO_LOP))) throw badRequest('Phần hồ sơ lớp không hợp lệ.');
   lenhSvc.quetLenhDenHan();
   if (phan.includes('diemTheoLuot')) regularSvc.quetCheckpoint(id);
   const out: Record<string, unknown> = {};
   for (const k of new Set(phan)) {
+    if (tuy && boQuaPhanHoSo(k, id)) { out[k] = { status: 204 }; continue; }
     try { out[k] = { status: 200, data: PHAN_HO_SO_LOP[k](p, id) }; } catch (e) {
       if (!(e instanceof HttpError)) throw e;
+      if (tuy && e.status === 403) { out[k] = { status: 204 }; continue; }
       out[k] = { status: e.status, error: e.message, khoa: e.khoa, bien: e.bien, details: e.details ?? undefined };
     }
   }
