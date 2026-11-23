@@ -575,7 +575,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('BADGE-QUA-HAN · hạn đã qua = MỘT badge đỏ chung (`BadgeHan`); không chữ đỏ / chip tự dựng cạnh "quá hạn n ngày" (chủ SP 15/11)', () => {
     const nh = doc('web/src/ui/Nhan.tsx');
-    assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<DauQuaHan \/>\}\{ngayHien\(han\)\}/.test(nh), 'QuaHan vẽ qua BadgeHan; ChipHan (24/11) chỉ ngày tô màu, không badge');
+    assert(/export function BadgeHan/.test(nh) && /addDaysIso\(homNay, -ngay\)/.test(nh) && /<DauQuaHan \/>\}\{ngayHien\(han\)\}/.test(nh), 'QuaHan + ChipHan (24/11) chỉ ngày tô màu (QuaHan: hạn = hôm nay − n), không badge');
     assert(/if \(t === 'qua-han'\) return <BadgeHan muc="qua"/.test(doc('web/src/ui/ui.tsx')), 'NhanTrangThai quá hạn = BadgeHan');
     assert(/if \(tt === 'qua-han'\) return <BadgeHan/.test(nh) && /if \(tt === 'qua_han'\) return <BadgeHan/.test(doc('web/src/modules/yThuc/NhanViPham.tsx'))
       && /tong === 'qua'\s*\? `\$\{lopBadgeHan\('qua'\)\}/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), 'XM-1: quá hạn của Case / vi phạm / việc Ý thức = BadgeHan');
