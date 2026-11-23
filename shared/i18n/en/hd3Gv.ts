@@ -98,7 +98,7 @@ export const EN_HD3_GV = {
   'MT thi trong 4 tuần gần đây vẫn sinh Case nếu em dưới kỳ vọng.': 'Mocks from the last 4 weeks still create a Case if below expectation.',
   'Mọi em của dòng đã xác nhận hoặc bỏ việc.': 'Every student on the row is confirmed or dropped.',
   'Mọi em đủ phần của bạn.': 'Every student has your part.',
-  'Một em: chỉ Head sửa sau, bấm <b>Nhờ Head sửa</b>; nhiều em: <b>Hoàn tác</b> ở dải báo.': 'One student: only a Head edits later, click <b>Ask a Head</b>; several: <b>Undo</b> on the notice.',
+  'Sửa mọi lúc: bấm <b>Sửa cấp bậc</b>; nhiều em: <b>Hoàn tác</b> ở dải báo.': 'Edit any time: click <b>Edit level</b>; several: <b>Undo</b> on the notice.',
   'Mở dòng làm như thường; lưu xong mọi nơi hết báo quá hạn.': 'Open the row and work as usual; once saved, overdue clears everywhere.',
   'Người chấm chéo ghi nhận xét bài Speaking của em có Case: GV dạy Speaking của lớp xác nhận.': 'A cross-marker commented on the Speaking of a student with a Case: the class Speaking teacher confirms.',
   'Người hỏi nhận chuông.': 'The person who asked gets a bell.',

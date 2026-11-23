@@ -59,10 +59,11 @@ export async function runPrYtGonTests(t: YThucTestKit) {
     assert(hs.bac === 2 && hs.khai?.coTheSua === true, `bac ${hs.bac} coTheSua ${hs.khai?.coTheSua}`);
   }));
 
-  await checkAsync('GON-3 · có lần xử lý đã xong → không khai (giữ luật)', () => thu(() => {
+  /* N66 (chủ SP 24/11) thay "có lần xử lý → không khai": GVCN vẫn khai được (bậc đã tới). */
+  await checkAsync('GON-3 → N66 · có lần xử lý đã xong → GVCN vẫn khai được', () => thu(() => {
     const sid = moiEm(); const v = vp(sid);
     xu.xacNhanXuLy(gvcn, sid, { violationIds: [v], performedOn: TODAY, performerName: 'Cô Hà', note: 'Đã gặp em và gửi Report 1' });
-    assert(xu.yThucHocVien(gvcn, sid).coTheKhai === false, 'đã có lần xử lý');
+    assert(xu.yThucHocVien(gvcn, sid).coTheKhai === true, 'đã có lần xử lý vẫn khai');
   }));
 
   const bp: any = await import('../yThuc/baoPhTvv.ts');

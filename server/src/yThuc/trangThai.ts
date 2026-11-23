@@ -17,6 +17,8 @@ import {
 export type XuLyEm = {
   id: number; kind: string; customName: string | null; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null;
   cycleId: number | null; createdAt: string; violationIds: number[]; hanDuyet: string | null;
+  /** N66: mốc ghi "xong" (`confirmed_at`, thiếu thì `created_at`) — so với mốc khai / sửa cấp bậc. */
+  moc: string | null;
 };
 export type ViPhamEm = { id: number; category: string; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null; cycleId: number | null; classId: number | null;
   /** LG-12 */ yeuCau: boolean; khongXuLy: string | null; /** N50 (5): QL "Không xử lý" vượt luật 3 / 2 tuần */ vuotLuat?: boolean };
@@ -27,7 +29,8 @@ export type EmYThuc = {
   cycleId: number | null; chuoi: number[]; nhanChuoi: string;
   bac: number; keTiep: ReturnType<typeof bacKeTiep>;
   /** `cycleId` = lộ trình dòng khai trỏ tới (sửa / hoàn tác ghi đúng dòng này — N36: chuỗi nối dài thì dòng khai có thể không còn ở đầu chuỗi). */
-  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean; cycleId: number } | null;
+  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean; cycleId: number;
+    /** N66: mốc lưu gần nhất (sửa, không thì khai) — lần xử lý xong sau mốc này mới đẩy bậc. */ moc: string } | null;
   /** Em đã từng khai ở chuỗi nào chưa (Q8: không hỏi khai lại). */
   tungKhai: boolean;
   /** Số lần xử lý ĐÃ XONG (`done`) trong chuỗi hiện tại — khai bậc chỉ khi 0 (Q7, H5; rà 11/11 G3-3: đề xuất chờ / bị từ chối không tính). */
@@ -94,19 +97,19 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
    * Vi phạm (`loai` 0) và lần xử lý + liên kết (`loai` 1) chung MỘT câu UNION ALL — mỗi câu trên Turso ~20–50 ms. Cột chung đặt tên
    * trung tính; ý nghĩa theo `loai` ghi ngay dưới.
    *   loai 0: a = category · b = occurred_on · c = reported_on · d = ghi_nhan_luc · e = class_id · f = yeu_cau_xu_ly · g = khong_xu_ly_luc (LG-12) · h = khong_xu_ly_vuot (N50 câu 5)
-   *   loai 1: a = kind · b = status · c = performed_on · d = quyet_luc · e = violation_id · f = custom_name · g = created_at · h = hạn thẻ chờ
+   *   loai 1: a = kind · b = status · c = performed_on · d = quyet_luc · e = violation_id · f = custom_name · g = created_at · h = hạn thẻ chờ · i = confirmed_at (N66)
    */
   const vp = new Map<number, ViPhamEm[]>();
   const xl = new Map<number, Map<number, XuLyEm>>();
   for (const r of conn.prepare(
     /* VIEC-NHO 2: MỌI cột vế đầu có AS (cả cột trần `id`) — Turso đặt tên cột khác libsql file (như `scoreHistoryOf` #256; DTL1). */
     `SELECT 0 AS loai, id AS id, student_id AS student_id, cycle_id AS cycle_id,
-            category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, yeu_cau_xu_ly AS f, khong_xu_ly_luc AS g, khong_xu_ly_vuot AS h
+            category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, yeu_cau_xu_ly AS f, khong_xu_ly_luc AS g, khong_xu_ly_vuot AS h, NULL AS i
        FROM violations WHERE student_id IN (${ph}) AND chi_nhac = 0   /* TINH-HINH: nhắc nhở ngoài luật, bậc, việc */
      UNION ALL
      SELECT 1, m.id, m.student_id, m.cycle_id, m.kind, m.status, m.performed_on, m.quyet_luc, mv.violation_id, m.custom_name, m.created_at,
             (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'y_thuc' AND y.doi_tuong_loai = 'discipline_measure'
-                AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho')
+                AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho'), m.confirmed_at
        FROM discipline_measures m LEFT JOIN measure_violations mv ON mv.measure_id = m.id
       WHERE m.student_id IN (${ph}) AND m.status != 'nhap'
      ORDER BY 1, 6, 2`).all(json, json) as any[]) {
@@ -119,7 +122,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     let m = theoEm.get(r.id);
     if (!m) {
       m = { id: r.id, kind: r.a, customName: r.f ?? null, status: r.b, performedOn: r.c ?? null,
-        quyetLuc: r.d ?? null, cycleId: r.cycle_id ?? null, createdAt: r.g, violationIds: [], hanDuyet: r.h ?? null };
+        quyetLuc: r.d ?? null, cycleId: r.cycle_id ?? null, createdAt: r.g, violationIds: [], hanDuyet: r.h ?? null, moc: r.i ?? r.g ?? null };
       theoEm.set(r.id, m);
     }
     if (r.e != null) m.violationIds.push(r.e);
@@ -128,15 +131,15 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const lt = new Map<number, { id: number; seq: number; route: string | null; status: string; resetBac: boolean }[]>();
   const kb = new Map<number, any[]>();
   for (const r of conn.prepare(
-    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
+    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, k.sua_luc, u.full_name AS boi
        FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
-       LEFT JOIN users u ON u.id = k.khai_boi
+       LEFT JOIN users u ON u.id = COALESCE(k.sua_boi, k.khai_boi)   /* PTA rà #2016: người + ngày = lần sửa mới nhất */
       WHERE lc.student_id IN (${ph})`).all(json) as any[]) {
     const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
     a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status, resetBac: !!r.reset_bac_y_thuc });
     if (r.bac != null) {
       const k = kb.get(r.student_id) ?? []; kb.set(r.student_id, k);
-      k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, boi: r.boi });
+      k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, sua_luc: r.sua_luc, boi: r.boi });
     }
   }
   /* Ghi danh hiện tại (đang học hoặc tạm dừng) mới nhất + GVCN đang hiệu lực của lớp đó + trạng thái em + ngày Quay lại gần nhất. */
@@ -184,7 +187,8 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       .sort((a, b) => chuoi.indexOf(b.chuoi_cycle_id) - chuoi.indexOf(a.chuoi_cycle_id))[0] ?? null;
     /* Rà 11/11 G3-3: chỉ lần `done` là lần xử lý — đề xuất chờ duyệt / bị từ chối / đã duyệt chưa làm không khoá Khai cấp bậc. */
     const xongChuoi = xlChuoi.filter((m) => m.status === 'done');
-    const bac = bacHienTai(xongChuoi, khaiRow?.bac ?? null);
+    const mocKhai: string | null = khaiRow ? khaiRow.sua_luc ?? khaiRow.khai_luc : null;
+    const bac = bacHienTai(xongChuoi, khaiRow?.bac ?? null, mocKhai);
 
     /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
     const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), hanTai('xu_ly_vi_pham', m.quyetLuc.slice(0, 10)).ngay) : null);
@@ -216,9 +220,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       nhanChuoi: !route ? 'lớp thường' : chuoi.length > 1 ? `lớp thường → ${route}` : route,
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
-        bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
+        bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: mocKhai!,
         /* N50 (8) (chủ SP 16/11, A1-21): GVCN tự sửa bậc đã khai mọi lúc (lịch sử ở nhật ký) — thay "chỉ QL sửa sau khi có lần xử lý trên web". */
-        coTheSua: true, cycleId: khaiRow.chuoi_cycle_id,
+        coTheSua: true, cycleId: khaiRow.chuoi_cycle_id, moc: mocKhai!,
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
       soXuLyChuoi: xongChuoi.length,

@@ -218,7 +218,7 @@ export const HD_GV: HuongDan = {
       khiCo: 'Em đã học ở trung tâm trước khi có web, hồ sơ mới tạo: GVCN xác nhận cấp bậc vi phạm cũ.',
       buoc: ['Chọn <b>Bậc đã xử lý</b> và tháng.', 'Bấm <b>Xác nhận</b>; nhiều em: chọn em, đặt bậc, lưu một lần.'],
       xong: 'Đã xác nhận bậc; quá {hang:khai_bac} từ khi tạo hồ sơ thì việc tự hết.',
-      sai: 'Một em: chỉ Head sửa sau, bấm <b>Nhờ Head sửa</b>; nhiều em: <b>Hoàn tác</b> ở dải báo.',
+      sai: 'Sửa mọi lúc: bấm <b>Sửa cấp bậc</b>; nhiều em: <b>Hoàn tác</b> ở dải báo.',
       sau: 'Thang vi phạm tính tiếp từ bậc đã xác nhận.',
       tuKhac: ['cấp bậc', 'hv cũ', 'khai bậc'],
     },

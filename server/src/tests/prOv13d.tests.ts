@@ -107,7 +107,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(get('SELECT ghi_nhan_luc FROM violations WHERE id = ?', vHuy[0]).ghi_nhan_luc === null, 'Hoàn tác');
   }));
 
-  await checkAsync('OV13d-5 · Xác nhận cấp bậc lô: bậc 0 "Chưa có xử lý vi phạm" lưu được và em thoát việc 14 ngày; em đã có xử lý trên web chưa khai thì khoá với GVCN; N50 (8): bậc đã khai GVCN sửa được', () => thu(() => {
+  await checkAsync('OV13d-5 · Xác nhận cấp bậc lô: bậc 0 "Chưa có xử lý vi phạm" lưu được và em thoát việc 14 ngày; N66: em đã có xử lý trên web chưa khai GVCN khai được; N50 (8): bậc đã khai GVCN sửa được', () => thu(() => {
     const moi = moiEm(), cu = moiEm(), daXl = moiEm(), ql = moiEm();
     conn.prepare('UPDATE students SET created_at = ? WHERE id IN (?, ?, ?, ?)').run(`${addDays(TODAY, -2)}T08:00:00.000Z`, moi, cu, daXl, ql);
     const viec = () => (mywork.myWork(gvcn).items as any[]).find((i) => i.group === 'khai_bac' && i.classId === cid);
@@ -120,11 +120,12 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     const bang = lo.loYThucLop(gvcn, cid);
     const dong = (sid: number) => bang.em.find((x: any) => x.studentId === sid);
     assert(dong(moi).capBac.duoc && dong(moi).capBac.khai === null, JSON.stringify(dong(moi)));
-    assert(!dong(daXl).capBac.duoc && dong(ql).capBac.duoc, 'GVCN: em đã xử lý trên web (chưa khai) khoá; em đã khai mở (N50 câu 8)');
+    assert(dong(daXl).capBac.duoc && dong(ql).capBac.duoc, 'N66: GVCN khai được em đã xử lý trên web (chưa khai); em đã khai mở (N50 câu 8)');
     assert(lo.loYThucLop(P.mbManager, cid).em.find((x: any) => x.studentId === ql).capBac.duoc, 'QL thấy mở (em đã khai)');
 
     const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 0 }, { studentId: cu, bac: 3 }, { studentId: daXl, bac: 1 }] });
-    assert(kq(r, moi).ok && kq(r, cu).ok && !kq(r, daXl).ok, JSON.stringify(r));
+    assert(kq(r, moi).ok && kq(r, cu).ok && kq(r, daXl).ok, JSON.stringify(r));
+    assert(xu.yThucHocVien(gvcn, daXl).bac === 1 && xu.yThucHocVien(gvcn, daXl).keTiep.nhan === 'Report 2', 'N66: khai mới hơn lần xử lý = bậc đã tới');
     assert(get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', moi).bac === 0 && xu.yThucHocVien(gvcn, cu).keTiep.nhan === 'Report 4 + Meeting CX/GĐCN', 'bậc 0 / bậc 3 lưu');
     assert(!viec()?.emIds?.includes(moi) && !viec()?.emIds?.includes(cu), 'sau: hai em thoát việc 14 ngày');
     assert(xu.yThucHocVien(gvcn, moi).keTiep.nhan === 'Report 1', 'bậc 0 → lần kế Report 1');
@@ -138,16 +139,16 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] })) === 400 || !kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] }), moi).ok, 'bậc ngoài 0–6 bị từ chối');
   }));
 
-  await checkAsync('KHAI-BAC-LO · lô cấp bậc: tháng + ghi chú chung (rỗng hợp lệ), em khoá báo riêng em khác vẫn lưu, Hoàn tác cả lô (về chưa khai / bậc cũ), bậc đã đổi thì không đè; khai từng em ghi chú rỗng hợp lệ', () => thu(() => {
+  await checkAsync('KHAI-BAC-LO · lô cấp bậc: tháng + ghi chú chung (rỗng hợp lệ), N66 em đã xử lý trên web vẫn lưu, Hoàn tác cả lô (về chưa khai / bậc cũ), bậc đã đổi thì không đè; khai từng em ghi chú rỗng hợp lệ', () => thu(() => {
     const a = moiEm(), b = moiEm(), khoa = moiEm(), c = moiEm();
     const bacDb = (sid: number) => get('SELECT bac, thang, ghi_chu FROM y_thuc_khai_bac WHERE student_id = ?', sid);
     xu.khaiBac(gvcn, b, { bac: 1, thang: '2026-08', ghiChu: '' });   // khai từng em: ghi chú tuỳ chọn
     assert(bacDb(b).bac === 1 && bacDb(b).ghi_chu === '', `khai một em ghi chú rỗng: ${JSON.stringify(bacDb(b))}`);
-    xu.xacNhanXuLy(gvcn, khoa, { violationIds: nVp(khoa, 1), performedOn: TODAY, note: MO_TA });   // có xử lý trên web → GVCN khoá
+    xu.xacNhanXuLy(gvcn, khoa, { violationIds: nVp(khoa, 1), performedOn: TODAY, note: MO_TA });   // N66: có xử lý trên web vẫn khai được
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }], thang: '2026-13' })) === 400, 'tháng sai → cả lô 400');
 
     const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: a, bac: 3 }, { studentId: b, bac: 2 }, { studentId: khoa, bac: 1 }], thang: '2026-09', ghiChu: '' });
-    assert(kq(r, a).ok && kq(r, b).ok && !kq(r, khoa).ok, `em khoá báo riêng: ${JSON.stringify(r)}`);
+    assert(kq(r, a).ok && kq(r, b).ok && kq(r, khoa).ok, `N66: em đã xử lý trên web cũng lưu: ${JSON.stringify(r)}`);
     assert(kq(r, a).truoc === null && kq(r, a).bac === 3 && kq(r, b).truoc.bac === 1 && kq(r, b).bac === 2, `trả bậc trước / bậc vừa lưu: ${JSON.stringify(r)}`);
     assert(bacDb(a).thang === '2026-09' && /Xác nhận theo lớp/.test(bacDb(a).ghi_chu), `khai mới: tháng chung, ghi chú tự điền: ${JSON.stringify(bacDb(a))}`);
     assert(bacDb(b).bac === 2 && bacDb(b).thang === '2026-09' && bacDb(b).ghi_chu === '', `sửa: tháng chung, giữ ghi chú cũ: ${JSON.stringify(bacDb(b))}`);
