@@ -292,7 +292,7 @@ export const CAN_XU_LY: readonly {
   /* OV-12h: meeting CX / GĐCN quá 5 ngày chưa xác nhận — việc GVCN trễ, cùng tập với dòng Phối hợp SOS quá hạn ở Công việc. */
   { metricId: 'phoi-hop-qua-han', nhan: t('lượt có Meeting CX/GĐCN (sau Mock) quá hạn xác nhận'), nut: 'Xem', cuaNguoiXem: false, quaHan: true },
   /* PR-VAI-a Q8: bốn việc "của Bạn" — mỗi dòng một chỉ số gọi đúng hàm màn khác đang dùng. */
-  { metricId: 'van-hanh-can-quyet-dinh', nhan: t('việc Vận hành cần quyết định'), nut: t('Mở Vận hành'), cuaNguoiXem: true },
+  { metricId: 'van-hanh-can-quyet-dinh', nhan: t('việc Vận hành cần quyết định'), nut: t('Mở Bảng giao việc'), cuaNguoiXem: true },
   /* PR-LCb: MỘT dòng "lớp cần Chốt lộ trình" (thay "em chưa có quyết định chuyển lớp" + "lớp cần Chốt lên FT") — cùng hàm với việc "Chốt lộ trình · lớp". */
   { metricId: 'lop-chua-chot-len-ft', nhan: t('lớp cần Chốt lộ trình'), nut: t('Cuối khoá ›'), cuaNguoiXem: true },
   { metricId: 'lop-thieu-gv-mon', nhan: t('lớp thiếu GV môn'), nut: t('Sửa phân công'), cuaNguoiXem: true },
