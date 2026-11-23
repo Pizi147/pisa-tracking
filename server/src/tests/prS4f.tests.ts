@@ -285,7 +285,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
     const dau = sp.slice(sp.indexOf('function DauLop'), sp.indexOf('function DaiLop'));
     assert(!dau.includes('OViec') && dau.includes('<NhanLop'), 'HV-LOP-GON: hàng lớp không có ô Việc, còn chip tình trạng');
     assert(docWeb('ui/TheDong.tsx').includes('grid-cols-[5.5rem_minmax(0,1fr)] items-baseline'), 'TheDong items-baseline');
-    assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-right tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');
+    assert(docWeb('modules/classes/ClassIssueBoard.tsx').includes('td text-center tabular-nums"><TyLe'), 'Tỷ lệ tabular-nums');
   });
 
   check('S4F (12) · Xuất: sheet "Pre FOU · …"; dòng xếp theo TÊN rồi họ; vượt trần cỡ → 400 "Thu hẹp phạm vi"; xem trước không cắt chữ', () => {

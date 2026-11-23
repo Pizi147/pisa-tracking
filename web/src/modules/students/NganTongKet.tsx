@@ -99,7 +99,7 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
   const cuoi = ft ? luotDaiDien(luot.map((l) => ({ ...l, huy: l.trangThai === 'cancelled' }))) : null;
   const dc = cuoi && !cuoi.huy ? diem5(cuoi) : null;
   const coDauVao = !!dauVao && Object.values(dauVao).some((v) => v !== null);
-  const tdSo = 'whitespace-nowrap px-2 text-right tabular-nums';
+  const tdSo = 'whitespace-nowrap px-2 text-center tabular-nums';
   return (
     <>
       {/* ≥ sm: bảng, cuộn ngang trong khung (không cuộn trang) */}
@@ -108,7 +108,7 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
           <thead>
             <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
               <th className="px-3 py-2 font-semibold">{ft ? 'MT' : t('Bài')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tuần')}</th>
-              {ft ? ['L', 'R', 'W1', 'W2', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-2 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
+              {ft ? ['L', 'R', 'W1', 'W2', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-2 py-2 text-center font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
               <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th>
             </tr>
           </thead>
@@ -131,8 +131,8 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
                   {ft ? (
                     <>
                       {(['l', 'r', 'w1', 'w2', 's'] as const).map((k) => <td key={k} className={tdSo}>{b1(diem5(l)[k])}</td>)}
-                      <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(l.overall)}</td>
-                      <td className="px-3 text-right tabular-nums">{b1(l.kyVong)}</td>
+                      <td className="px-3 text-center font-semibold tabular-nums text-slate-100">{b1(l.overall)}</td>
+                      <td className="px-3 text-center tabular-nums">{b1(l.kyVong)}</td>
                     </>
                   ) : (
                     <td className="px-3">{huy ? <span className="text-slate-500">—</span> : l.kyNang.map((k) => (
