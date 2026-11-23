@@ -10,6 +10,7 @@ import { db, theoLo, tx } from '../db.ts';
 import { badRequest, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { COT_TUTOR_TK, chuanTutor, tutorCuaGv } from '../cases/cases.ts';
 import { CHU_TOI_THIEU, KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
@@ -252,7 +253,7 @@ export function panelTutor(p: Principal, id: number, k: Khoang, ids?: number[]) 
       WHERE n.tutor_id = ? ORDER BY n.luc DESC, n.id DESC`,
   ).all(id) as any[]).map((n) => ({
     id: n.id, kl: n.ket_luan as KetLuan, noiDung: n.noi_dung, luc: n.luc, suaLuc: n.sua_luc ?? null, nguoi: n.full_name ?? '',
-    coSua: sua && n.nguoi_id === p.userId,                      // LUAT-34: sửa mọi lúc
+    coSua: suaDuocNhanXet(p, n, r),                             // LUAT-34: sửa mọi lúc · R2 C9: + Head tutor / Head chi nhánh nơi dạy
     coXoa: sua && n.nguoi_id === p.userId && trong24h(n.luc),   // xoá trong 24 giờ
   }));
   return {
@@ -337,23 +338,28 @@ export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; 
   }
 }
 
-/** Xoá tutor CHỈ khi chưa có buổi nào trỏ tới (có buổi → dùng kết luận "Ngừng hợp tác"); nhận xét của tutor xoá theo. */
-export function xoaTutor(p: Principal, id: number): { ok: true } {
+/**
+ * Xoá tutor CHỈ khi chưa có buổi nào trỏ tới (có buổi → dùng kết luận "Ngừng hợp tác"); nhận xét của tutor xoá theo.
+ * R2 C3 (rà 24/11): xoá mềm — tutor + nhận xét vào Thùng rác (N28, Khôi phục 30 ngày), web có Hoàn tác.
+ */
+export function xoaTutor(p: Principal, id: number): { ok: true; thungRacId: number } {
   canSua(p);
   const conn = db();
   const t = conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id FROM tutors WHERE id = ?').get(id) as any;
   if (!t) throw notFound('Không tìm thấy tutor.');
   if (t.user_id != null) throw badRequest('Dòng này là tài khoản giáo viên — không xoá ở trang Tutor.');
-  tx(() => {
+  const chup = new BoChup(conn);
+  return tx(() => {
     /* Kiểm trong giao dịch: GV vừa ghi buổi trỏ tutor này thì không xoá. */
     if (conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id)) {
       throw badRequest('Tutor đã có buổi dạy — không xoá được. Dùng kết luận "Ngừng hợp tác".');
     }
-    conn.prepare('DELETE FROM tutor_nhan_xet WHERE tutor_id = ?').run(id);
-    conn.prepare('DELETE FROM tutors WHERE id = ?').run(id);
-    writeAudit({ actorUserId: p.userId, action: 'tutor.xoa', entityType: 'tutor', entityId: id, entityLabel: t.ten, before: t });
+    chup.chay('DELETE FROM tutor_nhan_xet WHERE tutor_id = ?', id);
+    chup.chay('DELETE FROM tutors WHERE id = ?', id);
+    const thungRacId = ghiThungRac(conn, { loai: 'tutor', doiTuongId: id, nhan: `Tutor ${t.ten}`, branchId: t.noi_day_branch_id ?? null, nguoi: p.userId, chup });
+    writeAudit({ actorUserId: p.userId, action: 'tutor.xoa', entityType: 'tutor', entityId: id, entityLabel: t.ten, before: t, after: { thungRacId } });
+    return { ok: true as const, thungRacId };
   });
-  return { ok: true };
 }
 
 // ---------------------------------------------------------------- Nhận xét
@@ -381,15 +387,24 @@ export function ghiNhanXet(p: Principal, tutorId: number, v: unknown): { id: num
 }
 
 /**
- * Sửa / xoá: chỉ người ghi (mục 3.1). LUAT-34 (L3, H28): SỬA mọi lúc (nhật ký trước → sau `tutor.nhan_xet_sua`); XOÁ giữ trong 24 giờ kể từ `luc`.
- * Sửa không dời `luc` (mốc nhóm chú ý).
+ * Sửa / xoá (mục 3.1). LUAT-34 (L3, H28): SỬA mọi lúc (nhật ký trước → sau `tutor.nhan_xet_sua`); XOÁ giữ trong 24 giờ kể từ `luc`.
+ * Sửa không dời `luc` (mốc nhóm chú ý). XOÁ: chỉ người ghi. R2 C9 (rà 24/11 — người ghi nghỉ thì kẹt): SỬA thêm người sửa được danh bạ dòng tutor đó
+ * (`suaDuocTutor`: Head tutor / Quản trị mọi tutor, Head chi nhánh nơi dạy) — nhật ký giữ người sửa + trước → sau.
  */
+export function suaDuocNhanXet(p: Principal, n: { nguoi_id: number | null }, tutor: any): boolean {
+  return (coSua(p) && n.nguoi_id === p.userId) || suaDuocTutor(quyenDanhBa(p), p, tutor);
+}
 function nhanXetSuaDuoc(p: Principal, id: number, xoa: boolean): any {
-  canSua(p);
   const n = db().prepare('SELECT id, tutor_id, ket_luan, noi_dung, nguoi_id, luc FROM tutor_nhan_xet WHERE id = ?').get(id) as any;
   if (!n) throw notFound('Không tìm thấy nhận xét.');
-  if (n.nguoi_id !== p.userId) throw forbidden('Chỉ người ghi sửa / xoá được nhận xét này.');
-  if (xoa && !trong24h(n.luc)) throw badRequest('Quá 24 giờ — không xoá được nữa. Sửa nhận xét thay vì xoá.');
+  if (xoa) {
+    canSua(p);
+    if (n.nguoi_id !== p.userId) throw forbidden('Chỉ người ghi xoá được nhận xét này.');
+    if (!trong24h(n.luc)) throw badRequest('Quá 24 giờ — không xoá được nữa. Sửa nhận xét thay vì xoá.');
+    return n;
+  }
+  const tutor = db().prepare('SELECT user_id, noi_day_branch_id, chi_online, created_by, updated_by FROM tutors WHERE id = ?').get(n.tutor_id);
+  if (!suaDuocNhanXet(p, n, tutor)) throw forbidden('Chỉ người ghi, Head tutor hoặc Head chi nhánh của tutor sửa được nhận xét này.');
   return n;
 }
 export function suaNhanXet(p: Principal, id: number, v: unknown): { ok: true } {
@@ -402,14 +417,20 @@ export function suaNhanXet(p: Principal, id: number, v: unknown): { ok: true } {
   });
   return { ok: true };
 }
-export function xoaNhanXet(p: Principal, id: number): { ok: true } {
+/** R2 C3: xoá mềm — nhận xét vào Thùng rác (Khôi phục / Hoàn tác như Case, PA). Luật 24 giờ (H28) giữ. */
+export function xoaNhanXet(p: Principal, id: number): { ok: true; thungRacId: number } {
   const cu = nhanXetSuaDuoc(p, id, true);
-  tx(() => {
-    db().prepare('DELETE FROM tutor_nhan_xet WHERE id = ?').run(id);
+  const conn = db();
+  const chup = new BoChup(conn);
+  return tx(() => {
+    chup.ghiGoc('tutors', cu.tutor_id);   // khôi phục so lại: tutor còn đúng (không bị xoá rồi id dùng lại)
+    chup.chay('DELETE FROM tutor_nhan_xet WHERE id = ?', id);
+    const ten = (conn.prepare('SELECT ten, noi_day_branch_id FROM tutors WHERE id = ?').get(cu.tutor_id) as any);
+    const thungRacId = ghiThungRac(conn, { loai: 'nhan_xet_tutor', doiTuongId: id, nhan: `Nhận xét tutor ${ten?.ten ?? ''}`.trim(), branchId: ten?.noi_day_branch_id ?? null, nguoi: p.userId, chup });
     writeAudit({ actorUserId: p.userId, action: 'tutor.nhan_xet_xoa', entityType: 'tutor_nhan_xet', entityId: id,
-      before: { tutorId: cu.tutor_id, ketLuan: cu.ket_luan, noiDung: cu.noi_dung, luc: cu.luc } });
+      before: { tutorId: cu.tutor_id, ketLuan: cu.ket_luan, noiDung: cu.noi_dung, luc: cu.luc }, after: { thungRacId } });
+    return { ok: true as const, thungRacId };
   });
-  return { ok: true };
 }
 
 // ---------------------------------------------------------------- Gộp tên gõ tay

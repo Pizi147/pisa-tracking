@@ -841,6 +841,17 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
   ).get(sid, sid) as any;
   if (!nguon) throw badRequest('Chỉ em lên FT từ lớp FOU/BE/ELE mới có Kỳ vọng.');
   const lopBeEle = nguon.class_id as number, ftClass = (nguon.ft_class ?? null) as number | null;
+  /* R2 C11 (rà 24/11): `dat: null` = BỎ kết luận (về "chưa kết luận" như trước lần đánh đầu) — Hoàn tác của Đạt / Không đạt. Case Kỳ vọng đã tạo giữ nguyên (GV tự xử lý). */
+  if (input.dat === null) {
+    return tx(() => {
+      const dong = conn.prepare("SELECT ky_vong_dat FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?").get(sid, lopBeEle) as any;
+      if (!dong || dong.ky_vong_dat === null) return { dat: null, nguyenNhan: null, mon: [], ghiChu: null, taoCaseTutor: 0, luuY: null };
+      conn.prepare("UPDATE lo_trinh_tiep_theo SET ky_vong_dat = NULL, ky_vong_nguyen_nhan = NULL, ky_vong_mon = NULL, ky_vong_ghi_chu = NULL, updated_by = ?, updated_at = ? WHERE student_id = ? AND class_id = ?")
+        .run(p.userId, nowIso(), sid, lopBeEle);
+      writeAudit({ actorUserId: p.userId, action: "cuoi_khoa.ket_luan_ft", entityType: "student", entityId: sid, after: { dat: null } });
+      return { dat: null, nguyenNhan: null, mon: [], ghiChu: null, taoCaseTutor: 0, luuY: null };
+    });
+  }
   const goiY = mt0TheoLop([{ sid, lop: lopBeEle, ct: nguon.programme_code }]).get(sid)?.goiY ?? null;
   /* N22 ② (P9b): MT0 quá tuần muộn nhất vẫn < 3 band → QL tự đánh (cùng luật trang Cuối khoá — `emKyVong.moTay`). */
   if (!goiY) {

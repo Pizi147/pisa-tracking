@@ -17,7 +17,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf } from './scoring.ts';
 import { moLaiLuotNeuHuy, refreshOutcome, saveScore } from './attempts.ts';
-import { chanCuoiTuan, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
+import { chanCuoiTuan, checkSkillWeekMove, ensureSkillRows, ghiSitStatus, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
 
 /*
  * LUAT-34 (Luật 3 — T20, T20b, T18): loại bản cất thứ ba 'huy_diem' — MỘT Ô vừa mất hết điểm (Huỷ điểm, xoá tay, Bỏ khỏi đợt; Thi lại thì không):
@@ -126,7 +126,11 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
       ...lich.map((l) => l.planned_period_id ? (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any)?.week_start : null)]);
     for (const l of lich) {
       const r = rows.find((x) => x.skill === l.skill);
-      if (r?.sit_status === 'cancelled') throw loi(400, '{x} của {nhan} đã huỷ — không khôi phục được.', { x: tenMon(null, l.skill), nhan });
+      /* R2 C10 (rà 24/11 — chặn mà không nói bước tiếp): kỹ năng đã huỷ phần thi → HỎI một câu rồi mở lại kỹ năng (về "chờ thi") trong cùng giao dịch, như lượt đã huỷ. */
+      if (r?.sit_status === 'cancelled') {
+        canXacNhan('{x} của {nhan} đã huỷ — mở lại {x} rồi khôi phục kết quả?', { x: tenMon(null, l.skill), nhan }, 'Mở lại và khôi phục');
+        ghiSitStatus(p, attemptId, r, 'scheduled', lyDo ?? 'Khôi phục kết quả');
+      }
       if (!l.planned_period_id) continue;
       const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
       const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });

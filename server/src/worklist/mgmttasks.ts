@@ -13,6 +13,7 @@ import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { CN_VH, HOAT_DONG_O, baoTheoDoi, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
@@ -727,6 +728,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
       canSuaTheoDoi: coQuyen || q.phuTrach || q.nguoiTao,
       canTep: coQuyen || q.phuTrach || q.nguoiTao,
       canDungLap: !!goc?.lap_kieu && coQuyenViec(p, goc),
+      /** R2 C8: Xoá (Thùng rác) — chưa có cập nhật; cùng hàm với `xoaViec`. */
+      canXoa: quyenXoaViec(p, t) && chanXoaViec(t) === null,
     },
   };
 }
@@ -1377,3 +1380,46 @@ export function taskOwnerAccess(taskId: number) {
   };
 }
 
+
+/**
+ * R2 C8 (rà 24/11 — giao nhầm việc chỉ "Dừng hẳn" + lý do, nằm bảng mãi): XOÁ việc vận hành CHƯA CÓ CẬP NHẬT (không `task_updates`, chưa bắt đầu, không việc con,
+ * không việc lặp sinh từ nó, không em có PA sinh từ việc) — xoá mềm vào Thùng rác (N28, Khôi phục 30 ngày); web: Hoàn tác ngay sau khi giao + nút Xoá ở panel.
+ * Quyền: người tạo (còn hiệu lực ở chi nhánh) · Head / Quản trị / CX của chi nhánh — kiểm TRƯỚC khi ghi. Đã có cập nhật → 400 nói bước tiếp (Dừng hẳn).
+ */
+export function quyenXoaViec(p: Principal, t: any): boolean {
+  return !!t && (coQuyenViec(p, t) || (t.created_by === p.userId && laHieuLuc(p.userId, t.branch_id ?? null)));
+}
+export const LY_DO_KHONG_XOA_VIEC = 'Việc đã có cập nhật — dùng Dừng hẳn.';
+/** Lý do không xoá được (null = xoá được) — panel ẩn nút Xoá theo cùng hàm. */
+export function chanXoaViec(t: any): string | null {
+  const conn = db();
+  if (t.progress !== 'not_started') return LY_DO_KHONG_XOA_VIEC;
+  const co = conn.prepare(`SELECT (SELECT COUNT(*) FROM task_updates WHERE task_id = ?1) AS cn, (SELECT COUNT(*) FROM tasks WHERE parent_task_id = ?1 OR lap_goc_id = ?1) AS con,
+      (SELECT COUNT(*) FROM task_students WHERE task_id = ?1 AND intervention_id IS NOT NULL) AS pa`).get(t.id) as any;
+  if (co.cn) return LY_DO_KHONG_XOA_VIEC;
+  if (co.con) return 'Việc có việc con / việc lặp — xoá việc con trước, hoặc Dừng hẳn.';
+  if (co.pa) return 'Việc đã sinh PA cho học viên — dùng Dừng hẳn.';
+  return null;
+}
+export function xoaViec(p: Principal, taskId: number): { ok: true; thungRacId: number } {
+  const t = docTask(taskId);
+  if (!quyenXoaViec(p, t)) throw forbidden('Chỉ người giao hoặc Head của chi nhánh xoá được việc này.');
+  const conn = db();
+  const chup = new BoChup(conn);
+  return tx(() => {
+    const chan = chanXoaViec(docTask(taskId));   // đọc lại trong giao dịch: người phụ trách vừa cập nhật thì không xoá
+    if (chan) throw badRequest(chan);
+    const v = `loai = 'van_hanh' AND ref_id = ?`;
+    for (const sql of [
+      'DELETE FROM task_followers WHERE task_id = ?', 'DELETE FROM task_history WHERE task_id = ?', 'DELETE FROM task_students WHERE task_id = ?',
+      'DELETE FROM task_case_links WHERE task_id = ?', 'DELETE FROM unit_report_task_links WHERE task_id = ?',
+      `DELETE FROM viec_theo_doi WHERE ${v}`, `DELETE FROM viec_giao_lan WHERE ${v}`, `DELETE FROM viec_mo_ta WHERE ${v}`,
+      `DELETE FROM viec_han_lan WHERE loai = 'van_hanh' AND viec_id = ?`, `DELETE FROM ghi_dao WHERE bang = 'tasks' AND doi_tuong_id = ?`,
+      `DELETE FROM notifications WHERE entity_type = 'task' AND entity_id = ?`, `DELETE FROM attachments WHERE owner_type = 'task' AND owner_id = ?`,
+      'DELETE FROM tasks WHERE id = ?',
+    ]) chup.chay(sql, taskId);
+    const thungRacId = ghiThungRac(conn, { loai: 'viec', doiTuongId: taskId, nhan: `Việc ${t.code} · ${t.title}`, branchId: t.branch_id ?? null, nguoi: p.userId, chup });
+    writeAudit({ actorUserId: p.userId, action: 'mgmt_task.xoa', entityType: 'task', entityId: taskId, entityLabel: t.title, before: { code: t.code, title: t.title }, after: { thungRacId } });
+    return { ok: true as const, thungRacId };
+  });
+}

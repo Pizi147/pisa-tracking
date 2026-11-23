@@ -2905,7 +2905,7 @@ api.delete('/s-expert/:id', requireAuth, wrap((req) => {
   return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
 }));
 /* Q-RL2a THÙNG RÁC: Quản trị › Đã xoá (đọc) · Khôi phục một mục (Hoàn tác 5 s của web gọi cùng đường) — quyền như thao tác gốc. */
-const LOAI_RAC = ['case', 'pa', 'ket_qua_pa', 'vi_pham', 'tep', 'hoc_vien', 'lop'] as const;
+const LOAI_RAC = ['case', 'pa', 'ket_qua_pa', 'vi_pham', 'tep', 'hoc_vien', 'lop', 'tutor', 'nhan_xet_tutor', 'viec'] as const;
 const loaiRac = (v: string | undefined) => ((LOAI_RAC as readonly string[]).includes(v ?? '') ? v as (typeof LOAI_RAC)[number] : null);
 api.get('/thung-rac', requireAuth, wrap((req) => khoiPhucRacSvc.danhSachRac(principalOf(req), loaiRac(qStr(req, 'loai')))));
 /* GD-16: số tab "Đã xoá" ở Lưu trữ khi mở trang (danh sách chỉ nạp khi bấm tab). `loai` lạ → bỏ qua (null). */
@@ -3316,6 +3316,11 @@ api.post('/mgmt-tasks/:id/update', requireAuth, wrap((req) => {
 
 api.patch('/mgmt-tasks/:id', requireAuth, wrap((req) =>
   mgmtSvc.editMgmtTask(principalOf(req), pInt(req, 'id'), req.body ?? {})));
+/** R2 C8: Xoá việc vận hành chưa có cập nhật → Thùng rác (Hoàn tác / Khôi phục); đã có cập nhật → 400 (dùng Dừng hẳn). */
+api.delete('/mgmt-tasks/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return mgmtSvc.xoaViec(principalOf(req), pInt(req, 'id'));
+}));
 
 // ============================================================ Quản trị (lối phụ)
 

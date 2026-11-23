@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { BoLocDoan, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -91,11 +92,12 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
   async function xoaNx(n: NhanXet) {
     setGui(true);
     try {
-      await api.del(`/tutors/nhan-xet/${n.id}`);
+      const r = await api.del<{ thungRacId?: number }>(`/tutors/nhan-xet/${n.id}`);
       setXoa(null);
       if (dangSua === n.id) boForm();
       invalidate('/tutors');
-      toast.push('ok', t('Đã xoá nhận xét'));
+      /* R2 C3: xoá mềm — Hoàn tác = khôi phục Thùng rác. */
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá nhận xét'), () => invalidate('/tutors'));
     } catch (e) {
       toast.push('error', e instanceof ApiError ? e.message : t('Không xoá được — thử lại.'));
     } finally { setGui(false); }

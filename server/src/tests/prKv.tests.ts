@@ -218,6 +218,21 @@ export async function runPrKvTests(t: YThucTestKit) {
     const e2 = maLoi(() => ck.ghiKetLuanFt(P.mbManager, G, { dat: true }));
     assert(e2?.status === 400 && /MT0/.test(e2.msg), JSON.stringify(e2));
   });
+  check('R2-C11 · `dat: null` bỏ kết luận Kỳ vọng (Đạt / Không đạt → chưa kết luận), có thể đánh lại; Case đã tạo giữ nguyên', () => {
+    const eleC = lopMoi('ELE', false, 11), ftC = lopMoi('FT', true, 1);
+    const [E] = [hocVien(eleC, 'ELE')];
+    lenFt(eleC, [E], ftC, true);
+    diemMt0(E, { L: 4.5, R: 4.5, W: 3, S: 4.5 });
+    const kv = () => get('SELECT ky_vong_dat d, ky_vong_nguyen_nhan n, ky_vong_ghi_chu g FROM lo_trinh_tiep_theo WHERE student_id = ?', E);
+    ck.ghiKetLuanFt(P.mbManager, E, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Nghỉ nhiều buổi', mon: [] });
+    assert(kv()?.d === 0, 'tiền đề: Không đạt');
+    const r = ck.ghiKetLuanFt(P.mbManager, E, { dat: null });
+    assert(r.dat === null && kv().d === null && kv().n === null && kv().g === null, JSON.stringify(kv()));
+    assert(ck.ghiKetLuanFt(P.mbManager, E, { dat: null }).dat === null, 'bỏ lần hai không lỗi');
+    ck.ghiKetLuanFt(P.mbManager, E, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Đánh lại', mon: [] });
+    assert(kv().d === 0 && kv().g === 'Đánh lại', 'đánh lại được');
+    assert(maLoi(() => ck.ghiKetLuanFt(P.coreTeacher, E, { dat: null }))?.status === 403, 'GVCN 403');
+  });
   check('KV11 · em đã chuyển FT → FT: chủ Case Kỳ vọng theo lớp FT em ĐANG học, không theo lenh.lop_dich_id', () => {
     const ele5 = lopMoi('ELE', false, 11), ftA = lopMoi('FT', true, 1), ftB = lopMoi('FT', true, 1);
     ganGv(ele5, GV[0], 'writing'); ganGv(ftA, GV[2], 'writing2'); ganGv(ftB, GV[3], 'writing2');

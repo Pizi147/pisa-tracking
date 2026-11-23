@@ -119,7 +119,7 @@ export function KhoiGiaoViec({ g: gGoc, mo = true, dat, reload, gon, chiHan, anT
   const toi = session?.user?.id;
   const toast = useToast();
   /* A1-03: việc không còn mở → Phụ trách · Hạn · Mô tả · Theo dõi chỉ đọc (không Đổi / Sửa hạn / + Thêm mô tả / ✕ + theo dõi, không "còn n ngày"). */
-  const g: KhoiGv = gGoc.mo && mo ? gGoc : { ...gGoc, mo: false, coTheDoiNguoi: false, coTheSuaHan: false, coTheSuaMoTa: false, coTheSuaTheoDoi: false };
+  const g: KhoiGv = gGoc.mo && mo ? gGoc : { ...gGoc, mo: false, coTheDoiNguoi: false, coTheSuaHan: false, coTheSuaTheoDoi: false };   // R2 C13: Mô tả sửa được cả khi đã đóng (cờ máy chủ giữ)
   const [hop, setHop] = useState(false);
   const nutDoi = useRef<HTMLButtonElement>(null);
   const [vuaGiao, setVuaGiao] = useState<{ chu: string; het: number } | null>(null);

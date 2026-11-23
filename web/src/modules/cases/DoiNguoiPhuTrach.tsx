@@ -25,7 +25,17 @@ export function DoiNguoiPhuTrach({ caseId, ownerCu, ungVien, onXong, onTaiLai, o
     try {
       await api.post(`/cases/${caseId}/nguoi-phu-trach`, { ownerId: chon, ownerCu });
       invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
-      toast.push('ok', t('Đã đổi người phụ trách: {ten}', { ten: ds.find((u) => u.id === chon)?.ten ?? '' }));
+      const chu = t('Đã đổi người phụ trách: {ten}', { ten: ds.find((u) => u.id === chon)?.ten ?? '' });
+      const key = `doi-chu-case-${caseId}`;
+      /* R2 C12: Hoàn tác = đổi lại người cũ qua cùng đường (so-và-đổi: người khác vừa đổi → 409 nói rõ). Chưa có người cũ → không có gì để trả. */
+      if (ownerCu === null) toast.push('ok', chu);
+      else toast.hoanTac(chu, async () => {
+        try {
+          await api.post(`/cases/${caseId}/nguoi-phu-trach`, { ownerId: ownerCu, ownerCu: chon });
+          invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); onTaiLai();
+          toast.push('ok', t('Đã hoàn tác'), { key });
+        } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+      }, { key });
       onXong();
     } catch (e: any) {
       setLoi(e?.message ?? t('Không lưu được'));
