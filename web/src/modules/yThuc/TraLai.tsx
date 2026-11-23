@@ -4,10 +4,10 @@ import { useApi } from '../../lib/useApi.ts';
 import { Truong, useNhap } from '../../ui/KhungPanel.tsx';
 import { NutDichGop, useDichGop } from '../../ui/ChuDich.tsx';
 import { DsLichSu } from '../../ui/LichSuThayDoi.tsx';
-import { CHU_TOI_THIEU, VIOLATION_CATEGORY_LABEL, hanTraLai, nhanLichSuViPham, shortDate, tenMon, type ViolationCategory } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU, VIOLATION_CATEGORY_LABEL, hanTraLai, mucHan, nhanLichSuViPham, ngay, shortDate, tenMon, type ViolationCategory } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChipMon } from './BangLan.tsx';
-import { BadgeHan, NhanChoGv } from '../../ui/Nhan.tsx';
+import { LOP_MUC_HAN, NhanChoGv } from '../../ui/Nhan.tsx';
 import { lucVn } from '../congViec/gioVn.ts';
 
 /**
@@ -130,8 +130,8 @@ export function DaiChoGvSua({ y, moTa, hn, onRut }: { y: TraLaiMo; moTa: string;
       <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <b className="font-bold">{t('Chờ GV sửa')}</b>
         <span className="text-dim">{[moTa, y.nguoiNhan].filter(Boolean).join(' · ')}</span>
-        {qua ? <BadgeHan muc="qua">{t('GV quá hạn {n} ngày', { n: qua })}</BadgeHan>
-          : <span className="whitespace-nowrap text-[13px] tabular-nums text-dim">{t('hạn sửa {ngay}', { ngay: shortDate(y.han, hn) })}</span>}
+        {/* Chủ SP 24/11: hạn sửa = NGÀY tô màu (đỏ khi GV quá hạn), không "GV quá hạn n ngày". */}
+        <span className={`whitespace-nowrap text-[13px] tabular-nums ${hn ? LOP_MUC_HAN[mucHan(y.han, hn)] : LOP_MUC_HAN.xa}`}>{qua > 0 && <span className="sr-only">{t('GV quá hạn')} </span>}{ngay(y.han)}</span>
       </div>
       {onRut ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" disabled={dang} onClick={() => {
         setDang(true); setLoi(null);

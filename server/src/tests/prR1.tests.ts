@@ -119,6 +119,8 @@ export async function runPrR1Tests(t: any) {
     /* Lần sau: đã xong → sửa (OV-7a), so với updated_at vừa ghi. */
     assert(ma(xn) === null, 'sửa việc đã xong (updated_at có giá trị) lỗi');
     /* L3-web: panel gửi `updatedAt` đã thấy — người khác lưu lần lượt (không cùng lúc) vẫn 409, DB không đổi; đúng bản → lưu; null khớp việc chưa từng sửa. */
+    /* Đẩy mốc lưu về quá khứ: hai lần lưu liền nhau có thể trùng mili-giây → "đúng bản" so `updatedAt !==` rớt ngẫu nhiên (đêm 24/11). */
+    conn.prepare("UPDATE sos_coordination_actions SET updated_at = '2026-01-01T00:00:00.000Z' WHERE id = ?").run(x.id);
     const truoc = one('SELECT note, updated_at FROM sos_coordination_actions WHERE id = ?', x.id);
     const voi = (updatedAt: string | null, note: string) => () => ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note, updatedAt });
     assert(ma(voi('2000-01-01T00:00:00.000Z', 'Bản cũ đã thấy — phải bị chặn vì người khác vừa lưu.')) === 409, 'updatedAt cũ không 409');
