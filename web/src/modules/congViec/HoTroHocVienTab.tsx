@@ -602,6 +602,8 @@ export function HoTroHocVienTab() {
   const theoChon = theo && theoDong && `${theoDong.loai}:${theoDong.refId}` === theo ? theoDong : null;
   /* NHẸ HƠN: panel bám mép phải (KhungPanel tại chỗ, ≥ 1024) đang mở → đầu trang + danh sách bó về cột trái min(556 px, 42 % − 48 px); không mở → bố cục cũ. */
   const coPanel = !!(chon || theId || theoChon);
+  /* KHUÔN A (24/11): danh sách rộng min(680 px, 100vw − 776 px) — chừa 720 px cho panel; vai không có khối phải (Head / QL / Quản trị) chưa mở panel thì danh sách rộng hết khung. */
+  const coKhoiPhai = laGv || laTvv;
   const moTheo = (d: DongTd) => { setTheoDong(d); setParam('theo', `${d.loai}:${d.refId}`); };
   const dongTheo = () => { setParam('theo', null); lamMoiGiaoViec(); };
   const anTrenDienThoai = chon || theId || theoChon ? 'max-lg:hidden' : '';
@@ -648,10 +650,10 @@ export function HoTroHocVienTab() {
     </>
   );
   return (
-    /* PR-2a (PR-4 báo): panel bảng 75 % (`data-pn="bang"`) mở → đầu trang + danh sách thu về 330 px (v23 panel-cham-diem C1). */
-    <div className="space-y-3 lg:[&:has([data-pn=bang])>div:first-child]:max-w-[330px] lg:[&:has([data-pn=bang])_[data-hd=cv-dong]]:grid-cols-[minmax(0,1fr)_auto] lg:[&:has([data-pn=bang])_.o-nut]:hidden">
+    /* KHUÔN A (24/11): danh sách KHÔNG co khi panel mở — kể cả panel bảng / lưới (bỏ luật cũ "thu về 330 px"). */
+    <div className="space-y-3">
       {/* NHẸ HƠN: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024), panel 58 % bám mép phải không che nút lọc / + Task. */}
-      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(556px,calc(42vw-48px))]' : ''}`}>
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[min(680px,calc(100vw-776px))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
@@ -742,7 +744,7 @@ export function HoTroHocVienTab() {
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* NHẸ HƠN (v23 `.cv-luoi`, chủ SP 22/11): danh sách trái = min(556 px, 42 % − 48 px) — panel 58 % bám mép phải (KhungPanel tại chỗ) không đè (1280: ~490 px). */}
       {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
-      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(556px,calc(42vw-48px))_minmax(0,1fr)] lg:[&:has([data-pn=bang])]:grid-cols-[330px_minmax(0,1fr)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : coPanel ? 'lg:grid-cols-[min(680px,calc(100vw-776px))_minmax(0,1fr)]' : tab === 'duyet' ? 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]' : coKhoiPhai ? 'lg:grid-cols-[min(680px,calc(100vw-776px))_minmax(0,1fr)]' : ''}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
@@ -864,7 +866,7 @@ export function HoTroHocVienTab() {
             /* GD-8 (mockup v21 ④ K1, R4.3): TVV chưa chọn việc → "HV của tôi" (em · lớp · tình trạng · chip Việc cần làm) thay ô "Chọn một việc". */
             <HvCuaToi em={hvTvv.data?.em} viec={dsGoc} dangTai={!hvTvv.error && !hvTvv.data} onMo={(x) => boChuRoi(() => mo(x))}
               loi={hvTvv.error ? <ErrorState message={hvTvv.error.message} hint={hvTvv.error.hint} status={hvTvv.error.status} onRetry={hvTvv.reload} /> : null} />
-          ) : data && !data.scopeEmpty && (mucs.length > 0 || tab === 'duyet') ? (
+          ) : data && !data.scopeEmpty && (tab === 'duyet' || (mucs.length > 0 && !!viec)) ? (
             /* V8-CV (P2): panel trống, khung viền đứt. v12 S7: chữ ở ĐẦU khung (không rơi giữa trang dài), một câu — bỏ câu "Làm tại đây…" (S4). */
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center"
               style={{ borderColor: 'var(--line-strong)' }}>

@@ -1969,6 +1969,56 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   }
 }
 
+/* KHUÔN A (v24 `cong-viec-gon`, chủ SP chọn 24/11) — danh sách việc: bốn ô cố định lớp · ai · chi tiết · hạn, KHÔNG cột nút.
+   LUẬT CỘT: mọi nhóm / dòng / dòng con dùng CHUNG một bộ cột (subgrid) → thẳng cột tuyệt đối; cột chữ co giãn theo phần, cột hạn sát lề phải 20 px.
+   Dưới 600 px (điện thoại, hoặc 1280 khi panel mở): mỗi việc hai tầng — lớp + hạn · tên + chi tiết. */
+@layer components {
+  .cvA-cq { container-type: inline-size; }
+  .cvA { display: grid; grid-template-columns: minmax(104px, max-content) minmax(max-content, 4fr) minmax(0, 5fr) max-content; column-gap: 20px; row-gap: 14px; }
+  .cvA > * { grid-column: 1 / -1; min-width: 0; }
+  .cvA-sub { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; row-gap: 0; margin: 0; padding: 0; list-style: none; }
+  .cvA-sub > * { grid-column: 1 / -1; min-width: 0; }
+  .cvA-v { position: relative; display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; grid-template-rows: minmax(47px, auto); padding: 0 20px; border-top: 1px solid var(--line); cursor: pointer; font-size: 14px; line-height: 1.35; }
+  .cvA-v > * { min-width: 0; }
+  .cvA-nhom > h2 + * > .cvA-v, .cvA-nhom > h2 + .cvA-v { border-top: 0; }
+  .cvA-v:hover { background-image: linear-gradient(var(--phu-re), var(--phu-re)); }
+  .cvA-v:has(:focus-visible) { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cvA-lop { font-weight: 700; white-space: nowrap; color: var(--text); }
+  .cvA-ai { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); }
+  .cvA-ten { display: inline-flex; align-items: center; gap: 4px; min-width: 0; appearance: none; border: 0; background: transparent; padding: 0; margin: 0; font: inherit; font-weight: 500; color: inherit; text-align: left; cursor: pointer; }
+  .cvA-ten:focus-visible { outline: none; }
+  a.cvA-ten, .cvA-ai a { text-decoration: none; }
+  .cvA-ai a:hover { color: var(--accent); text-decoration: underline; }
+  .cvA-ct { color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cvA-hn { justify-self: end; font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+  .cvA-hn.sap { color: var(--warn); font-weight: 600; }
+  .cvA-hn.qua { color: var(--danger); font-weight: 600; }
+  .cvA-di { position: absolute; right: 2px; top: 50%; margin-top: -8px; width: 16px; height: 16px; fill: none; stroke: var(--text-faint); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  .cvA-xo { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--text-dim); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; transform: rotate(90deg); }
+  [aria-expanded='true'] > .cvA-xo { transform: rotate(-90deg); }
+  .cvA-v.cvA-kl .cvA-lop { display: none; }
+  .cvA-v.cvA-kl .cvA-ai { grid-column: 1 / 3; font-weight: 600; }
+  .cvA-con .cvA-v { background-color: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
+  .cvA-con .cvA-lop { visibility: hidden; }
+  .cvA-act { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 0 20px 10px; }
+  .cvA-v.dang-chon { background-image: linear-gradient(var(--accent-soft), var(--accent-soft)); box-shadow: inset 3px 0 0 var(--accent-strong); }
+  @container (max-width: 599px) {
+    .cvA { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+    .cvA-sub { display: block; }
+    .cvA-v { display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'lop lop hn' 'ai ct ct'; grid-template-rows: auto auto; row-gap: 3px; padding: 10px 16px; }
+    .cvA-v .cvA-lop { grid-area: lop; } .cvA-v .cvA-ai { grid-area: ai; } .cvA-v .cvA-hn { grid-area: hn; }
+    .cvA-v .cvA-ct { grid-area: ct; justify-self: start; font-size: 13px; max-width: 100%; }
+    .cvA-v:not(.cvA-kl) .cvA-ai + .cvA-ct:not(:empty)::before { content: '·'; margin: 0 6px; color: var(--text-faint); }
+    .cvA-con .cvA-v, .cvA-v.cvA-kl { grid-template-areas: 'ai ai hn' 'ct ct ct'; }
+    .cvA-con .cvA-lop { display: none; }
+    .cvA-con .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
+    .cvA-v.cvA-kl .cvA-ai { grid-column: auto; }
+    .cvA-di { right: 0; top: 11px; margin-top: 0; }
+    .cvA-act { padding: 0 16px 10px; justify-content: stretch; }
+    .cvA-act > * { flex: 1 1 0; }
+  }
+}
+
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
