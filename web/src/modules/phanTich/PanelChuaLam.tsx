@@ -85,7 +85,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
   const chuChep = (ten: string, dong: DongViecHan[]) => [t('{gv} · {n} {dv} quá hạn (tới {ngay})', { gv: ten, n: dong.length, dv: donVi, ngay: ngan(homNay) }),
     ...gopBai(dong).map(({ d, n }) => {
       const cat = d.tab === 'cham' ? d.ten.indexOf(' · ') : -1;
-      return `• ${[d.lop?.ma, cat >= 0 ? `${d.ten.slice(0, cat)} · ${d.ten.slice(cat + 3)}` : d.ten, d.tab === 'cham' ? t('{n} bài', { n }) : null, d.treNgay ? ngay(addDaysIso(homNay, -d.treNgay)) : null].filter(Boolean).join(' · ')}`;
+      return `• ${[d.lop?.ma, cat >= 0 ? `${d.ten.slice(0, cat)} · ${d.ten.slice(cat + 3)}` : d.ten, d.tab === 'cham' ? t('{n} bài', { n }) : null, d.treNgay ? t('hạn {ngay}', { ngay: ngay(addDaysIso(homNay, -d.treNgay)) }) : null].filter(Boolean).join(' · ')}`;
     })].join('\n');
   const khoi = (khoa: string, ten: ReactNode, n: number, dong: DongViecHan[], phu?: string, tenChep?: string) => (
     <section key={khoa} className="overflow-clip rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
