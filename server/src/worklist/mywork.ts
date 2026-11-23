@@ -2,7 +2,7 @@ import { nhinNhuQl, phamViXemViec } from './xemViec.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
-import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
+import { COT_THIEU_GVCN, COT_THIEU_GV_MON, KHONG_CHU_SQL, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, tx } from '../db.ts';
 import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
@@ -460,8 +460,8 @@ const COT_CASE = `COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
-/** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi`. */
-const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
+/** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi` (L1: chủ đã nghỉ cũng là chưa có người). Hàm: `KHONG_CHU_SQL` đọc lúc chạy (vòng nạp module). */
+const chuaCoNguoi = () => `(${KHONG_CHU_SQL('COALESCE(ac.branch_id, cc.branch_id, s.branch_id)')} AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
 /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt · K3-41: em Tạm dừng dừng hạn. */
 const LA_NO_PLAN = `(COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active')`;
 const LA_CAUSE = `(${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
@@ -501,7 +501,7 @@ function napCaseMo(loc: LocCaseMo = null, toi: number | null = null, chiViec = f
   const { sql: locSql, thamSo } = sqlLocCaseMo(loc);
   const khoaToi = (toi === null ? '' : `:toi:${toi}`) + (chiViec ? ':viec' : '');
   const sqlToi = toi === null ? '' : `
-        AND (sc.owner_user_id IS NULL OR sc.owner_user_id = ?
+        AND (${KHONG_CHU_SQL('COALESCE(ac.branch_id, cc.branch_id, s.branch_id)')} OR sc.owner_user_id = ?
              OR (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL
                  AND NOT EXISTS (SELECT 1 FROM case_interventions iv0 WHERE iv0.case_id = sc.id AND iv0.status != 'cancelled')))`;   /* = `la_no_plan` + `!iv_count` */
   const kq = nho((lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo') + khoaToi, () => lopHienTai(db().prepare(
@@ -511,12 +511,12 @@ function napCaseMo(loc: LocCaseMo = null, toi: number | null = null, chiViec = f
             NULL AS current_class_id, cur.id AS cur_eid,
             ${LA_NO_PLAN} AS la_no_plan,
             ${LA_CAUSE} AS la_cause,
-            ${CHUA_CO_NGUOI} AS chua_co_nguoi,
-            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
-            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn,
+            ${chuaCoNguoi()} AS chua_co_nguoi,
+            CASE WHEN ${chuaCoNguoi()} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
+            CASE WHEN ${chuaCoNguoi()} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn,
             ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi
        FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${locSql}${sqlToi}${!chiViec ? '' : `
-        AND (${CHUA_CO_NGUOI} OR (${LA_NO_PLAN} AND NOT EXISTS (SELECT 1 FROM case_interventions iv1 WHERE iv1.case_id = sc.id AND iv1.status != 'cancelled'))
+        AND (${chuaCoNguoi()} OR (${LA_NO_PLAN} AND NOT EXISTS (SELECT 1 FROM case_interventions iv1 WHERE iv1.case_id = sc.id AND iv1.status != 'cancelled'))
              OR ${LA_CAUSE})`} ORDER BY sc.id`,
   ).all(...thamSo, ...(toi === null ? [] : [toi])) as any[]));
   /* GIAM-DOC-0711a: `lamThayCua` dùng lại dòng đã nạp ở request (bất kỳ tập cha nào — id thiếu `ctxSuaCaseNhieu` tự đọc). */
@@ -551,7 +551,8 @@ function lopHienTai(ds: any[]): any[] {
   const moiNhat = new Map<number, { eid: number; lop: number }>();
   for (const x of ds) if (x.cur_eid != null && (moiNhat.get(x.id)?.eid ?? -1) < x.cur_eid) moiNhat.set(x.id, { eid: x.cur_eid, lop: x.lop_dang_hoc });
   /* N46: Case của lộ trình đã có KQ thi thật — không sinh việc nào (Thêm PA · Mô tả / Xác nhận Case · Chưa có người), như em Tạm dừng; cột tính một lần. */
-  return ds.map(({ cur_eid: _, sau_thi: st, ...r }) => ({ ...r, current_class_id: moiNhat.get(r.id)?.lop ?? null,
+  /* L1: Case chủ đã nghỉ (`chua_co_nguoi`) → `owner_user_id` null cho mọi khối dưới — như Case chưa ai nhận (chỉ dòng "chưa có người", không việc của người nghỉ). */
+  return ds.map(({ cur_eid: _, sau_thi: st, ...r }) => ({ ...r, current_class_id: moiNhat.get(r.id)?.lop ?? null, ...(r.chua_co_nguoi ? { owner_user_id: null } : {}),
     ...(st ? { la_no_plan: 0, la_cause: 0, chua_co_nguoi: 0 } : {}) }));
 }
 
