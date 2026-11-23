@@ -39,11 +39,11 @@ export function BaoCaoPhSapMo({ sapToi }: { sapToi?: SapToiGv }) {
   const tieuDe = t('Báo cáo PH · mở {ngay}', { ngay });
   return (
     <div ref={goc} className="relative mt-2 px-1 text-[13px] text-dim max-sm:px-0">
-      <div className="flex min-h-[32px] flex-wrap items-center gap-x-1.5 max-sm:min-h-[44px]">
+      <div className="flex min-h-[32px] flex-wrap items-center gap-x-1 max-sm:min-h-[44px]">
         <span>{tieuDe} ·</span>
+        {/* PTA rà #2017: số + đơn vị MỘT khối trong ô số ("2 lớp"), không tách. */}
         <button ref={nutMo} type="button" aria-expanded={mo} aria-label={t('{n} lớp mở Báo cáo PH', { n: soLop })} onClick={() => setMo(!mo)}
-          className={`${VUNG_BAM_SO} ${LOP_OSO} px-1`}>{soLop}</button>
-        <span>{t('lớp')}</span>
+          className={`${VUNG_BAM_SO} ${LOP_OSO} whitespace-nowrap px-1 !text-[13px]`}>{t('{n} lớp', { n: soLop })}</button>
       </div>
       {mo && (
         <NoiTren ref={hopEl} neo={nutMo} taiCho={dt} role="dialog" aria-label={tieuDe}

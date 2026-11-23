@@ -10,6 +10,8 @@ Chủ SP 24/11 (plan.md 599 mục 2): #2001 bỏ dải "Sắp tới". "Test tu�
 | — (mockup không vẽ) | Dòng "Báo cáo PH · mở 20/09/2026 · [2] lớp" dưới bảng, chỉ khi có đợt sắp mở trong 7 ngày | `SapToi.tsx` `BaoCaoPhSapMo` (thay dải `SapToi` không còn dùng) | `gv-1440-toi.png`, `gv-lop-375-sang.png` | THÊM (chủ SP 24/11) |
 | — | Bấm ô số → hộp danh sách cũ: tiêu đề + ✕, mỗi lớp một dòng (mã lớp là link sang tab Báo cáo PH của đợt) | cùng hộp `NoiTren` của dải cũ (1440 nổi neo ô số, 375 nằm tại chỗ), Esc / bấm ngoài để đóng, tiêu điểm vào hộp | `gv-hop-1440-toi.png`, `gv-hop-375-sang.png` | GIỮ (hộp cũ) |
 | — | Ngày dd/mm/yyyy | `ngan` (= `shortDate`, luật hạn NH4) | cả bốn ảnh | KHỚP |
+| G3 (375) | Thẻ lớp hai hàng: mã lớp + chip + số việc canh phải · Test kế (trước: ~125 px, số việc một mình một dòng) | `LopCuaToi.tsx` `DongLop` / `SoViecLop` (container < 640 px) | `gv-lop-375-sang.png` | SỬA (PTA rà #2017, ~70 px / lớp) |
+| — | "2 lớp" một khối trong ô số, không tách | `BaoCaoPhSapMo` | cả bốn ảnh | SỬA (PTA rà #2017) |
 | — | "Test tuần tới" | — | — | BỎ (đã ở cột Test kế, PTA) |
 
 **[XM] "›" → ô số:** PTA ghi "… · n lớp ›". Luật V5 (CLAUDE.md): "ô số = mở tại chỗ, chữ › = đổi trang". Ở đây bấm là mở hộp tại chỗ nên dùng ô số (`VUNG_BAM_SO` + `LOP_OSO`, như dải cũ), không dùng "›". Ngày hiện là ngày mở sớm nhất trong các đợt; số = số lớp khác nhau.

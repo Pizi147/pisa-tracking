@@ -119,7 +119,7 @@ const COT = 'grid grid-cols-[104px_164px_minmax(0,1fr)_56px] items-center gap-x-
  * LỚP CỦA TÔI — khung phải trang Công việc khi chưa chọn việc (GD-1, mockup v21 ① K1 + `04-thiet-ke.md` mục 12, 13).
  * Cột: Lớp (link hồ sơ lớp) · Tôi dạy (chip kỹ năng; "chủ nhiệm") · Test (tình trạng + hạn) · Việc cần làm (nút-chip "{loại} · {số}", đỏ khi quá hạn (V22: chỉ màu), "›" khi đổi trang — dòng 19).
  * Bấm chip = việc đầu (hạn sớm nhất) của loại đó ở lớp đó: mở panel tại chỗ, hoặc sang trang khi việc không làm tại chỗ (`onMo`).
- * Khung < 640 px (375, cột phải Công việc ở 1100): mỗi lớp một thẻ; 375 chip cao 44.
+ * Khung < 640 px (375, cột phải Công việc ở 1100): mỗi lớp một thẻ hai hàng (PTA rà #2017) — hàng 1 mã lớp + chip + số việc canh phải, hàng 2 Test kế; vùng bấm số 44 px (lề âm, không đội hàng).
  */
 export function LopCuaToi({ dong, onMo, dangTai, loi }: {
   dong: Dong[]; onMo: (x: WorkItem) => void; dangTai: boolean; loi: React.ReactNode;
@@ -152,15 +152,15 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
   const ranh = !d.chip.length;
   const nhat = ranh && !d.test;
   return (
-    <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-col [@container(max-width:639px)]:items-start [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:py-3`}
+    <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-x-2 [@container(max-width:639px)]:gap-y-0.5 [@container(max-width:639px)]:min-h-0 [@container(max-width:639px)]:py-2.5`}
       style={{ borderColor: 'var(--line)' }}>
-      <span className="flex min-w-0 items-center gap-2 [@container(max-width:639px)]:w-full [@container(max-width:639px)]:flex-wrap">
+      <span className="flex min-w-0 items-center gap-2 [@container(max-width:639px)]:flex-1 [@container(max-width:639px)]:flex-wrap">
         <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[14px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
         <span className="hidden [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:gap-1">{monCua(d, nhat)}</span>
       </span>
       {/* C1 (rà 19/11): cột 164 px — 5 môn một dòng, "chủ nhiệm" xuống dòng TRONG ô, không tràn sang cột Test. */}
       <span className="flex min-w-0 flex-wrap items-center gap-1 [@container(max-width:639px)]:hidden">{monCua(d, nhat)}</span>
-      <span className="grid min-w-0 justify-items-start gap-1 [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:empty:hidden">
+      <span className="grid min-w-0 justify-items-start gap-1 [@container(max-width:639px)]:order-3 [@container(max-width:639px)]:flex [@container(max-width:639px)]:basis-full [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:empty:hidden">
         {d.test && <span className={`whitespace-nowrap text-sm leading-snug ${d.test.han ? 'font-medium text-[color:var(--text)]' : 'text-dim'}`}>{d.test.chu}</span>}
       </span>
       <SoViecLop d={d} onMo={onMo} />
@@ -176,9 +176,9 @@ function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
   const dau = d.chip.map((c) => c.dau).sort(xepHan)[0];
   const chu = d.chip.map((c) => `${c.nhan} · ${c.so}`).join(', ');
   return (
-    <span className="flex justify-end [@container(max-width:639px)]:w-full [@container(max-width:639px)]:justify-start">
+    <span className="flex justify-end [@container(max-width:639px)]:order-2">
       <button type="button" onClick={() => onMo(dau)} title={chu} aria-label={`${qua ? `${t('Quá hạn')}: ` : ''}${chu} · ${d.code}`}
-        className="inline-flex min-h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:min-h-11 max-sm:min-w-[44px]">
+        className="inline-flex min-h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:-my-2 max-sm:min-h-11 max-sm:min-w-[44px]">
         {qua ? <span className={lopBadgeHan('qua')}>{so}</span> : <span className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{so}</span>}
       </button>
     </span>
