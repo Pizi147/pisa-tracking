@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  LY_DO_SUA_KHAI_LECH, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  LY_DO_SUA_KHAI_LECH, SUA_KHAI_HET_HAN_THEO_GVCN, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -292,23 +292,51 @@ export function guiSuaKhai(p: Principal, hv: { student_code: string }, studentId
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
     if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw conflict('Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
+    /* PTA rà #2058: bậc VÀ ngày / tháng đều như dòng khai thì không có gì để Head duyệt (ghi chú là lý do, không phải nội dung sửa). */
+    if (k.bac === em.khai.bac && (k.thang ?? null) === (em.khai.thang ?? null)) throw badRequest('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với bậc đã khai.');
     const duLieu: DuLieuSuaKhai = { bacCu: em.khai.bac, bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, cycleId: em.khai.cycleId };
     let id = taoYeuCau(db(), { ...theSuaKhai(studentId), hocVienId: studentId, lopId: em.lopId, nguoiXin: p.userId, lyDo: k.ghiChu, duLieu });
+    let ghiDe = false;
     if (id === null) {
       /* Đã có thẻ chờ (kể cả thẻ lệch bậc chưa kịp tự đóng) → thay nội dung, người gửi = người vừa gửi. */
-      const cu = db().prepare(`SELECT id, du_lieu, ly_do FROM yeu_cau_duyet WHERE loai = 'sua_khai_bac' AND doi_tuong_loai = 'hoc_vien_khai_bac' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
-        .get(studentId) as { id: number; du_lieu: string | null; ly_do: string | null };
+      const cu = db().prepare(`SELECT id, du_lieu, ly_do, nguoi_xin FROM yeu_cau_duyet WHERE loai = 'sua_khai_bac' AND doi_tuong_loai = 'hoc_vien_khai_bac' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+        .get(studentId) as { id: number; du_lieu: string | null; ly_do: string | null; nguoi_xin: number | null };
       id = cu.id;
-      db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(k.ghiChu, JSON.stringify(duLieu), p.userId, id);
+      /* PTA rà #2058: ghi đè thẻ CÒN HIỆU LỰC → giữ MỘT bản nội dung trước ở `du_lieu.truoc` (máy chủ giữ — không nhận từ client) để Hoàn tác lô khôi phục
+         thay vì rút mất thẻ gửi từ trước; thẻ đã lệch bậc thì không giữ (Hoàn tác = rút). */
+      const dCu = cu.du_lieu ? JSON.parse(cu.du_lieu) as Record<string, unknown> : null;
+      const truoc = dCu && em.khai.cho?.id === cu.id ? { lyDo: cu.ly_do, nguoiXin: cu.nguoi_xin, duLieu: { ...dCu, truoc: undefined } } : undefined;
+      ghiDe = !!truoc;
+      db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(k.ghiChu, JSON.stringify({ ...duLieu, ...(truoc ? { truoc } : {}) }), p.userId, id);
       writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: 'Sửa cấp bậc vi phạm',
-        before: { lyDo: cu.ly_do, duLieu: cu.du_lieu ? JSON.parse(cu.du_lieu) : null }, after: { lyDo: k.ghiChu, duLieu } });
+        before: { lyDo: cu.ly_do, duLieu: dCu ? { ...dCu, truoc: undefined } : null }, after: { lyDo: k.ghiChu, duLieu } });
     } else {
       writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_request', entityType: 'student', entityId: studentId,
         entityLabel: `${hv.student_code} · xin sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, yeuCauId: id } });
     }
     xoaNho();   // trạng thái Ý thức nhớ theo request đã cũ (khai.cho)
     const han = (db().prepare('SELECT han_duyet FROM yeu_cau_duyet WHERE id = ?').get(id) as { han_duyet: string | null }).han_duyet;
-    return { ok: true as const, guiDuyet: true as const, yeuCauId: id, han, bac: em.khai.bac };
+    return { ok: true as const, guiDuyet: true as const, yeuCauId: id, han, bac: em.khai.bac, ghiDe };
+  });
+}
+
+/**
+ * Hoàn tác lô (PTA rà #2058): thẻ đang chờ của CHÍNH người bấm mà lần gửi gần nhất là GHI ĐÈ (`du_lieu.truoc`) → trả nội dung trước (lý do, bậc xin,
+ * ngày / tháng, người gửi), thẻ vẫn chờ. Trả false khi không có bản trước — nơi gọi Rút thẻ như cũ.
+ */
+export function khoiPhucSuaKhai(p: Principal, studentId: number, yeuCauId: number): boolean {
+  return tx(() => {
+    const y = db().prepare(`SELECT id, du_lieu, ly_do, nguoi_xin FROM yeu_cau_duyet WHERE id = ? AND loai = 'sua_khai_bac' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+      .get(yeuCauId, studentId) as { id: number; du_lieu: string | null; ly_do: string | null; nguoi_xin: number | null } | undefined;
+    if (!y) throw badRequest('Yêu cầu sửa bậc của em không còn chờ Head — không hoàn tác em này.');
+    if (y.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
+    const d = JSON.parse(y.du_lieu ?? '{}') as { truoc?: { lyDo: string | null; nguoiXin: number | null; duLieu: Record<string, unknown> } };
+    if (!d.truoc) return false;
+    db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(d.truoc.lyDo, JSON.stringify(d.truoc.duLieu), d.truoc.nguoiXin, y.id);
+    writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: y.id, entityLabel: 'Sửa cấp bậc vi phạm · hoàn tác gửi lại',
+      before: { lyDo: y.ly_do, duLieu: { ...d, truoc: undefined } }, after: { lyDo: d.truoc.lyDo, duLieu: d.truoc.duLieu } });
+    xoaNho();
+    return true;
   });
 }
 
@@ -549,6 +577,8 @@ export type YThucHocVien = {
   qlApThang: boolean;
   /** N70: người xem sửa bậc đã khai thì KHÔNG áp ngay — thành yêu cầu chờ Head (nút "Gửi Head duyệt"); Head / Quản trị = false (áp ngay). */
   suaKhaiCanDuyet: boolean;
+  /** N70: người xem mở được hộp Chờ duyệt (Head / Quản trị) — liên kết "Mở Chờ duyệt ›" ở dải yêu cầu chờ; CX duyệt được thẻ nhưng không có hộp. */
+  moHopDuyet: boolean;
 };
 
 export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chuoi' | 'tat-ca' } = {}): YThucHocVien {
@@ -583,6 +613,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     coTheKhai: canManage && khaiMoDuoc(em),   // N66: cả khi chuỗi đã có lần xử lý trên web
     qlApThang: canManage && duyetYThuc(p, { studentId }),
     suaKhaiCanDuyet: !!em.khai && canManage && !duyetYThuc(p, { studentId }),
+    moHopDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac },
@@ -1231,7 +1262,7 @@ export const LY_DO_TU_CHOT_Y_THUC = 'Quá 5 ngày Head chưa duyệt — giữ q
  */
 export function quetYThucHetHan(conn: any, homNay: string): number {
   const ds = conn.prepare(`SELECT id, loai, doi_tuong_id, ly_do, du_lieu, hoc_vien_id, nguoi_xin FROM yeu_cau_duyet
-    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc', 'sua_khai_bac') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
+    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc'${SUA_KHAI_HET_HAN_THEO_GVCN ? ", 'sua_khai_bac'" : ''}) AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
     .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null; nguoi_xin: number | null }[];
   if (!ds.length) return 0;
   tx(() => {

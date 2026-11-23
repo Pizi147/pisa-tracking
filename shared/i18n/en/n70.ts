@@ -23,6 +23,8 @@ export const EN_N70 = {
   'Sửa bậc đã khai cần Head duyệt — không hoàn tác em này.': 'Changing a declared level needs Head approval — not undone.',
   'Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa': 'The level changed after this was sent — send again if still needed',
   'Gửi Head duyệt sửa cấp bậc vi phạm': 'Sent incident-level change to Head',
+  'Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với bậc đã khai.': 'Nothing changed — pick a level or date / month different from the declared one.',
+  'chờ Head duyệt {bac}': 'pending Head: {bac}',
   /* Hướng dẫn (GV: thẻ khai-bac · Head: thẻ duyet-y-thuc) */
   'Chọn <b>Bậc đã xử lý</b> và ngày hoặc tháng.': 'Pick the <b>Level handled</b> and a date or month.',
   'Sửa bậc đã khai: <b>Sửa cấp bậc</b>, ghi <b>Lý do sửa</b>, <b>Gửi Head duyệt</b>; bậc cũ giữ tới khi Head duyệt.': 'To change a declared level: <b>Edit level</b>, fill <b>Reason for the change</b>, <b>Send to Head</b>; the old level stays until approved.',

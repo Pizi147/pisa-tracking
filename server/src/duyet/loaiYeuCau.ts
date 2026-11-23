@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { sqlNguongMiniTest } from '../platform/cauHinh.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, PHIEU_BAN_GIAO_MO_SQL, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, PHIEU_BAN_GIAO_MO_SQL, SUA_KHAI_HET_HAN_THEO_GVCN, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -1037,7 +1037,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         dong: [
           `${nguoiXin(yc, ngu)} gửi ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(d.thang ? [`${d.thang.length === 7 ? 'Tháng' : 'Ngày'} xử lý: ${hienONgay(d.thang, 'ngay-hoac-thang')}`] : []),
-          ...(yc.trang_thai === 'cho' && yc.han_duyet ? [`Quá ${ngay(yc.han_duyet, ngu)} chưa duyệt: giữ quyết định GVCN`] : []),
+          ...(SUA_KHAI_HET_HAN_THEO_GVCN && yc.trang_thai === 'cho' && yc.han_duyet ? [`Quá ${ngay(yc.han_duyet, ngu)} chưa duyệt: giữ quyết định GVCN`] : []),
         ],
         neuDuyet: `Bậc em đã tới thành ${ten(d.bac)} · lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac((d.bac ?? 0) + 1))}.`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,

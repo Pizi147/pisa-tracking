@@ -52,11 +52,13 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
   /* N70: GVCN sửa bậc đã khai = gửi Head duyệt; `cho` = yêu cầu đang chờ (bậc trên web vẫn là bậc cũ). */
   const canDuyet = laSua && !!d?.suaKhaiCanDuyet;
   const cho = d?.khai?.cho ?? null;
-  /* Giá trị gốc của form: yêu cầu đang chờ (gửi lại = thay nội dung) → dòng khai; GVCN sửa thì ô lý do bắt đầu trống (ghi chú cũ không phải lý do). */
+  /* Giá trị gốc của form: GVCN có yêu cầu đang chờ → nội dung đã gửi (gửi lại = thay nội dung), ô lý do của GVCN bắt đầu trống (ghi chú cũ không phải lý do).
+     PTA rà #2058: Head / Quản trị (áp ngay) LUÔN bắt đầu từ dòng khai — không chọn sẵn bậc GVCN xin, kẻo bấm Lưu là áp nhầm và thẻ của GVCN tự đóng. */
+  const choCuaToi = canDuyet ? cho : null;
   const goc = {
-    bac: cho ? cho.bac : laSua && d?.khai ? d.khai.bac : null,
-    thang: cho ? cho.thang ?? '' : laSua && d?.khai?.thang ? d.khai.thang : '',
-    ghiChu: cho ? cho.ghiChu : laSua && d?.khai && !canDuyet ? d.khai.ghiChu : '',
+    bac: choCuaToi ? choCuaToi.bac : laSua && d?.khai ? d.khai.bac : null,
+    thang: choCuaToi ? choCuaToi.thang ?? '' : laSua && d?.khai?.thang ? d.khai.thang : '',
+    ghiChu: choCuaToi ? choCuaToi.ghiChu : laSua && d?.khai && !canDuyet ? d.khai.ghiChu : '',
   };
   useEffect(() => {
     const chu = giuChu.current; giuChu.current = null;
@@ -81,8 +83,10 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
     );
   }
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc là bắt buộc. N70: GVCN sửa → ô đó là "Lý do sửa", bắt buộc (Head đọc để duyệt). */
+  /* PTA rà #2058: GVCN chưa đổi bậc lẫn ngày / tháng so với dòng khai → không có gì để gửi Head (máy chủ cũng 400). */
+  const chuaDoi = canDuyet && !!d.khai && bac === d.khai.bac && thang === (d.khai.thang ?? '');
   const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, ...(canDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: 1 }] : [])],
-    { bac: bac === null ? '' : 'co', ghiChu });
+    { bac: bac === null || chuaDoi ? '' : 'co', ghiChu });
   const lamMoi = () => { onDone?.(); lamMoiYThucCua({ studentIds: [studentId] }); if (canDuyet) { invalidate('/yeu-cau'); invalidate('/my-work'); } };
   const rut = async () => {
     if (!cho) return;
@@ -140,7 +144,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
           </span>
           {canDuyet
             ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void rut()}>{t('Rút')}</button>
-            : <Link className="link whitespace-nowrap font-semibold" to={duongThe(cho.id, 'duyet')}>{t('Mở Chờ duyệt')} ›</Link>}
+            : d.moHopDuyet ? <Link className="link whitespace-nowrap font-semibold" to={duongThe(cho.id, 'duyet')}>{t('Mở Chờ duyệt')} ›</Link> : null}
         </p>
       )}
       <Khoi tieuDe={t('Bậc em đã tới')} luat={t('Bậc em đã tới — dùng khi bậc trên web chưa đúng; lần xử lý cũ vẫn giữ.')}>
@@ -148,7 +152,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
         <div {...lf.o(loi, 'bac')}>
           <ChipBac lon chon={bac} cu={laSua && d.khai ? d.khai.bac : null} onPick={setBac} nhan={t('Bậc đã xử lý')} />
         </div>
-        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
+        {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{chuaDoi ? t('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với bậc đã khai.') : t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
         {bac !== null && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: bacDu(nhanLoaiXuLy(kindCuaBac(bac + 1))) })}</p>}
       </Khoi>
       <Khoi tieuDe={t('Chi tiết')}>

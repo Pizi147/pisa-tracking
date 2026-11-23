@@ -86,6 +86,8 @@ export type YThucHocVien = {
   qlApThang?: boolean;
   /** N70: người xem sửa bậc đã khai thì gửi Head duyệt (GVCN) — Head / Quản trị áp ngay. */
   suaKhaiCanDuyet?: boolean;
+  /** N70: người xem có hộp Chờ duyệt (Head / Quản trị) — hiện liên kết "Mở Chờ duyệt ›" ở dải yêu cầu chờ. */
+  moHopDuyet?: boolean;
   chuoi: { nhan: string; cycleIds: number[]; soXuLy: number };
   bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number };
   dongThang: BacThangDong[];
@@ -189,4 +191,5 @@ export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa;
   /** KHAI-BAC-LO: bậc khai trước khi lưu (null = chưa khai) + bậc vừa lưu — để Hoàn tác cả lô. */
   truoc?: { bac: number; thang: string | null; ghiChu: string } | null; bac?: number;
   /** N70: em đã khai, GVCN sửa → đã gửi Head duyệt (chưa áp); Hoàn tác = rút thẻ `ycId`. */
-  guiDuyet?: true; ycId?: number };
+  guiDuyet?: true; ycId?: number;
+  /** Lần gửi ghi đè thẻ đang chờ từ trước — Hoàn tác khôi phục nội dung thẻ cũ (máy chủ giữ). */ ghiDe?: true };

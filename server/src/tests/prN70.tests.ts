@@ -21,6 +21,8 @@ export async function runPrN70Tests(t: YThucTestKit) {
   const xu: any = await import('../yThuc/xuLy.ts');
   const lo: any = await import('../yThuc/lo.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
+  const accounts: any = await import('../platform/accounts.ts');
+  const { loadPrincipal }: any = await import('../permissions.ts');
   const { hanDuyetMacDinh } = await import('../../../shared/domain/index.ts');
   const LOP = 'MB FT 101';
   const cid = classId(LOP);
@@ -201,4 +203,57 @@ export async function runPrN70Tests(t: YThucTestKit) {
     console.log(`      đo: hồ sơ Ý thức ${hs1} câu · bảng lô ${lo1} câu (có / không thẻ chờ như nhau) · lô gửi duyệt ${n} câu / 4 em = ${(n / 4).toFixed(1)}`);
     assert(n / 4 <= 17, `lô gửi duyệt ${(n / 4).toFixed(1)} câu / em`);
   }));
+
+  /* ---------------------------------------------------------------- PTA rà sâu #2058 */
+  await checkAsync('N70-10 · GVCN gửi mà bậc VÀ ngày / tháng đều bằng dòng khai → 400 "Chưa đổi gì", không tạo thẻ; chỉ đổi ngày / tháng thì vẫn gửi được', () => thu(() => {
+    const sid = moiEm();
+    xu.khaiBac(gvcn, sid, { bac: 2, thang: THANG, ghiChu: 'Report 2' });
+    const l = loi(() => xu.suaKhaiBac(gvcn, sid, { bac: 2, thang: THANG, ghiChu: 'Chỉ đổi ghi chú', bacCu: 2 }));
+    assert(l.status === 400 && /Chưa đổi gì/.test(l.msg) && the(sid).length === 0, `${l.status} ${l.msg}`);
+    const r = xu.suaKhaiBac(gvcn, sid, { bac: 2, thang: NGAY, ghiChu: 'Ghi lại đúng ngày', bacCu: 2 });
+    assert(r.guiDuyet === true && JSON.parse(the(sid)[0].du_lieu).thang === NGAY, 'chỉ đổi ngày / tháng: gửi được');
+  }));
+
+  await checkAsync('N70-11 · Hoàn tác lô với em có thẻ gửi TỪ TRƯỚC lô (lô ghi đè): thẻ KHÔNG bị rút — khôi phục nội dung cũ (lý do, bậc xin, ngày / tháng, người gửi); thẻ mới tạo trong lô thì rút', () => thu(() => {
+    const cu = moiEm(), moi = moiEm();
+    xu.khaiBac(gvcn, cu, { bac: 2, ghiChu: 'Report 2' }); xu.khaiBac(gvcn, moi, { bac: 2, ghiChu: 'Report 2' });
+    const r0 = xu.suaKhaiBac(gvcn, cu, { bac: 1, thang: NGAY, ghiChu: 'Gửi từ panel một em', bacCu: 2 });
+    const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: cu, bac: 4 }, { studentId: moi, bac: 3 }], ghiChu: 'Lô ghi đè' });
+    const kq = (sid: number) => r.em.find((x: any) => x.studentId === sid);
+    assert(kq(cu).ycId === r0.yeuCauId && kq(cu).ghiDe === true && !kq(moi).ghiDe && JSON.parse(the(cu)[0].du_lieu).bac === 4, JSON.stringify(r));
+    const ht = lo.loHoanTacCapBac(gvcn, cid, { em: [{ studentId: cu, ycId: kq(cu).ycId }, { studentId: moi, ycId: kq(moi).ycId }] });
+    assert(ht.em.every((x: any) => x.ok), JSON.stringify(ht));
+    const y = the(cu)[0]; const d = JSON.parse(y.du_lieu);
+    assert(the(cu).length === 1 && y.id === r0.yeuCauId && y.trang_thai === 'cho' && y.ly_do === 'Gửi từ panel một em' && d.bac === 1 && d.thang === NGAY && d.truoc === undefined
+      && y.nguoi_xin === gvcn.userId, JSON.stringify(y));
+    assert(hs(gvcn, cu).khai.cho.bac === 1 && the(moi)[0].trang_thai === 'tu_dong' && khai(cu).bac === 2 && khai(moi).bac === 2, 'thẻ cũ còn chờ đúng nội dung; thẻ mới của lô đã rút');
+  }));
+
+  await checkAsync('N70-12 · Quyền: người DUYỆT thẻ sửa bậc = đúng tập người sửa thẳng (`duyetYThuc`) — CX chi nhánh của em duyệt / từ chối được, CX chi nhánh khác 403; CX sửa thẳng áp ngay; cờ mở hộp Chờ duyệt chỉ cho người có hộp', () => thu(() => {
+    const taoCx = (cn: string) => loadPrincipal(accounts.createAccount(P.admin, { email: `cxn70.${cn.toLowerCase()}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-cxn70', fullName: `Thử CX N70 ${cn}`,
+      roles: [{ role: 'cx', branches: [cn] }] }).userId);
+    const cxMb = taoCx('MB'), cxCp = taoCx('CP');
+    const a = moiEm(), b = moiEm();
+    xu.khaiBac(gvcn, a, { bac: 2, ghiChu: 'Report 2' }); xu.khaiBac(gvcn, b, { bac: 2, ghiChu: 'Report 2' });
+    const ra = xu.suaKhaiBac(gvcn, a, { bac: 1, ghiChu: 'Hạ về Report 1', bacCu: 2 });
+    const rb = xu.suaKhaiBac(gvcn, b, { bac: 3, ghiChu: 'Lên WL 1', bacCu: 2 });
+    assert(loi(() => yc.duyetYeuCau(cxCp, ra.yeuCauId)).status === 403 && loi(() => yc.tuChoiYeuCau(cxCp, rb.yeuCauId, 'x')).status === 403 && khai(a).bac === 2, 'CX chi nhánh khác: 403');
+    yc.duyetYeuCau(cxMb, ra.yeuCauId);
+    yc.tuChoiYeuCau(cxMb, rb.yeuCauId, 'Hồ sơ giấy chỉ có Report 2');
+    assert(khai(a).bac === 1 && the(a)[0].trang_thai === 'duyet' && khai(b).bac === 2 && the(b)[0].trang_thai === 'tu_choi', JSON.stringify([the(a)[0], the(b)[0]]));
+    const t2 = xu.suaKhaiBac(cxMb, b, { bac: 4, ghiChu: 'CX sửa theo hồ sơ', bacCu: 2 });
+    assert(!t2.guiDuyet && khai(b).bac === 4, 'CX sửa thẳng áp ngay');
+    assert(hs(cxMb, b).suaKhaiCanDuyet === false && hs(cxMb, b).moHopDuyet === false && hs(head, b).moHopDuyet === true && hs(gvcn, b).moHopDuyet === false, 'cờ mở hộp Chờ duyệt');
+  }));
+
+  /* Chạy thật #2058 lộ vòng import `duyet/loaiYeuCau` ↔ `yThuc/xuLy` làm máy chủ sập lúc nạp; trong tiến trình kiểm mô-đun đã nạp theo thứ tự khác nên không lộ.
+     → nạp ứng dụng (như `index.ts`, không mở cổng) + hai đầu của vòng trong TIẾN TRÌNH MỚI. */
+  await checkAsync('N70-13 · Nạp máy chủ trong tiến trình mới: `app` (như index.ts, không mở cổng), `duyet/loaiYeuCau`, `yThuc/xuLy` — mỗi thứ tự nạp đều không ném (bắt vòng import đọc hằng lúc nạp)', async () => {
+    const { spawnSync } = await import('node:child_process');
+    for (const tep of ['../app.js', '../duyet/loaiYeuCau.js', '../yThuc/xuLy.js']) {
+      const url = new URL(tep, import.meta.url).href;
+      const r = spawnSync(process.execPath, ['--input-type=module', '-e', `await import(${JSON.stringify(url)}); process.exit(0);`], { encoding: 'utf8', timeout: 60_000 });
+      assert(r.status === 0, `${tep}: mã ${r.status} — ${(r.stderr ?? '').split('\n').filter((x) => /Error|at /.test(x)).slice(0, 3).join(' | ')}`);
+    }
+  });
 }

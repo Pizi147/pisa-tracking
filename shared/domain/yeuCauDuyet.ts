@@ -30,6 +30,11 @@ export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_x
 export const LY_DO_RUT = t('Người gửi đã rút');
 /** N70: thẻ sửa cấp bậc tự đóng vì bậc khai đã khác lúc gửi (Head / Quản trị vừa sửa thẳng) — ở shared để `loaiYeuCau.ts` ↔ `yThuc/xuLy.ts` không đọc hằng của nhau lúc nạp (vòng import). */
 export const LY_DO_SUA_KHAI_LECH = t('Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa');
+/**
+ * N70 — thẻ sửa cấp bậc QUÁ HẠN duyệt: `true` = máy chốt theo GVCN như thẻ Ý thức (PTA chọn, chờ chủ SP xác nhận); `false` = vẫn chờ Head.
+ * MỘT chỗ đổi: quét hết hạn (`quetYThucHetHan`), câu quy chế (`quyCheDuyet`), dòng chữ của thẻ và ô đếm ngược ở Chờ duyệt đều đọc cờ này.
+ */
+export const SUA_KHAI_HET_HAN_THEO_GVCN: boolean = true;
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;

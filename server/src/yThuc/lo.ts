@@ -25,7 +25,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { requireViewClass } from './access.ts';
 import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
-import { MANAGE_MESSAGE, guiSuaKhai, kiemKhai, luuGhiNhan, luuKhai, luuSuaKhai, luuXuLy, moTa, ngayThucHien, nguoiThucHien } from './xuLy.ts';
+import { MANAGE_MESSAGE, guiSuaKhai, khoiPhucSuaKhai, kiemKhai, luuGhiNhan, luuKhai, luuSuaKhai, luuXuLy, moTa, ngayThucHien, nguoiThucHien } from './xuLy.ts';
 import { rutYeuCau } from '../duyet/yeuCau.ts';
 import { KEY_TAKEN_MESSAGE } from './access.ts';
 
@@ -44,7 +44,8 @@ export type BangLo = { classId: number; classCode: string; canManage: boolean; l
 /** `truoc` / `bac` (Xác nhận cấp bậc): bậc khai trước khi lưu (null = chưa khai) và bậc vừa lưu — web giữ để Hoàn tác cả lô. */
 export type BacKhai = { bac: number; thang: string | null; ghiChu: string };
 /** N70 `guiDuyet` + `ycId`: em đã khai, GVCN sửa → KHÔNG áp, đã gửi Head duyệt (Hoàn tác = rút thẻ `ycId`). */
-export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[]; truoc?: BacKhai | null; bac?: number; guiDuyet?: true; ycId?: number };
+export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[]; truoc?: BacKhai | null; bac?: number; guiDuyet?: true; ycId?: number;
+  /** Lần gửi này GHI ĐÈ một thẻ đang chờ từ trước → Hoàn tác khôi phục nội dung thẻ cũ (máy chủ giữ), không rút. */ ghiDe?: true };
 
 function lopCua(classId: number): { id: number; code: string } {
   const cls = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(classId) as any;
@@ -238,7 +239,7 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
       /* N70 (chủ SP 24/11): em ĐÃ KHAI mà người lưu không phải người duyệt (GVCN) → gửi Head duyệt từng em, bậc cũ giữ; lý do = ghi chú chung (bắt buộc). */
       if (em.khai && !c.laQl) {
         const g = guiSuaKhai(p, hv, sid, { ...k, ghiChu: chung.ghiChu }, c.homNay);
-        return { nhan, truoc, bac: k.bac, guiDuyet: true as const, ycId: g.yeuCauId };
+        return { nhan, truoc, bac: k.bac, guiDuyet: true as const, ycId: g.yeuCauId, ...(g.ghiDe ? { ghiDe: true as const } : {}) };
       }
       if (em.khai) luuSuaKhai(p, hv, sid, k, c.homNay);
       else luuKhai(p, hv, sid, k, c.homNay);
@@ -276,7 +277,8 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
       /* N70: em vừa GỬI Head duyệt → Hoàn tác = Rút đúng thẻ đang chờ của em (thẻ của chính người bấm — `rutYeuCau` kiểm). */
       if (x.ycId != null) {
         if (em.khai?.cho?.id !== Number(x.ycId)) throw badRequest('Yêu cầu sửa bậc của em không còn chờ Head — không hoàn tác em này.');
-        rutYeuCau(p, em.khai.cho.id);
+        /* PTA rà #2058: lô GHI ĐÈ thẻ gửi từ trước → trả nội dung cũ (thẻ vẫn chờ); thẻ lô vừa tạo → rút. */
+        if (!khoiPhucSuaKhai(p, sid, em.khai.cho.id)) rutYeuCau(p, em.khai.cho.id);
         return { nhan: '' };
       }
       const sau = Number(x.bac);
