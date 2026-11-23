@@ -77,12 +77,29 @@ export function khoangTamDung(ids: readonly number[]): Record<number, KhoangTamD
       `SELECT student_id, event_type, event_date, detail, created_by FROM journey_events
         WHERE event_type IN ('pause', 'resume') AND student_id IN (${ph}) ORDER BY student_id, event_date, id`,
     ).all(...lo) as any[];
-    for (const r of rows) {
-      const cuoi = kq[r.student_id]?.at(-1);
-      if (r.event_type === 'pause') {
-        if (!cuoi || cuoi.den !== null) (kq[r.student_id] ??= []).push({ tu: r.event_date, den: null, lyDo: r.detail ?? null, boiId: r.created_by ?? null });
-      } else if (cuoi && cuoi.den === null) cuoi.den = r.event_date;
-    }
+    for (const r of rows) ghepKhoang((kq[r.student_id] ??= []), r);
   });
+  for (const k of Object.keys(kq)) if (!kq[Number(k)].length) delete kq[Number(k)];
   return kq;
+}
+/** Ghép một sự kiện (đã xếp theo ngày, id) vào các khoảng của một em — một luật cho `khoangTamDung` và `khoangTuSuKien`. */
+function ghepKhoang(ds: KhoangTamDung[], r: { event_type: string; event_date: string; detail?: string | null; created_by?: number | null }) {
+  const cuoi = ds.at(-1);
+  if (r.event_type === 'pause') {
+    if (!cuoi || cuoi.den !== null) ds.push({ tu: r.event_date, den: null, lyDo: r.detail ?? null, boiId: r.created_by ?? null });
+  } else if (cuoi && cuoi.den === null) cuoi.den = r.event_date;
+}
+
+/**
+ * R1-L2 (rà 24/11): sự kiện Tạm dừng / Quay lại của em `sid` (biểu thức SQL) thành MỘT cột JSON trong câu đang đọc — hạn Báo PH ở danh sách (Đang theo dõi,
+ * panel Phối hợp, Phân tích) tính cùng khoảng với panel (`khoangTamDung`) mà không thêm câu. Đọc lại bằng `khoangTuSuKien`.
+ */
+export const SU_KIEN_TAM_DUNG_SQL = (sid: string) =>
+  `(SELECT json_group_array(json_array(j_.event_date, j_.id, j_.event_type)) FROM journey_events j_ WHERE j_.event_type IN ('pause', 'resume') AND j_.student_id = ${sid})`;
+export function khoangTuSuKien(json: string | null | undefined): KhoangTamDung[] {
+  const ds: KhoangTamDung[] = [];
+  const ev = (json ? JSON.parse(json) : []) as [string, number, string][];
+  ev.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]));   // như ORDER BY event_date, id của `khoangTamDung`
+  for (const [ngay, , loai] of ev) ghepKhoang(ds, { event_type: loai, event_date: ngay });
+  return ds;
 }

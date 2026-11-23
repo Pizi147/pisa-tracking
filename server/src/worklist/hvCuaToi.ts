@@ -11,7 +11,7 @@
  */
 import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
-import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, thangKeTiep } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, dauNgayVnUtc, thangKeTiep } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { boLopCu, can, laTvvCuaEm, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -99,8 +99,8 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
      cả bảng → xếp theo id trong JS (thứ tự nhãn `caseMoi` như cũ). */
   for (const c of (conn.prepare(
     `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, sc.category FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE sc.status != 'done' AND ${CASE_THAT('sc')} AND sc.created_at >= ?`,
-  ).all(tuNgay) as any[]).sort((x, y) => x.id - y.id)) {
+      WHERE sc.status != 'done' AND ${CASE_THAT('sc')} AND sc.created_at >= ?`,   // R1-L6: mốc 00:00 giờ VN (Case tạo 00:00–07:00 VN không rơi khỏi cửa sổ)
+  ).all(dauNgayVnUtc(tuNgay)) as any[]).sort((x, y) => x.id - y.id)) {
     if (laDangHoc.has(c.sid)) ghi(c.sid, (l) => { l.caseMoi = [...new Set([...(l.caseMoi ?? []), c.category ?? 'tong_hop'])]; });
   }
   for (const v of conn.prepare('SELECT student_id AS sid, ten, category FROM violations WHERE occurred_on >= ? AND chi_nhac = 0 ORDER BY occurred_on DESC, id DESC').all(tuNgay) as any[]) {
