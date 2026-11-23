@@ -5,7 +5,8 @@
 export async function runPrAuViecLopCuTests(t: any) {
   const { check, assert, assertThrows, conn, P, TODAY } = t;
   console.log('\nAU-VIEC-3 · GV lớp cũ xem hồ sơ chỉ đọc 30 ngày (N48)');
-  const { can, lopCuXem, NGAY_XEM_LOP_CU, loadPrincipal } = await import('../permissions.ts');
+  const { can, lopCuXem, loadPrincipal } = await import('../permissions.ts');
+  const NGAY_XEM_LOP_CU = 30;   // N68: `xemCuDen` — gốc 30 ngày (Hạn mặc định › Bàn giao đổi GV (còn xem))
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { studentProfile } = await import('../students/profile.ts');
   const { skillSupportBoard } = await import('../cases/cases.ts');
@@ -41,6 +42,30 @@ export async function runPrAuViecLopCuTests(t: any) {
     for (const q of [PERMISSIONS.SOS_EDIT, PERMISSIONS.SOS_REPORT, PERMISSIONS.VIOLATION_RECORD, PERMISSIONS.DISCIPLINE_MANAGE, PERMISSIONS.STUDENT_EDIT, PERMISSIONS.SCORE_EDIT]) {
       assert(!can(P.coreTeacher, q, { ...ctx, skill: 'listening' }), `${q} không được mở`);
     }
+  });
+
+  check('N68 · phiếu bàn giao chuyển lớp còn là việc → GV cũ xem tới khi xong (quá 30 ngày vẫn xem); xác nhận xong → về mốc 30 ngày; lệnh cũ không phiếu (han_gvcn NULL) → hết sau 30 ngày', () => {
+    assert(em, 'seed');
+    const sau = ngayCong(em.roi, NGAY_XEM_LOP_CU + 5);
+    conn.exec('SAVEPOINT n68');
+    try {
+      const lop101 = conn.prepare(`SELECT id FROM classes WHERE code = 'MB FT 101'`).get().id;
+      const id = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
+        VALUES (?, ?, ?, 'chuyen_lop', 'giua-khoa', ?, ?, ?, 'da_chuyen', ?)`).run(em.sid, lop101, em.lop_moi, em.roi, P.coreTeacher.userId, em.roi, new Date().toISOString()).lastInsertRowid);
+      xoaNho();
+      /* Lệnh cũ không có phiếu (trước OV-13l: han_gvcn NULL, không ai xác nhận) → KHÔNG mở xem vô hạn. */
+      assert(lopCuXem(P.coreTeacher, em.sid, sau) === null, 'lệnh cũ không phiếu: hết sau 30 ngày');
+      assert(!can(P.coreTeacher, PERMISSIONS.STUDENT_VIEW, { studentId: em.sid, date: sau }), 'lệnh cũ không phiếu: STUDENT_VIEW ngày 35 chặn');
+      conn.prepare('UPDATE lenh_chuyen_lop SET han_gvbm = ?, han_gvcn = ? WHERE id = ?').run(em.roi, em.roi, id);   // có phiếu, chưa xác nhận
+      xoaNho();
+      assert(lopCuXem(P.coreTeacher, em.sid, sau)?.den === '9999-12-31', 'bàn giao mở: xem tới khi xong');
+      assert(can(P.coreTeacher, PERMISSIONS.STUDENT_VIEW, { studentId: em.sid, date: sau }), 'bàn giao mở: STUDENT_VIEW ngày 35');
+      assert(!can(P.coreTeacher, PERMISSIONS.STUDENT_EDIT, { studentId: em.sid, date: sau }), 'vẫn chỉ đọc');
+      conn.prepare('UPDATE lenh_chuyen_lop SET xac_nhan_luc = ? WHERE id = ?').run(new Date().toISOString(), id);
+      xoaNho();
+      assert(lopCuXem(P.coreTeacher, em.sid, sau) === null, 'bàn giao xong, quá 30 ngày → hết');
+      assert(lopCuXem(P.coreTeacher, em.sid, ngayCong(em.roi, NGAY_XEM_LOP_CU))?.den === ngayCong(em.roi, NGAY_XEM_LOP_CU), 'bàn giao xong: mốc 30 ngày');
+    } finally { conn.exec('ROLLBACK TO n68'); conn.exec('RELEASE n68'); xoaNho(); }
   });
 
   check('N48 · hết 30 ngày → chặn như GV không dạy em; chưa tới ngày rời → không có ngoại lệ', () => {

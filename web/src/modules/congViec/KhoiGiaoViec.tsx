@@ -526,6 +526,8 @@ export function dongLichSuGiao(g: KhoiGv | null | undefined, hn: string, ten?: s
       const chu = (l.moi ?? l.cu ?? '').replace(/\s+/g, ' ');
       return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${!l.cu ? t('Thêm mô tả việc') : l.moi ? t('Sửa mô tả việc') : t('Bỏ mô tả việc')}`, phu: [chu.length > 160 ? `${chu.slice(0, 160)}…` : chu] };
     }
+    /* N67: Xếp lịch họp tự xong / về như trước theo Kết quả meeting. */
+    if (l.truong === 'tu_xong' || l.truong === 'tu_mo_lai') return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.truong === 'tu_xong' ? t('Tự xong theo Kết quả') : t('Mở lại theo Kết quả')}`, phu: [] };
     const kq = (() => { try { const x = JSON.parse(l.moi ?? 'null'); return x ? [x.ngayGio ? t('họp {ngay}', { ngay: lucVn(x.ngayGio.replace(' ', 'T')) }) : null, x.ketQua].filter(Boolean) as string[] : []; } catch { return []; } })();
     return { luc: l.luc, nguoi: l.nguoi, tieu: `${dau}${l.truong === 'xong' ? t('Hoàn thành') : l.truong === 'sua' ? t('Sửa kết quả') : t('Hoàn tác hoàn thành')}`, phu: kq };
   });

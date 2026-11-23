@@ -33,6 +33,8 @@ export const EN_GIAO_VIEC_2 = {
   'Phụ trách {ten}': 'Owner {ten}',
   'Hoàn thành': 'Done',
   'Hoàn tác hoàn thành': 'Undid Done',
+  'Tự xong theo Kết quả': 'Done with the meeting result',
+  'Mở lại theo Kết quả': 'Reopened with the meeting result',
   '{phan} · Xong': '{phan} · Done',
   'Xong: {viec}': 'Done: {viec}',
   'Bạn nhập hộ CX': 'You are entering this for CX',

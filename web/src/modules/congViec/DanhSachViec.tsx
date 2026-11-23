@@ -145,15 +145,15 @@ export const chuDau = (ten: string) => {
  * · chip "n việc" · "n quá hạn" đỏ (375 cũng ghi đủ chữ — AU-GON A1-11). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
-export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: ChungDong & {
+export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: ChungDong & {
   /** GAP-MO (N60): khoá nhớ gập / mở ở trình duyệt = người + tab (vd `u7:bao-ph`); không có = không nhớ. Mục theo khoá mục; mặc định mở. */
   nho?: string;
   muc: readonly MucTab<WorkItem>[];
   /** `lamThay` (AUDIT-1611 P1-03): dòng làm thay trong mục — vẽ nhưng không vào `n`. */
   dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>;
   soHien: number;
-  /** Cuối thẻ cuối (QL "Việc quản lý": + Giao việc · Vận hành ›). */
-  cuoi?: ReactNode;
+  /** Đầu bên phải dải mục đầu (QL "Việc quản lý": Vận hành ›). */
+  dauPhai?: ReactNode;
   /** UI-CV-TVV (P1): luật của tab (vd hạn Báo PH) — ⓘ ở dải mục đầu, không thành câu trên màn. */
   luat?: ReactNode;
 }) {
@@ -200,9 +200,10 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: Chu
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
             <DaiNhom k={ICON_MUC[m.key] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
               trungTinh={chung} chevSauTen dieuKhien={dongGap ? undefined : maMuc} luat={i === 0 ? luat : undefined}
-              phu={d.quaHan > 0 || !!d.lamThay ? <>
+              phu={d.quaHan > 0 || !!d.lamThay || (dauPhai && i === 0) ? <>
                 {d.quaHan > 0 && <span className="font-bold tabular-nums text-late">{d.quaHan} {t('quá hạn')}</span>}
                 {!!d.lamThay && <span className="font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
+                {i === 0 && dauPhai}
               </> : null} />
             {!dongGap && <div id={maMuc}>
             <ul className="m-0 list-none p-0">
@@ -228,7 +229,6 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: Chu
               </div>
             )}
             </div>}
-            {cuoi && i === muc.length - 1 && <div className="border-t px-4 py-1" style={{ borderColor: 'var(--line)' }}>{cuoi}</div>}
           </section>
         );
       })}

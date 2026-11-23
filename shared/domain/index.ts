@@ -37,6 +37,7 @@ export * from './sapToi.ts';
 export * from './deMucCase.ts';
 export * from './dieuHuongHoSo.ts';
 export * from './dieuHuong.ts';
+export * from './hopDonVi.ts';
 export * from './quayLai.ts';
 export * from './hocVienLop.ts';
 export * from './trucTuan.ts';

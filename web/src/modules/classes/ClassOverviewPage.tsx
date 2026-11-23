@@ -232,13 +232,7 @@ export default function ClassOverviewPage() {
         <TabHocVienLop lop={data} cheDo={cheDo} moChon={moChon} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
           onDoi={xong} onThemHocVien={() => setViec('hoc-vien')} />
       )}
-      {tab === 'y-thuc' && (
-        /* U10 #29 (chủ SP 03/11): bảng Điểm MT ở tab Học viên — tab Ý thức giữ lối "Điểm Mock Test ›" (mở sẵn khối điểm rồi cuộn tới). */
-        <ClassYThucCard classId={data.id} thuong={thuong} onDiemMt={data.viewer.coTheXemDiem && dsTab.includes('hoc-vien') ? () => {
-          setMoDiem(true); doiThamSo({ tab: tabMacDinh === 'hoc-vien' ? null : 'hoc-vien', 'che-do': null });
-          requestAnimationFrame(() => document.getElementById('khoi-diem-lop-nut')?.scrollIntoView({ block: 'start' }));
-        } : undefined} />
-      )}
+      {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
       {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })} viet={params.get('viet') === '1'} onViet={() => doiThamSo({ viet: null })}
         onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} onDoiDot={() => { invalidate('/classes'); reload(); }} />}

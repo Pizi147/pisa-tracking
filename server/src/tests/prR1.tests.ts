@@ -39,9 +39,11 @@ export async function runPrR1Tests(t: any) {
       && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
     const tenCon = cases.listCases(P.admin, { studentId: c.sid }).rows.find((r: any) => r.id === c.id)?.ownerName ?? '';
     assert(tenCon && !/đã nghỉ/.test(tenCon), `chủ còn làm mà tên có "(đã nghỉ)": ${tenCon}`);
-    accounts.setRoles(P.admin, c.chu, []);   // gỡ hết vai — `donGiaoHetHieuLuc` không đụng Case (không luật mới)
+    /* N69 (24/11): gỡ hết vai qua `setRoles` nay tự chuyển Case (phép N69 ở prGiaoViec). Ở đây đóng vai THẲNG ở DB — dữ liệu trước N69 / người không có ai thay —
+       để thử trạng thái "chưa có người" của R1. */
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'`).run(c.chu);
     xoaNho();
-    assert(one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'gỡ vai không được tự đổi chủ Case');
+    assert(one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'đóng vai thẳng: chủ Case giữ nguyên');
     assert(coTrong(), 'caseChuaCoNguoi bỏ sót Case chủ đã gỡ vai');
     assert(viec(), 'Công việc thiếu dòng owner: của Case chủ đã gỡ vai');
     const ds = cases.listCases(P.admin, { noOwner: true, studentId: c.sid });
@@ -116,6 +118,16 @@ export async function runPrR1Tests(t: any) {
     assert(ma(xn) === null && one('SELECT status, updated_at FROM sos_coordination_actions WHERE id = ?', x.id).updated_at, 'việc chờ (updated_at NULL) không xác nhận được — so-và-đổi sai');
     /* Lần sau: đã xong → sửa (OV-7a), so với updated_at vừa ghi. */
     assert(ma(xn) === null, 'sửa việc đã xong (updated_at có giá trị) lỗi');
+    /* L3-web: panel gửi `updatedAt` đã thấy — người khác lưu lần lượt (không cùng lúc) vẫn 409, DB không đổi; đúng bản → lưu; null khớp việc chưa từng sửa. */
+    const truoc = one('SELECT note, updated_at FROM sos_coordination_actions WHERE id = ?', x.id);
+    const voi = (updatedAt: string | null, note: string) => () => ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note, updatedAt });
+    assert(ma(voi('2000-01-01T00:00:00.000Z', 'Bản cũ đã thấy — phải bị chặn vì người khác vừa lưu.')) === 409, 'updatedAt cũ không 409');
+    assert(JSON.stringify(one('SELECT note, updated_at FROM sos_coordination_actions WHERE id = ?', x.id)) === JSON.stringify(truoc), '409 mà DB đã đổi');
+    assert(ma(voi(null, 'Bản null trong khi việc đã có updated_at — phải bị chặn.')) === 409, 'updatedAt null khi DB có giá trị không 409');
+    const v = voi(truoc.updated_at, 'Đúng bản đã thấy — lưu được, ghi chú mới.')();
+    assert(v.note === 'Đúng bản đã thấy — lưu được, ghi chú mới.' && v.updatedAt && v.updatedAt !== truoc.updated_at, `đúng bản: ${JSON.stringify(v)}`);
+    dat('pending', null);
+    assert(ma(voi(null, 'Việc chưa từng sửa (updated_at NULL), panel gửi null — lưu được.')) === null, 'null khớp NULL không lưu được');
   }));
 
   const ab: any = await import('../fasttrack/absence.ts');
