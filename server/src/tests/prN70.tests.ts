@@ -190,18 +190,20 @@ export async function runPrN70Tests(t: YThucTestKit) {
      Head) nên web chia lô 4 em khi có em gửi duyệt — khoá trần câu mỗi em. */
   const { soCauSql } = await import('../platform/nguCanhRequest.ts');
   const dem = (fn: () => unknown) => { const truoc = soCauSql(); fn(); return soCauSql() - truoc; };
-  await checkAsync('N70-9 · Tốc độ: hồ sơ Ý thức + bảng lô KHÔNG thêm câu khi em có thẻ sửa bậc đang chờ; lô GVCN gửi Head duyệt ≤ 17 câu / em (lô 4 em)', () => thu(() => {
+  const { TRAN_GHI_LO }: any = await import('./tocDoDuong.ts');
+  await checkAsync('N70-9 · Tốc độ: hồ sơ Ý thức + bảng lô KHÔNG thêm câu khi em có thẻ sửa bậc đang chờ; một lần gửi + lô 4 em gửi Head duyệt trong trần `TRAN_GHI_LO` (tocDoDuong.ts)', () => thu(() => {
     const a = moiEm();
     xu.khaiBac(gvcn, a, { bac: 2, ghiChu: 'Report 2' });
     const hs0 = dem(() => hs(gvcn, a)), lo0 = dem(() => lo.loYThucLop(gvcn, cid));
-    xu.suaKhaiBac(gvcn, a, { bac: 1, ghiChu: 'Hạ về Report 1', bacCu: 2 });
+    const n1 = dem(() => xu.suaKhaiBac(gvcn, a, { bac: 1, ghiChu: 'Hạ về Report 1', bacCu: 2 }));
     const hs1 = dem(() => hs(gvcn, a)), lo1 = dem(() => lo.loYThucLop(gvcn, cid));
     assert(hs(gvcn, a).khai.cho && hs1 === hs0 && lo1 === lo0, `hồ sơ ${hs0} → ${hs1} câu · bảng lô ${lo0} → ${lo1} câu`);
     const ems = Array.from({ length: 4 }, () => moiEm());
     for (const sid of ems) xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2' });
     const n = dem(() => { const r = lo.loCapBac(gvcn, cid, { em: ems.map((studentId) => ({ studentId, bac: 1 })), ghiChu: 'Rà lại hồ sơ giấy' }); assert(r.em.every((x: any) => x.ok && x.guiDuyet), JSON.stringify(r)); });
-    console.log(`      đo: hồ sơ Ý thức ${hs1} câu · bảng lô ${lo1} câu (có / không thẻ chờ như nhau) · lô gửi duyệt ${n} câu / 4 em = ${(n / 4).toFixed(1)}`);
-    assert(n / 4 <= 17, `lô gửi duyệt ${(n / 4).toFixed(1)} câu / em`);
+    console.log(`      đo: hồ sơ Ý thức ${hs1} câu · bảng lô ${lo1} câu (có / không thẻ chờ như nhau) · một lần gửi ${n1} câu · lô gửi duyệt ${n} câu / 4 em = ${(n / 4).toFixed(1)}`);
+    assert(n1 <= TRAN_GHI_LO.guiSuaKhai, `một lần gửi ${n1} câu > trần ${TRAN_GHI_LO.guiSuaKhai}`);
+    assert(n <= TRAN_GHI_LO.loGuiSuaKhai4Em, `lô gửi duyệt 4 em ${n} câu > trần ${TRAN_GHI_LO.loGuiSuaKhai4Em}`);
   }));
 
   /* ---------------------------------------------------------------- PTA rà sâu #2058 */
@@ -244,6 +246,20 @@ export async function runPrN70Tests(t: YThucTestKit) {
     const t2 = xu.suaKhaiBac(cxMb, b, { bac: 4, ghiChu: 'CX sửa theo hồ sơ', bacCu: 2 });
     assert(!t2.guiDuyet && khai(b).bac === 4, 'CX sửa thẳng áp ngay');
     assert(hs(cxMb, b).suaKhaiCanDuyet === false && hs(cxMb, b).moHopDuyet === false && hs(head, b).moHopDuyet === true && hs(gvcn, b).moHopDuyet === false, 'cờ mở hộp Chờ duyệt');
+  }));
+
+  /* PTA rà lần 2 #2058: em sang chuỗi mới rồi khai lại ĐÚNG bậc cũ trong lúc thẻ còn chờ → dòng khai của chuỗi cũ còn nguyên nên thẻ không tự đóng; áp thẻ phải so cả
+     lộ trình của dòng khai (`cycleId`), không chỉ bậc — kẻo ghi nhầm vào dòng khai của chuỗi mới. */
+  await checkAsync('N70-14 · Áp thẻ mà dòng khai hiện tại thuộc CHUỖI KHÁC lúc gửi (bậc trùng) → 409, dòng khai không đổi; đúng chuỗi thì áp', () => thu(() => {
+    const sid = moiEm();
+    xu.khaiBac(gvcn, sid, { bac: 2, thang: THANG, ghiChu: 'Report 2' });
+    const r = xu.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Hạ về Report 1', bacCu: 2 });
+    const y = the(sid)[0]; const d = JSON.parse(y.du_lieu);
+    const lech = { id: y.id, doi_tuong_id: sid, du_lieu: JSON.stringify({ ...d, cycleId: d.cycleId + 100000 }) };
+    const l = loi(() => xu.apDungSuaKhai(head.userId, lech));
+    assert(l.status === 409 && khai(sid).bac === 2 && khai(sid).ghi_chu === 'Report 2', `${l.status} ${l.msg} ${JSON.stringify(khai(sid))}`);
+    yc.duyetYeuCau(head, r.yeuCauId);
+    assert(khai(sid).bac === 1, 'đúng chuỗi: áp');
   }));
 
   /* Chạy thật #2058 lộ vòng import `duyet/loaiYeuCau` ↔ `yThuc/xuLy` làm máy chủ sập lúc nạp; trong tiến trình kiểm mô-đun đã nạp theo thứ tự khác nên không lộ.

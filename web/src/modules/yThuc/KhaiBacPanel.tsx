@@ -10,6 +10,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState } from '../../ui/ui.tsx';
 import { ChipBac, nganBac } from './KhaiBacLoPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useSession } from '../../lib/session.tsx';
 import { BAC_0_NHAN, THANG, dsLoi, duongThe, hienONgay, kindCuaBac, luuRoiTiep, nhanLoaiXuLy, quyCheKhaiBac, bacDu } from '@shared/domain/index.ts';
 import { lamMoiYThucCua, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -34,6 +35,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
+  const { session } = useSession();
   const { data: d, error: loiTai, reload } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
   const [bac, setBac] = useState<number | null>(null);
   const [thang, setThang] = useState('');
@@ -142,8 +144,10 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
             <span className="whitespace-nowrap tabular-nums">{nganBac(d.khai.bac)} → {nganBac(cho.bac)}</span>
             {cho.han && <span className="whitespace-nowrap text-dim"> · {t('hạn {ngay}', { ngay: hienONgay(cho.han, 'ngay') })}</span>}
           </span>
+          {/* PTA rà lần 2 #2058: máy chủ chỉ cho NGƯỜI GỬI rút — GVCN khác của lớp vẫn thấy dải, không có nút (khỏi bấm ra 403). */}
           {canDuyet
-            ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void rut()}>{t('Rút')}</button>
+            ? (cho.nguoiXin != null && cho.nguoiXin === session?.user?.id
+              ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void rut()}>{t('Rút')}</button> : null)
             : d.moHopDuyet ? <Link className="link whitespace-nowrap font-semibold" to={duongThe(cho.id, 'duyet')}>{t('Mở Chờ duyệt')} ›</Link> : null}
         </p>
       )}

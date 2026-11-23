@@ -309,7 +309,7 @@ export function guiSuaKhai(p: Principal, hv: { student_code: string }, studentId
       ghiDe = !!truoc;
       db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(k.ghiChu, JSON.stringify({ ...duLieu, ...(truoc ? { truoc } : {}) }), p.userId, id);
       writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: 'Sửa cấp bậc vi phạm',
-        before: { lyDo: cu.ly_do, duLieu: dCu ? { ...dCu, truoc: undefined } : null }, after: { lyDo: k.ghiChu, duLieu } });
+        before: { lyDo: cu.ly_do, nguoiXin: cu.nguoi_xin, duLieu: dCu ? { ...dCu, truoc: undefined } : null }, after: { lyDo: k.ghiChu, nguoiXin: p.userId, duLieu } });
     } else {
       writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_request', entityType: 'student', entityId: studentId,
         entityLabel: `${hv.student_code} · xin sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, yeuCauId: id } });
@@ -353,19 +353,21 @@ export function kiemRutSuaKhai(p: Principal, studentId: number): void {
  */
 export function apDungSuaKhai(boi: number, yc: { id: number; doi_tuong_id: number; du_lieu: string | null }, o: { tuChot?: boolean } = {}): void {
   const d = JSON.parse(yc.du_lieu ?? '{}') as Partial<DuLieuSuaKhai>;
-  luuSuaKhai({ userId: boi }, hocVien(yc.doi_tuong_id), yc.doi_tuong_id, kiemKhai(d, true), demoToday(), { bacCu: d.bacCu, yeuCauId: yc.id, tuChot: o.tuChot });
+  luuSuaKhai({ userId: boi }, hocVien(yc.doi_tuong_id), yc.doi_tuong_id, kiemKhai(d, true), demoToday(), { bacCu: d.bacCu, cycleId: d.cycleId, yeuCauId: yc.id, tuChot: o.tuChot });
   xoaNho();
 }
 
 /** Phần GHI của Sửa cấp bậc (đã kiểm quyền) — OV-13d lô gọi thẳng. */
 export function luuSuaKhai(p: { userId: number }, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string,
   /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác.
-   *  N70: `yeuCauId` = áp từ thẻ sửa bậc (Head duyệt / `tuChot` hết hạn) — ghi vào nhật ký. */
-  o: { bacCu?: number; hoanTac?: (em: EmYThuc) => void; yeuCauId?: number; tuChot?: boolean } = {}) {
+   *  N70: `yeuCauId` = áp từ thẻ sửa bậc (Head duyệt / `tuChot` hết hạn) — ghi vào nhật ký; `cycleId` = lộ trình của dòng khai LÚC GỬI thẻ — em sang chuỗi
+   *  mới rồi khai lại đúng bậc cũ thì dòng khai hiện tại là dòng khác → 409, không ghi nhầm (PTA rà lần 2 #2058). */
+  o: { bacCu?: number; cycleId?: number; hoanTac?: (em: EmYThuc) => void; yeuCauId?: number; tuChot?: boolean } = {}) {
   const { bac, thang, ghiChu } = k;
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (o.cycleId !== undefined && em.khai.cycleId !== o.cycleId) throw conflict('Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
     if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) {
       throw conflict(o.hoanTac ? 'Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.' : 'Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
     }
