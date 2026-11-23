@@ -119,4 +119,38 @@ export async function runPrR1Tests(t: any) {
     assert(loi?.status === 400, `phải 400 (kỹ năng không có): ${loi?.status} ${loi?.message}`);
     assert(one('SELECT status FROM assessment_attempts WHERE id = ?', a.id).status === 'cancelled', 'lượt đã bị khôi phục dù báo vắng lỗi');
   }));
+
+  const { dauNgayVnUtc, khoangMacDinh } = await import('../../../shared/domain/index.ts');
+  const tqv: any = await import('../worklist/tongQuanV5.ts');
+  const hvt: any = await import('../worklist/hvCuaToi.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { addDays } = await import('../util.ts');
+  check('L6 · ngày VN: Báo PH tạo 01:00 VN ngày đầu kỳ vào kỳ, 01:00 VN ngày sau kỳ ra kỳ (Tổng quan TVV); Case tạo 00:30 VN ngày đầu cửa sổ vào "Cần chú ý"', () => thu(() => {
+    assert(dauNgayVnUtc('2026-11-24') === '2026-11-23T17:00:00.000Z', dauNgayVnUtc('2026-11-24'));
+    const em = one(`SELECT s.id, s.consultant_user_id AS tvv FROM students s JOIN user_roles ur ON ur.user_id = s.consultant_user_id AND ur.status = 'active'
+       JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant' WHERE s.status = 'active' ORDER BY s.id LIMIT 1`);
+    assert(em, 'seed thiếu em có TVV');
+    const tvv = loadPrincipal(em.tvv);
+    const ky = khoangMacDinh(TODAY);
+    const mot = (iso: string) => new Date(Date.parse(iso) + 3_600_000).toISOString();
+    const tong = () => tqv.tongQuanTvv(tvv).baoPh.tong as number;
+    const truoc = tong();
+    const them = (luc: string) => {
+      conn.prepare(`INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc) VALUES (?, 'Thử L6', ?, 'mo', ?)`).run(em.id, ky.den, luc);
+      xoaNho();
+      return tong() - truoc;
+    };
+    assert(them(mot(dauNgayVnUtc(ky.tu))) === 1, 'Báo PH tạo 01:00 VN ngày đầu kỳ không vào kỳ');
+    assert(them(mot(dauNgayVnUtc(addDays(ky.den, 1)))) === 1, 'Báo PH tạo 01:00 VN ngày sau kỳ vẫn vào kỳ');
+    /* Cần chú ý: Case mới trong 14 ngày — em chưa có lý do nào trước đó */
+    const chip = () => hvt.chipHocVien(tvv);
+    const c0 = chip();
+    const sid = c0.tatCa.find((id: number) => !c0.lyDo.has(id) && one("SELECT status FROM students WHERE id = ?", id).status === 'active');
+    if (sid) {
+      conn.prepare(`INSERT INTO sos_cases (student_id, origin_kind, status, created_at, category) VALUES (?, 'teacher_report', 'open', ?, 'speaking')`)
+        .run(sid, new Date(Date.parse(dauNgayVnUtc(addDays(TODAY, -14))) + 1_800_000).toISOString());
+      xoaNho();
+      assert(chip().lyDo.get(sid)?.caseMoi?.length, 'Case tạo 00:30 VN ngày đầu cửa sổ không vào Cần chú ý');
+    }
+  }));
 }

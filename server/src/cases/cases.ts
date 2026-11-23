@@ -33,6 +33,7 @@ import { expectationFor } from '../fasttrack/scoring.ts';
 import { CASE_SAU_THI_SQL, dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeByCode, programmeCodeOfCycle } from '../normal/regular.ts';
+import { ngayTheoGioVN } from '../../../shared/domain/index.ts';   // R1-L6: khoá chống trùng theo ngày VN
 import { KHONG_CHU_SQL, TEN_CHU_SQL, chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
@@ -438,7 +439,7 @@ function baoQuanLyCaseDong(p: Principal, caseId: number, c: { class_id?: number 
     if (id === p.userId) continue;
     notify({
       userId: id, kind: 'case_dong_gv', title: `${p.fullName} đã đóng Case ${chuDe} của ${hv?.full_name ?? 'học viên'}`,
-      entityType: 'sos_case', entityId: caseId, dedupKey: `case_dong_gv:${caseId}:${nowIso().slice(0, 10)}`,
+      entityType: 'sos_case', entityId: caseId, dedupKey: `case_dong_gv:${caseId}:${ngayTheoGioVN(nowIso())}`,
     });
   }
 }
@@ -2299,7 +2300,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
         title: 'Kết thúc theo dõi vấn đề',
         detail: input.note ?? null,
         refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
-        dedupKey: `case_closed:${caseId}:${nowIso().slice(0, 10)}`,
+        dedupKey: `case_closed:${caseId}:${ngayTheoGioVN(nowIso())}`,
       });
     }
     const quaGv = closing && dongQuaGv(p, c);
