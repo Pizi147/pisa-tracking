@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
-import { api, ApiError, invalidate } from '../../lib/api.ts';
+import { api, ApiError } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { DongQuyChe, Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -13,13 +13,12 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, CHU_TOI_THIEU, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
-import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
+import { lamMoiYThucCua, type BangLo, type EmLo, type KqEm } from './kieu.ts';
 const KhaiBacLoPanel = lazyHop(() => import('./KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 
 export type ViecLo = 'xu-ly' | 'ghi-nhan' | 'cap-bac';
 /** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
 const MO_TA_MIN = CHU_TOI_THIEU;
-const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 const duocCua = (e: EmLo, viec: ViecLo) => (viec === 'xu-ly' ? e.xuLy : viec === 'ghi-nhan' ? e.ghiNhan : e.capBac);
 /**
  * Rà #408: một lời gọi phải xong trong ~7,5 s (Netlify) — chia em thành lô nhỏ, gửi lần lượt, tự gửi tiếp (xử lý ~15 câu SQL / em, cấp bậc /
@@ -138,7 +137,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
     } finally {
       setBusy(false); setTienDo(null);
       /* RA-LUONG-11: còn em chưa lưu → giữ nháp (mô tả chung / riêng) để Thử lại, không xoá chữ đang gõ. */
-      if (coOk) { if (!coLoi) xoaNhap(); onDone?.(); lamMoi(); reload(); }
+      if (coOk) { if (!coLoi) xoaNhap(); onDone?.(); lamMoiYThucCua({ classId }); reload(); }
     }
   };
 
@@ -150,7 +149,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
     setBusy(false);
     const hong = r.filter((x) => x.status === 'rejected').length;
     setKq((m) => { const n = new Map(m); ok.forEach((x, i) => { if (r[i].status === 'fulfilled') n.delete(x.studentId); }); return n; });
-    onDone?.(); lamMoi(); reload();
+    onDone?.(); lamMoiYThucCua({ classId }); reload();
     if (hong) toast.push('error', t('{n} em chưa hoàn tác được — thử lại.', { n: hong }));
   };
 

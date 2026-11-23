@@ -239,6 +239,34 @@ export async function runPrCacheTests(t: YThucTestKit) {
       ua.taiTruocGop('/classes/7/ho-so', { overview: '/classes/7/overview' });
       assert(soGoi('/classes/7/ho-so?phan=overview') === 0 && soGoi('/classes/7/overview') === 0, 'đường còn mới vẫn vào bó / gọi lại');
     });
+    await checkAsync('R3-T4 · gopKhiVoHieu: lưu xong vô hiệu `/classes` (nhiều lần) → các đường ĐANG GẮN tải lại bằng GET ho-so theo bó, đường không gắn / không bị vô hiệu (cases) không vào bó; dữ liệu mới về đúng đường lẻ', async () => {
+      batDau();
+      const go = [ua.ganDuong('/classes/7/overview'), ua.ganDuong('/classes/7/roster'), ua.ganDuong('/cases?classId=7')];
+      const goGop = ua.gopKhiVoHieu('/classes/7/ho-so', [{ overview: '/classes/7/overview', roster: '/classes/7/roster' }, { xetLai: '/classes/7/xet-lai', cases: '/cases?classId=7' }]);
+      try {
+        api.invalidate('/classes'); api.invalidate('/classes/7/roster'); api.invalidate('/students');
+        await Promise.resolve();
+        assert(soGoi('/classes/7/ho-so?phan=overview,roster') === 1 && cho.length === 1, `lời gọi: ${cho.map((c) => c.url).join(' ')}`);
+        const ov = ua.taiVaNho('/classes/7/overview');   // hook tải lại ở effect sau — dùng chung lời gọi gộp
+        tra('/classes/7/ho-so?phan=overview,roster', { overview: { status: 200, data: { v: 'moi' } }, roster: { status: 200, data: [] } });
+        assert(JSON.stringify(await ov) === JSON.stringify({ d: { v: 'moi' } }) && cho.length === 0, 'đường lẻ không nhận bản mới của bó');
+        api.invalidate('/students');
+        await Promise.resolve();
+        assert(cho.length === 0, 'vô hiệu không trúng đường của bó vẫn gọi ho-so');
+      } finally { goGop(); go.forEach((f) => f()); }
+    });
+    await checkAsync('R3-T5 · lamMoiYThucCua: thao tác Ý thức của lớp 7 / em 3 → bản vừa xem của y-thuc lớp 7, em 3, /my-work bị xoá (tải mới); lớp / em khác giữ nguyên', async () => {
+      const kieu = await import('../../../web/src/modules/yThuc/kieu.ts');
+      batDau();
+      const ds = ['/classes/7/y-thuc', '/classes/7/viec-theo-em?chi=toi', '/classes/8/y-thuc', '/students/3', '/students/3/y-thuc', '/students/4/y-thuc', '/my-work', '/classes'];
+      for (const p of ds) { ua.taiTruoc(p); tra(p, { p }); }
+      await xong();
+      kieu.lamMoiYThucCua({ classId: 7, studentIds: [3] });
+      for (const p of ds) ua.taiTruoc(p);
+      const moi = ds.filter((p) => soGoi(p) === 1);
+      assert(JSON.stringify(moi) === JSON.stringify(['/classes/7/y-thuc', '/classes/7/viec-theo-em?chi=toi', '/students/3', '/students/3/y-thuc', '/my-work', '/classes']), `tải lại: ${moi.join(' ')}`);
+      cho = [];
+    });
     await checkAsync('HOTFIX-3 (4, 5) · lỗi thân HTML (504 Netlify) → "Lỗi 504 — thử lại", không in HTML; đã có dữ liệu mà tải lại lỗi → giữ dữ liệu, không ErrorState', async () => {
       globalThis.fetch = (async () => ({ ok: false, status: 504, text: async () => '<!doctype html><html><body>Gateway Timeout</body></html>' } as Response)) as typeof fetch;
       let e: any = null;
