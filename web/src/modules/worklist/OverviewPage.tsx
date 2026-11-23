@@ -6,9 +6,9 @@ import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, nhoChiNhanh, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
-import { DauTrangTq, lienKetTq, OViecCuaToi, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
+import { DauTrangTq, lienKetTq, OViecCuaToi, type TongQuanV5Data } from './TongQuanV5.tsx';
+import { duongTongQuanV5, vaiTongQuan } from './duongTongQuan.ts';
 import { TongQuanAdmin, TongQuanCx, TongQuanHead } from './TongQuanVai.tsx';
-import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -29,11 +29,9 @@ export default function OverviewPage() {
     setParams(next);
   };
   const [khung, setKhung] = useState<'ft' | 'thuong'>(() => (khungDaNho('tong-quan') === 'thuong' ? 'thuong' : 'ft'));
-  const vai = nav?.hvCuaToi ? 'tvv'
-    : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
-      : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
-  /* NHẸ HƠN PR-3 (PTA rà #2002 Turso): `gon=1` — bảng chỉ tính SOS (Tình hình + ma trận); Head / QT / Admin `kemViec=1` — việc Công việc "Tất cả" cùng request. */
-  const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' || vai === 'admin' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}&gon=1${vai === 'cx' ? '' : '&kemViec=1'}` : null, [branchId, khung, vai]);
+  const vai = vaiTongQuan(session);
+  /* TQ-QT-NHE A2: URL tính ở `duongTongQuanV5` — khung App tải trước CÙNG chuỗi (kèm "Của tôi" của badge), trang nhận lời gọi đang bay đó. */
+  const v5 = useApi<TongQuanV5Data>(duongTongQuanV5(vai, branchId, khung), [branchId, khung, vai]);
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   /* BPXL-1 (N57): Chuyên viên Xếp lịch (không kèm vai GV) — trang đầu = Kế hoạch Test. Dải 4 số lặng: PR BPXL-2. */
