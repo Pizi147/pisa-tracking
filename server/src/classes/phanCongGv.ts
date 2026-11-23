@@ -268,7 +268,7 @@ export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: s
   const gvcnSau = slots.find((s) => s.isCore)?.userId ?? null;
   const viec = o.san?.lo.viec().get(classId);
   const chon = chonViecChuyen(classId, ct, doi, conDay, gvcnSau, viec);
-  const caseThieu = viec?.cases.filter((r) => r.owner_user_id === null);
+  const caseThieu = viec?.cases.filter((r) => r.__khong_chu)   // L1: chủ đã nghỉ = chưa có người;
   if (o.g) {
     const caseIds = [...new Set([...[...chon.values()].flatMap((v) => v.caseIds), ...(caseThieu ? caseThieu.map((r) => r.id as number) : caseThieuChuLop(classId))])];
     const paIds = [...chon.values()].flatMap((v) => v.paIds);

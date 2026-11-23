@@ -52,6 +52,9 @@ export function ngayTheoGioVN(s: string | null | undefined): string | null {
   return new Date(t + 7 * 3_600_000).toISOString().slice(0, 10);
 }
 
+/** R1-L6: 00:00 giờ VN của ngày `ngay` (YYYY-MM-DD) dạng ISO UTC — so `created_at` / `tao_luc` (`nowIso`) với ngày VN mà vẫn đi chỉ mục: `col >= dauNgayVnUtc(tu)`. */
+export const dauNgayVnUtc = (ngay: string): string => new Date(Date.parse(`${ngay.slice(0, 10)}T00:00:00+07:00`)).toISOString();
+
 const validIso = (s: string | null | undefined): s is string => ngayTheoGioVN(s) !== null;
 
 /**

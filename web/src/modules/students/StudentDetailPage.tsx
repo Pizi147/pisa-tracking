@@ -127,16 +127,9 @@ export default function StudentDetailPage() {
    * ở tab Hành trình. Để mỗi khối tự gọi lấy là hai lần gọi cho một lần mở trang, và tệ hơn:
    * hai khối có thể hiện hai trạng thái khác nhau của cùng một case.
    */
-  /* Lộ trình ĐANG XEM, không phải tham số trên URL: không có tham số thì là lộ trình đang chạy. */
-  const boardCycleId: number | null = data?.cycle?.id ?? null;
-  /* PR-TD2-c: URL không chỉ lộ trình/đợt → hồ sơ và bảng cùng chọn lộ trình đang chạy (`currentCycle`), nên gọi bảng NGAY, song song với hồ sơ. */
-  const board = useApi<{ rows: SkillBoardRow[]; tamDungTu?: string | null }>(
-    !id ? null : !p.loTrinh && p.dot == null ? `/students/${id}/skill-board`
-      : boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
-    /* AUDIT-LOI (mục 11): không có `boardCycleId` ở đây — đường dẫn đã mang đủ khoá; `boardCycleId` null → id khi hồ sơ về làm gọi lại CÙNG
-       `/students/:id/skill-board` (~52 câu SQL) mỗi lần mở hồ sơ. */
-  );
-  const skillRows = board.data?.rows ?? null;
+  /* R3-T1 (rà 24/11): bảng kỹ năng đi KÈM hồ sơ (`bangKyNang` — máy chủ đã dựng cho việc / ô đầu hồ sơ, cùng lộ trình đang xem); trước GET `/skill-board`
+     riêng (+~28 câu, +1 GET mỗi lần mở và sau mỗi việc). Lỗi / tải lại đi cùng hồ sơ. */
+  const skillRows = (data?.bangKyNang as { rows: SkillBoardRow[] } | undefined)?.rows ?? null;
   /*
    * TAB ĐANG XEM đọc từ địa chỉ (A6); có `dot`/`kn` thì LUÔN Học thuật (R7, Q10) — hai tham số đó
    * chỉ có nghĩa ở tab này. Đổi tab là `replace` để nút Quay lại của trình duyệt không phải bấm
@@ -265,7 +258,7 @@ export default function StudentDetailPage() {
   const oYThuc = yt && ((yt.bac ?? 0) > 0 || choQl) ? { bac: bacYt, wl: !!bacYt?.startsWith('WL'), choQl } : null;
   const xemYt = data.xemYThuc ?? xemYtVai;   // máy chủ quyết theo em (BPXL kiêm GV lớp khác)
   const nhanTab = (k: keyof typeof HO_SO_TAB_LABEL) => (k === 'y-thuc' && !xemYt ? (cy?.ratio ? t('Phối hợp') : t('Phối hợp SOS')) : HO_SO_TAB_LABEL[k]);   // N63 ⑤
-  const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); board.reload(); yThuc.reload(); };
+  const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); yThuc.reload(); };
   /* "+ Task" (③ R3.1, K6): mục theo quyền máy chủ — Case `canReport` · Vi phạm `canRecord` · Tình hình `coTheBao` (GV báo TVV) / `coTheHoi` (TVV hỏi GVCN). */
   const mucTask = [
     ...(data.viewer.canReport ? ['case' as const] : []),
@@ -442,8 +435,7 @@ export default function StudentDetailPage() {
                   </div>
                   <KhoiMockTest cy={cy} ten={data.fullName} attempts={data.attempts} dotId={p.dot} homNay={homNay} ketThuc={data.status === 'finished' ? data.finishedAt ?? null : null} onOpen={(a) => navigate(attemptHref(a))} />
                 </>
-              ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
-                : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
+              ) : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
                 : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
                   tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => moCase(caseId, { paId })} toTuan={toTuan} />}
             </section>
@@ -457,12 +449,11 @@ export default function StudentDetailPage() {
               {homNay && <div className="order-2 min-w-0 empty:hidden lg:order-1"><TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan}
                 kns={rowsFt.map((r) => r.category)} tenKn={tenChon} anKhiRong={!!data.archivedAt} /></div>}
               <div className="order-1 min-w-0 lg:order-2">
-              {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
-                : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
+              {!skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
                 : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
                   onReport={data.viewer.canReport ? baoCase : undefined} onMoNgan={(caseId) => setOpenCase({ caseId })}
                   daThi={!!homNay && !cy.ratio && (thiThatCua(cy as LoTrinhD, homNay) as ThiThatD | null)?.loai === 'kq'}
-                  onChanged={() => { board.reload(); reload(); }} />}
+                  onChanged={reload} />}
               </div>
             </div>
 
