@@ -352,8 +352,8 @@ const HD_QL_DAY: HuongDan = {
     },
     {
       id: 'van-hanh', ten: 'Giao việc, theo dõi vận hành', nhom: 'khac',
-      loiChinh: { man: 'van-hanh', chu: 'Công việc › Việc quản lý › Vận hành ›', duong: '/cong-viec/van-hanh', chi: { hd: 'vh-so', duong: '/cong-viec/van-hanh', chu: 'Bấm một số để lọc việc.' } },
-      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Vận hành ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có <b>Người phụ trách</b>, <b>Hạn</b>; <b>Giao GV theo lớp + kỹ năng</b> hiện ở hồ sơ từng em lớp đó.', 'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>, <b>Dừng lặp</b>; <b>Sửa hạn</b> không bắt lý do, hạn cũ còn ở <b>Lịch sử</b>.'],
+      loiChinh: { man: 'van-hanh', chu: 'Công việc › Việc quản lý › Tất cả việc đã giao ›', duong: '/cong-viec/van-hanh', chi: { hd: 'vh-so', duong: '/cong-viec/van-hanh', chu: 'Bấm một số để lọc việc.' } },
+      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Tất cả việc đã giao ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có <b>Người phụ trách</b>, <b>Hạn</b>; <b>Giao GV theo lớp + kỹ năng</b> hiện ở hồ sơ từng em lớp đó.', 'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>, <b>Dừng lặp</b>; <b>Sửa hạn</b> không bắt lý do, hạn cũ còn ở <b>Lịch sử</b>.'],
       tuKhac: ['giao việc', 'giáo trình', 'tutor', 'task', 'operations'],
     },
     {
@@ -597,7 +597,7 @@ const HD_QL_DAY: HuongDan = {
           '<b>Duyệt</b> / <b>Duyệt…</b> · <b>Từ chối…</b> (lý do bắt buộc) · <b>Mở</b>; <b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.', 'Đã xử lý: bấm dòng › <b>Huỷ quyết định</b> · <b>Sửa trả lời…</b>.'],
           chi: { hd: 'cd-loc', duong: DUYET, chu: 'Chọn loại yêu cầu, Báo Head, Đã xử lý ở đây.' } },
         { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA: đánh dấu ô ở các thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
-        { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b>; một GV: <b>Lọc thêm</b>.', 'Tab <b>Việc quản lý</b> có <b>+ Giao việc</b> ở đầu trang, <b>Vận hành ›</b> ở đầu nhóm.'],
+        { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b>; một GV: <b>Lọc thêm</b>.', 'Tab <b>Việc quản lý</b> có <b>+ Giao việc</b> ở đầu trang, <b>Tất cả việc đã giao ›</b> ở đầu nhóm <b>Việc được giao</b>.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } },
         { id: 'cv-nhap-ho', viec: 'nhap-ho', ten: 'Nhập hộ bài quá hạn', buoc: ['Chọn <b>Của GV</b>, tab <b>Chấm điểm</b>: dòng quá hạn tô đỏ.', 'Bấm <b>Nhập hộ</b>, gõ điểm; em vắng gõ <b>-</b>.'] },
         { id: 'cv-y-thuc', viec: 'phoi-hop-sos', ten: 'Phối hợp SOS', buoc: ['Tab <b>Ý thức & Phối hợp</b>, mục <b>Phối hợp SOS</b>: bấm dòng lớp, làm thay GVCN không cần nút riêng.', 'Xử lý vi phạm: dòng <b>Xử lý vi phạm</b> cùng tab.'] },
@@ -605,7 +605,7 @@ const HD_QL_DAY: HuongDan = {
       ],
     },
     {
-      id: 'van-hanh', ten: 'Vận hành', duong: ['/cong-viec/van-hanh'],
+      id: 'van-hanh', ten: 'Bảng giao việc', duong: ['/cong-viec/van-hanh'],
       dangO: { cau: 'Việc ngoài học viên: giáo trình, tutor… có người phụ trách, hạn.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [],
     },

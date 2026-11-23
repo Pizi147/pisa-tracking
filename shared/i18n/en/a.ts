@@ -49,6 +49,7 @@ export const EN_A = {
   'Hỗ trợ học viên': 'Student support',
   'Yêu cầu của tôi': 'My requests',
   'Vận hành': 'Operations',
+  'Bảng giao việc': 'Assigned tasks board',
   'Họp đơn vị': 'Unit meeting',
   'Chấm điểm': 'Marking',
   'Việc hôm nay': 'Today',
