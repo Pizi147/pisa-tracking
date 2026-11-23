@@ -150,6 +150,7 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 .dt .the-dau { padding-left:12px; }
 .dt .bc > * > tr > :is(th, td):first-child { padding-left:12px; }
 .dt .bc > tbody > tr > td { padding-top:8px; padding-bottom:8px; }
+.dt .bc.le-phai > * > tr > :is(th, td):last-child { padding-right:16px; }
 .dt .bs td { height:56px; }
 .phu-nen { position:absolute; inset:var(--tt) 0 0 0; background:var(--phu-hop); z-index:4; }
 .to-day { position:absolute; left:0; right:0; bottom:0; z-index:5; background:var(--surface); border-top:1px solid var(--line-strong); border-radius:16px 16px 0 0; box-shadow:0 -10px 28px var(--bong); display:flex; flex-direction:column; max-height:85%; padding-bottom:8px; }
@@ -547,8 +548,8 @@ function dtThi(mo) {
     ${kpi([['Đạt Target', '', '62 %', '26/42 em'], ['Chưa đạt', '', 16, '38 %', 'do']])}
     <div class="the">${theKn('b', mo, true)}</div>
     <div class="the duoi"><div class="the-dau"><h3>Theo GV</h3><span class="phu">9 GV</span>${nutI}</div>
-    <table class="bc"><colgroup><col><col style="width:44px"><col style="width:50px"><col style="width:50px"><col style="width:62px"></colgroup>
-    <thead><tr><th>L</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th></tr></thead>
+    <table class="bc le-phai"><colgroup><col><col style="width:48px"><col style="width:48px"><col style="width:48px"><col style="width:64px"></colgroup>
+    <thead><tr><th>L</th><th>HV</th><th>Vượt</th><th>Đạt</th><th style="white-space:normal;line-height:1.25">Chưa<br>đạt</th></tr></thead>
     <tbody>${GV[0].gv.map((g) => `<tr><td class="ten">${g[0]}<small>TB ${g[6]}</small></td><td>${oSo('b', g[2], 0)}</td><td>${oSo('b', g[3], g[2])}</td><td>${oSo('b', g[4], g[2])}</td><td>${oSo('b', g[5], g[2], 'chua', mo === `gv:${g[0]}` ? 'mo' : '')}</td></tr>`).join('')}
     <tr class="them"><td colspan="5"><button type="button" class="nut-them" style="height:44px">+ 2 GV</button></td></tr></tbody></table></div></div>`;
 }
