@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, ApiError } from '../../lib/api.ts';
+import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -27,6 +27,8 @@ export const nganBac = (b: number) => NGAN_BAC[b] ?? dich(BAC[b] ?? '');
  * "Chọn tất cả" một chạm + "Áp bậc … → Áp cho n em" (ô tick CHỈ để Áp), ô Bậc mới mỗi dòng sửa riêng được, tháng (mặc định tháng này) + ghi chú
  * chung TUỲ CHỌN, MỘT nút Lưu. Lưu theo ô Bậc mới ("— giữ nguyên —" không gửi). Sau lưu: "✓ Đã lưu n em · Hoàn tác" (cả lô), panel dùng tiếp;
  * em lỗi báo riêng dòng đó (dữ liệu mới cho thấy em đã khoá → dòng khoá kèm lý do). Quyền do máy chủ quyết (`capBac.duoc` / `lyDo`).
+ * N70 (chủ SP 24/11): ô thời điểm nhận NGÀY hoặc THÁNG. GVCN (`!laQl`): em chưa khai lưu là áp ngay, em ĐÃ KHAI → gửi Head duyệt từng em (ghi chú chung = lý do,
+ * bắt buộc); sau lưu "n em đã lưu · m em gửi Head duyệt", Hoàn tác đảo phần đã áp + rút phần đã gửi. Head / Quản trị lưu là áp ngay như cũ.
  */
 export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone, onTiep = null }: {
   classId: number; lop?: string | null; han?: string | null;
@@ -71,6 +73,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
 
   /* Em gửi = em làm được, có ô Bậc mới khác bậc đã khai. */
   const gui = duoc.filter((e) => bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai);
+  /* N70: GVCN đổi bậc em ĐÃ KHAI = gửi Head duyệt (không áp ngay) — cần lý do ở ô ghi chú chung. */
+  const soGuiDuyet = data.laQl ? 0 : gui.filter((e) => e.capBac.khai !== null).length;
   const soKhoa = ds.length - duoc.length;
   const soOk = loVua.length;
   const soLoi = [...kq.values()].filter((x) => !x.ok).length;
@@ -85,7 +89,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
   };
 
   /* Luật N1: bấm Lưu khi chưa đổi em nào → báo còn thiếu "Bậc mới" (không tắt nút im lặng). */
-  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }], { bac: gui.length ? 'co' : '' });
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }, ...(soGuiDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: 1 }] : [])],
+    { bac: gui.length ? 'co' : '', ghiChu });
   /** true = mọi em gửi đều lưu được (Lưu · việc tiếp › mới sang việc kế; có em lỗi thì ở lại). */
   const luu = async (): Promise<boolean> => {
     lf.bam();
@@ -99,7 +104,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     const okMoi: KqEm[] = [];
     setKqHoanTac(new Map());
     try {
-      await guiTheoLo(ids, CO_LO['cap-bac'], (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac`, {
+      /* N70: em gửi Head duyệt tốn nhiều câu hơn em áp ngay (thẻ + chuông Head) → lô nhỏ như Xác nhận xử lý để một lời gọi vừa giờ Netlify. */
+      await guiTheoLo(ids, soGuiDuyet ? CO_LO['xu-ly'] : CO_LO['cap-bac'], (lo) => api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac`, {
         em: lo.map((sid) => ({ studentId: sid, bac: daGui.get(sid), thang: thangCua(theoId.get(sid)!) })), ghiChu: ghiChu.trim() || undefined,
       }), (em) => {
         okMoi.push(...em.filter((x) => x.ok));
@@ -114,7 +120,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false);
-      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoiYThucCua({ classId }); reload(); }
+      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoiYThucCua({ classId }); if (okMoi.some((x) => x.guiDuyet)) invalidate('/yeu-cau'); reload(); }
+      if (okMoi.length === ids.length) lf.datLai();   // lưu hết → bỏ "Còn n ô cần sửa" của lần bấm trước (ô Bậc mới đã trống đúng nghĩa)
     }
     return okMoi.length === ids.length;
   };
@@ -124,11 +131,12 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     setBusy(true);
     try {
       const r = await api.post<{ em: KqEm[] }>(`/classes/${classId}/y-thuc/lo/cap-bac/hoan-tac`, {
-        em: loVua.map((x) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })),
+        /* N70: em vừa gửi Head duyệt → rút đúng thẻ đó; em đã áp → về bậc trước. */
+        em: loVua.map((x) => (x.guiDuyet ? { studentId: x.studentId, ycId: x.ycId } : { studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })),
       });
       const hong = r.em.filter((x) => !x.ok);
       setLoVua([]); setKq(new Map()); setKqHoanTac(new Map(hong.map((x) => [x.studentId, x])));
-      onDone?.(); lamMoiYThucCua({ classId }); reload();
+      onDone?.(); lamMoiYThucCua({ classId }); invalidate('/yeu-cau'); reload();
       if (hong.length) toast.push('error', t('{n} em chưa hoàn tác được — thử lại.', { n: hong.length }));
       else toast.push('ok', t('Đã hoàn tác'));
     } catch (e: any) {
@@ -136,9 +144,11 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     } finally { setBusy(false); }
   };
 
+  const daAp = loVua.filter((x) => !x.guiDuyet);
+  const soGui = loVua.length - daAp.length;
   const tomTatOk = () => {
     const dem = new Map<string, number>();
-    for (const x of loVua) dem.set(x.nhan ?? '', (dem.get(x.nhan ?? '') ?? 0) + 1);
+    for (const x of daAp) dem.set(x.nhan ?? '', (dem.get(x.nhan ?? '') ?? 0) + 1);
     return [...dem].map(([nhan, n]) => t('{nhan} ({n} em)', { nhan: dich(nhan), n })).join(' · ');
   };
   /* Mockup: khoá một dòng ngay chỗ chọn — "Nhờ QL sửa" (có xử lý trên web) / "Chỉ QL sửa" (đã khai); lý do đủ ở `title`. */
@@ -149,6 +159,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
   const hienTai = (e: EmLo, doi: boolean) => {
     const cu = e.capBac.khai;
     if (doi && cu !== null) return `${ngan(cu)} → ${ngan(bacMoi[e.studentId])}${bacMoi[e.studentId] < cu ? ' ↓' : ''}`;
+    if (cu !== null && e.capBac.cho) return `${ngan(cu)} · ${t('chờ duyệt {bac}', { bac: ngan(e.capBac.cho.bac) })}`;   // N70
     return cu !== null ? `${ngan(cu)}${e.capBac.luc ? ` · ${t('khai {ngay}', { ngay: ngay(e.capBac.luc, homNay) })}` : ''}`
       : e.bacNhan ? `${bacNgan(dich(e.bacNhan))} · ${t('trên web')}` : t('Chưa khai');
   };
@@ -174,6 +185,8 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     </button>
   );
 
+  /* N70: mọi em đổi đều là em đã khai (GVCN) → nút nói đúng việc "Gửi Head duyệt". */
+  const nhanLuu = !gui.length ? t('Lưu') : soGuiDuyet === gui.length ? t('Gửi Head duyệt · {n} em', { n: gui.length }) : t('Lưu · {n} em', { n: gui.length });
   const COT = '[@container(min-width:600px)]:grid-cols-[28px_minmax(0,1fr)_150px_316px] [@container(min-width:600px)]:items-center';
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong" quyChe={duoc.length ? quyCheKhaiBac() : null}
@@ -189,6 +202,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
             <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-dim">
               <b className="font-semibold text-slate-100">{t('Đổi {n} em', { n: gui.length })}</b><span>{chiaBac}</span>
               {soHa > 0 && <span className="font-semibold text-soon">· {t('{n} em hạ bậc', { n: soHa })}</span>}
+              {soGuiDuyet > 0 && <span className="font-semibold text-slate-100">· {t('{n} em gửi Head duyệt', { n: soGuiDuyet })}</span>}
             </span>
           ) : <span className="text-[13px] text-dim">{t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em chưa có lộ trình', { n: soKhoa })}` : ''}</span>,
         /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế + người xem khai được → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕);
@@ -196,34 +210,37 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
         ...(onTiep && duoc.length ? {
           huy: null,
           phu: <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
-            {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button></>,
+            {nhanLuu}</button></>,
           chinh: !gui.length && soOk > 0
             ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={onTiep}>{t('Việc tiếp ›')}</button>
             : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
         } : {
           chinh: (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
-              {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button>
+              {nhanLuu}</button>
           ),
         }),
       }}>
       <div className="-mx-4 [container-type:inline-size] sm:-mx-5">
         {soOk > 0 && (
           <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-ok-bg px-4 py-2.5 text-[13px] font-semibold text-ok border-ok-line sm:px-5">
-            <span>✓ {t('Đã lưu {n} em: {tom}', { n: soOk, tom: tomTatOk() })}</span>
+            <span>✓ {!soGui ? t('Đã lưu {n} em: {tom}', { n: soOk, tom: tomTatOk() })
+              : daAp.length ? t('{n} em đã lưu · {m} em gửi Head duyệt', { n: daAp.length, m: soGui }) : t('{m} em đã gửi Head duyệt', { m: soGui })}</span>
             <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold underline underline-offset-2 appearance-none sm:min-h-0" disabled={busy} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
             {soLoi > 0 && <span className="font-normal text-bad">{t('{n} em chưa lưu', { n: soLoi })}</span>}
           </div>
         )}
         {/* Tháng + ghi chú chung — một hàng đầu panel (375: nhãn cột 96 px thẳng hàng). */}
         <div className="surface-2 flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 text-[13px] sm:px-5" style={{ borderColor: 'var(--line)' }}>
-          <span className="grid grid-cols-[96px_auto] items-center font-semibold text-dim max-sm:w-full sm:inline-flex sm:gap-2">{t('Tháng xử lý')}
-            <ONgay kieu="thang" value={thang} onChange={(v) => { setThang(v); setThangCham(true); }} toiDa={homNay ? homNay.slice(0, 7) : null} ariaLabel={t('Tháng xử lý')} gon />
+          <span className="grid grid-cols-[132px_auto] items-center font-semibold text-dim max-sm:w-full sm:inline-flex sm:gap-2"><span className="whitespace-nowrap">{t('Ngày / tháng xử lý')}</span>
+            <ONgay kieu="ngay-hoac-thang" value={thang} onChange={(v) => { setThang(v); setThangCham(true); }} toiDa={homNay || null} goiY={t('dd/mm/yyyy hoặc mm/yyyy')} ariaLabel={t('Ngày / tháng xử lý')} gon />
           </span>
-          <label className="grid min-w-0 flex-[1_1_14rem] grid-cols-[96px_minmax(0,1fr)] items-center font-semibold text-dim sm:flex sm:gap-2">
-            <span>{t('Ghi chú chung')}</span>
-            <input className="field min-h-[44px] min-w-0 flex-1 py-1 text-[13px] font-normal sm:min-h-0" value={ghiChu} maxLength={500}
-              onChange={(e) => setGhiChu(e.target.value)} placeholder={t('Tuỳ chọn')} aria-label={t('Ghi chú chung')} />
+          <label className="grid min-w-0 flex-[1_1_14rem] grid-cols-[132px_minmax(0,1fr)] items-center font-semibold text-dim sm:flex sm:gap-2">
+            {/* N70: GVCN đổi bậc em đã khai → ô này là lý do gửi Head, bắt buộc. */}
+            <span className="whitespace-nowrap">{t('Ghi chú chung')}{soGuiDuyet > 0 && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}</span>
+            <input className={`field min-h-[44px] min-w-0 flex-1 py-1 text-[13px] font-normal sm:min-h-0${lf.loiCua(loi, 'ghiChu') ? ' border-late' : ''}`} value={ghiChu} maxLength={500}
+              onChange={(e) => setGhiChu(e.target.value)} {...lf.o(loi, 'ghiChu')}
+              placeholder={soGuiDuyet > 0 ? t('Lý do sửa — Head đọc để duyệt') : t('Tuỳ chọn')} aria-label={t('Ghi chú chung')} />
           </label>
         </div>
         {/* Hàng công cụ (ngoài tiêu đề cột — G9): chưa tick → Chọn tất cả + lọc; có tick → "n em đã chọn · Đặt bậc [chip]". */}
@@ -258,10 +275,11 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
             const k = kq.get(e.studentId);
             const kh = kqHoanTac.get(e.studentId);
             const doi = bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai;
-            const vuaLuu = loVua.some((x) => x.studentId === e.studentId) && !doi;
+            const lv = loVua.find((x) => x.studentId === e.studentId);
+            const vuaLuu = !!lv && !doi;
             const ha = doi && e.capBac.khai !== null && bacMoi[e.studentId] < e.capBac.khai;
             const loiDong = kh?.loi ? t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) }) : k && !k.ok && k.loi ? t('Chưa lưu: {loi}', { loi: dichChu(k.loi) }) : null;
-            const chuHt = loiDong ?? (vuaLuu ? '✓' : hienTai(e, doi));
+            const chuHt = loiDong ?? (vuaLuu ? (lv?.guiDuyet ? `✓ ${t('đã gửi duyệt {bac}', { bac: ngan(lv.bac ?? 0) })}` : '✓') : hienTai(e, doi));
             return (
               <li key={e.studentId} className={`group/dong grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-2.5 sm:px-5 [@container(min-width:600px)]:h-11 [@container(min-width:600px)]:py-0 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>
@@ -284,7 +302,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
                     <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-faint" title={lyDoKhoa(e)}>
                       <IconKhoa />{lyDoKhoa(e)}
                     </span>
-                  ) : <ChipBac chon={bacMoi[e.studentId]} cu={vuaLuu ? (loVua.find((x) => x.studentId === e.studentId)?.bac ?? e.capBac.khai) : e.capBac.khai} onPick={(b) => chonMot(e, b)} nhan={t('Bậc khai của {ten}', { ten: e.ten })} />}
+                  ) : <ChipBac chon={bacMoi[e.studentId]} cu={vuaLuu && !lv?.guiDuyet ? (lv?.bac ?? e.capBac.khai) : e.capBac.khai} onPick={(b) => chonMot(e, b)} nhan={t('Bậc khai của {ten}', { ten: e.ten })} />}
                 </span>
               </li>
             );

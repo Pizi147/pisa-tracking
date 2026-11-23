@@ -19,7 +19,7 @@ export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
  * Mỗi PR thêm khoá của mình VÀO CUỐI mảng này (SOS: 'khong_theo_doi'; YT4: 'y_thuc' + 'bao_len_y_thuc'; CT: 'de_xuat_chuyen_lop', 'bao_len_ban_giao',
  * 'bao_len_chua_lenh'; LT2: 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa' — thẻ "Quyết định Cuối khoá" đã bỏ theo Q30-3).
  */
-export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh', 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa', 'thu_hoi_y_thuc', 'xin_xoa', 'giu_pa_gv'] as const;
+export const LOAI_YEU_CAU = ['de_xuat_pa', 'xin_y_kien', 'lich_thi', 'sua_thong_tin', 'bao_len_nguyen_nhan', 'khong_theo_doi', 'y_thuc', 'bao_len_y_thuc', 'de_xuat_chuyen_lop', 'bao_len_ban_giao', 'bao_len_chua_lenh', 'ke_hoach_bo_tro', 'bao_len_mini_test', 'bao_len_cuoi_khoa', 'thu_hoi_y_thuc', 'xin_xoa', 'giu_pa_gv', 'sua_khai_bac'] as const;
 export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
 
 /**
@@ -28,6 +28,8 @@ export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
  */
 export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc', 'thu_hoi_y_thuc'];
 export const LY_DO_RUT = t('Người gửi đã rút');
+/** N70: thẻ sửa cấp bậc tự đóng vì bậc khai đã khác lúc gửi (Head / Quản trị vừa sửa thẳng) — ở shared để `loaiYeuCau.ts` ↔ `yThuc/xuLy.ts` không đọc hằng của nhau lúc nạp (vòng import). */
+export const LY_DO_SUA_KHAI_LECH = t('Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa');
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;
@@ -75,6 +77,8 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   xin_xoa: { phanLoai: 'hoc-thuat', nhan: t('Xin xoá'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* SOS-TAM-PA (chủ SP 11/11): GV giữ PA của mình khác PA quy chế lúc SOS chốt — QL duyệt trong hết ngày gửi + `giu_pa_gv.ngay` (Hạn mặc định, gốc 3; `hanDuyetMacDinh` tính riêng), quá hạn máy chốt theo GV. */
   giu_pa_gv: { phanLoai: 'hoc-thuat', nhan: t('PA khác quy chế'), kieuNut: 'duyet-tu-choi', hanNgay: 4, hangLoat: false },
+  /* N70 (chủ SP 24/11): GVCN SỬA bậc đã khai — một thẻ đang chờ mỗi em (đối tượng `hoc_vien_khai_bac` = em); hạn + hết hạn như thẻ Ý thức (máy chốt theo GVCN — chủ SP 24/11 chốt "N70: tự áp theo GVCN"). */
+  sua_khai_bac: { phanLoai: 'y-thuc', nhan: t('Sửa cấp bậc vi phạm'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
 };
 
 export function laPhanLoai(x: unknown): x is PhanLoai {

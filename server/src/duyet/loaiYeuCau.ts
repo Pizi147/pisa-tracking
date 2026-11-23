@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { sqlNguongMiniTest } from '../platform/cauHinh.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  CO_DIEM_SQL, INTERVENTION_KIND_LABEL, PHIEU_BAN_GIAO_MO_SQL, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, PHIEU_BAN_GIAO_MO_SQL, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -35,7 +35,7 @@ import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { apDungSuaKhai, chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, kiemRutSuaKhai, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
@@ -1005,6 +1005,42 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         neuDuyet: 'Giữ PA của GV, PA quy chế kết thúc. Từ chối: PA quy chế chạy từ hôm nay, PA của GV dừng.',
         mo: yc.trang_thai === 'cho' && yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id, paId: yc.doi_tuong_id }) : undefined,
         duLieu: x ? { caseId: x.case_id } : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ N70 (chủ SP 24/11) · GVCN sửa bậc đã khai — đối tượng `hoc_vien_khai_bac` = em (một thẻ chờ mỗi em) */
+  {
+    loai: 'sua_khai_bac',
+    /* Duyệt = áp qua `luuSuaKhai` (so-và-đổi: bậc khai đã khác lúc gửi → 409). Từ chối: dòng khai giữ nguyên, lý do + chuông ở thẻ. Rút: chưa đổi gì ở nguồn. */
+    khiDuyet: (p, yc) => apDungSuaKhai(p.userId, yc),
+    khiRut: (p, yc) => kiemRutSuaKhai(p, yc.doi_tuong_id),
+    /* Hết hạn như thẻ Ý thức: `quetYThucHetHan` (ở loại `y_thuc`) chốt theo GVCN — không khai `quet` lần hai. */
+    /* Hoàn tác / Huỷ quyết định trong ngày: chụp đúng dòng khai của thẻ — bậc đã đổi tiếp sau đó thì bản ghi đảo tự chặn (409). */
+    dao: {
+      duyet: (yc) => [{ bang: 'y_thuc_khai_bac', dk: `student_id = ? AND chuoi_cycle_id = json_extract(?, '$.cycleId')`, args: [yc.doi_tuong_id, yc.du_lieu ?? '{}'], k: 'sua' }],
+      tuChoi: () => [],
+    },
+    /* Bậc khai đã khác lúc gửi (Head / Quản trị sửa thẳng, Hoàn tác lô xoá dòng khai) hoặc em đã lưu trữ → thẻ tự đóng, GVCN có chuông "Tự đóng: …". */
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM y_thuc_khai_bac k WHERE k.student_id = y.doi_tuong_id AND k.chuoi_cycle_id = json_extract(y.du_lieu, '$.cycleId')
+               AND k.bac = json_extract(y.du_lieu, '$.bacCu'))
+         OR EXISTS (SELECT 1 FROM students s WHERE s.id = y.hoc_vien_id AND s.archived_at IS NOT NULL)`,
+      lyDo: LY_DO_SUA_KHAI_LECH,
+    },
+    /* Mọi thứ thẻ nói đã lưu ở `du_lieu` lúc gửi (bậc cũ → bậc mới · ngày / tháng · lý do) — không câu nạp riêng. */
+    moTa: (yc, ngu) => {
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { bacCu?: number; bac?: number; thang?: string | null };
+      const ten = (b: number | undefined) => (b ? nhanLoaiXuLy(kindCuaBac(b)) : BAC_0_NHAN);
+      return {
+        tieuDe: `Sửa cấp bậc · ${ten(d.bacCu)} → ${ten(d.bac)}`,
+        phu: d.thang ? hienONgay(d.thang, 'ngay-hoac-thang') : null,
+        dong: [
+          `${nguoiXin(yc, ngu)} gửi ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
+          ...(d.thang ? [`${d.thang.length === 7 ? 'Tháng' : 'Ngày'} xử lý: ${hienONgay(d.thang, 'ngay-hoac-thang')}`] : []),
+          ...(yc.trang_thai === 'cho' && yc.han_duyet ? [`Quá ${ngay(yc.han_duyet, ngu)} chưa duyệt: giữ quyết định GVCN`] : []),
+        ],
+        neuDuyet: `Bậc em đã tới thành ${ten(d.bac)} · lần xử lý kế tiếp: ${nhanLoaiXuLy(kindCuaBac((d.bac ?? 0) + 1))}.`,
+        mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
       };
     },
   },
