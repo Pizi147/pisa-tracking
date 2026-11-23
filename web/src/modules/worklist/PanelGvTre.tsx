@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { duongHoSoHocVien, duongLichTest, skillShort, tuanLich } from '@shared/domain/index.ts';
+import { duongHoSoHocVien, duongLichTest, ngay, skillShort, tuanLich } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { XemCha, useThamSoUrl, useXem } from '../../lib/quayLai.ts';
@@ -38,7 +38,7 @@ const tieuDeDong = (d: DongGvTre) => `${tenDong(d)} · ${d.knChu}`;
 function chuSaoChep(g: Pick<NhomGvTre, 'ten' | 'soBai' | 'dong'>, homNay: string, ngan: (d: string) => string): string {
   const tre = (han: string | null) => (han && han < homNay ? Math.round((Date.parse(homNay) - Date.parse(han)) / 86_400_000) : 0);
   return [t('{gv} · {n} bài quá hạn (tới {ngay})', { gv: g.ten, n: g.soBai, ngay: ngan(homNay) }),
-    ...g.dong.map((d) => `• ${[tenDong(d), d.knChu, d.tuan ? t('thi {tuan}', { tuan: tuanLich(d.tuan) }) : null, t('{n} bài', { n: d.soBai }),   /* AUDIT-1611 B3-19: chép kèm mã tuần thi như panel */ tre(d.han) ? t('quá hạn {n} ngày', { n: tre(d.han) }) : null].filter(Boolean).join(' · ')}`)].join('\n');
+    ...g.dong.map((d) => `• ${[tenDong(d), d.knChu, d.tuan ? t('thi {tuan}', { tuan: tuanLich(d.tuan) }) : null, t('{n} bài', { n: d.soBai }),   /* AUDIT-1611 B3-19: chép kèm mã tuần thi như panel */ tre(d.han) ? ngay(d.han) : null].filter(Boolean).join(' · ')}`)].join('\n');
 }
 
 /**
