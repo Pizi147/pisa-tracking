@@ -24,8 +24,8 @@ const XacNhanXuLyPanel = lazyHop(() => import('./XacNhanXuLyPanel.tsx').then((x)
  * Dải ①②③ (bước GVCN là việc của người xem) · vi phạm mới (ngày · chip môn · tên; bấm mở tại chỗ: mô tả, bằng chứng, Sửa · Xoá) · "Hồ sơ Ý thức của em ›".
  * Chân: Xác nhận xử lý (mở panel xử lý ngay đây) · Đã xem · n (Hoàn tác ở thông báo). Một request như trước (`/students/:id/y-thuc`).
  */
-export function PanelXemViPham({ studentId, dau, onDong, onDaLam, onTiep = null }: {
-  studentId: number; dau: Parameters<typeof KhungPanel>[0]['dau']; onDong: () => void; onDaLam: () => void;
+export function PanelXemViPham({ studentId, lop, dau, onDong, onDaLam, onTiep = null }: {
+  studentId: number; /** R4 P9: mã lớp giữ khi chuyển sang Xác nhận xử lý. */ lop?: string | null; dau: Parameters<typeof KhungPanel>[0]['dau']; onDong: () => void; onDaLam: () => void;
   /** Việc kế ở danh sách Công việc (GD-4d) — có thì chân thêm "Đã xem · việc tiếp ›". */
   onTiep?: (() => void) | null;
 }) {
@@ -37,7 +37,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam, onTiep = null 
   const [busy, setBusy] = useState(false);
   const { mo, panels } = usePanelYThuc({ onDone: () => { reload(); onDaLam(); } });
   const tieuDe = t('Xem vi phạm mới');
-  if (xuLy) return <XacNhanXuLyPanel studentId={studentId} onClose={onDong} onDone={onDaLam} onTiep={onTiep} />;
+  if (xuLy) return <XacNhanXuLyPanel studentId={studentId} lop={lop} dau={dau} onClose={onDong} onDone={onDaLam} onTiep={onTiep} />;
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
   const moi = d.viPham.filter((v) => v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem')).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);

@@ -6,7 +6,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutDongPanel } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { Skeleton } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { IconKhoa } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -64,8 +64,10 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
   useEffect(() => {
     if (tatCaRef.current) tatCaRef.current.indeterminate = tickDuoc > 0 && tickDuoc < duoc.length;
   });
-  if (error) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-bad">{dich(error.message)}</p></KhungPanel>;
-  if (!data) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
+  /* R4 P7: đầu panel dựng từ props (hạn · lớp) ngay lúc tải / lỗi; lỗi tải có Thử lại. */
+  const dauTai = { loai: t('Việc'), han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined, dong2: [lop ?? null] };
+  if (error) return <KhungPanel tieuDe={tieuDe} dau={dauTai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!data) return <KhungPanel tieuDe={tieuDe} dau={dauTai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   /* Em gửi = em làm được, có ô Bậc mới khác bậc đã khai. */
   const gui = duoc.filter((e) => bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai);

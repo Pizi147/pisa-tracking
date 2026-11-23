@@ -3,7 +3,8 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { BoiCanh, dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh } from '../../ui/KhuonViec.tsx';
+import { dauTuViec } from './dauPanelViec.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
@@ -40,7 +41,7 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const bp = useGiaoViec('bao_ph', data?.baoPhId);
   const bc = data?.boiCanh;
   /* Mockup G8a: em · lớp · chip SOS của lượt (đầu panel). */
-  const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: bc?.sos ? <ChipSos muc={bc.sos} tinh /> : null });
+  const dau = dauTuViec(it, bc?.sos ? <ChipSos muc={bc.sos} tinh /> : null);   // R4 P4: + hạn / "quá hạn n ngày"
   const tieuDe = t('Meeting CX/GĐCN');
   /* A3-08 (AUDIT-2111): chân như mọi panel — Đóng trước, "Việc tiếp ›" sau. */
   const chan = { huy: { nhan: t('Đóng'), onClick: onDong }, chinh: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined };
