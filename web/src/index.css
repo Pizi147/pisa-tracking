@@ -1474,7 +1474,7 @@
 .o-so-hop .so-bam:not([class~="!text-inherit"]) { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 22px; padding: 0 4px; border-radius: 6px;
   border: 0; background: transparent; color: var(--accent); font-weight: 600; line-height: 1; vertical-align: middle; white-space: nowrap; font-variant-numeric: tabular-nums;
   transition: background-color .12s ease-out; }
-.o-so-hop td .so-bam:not([class~="!text-inherit"]) { font-size: 15px; }
+.o-so-hop td .so-bam:not([class~="!text-inherit"]) { font-size: 16px; }
 .o-so-hop .so-bam:not(:hover, :focus-visible) { text-decoration-line: none; }
 .o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--accent-soft); text-decoration-line: underline; text-underline-offset: 3px; }
 .o-so-hop .so-bam[aria-expanded="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px currentColor; }

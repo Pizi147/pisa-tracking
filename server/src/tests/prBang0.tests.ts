@@ -21,6 +21,7 @@ const taiTsx = (dir: string, out: string[] = []): string[] => {
 
 /** BANG-3: tệp còn tự viết `<table>` (chưa vào `Bang`). Chỉ được GIẢM. */
 const MIEN_TABLE: string[] = [
+  'web/src/ui/BangSoPanel.tsx',   // SO-720: bảng panel số 720 (cột cố định, không lớp co giãn của Bang)
   'web/src/modules/classes/BangDiemLopThuong.tsx',
   'web/src/modules/classes/ClassIssueBoard.tsx',
   'web/src/modules/classes/PhanTichLopTab.tsx',
