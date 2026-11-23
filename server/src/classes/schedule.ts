@@ -12,7 +12,7 @@ import { can, duocSuaLichLop, lopDayDu, phanCongDaNap, type Principal } from '..
 import { notify, writeAudit } from '../platform/audit.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
-import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
+import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu, tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
 import { coNho, nho } from '../platform/nguCanhRequest.ts';
 
@@ -463,7 +463,9 @@ function tinhTienDoNhieu(classIds: number[]): Map<number, ClassProgress> {
   else theoLoJson(classIds, (json) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${DS_JSON})`).all(json) as any[])); });
   const periodIds = [...new Set(classes.map((c) => c.start_period_id).filter(Boolean))];
   const periods = new Map<number, any>();
-  theoLoJson(periodIds, (json) => {
+  /* TQ-QT-NHE: GET đọc tuần qua bộ nhớ theo id của request (`tuanTheoId`, chung với lịch kỹ năng) — tuần đã đọc không đọc lại. */
+  if (coNho()) for (const [id, t] of tuanTheoId(periodIds)) periods.set(id, { id, ...weekInfo(t.week_start) });
+  else theoLoJson(periodIds, (json) => {
     for (const r of conn.prepare(`SELECT * FROM report_periods WHERE id IN (${DS_JSON})`).all(json) as any[]) {
       periods.set(r.id, { id: r.id, ...weekInfo(r.week_start) });
     }
