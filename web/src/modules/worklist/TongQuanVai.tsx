@@ -384,7 +384,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
       {!viec.data ? null : (
         <div className="flex flex-col gap-4">
           {/* 375 (mockup T1b): Lớp cần chú ý → Giáo viên → Chờ duyệt → Tình hình — hai lưới thành `contents`, thứ tự bằng `order`. */}
-          <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1200px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
+          <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]' : ''}`}>
             <div className="max-sm:order-2"><KhoiGiaoVien quaHan={quaHan} tenCn={tenCn} onMo={setPanel} /></div>
             {duyet && choN > 0 && <div className="max-sm:order-3">{hop.error ? <ErrorState message={hop.error.message} onRetry={hop.reload} /> : !hop.data ? <Skeleton rows={3} /> : (
               <Card bodyClass="p-0" className="h-full" title={<span className="inline-flex items-baseline gap-2">{t('Chờ duyệt')}<span className="text-[13px] font-medium text-dim tabular-nums">{hop.data.the.length}</span></span>}

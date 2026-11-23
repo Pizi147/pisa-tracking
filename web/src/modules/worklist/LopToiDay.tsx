@@ -31,8 +31,8 @@ export const useHaiKhoi = (bat: boolean): ApiHaiKhoi => useApi<HaiKhoi>(bat ? '/
 export const phuLopDay = (d: HaiKhoi) => new Map(d.day.map((x) => [x.classId, dich((x.khung === 'ft' ? [x.route, x.testKeTiep] : [x.tuanHoc, x.testKeTiep]).filter(Boolean).join(' · '))]));
 
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), dv: t('HV'), kieu: 'diem', rong: 160, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 380 }, { key: 'case', nhan: t('Case đang mở'), kieu: 'diem', rong: 130 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'diem', rong: 150 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), dv: t('HV'), kieu: 'diem', rong: 150, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 380 }, { key: 'case', nhan: t('Case đang mở'), kieu: 'diem', rong: 150 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'diem', rong: 150 },
 ];
 
 /**

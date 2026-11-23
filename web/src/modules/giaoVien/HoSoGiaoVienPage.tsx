@@ -327,10 +327,10 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   const COT: CotBang[] = [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true },
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 130 },
-    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 80 },
-    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 220 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 120 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 120 },
+    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 100 },
+    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 160 },
+    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 100 },
+    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -702,9 +702,9 @@ function KhoiBoTro({ ds }: { ds: BoTroHs[] }) {
     <Card title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
       <Bang ten={t('Em đang bổ trợ')} khung={false} khoa={(x) => x.hvId} hang={ds}
         cot={[
-          { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 256 },
-          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', linhHoat: true },
-          { key: 'han', nhan: 'Mini Test', kieu: 'chu', rong: 180 },
+          { key: 'ten', nhan: t('Học viên'), kieu: 'ten', linhHoat: true },
+          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 140 },
+          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 120 },
         ]}
         phuCua={(x, k) => (k.key === 'ten' && x.lopMa ? x.lopMa : null)}
         theRieng={(x) => (
