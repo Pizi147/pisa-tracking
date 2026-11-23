@@ -37,13 +37,13 @@
 .nhan-kieu { display:inline-block; margin:0 0 8px; font:700 var(--c13) var(--phong); color:var(--text); }
 .nhan-kieu small { font:500 var(--c13) var(--phong); color:var(--text-dim); }
 
-/* ---------- BẢNG BÁO CÁO: cột tên vừa chữ · cột số CHIA ĐỀU phần còn lại · số căn PHẢI, cột cuối sát mép phải ---------- */
+/* ---------- BẢNG BÁO CÁO (luật NH9, chủ SP 24/11): cột tên vừa chữ · các cột số rộng BẰNG NHAU, chia hết phần còn lại · số + đầu cột CĂN GIỮA ---------- */
 table.bc { width:100%; border-collapse:collapse; table-layout:fixed; font-size:var(--c14); }
-.bc > thead > tr > th { font:600 var(--c12) var(--phong); color:var(--text-faint); text-align:right; padding:8px 0; border-block:1px solid var(--line); white-space:nowrap; vertical-align:bottom; }
-.bc > tbody > tr > td { text-align:right; padding:6px 0; border-top:1px solid var(--line); vertical-align:middle; white-space:nowrap; position:relative; }
+.bc > thead > tr > th { font:600 var(--c12) var(--phong); color:var(--text-faint); text-align:center; padding:8px 0; border-block:1px solid var(--line); white-space:nowrap; vertical-align:bottom; }
+.bc > tbody > tr > td { text-align:center; padding:6px 0; border-top:1px solid var(--line); vertical-align:middle; white-space:nowrap; position:relative; }
 .bc > tbody > tr:first-child > td { border-top:0; }
 .bc > * > tr > :is(th, td):first-child { padding-left:16px; text-align:left; }
-.bc > * > tr > :is(th, td):last-child { padding-right:16px; }
+.bc > * > tr > :is(th, td).trai:last-child { padding-right:16px; }
 .bc > * > tr > :is(th, td).trai { text-align:left; }
 .bc > tbody > tr > td.trai:first-child { padding-left:0; }
 .bc > * > tr > :is(th, td).dem-trai { padding-left:16px; }
@@ -57,55 +57,42 @@ table.bc { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 .bc > tbody > tr.tong > td { border-top:1px solid var(--line-strong); font-weight:600; }
 .bc > thead > tr > th.gom { text-align:center; border-bottom:0; padding-bottom:2px; color:var(--text-dim); }
 .bc > * > tr > :is(th, td).vach { border-left:1px solid var(--line); }
-.bc.co-vach > * > tr > :is(th, td):not(:first-child) { padding-right:16px; }
-.bc > thead > tr > th.so-dau-hang { text-align:right; padding-left:0; }
-.bc.giua > * > tr > :is(th, td):not(:first-child):not(.trai) { text-align:center; }
+.bc > thead > tr > th.so-dau-hang { text-align:center; padding-left:0; }
 .nut-them { border:0; background:none; height:32px; padding:0 8px; margin-left:-8px; border-radius:6px; font:600 var(--c13) var(--phong); color:var(--accent); display:inline-flex; align-items:center; gap:4px; }
 .nut-them:hover { background:var(--accent-soft); }
 .tuan-c { display:grid; gap:1px; }
 .tuan-c b { font:600 var(--c14) var(--phong-so); }
 .tuan-c small { font:400 var(--c12) var(--phong-so); color:var(--text-faint); }
 
-/* ---------- A · HIỆN TẠI: số trong ô viền (web 24/11) ---------- */
-.so-a { display:inline-grid; place-items:center; min-width:40px; height:30px; padding:0 8px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface-2); font:600 var(--c14) var(--phong-so); color:var(--accent); }
+/* ---------- Ô VIỀN: web hôm nay (ảnh so sánh) + GIỮ cho cột SOS 1 / 2 / 3 của bảng SOS (chủ SP 24/11: màu trơn nhìn không rõ) ---------- */
+.so-a { display:inline-grid; place-items:center; min-width:40px; height:30px; padding:0 8px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface-2); font:600 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; color:var(--accent); }
 .so-a.vuot { color:var(--ok); } .so-a.chua { color:var(--bad); }
-.giua .pt { text-align:center; }
-.giua .so-0 { font-size:var(--c14); }
+.so-a.s1 { height:28px; color:var(--sos1-chu); border-color:var(--sos1); background:transparent; }
+.so-a.s2 { height:28px; color:var(--sos2-chu); border-color:var(--sos2); background:var(--sos2-nen); }
+.so-a.s3 { height:28px; color:var(--sos3-tren); border-color:var(--sos3-vien); background:var(--sos3-nen); }
+.so-a:is(.s1, .s2, .s3):is(:hover, .re) { outline:2px solid var(--accent); outline-offset:1px; }
+.dt .so-a { min-width:44px; height:44px; }
 
-/* ---------- B · SỐ TRƠN (khuyến nghị): số = chữ số, không ô, không nền ----------
-   Bấm được = màu nhấn, đậm 600; cột "xấu" (Chưa đạt, Chưa xử lý…) > 0 = đỏ. Rê / bàn phím: gạch chân + nền nhấn nhạt. 0 = mờ, không bấm.
-   Vùng bấm vô hình ≥ 32 × 32 (375: 44 × 44) — số nhỏ mà vẫn dễ bấm. */
+/* ---------- SỐ TRƠN (chủ SP chọn 24/11): số = chữ số, không ô, không nền; CĂN GIỮA cột ----------
+   Màu theo nghĩa: Vượt xanh lá · Đạt (và số đếm thường) xanh dương · Chưa đạt / cột "xấu" đỏ · thiếu điểm, chưa chốt vàng.
+   Rê / bàn phím: gạch chân + nền nhạt cùng màu. 0 = mờ, không bấm. Vùng bấm vô hình ≥ 32 × 32 (375: 44 × 44). */
 .so-b { position:relative; border:0; background:none; padding:1px 6px; margin:-1px -6px; border-radius:4px; font:600 15px/20px var(--phong-so); font-variant-numeric:tabular-nums; color:var(--accent); }
 .so-b::after { content:""; position:absolute; left:50%; top:50%; width:max(100%, 32px); height:32px; transform:translate(-50%, -50%); }
 .dt .so-b::after { width:max(100%, 44px); height:44px; }
 .so-b:hover, .so-b.re, .so-b.mo { background:var(--accent-soft); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1.5px; }
-.so-b.mo { box-shadow:0 0 0 1px var(--accent); }
+.so-b.mo { box-shadow:0 0 0 1px currentColor; }
 .so-b.fo { outline:2px solid var(--accent); outline-offset:1px; }
+.so-b.xl { color:var(--ok); }
 .so-b.do { color:var(--bad); }
 .so-b.vang { color:var(--soon); }
-.so-b.s1 { color:var(--sos1-chu); } .so-b.s2 { color:var(--sos2-chu); }
+.so-b.sm1 { color:var(--sos1-chu); } .so-b.sm2 { color:var(--sos2-chu); }
+.so-b.xl:is(:hover, .re, .mo) { background:var(--ok-nen); }
 .so-b.do:is(:hover, .re, .mo) { background:var(--bad-nen); }
+.so-b.vang:is(:hover, .re, .mo) { background:var(--soon-nen); }
 .so-b.lon { font:700 var(--c26)/1.2 var(--phong-so); padding:0 6px; }
 .so-0 { font:400 15px/20px var(--phong-so); color:var(--text-faint); }
 .pt { display:block; font:400 12px/16px var(--phong-so); color:var(--text-faint); }
 .qh-nho { font:600 var(--c12) var(--phong-so); color:var(--bad); margin-left:4px; }
-
-/* ---------- C · SỐ TRƠN MÀU CHỮ CHÍNH + % CÙNG DÒNG (gợi ý của lượt rà impeccable) ----------
-   Bấm được = đậm 600 màu chữ chính; không bấm (Điểm TB, % tuần dạy) = thường, màu phụ. Màu chỉ còn cho cột trạng thái. % nằm sau số, khe rộng cố định. */
-.so-b.den { color:var(--text); }
-.k-den .so-b:not(.do, .vang, .s1, .s2) { color:var(--text); }
-.bc.k-den .tb, .k-den .bc .tb { color:var(--text-dim); }
-.bc.k-den > tbody > tr:not(.them) > td { padding-top:10px; padding-bottom:10px; }
-.cap { display:inline-flex; align-items:baseline; justify-content:flex-end; gap:6px; }
-.pt-n { display:inline-block; width:36px; text-align:right; font:400 12px/16px var(--phong-so); color:var(--text-faint); }
-/* ---------- (thử, KHÔNG khuyến nghị) THANH TỈ LỆ MẢNH (dataviz: "thanh chia đoạn mảnh, không chữ, cạnh con số") ---------- */
-.tl { display:flex; gap:2px; height:8px; width:100%; }
-.tl i { display:block; height:8px; border-radius:2px; min-width:3px; }
-.tl .v { background:var(--ok); } .tl .d { background:var(--tl-giua); } .tl .c { background:var(--bad); }
-.toi { --tl-giua:#5f6f8f; } .sang { --tl-giua:#aab2c6; }
-.chu-giai { display:inline-flex; gap:10px; font-size:var(--c12); color:var(--text-dim); }
-.chu-giai i { display:inline-block; width:10px; height:8px; border-radius:2px; margin-right:4px; }
-.bc > tbody > tr > td.o-tl { padding-left:14px; padding-right:0; }
 
 /* ---------- HỘP NEO cạnh số (danh sách ≤ 8 dòng, ≤ 5 cột) — cùng họ hộp Tuần dạy đang có ---------- */
 .hop { position:absolute; z-index:6; text-align:left; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; box-shadow:0 10px 28px var(--bong); display:flex; flex-direction:column; white-space:normal; font:400 var(--c14)/1.45 var(--phong); color:var(--text); }
@@ -138,6 +125,7 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 .pn .bs :is(th, td):first-child { padding-left:20px; }
 .pn .bs :is(th, td):last-child { padding-right:20px; }
 .bs :is(th, td).p { text-align:right; }
+.bs :is(th, td).g { text-align:center; }
 .bs td.so, .bs td .so { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
 .bs :is(th, td).ly { background:color-mix(in srgb, var(--accent-soft) 70%, transparent); }
 .bs th.ly { color:var(--text); }
@@ -161,7 +149,6 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 .dt .o-kpi { padding:8px 12px 10px; }
 .dt .the-dau { padding-left:12px; }
 .dt .bc > * > tr > :is(th, td):first-child { padding-left:12px; }
-.dt .bc > * > tr > :is(th, td):last-child { padding-right:12px; }
 .dt .bc > tbody > tr > td { padding-top:8px; padding-bottom:8px; }
 .dt .bs td { height:56px; }
 .phu-nen { position:absolute; inset:var(--tt) 0 0 0; background:var(--phu-hop); z-index:4; }
@@ -194,7 +181,7 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 .do-mk { font:600 12px/1.4 'Be Vietnam Pro'; color:var(--text-dim); }
 .tt-hang { display:flex; gap:40px; align-items:flex-end; flex-wrap:wrap; }
 .tt-hang > div { display:grid; gap:10px; justify-items:start; }
-.tt-hang .o-mau { display:flex; align-items:center; justify-content:flex-end; width:96px; height:68px; padding:12px 16px; background:var(--surface); border:1px solid var(--line); border-radius:8px; text-align:right; }
+.tt-hang .o-mau { display:flex; align-items:center; justify-content:center; width:96px; height:68px; padding:12px 16px; background:var(--surface); border:1px solid var(--line); border-radius:8px; text-align:center; }
 .tt-hang .o-mau > span { display:block; }
 </style>
 </head>
@@ -204,9 +191,10 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
     <h1>v24 · Phân tích — con số bấm được và panel số</h1>
     <p>Chủ SP 24/11: <i>"kiểm tra lại các panels hiện lên khi bấm số ở các trang phân tích… có bị to quá, nhỏ quá, thiếu / thừa thông tin… Các con số có cần phải để trong badge không, bạn thấy như thế nào dễ nhìn và đẹp hơn?"</i> Hiện trạng + rà: <code>docs/anh/ra-panel-phan-tich/</code> (136 loại ô số, 32 khuôn panel).</p>
     <p>Dữ liệu bịa: Head <b>Nguyễn Khánh Vy</b> · Monbay · Fast Track · hôm nay <b>thứ Hai 14/09/2026 · W3 SEP</b>. 42 em thi thật trong kỳ "Toàn bộ" (số thật ở demo quá nhỏ để thấy cột 2 chữ số). Mọi bảng cùng một bộ số.</p>
+    <p><b>Bản 2 (sau khi chủ SP xem 24/11):</b> đã chốt số trơn <b>căn giữa</b>, màu theo nghĩa · bảng Theo GV <b>không</b> cột Tuần dạy · cột SOS 1 / 2 / 3 của bảng SOS <b>giữ ô viền</b>. Còn chờ chọn: hộp neo (B2) hay một kiểu panel 720 (B7) và các câu XM-3 → XM-5.</p>
     <p>Nền vàng viền đứt = chú thích cho người duyệt, không lên web. Dòng xanh <b>"Đổi: …"</b> = khác web hiện tại. <span class="xm">XM</span> = cần chủ SP / PTA quyết.</p>
     <nav class="muc-mk" aria-label="Mục lục khung">
-      <a href="#a1">A1 · Ba kiểu số — Từng kỹ năng</a><a href="#a2">A2 · Ba kiểu số — Theo GV</a><a href="#a3">A3 · Kiểu B: trạng thái + 375</a>
+      <a href="#a1">A1 · Số trơn căn giữa</a><a href="#a2">A2 · So sánh trước → sau</a><a href="#a3">A3 · Trạng thái + 375</a>
       <a href="#b0">B0 · Khuôn panel số</a><a href="#b1">B1 · Thi thật › kỹ năng</a><a href="#b2">B2 · Thi thật › Theo GV</a><a href="#b3">B3 · SOS</a><a href="#b4">B4 · Ý thức</a><a href="#b5">B5 · Ý thức (hộp)</a><a href="#b6">B6 · Chi nhánh</a><a href="#b8">B8 · Ô tỉ lệ</a><a href="#b7">B7 · Phương án khác</a><a href="#c1">C1 · Hạn = ngày</a><a href="#m">M · 375</a>
       <span class="che-mk" role="group" aria-label="Chế độ màu"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
     </nav>
@@ -214,44 +202,46 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 
   <!-- ======================= A · CÁCH HIỆN SỐ ======================= -->
   <section class="khu" id="a1">
-    <h2>A1 · Ba kiểu hiện số trên CÙNG bảng "Từng kỹ năng" (Thi thật)</h2>
-    <p class="ghi"><b>A</b> = web hôm nay: mỗi số một ô viền 40 × 30, % dưới, cột căn giữa — dòng 59 px ở đây (web thật 67). <b>B (khuyến nghị)</b> = số trơn <b>màu nhấn</b> đậm 600, % nhỏ dưới, 0 mờ không bấm, cột căn phải — dòng 49 px. <b>C</b> = số trơn <b>màu chữ chính</b>, % cùng dòng sau số, số không bấm (Điểm TB) màu phụ — dòng 41 px (gợi ý của lượt rà impeccable; giống bảng Lớp cần chú ý vừa duyệt). Cả B và C: đỏ chỉ ở cột "xấu" (Chưa đạt); thứ tự cột hai bảng làm một: HV · Vượt · Đạt · Chưa đạt · Điểm TB (web đang đặt Điểm TB ở hai chỗ khác nhau).</p>
+    <h2>A1 · Số trơn, căn giữa cột, màu theo nghĩa — Thi thật: "Từng kỹ năng" + "Theo GV" (chủ SP chọn 24/11)</h2>
+    <p class="ghi">Chủ SP 24/11: <i>"Ok chọn B nhưng các số cần căn giữa và màu vẫn nên để xanh lá, xanh dương, đỏ"</i>. Số là chữ số 15 px đậm, <b>căn giữa cột</b> (đầu cột và % nhỏ dưới số cũng giữa): <b>Vượt xanh lá · Đạt và số đếm xanh dương · Chưa đạt đỏ</b>; 0 mờ, không bấm. Các cột số rộng bằng nhau, chia hết bề ngang. Thứ tự cột hai bảng làm một: HV · Vượt · Đạt · Chưa đạt · Điểm TB.</p>
+    <p class="ghi">Bảng Theo GV — chủ SP 24/11: <i>"Tuần dạy hiện ở trên bảng theo GV làm gì, không cần cột đó… box thông tin có ghi tuần dạy rất hợp lý, nhưng tính % ở bảng GV là không cần thiết"</i>. Bảng xếp <b>kỹ năng → GV</b>, mỗi kỹ năng 2 GV dạy nhiều tuần nhất + "+ n GV" mở tại chỗ; <b>không cột Tuần dạy</b>. % tuần dạy chỉ nằm ở hộp / panel của từng em (B2).</p>
+    <p class="cap-doi">Đổi: web đang để mỗi số trong ô viền 40 × 30 (dòng 67 px), bảng Theo GV xếp GV → kỹ năng và hiện mọi GV. Số liệu từng ô không đổi.</p>
     <figure id="f-a1">
-      <figcaption>A1 · 1440 tối — ba thẻ cùng dữ liệu, cùng bề rộng 440</figcaption>
-      <div class="man toi cao khay"><div class="ba-the" id="k-a1"></div></div>
+      <figcaption>A1 · 1440 tối — hai thẻ như trên trang (440 + 940)</figcaption>
+      <div class="man toi cao khay"><div class="hai-the" id="k-a1"></div></div>
     </figure>
-    <figure id="f-a4"><figcaption>A4 · thử thêm một thanh tỉ lệ Vượt · Đạt · Chưa đạt (gợi ý của skill dataviz)</figcaption><div class="man toi cao khay" style="width:488px"><div id="k-a4"></div></div></figure>
   </section>
 
   <section class="khu" id="a2">
-    <h2>A2 · Ba kiểu trên bảng "Theo GV" — mỗi kỹ năng 2 GV dạy nhiều tuần nhất + "+ n GV"</h2>
-    <p class="ghi">Chủ SP 24/11: <i>"Bảng theo GV dù có 1 % vẫn cần, nhưng để hiển thị 2 GV dạy nhiều nhất thôi, nhiều hơn thì bấm vào thêm"</i>. Bảng xếp theo <b>kỹ năng → GV</b>; cột mới <b>Tuần dạy</b> (% tuần GV dạy kỹ năng đó cho các em đã thi — cùng luật với hộp Tuần dạy) là lý do xếp hạng. "+ n GV" mở tại chỗ. <span class="xm">XM</span> Cột Tuần dạy cần máy chủ gộp % theo GV × kỹ năng (hiện chỉ tính cho từng em).</p>
-    <p class="cap-doi">Đổi: bảng web đang xếp GV → kỹ năng, hiện mọi GV. Số liệu từng ô không đổi.</p>
-    <figure id="f-a2a"><figcaption>A2-A · kiểu A (ô viền) — dòng 59 px, thẻ cao 832</figcaption><div class="man toi cao khay" style="width:988px"><div class="the" id="k-a2a"></div></div></figure>
-    <figure id="f-a2b"><figcaption>A2-B · kiểu B (số trơn màu nhấn, % dưới) — dòng 49 px, thẻ cao 735 · khuyến nghị</figcaption><div class="man toi cao khay" style="width:988px"><div class="the" id="k-a2b"></div></div></figure>
-    <figure id="f-a2c"><figcaption>A2-C · kiểu C (số trơn màu chữ, % cùng dòng) — dòng 41 px, thẻ cao 655</figcaption><div class="man toi cao khay" style="width:988px"><div class="the" id="k-a2c"></div></div></figure>
+    <h2>A2 · So sánh — web hôm nay (ô viền) → đã chọn (số trơn căn giữa)</h2>
+    <figure id="f-a2">
+      <figcaption>A2 · 1440 tối — cùng dữ liệu, cùng bề rộng 440</figcaption>
+      <div class="man toi cao khay" style="width:952px"><div class="ba-the" style="grid-template-columns:repeat(2, 440px)" id="k-a2"></div></div>
+    </figure>
   </section>
 
   <section class="khu" id="a3">
-    <h2>A3 · Kiểu B — trạng thái của một con số, "+ n GV" đã mở, và 375</h2>
+    <h2>A3 · Trạng thái của một con số, "+ n GV" đã mở, và 375</h2>
     <div class="hang-khung">
       <figure id="f-a3a">
-        <figcaption>A3-1 · trạng thái số (phóng to cho dễ xem)</figcaption>
+        <figcaption>A3-1 · trạng thái số</figcaption>
         <div class="man toi cao khay" style="width:860px">
           <div class="tt-hang">
-            <div><span class="do-mk">Thường</span><span class="o-mau"><span><button type="button" class="so-b">12</button><span class="pt">29 %</span></span></span></div>
-            <div><span class="do-mk">Rê chuột</span><span class="o-mau"><span><button type="button" class="so-b re">12</button><span class="pt">29 %</span></span></span></div>
-            <div><span class="do-mk">Bàn phím (Tab)</span><span class="o-mau"><span><button type="button" class="so-b fo">12</button><span class="pt">29 %</span></span></span></div>
-            <div><span class="do-mk">Đang mở panel</span><span class="o-mau"><span><button type="button" class="so-b mo">12</button><span class="pt">29 %</span></span></span></div>
-            <div><span class="do-mk">Cột "xấu" &gt; 0</span><span class="o-mau"><span><button type="button" class="so-b do">24</button><span class="pt">57 %</span></span></span></div>
+            <div><span class="do-mk">Đạt / số đếm</span><span class="o-mau"><span><button type="button" class="so-b">18</button><span class="pt">43 %</span></span></span></div>
+            <div><span class="do-mk">Vượt</span><span class="o-mau"><span><button type="button" class="so-b xl">12</button><span class="pt">29 %</span></span></span></div>
+            <div><span class="do-mk">Chưa đạt</span><span class="o-mau"><span><button type="button" class="so-b do">24</button><span class="pt">57 %</span></span></span></div>
+            <div><span class="do-mk">Rê chuột</span><span class="o-mau"><span><button type="button" class="so-b re">18</button><span class="pt">43 %</span></span></span></div>
+            <div><span class="do-mk">Bàn phím (Tab)</span><span class="o-mau"><span><button type="button" class="so-b fo">18</button><span class="pt">43 %</span></span></span></div>
+            <div><span class="do-mk">Đang mở</span><span class="o-mau"><span><button type="button" class="so-b do mo">24</button><span class="pt">57 %</span></span></span></div>
             <div><span class="do-mk">Số 0 — không bấm</span><span class="o-mau"><span><span class="so-0">0</span></span></span></div>
-            <div><span class="do-mk">Số lớn đầu trang</span><span class="o-mau" style="width:132px;height:68px"><span><button type="button" class="so-b lon">62 %</span></button></span></span></div>
+            <div><span class="do-mk">Số lớn đầu trang</span><span class="o-mau" style="width:132px"><span><button type="button" class="so-b lon">62 %</button></span></span></div>
+            <div><span class="do-mk">Cột SOS 1 · 2 · 3 — giữ ô viền</span><span class="o-mau" style="width:196px;gap:12px"><button type="button" class="so-a s1">2</button><button type="button" class="so-a s2">1</button><button type="button" class="so-a s3">4</button></span></div>
           </div>
         </div>
       </figure>
-      <figure id="f-a3b"><figcaption>A3-2 · 375 sáng — số trơn, vùng bấm 44 × 44</figcaption><div class="dt sang cao" id="k-a3b"></div></figure>
+      <figure id="f-a3b"><figcaption>A3-2 · 375 sáng — số trơn căn giữa, vùng bấm 44 × 44</figcaption><div class="dt sang cao" id="k-a3b"></div></figure>
     </div>
-    <figure id="f-a3c"><figcaption>A3-3 · "+ 3 GV" của W1 đã mở — GV dạy 1 % vẫn có dòng; "Thu gọn" ở cuối nhóm</figcaption><div class="man toi cao khay" style="width:988px"><div class="the" id="k-a3c"></div></div></figure>
+    <figure id="f-a3c"><figcaption>A3-3 · "+ 3 GV" của W1 đã mở — GV dạy 1 % số tuần vẫn có dòng; "Thu gọn" ở cuối nhóm</figcaption><div class="man toi cao khay" style="width:988px"><div class="the" id="k-a3c"></div></div></figure>
   </section>
 
   <!-- ======================= B · KHUNG PANEL SỐ ======================= -->
@@ -266,7 +256,7 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
       <tr><th>Phần</th><th>Luật</th><th>Web hôm nay</th></tr>
       <tr><td>Đầu — MỘT dòng</td><td><b>Tên số</b> (đúng chữ ô vừa bấm, kèm đối tượng: GV / lớp / kỹ năng) · <b>tổng + đơn vị</b> · ⓘ (cách tính) · ✕. Phạm vi (chi nhánh · chương trình · kỳ) chỉ thêm ở <b>panel 720</b> — hộp neo không che hàng lọc nên không lặp.</td><td>Tên số · ⓘ · phạm vi · "dữ liệu đến 14/09" ở đầu, rồi thêm một dòng "3 HV", rồi hàng chip lớp</td></tr>
       <tr><td>Thân</td><td>MỘT bảng đúng tập sinh ra số. Cột 1 = <b>Học viên</b> (tên là link hồ sơ, lớp chữ nhỏ dưới — bỏ lớp khi tên số đã có lớp). Sau đó chỉ các cột là <b>lý do</b> của con số (nền nhấn nhạt ở cột lý do chính). Xếp: nặng nhất trước.</td><td>9–10 cột cho mọi loại số (L R W1 W2 S OVR…) dù số chỉ nói về một kỹ năng</td></tr>
-      <tr><td>Cột</td><td>Cột tên rộng vừa chữ (190–220); các cột còn lại <b>chia đều</b> phần còn lại; số căn phải; cột cuối sát mép phải.</td><td>Cột tên nuốt hết phần thừa (374–755 px), các cột số dồn sát mép phải</td></tr>
+      <tr><td>Cột</td><td>Cột tên rộng vừa chữ (172–220); các cột còn lại <b>chia đều</b> phần còn lại; <b>số căn giữa cột</b> (đầu cột theo). Căn phải chỉ cho <b>hạn / ngày ở cột cuối</b> (sát mép phải).</td><td>Cột tên nuốt hết phần thừa (374–755 px), các cột số dồn sát mép phải</td></tr>
       <tr><td>Dòng</td><td>48 px (tên + lớp). Hộp neo: hiện hết (≤ 8). Panel 720: 20 dòng đầu, cuộn trong thân, "Xem thêm 20" ở cuối (giữ như hiện tại).</td><td>44–86 px tuỳ panel</td></tr>
       <tr><td>Chân</td><td><b>Không có.</b> ✕ + Esc + bấm ra ngoài là đủ; Phân tích là báo cáo thuần — không nút việc.</td><td>Nút "Đóng" chiếm một dải 52 px</td></tr>
       <tr><td>Hạn / ngày</td><td>Chỉ <b>dd/mm/yyyy</b> tô màu: đỏ quá hạn · vàng ≤ 2 ngày · thường. Không "quá n ngày", không badge.</td><td>Badge "Chưa làm · quá 5 ngày", "Quá hạn 1 ngày"</td></tr>
@@ -281,12 +271,12 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
   </section>
   <section class="khu" id="b2">
     <h2>B2 · Thi thật › Theo GV › "7" Chưa đạt · Dương Tuấn Kiên · L → hộp neo M</h2>
-    <p class="cap-doi">Đổi: panel 1080 × 803 cho 1–7 dòng → <b>hộp 560 neo ngay dưới con số</b>. Cột lý do: điểm L so Target + <b>Tuần dạy</b> (GV này dạy em bao nhiêu tuần).</p>
+    <p class="cap-doi">Đổi: panel 1080 × 803 cho 1–7 dòng → <b>hộp 560 neo ngay dưới con số</b>. Cột lý do: điểm L so Target + <b>Tuần dạy</b> — GV này dạy kỹ năng L cho em bao nhiêu tuần (n / m · %), xếp % cao trước: em trượt (hay vượt) kỹ năng nào thì thấy ngay ai dạy em kỹ năng đó nhiều nhất. Đây là nơi DUY NHẤT hiện % tuần dạy (cùng hộp Tuần dạy của từng điểm).</p>
     <figure id="f-b2"><figcaption>B2 · 1440 × 900 tối · cả màn</figcaption><div class="man toi" id="k-b2"></div></figure>
   </section>
   <section class="khu" id="b3">
-    <h2>B3 · SOS › "31" Chưa chốt PA → panel 720 (bảng Theo tuần phía sau cũng là số trơn)</h2>
-    <p class="cap-doi">Đổi: dải 4 ô (có 2 ô "0") + dòng 3 tầng chữ ("Chưa có mô tả" lặp 27 lần) + "+ 25 Case" → nhóm theo bước, mỗi Case <b>một dòng</b>: em · Case · điểm / kỳ vọng · người phụ trách · hạn (ngày tô màu). Quá hạn lên đầu nhóm.</p>
+    <h2>B3 · SOS › "31" Chưa chốt PA → panel 720 · bảng Theo tuần: cột SOS 1 / 2 / 3 giữ ô viền, các cột khác số trơn căn giữa</h2>
+    <p class="cap-doi">Đổi: dải 4 ô (có 2 ô "0") + dòng 3 tầng chữ ("Chưa có mô tả" lặp 27 lần) + "+ 25 Case" → nhóm theo bước, mỗi Case <b>một dòng</b>: em · Case · điểm / kỳ vọng · người phụ trách · hạn (ngày tô màu). Quá hạn lên đầu nhóm. Ô vừa bấm (thẻ "Chưa chốt PA 31" ở góc phải) nằm dưới panel — bảng này rộng hết trang nên panel phải nào cũng che nửa phải.</p>
     <figure id="f-b3"><figcaption>B3 · 1440 × 900 tối · cả màn</figcaption><div class="man toi" id="k-b3"></div></figure>
   </section>
   <section class="khu" id="b4">
@@ -313,7 +303,7 @@ table.bs { width:100%; border-collapse:collapse; table-layout:fixed; font-size:v
 
   <section class="khu" id="b7">
     <h2>B7 · Phương án khác cho danh sách ngắn — MỘT kiểu mở: panel 720 cao theo số dòng (cùng ô số với B2)</h2>
-    <p class="ghi"><span class="xm">XM</span> Lượt rà độc lập phản đối B2: cùng một cột mà ô "7" mở hộp, ô "30" mở panel thì trái luật "một danh sách một kiểu mở". Phương án này giữ một kiểu duy nhất — panel phải 720, <b>cao vừa đủ số dòng</b>. Được: một kiểu mở, một component. Mất: panel đứng xa con số vừa bấm và che đúng bảng nguồn nằm bên phải (ô vừa bấm bị che), muốn bấm ô kế phải đóng trước. Người vẽ vẫn khuyến nghị B2 (hộp neo).</p>
+    <p class="ghi"><span class="xm">XM</span> Lượt rà độc lập phản đối B2: cùng một cột mà ô "7" mở hộp, ô "30" mở panel thì trái luật "một danh sách một kiểu mở". Phương án này giữ một kiểu duy nhất — panel phải 720, <b>cao vừa đủ số dòng</b>. Được: một kiểu mở, một component. Mất: panel đứng xa con số vừa bấm và che đúng bảng nguồn nằm bên phải (ô vừa bấm bị che), muốn bấm ô kế phải đóng trước. Chủ SP chưa quyết — mockup giữ cả hai; người vẽ nghiêng về B2 (hộp neo).</p>
     <figure id="f-b7"><figcaption>B7 · 1440 × 900 tối · cả màn</figcaption><div class="man toi" id="k-b7"></div></figure>
   </section>
 
@@ -370,56 +360,47 @@ const kpi = (ds, lop = '') => `<div class="kpi ${lop}">${ds.map(([ten, ky, gt, p
 
 /* một ô số theo kiểu a / b / c; `mau`: 'vuot' | 'chua' | '' ; `t` = mẫu số để ra % */
 function oSo(kieu, n, t, mau = '', them = '') {
-  if (!n) return kieu === 'c' && t ? `<span class="cap"><span class="so-0">0</span><span class="pt-n"></span></span>` : `<span class="so-0">0</span>`;
-  if (kieu === 'a') return `<button type="button" class="so-a ${mau}">${n}</button>${t ? `<span class="pt">${pc(n, t)}</span>` : ''}`;
-  const nut = `<button type="button" class="so-b ${mau === 'chua' ? 'do' : kieu === 'c' ? 'den' : ''} ${them}">${n}</button>`;
-  if (kieu === 'c') return t ? `<span class="cap">${nut}<span class="pt-n">${pc(n, t)}</span></span>` : nut;
-  if (kieu === 'd') return nut;
-  return nut + (t ? `<span class="pt">${pc(n, t)}</span>` : '');
+  if (!n) return `<span class="so-0">0</span>`;
+  const phu = t ? `<span class="pt">${pc(n, t)}</span>` : '';
+  if (kieu === 'a') return `<button type="button" class="so-a ${mau}">${n}</button>${phu}`;
+  return `<button type="button" class="so-b ${{ vuot: 'xl', chua: 'do' }[mau] ?? ''} ${them}">${n}</button>${phu}`;
 }
-const thanh = (v, d, c) => `<span class="tl" role="img" aria-label="Vượt ${v}, Đạt ${d}, Chưa đạt ${c}">${v ? `<i class="v" style="flex:${v}"></i>` : ''}${d ? `<i class="d" style="flex:${d}"></i>` : ''}${c ? `<i class="c" style="flex:${c}"></i>` : ''}</span>`;
-const chuGiai = `<span class="chu-giai"><span><i style="background:var(--ok)"></i>Vượt</span><span><i style="background:var(--tl-giua)"></i>Đạt</span><span><i style="background:var(--bad)"></i>Chưa đạt</span></span>`;
 
 /* ===================== BẢNG "TỪNG KỸ NĂNG" ===================== */
 function theKn(kieu, mo = null, dt = false) {
-  const d = kieu === 'd';
-  const W = dt ? { a: [62], b: [62, 38, 52, 52, 64], c: [62, 36, 0, 0, 0, 52], d: [40, 40, 44, 40, 62, 0, 56] }[kieu] : { a: [66, 56, 72, 72, 84, 88], b: [66, 56, 72, 72, 84, 88], c: [66, 40, 84, 84, 88, 76], d: [66, 40, 46, 46, 66, 100, 74] }[kieu];
-  const cols = Array.from({ length: d ? 7 : 6 }, (_, i) => `<col${W[i] ? ` style="width:${W[i]}px"` : ''}>`).join('');
-  const dau = `<tr><th>Kỹ năng</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th>${d ? '<th class="trai dem-trai">Tỉ lệ</th>' : ''}<th>Điểm TB</th></tr>`;
+  const cols = `<col style="width:${dt ? 62 : 66}px">${'<col>'.repeat(5)}`;
+  const dau = `<tr><th>Kỹ năng</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th><th>${dt ? 'TB' : 'Điểm TB'}</th></tr>`;
   const than = KN.map((r) => `<tr><td class="kn" style="vertical-align:middle;padding-top:6px">${r.kn}</td>
     <td>${oSo(kieu, r.hv, 0)}</td><td>${oSo(kieu, r.v, r.hv, 'vuot')}</td><td>${oSo(kieu, r.d, r.hv)}</td>
-    <td>${oSo(kieu, r.c, r.hv, 'chua', mo === `${r.kn}:c` ? 'mo' : '')}</td>${d ? `<td class="o-tl">${thanh(r.v, r.d, r.c)}</td>` : ''}<td class="tb">${r.tb}</td></tr>`).join('');
+    <td>${oSo(kieu, r.c, r.hv, 'chua', mo === `${r.kn}:c` ? 'mo' : '')}</td><td class="tb">${r.tb}</td></tr>`).join('');
   return `<div class="the-dau"><h3>Từng kỹ năng</h3><span class="phu">so Target overall</span>${nutI}</div>
-    ${d ? `<div style="padding:0 16px 8px">${chuGiai}</div>` : ''}
-    <table class="bc ${kieu === 'a' ? 'giua' : ''} ${kieu === 'c' ? 'k-den' : ''}"><colgroup>${cols}</colgroup><thead>${dau}</thead><tbody>${than}</tbody></table>`;
+    <table class="bc"><colgroup>${cols}</colgroup><thead>${dau}</thead><tbody>${than}</tbody></table>`;
 }
 
-/* ===================== BẢNG "THEO GV" (kỹ năng → 2 GV dạy nhiều nhất + n GV) ===================== */
+/* ===================== BẢNG "THEO GV" (kỹ năng → 2 GV dạy nhiều tuần nhất + n GV; KHÔNG cột Tuần dạy — chủ SP 24/11) ===================== */
 function theGv(kieu, { moThem = null, mo = null } = {}) {
-  const c = kieu === 'd';
-  const cols = `<col style="width:76px"><col style="width:220px"><col><col><col><col><col>${c ? '<col style="width:150px">' : ''}<col>`;
-  const dau = `<tr><th>Kỹ năng</th><th class="trai">Giáo viên</th><th>Tuần dạy</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th>${c ? '<th class="trai dem-trai">Tỉ lệ</th>' : ''}<th>Điểm TB</th></tr>`;
-  const dong = (kn, g, phu) => {
-    const [ten, tuan, hv, v, d, ch, tb] = g;
-    return `<td class="trai ten">${ten}</td><td class="tb">${tuan} %</td><td>${oSo(kieu, hv, 0)}</td><td>${oSo(kieu, v, hv, 'vuot')}</td><td>${oSo(kieu, d, hv)}</td>
-      <td>${oSo(kieu, ch, hv, 'chua', mo === `${kn}:${ten}` ? 'mo' : '')}</td>${c ? `<td class="o-tl">${thanh(v, d, ch)}</td>` : ''}<td class="tb">${tb}</td>`;
+  const cols = `<col style="width:76px"><col style="width:220px">${'<col>'.repeat(5)}`;
+  const dau = `<tr><th>Kỹ năng</th><th class="trai">Giáo viên</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th><th>Điểm TB</th></tr>`;
+  const dong = (kn, g) => {
+    const [ten, , hv, v, d, ch, tb] = g;
+    return `<td class="trai ten">${ten}</td><td>${oSo(kieu, hv, 0)}</td><td>${oSo(kieu, v, hv, 'vuot')}</td><td>${oSo(kieu, d, hv)}</td>
+      <td>${oSo(kieu, ch, hv, 'chua', mo === `${kn}:${ten}` ? 'mo' : '')}</td><td class="tb">${tb}</td>`;
   };
   const than = GV.map((k) => {
     const daMo = moThem === k.kn;
     const soDong = k.gv.length + 1 + (daMo ? k.them.length : 0);
-    const conLai = k.them.reduce((a, g) => a + g[1], 0);
     return k.gv.map((g, i) => `<tr class="${i === 0 ? 'nhom-moi' : ''}">${i === 0 ? `<td class="kn" rowspan="${soDong}">${k.kn}</td>` : ''}${dong(k.kn, g)}</tr>`).join('')
-      + (daMo ? k.them.map((g) => `<tr class="phu-gv">${dong(k.kn, g, true)}</tr>`).join('') : '')
-      + `<tr class="them"><td class="trai" colspan="${c ? 8 : 7}"><button type="button" class="nut-them" aria-expanded="${daMo}">${daMo ? 'Thu gọn' : `+ ${k.them.length} GV`}</button>${daMo ? '' : `<span class="mo" style="font-size:var(--c13)"> · ${conLai} % tuần dạy</span>`}</td></tr>`;
+      + (daMo ? k.them.map((g) => `<tr class="phu-gv">${dong(k.kn, g)}</tr>`).join('') : '')
+      + `<tr class="them"><td class="trai" colspan="6"><button type="button" class="nut-them" aria-expanded="${daMo}">${daMo ? 'Thu gọn' : `+ ${k.them.length} GV`}</button></td></tr>`;
   }).join('');
-  return `<div class="the-dau"><h3>Theo GV</h3><span class="phu">9 GV · trừ KCK · mỗi kỹ năng 2 GV dạy nhiều tuần nhất</span>${c ? `<span style="margin-left:16px">${chuGiai}</span>` : ''}${nutI}</div>
-    <table class="bc ${kieu === 'a' ? 'giua' : ''} ${kieu === 'c' ? 'k-den' : ''}"><colgroup>${cols}</colgroup><thead>${dau}</thead><tbody>${than}</tbody></table>`;
+  return `<div class="the-dau"><h3>Theo GV</h3><span class="phu">9 GV · trừ KCK · mỗi kỹ năng 2 GV dạy nhiều tuần nhất</span>${nutI}</div>
+    <table class="bc"><colgroup>${cols}</colgroup><thead>${dau}</thead><tbody>${than}</tbody></table>`;
 }
 
 /* ===================== BẢNG TRONG PANEL SỐ ===================== */
 /* cot: [{ t, w?, p? (căn phải), ly? (cột lý do) }] · dong: mảng ô (html) hoặc { nhom, n } */
 function bangSo(cot, dong) {
-  const lop = (c) => [c.p ? 'p' : '', c.ly ? 'ly' : ''].join(' ').trim();
+  const lop = (c) => [c.p ? 'p' : '', c.g ? 'g' : '', c.ly ? 'ly' : ''].join(' ').trim();
   return `<table class="bs"><colgroup>${cot.map((c) => `<col${c.w ? ` style="width:${c.w}px"` : ''}>`).join('')}</colgroup>
     <thead><tr>${cot.map((c) => `<th class="${lop(c)}">${c.t}</th>`).join('')}</tr></thead>
     <tbody>${dong.map((r) => (r.nhom ? `<tr class="nhom"><td colspan="${cot.length}">${r.nhom}<span>${r.n}</span></td></tr>` : `<tr>${r.map((o, i) => `<td class="${lop(cot[i])} ${cot[i].so ? 'so' : ''} ${cot[i].xuong ? 'xuong' : ''}">${o}</td>`).join('')}</tr>`)).join('')}</tbody></table>`;
@@ -433,10 +414,10 @@ const NGAY_THI = ['15/08/2026', '15/08/2026', '22/08/2026', '22/08/2026', '29/08
 const CHUA_L = [[5.0, 6.5], [5.5, 7.0], [5.0, 6.0], [5.5, 6.5], [5.5, 6.5], [6.0, 7.0], [5.5, 6.0], [6.0, 6.5], [6.0, 6.5], [6.0, 6.5], [6.5, 7.0], [6.5, 7.0]];
 const lech = (a, b) => `<span class="${a < b ? 'xau' : 'tot'}">${a < b ? '−' : '+'}${Math.abs(a - b).toFixed(1)}</span>`;
 const dongChuaL = (n) => CHUA_L.slice(0, n).map(([l, t], i) => [hv(TEN_HV[i], LOP[i % LOP.length]), `<span class="ngay">${NGAY_THI[i]}</span>`, `<span class="xau">✗ ${l.toFixed(1)}</span>`, t.toFixed(1), lech(l, t)]);
-const COT_CHUA_L = (w) => [{ t: 'Học viên', w }, { t: 'Ngày thi' }, { t: 'L', p: 1, ly: 1, so: 1 }, { t: 'Target', p: 1, so: 1 }, { t: 'Lệch', p: 1, so: 1 }];
+const COT_CHUA_L = (w) => [{ t: 'Học viên', w }, { t: 'Ngày thi' }, { t: 'L', g: 1, ly: 1, so: 1 }, { t: 'Target', g: 1, so: 1 }, { t: 'Lệch', g: 1, so: 1 }];
 const TUAN_DAY = [[20, 22], [18, 22], [16, 24], [12, 20], [11, 22], [8, 22], [5, 24]];
 const dongGvL = () => TUAN_DAY.map(([a, b], i) => { const [l, t] = CHUA_L[i + 1]; return [hv(TEN_HV[i + 3], LOP[(i + 3) % LOP.length]), `<span class="ngay">${NGAY_THI[i + 2]}</span>`, `<span class="xau">✗ ${l.toFixed(1)}</span>`, t.toFixed(1), `${a}/${b} <span class="mo">·</span> <b>${Math.round(a * 100 / b)} %</b>`]; });
-const COT_GV_L = [{ t: 'Học viên', w: 176 }, { t: 'Ngày thi', w: 104 }, { t: 'L', w: 72, p: 1, ly: 1, so: 1 }, { t: 'Target', w: 76, p: 1, so: 1 }, { t: 'Tuần dạy', p: 1, ly: 1, so: 1 }];
+const COT_GV_L = [{ t: 'Học viên', w: 176 }, { t: 'Ngày thi', w: 104 }, { t: 'L', w: 72, g: 1, ly: 1, so: 1 }, { t: 'Target', w: 76, g: 1, so: 1 }, { t: 'Tuần dạy', g: 1, ly: 1, so: 1 }];
 const chip = (n) => `<span class="chip sos${n}">SOS ${n}</span>`;
 const ngay = (d, k = '') => `<span class="ngay ${k}">${d}</span>`;
 const CASE = [
@@ -476,13 +457,13 @@ const DANG_HOC = [['Nguyễn Minh An', 'MB FT 101', 'Tuần 14', 'MT2 · W3 AUG'
 const CHAM = ['Ngô Bảo Châu', 'Lý Thanh Tâm', 'Võ Minh Triết', 'Hồ Gia Hân', 'Lê Minh Đức'];
 
 const DAT_MT = [['Bùi Thảo Vy', 'MT3 · W2 SEP', [7.0, 7.0, 7.0, 7.0, 6.5], 7.0, 7.0], ['Nguyễn Minh An', 'MT2 · W3 AUG', [6.0, 6.0, 6.0, 6.0, 6.0], 6.0, 6.0], ['Trần Thu Hà', 'MT2 · W3 AUG', [5.5, 5.5, 5.5, 5.5, 5.0], 5.5, 5.5], ['Lê Quang Huy', 'MT2 · W3 AUG', [5.5, 6.0, 6.0, 6.0, 6.0], 6.0, 6.0], ['Vũ Hải Đăng', 'MT2 · W3 AUG', [6.0, 6.0, 6.0, 6.0, 6.0], 6.0, 5.5], ['Tạ Minh Quân', 'MT3 · W2 SEP', [6.5, 6.5, 6.5, 6.0, 6.5], 6.5, 6.5], ['Lương Bảo Anh', 'MT3 · W2 SEP', [6.5, 7.0, 6.0, 6.5, 6.5], 6.5, 6.5], ['Lý Minh Châu', 'MT2 · W2 SEP', [6.5, 5.5, 6.5, 6.5, 6.5], 6.5, 6.5], ['Hoàng Bảo Ngọc', 'MT2 · W1 SEP', [6.0, 6.0, 5.5, 6.0, 6.0], 6.0, 6.0], ['Hồ Thảo Nhi', 'MT2 · W1 SEP', [6.5, 6.0, 6.0, 6.0, 6.5], 6.0, 6.0]];
-const pnB8 = () => `<aside class="pn" aria-label="Panel số">${dauSo('Đạt MT · MB FT 101', '10 / 18 HV', 'Fast Track · W1 SEP – W4 SEP')}<div class="tabs" role="tablist"><button type="button" class="tab" role="tab" aria-selected="true">Đạt <span class="bd">10</span></button><button type="button" class="tab" role="tab" aria-selected="false">Chưa đạt <span class="bd">8</span></button></div><div class="pn-than">${bangSo([{ t: 'Học viên', w: 172 }, { t: 'MT', w: 118 }, { t: 'L', p: 1, so: 1 }, { t: 'R', p: 1, so: 1 }, { t: 'W1', p: 1, so: 1 }, { t: 'W2', p: 1, so: 1 }, { t: 'S', p: 1, so: 1 }, { t: 'Overall', p: 1, ly: 1, so: 1 }, { t: 'KV', p: 1, so: 1 }],
+const pnB8 = () => `<aside class="pn" aria-label="Panel số">${dauSo('Đạt MT · MB FT 101', '10 / 18 HV', 'Fast Track · W1 SEP – W4 SEP')}<div class="tabs" role="tablist"><button type="button" class="tab" role="tab" aria-selected="true">Đạt <span class="bd">10</span></button><button type="button" class="tab" role="tab" aria-selected="false">Chưa đạt <span class="bd">8</span></button></div><div class="pn-than">${bangSo([{ t: 'Học viên', w: 172 }, { t: 'MT', w: 118 }, { t: 'L', g: 1, so: 1 }, { t: 'R', g: 1, so: 1 }, { t: 'W1', g: 1, so: 1 }, { t: 'W2', g: 1, so: 1 }, { t: 'S', g: 1, so: 1 }, { t: 'Overall', g: 1, ly: 1, so: 1 }, { t: 'KV', g: 1, so: 1 }],
   DAT_MT.map((r) => [hv(r[0]), r[1], ...r[2].map((d) => (d < r[4] ? `<span class="xau">${d.toFixed(1)}</span>` : `<span class="dim">${d.toFixed(1)}</span>`)), `<span class="tot">✓ ${r[3].toFixed(1)}</span>`, r[4].toFixed(1)]))}</div></aside>`;
 /* panel / hộp cụ thể */
 const pnB1 = () => panel(dauSo('Chưa đạt · L', '12 HV', 'Thi thật · Toàn bộ · Monbay'), bangSo(COT_CHUA_L(220), dongChuaL(12)), false);
 const hopB2 = (lop = '', kieu = '') => `<div class="hop m ${lop}" role="dialog" aria-label="Chưa đạt · Dương Tuấn Kiên · L" style="${kieu}">${dauSo('Chưa đạt · L · Dương Tuấn Kiên', '7 HV')}${bangSo(COT_GV_L, dongGvL())}</div>`;
 const pnB3 = () => panel(dauSo('Chưa chốt PA', '31 Case · <span class="qua-chu">1 quá hạn</span>', 'Fast Track · hiện tại · Monbay'),
-  bangSo([{ t: 'Học viên', w: 172 }, { t: 'Case', w: 198 }, { t: 'Điểm / KV', w: 86, p: 1, ly: 1, so: 1 }, { t: 'Phụ trách' }, { t: 'Hạn', w: 116, p: 1 }],
+  bangSo([{ t: 'Học viên', w: 172 }, { t: 'Case', w: 198 }, { t: 'Điểm / KV', w: 86, g: 1, ly: 1, so: 1 }, { t: 'Phụ trách' }, { t: 'Hạn', w: 116, p: 1 }],
     CASE.map((r) => (r.nhom ? r : [hv(r[0], r[1]), `${r[2]} ${chip(r[3])}`, `<span class="xau">${r[4].split(' / ')[0]}</span> <span class="mo">/ ${r[4].split(' / ')[1]}</span>`, r[5], ngay(r[6], r[7])]))) + `<div class="xem-them"><button type="button" class="nut nut-nho">Xem thêm 19</button></div>`);
 const pnB4 = () => panel(dauSo('Chưa xử lý · MB FT 101', '14 vi phạm · 8 HV', 'Ý thức · Toàn bộ'),
   bangSo([{ t: 'Học viên', w: 176 }, { t: 'Ngày', w: 100 }, { t: 'Vi phạm', xuong: 1 }, { t: 'Trạng thái', w: 92 }, { t: 'Hạn xử lý', w: 112, p: 1, ly: 1 }],
@@ -490,7 +471,7 @@ const pnB4 = () => panel(dauSo('Chưa xử lý · MB FT 101', '14 vi phạm · 8
 const hopB5 = (kieu = '') => `<div class="hop s" role="dialog" aria-label="Vi phạm · Phạm Bảo Ngọc" style="${kieu}">${dauSo('Vi phạm · Phạm Bảo Ngọc', '6')}${bangSo([{ t: 'Ngày', w: 104 }, { t: 'Vi phạm', xuong: 1 }, { t: 'Xử lý', w: 112, p: 1 }],
   VP_NGOC.map((r) => [ngay(r[0]), `<b style="font-weight:600">${r[1]}</b><small>${r[2]}</small>`, r[3] ? `${r[3]}` : `<span class="dim">${r[4]}</span>`]))}</div>`;
 const pnB6 = () => panel(dauSo('Học viên đang học', '51 HV', 'Fast Track · hiện tại · Monbay'),
-  bangSo([{ t: 'Học viên', w: 200 }, { t: 'Lớp' }, { t: 'Tuần học', ly: 1 }, { t: 'MT gần nhất', w: 136 }, { t: 'Overall / KV', w: 116, p: 1, so: 1 }],
+  bangSo([{ t: 'Học viên', w: 200 }, { t: 'Lớp' }, { t: 'Tuần học', ly: 1 }, { t: 'MT gần nhất', w: 136 }, { t: 'Overall / KV', w: 116, g: 1, so: 1 }],
     DANG_HOC.map((r) => [hv(r[0]), r[1], r[2], r[3] === 'chưa có MT' ? '<span class="mo">chưa có MT</span>' : r[3], r[5] === 2 ? `<span class="mo">${r[4]}</span>` : `<span class="${r[5] ? '' : 'xau'}">${r[4].split(' / ')[0]}</span> <span class="mo">/ ${r[4].split(' / ')[1]}</span>`])));
 const hopC1 = (kieu = '') => `<div class="hop s" role="dialog" aria-label="Chưa làm · Chấm Test · Cao Khánh Linh" style="${kieu}">${dauSo('Chấm Test chưa làm · <a href="#">Cao Khánh Linh</a>', '5 bài')}${bangSo([{ t: 'Học viên', w: 176 }, { t: 'Bài' }, { t: 'Hạn', w: 116, p: 1, ly: 1 }],
   CHAM.map((t, i) => [hv(t, 'MB FT 101'), i < 3 ? 'MT1 · W2<small>W1 SEP</small>' : 'MT2 · W2<small>W2 SEP</small>', i < 3 ? ngay('09/09/2026', 'qua') : ngay('16/09/2026', 'gan')]))}</div>`;
@@ -513,13 +494,13 @@ const TUAN = [
   ['W2 JUL', '06/07 – 12/07', [5, 0, 0, 0, 0, 1, 2, 0, 0, 1, 3, 7, 0, 3]],
   ['W1 JUN', '01/06 – 07/06', [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
 ];
-const MAU_SOS = ['', 's1', 's2', 'do', 'vang', '', '', '', '', '', '', '', 'vang', ''];
+const MAU_SOS = ['', '', '', '', 'vang', '', '', '', '', '', '', '', 'vang', ''];
 function trangSos() {
-  const o = (n, i, qh, mo) => (n ? `<button type="button" class="so-b ${MAU_SOS[i]} ${mo ? 'mo' : ''}">${n}</button>${qh ? `<span class="qh-nho">· ${qh}</span>` : ''}` : '<span class="so-0">0</span>');
+  const o = (n, i, qh, mo) => (!n ? '<span class="so-0">0</span>' : i >= 1 && i <= 3 ? `<button type="button" class="so-a s${i}">${n}</button>` : `<button type="button" class="so-b ${MAU_SOS[i]} ${mo ? 'mo' : ''}">${n}</button>${qh ? `<span class="qh-nho">· ${qh}</span>` : ''}`);
   const vach = (i) => (i === 5 || i === 10 ? 'vach' : '');
   const tong = TUAN.reduce((a, r) => a.map((x, i) => x + r[2][i]), Array(14).fill(0));
   return `${tt()}<div class="noi-dung">${dauTrang('SOS', false, '<span class="o-chon" style="width:140px">Theo tuần</span>')}
-    ${kpi([['Lượt MT', 'trong kỳ', 53, '37 HV'], ['SOS 1', '', 4, '8 % trên lượt MT', 's1'], ['SOS 2', '', 4, '8 % trên lượt MT', 's2'], ['SOS 3', '', 5, '9 % trên lượt MT', 'do'], ['Thiếu điểm', '', 6, 'gồm SOS tạm', 'vang'], ['Chưa chốt PA', 'hôm nay', 31, '<span class="qua-chu">1 quá hạn</span> · trên 43 Case', 'vang', 1]], 'sau')}
+    ${kpi([['Lượt MT', 'trong kỳ', 53, '37 HV'], ['<span class="chip sos1">SOS 1</span>', '', 4, '8 % trên lượt MT', 'sm1'], ['<span class="chip sos2">SOS 2</span>', '', 4, '8 % trên lượt MT', 'sm2'], ['<span class="chip sos3">SOS 3</span>', '', 5, '9 % trên lượt MT', 'do'], ['Thiếu điểm', '', 6, 'gồm SOS tạm', 'vang'], ['Chưa chốt PA', 'hôm nay', 31, '<span class="qua-chu">1 quá hạn</span> · trên 43 Case', 'vang', 1]], 'sau')}
     <div class="the"><div class="the-dau"><h3>Theo tuần</h3><span class="phu">10 tuần</span>${nutI}</div>
     <table class="bc co-vach"><colgroup><col style="width:190px">${'<col>'.repeat(14)}</colgroup>
     <thead><tr><th rowspan="2">Tuần</th><th class="gom" colspan="5">Kết quả</th><th class="gom vach" colspan="5">Dưới kỳ vọng · HV</th><th class="gom vach" colspan="4">Xử lý</th></tr>
@@ -566,17 +547,17 @@ function dtThi(mo) {
     ${kpi([['Đạt Target', '', '62 %', '26/42 em'], ['Chưa đạt', '', 16, '38 %', 'do']])}
     <div class="the">${theKn('b', mo, true)}</div>
     <div class="the duoi"><div class="the-dau"><h3>Theo GV</h3><span class="phu">9 GV</span>${nutI}</div>
-    <table class="bc"><colgroup><col><col style="width:40px"><col style="width:48px"><col style="width:48px"><col style="width:76px"></colgroup>
+    <table class="bc"><colgroup><col><col style="width:44px"><col style="width:50px"><col style="width:50px"><col style="width:62px"></colgroup>
     <thead><tr><th>L</th><th>HV</th><th>Vượt</th><th>Đạt</th><th>Chưa đạt</th></tr></thead>
-    <tbody>${GV[0].gv.map((g) => `<tr><td class="ten">${g[0]}<small>${g[1]} % tuần · TB ${g[6]}</small></td><td>${oSo('b', g[2], 0)}</td><td>${oSo('b', g[3], g[2])}</td><td>${oSo('b', g[4], g[2])}</td><td>${oSo('b', g[5], g[2], 'chua', mo === `gv:${g[0]}` ? 'mo' : '')}</td></tr>`).join('')}
-    <tr class="them"><td colspan="5"><button type="button" class="nut-them" style="height:44px">+ 2 GV</button><span class="mo" style="font-size:var(--c13)"> · 11 % tuần dạy</span></td></tr></tbody></table></div></div>`;
+    <tbody>${GV[0].gv.map((g) => `<tr><td class="ten">${g[0]}<small>TB ${g[6]}</small></td><td>${oSo('b', g[2], 0)}</td><td>${oSo('b', g[3], g[2])}</td><td>${oSo('b', g[4], g[2])}</td><td>${oSo('b', g[5], g[2], 'chua', mo === `gv:${g[0]}` ? 'mo' : '')}</td></tr>`).join('')}
+    <tr class="them"><td colspan="5"><button type="button" class="nut-them" style="height:44px">+ 2 GV</button></td></tr></tbody></table></div></div>`;
 }
 const pnDt = (dau, than) => `<aside class="pn" aria-label="Panel số">${dau}<div class="pn-than" style="overflow:hidden">${than}</div><div class="mo-day"></div></aside>`;
 const m1 = () => `${tt(true)}${pnDt(dauSo('Chưa đạt · L', '12 HV', 'Thi thật · Toàn bộ · Monbay'),
-  bangSo([{ t: 'Học viên' }, { t: 'L', w: 58, p: 1, ly: 1, so: 1 }, { t: 'Target', w: 60, p: 1, so: 1 }, { t: 'Lệch', w: 64, p: 1, so: 1 }],
+  bangSo([{ t: 'Học viên' }, { t: 'L', w: 58, g: 1, ly: 1, so: 1 }, { t: 'Target', w: 60, g: 1, so: 1 }, { t: 'Lệch', w: 64, g: 1, so: 1 }],
     CHUA_L.map(([l, t], i) => [`<a class="hv" href="#">${TEN_HV[i]}</a><small>${LOP[i % LOP.length]} · ${NGAY_THI[i]}</small>`, `<span class="xau">✗ ${l.toFixed(1)}</span>`, t.toFixed(1), lech(l, t)])))}`;
 const m2 = () => `${dtThi('gv:Dương Tuấn Kiên')}<div class="phu-nen"></div><div class="to-day" role="dialog" aria-label="Chưa đạt · L · Dương Tuấn Kiên">${dauSo('Chưa đạt · L · Dương Tuấn Kiên', '7 HV')}
-  ${bangSo([{ t: 'Học viên' }, { t: 'L', w: 56, p: 1, ly: 1, so: 1 }, { t: 'Target', w: 56, p: 1, so: 1 }, { t: 'Tuần dạy', w: 84, p: 1, ly: 1, so: 1 }],
+  ${bangSo([{ t: 'Học viên' }, { t: 'L', w: 56, g: 1, ly: 1, so: 1 }, { t: 'Target', w: 56, g: 1, so: 1 }, { t: 'Tuần dạy', w: 96, g: 1, ly: 1, so: 1 }],
     TUAN_DAY.map(([a, b], i) => { const [l, t] = CHUA_L[i + 1]; return [`<a class="hv" href="#">${TEN_HV[i + 3]}</a><small>${LOP[(i + 3) % LOP.length]} · ${NGAY_THI[i + 2]}</small>`, `<span class="xau">✗ ${l.toFixed(1)}</span>`, t.toFixed(1), `<b>${Math.round(a * 100 / b)} %</b><small>${a}/${b} tuần</small>`]; }))}</div>`;
 const m3 = () => `${tt(true)}${pnDt(dauSo('Chưa chốt PA', '31 Case · <span class="qua-chu">1 quá hạn</span>', 'Fast Track · hiện tại · Monbay'),
   CASE.map((r) => (r.nhom ? `<div class="dv-nhom">${r.nhom}<span>${r.n}</span></div>` : `<div class="dv"><a class="hv" href="#">${r[0]}</a>${ngay(r[6], r[7])}<span class="d2">${r[2]} · <span class="so"><span class="xau">${r[4].split(' / ')[0]}</span> <span class="mo">/ ${r[4].split(' / ')[1]}</span></span> ${chip(r[3])}</span><span class="d3">${r[1]} · ${r[5]}</span></div>`)).join(''))}`;
@@ -585,9 +566,8 @@ const m4 = () => `${tt(true)}${pnDt(dauSo('Chưa xử lý · MB FT 101', '14 vi 
 
 /* ===================== GẮN VÀO KHUNG ===================== */
 const g = (id, h) => { document.getElementById(id).innerHTML = h; };
-g('k-a1', ['a', 'b', 'c'].map((k) => `<div><span class="nhan-kieu">${{ a: 'A · hiện tại <small>— ô viền, căn giữa, % dưới</small>', b: 'B · số trơn màu nhấn <small>— % dưới · khuyến nghị</small>', c: 'C · số trơn màu chữ <small>— % cùng dòng</small>' }[k]}</span><div class="the">${theKn(k)}</div></div>`).join(''));
-g('k-a4', `<div><span class="nhan-kieu">Thử thêm · thanh tỉ lệ mảnh <small>— không khuyến nghị</small></span><div class="the">${theKn('d')}</div></div>`);
-g('k-a2a', theGv('a')); g('k-a2b', theGv('b')); g('k-a2c', theGv('c'));
+g('k-a1', `<div class="the">${theKn('b')}</div><div class="the">${theGv('b')}</div>`);
+g('k-a2', `<div><span class="nhan-kieu">Web hôm nay <small>— ô viền 40 × 30, dòng 59 px (web thật 67)</small></span><div class="the">${theKn('a')}</div></div><div><span class="nhan-kieu">Đã chọn <small>— số trơn căn giữa, dòng 49 px</small></span><div class="the">${theKn('b')}</div></div>`);
 g('k-a3b', dtThi(null));
 g('k-a3c', theGv('b', { moThem: 'W1' }));
 g('k-b0s', `${dauSo('Vi phạm · Phạm Bảo Ngọc', '6')}${bangSo([{ t: 'Ngày', w: 104 }, { t: 'Vi phạm', xuong: 1 }, { t: 'Xử lý', w: 112, p: 1 }], VP_NGOC.slice(0, 3).map((r) => [ngay(r[0]), `<b style="font-weight:600">${r[1]}</b><small>${r[2]}</small>`, r[3]]))}`);
@@ -595,12 +575,12 @@ g('k-b0m', `${dauSo('Chưa đạt · L · Dương Tuấn Kiên', '7 HV')}${bangS
 g('k-b1', trangThi({ mo: 'L:c' }) + pnB1());
 g('k-b2', trangThi({ moGv: 'L:Dương Tuấn Kiên', hop: hopB2('', 'top:140px;right:92px;--mui:452px') }));
 g('k-b3', trangSos() + pnB3());
-g('k-b7', trangThi({ moGv: 'L:Dương Tuấn Kiên' }) + `<aside class="pn thap" aria-label="Panel số">${dauSo('Chưa đạt · L · Dương Tuấn Kiên', '7 HV', 'Thi thật · Toàn bộ · Monbay')}<div class="pn-than">${bangSo([{ t: 'Học viên', w: 220 }, { t: 'Ngày thi' }, { t: 'L', p: 1, ly: 1, so: 1 }, { t: 'Target', p: 1, so: 1 }, { t: 'Tuần dạy', p: 1, ly: 1, so: 1 }], dongGvL())}</div></aside>`);
+g('k-b7', trangThi({ moGv: 'L:Dương Tuấn Kiên' }) + `<aside class="pn thap" aria-label="Panel số">${dauSo('Chưa đạt · L · Dương Tuấn Kiên', '7 HV', 'Thi thật · Toàn bộ · Monbay')}<div class="pn-than">${bangSo([{ t: 'Học viên', w: 220 }, { t: 'Ngày thi' }, { t: 'L', g: 1, ly: 1, so: 1 }, { t: 'Target', g: 1, so: 1 }, { t: 'Tuần dạy', g: 1, ly: 1, so: 1 }], dongGvL())}</div></aside>`);
 g('k-b4', trangYThuc({ moCx: true }) + pnB4());
-g('k-b5', trangYThuc({ hop: hopB5('top:calc(100% + 4px);right:-20px;--mui:372px') }));
+g('k-b5', trangYThuc({ hop: hopB5('top:calc(100% + 4px);right:-20px;--mui:339px') }));
 g('k-b6', trangCn() + pnB6());
 g('k-b8', trangCn(true) + pnB8());
-g('k-c1', trangGv(hopC1('top:calc(100% + 4px);right:-150px;--mui:244px')));
+g('k-c1', trangGv(hopC1('top:calc(100% + 4px);right:-150px;--mui:202px')));
 g('k-m1', m1()); g('k-m2', m2()); g('k-m3', m3()); g('k-m4', m4());
 </script>
 <script src="../v23/v23.js"></script>
