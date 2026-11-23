@@ -40,7 +40,12 @@ Tỉ lệ KHỚP ước tính: 20 / 21 thành phần có trong mockup (không t�
 | Mở việc một em | nút động từ cột phải | bấm cả dòng (hoặc tên em bằng bàn phím) → panel |
 | Mở việc nhiều em | nút "n em ▾" mở khay | bấm dòng → mở ra từng em, bấm em → panel; dòng làm chung một lưới (Nhập điểm, Ghi kết quả PA, Bàn giao…) bấm = mở panel |
 | Viết Báo cáo PH · Chốt lộ trình | nút "Viết ›" · "Cuối khoá ›" | bấm dòng (có "›") → trang |
-| Hoàn thành (Xếp lịch họp, việc Vận hành giao tôi) · Gia hạn · Bỏ qua · Không thi · Xuất lớp | nút trong cột nút | **giữ nút**, đặt ở hàng nút nhỏ ngay dưới dòng (không thành cột) — [XM2] |
+| Gia hạn (Chọn bước tiếp) | nút trên dòng | **PanelSauThi** — link "Gia hạn" sẵn có (khối hạn) |
+| Không thi (Cập nhật KQ thi thật) | nút trên dòng | **PanelSauThi** — nút "Không thi" cùng hàng Lưu KQ (sẵn có) |
+| Hoàn thành Xếp lịch họp | nút trên dòng (1 bấm + Hoàn tác) | **PanelMeeting** — nút "Hoàn thành" (mở dòng → Hoàn thành: 2 bấm; Hoàn tác giữ khi panel báo xong) |
+| Hoàn thành việc Vận hành giao cho tôi | nút trên dòng (1 bấm + Hoàn tác) | **panel Vận hành** — chọn tiến độ "Hoàn thành" (sẵn có) |
+| Bỏ qua (Xếp MT / việc máy chủ báo bỏ qua được) | nút trên dòng | **GIỮ** hàng nút nhỏ dưới dòng — panel chưa có chỗ ([XM2]) |
+| Xuất lớp (Báo cáo PH đủ, không hạn) | nút trên dòng | **GIỮ** hàng nút nhỏ dưới dòng — dòng không có panel ([XM2]) |
 | Hoàn tác sau Lưu | dải "✓ Đã lưu · Hoàn tác" thay dòng | giữ, vẽ cùng bộ cột |
 | Link hồ sơ em (tên em trên dòng) | link trên dòng | tên em là nút mở panel (cả dòng một nút, không lồng link); link hồ sơ ở panel — theo ghi chú v24 mục 6 |
 | Xem lại (lọc "Xong hôm nay") | link "Xem lại" | bấm dòng (tên có nhãn "Xem lại") |
@@ -65,8 +70,9 @@ Không dòng nào xuống dòng ở ô lớp / ai, không tràn ngang trang. Chi
 
 ## 4. [XM] chờ PTA Plan quyết
 
-- **[XM1] Nhóm gộp nhiều loại.** Mockup tách "Thêm PA · Xác nhận PA · Ghi Mini Test · Xét lại lộ trình…" thành nhóm riêng; web còn nhóm `MUC_CV` ("Phương án", "Lộ trình", "Vi phạm") nên dòng ghi tên loại ở đầu chi tiết ("Thêm PA · Reading"). Tách nhóm = đổi `shared/domain/tongQuan.ts` (đếm, badge) — PR riêng nếu muốn.
-- **[XM2] Nút phụ không có chỗ trong khuôn A.** Hoàn thành · Gia hạn · Bỏ qua · Không thi · Xuất giữ ở hàng nút nhỏ dưới dòng (chỉ dòng có nút). Mockup không vẽ; nếu muốn bỏ hàng này thì chuyển vào panel / ⋯ ở đầu panel.
+- **[XM1] Nhóm = động từ việc — làm ở mức hiển thị.** Mục gộp (Mô tả Case · Phương án · Kết quả PA · Lộ trình · Vi phạm) tách thành Mô tả Case · Xác nhận Case · Thêm PA · Xác nhận PA · Ghi Mini Test · Ghi kết quả PA · Chốt lộ trình · Xét lại lộ trình · Xử lý vi phạm · Đã thực hiện · Khai cấp bậc (`tachNhom` trong `DanhSachViec.tsx`). Số tab / badge / `tongQuan.ts` không đổi; số ở đầu nhóm con đếm lại từ dòng (cùng luật `dem`). Khoá gập / mở = khoá nhóm con (nhóm "Mô tả Case" giữ khoá cũ `mo-ta`; nhóm Phương án / Lộ trình / Vi phạm cũ mất trạng thái gập đã nhớ, về mặc định mở).
+- **[XM2] Nút còn lại trên dòng.** Chỉ **Bỏ qua** và **Xuất lớp** (không có chỗ trong panel): giữ hàng nút nhỏ dưới dòng, chỉ dòng có nút. Đề xuất: Bỏ qua → ⋯ đầu panel (panel-gon); Xuất lớp → bấm dòng tải luôn hoặc nút trong trang lớp.
+- **[XM7] Bổ sung hồ sơ có lớp.** Việc `bo_sung_ho_so` là MỘT dòng gộp theo người giữ (`viecTvv.ts`): máy chủ không trả lớp / tên em / `con`, chỉ `emIds` + `reason` ("Email 1 · Target 1"). Web hiện tên việc chiếm ô lớp + ô em (không ô trống) và chi tiết = thiếu gì. Muốn "lớp · em · Thiếu Target" và mở ra từng em có lớp thì cần máy chủ thêm `con` từng em (lớp, tên, thiếu gì) — PR riêng, đụng đếm việc.
 - **[XM3] Panel.** Khung panel 720 (`KhungPanel`, session panel-gon) chưa vào `main` lúc chụp: ảnh `gv-1440-panel` còn panel 58 % che mép phải danh sách; danh sách đã đúng min(680, 100vw − 784) và không co. Chụp lại khi panel-gon merge.
 - **[XM4] "PA đang chạy", "Đã bỏ qua", "Yêu cầu của tôi", "Lớp của tôi"** không có trong khung → giữ nguyên dáng cũ, dưới danh sách. Muốn đồng bộ thì PR sau.
 - **[XM5] Danh sách rộng 656 px (1440 + panel)** thay vì 680: trang thật có lề 20 hai bên, panel 720 + khoảng 24.
@@ -78,7 +84,7 @@ Chữ không đè, không xuống dòng lạ ở ô lớp / tên em, mã tuần 
 
 ## 6. Dòng "Việc con của: …" (báo từ bang-giao-viec-cot) — không đè cột hạn
 
-Chi tiết (`.cvA-ct`) là một dòng, `min-width: 0` + cắt "…" nên không bao giờ chạm cột hạn; ≤ 599 px chi tiết nằm tầng hai. Thử chèn chuỗi "Việc con của: Kiểm kê giáo trình tháng 9 và chuẩn bị đề thi cuối kỳ" vào mọi dòng (1440 / 1280 panel mở, 1440 chưa mở, 375): 0 dòng đè hạn, không tràn ngang. Ảnh: `viec-con-cua-1440-panel-mo.png`, `viec-con-cua-1280-panel-mo.png` (chỉ web; chuỗi chèn bằng DOM vì demo không có dòng này).
+Chi tiết (`.cvA-ct`) là một dòng, `min-width: 0` + cắt "…" nên không bao giờ chạm cột hạn; ≤ 599 px chi tiết nằm tầng hai. Thử chèn chuỗi "Việc con của: Kiểm kê giáo trình tháng 9 và chuẩn bị đề thi cuối kỳ" vào mọi dòng (1440 / 1280 panel mở, 1440 chưa mở, 375): 0 dòng đè hạn, không tràn ngang.  (Chỉ là phép thử bằng DOM, KHÔNG phải giao diện thật — không có ảnh kèm.)
 
 ## 7. Chưa làm: dải tab "Thêm n ▾" ở 1280 khi mở panel (mockup đợt ba)
 
