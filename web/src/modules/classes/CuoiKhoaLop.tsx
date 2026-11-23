@@ -770,8 +770,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
 
   /* Cột cố định (khung v23 K1): QL tick 28 · Học viên ≥ 260 · Final 100 · MT0 100 · Kỳ vọng FT 124 · Bước tiếp 168 · Lớp mới 140 · Tuần 116;
      GVCN / người xem: … · Hướng · Head chốt · Nhận xét. Bàn giao (khung không vẽ — GIỮ) thành chip dưới tên. < 1280: thẻ hai dòng, "Sửa" mở ô tại thẻ. */
-  const LUOI = laQl ? 'xl:grid-cols-[28px_minmax(260px,1fr)_100px_100px_124px_168px_140px_116px]'
-    : 'xl:grid-cols-[28px_minmax(240px,1fr)_100px_100px_124px_220px_minmax(220px,1fr)]';
+  const LUOI = laQl ? 'xl:grid-cols-[28px_minmax(260px,1fr)_120px_120px_120px_148px_148px_148px]'
+    : 'xl:grid-cols-[28px_minmax(240px,1fr)_120px_120px_120px_220px_minmax(220px,1fr)]';
   const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (
     <button key={key} type="button" aria-pressed={bat} onClick={onClick}
       className={`btn btn-sm min-h-[44px] rounded-full sm:min-h-0 ${bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{nhan}</button>
@@ -825,7 +825,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           </span>
           <span className="justify-self-center max-xl:hidden">{oFinal(e)}</span>
           <span className="justify-self-center max-xl:hidden">{oMt0(e)}</span>
-          <span className="min-w-0 max-xl:hidden">{oKv(e, x)}</span>
+          <span className="flex min-w-0 justify-center max-xl:hidden">{oKv(e, x)}</span>
           {laQl ? (
             <>
               <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oHuong(e, x)}</span>
@@ -952,7 +952,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
               <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })} className="border-t" style={{ borderColor: 'var(--line)' }}>
                 {/* Tiêu đề cột (chữ, không điều khiển — G9); < 1280 không có. */}
                 <div aria-hidden className={`hidden gap-x-3.5 border-b px-4 py-2 text-xs font-semibold text-slate-500 xl:grid ${LUOI}`} style={{ borderColor: 'var(--line)' }}>
-                  <span /><span>{t('Học viên')}</span><span className="text-center">Final</span><span className="text-center">MT0</span><span>{t('Kỳ vọng FT')}</span>
+                  <span /><span>{t('Học viên')}</span><span className="text-center">Final</span><span className="text-center">MT0</span><span className="text-center">{t('Kỳ vọng FT')}</span>
                   {laQl ? <><span>{t('Bước tiếp')}</span><span>{t('Lớp mới')}</span><span>{t('Tuần')}</span></> : <><span>{t('Hướng · Head chốt')}</span><span>{t('Nhận xét')}</span></>}
                 </div>
                 {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]}>{daiNhom(n.k, n.rows)}{n.rows.map((r) => dongEm(r, false))}</div>)}
