@@ -49,4 +49,44 @@ export async function runPrR1Tests(t: any) {
     xoaNho();
     assert(!coTrong(), 'Case đã có người mới vẫn ở "chưa có người"');
   }));
+
+  const { hanBaoPhHieuLuc } = await import('../../../shared/domain/index.ts');
+  const { khoangTamDung } = await import('../students/tamDung.ts');
+  const gv: any = await import('../worklist/giaoViec.ts');
+  const ph: any = await import('../yThuc/phoiHop.ts');
+  const { viecXongCn } = await import('../phanTich/viecDaXong.ts');
+  check('L2 · em Tạm dừng → Quay lại: hạn Báo PH ở Đang theo dõi / panel Phối hợp TVV / Phân tích = hạn panel (khoangTamDung), không phải hạn gốc', () => thu(() => {
+    const em = one(`SELECT s.id, s.branch_id AS cn FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' WHERE s.status = 'active' AND s.branch_id IS NOT NULL ORDER BY s.id LIMIT 1`);
+    const x = one(`SELECT x.id, x.student_id AS sid FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id
+       WHERE NOT EXISTS (SELECT 1 FROM viec_bao_ph v WHERE v.phoi_hop_id = x.id) ORDER BY x.id LIMIT 1`);
+    assert(em && x, 'seed thiếu em / việc phối hợp');
+    const han = '2026-11-10';
+    const suKien = (sid: number) => {
+      for (const [loai, ngay] of [['pause', '2026-11-08'], ['resume', '2026-11-20']]) {
+        conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, ?, ?, 'thử L2', ?)`).run(sid, loai, ngay, '2026-11-20T03:00:00.000Z');
+      }
+      return hanBaoPhHieuLuc(han, khoangTamDung([sid])[sid] ?? [], null);   // hạn như panel việc (`hanCua`)
+    };
+    const ins = (sid: number, tt: string, phoiHop: number | null) => Number(conn.prepare(
+      `INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc, phoi_hop_id) VALUES (?, 'Thử L2', ?, ?, '2026-11-06T03:00:00.000Z', ?)`).run(sid, han, tt, phoiHop).lastInsertRowid);
+    const mong = suKien(em.id);
+    assert(mong > han, `khoảng Tạm dừng không dời hạn (${mong})`);
+    /* Đang theo dõi */
+    const mo = ins(em.id, 'mo', null);
+    conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('bao_ph', ?, ?, 'tay', '2026-11-06T03:00:00.000Z')`).run(mo, P.admin.userId);
+    xoaNho();
+    const dong = gv.viecTheoDoi(P.admin).nhom.flatMap((n: any) => n.mo).find((d: any) => d.loai === 'bao_ph' && d.refId === mo);
+    assert(dong?.han === mong, `Đang theo dõi: hạn ${dong?.han}, panel ${mong}`);
+    /* Panel Phối hợp (việc TVV sau Meeting CX) */
+    const mong2 = x.sid === em.id ? mong : suKien(x.sid);
+    const v2 = ins(x.sid, 'mo', x.id);
+    xoaNho();
+    assert(ph.tvvCuaHanhDong(P.admin, [x.id]).get(x.id)?.han === mong2, `Phối hợp TVV: hạn ${ph.tvvCuaHanhDong(P.admin, [x.id]).get(x.id)?.han}, panel ${mong2} (việc ${v2})`);
+    /* Phân tích — việc đã xong: hạn so đúng hạn dời; báo ngày 18/11 (trước hạn dời) là đúng hạn */
+    const xong = ins(em.id, 'xong', null);
+    conn.prepare(`UPDATE students SET consultant_user_id = COALESCE(consultant_user_id, ?) WHERE id = ?`).run(P.admin.userId, em.id);
+    conn.prepare(`INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_luc) VALUES (?, 'da_bao', '2026-11-18', '2026-11-18T03:00:00.000Z')`).run(xong);
+    const r = viecXongCn({ cn: em.cn, khung: 'ft', tu: '2026-11-01', cuoi: '2026-11-30', homNay: '2026-11-24' }).find((d: any) => d.key === `bao-ph:${xong}`);
+    assert(r?.due === mong && r.dung === true, `Phân tích: ${JSON.stringify(r && { due: r.due, dung: r.dung })}, panel ${mong}`);
+  }));
 }
