@@ -75,3 +75,11 @@ Không dòng nào xuống dòng ở ô lớp / ai, không tràn ngang trang. Chi
 ## 5. Tự soi
 
 Chữ không đè, không xuống dòng lạ ở ô lớp / tên em, mã tuần một dòng, không thừa khoảng cột cuối (hạn sát lề 20). 375: dòng hai tầng như A5, không tràn ngang.
+
+## 6. Dòng "Việc con của: …" (báo từ bang-giao-viec-cot) — không đè cột hạn
+
+Chi tiết (`.cvA-ct`) là một dòng, `min-width: 0` + cắt "…" nên không bao giờ chạm cột hạn; ≤ 599 px chi tiết nằm tầng hai. Thử chèn chuỗi "Việc con của: Kiểm kê giáo trình tháng 9 và chuẩn bị đề thi cuối kỳ" vào mọi dòng (1440 / 1280 panel mở, 1440 chưa mở, 375): 0 dòng đè hạn, không tràn ngang. Ảnh: `viec-con-cua-1440-panel-mo.png`, `viec-con-cua-1280-panel-mo.png` (chỉ web; chuỗi chèn bằng DOM vì demo không có dòng này).
+
+## 7. Chưa làm: dải tab "Thêm n ▾" ở 1280 khi mở panel (mockup đợt ba)
+
+Là dải tab (`HangTab`), không thuộc danh sách việc — PTA Plan quyết giao cho PR này hay PR riêng.

@@ -399,7 +399,7 @@ const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'y
 const DONG_TU_DAU = /^(Thêm PA(?: học thuật)?|Xác nhận PA|Chọn PA|Xác nhận Case|Mô tả Case|Ghi kết quả PA|Ghi Mini Test|Nhập điểm|Viết Báo cáo PH|Xử lý vi phạm|Bàn giao|Báo PH kết quả Test|Báo PH)(?: |$)/;
 const tenLoaiNgan = (it: WorkItem) => {
   const tg = ({ yt_xu_ly: t('Xử lý vi phạm'), yt_xem: t('Xem vi phạm mới'), yt_thuc_hien: t('Đã thực hiện'), khai_bac: t('Khai cấp bậc'), yt_tra_lai: t('Vi phạm bị trả lại') } as Record<string, string>)[it.group];
-  return tg ?? dich(it.tieuDe.split(' · ')[0]).replace(t('Thêm PA học thuật'), t('Thêm PA')).replace(t('Ghi Mini Test'), t('Mini Test'));
+  return tg ?? dich(it.tieuDe.split(' · ')[0]).replace(t('Thêm PA học thuật'), t('Thêm PA')).replace(t('Ghi Mini Test'), 'Mini Test');
 };
 
 /** Các mẩu chi tiết (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). `ghiLoai`: nhóm có nhiều loại việc → mở đầu bằng tên loại. */
