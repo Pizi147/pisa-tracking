@@ -1255,7 +1255,7 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
   'QL /tong-quan/v5?ct=ft': 46,   // DOC-PT: đo 35 (trước 40) · NHẸ HƠN PR-3: bỏ Trễ chấm + caseGv — đo 34
   'ADMIN /my-work?nguoi=tat-ca&branchId={cn}': 26, 'CX /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,   // NHẸ HƠN PR-3: đo 16 · 8 → max(đo + 10, ⌈đo × 1,3⌉)
-  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 97, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 102, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'CX /tong-quan/v5?ct=ft&gon=1': 35,   // NHẸ HƠN PR-3 (PTA rà #2002): đo 74 · 78 · 35 · 25 → max(đo + 10, ⌈đo × 1,3⌉)
+  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 95, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 101, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'CX /tong-quan/v5?ct=ft&gon=1': 35,   // TQ-QT-NHE: đo QL 73 · QT 77 (trước 74 · 78) → max(đo + 10, ⌈đo × 1,3⌉) · NHẸ HƠN PR-3 (PTA rà #2002): đo 74 · 78 · 35 · 25 → max(đo + 10, ⌈đo × 1,3⌉)
   'QT /tong-quan/v5?ct=ft': 47,   // TL-TQ: đo 36 (trước 49)
   'QL /tong-quan/v5?ct=thuong': 35,   // DOC-PT: đo 25 (trước 29)
   'QT /tong-quan/v5?ct=thuong': 33,   // TL-TQ: đo 23 (trước 31)
@@ -2455,7 +2455,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'QL trang Tổng quan': {
-    vai: 'QL', tran: 125,   // NHẸ HƠN PR-3 (PTA rà #2002): `/tong-quan/v5?gon=1&kemViec=1` (bảng chỉ SOS + việc Công việc "Tất cả" cùng request) thay `/tong-quan/v5` + `/phan-tich/giao-vien` — đo 96 (trước 82) → max(96 + 10, ⌈96 × 1,3⌉) · TURSO-1211: thẻ Giáo viên `v2=1` — đo 82 (trước 108) → max(82 + 10, ⌈82 × 1,3⌉) · CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
+    vai: 'QL', tran: 124,   // TQ-QT-NHE: đo 95 (trước 96) · NHẸ HƠN PR-3 (PTA rà #2002): `/tong-quan/v5?gon=1&kemViec=1` (bảng chỉ SOS + việc Công việc "Tất cả" cùng request) thay `/tong-quan/v5` + `/phan-tich/giao-vien` — đo 96 (trước 82) → max(96 + 10, ⌈96 × 1,3⌉) · TURSO-1211: thẻ Giáo viên `v2=1` — đo 82 (trước 108) → max(82 + 10, ⌈82 × 1,3⌉) · CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;
        thêm bảng GV (Trễ chấm). Thẻ "Chờ duyệt" (`/yeu-cau?hop=cho-duyet`) chỉ tải khi có thẻ. */
     /* OV-15h1: GET dữ liệu 4 → 2 — Lớp cần chú ý + Tuần này + Trễ chấm thành một `/tong-quan/ql`; Cần bạn quyết giữ `/tong-quan/quan-ly` (gộp khung). */
@@ -2464,7 +2464,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft&gon=1&kemViec=1', '/yeu-cau?hop=cho-duyet&branchId={cn}'],
   },
   'QT trang Tổng quan (Toàn hệ thống)': {
-    vai: 'QT', tran: 132,   // NHẸ HƠN PR-3 (PTA #1994, rà #2002): Tổng quan Quản trị Toàn hệ thống — đo 101 → max(101 + 10, ⌈101 × 1,3⌉)
+    vai: 'QT', tran: 130,   // TQ-QT-NHE: đo 100 (trước 101) → max(100 + 10, ⌈100 × 1,3⌉) · NHẸ HƠN PR-3 (PTA #1994, rà #2002): Tổng quan Quản trị Toàn hệ thống — đo 101 → max(101 + 10, ⌈101 × 1,3⌉)
     urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft&gon=1&kemViec=1', '/yeu-cau?hop=cho-duyet'],
   },
   'CX trang Tổng quan': {

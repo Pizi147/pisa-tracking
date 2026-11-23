@@ -253,8 +253,9 @@ function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): Sk
 /**
  * GIAM-DOC-0611g: tuần (`report_periods`) theo id — MỘT câu cho các id chưa nhớ trong request (`nhoTheoId`, nhớ theo từng id; ngoài request đọc thẳng).
  * Trang gọi `loadSkillRows` nhiều lần chỉ đọc tuần một lần (vài chục dòng, bảng ~67 tuần).
+ * TQ-QT-NHE: tiến độ lớp (`classProgressMany`) dùng chung bộ nhớ này — tuần đã đọc cho lịch kỹ năng không đọc lại.
  */
-function tuanTheoId(ids: readonly number[]): Map<number, { week_start: string; week_end: string; code: string }> {
+export function tuanTheoId(ids: readonly number[]): Map<number, { week_start: string; week_end: string; code: string }> {
   const m = nhoTheoId('tuan:', [...new Set(ids)], (thieu) => new Map((db().prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`)
     .all(JSON.stringify(thieu)) as any[]).map((t) => [t.id as number, [{ week_start: t.week_start as string, week_end: t.week_end as string, code: t.code as string }]])));
   return new Map([...m].map(([id, [t]]) => [id, t]));

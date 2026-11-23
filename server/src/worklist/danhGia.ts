@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { db } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo, RATIO_PASS_THRESHOLD } from '../../../shared/domain/index.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
@@ -160,9 +160,9 @@ export function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
 }
 function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
   const out = new Map<number, any[]>();
-  for (let i = 0; i < studentIds.length; i += 400) {
-    const chunk = studentIds.slice(i, i + 400);
-    const ph = chunk.map(() => '?').join(',');
+  /* TQ-QT-NHE: một tham số JSON cho cả tập em (trước lô 400 em — Tổng quan QT toàn hệ thống ~820 em = 3 câu); thứ tự dòng không đổi kết quả (xếp lại dưới). */
+  if (studentIds.length) {
+    const ph = DS_JSON, json = JSON.stringify(studentIds);
     for (const r of db()
       .prepare(
         /* S3: lộ trình của lượt nối một lần (trước: hai câu con cùng dòng), lộ trình FT đang chạy đọc một lần mỗi EM (trước: câu con theo từng lượt). */
@@ -182,7 +182,7 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
                        GROUP BY student_id) ft ON ft.student_id = a.student_id
           WHERE a.student_id IN (${ph}) AND a.status != 'cancelled'`,
       )
-      .all(...chunk, ...chunk) as any[]) {
+      .all(json, json) as any[]) {
       if (!out.has(r.student_id)) out.set(r.student_id, []);
       out.get(r.student_id)!.push(r);
     }
