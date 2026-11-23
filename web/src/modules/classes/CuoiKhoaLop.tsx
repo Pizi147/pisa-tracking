@@ -396,7 +396,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   };
   /** Vùng bấm ≥ 44 px ở 375 mà không đội chiều cao dòng (thẻ gọn như khung K3). */
   const HIT = "relative after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-['']";
-  const VIEN_DAT = { color: 'rgb(var(--kq-bang-rgb))', borderColor: 'rgb(var(--kq-bang-rgb) / .5)' };   // Đạt = xanh dương (MK-6), không xanh lá
+  const VIEN_DAT = { color: 'rgb(var(--ok-rgb))', borderColor: 'rgb(var(--ok-line-rgb))' };   // DAT-XANH-LA (chủ SP 24/11): Đạt = xanh lá theo mockup v23 `.so-f.dat` (--ok / --ok-vien) — thay MK-6 xanh dương
   const VIEN_TRUOT = { color: 'rgb(var(--bad-rgb))', borderColor: 'rgb(var(--bad-line-rgb))' };
   /** `gon` (thẻ < 1280, khung K3): chữ màu không viền, vùng bấm vẫn ≥ 44 px ở 375. */
   const nutDiem = (e: Em, chu: ReactNode, dat: boolean | null, nhan: string, gon = false) => (
@@ -425,7 +425,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   };
   const oKv = (e: Em, x: Dong) => {
     const k = kvTrang(e, x);
-    return k === 'dat' ? <span className="text-[13px] font-semibold text-kq-bang">✓ {t('Đạt')}</span>
+    return k === 'dat' ? <span className="text-[13px] font-semibold text-ok">✓ {t('Đạt')}</span>
       : k === 'khong' ? <span className="text-[13px] font-semibold text-late">✗ {t('Không đạt')}</span>
         : k === 'can' ? <span className="text-[13px] text-dim">{t('Head cân nhắc')}</span>
           : k === 'cho' ? <span className="text-[13px] text-faint">{t('Chờ MT0')}</span> : <span className="text-faint">—</span>;
@@ -474,7 +474,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
         <b className="text-slate-200">{ten}</b>
         <span className="flex gap-1" role="group" aria-label={t('Kỳ vọng · {ten}', { ten: e.fullName })}>
-          <button type="button" aria-pressed={kv?.dat === true} className={`${nut} ${kv?.dat === true ? 'border-doing text-kq-bang' : ''}`} onClick={() => dat(true)}>{t('Đạt')}</button>
+          <button type="button" aria-pressed={kv?.dat === true} className={`${nut} ${kv?.dat === true ? 'border-ok-line text-ok' : ''}`} onClick={() => dat(true)}>{t('Đạt')}</button>
           {/* KY-VONG-MT0: MT0 đạt mốc → Đạt; "Không đạt" tắt có lý do (máy chủ cũng chặn). */}
           <button type="button" aria-pressed={kv?.dat === false} className={`${nut} ${kv?.dat === false ? 'border-late text-late' : ''}`} onClick={() => dat(false)}
             disabled={goiDat === true} title={goiDat === true ? t('MT0 đã đạt mốc {ct} — Kết quả đầu ra là Đạt.', { ct: ma ?? '' }) : undefined}>{t('Không đạt')}</button>
@@ -746,7 +746,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       {tatCaFt && d.coTheChotKq && (
         <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-slate-400 max-sm:col-span-2">{t('Kỳ vọng FT')}
           {[true, false].map((v) => (
-            <button key={String(v)} type="button" aria-pressed={ap.kv?.dat === v} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${ap.kv?.dat === v ? (v ? 'border-doing text-kq-bang' : 'border-late text-late') : ''}`}
+            <button key={String(v)} type="button" aria-pressed={ap.kv?.dat === v} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${ap.kv?.dat === v ? (v ? 'border-ok-line text-ok' : 'border-late text-late') : ''}`}
               onClick={() => apNgay({ kv: { dat: v, nn: v ? null : ap.kv?.nn ?? 'trung_tam' } })}>{v ? t('Đạt') : t('Không đạt')}</button>
           ))}
           {ap.kv && !ap.kv.dat && (['trung_tam', 'hoc_sinh'] as const).map((n) => (

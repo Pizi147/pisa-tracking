@@ -44,7 +44,10 @@ export async function runPrMauKqTests(t: YThucTestKit) {
     const sai: string[] = [];
     const XANH_LA = /text-ok\b|text-dat\b|text-kq-vuot|tone=["{]['"]?ok\b|tone: 'ok'|\? 'ok'|\? 'vuot' :|'duoi' : 'vuot'/;
     const DAT = /t\('Đạt'\)|'Đạt Target'|t\('Đạt Target|ketLuan === 'reached'|ketQua === 'pass'|outcome === 'pass'|ketQua === 'dat'|\.dat \?|dat \? |muc <= 0|r\.missed/;
+    /* DAT-XANH-LA (chủ SP 24/11): Cuối khoá theo mockup đã duyệt `thiet-ke/v23/cuoi-khoa.html` — "Đạt" xanh lá (`--ok`). Chỉ tệp này; màn khác giữ luật MK. */
+    const NGOAI_LE = new Set(['web/src/modules/classes/CuoiKhoaLop.tsx']);
     for (const p of tep) {
+      if (NGOAI_LE.has(path.relative(REPO, p).split(path.sep).join('/'))) continue;
       doc(path.relative(REPO, p)).split('\n').forEach((d, i) => { if (DAT.test(d) && XANH_LA.test(d)) sai.push(`${path.relative(REPO, p)}:${i + 1}`); });
     }
     assert(!sai.length, `còn Đạt xanh lá: ${sai.join(', ')}`);
