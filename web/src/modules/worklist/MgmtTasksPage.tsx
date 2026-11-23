@@ -23,6 +23,7 @@ import { docGap, ghiGap } from '../congViec/DanhSachViec.tsx';
 import { KhoiGiaoViec, type KhoiGv, type ThaoTacKhoi } from '../congViec/KhoiGiaoViec.tsx';
 import { HopNhomViec, KHONG_PHAN_LOAI, OHangMuc, OLocNhom, tenHangMuc, type NhomViec, type NoiViec } from './NhomViec.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { HOP_DON_VI_BAT } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_MUC_CV, HANG_SO, HANG_SO_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
@@ -519,7 +520,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
 
   return (
     <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
-      loai={data ? `${laNguoiNhan ? t('Việc được giao') : t('Vận hành')} · ${tenNhom}` : null}
+      loai={data ? `${laNguoiNhan ? t('Việc được giao') : t('Bảng giao việc')} · ${tenNhom}` : null}
       dau={data ? {
         han: data.due ? <ChipHan loai="viec-van-hanh" han={data.due} /> : undefined,
         dong2: [data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ'),
@@ -1073,7 +1074,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
       else toast.push('ok', parent ? t('Đã thêm việc con') : t('Đã giao việc'));
       /* Đóng form; giao tiếp là mở lại → giá trị đầu đúng ngữ cảnh lúc đó và khoá gửi mới. */
       onDone(); onClose();
-      if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
+      if (HOP_DON_VI_BAT && unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
     finally { setBusy(false); }
   };
@@ -1083,7 +1084,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const chuNut = busy ? t('Đang lưu…') : daTao ? t('Thử lại') : giaoGv ? t('Giao') : parent ? t('Thêm việc con') : t('Giao việc');
   return (
     <KhungPanel tieuDe={parent ? t('Việc con') : t('Giao việc')} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose} rong={parent ? undefined : 'rong'}
-      loai={parent ? null : t('Vận hành · Giao việc')}
+      loai={parent ? null : t('Bảng giao việc · Giao việc')}
       quyChe={!giaoGv && !parent && lapHl && !loiLap(lap).length ? quyCheViecLap({ ky: chuLap(lapHl as Lap), khoang }) : null}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },

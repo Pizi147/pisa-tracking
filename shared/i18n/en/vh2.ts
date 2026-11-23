@@ -40,7 +40,7 @@ export const EN_VH2 = {
   'Đã thêm việc con': 'Subtask added',
   'Đã giao việc': 'Task assigned',
   'Thêm việc con': 'Add subtask',
-  'Vận hành · Giao việc': 'Operations · Assign task',
+  'Bảng giao việc · Giao việc': 'Assigned tasks board · Assign task',
   'Kiểu việc': 'Task kind',
   '{ten} (bạn) tự theo dõi': '{ten} (you) follows automatically',
   'Thêm người': 'Add people',

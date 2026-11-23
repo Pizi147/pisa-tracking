@@ -184,12 +184,14 @@ export function duongLichTest(o: { classId?: number | null; periodId?: number | 
   return voiThamSo(DUONG_TAB_TEST.lich, q);
 }
 
+import { HOP_DON_VI_BAT } from './hopDonVi.ts';
+
 // ---------------------------------------------------------------- Công việc
 
 const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau', 'van-hanh', 'bao-cao'];
 /** PR-DUYET (K1-29) đổi thành "Việc học viên"; PR-S3 (A-012, chủ sản phẩm 01/10) trả về "Hỗ trợ học viên". */
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
-  'cho-duyet': t('Chờ duyệt'), 'ho-tro': t('Hỗ trợ học viên'), 'yeu-cau': t('Yêu cầu của tôi'), 'van-hanh': t('Vận hành'), 'bao-cao': t('Họp đơn vị'),
+  'cho-duyet': t('Chờ duyệt'), 'ho-tro': t('Hỗ trợ học viên'), 'yeu-cau': t('Yêu cầu của tôi'), 'van-hanh': t('Bảng giao việc'), 'bao-cao': t('Họp đơn vị'),
 };
 /** OV-10a: Admin (`workChamDiem`) chỉ có nhóm Chấm điểm + Nhắc — tab đầu ghi "Chấm điểm", không "Hỗ trợ học viên". */
 export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? t('Chấm điểm') : TAB_CONG_VIEC_LABEL[k]);
@@ -201,7 +203,7 @@ export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
 /** Người duyệt không có tab Yêu cầu của tôi (họ tự gửi thì tự duyệt ngay trong hộp, Q-D). */
 const HIEN_CONG_VIEC: Record<TabCongViec, (n: NavQuyen) => boolean> = {
   'cho-duyet': (n) => n.workApprove, 'ho-tro': (n) => n.workSupport, 'yeu-cau': (n) => n.workRequests && !n.workApprove,
-  'van-hanh': (n) => n.workOps || !!n.vanHanh, 'bao-cao': (n) => n.workReports,
+  'van-hanh': (n) => n.workOps || !!n.vanHanh, 'bao-cao': (n) => HOP_DON_VI_BAT && n.workReports,
 };
 
 export function tabCongViecHienThi(nav: NavQuyen): TabCongViec[] {
@@ -244,6 +246,9 @@ function phanTichCu(q: URLSearchParams): string | null {
   return voiThamSo('/phan-tich', giu(['cn', 'ct'], [['goc', 'van-de']]));
 }
 
+/** Đường cũ về Họp đơn vị: tắt thì về Công việc (không trang trắng, không chuyển tiếp lần hai). */
+const DUONG_HOP = HOP_DON_VI_BAT ? '/cong-viec/bao-cao' : '/cong-viec';
+
 /**
  * ĐƯỜNG DẪN CŨ → MỚI (O5, O7). Link đã lưu, link trong thông báo và link máy chủ sinh ra vẫn mở đúng chỗ.
  * Trả null khi đường dẫn đang dùng được. Mọi đích trả về đều không bị chuyển tiếp lần nữa (phép kiểm PR-O khẳng định).
@@ -269,13 +274,13 @@ export function duongMoi(pathname: string, search: string): string | null {
     if (cn) moi.set('cn', cn);
     return voiThamSo('/phan-tich', moi);
   }
-  if (p === '/tien-trinh' || p === '/hop-tuan') return voiThamSo('/cong-viec/bao-cao', q);
+  if (p === '/tien-trinh' || p === '/hop-tuan') return voiThamSo(DUONG_HOP, q);
   if (p === '/tien-do-cong-viec') {
     const donVi = q.get('tab') === 'don-vi';
     q.delete('tab');
     const viec = q.get('viec');
     if (viec) { q.delete('viec'); if (!q.has('open')) q.set('open', viec); }
-    return voiThamSo(donVi ? '/cong-viec/bao-cao' : '/cong-viec/van-hanh', q);
+    return voiThamSo(donVi ? DUONG_HOP : '/cong-viec/van-hanh', q);
   }
   if (p === '/hoc-vien') {
     const view = q.get('view');

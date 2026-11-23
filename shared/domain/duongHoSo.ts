@@ -11,6 +11,7 @@ import type { HoSoTab } from './hoSoHocVien.ts';
 import type { NavQuyen } from './dieuHuong.ts';
 import type { DeadlineKind } from './display.ts';
 import { duongThe } from './yeuCauDuyet.ts';
+import { HOP_DON_VI_BAT } from './hopDonVi.ts';
 import { t } from '../i18n/index.ts';
 
 export type ThamSoHoSo = {
@@ -253,7 +254,7 @@ export function moDuocThongBao(n: ThongBaoRow, nav: Partial<Pick<NavQuyen, 'work
   /* AUDIT-UI B6: thẻ duyệt nay ở tab "Chờ bạn duyệt" (`nhom=duyet`) — chỉ người duyệt mở được, như trang Chờ duyệt cũ. */
   if (path.startsWith('/cong-viec') && new URLSearchParams(q).get('nhom') === 'duyet') return !!nav.workApprove;
   if (path.startsWith('/cong-viec/van-hanh')) return !!nav.workOps;
-  if (path.startsWith('/cong-viec/bao-cao')) return !!nav.workReports;
+  if (path.startsWith('/cong-viec/bao-cao')) return HOP_DON_VI_BAT && !!nav.workReports;
   if (path.startsWith('/cong-viec')) return !!nav.work;
   if (path.startsWith('/quan-tri')) return !!nav.admin;
   if (path.startsWith('/test')) return !!nav.test;

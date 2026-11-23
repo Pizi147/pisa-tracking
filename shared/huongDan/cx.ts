@@ -8,6 +8,7 @@
 import { HD_TVV, LUAT_TVV, TINH_HUONG_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
 import { VIEC_TUTOR, manTutor } from './headTutor.ts';
 import type { HuongDan, ViecHd } from './kieu.ts';
+import { HOP_DON_VI_BAT } from '../domain/hopDonVi.ts';
 
 const HV = '/hoc-vien';
 const CV = '/cong-viec';
@@ -61,7 +62,7 @@ const VIEC_CX: ViecHd[] = [
 
 const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'tra-lai-vi-pham', 'doi-nguoi-han', 'dang-theo-doi', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich', 'tutor-xem', 'tutor-xuat'];
 
-export const HD_CX: HuongDan = {
+const HD_CX_DAY: HuongDan = {
   viec: [],
   lam: THU_TU.map((id) => [...VIEC_CX, ...VIEC_TVV, VIEC_TUTOR.xem, VIEC_TUTOR.xuat].find((v) => v.id === id)!),   // TU12: CX xem trang Tutor, xuất số buổi
   tuan: [
@@ -113,11 +114,11 @@ export const HD_CX: HuongDan = {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
       dangO: { cau: 'Mọi việc trong phạm vi của bạn — xem, làm thay khi cần; Kết quả meeting và việc được giao là của bạn.', truoc: { chu: 'Tổng quan', duong: '/' } },
       muc: [{ id: 'cx-cv', ten: 'Xem, làm thay', buoc: ['Mặc định <b>Của tôi</b> khi bạn có việc riêng (Kết quả meeting, việc được giao), không có thì <b>Tất cả</b>; <b>Của GV</b> chỉ việc GV giữ; một GV: <b>Lọc thêm</b>.',
-        'Bấm dòng mở việc ngay tại trang; lưu là làm thay — lịch sử ghi tên bạn, việc vẫn của người giữ.', '<b>Kết quả meeting</b> (nhóm Báo PH) và việc được giao ở <b>Vận hành</b> là việc bạn làm; việc bạn giao người khác theo dõi ở bảng Vận hành.'] }],
+        'Bấm dòng mở việc ngay tại trang; lưu là làm thay — lịch sử ghi tên bạn, việc vẫn của người giữ.', '<b>Kết quả meeting</b> (nhóm Báo PH) và việc được giao ở <b>Bảng giao việc</b> là việc bạn làm; việc bạn giao người khác theo dõi ở Bảng giao việc.'] }],
     },
     { id: 'yeu-cau', ten: 'Yêu cầu của tôi', duong: [`${CV}/yeu-cau`], dangO: { cau: 'Đề nghị bạn đã gửi và kết quả.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-yc', ten: 'Xem yêu cầu đã gửi', buoc: ['Mỗi dòng một đề nghị: trạng thái <b>Chờ</b> · <b>Đã duyệt</b> · <b>Từ chối</b>; bấm dòng xem chi tiết.'] }] },
-    { id: 'van-hanh', ten: 'Vận hành', duong: [`${CV}/van-hanh`], dangO: { cau: 'Việc ngoài học viên, chia theo nhóm: người phụ trách, hạn, việc con.', truoc: { chu: 'Công việc', duong: CV } },
+    { id: 'van-hanh', ten: 'Bảng giao việc', duong: [`${CV}/van-hanh`], dangO: { cau: 'Việc ngoài học viên, chia theo nhóm: người phụ trách, hạn, việc con.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-vh', ten: 'Giao việc, theo dõi', buoc: ['<b>+ Giao việc</b>: chọn <b>Hạng mục</b>, người phụ trách, hạn; thêm việc con, <b>Lặp lại</b>, tệp khi cần.', 'Bấm hàng nhóm để gập / mở; bấm dòng mở chi tiết, <b>Cập nhật tiến độ</b>.', '<b>Nhóm…</b>: tạo, đổi tên, sắp ▲▼, ẩn nhóm của chi nhánh.'] }] },
     { id: 'bao-cao', ten: 'Họp đơn vị', duong: [`${CV}/bao-cao`], dangO: { cau: 'Báo cáo tuần / tháng của các đơn vị (chỉ xem).', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'cx-bc', ten: 'Xem báo cáo đơn vị', buoc: ['Chọn kỳ và chi nhánh ở hàng lọc; bấm số mở danh sách ngay tại trang.'] }] },
@@ -134,3 +135,5 @@ export const HD_CX: HuongDan = {
     { ten: 'Meeting CX/GĐCN', nghia: 'Buổi gặp em (có thể cả phụ huynh) với CX hoặc Giám đốc chi nhánh — SOS 3 hoặc Ý thức bậc 4.' },
   ],
 };
+
+export const HD_CX: HuongDan = HOP_DON_VI_BAT ? HD_CX_DAY : { ...HD_CX_DAY, man: HD_CX_DAY.man.filter((m) => m.id !== 'bao-cao') };

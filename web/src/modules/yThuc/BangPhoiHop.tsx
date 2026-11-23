@@ -17,7 +17,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, chuDiem, kiemGhiRoKhac, laMeetingCx,
-  reasonNeedsText, daysBetween, mucHan, ngay as ngayHien, hoanTacXacNhanDuoc, datTheSos, mucDiem, nhanDocTheSos, type NguoiChon,
+  reasonNeedsText, mucHan, ngay as ngayHien, hoanTacXacNhanDuoc, datTheSos, mucDiem, nhanDocTheSos, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn, PhanMeetingTom } from './PhoiHopSosSection.tsx';
@@ -139,7 +139,7 @@ function LoXacNhan({ ds, onXong }: { ds: Dong[]; onXong: (ids: number[]) => void
     setBusy(true); setLoi(null);
     const xong: number[] = []; let hong = 0; let cau = '';
     for (const d of dsChon) {
-      try { await api.post(`/phoi-hop-sos/${d.a.id}/confirm`, { performedOn: ngay, note: nd.trim() || undefined }); xong.push(d.a.id); }
+      try { await api.post(`/phoi-hop-sos/${d.a.id}/confirm`, { performedOn: ngay, note: nd.trim() || undefined, updatedAt: d.a.updatedAt ?? null }); xong.push(d.a.id); }
       catch (e: any) { hong++; cau = e?.message ?? ''; }
     }
     setBusy(false);
@@ -195,7 +195,7 @@ function HanEm({ han, soNgay = true }: { han: string; soNgay?: boolean }) {
   const muc = mucHan(han, homNay);
   return (
     <span className={`mt-1 block whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>
-      {muc === 'qua' && <DauQuaHan />}{t('hạn {ngay}', { ngay: ngayHien(han) })}{soNgay && muc === 'qua' && <> · {t('quá hạn {n} ngày', { n: daysBetween(han, homNay) })}</>}
+      {muc === 'qua' && <DauQuaHan />}{ngayHien(han)}
     </span>
   );
 }
@@ -244,7 +244,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
         {han && <HanEm han={han} />}
       </span>
       {mo === 'xac-nhan' ? (
-        <span role="cell" className={`${O} ${gop ? 'col-span-2' : 'col-span-3'} max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} /></span>
+        <span role="cell" className={`${O} ${gop ? 'col-span-2' : 'col-span-3'} max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} onTaiLai={doi} /></span>
       ) : (
         <>
           <span role="cell" className={`${O} max-sm:order-3`}>
@@ -337,7 +337,7 @@ function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
 }
 
 /** Xác nhận tại dòng (GVCN / QL): Ngày + MỘT ô Nội dung (bắt buộc; Meeting CX: "Nội dung gửi TVV" tuỳ chọn) · + Tệp · Người thực hiện. Sửa: điền sẵn. */
-function FormXacNhan({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void; onLuu: () => void }) {
+function FormXacNhan({ a, onDong, onLuu, onTaiLai }: { a: CoordAction; onDong: () => void; onLuu: () => void; onTaiLai: () => void }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const meeting = laMeetingCx(a.kind);
@@ -357,9 +357,12 @@ function FormXacNhan({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void;
     if (loi || !ngay) return;
     setBusy(true);
     try {
-      await api.post(`/phoi-hop-sos/${a.id}/confirm`, { performedOn: ngay, note: nd.trim() || undefined, performerName: !nguoi || nguoi.kieu === 'toi' ? undefined : nguoi.ten.trim() });
+      await api.post(`/phoi-hop-sos/${a.id}/confirm`, { performedOn: ngay, note: nd.trim() || undefined, updatedAt: a.updatedAt ?? null, performerName: !nguoi || nguoi.kieu === 'toi' ? undefined : nguoi.ten.trim() });
       onLuu();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) {
+      toast.push('error', e.message);
+      if (e?.status === 409) onTaiLai();   // L3-web: người khác vừa lưu — tải bản mới, form (chữ đang gõ) giữ nguyên, bấm lại là lưu trên bản mới
+    } finally { setBusy(false); }
   };
   const idLoi = `xn-loi-${a.id}`;
   return (
@@ -628,7 +631,7 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
         <Menu3 a={a} tvv={false} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
           onHan={a.status === 'pending' && a.hanMacDinh && lam ? () => setMo('han') : undefined} />
       </span>
-      {mo === 'xac-nhan' && <span className="col-span-full"><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} /></span>}
+      {mo === 'xac-nhan' && <span className="col-span-full"><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} onTaiLai={doi} /></span>}
       {mo === 'ghi' && <span className="col-span-full"><FormTvv a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, true)} /></span>}
       {mo === 'han' && a.han && a.hanMacDinh && (
         <span className="col-span-full pb-1"><DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={doi} onLuu={luuHan} /></span>

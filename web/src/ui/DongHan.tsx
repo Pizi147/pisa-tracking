@@ -2,9 +2,9 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ApiError } from '../lib/api.ts';
 import { ONgay } from './ONgay.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
-import { HAN_GAN_NGAY, daysBetween, mucHan, shortDate } from '@shared/domain/index.ts';
+import { mucHan, ngay, shortDate } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
-import { BadgeHan, DauQuaHan, LOP_MUC_HAN, NhanChoGv } from './Nhan.tsx';
+import { DauQuaHan, LOP_MUC_HAN, NhanChoGv } from './Nhan.tsx';
 
 /**
  * DÒNG HẠN + SỬA HẠN TẠI CHỖ (HAN-BAO-PH, chủ SP 03/11 N34; mockup `thiet-ke/audit-0311/u10-y-thuc.html` K5 · K8) — dùng chung việc Báo PH và Meeting CX.
@@ -59,13 +59,8 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
     finally { setDang(false); }
   };
   const moSua = () => { setNhap(han ?? hn); setLoi(null); setSua(true); };
-  const conNgay = han ? daysBetween(hn, han) : 0;
-  /* BADGE-QUA-HAN (chủ SP 15/11): quá hạn badge đỏ · ≤ 3 ngày badge vàng (`BadgeHan`) · xa chữ thường (V22). */
-  const tinh = tamDung && !xong ? <NhanChoGv>{t('tạm dừng')}</NhanChoGv>
-    : xong || !hn || !han || khoi ? null
-    : conNgay < 0 ? <BadgeHan muc="qua">{t('quá hạn {n} ngày', { n: -conNgay })}</BadgeHan>
-    : conNgay <= HAN_GAN_NGAY ? <BadgeHan muc="gan">{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</BadgeHan>
-    : <span className="whitespace-nowrap text-xs text-slate-400">{t('còn {n} ngày', { n: conNgay })}</span>;
+  /* Chủ SP 24/11: hạn = NGÀY tô màu (không badge "quá hạn n ngày" / "còn n ngày"); chỉ "tạm dừng" giữ chữ. */
+  const tinh = tamDung && !xong ? <NhanChoGv>{t('tạm dừng')}</NhanChoGv> : null;
   /* Mockup v22 G1: "mặc định" là thẻ viền nhỏ trong khối; dòng hạn cũ (Phối hợp) giữ chữ thường. */
   const nguon = tamDung ? null : tinhLai && hanChon ? <span className="text-xs text-slate-500">{t('tính lại sau khi GV gửi lại')}</span>
     : !han || (!hanMacDinh && !hanChon) ? null : hanChon && hanMacDinh && khoi
@@ -95,12 +90,11 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
     </span>
   ) : (
     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-      {han && khoi ? (() => {
-        /* PR-2b: màu theo `mucHan` (PR-1) — việc đã xong / tạm dừng không tô. */
+      {han ? (() => {
+        /* Màu theo `mucHan` — việc đã xong / tạm dừng không tô. */
         const muc = xong || tamDung || !hn ? 'xa' : mucHan(han, hn);
-        return <span className={`whitespace-nowrap text-sm tabular-nums ${LOP_MUC_HAN[muc]}`}>{muc === 'qua' && <DauQuaHan />}{shortDate(han, hn)}</span>;
+        return <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]} ${khoi || gon ? 'text-sm' : 'text-base'}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
       })()
-        : han ? <b className={`tabular-nums text-slate-100 ${gon ? 'text-sm' : 'text-base'}`}>{shortDate(han, hn)}</b>
         : <span className="text-sm text-faint">{t('Chưa có hạn')}</span>}
       {tinh && <span className="text-[13px] tabular-nums">{tinh}</span>}
       {!xong && nguon}

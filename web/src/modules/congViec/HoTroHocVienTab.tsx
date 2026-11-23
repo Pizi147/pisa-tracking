@@ -540,8 +540,7 @@ export function HoTroHocVienTab() {
     return tabThat.map((k) => ({ key: k, label: tenTab(k), items: ds.filter((x) => tabCua(x) === k), quaHan: 0 })).filter((m) => m.items.length);
   }, [giu, xong, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!xong.size) setXemXong(false); }, [xong.size]);
-  const coBaoCao = !!session?.nav?.workReports;
-  const loiVanHanh = <LoiVanHanh cn={branchId} baoCao={coBaoCao} />;
+  const loiVanHanh = <LoiVanHanh cn={branchId} />;
   /* GV-2 (mockup v22 G8a): BPXL (`trangDauTest`, không dạy lớp) — không khối "Lớp của tôi" / "+ Task" của GV. */
   const laGv = laGvThuong && !session?.nav?.trangDauTest;
   /* GD-1: "Lớp của tôi" — phân công trong phiên + việc đã nạp (`/my-work`), không request thêm. */
@@ -760,12 +759,13 @@ export function HoTroHocVienTab() {
           {/* RA-LOI-0711i: tab đang hiện chính danh sách bài chấm chéo thì không ghi "không có việc" ngay trên danh sách đó. */}
           {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
           {tab === 'theo-doi' && <DsTheoDoi chon={theo} onMo={(d) => boChuRoi(() => moTheo(d))} onCo={setTheoDong} nho={uid != null ? `u${uid}:theo-doi` : undefined} />}
-          {data && !data.scopeEmpty && tab !== 'duyet' && tab !== 'theo-doi' && mucs.length === 0 && !(tab === 'van-hanh' && coVanHanh) && (
-            <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : t('Không còn việc đang mở')}
-              action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : undefined} /></Card>
+          {data && !data.scopeEmpty && tab !== 'duyet' && tab !== 'theo-doi' && mucs.length === 0 && (
+            /* Tab "Việc quản lý" rỗng: một dòng + lối "Tất cả việc đã giao ›" (bảng đầy đủ); "+ Giao việc" đã ở đầu trang. */
+            <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : tab === 'van-hanh' && coVanHanh ? t('Không có việc quản lý nào của bạn') : t('Không còn việc đang mở')}
+              action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : tab === 'van-hanh' && coVanHanh ? loiVanHanh : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length > 0 && (
-            <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} cuoi={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
+            <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
               /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
@@ -790,8 +790,6 @@ export function HoTroHocVienTab() {
           {data && !data.scopeEmpty && tab === 'case-hoc-thuat' && !!data.paDangChay?.length && (
             <PaDangChayKhoi ds={data.paDangChay} uid={uid ?? null} chon={viec} onMo={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} />
           )}
-          {/* OV-15h1 → CV-TAB: không có việc Vận hành nào — tab "Việc quản lý" vẫn có lối Giao việc · Vận hành · Báo cáo đơn vị. */}
-          {data && tab === 'van-hanh' && coVanHanh && mucs.length === 0 && <section className="card p-0"><div className="px-4 py-1">{loiVanHanh}</div></section>}
           {tab === 'van-hanh' && !!data?.daBoQua?.length && <DaBoQua ds={data.daBoQua} homNay={homNay} onKhoiPhuc={khoiPhuc} />}
           {laGv && data && !data.scopeEmpty && tab !== 'theo-doi' && session?.nav?.workRequests && (
             /* U01 #21 (khung A1): Yêu cầu của tôi giữ cuối trang, nhóm GẬP SẴN — chỉ tải khi mở (bớt đọc Turso). GD-1: "Lớp tôi dạy" gập đã lên khung phải ("Lớp của tôi"). */
@@ -1013,15 +1011,9 @@ function DaBoQua({ ds, homNay, onKhoiPhuc }: { ds: ViecDaBoQua[]; homNay: string
   );
 }
 
-/** OV-15d: cuối nhóm "Việc quản lý" — lối tới bảng Vận hành / Báo cáo đơn vị (màn đầy đủ). A2-13 (AUDIT-2111): "+ Giao việc" chỉ ở đầu trang (N62), không lặp ở đây. */
-function LoiVanHanh({ cn, baoCao }: { cn: number | null; baoCao: boolean }) {
-  const q = cn ? `?cn=${cn}` : '';
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 text-[13px]">
-      <Link to={`/cong-viec/van-hanh${q}`} className="link max-sm:py-3">{t('Vận hành ›')}</Link>
-      {baoCao && <Link to={`/cong-viec/bao-cao${q}`} className="link max-sm:py-3">{t('Họp đơn vị ›')}</Link>}
-    </div>
-  );
+/** Lối tới Bảng giao việc (màn đầy đủ): đầu bên phải nhóm "Việc được giao" (không có nhóm đó: dòng cuối danh sách), hoặc trong trạng thái rỗng. "+ Giao việc" chỉ ở đầu trang (N62). Họp đơn vị tạm ẩn (`HOP_DON_VI_BAT`). */
+function LoiVanHanh({ cn }: { cn: number | null }) {
+  return <Link to={`/cong-viec/van-hanh${cn ? `?cn=${cn}` : ''}`} className="link max-sm:py-3">{t('Tất cả việc đã giao ›')}</Link>;
 }
 
 /** UI-CV-TVV (P1): luật hạn của nhóm việc TVV — ⓘ cạnh số đầu nhóm (mockup ghi thành chữ "· hạn 23:59 ngày lưu + 4"). */

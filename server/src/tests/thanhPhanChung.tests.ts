@@ -354,7 +354,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(loi.length === 0, `${loi.length} chỗ hạn tự dựng ⚠ (V22: hạn không biểu tượng): ` + loi.slice(0, 6).join(' · '));
     const nhan = doc('web/src/ui/Nhan.tsx');
     assert(/export const DauQuaHan = \(\) => <span className="sr-only">/.test(nhan), 'DauQuaHan phải chỉ là chữ sr-only "quá hạn" (không ⚠)');
-    assert(/qua: '[^']*text-late[^']*bg-late-bg/.test(nhan), 'LOP_MUC_HAN.qua: chữ đỏ + nền đỏ nhạt (dấu ngoài màu chữ)');
+    assert(/LOP_MUC_HAN = \{[^\n]*qua: '[^']*text-late' \}/.test(nhan) && !/LOP_MUC_HAN[^\n]*bg-late-bg/.test(nhan), 'LOP_MUC_HAN.qua: chỉ chữ đỏ, KHÔNG nền (chủ SP 24/11: hạn chỉ là ngày tô màu)');
     assert(!/khongDau/.test(doc('web/src/ui/Han.tsx')), 'Han: không còn cờ khongDau (không ⚠ là mặc định)');
   });
   /* PTA Plan rà #1649: V22 "không ⚠ hay biểu tượng nào kèm" — cả chấm "●" ở chip / badge báo hạn, quá hạn, việc chờ. Chấm "có việc mới" trên tab giữ. */
@@ -575,7 +575,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('BADGE-QUA-HAN · hạn đã qua = MỘT badge đỏ chung (`BadgeHan`); không chữ đỏ / chip tự dựng cạnh "quá hạn n ngày" (chủ SP 15/11)', () => {
     const nh = doc('web/src/ui/Nhan.tsx');
-    assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<BadgeHan muc="qua" title=\{v\.text\}>/.test(nh), 'QuaHan + ChipHan vẽ qua BadgeHan');
+    assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<DauQuaHan \/>\}\{ngayHien\(han\)\}/.test(nh), 'QuaHan vẽ qua BadgeHan; ChipHan (24/11) chỉ ngày tô màu, không badge');
     assert(/if \(t === 'qua-han'\) return <BadgeHan muc="qua"/.test(doc('web/src/ui/ui.tsx')), 'NhanTrangThai quá hạn = BadgeHan');
     assert(/if \(tt === 'qua-han'\) return <BadgeHan/.test(nh) && /if \(tt === 'qua_han'\) return <BadgeHan/.test(doc('web/src/modules/yThuc/NhanViPham.tsx'))
       && /tong === 'qua'\s*\? `\$\{lopBadgeHan\('qua'\)\}/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), 'XM-1: quá hạn của Case / vi phạm / việc Ý thức = BadgeHan');
