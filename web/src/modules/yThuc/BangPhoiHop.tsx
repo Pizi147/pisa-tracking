@@ -17,7 +17,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, chuDiem, kiemGhiRoKhac, laMeetingCx,
-  reasonNeedsText, daysBetween, mucHan, ngay as ngayHien, hoanTacXacNhanDuoc, datTheSos, mucDiem, nhanDocTheSos, type NguoiChon,
+  reasonNeedsText, mucHan, ngay as ngayHien, hoanTacXacNhanDuoc, datTheSos, mucDiem, nhanDocTheSos, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn, PhanMeetingTom } from './PhoiHopSosSection.tsx';
@@ -195,7 +195,7 @@ function HanEm({ han, soNgay = true }: { han: string; soNgay?: boolean }) {
   const muc = mucHan(han, homNay);
   return (
     <span className={`mt-1 block whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>
-      {muc === 'qua' && <DauQuaHan />}{t('hạn {ngay}', { ngay: ngayHien(han) })}{soNgay && muc === 'qua' && <> · {t('quá hạn {n} ngày', { n: daysBetween(han, homNay) })}</>}
+      {muc === 'qua' && <DauQuaHan />}{ngayHien(han)}
     </span>
   );
 }

@@ -12,8 +12,8 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
  * phải một cảnh báo lúc chạy. Mỗi loại (`DEADLINE_KINDS`, PR-NEN thêm Duyệt · Xử lý vi phạm ·
  * Mini Test) là một đồng hồ riêng trong rule book; ngày trần ("30/08") không nói được người đọc đang trễ việc gì.
  *
- * LUẬT HẠN NHẸ HƠN (chủ SP 22/11, v23 `.han`): chữ "hạn 21/11/2026" tô theo `mucHan` — chữ phụ (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) ·
- * đỏ + nền đỏ nhạt (quá hạn, đếm từ hạn GỐC; HAN-BO-DAU: không ⚠ — luật V22, `LOP_MUC_HAN.qua`). Chữ "quá hạn n ngày" chỉ ở dòng việc / đầu panel việc → `soNgay`; bảng báo cáo / hồ sơ chỉ tô ngày.
+ * LUẬT HẠN (chủ SP 24/11): CHỈ ngày dd/mm/yyyy tô theo `mucHan` — chữ phụ (còn xa) · vàng (hôm nay → còn ≤ 2 ngày) · đỏ (quá hạn, đếm từ hạn GỐC).
+ * Không chữ "hạn" / "quá hạn n ngày", không nền; `soNgay` giữ cho chỗ gọi cũ (không còn tác dụng).
  * Bản đầy đủ nằm ở tooltip. `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính.
  *
  * Toàn bộ câu chữ nằm ở `deadlineView` (`shared/domain/display.ts`), mức ở `mucHan` — kiểm được bằng bộ kiểm thử máy chủ. Component này chỉ vẽ.
@@ -56,7 +56,7 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, soNgay, mo
     <span title={title} className="text-[13px] tabular-nums text-dim">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
       <span className={`whitespace-nowrap ${mo ? LOP_MUC_HAN.xa : LOP_MUC_HAN[muc]}`}>
-        {muc === 'qua' && <DauQuaHan />}{v.han}{soNgay && v.quaHan && <> · {v.quaHan}</>}
+        {muc === 'qua' && <DauQuaHan />}{han ? ngay(han) : v.han}
       </span>
       {v.hen && <> · {v.hen}</>}
       {ghiChu && <> · {ghiChu}</>}
