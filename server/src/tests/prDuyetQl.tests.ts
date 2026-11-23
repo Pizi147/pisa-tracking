@@ -43,7 +43,7 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
   });
 
   check('D1 · chip SOS ở Chờ bạn duyệt (y.sos) + đầu panel; dòng Điểm ở bối cảnh dùng DongDiem', () => {
-    assert(/y\.sos && <ChipSos tinh muc=\{y\.sos\.muc\}/.test(doc('web/src/modules/duyet/DsDuyet.tsx')), 'dòng duyệt chưa vẽ ChipSos theo sos');
+    assert(/y\.sos && <span className="dyc-sos"><ChipSos tinh muc=\{y\.sos\.muc\}/.test(doc('web/src/modules/duyet/DsDuyet.tsx')), 'dòng duyệt chưa vẽ ChipSos theo sos');
     assert(/yc\.sos && <ChipSos/.test(than(hop, 'function PanelDuyet')), 'đầu panel chưa có ChipSos');
     assert(/panel && yc\.diemHv && [\s\S]{0,600}<DongDiem d=\{yc\.diemHv\}/.test(the), 'bối cảnh chưa có dòng Điểm');
   });

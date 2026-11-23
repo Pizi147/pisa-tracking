@@ -61,6 +61,13 @@ Mockup: `thiet-ke/v24/cong-viec-gon.html` H1 (1440 tối) · H2 (375 sáng), ch�
 Cột "nút" 176 px = rộng hơn hai nút vì có dòng chỉ một nút "Trả lời"; dồn phải nên mép phải vẫn 16 px.
 KHỚP hình ảnh ước tính ≥ 90 % (cột, cỡ / đậm chữ, cao dòng, vị trí nút, màu hạn).
 
+## 3b. Vòng sửa theo rà của PTA Plan (đêm 24/11)
+
+- Phần mở của MỌI loại thẻ là một lưới nhãn · giá trị (cột nhãn 120 px, giá trị tới 72 ký tự, nên đoạn dài gãy dòng cùng một chỗ ở mọi thẻ): Điểm · Đề xuất / Câu hỏi · n vi phạm · n bằng chứng · Sau khi duyệt · Hạn tự chốt · link hồ sơ cuối lưới. ⓘ quy chế đứng cạnh nhãn nó giải thích.
+- `KhoiDuyetYThuc` có chế độ `luoi`: ngày vi phạm dd/mm/yyyy một dòng, chip kỹ năng sau ngày, người ghi / mô tả dòng dưới; tên tệp bằng chứng là link ngay tại giá trị (ảnh xem trước giữ).
+- 375: tên em một dòng, chip SOS xuống tầng hai, mã lớp ở tầng hai ("MB FT 101 · Speaking"), tên việc dài xuống dòng trong khung (không cắt).
+- Ảnh thêm: `8-xin-y-kien-tra-loi` · `9-doi-lich-chon-tuan` (1440 + 375); `2-mo-mot-dong` là thẻ Đề xuất PA. Thẻ Sửa cấp bậc (`sua_khai_bac`, #2058) chụp sau khi #2058 merge và gộp main.
+
 ## 4. Khác mockup — lý do ([XM] cho PTA Plan)
 
 - **[XM1]** Toast Hoàn tác dùng toast chung của web (góc phải dưới, đếm lùi 10 s, có ✕), mockup vẽ giữa đáy. Sửa vị trí toast là đổi toàn app — không làm trong PR này.

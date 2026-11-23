@@ -312,35 +312,32 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     const themPa = coNut && yc.kieuNut === 'tra-loi' && onThemPa && typeof yc.duLieu?.caseId === 'number';
     /* Quy chế (hạn, "từ chối cần lý do"…): ⓘ cạnh "Sau khi duyệt"; thẻ không có dòng đó thì ⓘ ở hàng việc phụ. */
     const qcTaiNeu = !!qc && !!yc.neuDuyet && cho && o?.loai !== 'tu-choi';
-    const viecPhu = nguoiGuiSua || chiRut || suaTraLoiDuoc || (!cho && !laNguoiXin && yc.coTheHuy) || tuDuyetDuoc || themPa || (qc && !qcTaiNeu);
+    const viecPhu = nguoiGuiSua || chiRut || suaTraLoiDuoc || (!cho && !laNguoiXin && yc.coTheHuy) || tuDuyetDuoc || themPa;
     return (
       <>
         <div className="dyc-ct" id={`the-ct-${yc.id}`} data-the-id={yc.id} role="region" aria-label={`${dich(yc.nhanPhanLoai)}: ${dich(yc.tieuDe)}`}>
+          {/* MỘT lưới nhãn · giá trị cho mọi loại thẻ (cột nhãn 120, giá trị tới 72 ký tự); ⓘ đi cùng nhãn nó giải thích; link hồ sơ cuối lưới. */}
           <div className="dyc-kv">
             {yc.diemHv && <><span>{t('Điểm')}</span><span><DongDiem d={yc.diemHv} />{yc.sos && <span className="ml-2 inline-block align-middle"><ChipSos muc={yc.sos.muc} kyNang={yc.sos.kyNang} tam={yc.sos.tam} dot={yc.diemHv.luot} ten={yc.hocVien} /></span>}</span></>}
-            <span>{yc.kieuNut === 'tra-loi' ? t('Câu hỏi') : t('Đề xuất')}</span>
+            <span className="inline-flex items-center gap-1">{yc.kieuNut === 'tra-loi' ? t('Câu hỏi') : t('Đề xuất')}{qc && !qcTaiNeu && <NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat>}</span>
             <span>{yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{bacDu(dich(d))}</p>)}</span>
+            {yThuc && cho && <KhoiDuyetYThuc measureId={yc.doiTuongId as number} luoi />}
+            {yc.neuDuyet && cho && o?.loai !== 'tu-choi' && <>
+              <span className="inline-flex items-center gap-1">{t('Sau khi duyệt')}{qc && <NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat>}</span>
+              <span>{dich(yc.neuDuyet)}
+                {/* YT-BAO-PH ([XM 1], chủ SP 11/11): PH đã nghe biện pháp sắp thu hồi → mặc định nhờ TVV báo lại; QL bỏ tick khi không cần. */}
+                {thuHoi && yc.duLieu?.daBaoPh === true && (
+                  <label className="mt-1 flex min-h-[44px] items-center gap-2 sm:min-h-0">
+                    <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={baoLai} disabled={busy} onChange={(e) => setBaoLai(e.target.checked)} />
+                    {t('Nhờ TVV báo lại PH')}
+                  </label>
+                )}
+              </span>
+            </>}
+            {yThuc && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
+            {!cho && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
+            {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
           </div>
-          {yThuc && cho && <KhoiDuyetYThuc measureId={yc.doiTuongId as number} />}
-          {(yc.neuDuyet && cho && o?.loai !== 'tu-choi') || (yThuc && cho && yc.hanDuyet) || !cho || yc.mo ? (
-            <div className="dyc-kv">
-              {yc.neuDuyet && cho && o?.loai !== 'tu-choi' && <>
-                <span>{t('Sau khi duyệt')}</span>
-                <span>{dich(yc.neuDuyet)}{qcTaiNeu && qc && <span className="ml-1.5 inline-block align-middle"><NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat></span>}
-                  {/* YT-BAO-PH ([XM 1], chủ SP 11/11): PH đã nghe biện pháp sắp thu hồi → mặc định nhờ TVV báo lại; QL bỏ tick khi không cần. */}
-                  {thuHoi && yc.duLieu?.daBaoPh === true && (
-                    <label className="mt-1 flex min-h-[44px] items-center gap-2 sm:min-h-0">
-                      <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={baoLai} disabled={busy} onChange={(e) => setBaoLai(e.target.checked)} />
-                      {t('Nhờ TVV báo lại PH')}
-                    </label>
-                  )}
-                </span>
-              </>}
-              {yThuc && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
-              {!cho && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
-              {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
-            </div>
-          ) : null}
           {viecPhu && (
             <div className="dyc-hang items-center">
               {tuDuyetDuoc && <span className="text-[13px] text-muted" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>{t('Bạn tự gửi · tự duyệt được')}</span>}
@@ -349,7 +346,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               {(nguoiGuiSua || chiRut) && <button type="button" className="btn btn-sm" disabled={busy || !!o} onClick={(e) => rut(e.currentTarget)}>{busy && !o ? t('Đang rút…') : t('Rút')}</button>}
               {suaTraLoiDuoc && <button type="button" className="btn btn-sm" disabled={busy || !!o} aria-expanded={o?.loai === 'sua-tra-loi'} onClick={(e) => moO('sua-tra-loi', e.currentTarget, yc.traLoi ?? '')}>{t('Sửa trả lời…')}</button>}
               {!cho && !laNguoiXin && yc.coTheHuy && <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void huy()}>{busy ? t('Đang huỷ…') : t('Huỷ quyết định')}</button>}
-              {qc && !qcTaiNeu && <NutLuat label={t('Quy chế')}>{qc.chu}</NutLuat>}
             </div>
           )}
         </div>

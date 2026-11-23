@@ -2000,6 +2000,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .dyc-nh { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-dim); }
   .dyc-nh .dyc-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 4px; border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; line-height: 1; color: var(--text-dim); }
   .dyc-lq { font-size: 13px; color: var(--text-dim); }
+  .dyc-lop2, .dyc-sos2 { display: none; }
   .dyc-hn { justify-self: end; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-dim); }
   .dyc-hn[data-muc='sap'] { font-weight: 600; color: rgb(var(--soon-rgb)); }
   .dyc-hn[data-muc='qua'] { font-weight: 600; color: rgb(var(--bad-rgb)); }
@@ -2025,6 +2026,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .dyc-dong { grid-template-columns: 18px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; padding: 10px 12px; }
     .dyc-mo { grid-column: 2; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ai hn' 'vd vd' 'duoi duoi'; column-gap: 10px; row-gap: 2px; }
     .dyc-mo .dyc-duoi { grid-area: duoi; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: 2px; }
+    .dyc-mo > .dyc-ai { grid-area: ai; white-space: nowrap; }
+    .dyc-mo > .dyc-vd { white-space: normal; overflow-wrap: anywhere; }
+    .dyc-ai .dyc-sos { display: none; } .dyc-sos2 { display: inline-flex; }
     .dyc-mo .dyc-ai { grid-area: ai; } .dyc-mo .dyc-hn { grid-area: hn; } .dyc-mo .dyc-vd { grid-area: vd; font-size: 13px; color: var(--text-dim); }
     .dyc-mo .dyc-xo, .dyc-ai .dyc-lop, .dyc-nh:empty { display: none; }
     .dyc-lop2 { display: inline; }
@@ -2036,7 +2040,6 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .dyc-tc .dyc-hang { display: grid; grid-template-columns: 1fr 1fr; }
     .dyc-hang .btn { min-height: 44px; justify-content: center; }
   }
-  .dyc-lop2 { display: none; }
 }
 
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /

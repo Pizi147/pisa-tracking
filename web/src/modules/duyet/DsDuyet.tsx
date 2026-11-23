@@ -85,9 +85,10 @@ function DongYc({ y, nhom, mo, dangO, nhanId, lenh, dangGui, toi, chon, onBam, o
           )}
         </span>
         <button type="button" className="dyc-mo" aria-expanded={dangMo} onClick={() => onBam(y)} title={y.neuDuyet && !dangMo ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(y.neuDuyet) }) : undefined}>
-          <span className="dyc-ai"><span className="ten-hv">{y.hocVien ?? y.lop ?? ''}</span>{y.hocVien && y.lop && <span className="dyc-lop">{y.lop}</span>}{y.sos && <ChipSos tinh muc={y.sos.muc} kyNang={y.sos.kyNang} tam={y.sos.tam} dot={y.diemHv?.luot} ten={y.hocVien} />}</span>
+          <span className="dyc-ai"><span className="ten-hv">{y.hocVien ?? y.lop ?? ''}</span>{y.hocVien && y.lop && <span className="dyc-lop">{y.lop}</span>}{y.sos && <span className="dyc-sos"><ChipSos tinh muc={y.sos.muc} kyNang={y.sos.kyNang} tam={y.sos.tam} dot={y.diemHv?.luot} ten={y.hocVien} /></span>}</span>
           <span className="dyc-vd"><span className="dyc-lop2">{y.lop ? `${y.lop} · ` : ''}</span>{viecHien}</span>
           <span className="dyc-duoi">
+            {y.sos && <span className="dyc-sos2"><ChipSos tinh muc={y.sos.muc} kyNang={y.sos.kyNang} tam={y.sos.tam} dot={y.diemHv?.luot} ten={y.hocVien} /></span>}
             <span className="dyc-nh">{phu && (chip ? phu.split(' · ').map((p, i) => <span key={i} className="dyc-chip">{p}</span>) : phu)}</span>
             <span className="dyc-lq" title={y.nguoiXin && y.vaiNguoiXin ? `${y.nguoiXin} · ${dich(y.vaiNguoiXin)}` : undefined}>{gui}</span>
           </span>

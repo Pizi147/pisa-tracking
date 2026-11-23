@@ -45,4 +45,6 @@ export const EN_UI_CON_LAI = {
   'Sau khi duyệt': 'After approval',
   'Hạn tự chốt': 'Auto-decision deadline',
   'Hồ sơ Case ›': 'Case file ›',
+  '{n} vi phạm': '{n} incidents',
+  '{n} bằng chứng': '{n} evidence',
 } as const;
