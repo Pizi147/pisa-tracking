@@ -76,10 +76,20 @@ export default function ClassOverviewPage() {
   const tabUrl = params.get('tab');
   useEffect(() => {
     if (!classId) return;
+    const id = Number(classId);
     taiTruocGop(`/classes/${classId}/ho-so`, {
       overview: `/classes/${classId}/overview`,
-      ...(tabUrl && tabUrl !== 'hoc-vien' ? {} : { roster: `/classes/${classId}/roster`, diemTheoLuot: duongDiemTheoLuot(Number(classId)) }),
+      ...(tabUrl && tabUrl !== 'hoc-vien' ? {} : { roster: `/classes/${classId}/roster`, diemTheoLuot: duongDiemTheoLuot(id) }),
     });
+    /* R3-T3 (rà 24/11): bó phần 2 gửi CÙNG LÚC (trước chờ `/overview` về ~1–2,5 s) — điều kiện chỉ biết sau `overview` (quyền, lớp đã kết thúc, lớp thường)
+       để máy chủ tự bỏ (`tuy=1`, phần 204). Bó sau `/overview` bên dưới giữ làm lưới: đường đã đang bay / đã có thì không gọi lại. */
+    if (params.get('xem') === 'cuoi-khoa') return;
+    taiTruocGop(`/classes/${classId}/ho-so`, {
+      xetLai: duongXetLai(id),
+      ...(laGvThuan(session?.roles) ? {} : { viecCuaToi: duongViecLop(id) }),
+      xoaKetThuc: `/classes/${classId}/xoa-ket-thuc`,
+      ...((!tabUrl || tabUrl === 'hoc-vien') && cheDo === 'diem' ? { cases: `/cases?classId=${classId}` } : {}),
+    }, true);
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   /* R3-T4 (rà 24/11): lưu xong (`invalidate('/classes')`…) → các phần đang hiện tải lại bằng hai GET `ho-so` song song, cùng hai bó lúc mở trang (trước ~6 GET lẻ). */
   useEffect(() => {

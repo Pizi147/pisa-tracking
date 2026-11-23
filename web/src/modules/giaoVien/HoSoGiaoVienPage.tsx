@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  CHU_THEM_PA, NHOM_VIEC_LABEL, addDaysIso, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
+  CHU_THEM_PA, NHOM_VIEC_LABEL, demViecTheoNhom, dongCuaToi, addDaysIso, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -27,6 +27,8 @@ import type { ViewCase } from '../cases/CasePanel.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { IconNhom } from '../congViec/DanhSachViec.tsx';
 import { LopChuNhiem, phuLopDay, useHaiKhoi } from '../worklist/LopToiDay.tsx';
+import { laGvThuan } from '../classes/ThanhViecLop.tsx';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 
@@ -73,6 +75,8 @@ export function HoSoGiaoVienPage() {
   const { id } = useParams();
   const { data, loading, error, reload } = useApi<HoSo>(`/giao-vien/${id}`, [id]);
   const { session } = useSession();
+  /* R3-T6 / T7 (rà 24/11): hồ sơ của CHÍNH MÌNH biết ngay từ URL (không chờ hồ sơ về). */
+  const laToi = !!session?.user?.id && Number(id) === session.user.id;
   const { homNay } = useNgayNghiepVu();
   /* P9: kỳ tự do — mặc định 4 tuần tới tuần này; giá trị mặc định không ghi lên URL. XM-13: Tổng quan / Phân tích GV truyền `tu`, `den` → kỳ đi theo trang nguồn. */
   const denMd = mondayOfDate(homNay), tuMd = addDaysIso(denMd, -21);
@@ -86,9 +90,17 @@ export function HoSoGiaoVienPage() {
   const ct = ctUrl === 'ft' || ctUrl === 'thuong' ? ctUrl : '';
   const ky = `tu=${tu}&den=${den}${ct ? `&ct=${ct}` : ''}`;
   const cs = useApi<ChiSoHoSoGv>(id && !kyLoi ? `/giao-vien/${id}/chi-so?${ky}` : null, [id, ky]);
-  const viec = useApi<{ viec: NhomSo[] }>(`/giao-vien/${id}/viec`, [id]);
-  /* XM-5: lớp chủ nhiệm + dòng phụ "Test kế tiếp" chỉ khi xem hồ sơ của chính mình (đường chỉ đọc phân công người gọi — QL xem không thêm câu đọc). */
-  const haiKhoi = useHaiKhoi(!!data?.gv.laChinhMinh);
+  /* R3-T6: hồ sơ của mình (GV có Công việc) — đếm "Việc đang tồn" từ `/my-work` badge đã nạp (máy chủ `viecCuaGv` cũng dựng từ `myWork`, cùng
+     `demViecTheoNhom(dongCuaToi(…))`), không GET `/giao-vien/:id/viec` dựng lại (+~47 câu). Cùng cổng với thanh việc hồ sơ lớp (`ThanhViecLop`). */
+  const tuMyWork = laToi && laGvThuan(session?.roles) && !!session?.nav?.workSupport;
+  const mw = useApi<{ dong?: WorkItem[] }>(tuMyWork ? '/my-work' : null, [], { dungBanLuu: true });
+  const viecGv = useApi<{ viec: NhomSo[] }>(tuMyWork ? null : `/giao-vien/${id}/viec`, [id]);
+  const viec: ApiViec = tuMyWork
+    ? { data: mw.data?.dong ? { viec: demViecTheoNhom(dongCuaToi(mw.data.dong)) } : null, loading: mw.loading, error: mw.error, reload: mw.reload }
+    : viecGv;
+  /* XM-5: lớp chủ nhiệm + dòng phụ "Test kế tiếp" chỉ khi xem hồ sơ của chính mình (đường chỉ đọc phân công người gọi — QL xem không thêm câu đọc).
+     R3-T7: gọi song song với hồ sơ (trước chờ `laChinhMinh`). */
+  const haiKhoi = useHaiKhoi(laToi);
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={8} />;
   const { gv } = data;

@@ -255,6 +255,20 @@ export async function runPrCacheTests(t: YThucTestKit) {
         assert(cho.length === 0, 'vô hiệu không trúng đường của bó vẫn gọi ho-so');
       } finally { goGop(); go.forEach((f) => f()); }
     });
+    await checkAsync('R3-T3 · taiTruocGop tuy: phần 204 (máy chủ bỏ) mà không khối nào gắn → không gọi lẻ, không bản vừa xem; khối đang gắn → gọi lẻ như cũ', async () => {
+      batDau();
+      const go = ua.ganDuong('/classes/9/xet-lai');
+      try {
+        ua.taiTruocGop('/classes/9/ho-so', { xetLai: '/classes/9/xet-lai', viecCuaToi: '/classes/9/viec-theo-em?chi=toi', cases: '/cases?classId=9' }, true);
+        assert(soGoi('/classes/9/ho-so?phan=xetLai,viecCuaToi,cases&tuy=1') === 1, `lời gọi: ${cho.map((c) => c.url).join(' ')}`);
+        tra('/classes/9/ho-so?phan=xetLai,viecCuaToi,cases&tuy=1', { xetLai: { status: 204 }, viecCuaToi: { status: 204 }, cases: { status: 200, data: { rows: [] } } });
+        await xong(); await xong();
+        assert(soGoi('/classes/9/viec-theo-em?chi=toi') === 0 && soGoi('/classes/9/xet-lai') === 1, `gọi lẻ sai: ${cho.map((c) => c.url).join(' ')}`);
+        ua.taiTruoc('/classes/9/viec-theo-em?chi=toi');
+        assert(soGoi('/classes/9/viec-theo-em?chi=toi') === 1, 'phần bị bỏ vẫn có bản vừa xem');
+        cho = [];
+      } finally { go(); }
+    });
     await checkAsync('R3-T5 · lamMoiYThucCua: thao tác Ý thức của lớp 7 / em 3 → bản vừa xem của y-thuc lớp 7, em 3, /my-work bị xoá (tải mới); lớp / em khác giữ nguyên', async () => {
       const kieu = await import('../../../web/src/modules/yThuc/kieu.ts');
       batDau();
