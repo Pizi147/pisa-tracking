@@ -128,7 +128,7 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
       const r = rows.find((x) => x.skill === l.skill);
       /* R2 C10 (rà 24/11 — chặn mà không nói bước tiếp): kỹ năng đã huỷ phần thi → HỎI một câu rồi mở lại kỹ năng (về "chờ thi") trong cùng giao dịch, như lượt đã huỷ. */
       if (r?.sit_status === 'cancelled') {
-        canXacNhan('{x} của {nhan} đã huỷ phần thi — mở lại {x} rồi khôi phục kết quả?', { x: tenMon(null, l.skill), nhan }, 'Mở lại và khôi phục');
+        canXacNhan('{x} của {nhan} đã huỷ — mở lại {x} rồi khôi phục kết quả?', { x: tenMon(null, l.skill), nhan }, 'Mở lại và khôi phục');
         ghiSitStatus(p, attemptId, r, 'scheduled', lyDo ?? 'Khôi phục kết quả');
       }
       if (!l.planned_period_id) continue;

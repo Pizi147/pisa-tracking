@@ -8,7 +8,7 @@ export const EN_R2_HOAN_TAC = {
   'Không còn lô thêm học viên này.': 'This batch of added students is no longer available.',
   'Đã quá {n} phút — xoá từng em ở danh sách học viên.': 'More than {n} minutes have passed — delete students one by one from the student list.',
   'Thiếu lô cần hoàn tác.': 'Missing the batch to undo.',
-  '{x} của {nhan} đã huỷ phần thi — mở lại {x} rồi khôi phục kết quả?': '{x} of {nhan} was cancelled — reopen {x} and restore the result?',
+  '{x} của {nhan} đã huỷ — mở lại {x} rồi khôi phục kết quả?': '{x} of {nhan} was cancelled — reopen {x} and restore the result?',
   'Mở lại và khôi phục': 'Reopen and restore',
   'Chỉ người ghi, Head tutor hoặc Head chi nhánh của tutor sửa được nhận xét này.': 'Only the author, the tutor Head or the branch Head of the tutor can edit this comment.',
   'Chỉ người ghi xoá được nhận xét này.': 'Only the author can delete this comment.',

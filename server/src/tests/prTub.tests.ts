@@ -216,7 +216,7 @@ export async function runPrTubTests(t: any) {
     assertThrows(() => tr.ghiNhanXet(HT, a, { ketLuan: 'on', noiDung: 'ngắn' }), /8 ký tự/, '< 8 ký tự');
     assertThrows(() => tr.ghiNhanXet(HT, a, { ketLuan: 'tot', noiDung: 'Nội dung đủ dài rồi' }), /Kết luận/, 'kết luận lạ');
     const { id } = tr.ghiNhanXet(HT, a, { ketLuan: 'can_cai_thien', noiDung: 'Nhắc gửi feedback đều' });
-    assertThrows(() => tr.suaNhanXet(P.admin, id, { ketLuan: 'on', noiDung: 'Người khác sửa thử' }), /người ghi/, 'người khác sửa');
+    assertThrows(() => tr.suaNhanXet(P.lrTeacher, id, { ketLuan: 'on', noiDung: 'Người khác sửa thử' }), /người ghi/, 'người khác sửa');
     const luc = one('SELECT luc FROM tutor_nhan_xet WHERE id = ?', id).luc;
     tr.suaNhanXet(HT, id, { ketLuan: 'on', noiDung: 'Đã sửa trong 24 giờ' });
     const x = one('SELECT ket_luan, luc, sua_luc FROM tutor_nhan_xet WHERE id = ?', id);
@@ -231,7 +231,7 @@ export async function runPrTubTests(t: any) {
     themBuoi(a);
     ngayFu('2026-09-10T03:00:00.000Z');
     const p = tr.panelTutor(QL, a, K);
-    assert(p.nhanXet.length === 1 && p.nhanXet[0].coSua === false, 'QL đọc nhận xét, không sửa');
+    assert(p.nhanXet.length === 1 && p.nhanXet[0].coXoa === false, 'QL đọc nhận xét, không xoá được (R2 C9: Head chi nhánh nơi dạy sửa được)');
   }));
 
   // ------------------------------------------------------------------ TUB-4 · tải danh sách

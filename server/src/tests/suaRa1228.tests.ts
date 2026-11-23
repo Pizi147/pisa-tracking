@@ -77,6 +77,6 @@ export async function runSuaRa1228Tests(t: any) {
     const nC = moi.find((n) => Date.now() - new Date(n.luc).getTime() >= 24 * 3600_000)!;
     assert(nM.coSua && nM.coXoa, `bản trong 24 giờ: ${JSON.stringify([nM.coSua, nM.coXoa])}`);
     assert(nC.coSua === true && nC.coXoa === false, `bản quá 24 giờ phải sửa được, không xoá: ${JSON.stringify([nC.coSua, nC.coXoa])}`);
-    assert(ds.filter((n) => !moi.includes(n)).every((n) => !n.coSua && !n.coXoa), 'nhận xét của người khác không được sửa / xoá');
+    assert(ds.filter((n) => !moi.includes(n)).every((n) => !n.coXoa), 'nhận xét của người khác không xoá được (R2 C9: Head tutor sửa được hộ)');
   }));
 }

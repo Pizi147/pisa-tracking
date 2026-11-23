@@ -365,7 +365,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     huyCu(a);
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(a.m2);
     const e = loiCua(() => ketQuaHuy.khoiPhucKetQua(QL, a.m2));
-    assert(e.status === 409 && e.details?.canXacNhan === true && /đã huỷ phần thi/.test(e.message), `phải hỏi: ${e.status} ${e.message}`);
+    assert(e.status === 409 && e.details?.canXacNhan === true && /đã huỷ — mở lại/.test(e.message), `phải hỏi: ${e.status} ${e.message}`);
     assert(soDiem(a.m2) === 0, 'hỏi mà DB đổi');
     voiXacNhan(() => ketQuaHuy.khoiPhucKetQua(QL, a.m2));
     assert(kyNang(a.m2, 'listening').sit_status !== 'cancelled' && soDiem(a.m2) > 0, JSON.stringify(kyNang(a.m2, 'listening')));
