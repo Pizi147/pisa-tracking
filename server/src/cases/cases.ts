@@ -2974,7 +2974,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   if (f.origin) { where.push('sc.origin_kind = ?'); params.push(f.origin); }
   /* Lọc theo NGƯỜI PHỤ TRÁCH — để bảng giáo viên đếm đúng trách nhiệm của từng người. */
   if (f.ownerUserId) { where.push('sc.owner_user_id = ?'); params.push(f.ownerUserId); }
-  if (f.noOwner) where.push(KHONG_CHU_SQL(CN_CUA_CASE));   // L1: chủ đã nghỉ = chưa có người
+  if (f.noOwner) where.push(KHONG_CHU_SQL);   // L1: chủ đã nghỉ = chưa có người
   if (!f.kemTam) where.push(CASE_THAT('sc'));
   /*
    * DOC-IT-3: người xem chỉ có quyền THEO LỚP (GV — `scopeFor` không chi nhánh, không toàn hệ thống), không lọc lớp / em → trước đọc MỌI Case cả hệ thống
@@ -3016,7 +3016,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               s.full_name, s.student_code,
               a.attempt_no, a.kind AS attempt_kind,
               u.full_name AS reporter_name,
-              ${TEN_CHU_SQL('sc.owner_user_id', CN_CUA_CASE)} AS owner_name,
+              ${TEN_CHU_SQL('sc.owner_user_id')} AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
               ${LA_CASE_SOS('sc')} AS tu_sos,
               /* PR-N1 (Task 13, K3-02/T53 Q1): hạn tiếp theo = hạn GHI KẾT QUẢ TUẦN (action_due, hết Thứ Hai) của PA đang
@@ -3355,7 +3355,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
               (SELECT cl.code FROM classes cl WHERE cl.id = sos_cases.goc_class_id) AS lop_attempt,
               (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id) AS attempt_class_id,
               (${LUOT_CASE_SQL}) AS luot_json,
-              ${TEN_CHU_SQL('sos_cases.owner_user_id', '(SELECT s_.branch_id FROM students s_ WHERE s_.id = sos_cases.student_id)')} AS owner_name,
+              ${TEN_CHU_SQL('sos_cases.owner_user_id')} AS owner_name,
               ${CASE_SAU_THI_SQL('sos_cases', 'sos_cases.student_id')} AS sau_thi FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')

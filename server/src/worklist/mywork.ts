@@ -460,8 +460,8 @@ const COT_CASE = `COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
               COALESCE(ac.code, cc.code) AS class_code,
               s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
-/** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi` (L1: chủ đã nghỉ cũng là chưa có người). Hàm: `KHONG_CHU_SQL` đọc lúc chạy (vòng nạp module). */
-const chuaCoNguoi = () => `(${KHONG_CHU_SQL('COALESCE(ac.branch_id, cc.branch_id, s.branch_id)')} AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
+/** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi` (L1: chủ đã nghỉ cũng là chưa có người). Hàm: đọc `KHONG_CHU_SQL` lúc chạy (vòng nạp module). */
+const chuaCoNguoi = () => `(${KHONG_CHU_SQL} AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
 /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt · K3-41: em Tạm dừng dừng hạn. */
 const LA_NO_PLAN = `(COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active')`;
 const LA_CAUSE = `(${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
@@ -501,7 +501,7 @@ function napCaseMo(loc: LocCaseMo = null, toi: number | null = null, chiViec = f
   const { sql: locSql, thamSo } = sqlLocCaseMo(loc);
   const khoaToi = (toi === null ? '' : `:toi:${toi}`) + (chiViec ? ':viec' : '');
   const sqlToi = toi === null ? '' : `
-        AND (${KHONG_CHU_SQL('COALESCE(ac.branch_id, cc.branch_id, s.branch_id)')} OR sc.owner_user_id = ?
+        AND (${KHONG_CHU_SQL} OR sc.owner_user_id = ?
              OR (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL
                  AND NOT EXISTS (SELECT 1 FROM case_interventions iv0 WHERE iv0.case_id = sc.id AND iv0.status != 'cancelled')))`;   /* = `la_no_plan` + `!iv_count` */
   const kq = nho((lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo') + khoaToi, () => lopHienTai(db().prepare(

@@ -29,6 +29,16 @@ export async function runPrR1Tests(t: any) {
     const viec = () => (myWork(P.admin, { nguoi: "tat-ca" } as any).items ?? []).some((i: any) => i.key === `owner:${c.id}`);
     xoaNho();
     assert(!coTrong() && !viec(), 'Case có chủ còn làm đã nằm trong "chưa có người"');
+    /* PTA rà #2024: chủ chỉ còn vai Giáo viên ở chi nhánh KHÁC chi nhánh lớp (dạy chéo / em chuyển chi nhánh) = vẫn còn làm — giữ Case, không gán đè. */
+    const khac = one(`SELECT b.code FROM branches b WHERE b.id != (SELECT branch_id FROM classes WHERE id = ?) ORDER BY b.id LIMIT 1`, c.lop);
+    assert(khac, 'seed thiếu chi nhánh thứ hai');
+    accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]);
+    xoaNho();
+    assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh khác bị coi là đã nghỉ');
+    assert(owner.ganChuCaseThieu({ classId: c.lop, actorId: P.admin.userId, luc: '2026-11-24T03:00:00.000Z' }) === 0
+      && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
+    const tenCon = cases.listCases(P.admin, { studentId: c.sid }).rows.find((r: any) => r.id === c.id)?.ownerName ?? '';
+    assert(tenCon && !/đã nghỉ/.test(tenCon), `chủ còn làm mà tên có "(đã nghỉ)": ${tenCon}`);
     accounts.setRoles(P.admin, c.chu, []);   // gỡ hết vai — `donGiaoHetHieuLuc` không đụng Case (không luật mới)
     xoaNho();
     assert(one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'gỡ vai không được tự đổi chủ Case');
