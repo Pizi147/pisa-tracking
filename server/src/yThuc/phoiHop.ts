@@ -11,7 +11,7 @@ import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { countAttachments } from '../platform/attachments.ts';
-import { LUOT_SAU_THI_SQL } from '../students/tamDung.ts';
+import { LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
@@ -367,7 +367,7 @@ function docBanChup(s: string | null): string[] | null {
 
 /**
  * PHOI-HOP-V2: việc TVV của một tập hành động Meeting CX — MỘT câu (lần ghi mới nhất + số lần đọc cùng câu), không theo dòng.
- * ponytail: hạn hiệu lực = hạn chọn hoặc mặc định, bỏ qua Tạm dừng (em Tạm dừng không có việc mở ở Công việc); dùng `hanBaoPhHieuLuc` đủ khi cần.
+ * R1-L2: hạn hiệu lực tính cả Tạm dừng → Quay lại (`hanBaoPhHieuLuc` + khoảng đọc cùng câu — `SU_KIEN_TAM_DUNG_SQL`), khớp panel việc.
  */
 export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number, TvvMeeting> {
   const out = new Map<number, TvvMeeting>();
@@ -375,13 +375,14 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
   const homNay = demoToday();
   for (const v of db().prepare(
     `SELECT v.id, v.phoi_hop_id, v.trang_thai, v.han, v.han_chon, v.student_id, v.phu_trach_id, v.giao_boi, s.consultant_user_id, u.full_name AS tvv_ten, ph.kind AS ph_kind, ph.pb_moc AS ph_pb,
-            l.ket_qua, l.ngay, l.ghi_chu, lu.full_name AS l_nguoi, (SELECT COUNT(*) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id) AS so_lan
+            l.ket_qua, l.ngay, l.ghi_chu, lu.full_name AS l_nguoi, (SELECT COUNT(*) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id) AS so_lan,
+            CASE WHEN v.han_chon IS NULL THEN ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} END AS dung
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN users u ON u.id = s.consultant_user_id
        JOIN sos_coordination_actions ph ON ph.id = v.phoi_hop_id
        LEFT JOIN viec_bao_ph_lan l ON l.id = (SELECT MAX(x.id) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id) LEFT JOIN users lu ON lu.id = l.ghi_boi
       WHERE v.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
-    const han = hanBaoPhHieuLuc(v.han, [], v.han_chon);
+    const han = hanBaoPhHieuLuc(v.han, khoangTuSuKien(v.dung), v.han_chon);
     const goc = { consultant_user_id: v.consultant_user_id ?? null, student_id: v.student_id, phoi_hop_id: v.phoi_hop_id, phu_trach_id: v.phu_trach_id ?? null, giao_boi: v.giao_boi ?? null };   // GV-1: người được giao
     out.set(v.phoi_hop_id, {
       viecId: v.id, trangThai: v.trang_thai, han, hanMacDinh: v.han, hanChon: v.han_chon ?? null, quaHan: v.trang_thai === 'mo' && han < homNay,
@@ -748,7 +749,11 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
 export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null }): CoordinationAction {
   const r = loadAction(id);
   requireLam(p, r);
-  /* RKC-3a: việc đã bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước. */
+  /* RKC-3a: việc NGƯỜI DÙNG bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước.
+     R1-L3: việc HỆ THỐNG bỏ (mức SOS đổi, lượt huỷ) theo điểm — không xác nhận tay, như `moLaiCoordination`. */
+  if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
+    throw badRequest('Việc này do hệ thống bỏ theo điểm — không xác nhận tay được.');
+  }
   if (!input.performedOn) throw badRequest('Cần chọn ngày thực hiện.');
   if (!isIsoDate(input.performedOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
@@ -764,12 +769,14 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
     /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
     const chup = r.kind === 'bao_ph_tvv'
       ? turnsOf(p, [{ ...r, status: 'done', performed_on: input.performedOn, noi_dung_luc_bao: null }])[0]?.actions[0]?.noiDung ?? null : null;
-    db()
+    /* R1-L3: so-và-đổi với dòng đã đọc — hai người bấm cùng lúc thì người sau 409 (không đè ghi chú, không gửi tin hai lần). */
+    const doi = db()
       .prepare(
         `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, noi_dung_luc_bao = ?,
-            remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,
+            remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ? AND status = ? AND updated_at IS ?`,
       )
-      .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id);
+      .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id, r.status, r.updated_at ?? null).changes;
+    if (doi !== 1) throw conflict('Việc vừa được người khác cập nhật — tải lại.');
     const aid = writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.confirm', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`,
