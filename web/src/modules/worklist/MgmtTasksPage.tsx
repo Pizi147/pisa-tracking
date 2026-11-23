@@ -520,7 +520,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
 
   return (
     <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
-      loai={data ? `${laNguoiNhan ? t('Việc được giao') : t('Vận hành')} · ${tenNhom}` : null}
+      loai={data ? `${laNguoiNhan ? t('Việc được giao') : t('Bảng giao việc')} · ${tenNhom}` : null}
       dau={data ? {
         han: data.due ? <ChipHan loai="viec-van-hanh" han={data.due} /> : undefined,
         dong2: [data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ'),
@@ -1084,7 +1084,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const chuNut = busy ? t('Đang lưu…') : daTao ? t('Thử lại') : giaoGv ? t('Giao') : parent ? t('Thêm việc con') : t('Giao việc');
   return (
     <KhungPanel tieuDe={parent ? t('Việc con') : t('Giao việc')} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose} rong={parent ? undefined : 'rong'}
-      loai={parent ? null : t('Vận hành · Giao việc')}
+      loai={parent ? null : t('Bảng giao việc · Giao việc')}
       quyChe={!giaoGv && !parent && lapHl && !loiLap(lap).length ? quyCheViecLap({ ky: chuLap(lapHl as Lap), khoang }) : null}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },

@@ -767,7 +767,7 @@ const EN_B_WEB = {
   'PA chưa có Kết quả': 'PA without a result',
   'lượt có meeting CX quá hạn xác nhận': 'CX meetings overdue for confirmation',
   'việc Vận hành cần quyết định': 'Operations tasks need a decision',
-  'Mở Vận hành': 'Open Operations',
+  'Mở Bảng giao việc': 'Open Assigned tasks board',
   'lớp cần Chốt lộ trình': 'classes need pathway confirmation',
   'Lộ trình tiếp theo': 'Next pathway',
   'lớp thiếu GV môn': 'classes missing a subject teacher',

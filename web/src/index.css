@@ -924,6 +924,10 @@
   .bang :is(th, td):is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="chip"], [data-kieu="tuan"], [data-kieu="viec"]) { text-align: left; }
   .bang :is(th, td):is([data-kieu="so"], [data-kieu="diem"], [data-kieu="noi-bat"], [data-kieu="diem-ti-le"], [data-kieu="phan-tram"]) { text-align: center; font-variant-numeric: tabular-nums; }
   .bang :is(th, td):is([data-kieu="nut"]) { text-align: right; }
+  /* Lớp cần chú ý (chủ SP 24/11): cột số căn PHẢI, đầu cột và ô cùng đệm → mép phải số thẳng đầu cột; các cột số rộng đều nhau. */
+  [data-hd="tq-lop-chu-y"] .bang :is(th, td)[data-kieu="so"] { text-align: right; padding-left: 4px; padding-right: 16px; }
+  [data-hd="tq-lop-chu-y"] .bang > tbody > tr > td[data-kieu] { height: 44px; padding-top: 6px; padding-bottom: 6px; }
+  @media (max-width: 639px) { [data-hd="tq-lop-chu-y"] .bang :is(th, td)[data-kieu="so"] { padding-right: 10px; } }
   .bang > tbody > tr > td { height: 44px; padding: 10px 12px; line-height: 1.5; }
   /* V8-TQ (mockup v8 `tong-quan.html`, chủ SP duyệt 29/10) — chỉ trang Tổng quan (`.tq-v8`): đầu thẻ không vạch dưới (dải đầu cột / vạch dòng tách),
      bảng hàng 60 căn giữa dọc, đệm ngang 14, đầu cột 40. */

@@ -191,7 +191,7 @@ import { HOP_DON_VI_BAT } from './hopDonVi.ts';
 const TAB_CONG_VIEC: readonly TabCongViec[] = ['cho-duyet', 'ho-tro', 'yeu-cau', 'van-hanh', 'bao-cao'];
 /** PR-DUYET (K1-29) đổi thành "Việc học viên"; PR-S3 (A-012, chủ sản phẩm 01/10) trả về "Hỗ trợ học viên". */
 export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
-  'cho-duyet': t('Chờ duyệt'), 'ho-tro': t('Hỗ trợ học viên'), 'yeu-cau': t('Yêu cầu của tôi'), 'van-hanh': t('Vận hành'), 'bao-cao': t('Họp đơn vị'),
+  'cho-duyet': t('Chờ duyệt'), 'ho-tro': t('Hỗ trợ học viên'), 'yeu-cau': t('Yêu cầu của tôi'), 'van-hanh': t('Bảng giao việc'), 'bao-cao': t('Họp đơn vị'),
 };
 /** OV-10a: Admin (`workChamDiem`) chỉ có nhóm Chấm điểm + Nhắc — tab đầu ghi "Chấm điểm", không "Hỗ trợ học viên". */
 export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? t('Chấm điểm') : TAB_CONG_VIEC_LABEL[k]);

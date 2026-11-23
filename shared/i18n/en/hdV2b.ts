@@ -203,7 +203,7 @@ export const EN_HD_V2B = {
   '<b>Duyệt</b> / <b>Duyệt…</b> · <b>Từ chối…</b> (lý do bắt buộc) · <b>Mở</b>; <b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.': '<b>Approve</b> / <b>Approve…</b> · <b>Decline…</b> (reason required) · <b>Open</b>; <b>Ask for opinion</b>: <b>Reply…</b> or <b>+ Add PA</b>.',
   'Mọi việc của bạn và của GV; Chờ bạn duyệt ở đầu.': 'Your tasks and the teachers’; Awaiting your approval on top.',
   '<b>Của tôi · Của GV · Tất cả</b>; ô <b>▾</b> chọn một GV.': '<b>Mine · Teachers’ · All</b>; the <b>▾</b> picker chooses one teacher.',
-  '<b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.': '<b>Management tasks</b> at the bottom (collapsed) has <b>+ Assign work</b>, <b>Operations ›</b>, <b>Unit meeting ›</b>.',
+  '<b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Tất cả việc đã giao ›</b>, <b>Họp đơn vị ›</b>.': '<b>Management tasks</b> at the bottom (collapsed) has <b>+ Assign work</b>, <b>All assigned tasks ›</b>, <b>Unit meeting ›</b>.',
   'Chọn <b>Của GV</b>, nhóm <b>Chấm điểm</b>: dòng quá hạn có ⚠.': 'Choose <b>Teachers’</b>, the <b>Marking</b> group: overdue rows have ⚠.',
   'Bấm <b>Nhập hộ</b>, gõ điểm; em vắng gõ <b>-</b>.': 'Press <b>Enter for them</b>, type scores; type <b>-</b> for an absent student.',
   'Việc ngoài học viên: giáo trình, tutor… có người phụ trách, hạn.': 'Work outside students: curriculum, tutor… with an owner and a deadline.',

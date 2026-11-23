@@ -11,7 +11,6 @@ import { t } from '@shared/i18n/index.ts';
 import type { PanelHd } from '@shared/huongDan/kieu.ts';
 import { ghiQuyCheMo, moHuongDan } from '../lib/hdNgCanh.ts';
 import { NutLuat } from './NutLuat.tsx';
-import { HanChiNgay } from './Nhan.tsx';
 
 /**
  * NHẸ HƠN (v23 `.pn` top = dưới thanh menu): đáy thanh trên (`header.thanh-xanh`, cộng dải demo / mất mạng phía trên nếu có) — panel bám ngay dưới,
@@ -398,7 +397,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   );
   const nguoiLam = cvNgoai?.nguoiLam ? [[t('Phụ trách'), cvNgoai.nguoiLam] as [string, ReactNode]] : [];
   const meta = (trongCot ? [] : [
-    phu, ...(dau ? dau.dong2 : [ngu]), dau?.han && <HanChiNgay.Provider value>{dau.han}</HanChiNgay.Provider>,
+    phu, ...(dau ? dau.dong2 : [ngu]), dau?.han,
     ...[...(dau?.su ?? []), ...nguoiLam].filter(([, v]) => v !== null && v !== undefined && v !== '').map(([n, v]) => (
       <span key={n} className="inline-flex items-baseline gap-1.5"><span className="text-xs font-semibold text-faint">{n}</span><span className="font-semibold text-[color:var(--text)]">{v}</span></span>
     )),

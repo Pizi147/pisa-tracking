@@ -73,8 +73,8 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     /* CD-GON (05/11): thẻ Chờ duyệt vẽ hạn bằng ChipHan vien (ngưỡng trong deadlineView — vẫn một chỗ), không tự so ngày. */
     const tyc = doc('web/src/modules/duyet/TheYeuCau.tsx');
     assert(tyc.includes('<ChipHan vien loai="duyet"') && !/\.slice\(0, 10\) < homNay|86_400_000/.test(tyc), 'TheYeuCau');
-    /* BADGE-QUA-HAN (PTA 15/11): gần hạn = badge vàng như mọi nơi (V22) — vẫn theo `deadlineView.ganHan`, không tự so ngày. */
-    assert(/<BadgeHan muc=\{han\.quaHan \? 'qua' : 'gan'\}/.test(doc('web/src/modules/students/CotCaseHv.tsx')), 'CotCaseHv (CASE-PA-UI b: TheKyNang gỡ)');
+    /* Chủ SP 24/11 (thay BADGE-QUA-HAN 15/11): hạn chỉ là ngày tô màu — mức vẫn theo `deadlineView` (quaHan / ganHan), không tự so ngày, không badge. */
+    assert(/LOP_MUC_HAN\[han\.quaHan \? 'qua' : han\.ganHan \? 'sap' : 'xa'\]/.test(doc('web/src/modules/students/CotCaseHv.tsx')), 'CotCaseHv (CASE-PA-UI b: TheKyNang gỡ)');
     assert(/mucHan\(/.test(doc('web/src/ui/Han.tsx')), 'Han theo mucHan (luật hạn NHẸ HƠN)');
   });
 

@@ -68,7 +68,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(co.sort().join(', ') === 'web/src/modules/congViec/HoTroHocVienTab.tsx×1, web/src/modules/worklist/MgmtTasksPage.tsx×1', co.join(', '));
     assert(doc('web/src/modules/congViec/HoTroHocVienTab.tsx').includes('<CreateTask '), 'Việc quản lý dùng chung hộp CreateTask');
     const hop = doc('web/src/modules/worklist/MeetingPage.tsx');
-    assert(!hop.includes('<ManagerTasks ') && !hop.includes('<ManagerTasks\n') && hop.includes('Giao việc ở Vận hành'), 'MeetingPage');
+    assert(!hop.includes('<ManagerTasks ') && !hop.includes('<ManagerTasks\n') && hop.includes('Giao việc ở Bảng giao việc'), 'MeetingPage');
     const vh = doc('web/src/modules/worklist/MgmtTasksPage.tsx');
     assert(vh.includes("'/mgmt-tasks'") && vh.includes("'/tasks'") && vh.includes('Việc chi nhánh') && vh.includes('Giao GV theo lớp + kỹ năng'), 'form Giao việc');
   });
