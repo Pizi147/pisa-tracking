@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
+import { baoXepCoHoanTac } from './hoanTacXep.ts';
 import { addDaysStr } from '../../../lib/format.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel } from '../../../ui/KhungPanel.tsx';
@@ -228,6 +229,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     let ok = 0;
     const loi: Record<number, string> = {};
     const xong = new Set<number>();
+    const dao: (number | undefined)[] = [];
     try {
       for (const sid of emCoDoi) {
         const buoc = thuTuLuuLuot(doiCua(sid).map((d) => {
@@ -242,16 +244,16 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
         const da: number[] = [];
         for (const { d } of buoc) {
           try {
-            if (d.nhap!.moi) {
-              await api.post('/ke-hoach-test/xep-moi', {
-                studentId: sid, attemptNo: d.n, tuan: Object.fromEntries(KY.map((k) => [k, d.nhap!.kn[k]!.periodId])), force: true,
-              });
-            } else {
-              await api.post('/ke-hoach-test/dot', {
-                attemptId: d.luot!.attemptId, force: true,
+            /* R2 C2: `hoanTac` — máy chủ chụp lịch em này (`dao`), toast cuối Hoàn tác cả lần lưu. */
+            const r = d.nhap!.moi
+              ? await api.post<{ dao?: number }>('/ke-hoach-test/xep-moi', {
+                studentId: sid, attemptNo: d.n, tuan: Object.fromEntries(KY.map((k) => [k, d.nhap!.kn[k]!.periodId])), force: true, hoanTac: true,
+              })
+              : await api.post<{ dao?: number }>('/ke-hoach-test/dot', {
+                attemptId: d.luot!.attemptId, force: true, hoanTac: true,
                 kyNang: KY.filter((k) => doiThat(d.luot!.kn[k], d.nhap!.kn[k])).map((k) => ({ skill: k, periodId: d.nhap!.kn[k]!.periodId })),
               });
-            }
+            dao.push(r?.dao);
             da.push(d.n);
           } catch (e: any) {
             /* Câu lỗi đã hiện ở hàng (kiểm trước) thì không nhắc lại nguyên văn. */
@@ -272,7 +274,8 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
       setTaiLai((n) => n + 1);
       onDone();
       const soLoi = Object.keys(loi).length;
-      toast.push(ok ? 'ok' : 'error', ok ? tChu('Đã lưu lịch {n} em.', { n: ok }) + (soLoi ? ' ' + tChu('{n} em còn lỗi.', { n: soLoi }) : '') : tChu('{n} em chưa lưu được — xem câu lỗi dưới tên em.', { n: soLoi }));
+      baoXepCoHoanTac(toast, dao, ok ? 'ok' : 'error', ok ? tChu('Đã lưu lịch {n} em.', { n: ok }) + (soLoi ? ' ' + tChu('{n} em còn lỗi.', { n: soLoi }) : '') : tChu('{n} em chưa lưu được — xem câu lỗi dưới tên em.', { n: soLoi }),
+        () => { setDaLuu(new Set()); taiBang(emCoDoi); setTaiLai((n) => n + 1); onDone(); });
     } finally { setBusy(false); }
   };
 

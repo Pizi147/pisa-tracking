@@ -166,12 +166,21 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
     /* F05: em đổi email cho nhau chung một lô (một giao dịch) — xem trước đã báo nhóm quá một lô. */
     const lo = chiaLoSuaCaLop(guiDuoc, (sid) => (luuRoi[sid]?.email ?? goc.get(sid)?.email) || null).lo;
     let xong = 0, daSua = 0;
+    /* R2 C4: giá trị TRƯỚC lần lưu của đúng các ô gửi đi (cùng cách chuẩn hoá) — Hoàn tác gửi lại qua cùng đường. */
+    const truoc = new Map(guiDuoc.map((r) => {
+      const g = goc.get(r.studentId)!;
+      const o: Record<string, unknown> & { studentId: number } = { studentId: r.studentId };
+      for (const k of Object.keys(r)) if (k !== 'studentId') { const v = chuan(k as Cot, nen(g, k as Cot)); o[k] = k === 'fullName' ? v : k === 'monDangKy' ? monCuaO(v) : v || null; }
+      return [r.studentId, o];
+    }));
+    const daGhi: (Record<string, unknown> & { studentId: number })[] = [];
     setTienDo({ xong, tong: guiDuoc.length });
     try {
       for (const [i, rows] of lo.entries()) {
         const r = await api.post<{ daSua: number }>(`/classes/${classId}/sua-ca-lop`, {
           rows, lyDoTarget: doiTarget ? lyDo.trim() : undefined, idempotencyKey: `${khoa.current}-${i}`,
         });
+        daGhi.push(...rows.map((x) => truoc.get(x.studentId)!));
         daSua += r.daSua;
         xong += rows.length;
         setTienDo({ xong, tong: guiDuoc.length });
@@ -182,7 +191,18 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
           ? Object.fromEntries(Object.entries(o).filter(([k, v]) => ghi.get(Number(sid))![k] === undefined || chuan(k as Cot, v!) !== ghi.get(Number(sid))![k]))
           : o])));
       }
-      toast.push('ok', t('Đã cập nhật {n} học viên', { n: daSua }));
+      const key = `sua-ca-lop-${classId}-${khoa.current}`;
+      const coTarget = daGhi.some((x) => 'target' in x);
+      toast.hoanTac(t('Đã cập nhật {n} học viên', { n: daSua }), async () => {
+        try {
+          /* Cùng cách chia lô với lần lưu (F05: em đổi email cho nhau chung một lô); lô sau lỗi thì báo, lô trước đã về. */
+          const loCu = chiaLoSuaCaLop(daGhi, (sid) => (daGhi.find((x) => x.studentId === sid)?.email as string | null | undefined) ?? goc.get(sid)?.email ?? null).lo;
+          for (const [i, rows] of loCu.entries()) {
+            await api.post(`/classes/${classId}/sua-ca-lop`, { rows, lyDoTarget: coTarget ? t('Hoàn tác') : undefined, idempotencyKey: `${key}-hoan-${i}` });
+          }
+          onDone(); toast.push('ok', t('Đã hoàn tác'), { key });
+        } catch (e: any) { onDone(); toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+      }, { key });
       onDone();
       if (emLoi.size) { khoa.current = moiKhoa(); setLuuDo({ cau: t('Đã lưu {ok} em · {loi} em chưa lưu', { ok: xong, loi: emLoi.size }), lyDo: t('{n} ô cần sửa', { n: soLoi }) }); }
       else onClose();

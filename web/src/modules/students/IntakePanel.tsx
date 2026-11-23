@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api } from '../../lib/api.ts';
+import { hoanTacXoaLo, lamMoiHocVien } from '../../lib/thungRac.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -22,6 +23,8 @@ type PreviewRow = { row: number; issues: VanDeNhap[] };
 type Preview = { rows: PreviewRow[]; issues: VanDeNhap[]; defaultStartWeek?: string | null };
 type KetQua = {
   added: number; hangDaThem: number[];
+  /** R2 C5: id lô — Hoàn tác `POST /intake/hoan-tac`. */
+  nhap?: number;
   mt?: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
 };
 
@@ -158,6 +161,19 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       setMoDong(null);
       setKetQua(r);
       if (r.added > 0) { onDone(); setDaDan(null); classes.reload(); }   // A2-22: chip lớp đếm lại số em sau khi thêm
+      /* R2 C5: thêm nhầm lô → Hoàn tác = cả lô vào Thùng rác; toast sau đó có Hoàn tác (khôi phục) như Xoá học viên. */
+      if (r.added > 0 && r.nhap) {
+        const key = `nhap-hv-${r.nhap}`;
+        const lamMoi = () => { lamMoiHocVien(); classes.reload(); onDone(); };
+        toast.hoanTac(t('Đã thêm {n} học viên', { n: r.added }), async () => {
+          try {
+            const k = await api.post<{ ok: number[]; thungRac: number[]; failed: { message: string }[] }>('/intake/hoan-tac', { nhap: r.nhap });
+            setKetQua(null); lamMoi();
+            if (k.failed.length) toast.push('error', t('Bỏ {ok} học viên, lỗi {loi}: {ly}', { ok: k.ok.length, loi: k.failed.length, ly: k.failed[0].message }), { key });
+            else hoanTacXoaLo(toast, k.thungRac, t('Đã bỏ {n} học viên vừa thêm', { n: k.ok.length }), key, lamMoi);
+          } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+        }, { key });
+      }
       else toast.push('info', t('Chưa thêm được dòng nào — xem cột Trạng thái.'));
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại

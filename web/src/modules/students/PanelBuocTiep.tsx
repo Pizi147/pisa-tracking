@@ -114,13 +114,15 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: chonMay, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined }),
       { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI[chonMay] }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
   };
-  /* N51: Học tiếp — thân POST từ hai ô tuỳ chọn; lớp khác (đã chuyển ngay) thì máy chủ không hoàn tác chính xác được → không nút Hoàn tác ở khối Đã lưu. */
+  /* N51: Học tiếp — thân POST từ hai ô tuỳ chọn. R2 C6: lớp khác (đã chuyển ngay) → máy chủ trả `dao`, Hoàn tác = em về lớp cũ, lựa chọn về chờ chọn. */
   const luuHocTiep = () => {
     setBamHt(true);
     if (loiHocTiep(hocTiep, bt).length) return;
     const doiLop = hocTiep.lopKhac && !!hocTiep.lopMoiId;
-    void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, thanHocTiep(hocTiep)),
-      { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI.hoc_tiep }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI.hoc_tiep }), hoanTac: doiLop ? undefined : boChon });
+    let dao: number | undefined;
+    const hoanTacDoiLop = () => (dao ? api.post(`/cycles/${cycleId}/buoc-tiep/hoan-tac-doi-lop`, { dao }).then(() => { lamMoi(); reload(); onDone?.(); }) : boChon());
+    void gui(async () => { const r = await api.post<{ dao?: number }>(`/cycles/${cycleId}/buoc-tiep`, thanHocTiep(hocTiep)); dao = r?.dao; return r; },
+      { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI.hoc_tiep }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI.hoc_tiep }), hoanTac: doiLop ? hoanTacDoiLop : boChon });
   };
   const viecTiep = onTiep
     ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
