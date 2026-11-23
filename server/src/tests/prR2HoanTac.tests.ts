@@ -11,6 +11,9 @@ export async function runPrR2HoanTacTests(t: any) {
   const scl: any = await import('../classes/suaCaLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
+  const tutors: any = await import('../tutors/trang.ts');
+  const rac: any = await import('../platform/khoiPhucRac.ts');
+  const mgmt: any = await import('../worklist/mgmttasks.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nR2 HOÀN TÁC · xếp lịch Test nhiều em');
 
@@ -135,5 +138,66 @@ export async function runPrR2HoanTacTests(t: any) {
     assert(one('SELECT COUNT(*) n FROM students WHERE id IN (?, ?)', ...r.studentIds).n === 0, 'đã xoá mềm');
     assert(one(`SELECT COUNT(*) n FROM thung_rac WHERE id IN (?, ?)`, ...k.thungRac).n === 2, 'có trong Thùng rác');
     assert(intake.hoanTacNhap(P.mbManager, r.nhap).ok.length === 0, 'lần hai không xoá gì');
+  }));
+
+  /* ---------------------------------------------------------------- PR2: tutor · việc · Case */
+  const BO2 = new Set([...BO, 'thung_rac']);
+  const bang2 = all(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).map((r) => r.name as string).filter((b) => !BO2.has(b));
+  const chup2 = () => new Map(bang2.map((b) => [b, JSON.stringify(all(`SELECT rowid AS __r, * FROM "${b}" ORDER BY rowid`))]));
+  const khac2 = (a: Map<string, string>, b: Map<string, string>) => bang2.filter((x) => a.get(x) !== b.get(x));
+
+  check('R2-C3a · Xoá tutor → Thùng rác; Khôi phục: tutor + nhận xét về y như trước; sai vai 403', () => thu(() => {
+    const id = Number(conn.prepare(`INSERT INTO tutors (ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at) VALUES ('Tutor R2', '0911222333', ?, 0, '["listening"]', '2026-01-01T00:00:00.000Z')`)
+      .run(one('SELECT id FROM branches ORDER BY id LIMIT 1').id).lastInsertRowid);
+    tutors.ghiNhanXet(P.admin, id, { ketLuan: 'on', noiDung: 'Dạy đều, em tiến bộ.' });
+    const truoc = chup2();
+    const r = tutors.xoaTutor(P.admin, id);
+    assert(r.thungRacId && one('SELECT COUNT(*) n FROM tutors WHERE id = ?', id).n === 0 && one('SELECT COUNT(*) n FROM tutor_nhan_xet WHERE tutor_id = ?', id).n === 0, 'đã xoá mềm');
+    assert(ma(() => rac.khoiPhucRac(P.lrTeacher, r.thungRacId)) === 403, 'GV không khôi phục');
+    xoaNho();
+    rac.khoiPhucRac(P.admin, r.thungRacId);
+    const d = khac2(truoc, chup2());
+    assert(!d.length, `còn khác sau khôi phục: ${d.join(', ')}`);
+    assert(ma(() => rac.khoiPhucRac(P.admin, r.thungRacId)) === 409, 'lần hai 409');
+  }));
+
+  check('R2-C3b · Xoá nhận xét tutor (≤ 24 giờ) → Thùng rác, Khôi phục trả nguyên; quá 24 giờ vẫn 400; chỉ người ghi', () => thu(() => {
+    const tutor = one('SELECT id FROM tutors LIMIT 1');
+    const { id } = tutors.ghiNhanXet(P.admin, tutor.id, { ketLuan: 'can_cai_thien', noiDung: 'Cần chuẩn bị bài kỹ hơn.' });
+    const truoc = chup2();
+    const r = tutors.xoaNhanXet(P.admin, id);
+    assert(r.thungRacId && one('SELECT COUNT(*) n FROM tutor_nhan_xet WHERE id = ?', id).n === 0, 'đã xoá mềm');
+    xoaNho();
+    rac.khoiPhucRac(P.admin, r.thungRacId);
+    assert(!khac2(truoc, chup2()).length, `còn khác: ${khac2(truoc, chup2()).join(', ')}`);
+    const cu = Number(conn.prepare(`INSERT INTO tutor_nhan_xet (tutor_id, ket_luan, noi_dung, nguoi_id, luc) VALUES (?, 'on', 'Cũ quá 24 giờ.', ?, '2026-01-01T00:00:00.000Z')`).run(tutor.id, P.admin.userId).lastInsertRowid);
+    assert(ma(() => tutors.xoaNhanXet(P.admin, cu)) === 400, 'quá 24 giờ vẫn chặn');
+  }));
+
+  check('R2-C9 · Head chi nhánh nơi dạy sửa nhận xét tutor của NGƯỜI KHÁC (có nhật ký trước → sau); Head chi nhánh khác 403; xoá vẫn chỉ người ghi', () => thu(() => {
+    const cn = one('SELECT branch_id b FROM classes WHERE id = ?', lop('MB FT 101')).b as number;
+    const id = Number(conn.prepare(`INSERT INTO tutors (ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at) VALUES ('Tutor C9', '0911000999', ?, 0, '["listening"]', '2026-01-01T00:00:00.000Z')`).run(cn).lastInsertRowid);
+    const { id: nx } = tutors.ghiNhanXet(P.admin, id, { ketLuan: 'on', noiDung: 'Người ghi đã nghỉ việc.' });
+    tutors.suaNhanXet(P.mbManager, nx, { ketLuan: 'can_cai_thien', noiDung: 'Head sửa hộ người ghi.' });
+    assert(one('SELECT noi_dung FROM tutor_nhan_xet WHERE id = ?', nx).noi_dung === 'Head sửa hộ người ghi.', 'Head sửa được');
+    assert(/Người ghi đã nghỉ/.test(one(`SELECT before_json FROM audit_logs WHERE action = 'tutor.nhan_xet_sua' AND entity_id = ? ORDER BY id DESC LIMIT 1`, nx).before_json), 'nhật ký trước → sau');
+    assert(ma(() => tutors.suaNhanXet(P.cpManager, nx, { ketLuan: 'on', noiDung: 'Chi nhánh khác sửa.' })) === 403, 'Head chi nhánh khác 403');
+    assert(ma(() => tutors.xoaNhanXet(P.mbManager, nx)) === 403, 'xoá vẫn chỉ người ghi');
+  }));
+
+  check('R2-C8 · Xoá việc vận hành chưa có cập nhật → Thùng rác, Khôi phục về y như trước; đã có cập nhật → 400; người ngoài 403', () => thu(() => {
+    const truoc = chup2();
+    const v = mgmt.createMgmtTask(P.mbManager, { title: 'Giao nhầm việc R2', group: 'teacher', assigneeUserId: P.lrTeacher.userId, due: '2099-01-01' });
+    const them = chup2();
+    assert(khac2(truoc, them).includes('tasks'), 'tiền đề: việc đã tạo');
+    assert(ma(() => mgmt.xoaViec(P.cpManager, v.id)) === 403, 'Head chi nhánh khác 403');
+    const r = mgmt.xoaViec(P.mbManager, v.id);
+    assert(r.thungRacId && one('SELECT COUNT(*) n FROM tasks WHERE id = ?', v.id).n === 0, 'đã xoá mềm');
+    xoaNho();
+    rac.khoiPhucRac(P.mbManager, r.thungRacId);
+    const d = khac2(them, chup2());
+    assert(!d.length, `còn khác sau khôi phục: ${d.join(', ')}`);
+    mgmt.updateMgmtTask(P.lrTeacher, v.id, { progress: 'doing', note: 'Đã bắt đầu' });
+    assert(ma(() => mgmt.xoaViec(P.mbManager, v.id)) === 400, 'đã có cập nhật → 400');
   }));
 }

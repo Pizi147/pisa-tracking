@@ -570,7 +570,7 @@ export function suaMoTa(p: Principal, loai: LoaiGiao, id: number, body: { moTa?:
   if (!('moTaCu' in body)) throw badRequest('Thiếu mô tả đang xem — mở lại việc rồi sửa.');
   if (!('moTa' in body)) throw badRequest('Thiếu mô tả mới (gửi chuỗi rỗng để bỏ).');
   const v = docViec(loai, id);
-  if (!v.mo) throw badRequest('Việc đã kết thúc — không sửa mô tả.');
+  /* R2 C13 (rà 24/11 — lỗi chính tả việc đã đóng): Mô tả sửa được cả khi việc đã kết thúc (lịch sử + nhật ký như thường); Hạn / Phụ trách giữ chặn. */
   if (!coTheSuaMoTa(p, v)) throw forbidden('Chỉ người phụ trách, người giao, Head, Quản trị hoặc CX sửa được mô tả.');
   const moi = chuTuDo(body.moTa, 'Mô tả', TRAN_MO_TA);
   const cuGui = body.moTaCu == null || body.moTaCu === '' ? null : String(body.moTaCu);
@@ -666,7 +666,7 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     theoDoi: td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon, vai: vaiTheoDoi(v, t) })),
     toiTheoDoi: td.some((t) => t.user_id === p.userId) && !v.phuTrach.includes(p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
-    moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: v.mo && coTheSuaMoTa(p, v),
+    moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: coTheSuaMoTa(p, v),
     lichSu: lan.map((l) => ({ truong: l.truong, cu: l.cu ?? null, moi: l.moi ?? null, cuTen: l.truong === 'mo_ta' ? null : tenSo(l.cu), moiTen: l.truong === 'mo_ta' ? null : tenSo(l.moi),   /* VH-1b: mô tả "12" không phải id người */ nguoi: l.nguoi ?? null, luc: l.luc })),
     ...(loai === 'meeting' ? { meeting: {
       phan: r.phan, ten: TEN_PHAN[r.phan as PhanMeeting], phoiHopId: r.phoi_hop_id, trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, ketQua: r.ket_qua ?? null,

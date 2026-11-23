@@ -32,6 +32,23 @@ export type MiniTestEm = {
 const TONE = { ok: 'ok', warn: 'warn', bad: 'danger', muted: 'muted' } as const;
 
 /**
+ * R2 C11: toast "Đã ghi … · Hoàn tác" — Hoàn tác = về đúng kết luận TRƯỚC (chưa kết luận → `dat: null`; Đạt → `dat: true`; Không đạt → gửi lại nguyên nhân / kỹ năng / phương án).
+ * Case Kỳ vọng đã tạo ở lần Không đạt giữ nguyên (máy chủ nói ở `luuY`).
+ */
+export function hoanTacKetLuan(toast: ReturnType<typeof useToast>, studentId: number, truoc: CuoiKhoaEm['ketLuanFt'], chu: string, onDoi: () => void) {
+  const key = `ket-luan-ft-${studentId}`;
+  toast.hoanTac(chu, async () => {
+    try {
+      await api.put(`/students/${studentId}/ket-luan-ft`, truoc?.dat === true ? { dat: true }
+        : truoc?.dat === false ? { dat: false, nguyenNhan: truoc.nguyenNhan, mon: truoc.mon, ...(truoc.nguyenNhan === 'hoc_sinh' ? { ghiChu: truoc.ghiChu ?? '' } : {}) }
+        : { dat: null });
+      invalidate('/students'); invalidate('/cases'); invalidate('/my-work'); onDoi();
+      toast.push('ok', t('Đã hoàn tác'), { key });
+    } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+  }, { key });
+}
+
+/**
  * HỘP "KẾT LUẬN KHOÁ" (PR-LT2b, K3 §4b, K3-43, T49) — Nằm ở: Hồ sơ HV → tab Học thuật → ngay trên bảng "Tiến độ và hỗ trợ theo kỹ năng"
  * (chỉ em đang học lớp thường đã có điểm Cuối khoá). Dòng 1: % Cuối khoá (tầng 1) + % từng môn · dòng 2: MỘT nhãn hướng/trạng thái ·
  * FOU/BE/ELE: dòng Kết quả đầu ra (Quản lý: Đạt / Không đạt) · nút phụ Lộ trình tiếp theo (OV-3b: sang bảng lớp, mở hộp của em). Không có nút "Chuyển tiếp" — việc chuyển ở PR-CT.
@@ -46,8 +63,10 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
   const h = chuHopKetLuan({ ct, ...cuoiKhoa, homNay });
   const danhDauDat = async () => {
     try {
+      const truoc = cuoiKhoa.ketLuanFt;
       await api.put(`/students/${studentId}/ket-luan-ft`, { dat: true });
-      invalidate('/students'); toast.push('ok', t('Đã ghi: đạt Kỳ vọng')); onDoi();
+      invalidate('/students'); onDoi();
+      hoanTacKetLuan(toast, studentId, truoc, t('Đã ghi: đạt Kỳ vọng'), onDoi);
     } catch (e: any) { toast.push('error', e.message); }
   };
   return (
@@ -112,7 +131,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         dat: false, nguyenNhan: nn, mon: nn === 'trung_tam' ? mon : [], ...(nn === 'hoc_sinh' ? { ghiChu: ghiChu.trim() } : {}),
       });
       invalidate('/students'); invalidate('/cases'); invalidate('/my-work');
-      toast.push('ok', r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kỳ vọng'));
+      hoanTacKetLuan(toast, studentId, ban, r?.taoCaseTutor ? t('Đã ghi — tạo {n} Case', { n: r.taoCaseTutor }) : t('Đã ghi Kỳ vọng'), onXong);
       if (r?.luuY) toast.push('info', dich(r.luuY));
       onXong();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }

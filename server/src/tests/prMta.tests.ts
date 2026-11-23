@@ -57,6 +57,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     `INSERT INTO assessment_scores (attempt_id, skill, band, raw_score, nhap_dau_ngay) VALUES (?,?,?,?,?)`).run(attemptId, skill, band, raw, TODAY);
   const soDiem = (attemptId: number) => (conn.prepare(
     `SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).get(attemptId) as any).n as number;
+  const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   /** Bắt lỗi HTTP: trả lỗi đã ném (status, message, details). */
   const loiCua = (fn: () => unknown): any => {
     try { fn(); } catch (e) { return e; }
@@ -357,6 +358,17 @@ export async function runPrMtaTests(t: YThucTestKit) {
     diem(b.m2, 'listening', 7, 33);
     assertThrows(() => ketQuaHuy.khoiPhucKetQua(QL, b.m2), /MT2 đã có điểm mới — thay bằng kết quả cũ/, 'điểm mới: RKC hỏi (409)');
     assert((conn.prepare(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(b.m2) as any).band === 7, 'điểm mới bị đè');
+  });
+
+  check('R2-C10 · khôi phục KQ khi kỹ năng đã huỷ phần thi: HỎI (409 canXacNhan) rồi mở lại kỹ năng cùng giao dịch, điểm về; không còn "chặn không nói bước tiếp"', () => {
+    const a = emCoDiemMt2();
+    huyCu(a);
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(a.m2);
+    const e = loiCua(() => ketQuaHuy.khoiPhucKetQua(QL, a.m2));
+    assert(e.status === 409 && e.details?.canXacNhan === true && /đã huỷ phần thi/.test(e.message), `phải hỏi: ${e.status} ${e.message}`);
+    assert(soDiem(a.m2) === 0, 'hỏi mà DB đổi');
+    voiXacNhan(() => ketQuaHuy.khoiPhucKetQua(QL, a.m2));
+    assert(kyNang(a.m2, 'listening').sit_status !== 'cancelled' && soDiem(a.m2) > 0, JSON.stringify(kyNang(a.m2, 'listening')));
   });
 
   check('MTa T2 (R2) · Writing: W1 điểm + nhận xét + ngày nhập đầu → khôi phục trả đủ', () => {

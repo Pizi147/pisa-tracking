@@ -8,6 +8,7 @@ import { EDIT_VIOLATION_MESSAGE, canEditViolation, requireViewStudent } from '..
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { khoiPhucTraLaiKhiXoa, type TraLaiKhiXoa } from '../yThuc/traLai.ts';
 import { ownerAccess } from './attachments.ts';
+import { quyenXoaViec } from '../worklist/mgmttasks.ts';
 import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac } from './thungRac.ts';
 
 /**
@@ -16,12 +17,20 @@ import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac 
  * của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
  * Danh sách "Đã xoá" (Quản trị) chỉ hiện mục người xem khôi phục được (Quản trị: mọi mục, kể cả đã khôi phục / hết hạn).
  */
-const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', ket_qua_pa: 'case_followups', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students', lop: 'classes' };
+const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', ket_qua_pa: 'case_followups', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students', lop: 'classes',
+  tutor: 'tutors', nhan_xet_tutor: 'tutor_nhan_xet', viec: 'tasks' };
 const duLieu = (m: MucRac) => JSON.parse(m.du_lieu) as DuLieuRac;
 const dongGoc = (m: MucRac, bang: string) => duLieu(m).ban.find((b) => b.k === 'xoa' && b.bang === bang)?.dong[0] as any;
 
 function kiemQuyen(p: Principal, m: MucRac): void {
-  if (m.loai === 'lop') {
+  if (m.loai === 'tutor' || m.loai === 'nhan_xet_tutor') {
+    /* R2 C3: như Xoá tutor / Xoá nhận xét — Head tutor / Quản trị (`tutor.manage`); nhận xét: chỉ người ghi. */
+    require_(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true }, 'Chỉ Head tutor hoặc Quản trị khôi phục được.');
+    if (m.loai === 'nhan_xet_tutor' && dongGoc(m, 'tutor_nhan_xet')?.nguoi_id !== p.userId) throw forbidden('Chỉ người ghi khôi phục được nhận xét này.');
+  } else if (m.loai === 'viec') {
+    /* R2 C8: như Xoá việc vận hành — người tạo hoặc Head / Quản trị / CX của chi nhánh (`quyenXoaViec`). */
+    if (!quyenXoaViec(p, dongGoc(m, 'tasks'))) throw forbidden('Chỉ người giao hoặc Head của chi nhánh khôi phục được việc này.');
+  } else if (m.loai === 'lop') {
     /* DUONG-LUI-2 (B1-02): như Xoá lớp trống (`class.edit`) — lớp đã không còn nên xét theo chi nhánh lúc xoá. */
     require_(p, PERMISSIONS.CLASS_EDIT, { branchId: m.branch_id }, 'Chỉ Head chi nhánh của lớp này hoặc Quản trị hệ thống mới khôi phục được lớp.');
   } else if (m.loai === 'hoc_vien') {
