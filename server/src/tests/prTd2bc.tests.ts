@@ -62,7 +62,8 @@ export async function runPrTd2bcTests(t: YThucTestKit) {
     assert(/taiTruocGop\(`\/classes\/\$\{classId\}\/ho-so`/.test(lop) && /roster: `\/classes\/\$\{classId\}\/roster`/.test(lop) && /diemTheoLuot: duongDiemTheoLuot\(/.test(lop),
       'ClassOverviewPage chưa tải trước roster + diem-theo-luot');
     const hv = nguon('web/src/modules/students/StudentDetailPage.tsx');
-    assert(hv.includes('`/students/${id}/skill-board`'), 'skill-board vẫn phải chờ /students/:id');
+    /* R3-T1 (24/11): bảng kỹ năng đi KÈM hồ sơ — không còn GET `/skill-board` riêng (không chờ, không lời gọi thứ hai). */
+    assert(!hv.includes('/skill-board') && hv.includes('bangKyNang'), 'hồ sơ HV còn gọi /skill-board riêng');
     const ua = nguon('web/src/lib/useApi.ts');
     assert(/export function taiTruoc/.test(ua) && /cachedGet/.test(ua) && /'\/ref\/branches'/.test(ua) && /'\/ref\/periods'/.test(ua), 'useApi.ts thiếu taiTruoc / cachedGet cho /ref');
     assert(/MOI_MS/.test(ua), 'useApi chưa dùng lại bản vừa tải khi mới gắn (Case route gọi /cases/:id hai lần)');
