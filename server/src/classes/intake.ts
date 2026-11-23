@@ -9,7 +9,9 @@ import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
 import { allProgrammes, mocChupVaoLop, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
-import { HttpError, addDays, badRequest, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi as loiHttp } from '../util.ts';
+import { HttpError, addDays, badRequest, conflict, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi as loiHttp } from '../util.ts';
+import { xoaHocVien } from '../students/xoaHocVien.ts';
+import { HOAN_TAC_PHUT } from '../platform/ghiDao.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
@@ -431,7 +433,44 @@ export function previewIntake(
 export type IntakeResult = {
   added: number; skipped: number; failed: RowIssue[]; studentIds: number[]; hangDaThem: number[];
   mt: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
+  /** R2 C5: id nhật ký của lô — `POST /intake/hoan-tac { nhap }`. */
+  nhap?: number;
 };
+
+/**
+ * R2 C5 (rà 24/11): HOÀN TÁC THÊM HỌC VIÊN — bỏ cả lô vừa thêm (nhầm lớp, dán nhầm) = xoá mềm từng em vào Thùng rác (N28, `xoaHocVien` — Khôi phục 30 ngày),
+ * thay "Xoá hàng loạt gõ XOÁ". Chỉ trong `HOAN_TAC_PHUT` phút sau khi thêm; quyền = quyền thêm HV ở lớp đó (GVCN thêm được thì bỏ được), kiểm TRƯỚC khi ghi.
+ * Mỗi em một giao dịch (như Xoá hàng loạt); em đã xoá rồi thì bỏ qua.
+ */
+export function hoanTacNhap(p: Principal, nhapVao: unknown, homNayIso = nowIso()): { ok: number[]; thungRac: number[]; failed: { studentId: number; message: string }[] } {
+  const nhap = Number(nhapVao);
+  if (!Number.isInteger(nhap) || nhap <= 0) throw badRequest('Thiếu lô cần hoàn tác.');
+  const conn = db();
+  const a = conn.prepare(`SELECT entity_id, actor_user_id, after_json, created_at FROM audit_logs WHERE id = ? AND action = 'student.bulk_add'`).get(nhap) as any;
+  if (!a) throw loiHttp(404, 'Không còn lô thêm học viên này.');
+  /* PTA rà #2026: chỉ CHÍNH người thêm lô, hoặc người xoá được học viên của lớp (`cycle.edit`) — không phải ai thêm được HV ở lớp cũng bỏ được lô người khác. */
+  if (a.actor_user_id !== p.userId) require_(p, PERMISSIONS.CYCLE_EDIT, { classId: a.entity_id }, 'Chỉ người thêm lô này hoặc Head của lớp hoàn tác được.');
+  if (Date.parse(homNayIso) - Date.parse(a.created_at) > HOAN_TAC_PHUT * 60_000) throw loiHttp(409, 'Đã quá {n} phút — xoá từng em ở danh sách học viên.', { n: HOAN_TAC_PHUT });
+  const ids = ((JSON.parse(a.after_json ?? '{}').hv ?? []) as { id: number }[]).map((h) => h.id);
+  const con = new Set((conn.prepare('SELECT id FROM students WHERE id IN (SELECT value FROM json_each(?))').all(JSON.stringify(ids)) as any[]).map((r) => r.id as number));
+  const kq = { ok: [] as number[], thungRac: [] as number[], failed: [] as { studentId: number; message: string }[] };
+  for (const id of ids.filter((x) => con.has(x))) {
+    /* Chỉ em CÒN ở lớp đó và chưa có dữ liệu ghi sau lúc thêm (điểm, vi phạm, Case, tín hiệu, Mini Test): có rồi thì xoá ở danh sách HV (Thùng rác như thường). */
+    const e = conn.prepare(`SELECT
+        (SELECT COUNT(*) FROM enrollments WHERE student_id = ?1 AND status = 'active' AND class_id = ?2) AS o_lop,
+        (SELECT COUNT(*) FROM enrollments WHERE student_id = ?1) AS so_ghi_danh,
+        (SELECT COUNT(*) FROM assessment_scores sc JOIN assessment_attempts at ON at.id = sc.attempt_id WHERE at.student_id = ?1 AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)) AS diem,
+        (SELECT COUNT(*) FROM violations WHERE student_id = ?1) AS vp, (SELECT COUNT(*) FROM sos_cases WHERE student_id = ?1) AS ca,
+        (SELECT COUNT(*) FROM case_signals WHERE student_id = ?1) AS tin, (SELECT COUNT(*) FROM mini_test WHERE student_id = ?1) AS mt`).get(id, a.entity_id) as any;
+    if (!e.o_lop || e.so_ghi_danh !== 1 || e.diem || e.vp || e.ca || e.tin || e.mt) {
+      kq.failed.push({ studentId: id, message: 'Học viên đã có dữ liệu hoặc đã đổi lớp — xoá ở danh sách học viên.' });
+      continue;
+    }
+    try { const r = xoaHocVien(p, id, { daKiemQuyen: true }); kq.ok.push(id); kq.thungRac.push(r.thungRacId); }
+    catch (er: any) { kq.failed.push({ studentId: id, message: er?.message ?? 'Không xoá được.' }); }
+  }
+  return kq;
+}
 
 /** N47 (chủ SP 16/11): mặc định của `commitIntake` cho lớp đã chạy là TUẦN NÀY — seed demo giữ tuần khai giảng như dữ liệu demo cũ (phép kiểm dựa vào). */
 export const tuanKhaiGiang = (classId: number): string | null => (db().prepare('SELECT start_date FROM classes WHERE id = ?').get(classId) as any)?.start_date ?? null;
@@ -591,7 +630,8 @@ export function commitIntake(
 
     const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };
     /* OV-15g: MỘT mục cho cả lô, gắn LỚP (Lịch sử thay đổi › nhập HV của lớp mở ra từng em). OV-15i1: lô 0 em không có gì để ghi. */
-    if (out.added) writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'class', entityId: cls.id,
+    /* R2 C5: id nhật ký của lô = khoá Hoàn tác (`hoanTacNhap`). */
+    if (out.added) out.nhap = writeAudit({ actorUserId: p.userId, action: 'student.bulk_add', entityType: 'class', entityId: cls.id,
       entityLabel: `${out.added} học viên`, after: { added: out.added, skipped: out.skipped, lop: cls.code,
         hv: ok.map((r, i) => ({ id: studentIds[i], ten: r.fullName })) } });
     if (key) {

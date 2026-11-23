@@ -1,6 +1,7 @@
 import { MuiChev } from '../../../ui/HangNhom.tsx';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
+import { baoXepCoHoanTac } from './hoanTacXep.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
@@ -202,15 +203,17 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
     setBusy(true);
     let daLuu = 0;
     const loi: DongHangLoat[] = [];
+    const dao: (number | undefined)[] = [];
     try {
       for (const id of lopChon) {
         const ids = daChonThay.filter((h) => h.classId === id).map((h) => h.studentId);
         if (!ids.length) continue;
         try {
-          const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
+          const r = await api.post<{ dong: DongHangLoat[]; daLuu: number; dao?: number }>('/ke-hoach-test/hang-loat', {
             classId: id, studentIds: ids, force: true, xemTruoc: false, ...thanChung, idempotencyKey: khoaLuu.current,
           });
           daLuu += r.daLuu;
+          dao.push(r.dao);
           loi.push(...r.dong.filter((d) => d.hanhDong === 'loi'));
         } catch (e: any) {
           toast.push('error', `${luoi.get(id)?.classCode ?? t('Lớp')}: ${e.message ?? t('không lưu được')}`);
@@ -218,7 +221,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
         }
       }
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
-      toast.push(daLuu > 0 ? 'ok' : 'error', loi.length ? t('Đã xếp {n} em, còn {m} em lỗi.', { n: daLuu, m: loi.length }) : t('Đã xếp {n} em.', { n: daLuu }));
+      baoXepCoHoanTac(toast, dao, daLuu > 0 ? 'ok' : 'error', loi.length ? t('Đã xếp {n} em, còn {m} em lỗi.', { n: daLuu, m: loi.length }) : t('Đã xếp {n} em.', { n: daLuu }), onDone);
       onDone();
       if (!loi.length) { onClose(); return; }
       /* R9b: giữ ngăn, chỉ còn các em lỗi được tick sẵn. */

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
+import { baoXepCoHoanTac } from './hoanTacXep.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
@@ -168,12 +169,12 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
     if (luuDuoc.soEmLuu === 0) { toast.push('error', t('Chưa có bài nào lưu được — xem cột Ghi chú ở Xem trước.')); return; }
     setBusy(true);
     try {
-      const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
+      const r = await api.post<{ dong: DongHangLoat[]; daLuu: number; dao?: number }>('/ke-hoach-test/hang-loat', {
         classId, ...thanDot(dot), studentIds, tuan: tuanGui, force, xemTruoc: false, idempotencyKey: khoaLuu.current,
       });
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       const conLai = emGiuLaiSauLuu(r.dong);
-      toast.push(r.daLuu > 0 ? 'ok' : 'error', conLai.length ? t('Đã xếp {n} em, còn {m} em lỗi.', { n: r.daLuu, m: conLai.length }) : t('Đã xếp {n} em.', { n: r.daLuu }));
+      baoXepCoHoanTac(toast, [r.dao], r.daLuu > 0 ? 'ok' : 'error', conLai.length ? t('Đã xếp {n} em, còn {m} em lỗi.', { n: r.daLuu, m: conLai.length }) : t('Đã xếp {n} em.', { n: r.daLuu }), onDone);
       onDone();
       if (!conLai.length) { onClose(); return; }
       /* R9b: giữ panel, chỉ còn các em lỗi được tick sẵn để sửa tuần rồi lưu lại. */

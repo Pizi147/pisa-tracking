@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -110,6 +110,7 @@ import {
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow,
 } from '../platform/week.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
+import * as hoanTacLichSvc from '../keHoach/hoanTacLich.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
 import * as gioiHan from '../platform/gioiHanThu.ts';
@@ -710,9 +711,15 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
     xepLai: k?.xepLai === true,   // N38 L5: Dời chọn đúng tuần đang có = xếp lại từ đầu
   }));
   const p = principalOf(req);
-  return keHoachSvc.luuLichKemGhiChu(p, ghiChuKem(req.body?.ghiChu), () => keHoachSvc.luuDot(p, {
+  return hoanTacLichSvc.emCoHoanTac(p, req.body?.hoanTac, { attemptId }, () => keHoachSvc.luuLichKemGhiChu(p, ghiChuKem(req.body?.ghiChu), () => keHoachSvc.luuDot(p, {
     attemptId, kyNang, lyDoBo: req.body.lyDoBo ?? null, force: !!req.body.force, reason: req.body.reason ?? null,
-  }));
+  })));
+}));
+
+/** R2 C2: Hoàn tác lần xếp lịch Test (lô / Xếp theo học viên) `{ dao: id | id[] }` — về y như trước; đổi tiếp sau đó / quá 15 phút → 409. */
+api.post('/ke-hoach-test/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return hoanTacLichSvc.hoanTacXep(principalOf(req), req.body?.dao);
 }));
 
 /** OV-15h2 (ý 5): ghi chú lịch thi đi kèm lần lưu lịch (`/dot`, `/xep-moi`) — một giao dịch; thiếu lớp → 400. */
@@ -733,12 +740,12 @@ api.post('/ke-hoach-test/xep-moi', requireAuth, wrap((req) => {
   if (req.body?.kind) {
     const classId = toInt(req.body?.classId);
     if (!classId) throw badRequest('Thiếu lớp.');
-    return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoiThuong(p, { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force }));
+    return hoanTacLichSvc.emCoHoanTac(p, req.body?.hoanTac, { studentId }, () => keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoiThuong(p, { classId, studentId, kind: req.body.kind, tuan, force: !!req.body.force })));
   }
-  return keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoi(p, {
+  return hoanTacLichSvc.emCoHoanTac(p, req.body?.hoanTac, { studentId }, () => keHoachSvc.luuLichKemGhiChu(p, ghi, () => keHoachSvc.xepMoi(p, {
     studentId, attemptNo: toInt(req.body?.attemptNo) ?? undefined, tuan, bo: Array.isArray(req.body?.bo) ? req.body.bo : [],
     lyDoBo: req.body?.lyDoBo ?? null, force: !!req.body?.force,
-  }));
+  })));
 }));
 
 api.post('/ke-hoach-test/hang-loat', requireAuth, wrap((req) => {
@@ -1254,17 +1261,28 @@ const PHAN_HO_SO_LOP: Record<string, (p: Principal, classId: number) => unknown>
     ownerUserId: null, noOwner: false, cycleId: null,
   }),
 };
+/**
+ * R3-T3 (rà 24/11): `tuy=1` — trang gửi bó phần 2 CÙNG LÚC phần 1 (trước chờ `overview` về để biết phần nào áp dụng). Phần không áp dụng trả `{ status: 204 }`
+ * (web không gọi lẻ lại): việc của tôi / Case cả lớp khi lớp đã kết thúc (tab mặc định Tổng kết), Case cả lớp ở lớp thường, phần người xem không có quyền (403). Lỗi khác vẫn trả như GET lẻ.
+ */
+const boQuaPhanHoSo = (k: string, id: number) => {
+  const lop = lopDayDu().get(id);
+  return (k === 'viecCuaToi' || k === 'cases') && lop?.status === 'finished' || (k === 'cases' && !!lop && !lop.is_fast_track);
+};
 api.get('/classes/:id/ho-so', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req), id = pInt(req, 'id');
+  const tuy = qStr(req, 'tuy') === '1';
   const phan = (qStr(req, 'phan') ?? '').split(',').filter(Boolean);
   if (!phan.length || phan.some((k) => !(k in PHAN_HO_SO_LOP))) throw badRequest('Phần hồ sơ lớp không hợp lệ.');
   lenhSvc.quetLenhDenHan();
   if (phan.includes('diemTheoLuot')) regularSvc.quetCheckpoint(id);
   const out: Record<string, unknown> = {};
   for (const k of new Set(phan)) {
+    if (tuy && boQuaPhanHoSo(k, id)) { out[k] = { status: 204 }; continue; }
     try { out[k] = { status: 200, data: PHAN_HO_SO_LOP[k](p, id) }; } catch (e) {
       if (!(e instanceof HttpError)) throw e;
+      if (tuy && e.status === 403) { out[k] = { status: 204 }; continue; }
       out[k] = { status: e.status, error: e.message, khoa: e.khoa, bien: e.bien, details: e.details ?? undefined };
     }
   }
@@ -1918,6 +1936,11 @@ api.post('/intake/commit', requireAuth, wrap((req) => {
     idempotencyKey: b.idempotencyKey,
   });
 }));
+/** R2 C5: Hoàn tác Thêm HV `{ nhap }` (id nhật ký của lô) — cả lô vào Thùng rác (Khôi phục 30 ngày); quá 15 phút → 409. */
+api.post('/intake/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return intakeSvc.hoanTacNhap(principalOf(req), req.body?.nhap);
+}));
 
 // ============================================================ Lớp thường (FOU/BE/ELE)
 
@@ -2078,11 +2101,16 @@ api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
 /** OV-8a: Bước tiếp sau thi thật — Quản lý / Quản trị (`cycle.edit` của em) và OV-12a: TVV cùng chi nhánh (`coQuyenBuocTiep`). Chọn / đổi = một giao dịch; DELETE = hoàn tác lựa chọn. */
 api.post('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return buocTiepSvc.chonBuocTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return buocTiepSvc.chonBuocTiepCoHoanTac(principalOf(req), pInt(req, 'id'), req.body ?? {});   // R2 C6: Học tiếp đổi lớp trả `dao`
 }));
 api.delete('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return buocTiepSvc.boChonBuocTiep(principalOf(req), pInt(req, 'id'));
+}));
+/** R2 C6: Hoàn tác Học tiếp có đổi lớp `{ dao }` — em về lớp cũ, lựa chọn về "chờ chọn"; đổi tiếp sau đó → 409. */
+api.post('/cycles/:id/buoc-tiep/hoan-tac-doi-lop', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return buocTiepSvc.hoanTacHocTiepDoiLop(principalOf(req), pInt(req, 'id'), req.body?.dao);
 }));
 
 /** PR-DUYET (T44): GV của lớp gửi Đề xuất sửa thông tin HV — thành thẻ ở hộp Chờ duyệt. */
@@ -2278,7 +2306,9 @@ api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
  */
 api.post('/cycles/:id/apply-suggested-mocks', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return scheduleSvc.applySuggestedMockWeeks(principalOf(req), pInt(req, 'id'));
+  /* R2 C7: chụp lịch của em (`dao`) — Hoàn tác = `/ke-hoach-test/hoan-tac`, các lượt vừa tạo / dời về như trước. */
+  const p = principalOf(req), id = pInt(req, 'id');
+  return hoanTacLichSvc.emCoHoanTac(p, true, { studentId: cycleSvc.cycleById(id)?.student_id }, () => scheduleSvc.applySuggestedMockWeeks(p, id));
 }));
 
 // ============================================================ Case học vụ
@@ -3090,7 +3120,7 @@ api.get('/students/:id/handover', requireAuth, wrap((req) => {
 api.get('/students/:id/xoa', requireAuth, wrap((req) => xoaHocVienSvc.xemXoaHocVien(principalOf(req), pInt(req, 'id'))));
 api.post('/students/:id/xoa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return xoaHocVienSvc.xoaHocVien(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return xoaHocVienSvc.xoaHocVien(principalOf(req), pInt(req, 'id'), { maXacNhan: req.body?.maXacNhan });   // R2: không nhận `daKiemQuyen` từ thân yêu cầu
 }));
 
 api.post('/students/:id/status', requireAuth, wrap((req) => {

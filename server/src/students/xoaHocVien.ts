@@ -255,9 +255,10 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
  * Xoá nhiều em (`hangLoat`) vẫn gõ XOÁ. `maXacNhan` cũ vẫn nhận (bỏ qua).
  * Q-RL2b (N24 ②): mọi dòng sắp mất / bị NULL chụp vào thùng rác cùng giao dịch → Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn.
  */
-export function xoaHocVien(p: Principal, studentId: number, _input: { maXacNhan?: unknown } = {}): { ok: true; ma: string; soDong: Record<string, number>; thungRacId: number } {
+export function xoaHocVien(p: Principal, studentId: number, _input: { maXacNhan?: unknown; daKiemQuyen?: boolean } = {}): { ok: true; ma: string; soDong: Record<string, number>; thungRacId: number } {
   const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
+  /* R2 C5: Hoàn tác Thêm HV (`hoanTacNhap`) đã kiểm quyền thêm HV ở lớp của lô — người thêm bỏ được em mình vừa thêm. */
+  if (!_input.daKiemQuyen) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const chup = new BoChup(db());
   return tx(() => {
     const con = conLaiMs();

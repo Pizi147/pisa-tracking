@@ -116,13 +116,15 @@ export function taiTruoc(path: string): void {
  * lẻ nhận phần `data` của nó như một lời gọi đang bay → khối gắn sau dùng lại / bản vừa xem như `taiTruoc`; tải lại sau thao tác vẫn gọi đường lẻ (chỉ phần đổi).
  * Phần lỗi (403 / 404…) hoặc lời gọi gộp lỗi → đường đó tự gọi lẻ, lỗi hiện tại khối như cũ. Đường đã có bản mới / đang bay: không vào bó.
  */
-export function taiTruocGop(goc: string, phan: Record<string, string>): void {
+/** R3-T3: phần máy chủ bỏ (`tuy`, 204 — không áp dụng) mà không khối nào đang gắn → không gọi lẻ; bỏ im lặng (khối gắn sau tự gọi). */
+const BO_PHAN = new Error('bo-phan');
+export function taiTruocGop(goc: string, phan: Record<string, string>, tuy = false): void {
   const can = Object.entries(phan).filter(([, path]) => !conMoi(path) && !dangBay.has(path));
   if (!can.length) return;
-  const bo = api.get<Record<string, { status: number; data?: unknown }>>(`${goc}${goc.includes('?') ? '&' : '?'}phan=${can.map(([k]) => k).join(',')}`);
+  const bo = api.get<Record<string, { status: number; data?: unknown }>>(`${goc}${goc.includes('?') ? '&' : '?'}phan=${can.map(([k]) => k).join(',')}${tuy ? '&tuy=1' : ''}`);
   const luc = Date.now();
   for (const [k, path] of can) {
-    const p = bo.then((r) => (r[k]?.status === 200 ? r[k].data : api.get(path)), () => api.get(path));
+    const p = bo.then((r) => (r[k]?.status === 200 ? r[k].data : r[k]?.status === 204 && !dangGan.has(path) ? Promise.reject(BO_PHAN) : api.get(path)), () => api.get(path));
     dangBay.set(path, p);
     batDauGoi.set(path, luc);
     const xong = () => { if (dangBay.get(path) === p) { dangBay.delete(path); batDauGoi.delete(path); } };

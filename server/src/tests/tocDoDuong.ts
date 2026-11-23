@@ -539,6 +539,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc' },
   /* R3-T4 / T5 (rà 24/11): lưu xong ở hồ sơ lớp — phần đang hiện tải lại theo hai bó gộp (`gopKhiVoHieu`): tab Học viên = hai URL mở trang (không `cases`) · tab Ý thức (không bảng điểm). */
+  /* R3-T3 (rà 24/11): bó phần 2 gửi cùng lúc phần 1 (`tuy=1`: phần không áp dụng / 403 → 204, không gọi lẻ). */
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1' },
   { trang: 'Hồ sơ lớp FT · sau lưu', vai: ['QL', 'GVCN'], url: '/classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc' },
   { trang: 'Hồ sơ lớp FT · sau lưu Ý thức', vai: ['QL', 'GVCN'], url: '/classes/{lopFT}/ho-so?phan=overview,roster' },
   /* TD-QUET (17/11): GET còn thiếu trong bảng đo (đo toàn bộ trên bản chép thật — docs/superpowers/specs/2026-11-17-toc-do/do-toan-bo.md) — có trần để không tăng âm thầm. */
@@ -582,6 +585,12 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* R3-T3 (24/11): bó phần 2 hồ sơ lớp gửi cùng lúc phần 1 (`tuy=1`). */
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 95,   // đo 73
+  'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 58,   // đo 44
+  'GVBM /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 50,   // đo 38
+  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 88,   // đo 67
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 48,   // đo 37
   /* R3-T4 / T5 (24/11): bó gộp sau lưu ở hồ sơ lớp (trước 6 GET lẻ 145 câu QL tab Học viên → 2 GET 125; Ý thức "Đã xem" 9 GET 178 → 5 GET 152). */
   'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 91,   // đo 70
   'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 54,   // đo 41

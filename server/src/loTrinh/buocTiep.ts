@@ -15,7 +15,9 @@
  * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = hạn sau thi (OV-13q `trangThaiSauThi`), đỏ không chặn.
  */
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
-import { db, tx } from '../db.ts';
+import { chayHenNgay, db, tx } from '../db.ts';
+import { HOAN_TAC_PHUT, chayCoChup, daoLai, luuGhiDao, type BanGhiDao, type DongChup } from '../platform/ghiDao.ts';
+import { dongDaoChuyenNgay } from '../classes/hoanTacChuyenNgay.ts';
 import {
   LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, trangThaiSauThi, tuanHopLe, tuanLich,
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
@@ -548,6 +550,46 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     return chon === 'tam_dung' || chon === 'ket_thuc'
       ? { ...kq, thongBao: thongBaoTrangThai(conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(c.student_id) as any) } : kq;
   });
+}
+
+/**
+ * R2 C6 (rà 24/11): HỌC TIẾP CÓ ĐỔI LỚP — chuyển ngay sang lớp khác (đường Chuyển lớp) nên `boChonBuocTiep` không gỡ được. Lần chọn chụp mọi dòng của em
+ * như Chuyển lớp "Ngay hôm nay" (`dongDaoChuyenNgay` + lịch sử thi thật, lịch sử Target) → `dao`; Hoàn tác = em về lớp cũ, lựa chọn về "chờ chọn", y như trước.
+ * Không đổi lớp → đường cũ (không chụp).
+ */
+const LOAI_HOC_TIEP_DOI_LOP = 'buoc_tiep.doi_lop';
+export function chonBuocTiepCoHoanTac(p: Principal, cycleId: number, input: ChonBuocTiepVao) {
+  const c0 = docLoTrinh(cycleId);
+  const lopMoiId = Number(input.lopMoiId) || null;
+  if (!c0 || input.chon !== 'hoc_tiep' || !lopMoiId || lopMoiId === c0.lop_id || !c0.lop_id) return chonBuocTiep(p, cycleId, input);
+  const conn = db();
+  return tx(() => {
+    const ds: DongChup[] = [...dongDaoChuyenNgay(c0.student_id, [c0.lop_id, lopMoiId]),
+      { bang: 'thi_that_lich_su', dk: 'cycle_id = ?', args: [cycleId], k: 'them' },
+      { bang: 'cycle_target_revisions', dk: 'cycle_id = ?', args: [cycleId], k: 'them' }];
+    const { kq, g } = chayCoChup(conn, ds, () => { const r = chonBuocTiep(p, cycleId, input); chayHenNgay(); return r; });
+    if (g.rong || !kq) return kq;
+    return { ...kq, dao: luuGhiDao(conn, { loai: LOAI_HOC_TIEP_DOI_LOP, bang: 'learning_cycles', id: cycleId, nguoi: p.userId, ghi: g }) };
+  });
+}
+
+/** POST /cycles/:id/buoc-tiep/hoan-tac-doi-lop { dao } — quyền Bước tiếp (QL / TVV cùng chi nhánh), kiểm TRƯỚC khi ghi; đổi tiếp sau đó → 409. */
+export function hoanTacHocTiepDoiLop(p: Principal, cycleId: number, daoVao: unknown) {
+  const c = docLoTrinh(cycleId);
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  if (!coQuyenBuocTiep(p, c.student_id)) throw forbidden(CHI_QL);
+  const conn = db();
+  const g = conn.prepare('SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?').get(Number(daoVao), LOAI_HOC_TIEP_DOI_LOP, 'learning_cycles', cycleId) as BanGhiDao | undefined;
+  if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
+  /* PTA rà #2026: cùng hạn với Hoàn tác xếp lịch / thêm HV — quá hạn thì Chuyển lớp (đổi lại bằng đường Chuyển lớp). */
+  if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT} phút — dùng Chuyển lớp để đưa em về lớp cũ.`);
+  tx(() => {
+    conn.pragma('defer_foreign_keys = ON');
+    daoLai(conn, g, p.userId);
+    writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
+      before: { buocTiep: 'hoc_tiep' }, after: { buocTiep: null, _hoan: true, _nguon: 'Hoàn tác Học tiếp đổi lớp' } });
+  });
+  return trangThaiBuocTiep(p, cycleId);
 }
 
 /** DELETE /cycles/:id/buoc-tiep — Hoàn tác lựa chọn / Huỷ hẹn (về "chờ chọn"; Lộ trình mới chọn lúc Tạm dừng → về Tạm dừng). */

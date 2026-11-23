@@ -28,6 +28,7 @@ import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
 import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
 import { VANG_TUAN_SQL, laVangTuan } from './tinVang.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { xepCoHoanTac } from './hoanTacLich.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
@@ -1207,7 +1208,7 @@ export function xepHangLoat(p: Principal, i: {
   dotTheoEm?: Record<string, number>; thiLai?: Record<string, KyNangKH[]>; lyDo?: string | null;
   /** RA-LUONG-17: khoá chống gửi lặp của MỘT lần bấm Lưu (web giữ khoá khi lỗi mạng, đổi khoá khi đã nhận phản hồi). */
   idempotencyKey?: string;
-}, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number } {
+}, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number; dao?: number } {
   const conn = db();
   requireSuaLichTest(p, { classId: i.classId }, PLAN_MSG);
   if (i.attemptNo !== undefined && i.attemptNo !== 'moi' && !Number.isInteger(i.attemptNo)) throw badRequest('Đợt không hợp lệ.');
@@ -1276,7 +1277,8 @@ export function xepHangLoat(p: Principal, i: {
 
   let daLuu = 0;
   let soEmDoi = 0;
-  const ketQua = xet.map(({ dong, attemptId }) => {
+  /* R2 C2: chụp lịch các em của lô (`ghi_dao`) — Hoàn tác cả lô trả về y như trước (`hoanTacLich.ts`). */
+  const luuLo = () => xet.map(({ dong, attemptId }) => {
     if (dong.hanhDong === 'giu' || dong.hanhDong === 'loi') return dong;
     const canhBao = [...new Set(dong.bai.filter((b) => b.ghiChu === 'canh-bao').map((b) => b.cau))];
     if (canhBao.length && !i.force) return { ...dong, hanhDong: 'loi' as const, loi: `${canhBao.join(' ')} ${CAU_XAC_NHAN}` };
@@ -1310,6 +1312,7 @@ export function xepHangLoat(p: Principal, i: {
       return { ...dong, hanhDong: 'loi' as const, loi: e?.message ?? 'Không lưu được.' };
     }
   });
+  const { dong: ketQua, dao } = xepCoHoanTac(p, { bang: 'classes', id: i.classId }, studentIds, () => ({ dong: luuLo() }), () => daLuu > 0);
 
   if (laThuong) baoGvcnDoiLichThuongLop(p, i.classId, i.kind!.replace(/^cp(\d+)$/, 'checkpoint:$1'), soEmDoi, today);   // T11: một chuông cả lớp (bài mới tạo không tính)
   writeAudit({
@@ -1320,9 +1323,9 @@ export function xepHangLoat(p: Principal, i: {
   if (khoaGui) {
     donKhoaGuiCu(conn, nowIso());
     conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)')
-      .run(khoaGui, JSON.stringify({ dau: dauGui, ketQua: { dong: ketQua, daLuu } }), nowIso());
+      .run(khoaGui, JSON.stringify({ dau: dauGui, ketQua: { dong: ketQua, daLuu, ...(dao ? { dao } : {}) } }), nowIso());
   }
-  return { dong: ketQua, daLuu };
+  return { dong: ketQua, daLuu, ...(dao ? { dao } : {}) };
 }
 
 // ---------------------------------------------------------------- OV-15c: ghi chú lịch thi (C21)
