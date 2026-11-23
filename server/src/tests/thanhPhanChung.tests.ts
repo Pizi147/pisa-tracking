@@ -402,7 +402,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
     assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
     const k = doc('web/src/ui/KhungPanel.tsx');
-    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
+    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim(?: \?\? cvNgoai\?\.ghim)?\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
   });
   check('GD-6 · phần mở rộng em: TVV chỉ ở "Điểm theo lượt"; thẻ kỹ năng / môn quá hạn chỉ màu (V22); lịch sử Case + Nhật ký PA = LichSuGap', () => {
     const b = doc('web/src/modules/classes/BangHoSoLop.tsx');
