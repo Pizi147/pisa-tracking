@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  LY_DO_SUA_KHAI_LECH, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -272,36 +272,130 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
   const ql = duyetYThuc(p, { studentId });
   if (!ql) requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const bacCu = v.bacCu === undefined || v.bacCu === null ? undefined : Number(v.bacCu);
+  /* N70 (chủ SP 24/11): người duyệt Ý thức (Head / Quản trị) sửa áp ngay; GVCN sửa bậc ĐÃ KHAI → yêu cầu chờ Head, bậc cũ giữ. */
+  if (!ql) return guiSuaKhai(p, hv, studentId, kiemKhai(v), demoToday(), { bacCu });
   return luuSuaKhai(p, hv, studentId, kiemKhai(v), demoToday(), { bacCu });
 }
 
+// ---------------------------------------------------------------- N70 · GVCN sửa bậc đã khai → thẻ `sua_khai_bac` chờ Head
+
+const theSuaKhai = (studentId: number) => ({ loai: 'sua_khai_bac' as const, doiTuongLoai: 'hoc_vien_khai_bac', doiTuongId: studentId });
+type DuLieuSuaKhai = { bacCu: number; bac: number; thang: string | null; ghiChu: string; cycleId: number };
+
+/**
+ * Phần GHI của "Gửi Head duyệt" (đã kiểm quyền) — lô gọi thẳng. MỘT thẻ đang chờ mỗi em: gửi lại = thay nội dung (hạn giữ). Ghi chú = lý do, bắt buộc.
+ * Dòng khai KHÔNG đổi. `bacCu` (bậc panel đã thấy) lệch → 409 như sửa thẳng.
+ */
+export function guiSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string, o: { bacCu?: number } = {}) {
+  if (!k.ghiChu) throw badRequest('Ghi lý do sửa bậc ở ô Ghi chú — Head đọc để duyệt.');
+  return tx(() => {
+    const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
+    if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw conflict('Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
+    /* PTA rà #2058: bậc VÀ ngày / tháng đều như dòng khai thì không có gì để Head duyệt (ghi chú là lý do, không phải nội dung sửa). */
+    if (k.bac === em.khai.bac && (k.thang ?? null) === (em.khai.thang ?? null)) throw badRequest('Chưa đổi gì — chọn bậc hoặc ngày / tháng khác với hiện tại.');
+    const duLieu: DuLieuSuaKhai = { bacCu: em.khai.bac, bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, cycleId: em.khai.cycleId };
+    let id = taoYeuCau(db(), { ...theSuaKhai(studentId), hocVienId: studentId, lopId: em.lopId, nguoiXin: p.userId, lyDo: k.ghiChu, duLieu });
+    let ghiDe = false;
+    if (id === null) {
+      /* Đã có thẻ chờ (kể cả thẻ lệch bậc chưa kịp tự đóng) → thay nội dung, người gửi = người vừa gửi. */
+      const cu = db().prepare(`SELECT id, du_lieu, ly_do, nguoi_xin FROM yeu_cau_duyet WHERE loai = 'sua_khai_bac' AND doi_tuong_loai = 'hoc_vien_khai_bac' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+        .get(studentId) as { id: number; du_lieu: string | null; ly_do: string | null; nguoi_xin: number | null };
+      id = cu.id;
+      /* PTA rà #2058: ghi đè thẻ CÒN HIỆU LỰC → giữ MỘT bản nội dung trước ở `du_lieu.truoc` (máy chủ giữ — không nhận từ client) để Hoàn tác lô khôi phục
+         thay vì rút mất thẻ gửi từ trước; thẻ đã lệch bậc thì không giữ (Hoàn tác = rút). */
+      const dCu = cu.du_lieu ? JSON.parse(cu.du_lieu) as Record<string, unknown> : null;
+      const truoc = dCu && em.khai.cho?.id === cu.id ? { lyDo: cu.ly_do, nguoiXin: cu.nguoi_xin, duLieu: { ...dCu, truoc: undefined } } : undefined;
+      ghiDe = !!truoc;
+      db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(k.ghiChu, JSON.stringify({ ...duLieu, ...(truoc ? { truoc } : {}) }), p.userId, id);
+      writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: 'Sửa cấp bậc vi phạm',
+        before: { lyDo: cu.ly_do, nguoiXin: cu.nguoi_xin, duLieu: dCu ? { ...dCu, truoc: undefined } : null }, after: { lyDo: k.ghiChu, nguoiXin: p.userId, duLieu } });
+    } else {
+      writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_request', entityType: 'student', entityId: studentId,
+        entityLabel: `${hv.student_code} · xin sửa cấp bậc`, before: { bac: em.khai.bac }, after: { bac: k.bac, thang: k.thang, ghiChu: k.ghiChu, yeuCauId: id } });
+    }
+    xoaNho();   // trạng thái Ý thức nhớ theo request đã cũ (khai.cho)
+    const han = (db().prepare('SELECT han_duyet FROM yeu_cau_duyet WHERE id = ?').get(id) as { han_duyet: string | null }).han_duyet;
+    return { ok: true as const, guiDuyet: true as const, yeuCauId: id, han, bac: em.khai.bac, ghiDe };
+  });
+}
+
+/**
+ * Hoàn tác lô (PTA rà #2058): thẻ đang chờ của CHÍNH người bấm mà lần gửi gần nhất là GHI ĐÈ (`du_lieu.truoc`) → trả nội dung trước (lý do, bậc xin,
+ * ngày / tháng, người gửi), thẻ vẫn chờ. Trả false khi không có bản trước — nơi gọi Rút thẻ như cũ.
+ */
+export function khoiPhucSuaKhai(p: Principal, studentId: number, yeuCauId: number): boolean {
+  return tx(() => {
+    const y = db().prepare(`SELECT id, du_lieu, ly_do, nguoi_xin FROM yeu_cau_duyet WHERE id = ? AND loai = 'sua_khai_bac' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+      .get(yeuCauId, studentId) as { id: number; du_lieu: string | null; ly_do: string | null; nguoi_xin: number | null } | undefined;
+    if (!y) throw badRequest('Yêu cầu sửa bậc của em không còn chờ Head — không hoàn tác em này.');
+    if (y.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
+    const d = JSON.parse(y.du_lieu ?? '{}') as { truoc?: { lyDo: string | null; nguoiXin: number | null; duLieu: Record<string, unknown> } };
+    if (!d.truoc) return false;
+    db().prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ?, nguoi_xin = ? WHERE id = ?').run(d.truoc.lyDo, JSON.stringify(d.truoc.duLieu), d.truoc.nguoiXin, y.id);
+    writeAudit({ actorUserId: p.userId, action: 'request.edit', entityType: 'yeu_cau_duyet', entityId: y.id, entityLabel: 'Sửa cấp bậc vi phạm · hoàn tác gửi lại',
+      before: { lyDo: y.ly_do, duLieu: { ...d, truoc: undefined } }, after: { lyDo: d.truoc.lyDo, duLieu: d.truoc.duLieu } });
+    xoaNho();
+    return true;
+  });
+}
+
+/** Người gửi (hoặc người đang phụ trách em) Rút thẻ sửa bậc — rời lớp thì 403 như thẻ Ý thức khác (SUA-NO-RA). Bảng nguồn chưa đổi gì. */
+export function kiemRutSuaKhai(p: Principal, studentId: number): void {
+  if (!duyetYThuc(p, { studentId }) && !canManageDiscipline(p, studentId)) {
+    throw forbidden('Bạn không còn phụ trách lớp của em — không sửa hoặc rút được yêu cầu này. Head chi nhánh xử lý yêu cầu trong Chờ duyệt.');
+  }
+}
+
+/**
+ * ÁP thẻ sửa bậc (TRONG tx của nơi gọi): Head Duyệt (`boi` = Head) hoặc hết hạn máy chốt theo GVCN (`boi` = người gửi, `tuChot`). So-và-đổi: bậc
+ * khai đã khác lúc gửi → 409 (`luuSuaKhai`), thẻ không áp.
+ */
+export function apDungSuaKhai(boi: number, yc: { id: number; doi_tuong_id: number; du_lieu: string | null }, o: { tuChot?: boolean } = {}): void {
+  const d = JSON.parse(yc.du_lieu ?? '{}') as Partial<DuLieuSuaKhai>;
+  luuSuaKhai({ userId: boi }, hocVien(yc.doi_tuong_id), yc.doi_tuong_id, kiemKhai(d, true), demoToday(), { bacCu: d.bacCu, cycleId: d.cycleId, yeuCauId: yc.id, tuChot: o.tuChot });
+  xoaNho();
+}
+
 /** Phần GHI của Sửa cấp bậc (đã kiểm quyền) — OV-13d lô gọi thẳng. */
-export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string,
-  /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác. */
-  o: { bacCu?: number; hoanTac?: (em: EmYThuc) => void } = {}) {
+export function luuSuaKhai(p: { userId: number }, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string,
+  /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác.
+   *  N70: `yeuCauId` = áp từ thẻ sửa bậc (Head duyệt / `tuChot` hết hạn) — ghi vào nhật ký; `cycleId` = lộ trình của dòng khai LÚC GỬI thẻ — em sang chuỗi
+   *  mới rồi khai lại đúng bậc cũ thì dòng khai hiện tại là dòng khác → 409, không ghi nhầm (PTA rà lần 2 #2058). */
+  o: { bacCu?: number; cycleId?: number; hoanTac?: (em: EmYThuc) => void; yeuCauId?: number; tuChot?: boolean } = {}) {
   const { bac, thang, ghiChu } = k;
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
+    if (o.cycleId !== undefined && em.khai.cycleId !== o.cycleId) throw conflict('Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
     if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) {
       throw conflict(o.hoanTac ? 'Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.' : 'Bậc của em vừa được người khác sửa — mở lại panel.', { bac: em.khai.bac });
     }
     o.hoanTac?.(em);
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, nowIso(), studentId, em.khai.cycleId);
-    writeAudit({ actorUserId: p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
-      entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : 'sửa cấp bậc'}`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
+    writeAudit({ actorUserId: o.tuChot ? null : p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
+      entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : o.tuChot ? 'tự chốt vì hết hạn duyệt · sửa cấp bậc' : 'sửa cấp bậc'}`,
+      before: { bac: em.khai.bac }, after: { bac, thang, ghiChu, ...(o.yeuCauId ? { yeuCauId: o.yeuCauId } : {}) } });
     return { ok: true as const, bac };
   });
 }
 
-export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
+/**
+ * N70 (chủ SP 24/11): ô thời điểm nhận NGÀY ('YYYY-MM-DD') hoặc THÁNG ('YYYY-MM') — lưu chung cột `thang`, đúng dạng đã nhập; không ở tương lai.
+ * `daLuu`: giá trị đọc lại từ thẻ / dòng cũ (Hoàn tác, Head duyệt) — đã kiểm lúc gửi, không kiểm lại "tương lai" (đổi ngày demo không làm hỏng).
+ */
+export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }, daLuu = false) {
   const bac = Number(v.bac);
   /* Khai tối đa bậc 6 (WL 2) — hết mạch chính. ponytail: em đã qua Report 7+ trước khi dùng web thì khai WL 2, tăng dần trên web.
      OV-13d (Q5): bậc 0 = "Chưa có xử lý vi phạm" — xác nhận em chưa từng bị xử lý (thoát việc khai bậc, lần kế vẫn Report 1). */
   if (!Number.isInteger(bac) || bac < 0 || bac > THANG.length) throw badRequest('Chọn bậc đã xử lý: Chưa có xử lý vi phạm, Report 1 … WL 2.');
   const thangStr = String(v.thang ?? '').trim();
-  if (thangStr && !/^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr)) throw badRequest('Tháng xử lý không hợp lệ.');
+  const laThang = /^\d{4}-(0[1-9]|1[0-2])$/.test(thangStr);
+  if (thangStr && !laThang && !(isIsoDate(thangStr) && new Date(`${thangStr}T00:00:00Z`).toISOString().slice(0, 10) === thangStr)) {
+    throw badRequest('Ngày / tháng xử lý không hợp lệ — gõ dd/mm/yyyy hoặc mm/yyyy.');
+  }
+  if (thangStr && !daLuu && thangStr > (laThang ? demoToday().slice(0, 7) : demoToday())) throw badRequest('Ngày / tháng xử lý không được ở tương lai.');
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú TUỲ CHỌN — khai từng em và theo lô; rỗng lưu chuỗi rỗng (cột NOT NULL). */
   const ghiChu = String(v.ghiChu ?? '').trim();
   return { bac, thang: thangStr || null, ghiChu: ghiChu.slice(0, 500) };
@@ -483,6 +577,10 @@ export type YThucHocVien = {
   coTheBao: boolean; coTheHoi: boolean;
   /** MA-QL-VIEC (PTA 16/11): người xem xử lý được VÀ là người duyệt (QL / Quản trị) — cách khác Nâng 1 bậc lưu là chốt ngay ("Lưu xử lý"), không gửi rồi tự duyệt. */
   qlApThang: boolean;
+  /** N70: người xem sửa bậc đã khai thì KHÔNG áp ngay — thành yêu cầu chờ Head (nút "Gửi Head duyệt"); Head / Quản trị = false (áp ngay). */
+  suaKhaiCanDuyet: boolean;
+  /** N70: người xem mở được hộp Chờ duyệt (Head / Quản trị) — liên kết "Mở Chờ duyệt ›" ở dải yêu cầu chờ; CX duyệt được thẻ nhưng không có hộp. */
+  moHopDuyet: boolean;
 };
 
 export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chuoi' | 'tat-ca' } = {}): YThucHocVien {
@@ -516,6 +614,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     canSuaKhai: !!em.khai && (duyetYThuc(p, { studentId }) || (canManage && em.khai.coTheSua)),
     coTheKhai: canManage && khaiMoDuoc(em),   // N66: cả khi chuỗi đã có lần xử lý trên web
     qlApThang: canManage && duyetYThuc(p, { studentId }),
+    suaKhaiCanDuyet: !!em.khai && canManage && !duyetYThuc(p, { studentId }),
+    moHopDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac },
@@ -1163,12 +1263,21 @@ export const LY_DO_TU_CHOT_Y_THUC = 'Quá 5 ngày Head chưa duyệt — giữ q
  * Lần sau đã có: GVCN đã xác nhận lúc gửi (`hoiLanSau`) nên không hỏi lại. Lần xử lý không còn để thu hồi: lượt "chết" đã đóng thẻ trước đó.
  */
 export function quetYThucHetHan(conn: any, homNay: string): number {
-  const ds = conn.prepare(`SELECT id, loai, doi_tuong_id, ly_do, du_lieu, hoc_vien_id FROM yeu_cau_duyet
-    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
-    .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null }[];
+  const ds = conn.prepare(`SELECT id, loai, doi_tuong_id, ly_do, du_lieu, hoc_vien_id, nguoi_xin FROM yeu_cau_duyet
+    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc', 'sua_khai_bac') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
+    .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null; nguoi_xin: number | null }[];
   if (!ds.length) return 0;
   tx(() => {
     for (const y of ds) {
+      if (y.loai === 'sua_khai_bac') {
+        /* N70: hết hạn → chốt theo GVCN (người gửi là người sửa). Bậc đã khác lúc gửi (lượt "chết" chưa kịp đóng) → đóng thẻ, không áp. */
+        const d = JSON.parse(y.du_lieu ?? '{}') as { bacCu?: number; cycleId?: number };
+        const k = emCua(y.doi_tuong_id)?.khai;
+        const khop = !!k && k.bac === d.bacCu && k.cycleId === d.cycleId && y.nguoi_xin != null;
+        if (khop) apDungSuaKhai(y.nguoi_xin!, y, { tuChot: true });
+        chotYeuCau(conn, theSuaKhai(y.doi_tuong_id), 'tu_dong', { lyDo: khop ? LY_DO_TU_CHOT_Y_THUC : LY_DO_SUA_KHAI_LECH });
+        continue;
+      }
       if (y.loai === 'y_thuc') chotDeXuatYThuc(y.doi_tuong_id, homNay, null, true);
       else {
         const m = loadXuLy(y.doi_tuong_id);

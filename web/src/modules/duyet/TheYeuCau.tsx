@@ -334,7 +334,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 )}
               </span>
             </>}
-            {yThuc && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
+            {(yThuc || yc.loai === 'sua_khai_bac') && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
             {!cho && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
             {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
           </div>

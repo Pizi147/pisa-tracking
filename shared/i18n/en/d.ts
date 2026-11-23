@@ -331,7 +331,6 @@ const EN_D_WEB = {
   'Chọn bậc cao nhất em đã bị xử lý': 'Pick the highest level already applied',
   'Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.': 'Next action for this student: {nhanLoaiXuLy}.',
   'Chi tiết': 'Details',
-  'Tháng xử lý': 'Month handled',
   'Ví dụ: REPORT 2 tháng 8, cô Hà gửi PH': 'E.g. Report 2 in August, sent to parents by Ms Ha',
   'GVCN đã xem, không cần xử lý': 'Core teacher has seen it, no action needed',
 

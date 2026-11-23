@@ -350,8 +350,9 @@ export function trongPhamVi(p: Principal, rows: any[]): any[] {
   napTruocPhamVi(rows.map((r) => r.hoc_vien_id));
   return rows.filter((r) => duyetDuocThe(p, r));
 }
-/** Duyệt được thẻ này: `request.approve` theo phạm vi thẻ; N52 — thẻ Ý thức thêm CX (`duyetYThuc`), loại khác vẫn chỉ Head. */
-const duyetDuocThe = (p: Principal, r: any): boolean => (r.loai === 'y_thuc' ? duyetYThuc(p, ctxThe(r)) : can(p, P_DUYET, ctxThe(r)));
+/** Duyệt được thẻ này: `request.approve` theo phạm vi thẻ; N52 — thẻ Ý thức thêm CX (`duyetYThuc`), loại khác vẫn chỉ Head.
+ *  N70: thẻ sửa cấp bậc cùng luật — người duyệt = đúng tập người sửa thẳng bậc đã khai (`suaKhaiBac`). */
+const duyetDuocThe = (p: Principal, r: any): boolean => (r.loai === 'y_thuc' || r.loai === 'sua_khai_bac' ? duyetYThuc(p, ctxThe(r)) : can(p, P_DUYET, ctxThe(r)));
 const kiemDuyetThe = (p: Principal, r: any) => { if (!duyetDuocThe(p, r)) throw forbidden('Yêu cầu này nằm ngoài phạm vi bạn được duyệt.'); };
 
 const tuNgay = (n: number) => `${addDays(demoToday(), -n)}T00:00:00.000Z`;
@@ -421,7 +422,7 @@ export const soLichSuYeuCau = (id: number): number =>
  * không đọc lộ trình / Case như `standingFor`) + số Lịch sử (đã đếm trong câu đọc thẻ — `so_lich_su`).
  */
 /** Chủ SP 11/11: "những vấn đề liên quan đến ý thức thì đừng nhét thêm điểm" — thẻ Ý thức không có dòng điểm / chip SOS (và không đọc lượt cho chúng). */
-const LOAI_Y_THUC: ReadonlySet<string> = new Set(['y_thuc', 'thu_hoi_y_thuc', 'bao_len_y_thuc']);
+const LOAI_Y_THUC: ReadonlySet<string> = new Set(['y_thuc', 'thu_hoi_y_thuc', 'bao_len_y_thuc', 'sua_khai_bac']);
 function ganBoiCanh(the: TheYeuCauDto[], rows: any[]) {
   if (!the.length || diemHvKhiKiem.tat) return;
   const coDiem = (x: TheYeuCauDto) => x.hocVienId != null && !LOAI_Y_THUC.has(x.loai);
