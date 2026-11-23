@@ -45,7 +45,7 @@ for (const m of MAN) {
 
   /* 1 · Panel số 720: ô đầu bảng, ô cuối bảng (sát mép phải), trang đã cuộn xuống. */
   for (const [nhan, cuon] of [['đầu', false], ['cuối', false], ['cuối, trang đã cuộn', true]]) {
-    const nut = p.locator('button.so-bam');
+    const nut = p.locator('button.so-bam:not([aria-label*="cuộn tới bảng"])');
     const n = await nut.count();
     if (!n) { hong++; console.log(`✗ [${m.w}] không có nút số`); continue; }
     const b = nhan === 'đầu' ? nut.first() : nut.last();
