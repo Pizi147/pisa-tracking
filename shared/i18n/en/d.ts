@@ -776,6 +776,8 @@ const EN_D_LOI = {
   'Chỉ bỏ được việc đang ở trạng thái Cần xử lý — việc đã xong hoặc đã bỏ thì không bỏ nữa.': 'Only tasks in Action needed can be removed.',
   'Việc này đang ở trạng thái Cần xử lý.': 'This task is already in Action needed.',
   'Việc này do hệ thống bỏ theo điểm — không khôi phục tay được.': 'The system removed this task by score — it cannot be restored by hand.',
+  'Việc này do hệ thống bỏ theo điểm — không xác nhận tay được.': 'The system removed this task by score — it cannot be confirmed by hand.',
+  'Việc vừa được người khác cập nhật — tải lại.': 'Someone else just updated this task — reload.',
   'Bản ghi chủ không hợp lệ.': 'Invalid parent record.',
   'Không tìm thấy họp đơn vị': 'Unit meeting not found',
   'Liên kết không hợp lệ — cần một địa chỉ đầy đủ bắt đầu bằng http:// hoặc https://.': 'Invalid link — use a full address starting with http:// or https://.',

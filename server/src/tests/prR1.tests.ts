@@ -4,7 +4,7 @@
  *   L1  chủ Case hết vai / bị xoá = "chưa có người": caseChuaCoNguoi, Công việc `owner:`, lọc noOwner, tên "(đã nghỉ)", phân công lại gán người mới + lịch sử
  */
 export async function runPrR1Tests(t: any) {
-  const { check, assert, conn, P } = t;
+  const { check, assert, conn, P, TODAY } = t;
   console.log('\nGÓI R1 · hổng logic máy chủ');
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); } };
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -88,5 +88,23 @@ export async function runPrR1Tests(t: any) {
     conn.prepare(`INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_luc) VALUES (?, 'da_bao', '2026-11-18', '2026-11-18T03:00:00.000Z')`).run(xong);
     const r = viecXongCn({ cn: em.cn, khung: 'ft', tu: '2026-11-01', cuoi: '2026-11-30', homNay: '2026-11-24' }).find((d: any) => d.key === `bao-ph:${xong}`);
     assert(r?.due === mong && r.dung === true, `Phân tích: ${JSON.stringify(r && { due: r.due, dung: r.dung })}, panel ${mong}`);
+  }));
+
+  check('L3 · Xác nhận Phối hợp: việc hệ thống bỏ → 400 (như Khôi phục); việc người dùng bỏ xác nhận thẳng (RKC-3a); câu so-và-đổi (updated_at NULL) ghi đúng', () => thu(() => {
+    const x = one("SELECT id FROM sos_coordination_actions WHERE kind = 'talk_family' ORDER BY id LIMIT 1");
+    assert(x, 'seed thiếu việc phối hợp');
+    const dat = (tt: string, ly: string | null) => conn.prepare(`UPDATE sos_coordination_actions SET status = ?, remove_reason_code = ?, updated_at = NULL, performed_on = NULL WHERE id = ?`).run(tt, ly, x.id);
+    const xn = () => ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note: 'Đã gọi gia đình, em hứa đi học đều — thử L3 ghi đủ dài.' });
+    const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
+    dat('removed', 'system_sos_changed');
+    assert(ma(xn) === 400, 'việc hệ thống bỏ vẫn xác nhận được');
+    assert(one('SELECT status FROM sos_coordination_actions WHERE id = ?', x.id).status === 'removed', 'việc hệ thống bỏ đã bị đổi');
+    dat('removed', 'not_needed');
+    const kq = xn();
+    assert(kq.status === 'done', `việc người dùng bỏ không xác nhận thẳng được (${kq.status})`);
+    dat('pending', null);
+    assert(ma(xn) === null && one('SELECT status, updated_at FROM sos_coordination_actions WHERE id = ?', x.id).updated_at, 'việc chờ (updated_at NULL) không xác nhận được — so-và-đổi sai');
+    /* Lần sau: đã xong → sửa (OV-7a), so với updated_at vừa ghi. */
+    assert(ma(xn) === null, 'sửa việc đã xong (updated_at có giá trị) lỗi');
   }));
 }
