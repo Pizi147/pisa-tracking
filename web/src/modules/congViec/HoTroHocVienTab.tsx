@@ -22,7 +22,7 @@ import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
-import type { SapToiGv } from './SapToi.tsx';
+import { BaoCaoPhSapMo, type SapToiGv } from './SapToi.tsx';
 import { PaDangChayKhoi, viecPdcTheoKhoa } from './PaDangChay.tsx';
 import { NutTask } from './NutTask.tsx';
 import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
@@ -850,6 +850,8 @@ export function HoTroHocVienTab() {
               {/* NHẸ HƠN (đặc tả mục 0 "bỏ dải số"): bỏ dòng "Sắp tới" — Test kế đã ở cột của Lớp của tôi. */}
               <LopCuaToi dong={dongLop} dangTai={!error && !data} onMo={(x) => boChuRoi(() => mo(x))}
                 loi={error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : null} />
+              {/* BAO-PH-SAP-MO (chủ SP 24/11): "Báo cáo PH sắp mở" có lại chỗ — một dòng nhỏ dưới bảng, ô số mở hộp danh sách cũ (dữ liệu `sapToi` của `/my-work`). */}
+              {!error && <BaoCaoPhSapMo sapToi={data?.sapToi} />}
             </>
           ) : laTvv && tab !== 'duyet' && !data?.scopeEmpty ? (
             /* GD-8 (mockup v21 ④ K1, R4.3): TVV chưa chọn việc → "HV của tôi" (em · lớp · tình trạng · chip Việc cần làm) thay ô "Chọn một việc". */
