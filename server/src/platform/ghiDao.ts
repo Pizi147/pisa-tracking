@@ -65,6 +65,21 @@ export class GhiDao {
   get rong() { return !this.muc.length; }
 }
 
+/** R2 (rà 24/11): Hoàn tác "ngay sau lưu" của thao tác nhiều dòng (xếp lịch lô, thêm HV) — trong chừng này phút sau lưu; quá → 409, sửa từng mục. */
+export const HOAN_TAC_PHUT = 15;
+
+/** Một nhóm dòng cần chụp: `sua` chụp dòng có sẵn · `them` theo dõi dòng mới · `ca` cả hai. Bảng cha trước bảng con (đảo xoá dòng thêm con trước). */
+export type DongChup = { bang: string; dk: string; args: unknown[]; k: 'sua' | 'them' | 'ca' };
+
+/** R2: chạy `fn` có chụp các nhóm `ds` (như `chuyenNgayCoHoanTac`) — dòng `sua` mà `fn` không đổi bị bỏ khỏi bản chụp. */
+export function chayCoChup<T>(conn: any, ds: readonly DongChup[], fn: () => T): { kq: T; g: GhiDao } {
+  const g = new GhiDao(conn);
+  for (const d of ds) if (d.k !== 'them') g.sua(d.bang, d.dk, ...d.args);
+  const kq = ds.filter((d) => d.k !== 'sua').reduce<() => T>((f, d) => () => g.theoDoi(d.bang, d.dk, d.args, f), fn)();
+  for (const b of new Set(ds.filter((d) => d.k !== 'them').map((d) => d.bang))) g.boKhongDoi(b);
+  return { kq, g };
+}
+
 /** Lưu một bản ghi đảo (cùng giao dịch, NGAY SAU thao tác — tự chụp trạng thái sau). Trả id. */
 export function luuGhiDao(conn: any, o: { loai: string; bang: string; id: number; nguoi: number | null; ghi: GhiDao }): number {
   o.ghi.chot();

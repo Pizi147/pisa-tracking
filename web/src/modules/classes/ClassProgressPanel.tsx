@@ -88,6 +88,9 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
     lf.bam();
     if (loi.length > 0 || busy) return;
     setBusy(true); setLoiLuu(null);
+    /* R2 C1: mốc đang lưu (trước khi đổi) — Hoàn tác gửi lại qua cùng PATCH, máy chủ dời bài + việc cả lớp về như cũ. */
+    const cu = data ? { startPeriodId: data.startPeriodId ?? null, progressWeek: data.progressOverridden ? data.progressWeek : null, finalWeek: data.finalOverridden ? data.finalWeek : null } : null;
+    const lamMoi = () => { for (const k of ['/classes', '/ke-hoach-test', '/attempts', '/my-work']) invalidate(k); reload(); onDone?.(); };
     try {
       await api.patch(`/classes/${classId}/progress`, {
         startPeriodId: startPeriodId ?? null,
@@ -95,7 +98,12 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
         finalWeek: finalWeek.trim() === '' ? null : Number(finalWeek),
       });
       invalidate('/classes');
-      toast.push('ok', t('Đã lưu {ten}', { ten: tieuDe.toLowerCase() }));
+      const chu = t('Đã lưu {ten}', { ten: tieuDe.toLowerCase() });
+      if (!cu) toast.push('ok', chu);
+      else toast.hoanTac(chu, async () => {
+        try { await api.patch(`/classes/${classId}/progress`, cu); lamMoi(); toast.push('ok', t('Đã hoàn tác'), { key: `moc-lop-${classId}` }); }
+        catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key: `moc-lop-${classId}` }); }
+      }, { key: `moc-lop-${classId}` });
       setDangSua(false); setTouched(false);
       reload(); onDone?.();
     } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }

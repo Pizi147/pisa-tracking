@@ -10083,6 +10083,9 @@ await runPrBpxl2Tests({ check, assert, conn, P, classId } as any);
 // ==================================================================== GÓI 4 CX-BPXL (AUDIT-2111, N63 ① ② ⑤ · P1-06 · A3-06)
 const { runPrCxBpxlTests } = bocTep('prCxBpxl', await import('./prCxBpxl.tests.ts'));
 await runPrCxBpxlTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== R2 (rà 24/11): Hoàn tác các chỗ chặn cứng
+const { runPrR2HoanTacTests } = bocTep('prR2HoanTac', await import('./prR2HoanTac.tests.ts'));
+await runPrR2HoanTacTests({ check, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

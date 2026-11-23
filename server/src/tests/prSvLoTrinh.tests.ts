@@ -493,6 +493,24 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(!get('SELECT 1 x FROM thi_that_lich_su WHERE cycle_id = ?', a.cy) && hs(a.sid).status === 'inactive', 'lịch sử gỡ, em Tạm dừng');
   }));
 
+  check('HT-3b · R2 C6: Học tiếp đổi lớp có `dao` → Hoàn tác: em về lớp cũ, lựa chọn về chờ chọn, DB y như trước (trừ nhật ký / chuông); lần hai 404/409; GV 403', () => thu(() => {
+    const L = lop(); const L2 = lop(); const a = emHocTiep(L);
+    const BO = new Set(['audit_logs', 'ghi_dao', 'notifications', 'demo_config']);
+    const bang = (conn.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).all() as any[]).map((r) => r.name as string).filter((b) => !BO.has(b));
+    const chup = () => new Map(bang.map((b) => [b, JSON.stringify(conn.prepare(`SELECT rowid AS __r, * FROM "${b}" ORDER BY rowid`).all())]));
+    const truoc = chup();
+    const kq = bt.chonBuocTiepCoHoanTac(QL, a.cy, { chon: 'hoc_tiep', mucTieu: '7.0', lopMoiId: L2 });
+    assert(kq.dao && get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).class_id === L2, `đã chuyển, có dao: ${kq.dao}`);
+    assert(loi(() => bt.hoanTacHocTiepDoiLop(P.lrTeacher, a.cy, kq.dao))?.status === 403, 'GV 403');
+    xoaNho();
+    const s = bt.hoanTacHocTiepDoiLop(QL, a.cy, kq.dao);
+    const sau = chup();
+    const khac = bang.filter((b) => truoc.get(b) !== sau.get(b));
+    assert(!khac.length && !s.chon, `còn khác: ${khac.join(', ')}`);
+    assert([404, 409].includes(loi(() => bt.hoanTacHocTiepDoiLop(QL, a.cy, kq.dao))?.status), 'lần hai');
+    assert(!bt.chonBuocTiepCoHoanTac(QL, a.cy, { chon: 'hoc_tiep' }).dao, 'không đổi lớp → không chụp');
+  }));
+
   check('HT-4 · Lần thi sau: KQ mới ghi như thường → hết Học tiếp, việc Chọn bước tiếp lần 2 · "điểm lần trước" = lần thi trước của CHÍNH lộ trình · Phân tích có cả hai lần · N46 ẩn lại', () => thu(() => {
     const L = lop(); const a = emHocTiep(L);
     bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });

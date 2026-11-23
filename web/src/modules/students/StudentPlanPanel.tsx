@@ -8,6 +8,7 @@ import { Empty, ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { baoXepCoHoanTac } from '../test/keHoach/hoanTacXep.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
 
@@ -39,13 +40,14 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   const applyPlan = async () => {
     setBusy(true);
     try {
-      const r = await api.post<{ created: number; moved: number; kept: number }>(
+      const r = await api.post<{ created: number; moved: number; kept: number; dao?: number }>(
         `/cycles/${cycleId}/apply-suggested-mocks`, {},
       );
       invalidate('/attempts'); invalidate('/classes'); invalidate('/students');
-      toast.push('ok',
+      /* R2 C7: Hoàn tác — lượt vừa tạo / dời về như trước (máy chủ chụp `dao`). */
+      baoXepCoHoanTac(toast, [r.dao], 'ok',
         t('Đã lên lịch: thêm {them} lượt, xếp {doi} lượt', { them: r.created, doi: r.moved })
-        + (r.kept ? t(', giữ nguyên {n} lượt đã có lịch', { n: r.kept }) : ''));
+        + (r.kept ? t(', giữ nguyên {n} lượt đã có lịch', { n: r.kept }) : ''), () => { doiLich(); invalidate('/students'); });
       sugg.reload(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
