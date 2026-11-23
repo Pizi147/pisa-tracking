@@ -475,7 +475,7 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
   const kq = { soCase: 0, soPa: 0, soTinHieu: 0, soXuLy: 0 };
   /* MỘT câu đọc cả bốn loại (tài khoản không đứng tên gì: +1 câu cho lần xoá / gỡ vai). */
   const rows = conn.prepare(
-    `SELECT 'c' AS k, sc.id, sc.id AS case_id, sc.category, COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+    `SELECT 'c' AS k, sc.id AS id, sc.id AS case_id, sc.category AS category, COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
       WHERE sc.owner_user_id = ?1 AND sc.status != 'done'
      UNION ALL SELECT 'p', iv.id, iv.case_id, sc.category, COALESCE(sc.student_id, a.student_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
        LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.performer_user_id = ?1 AND iv.status IN ('planned', 'started')
