@@ -3,7 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
-import { NutDongPanel, dauViec } from '../../ui/KhuonViec.tsx';
+import { NutDongPanel, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState } from '../../ui/ui.tsx';
@@ -22,8 +22,10 @@ const tenBac = (b: number) => BAC_KHAI[b] ?? '';
  * Sửa (`sua`, OV-7a + N50 câu 8): GVCN / QL, có lịch sử (máy chủ quyết — `canSuaKhai`); gửi `bacCu` — người khác vừa sửa → 409, tải lại. Bậc kế đi tiếp từ bậc khai.
  * DUONG-LUI-2 (A1-21): tiêu đề như panel cả lớp "Khai / sửa cấp bậc vi phạm"; đầu panel theo khuôn chung (dòng loại · tên em · thang); chip bậc viết đủ (lời 36).
  */
-export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }: {
-  studentId: number | null; sua?: boolean; onClose: () => void; onDone?: () => void;
+export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone, onTiep = null }: {
+  studentId: number | null; sua?: boolean;
+  /** R4 P6 / P10: lớp (nơi gọi biết) + đầu panel dựng từ dòng việc cho lúc tải / lỗi. */
+  lop?: string | null; dau?: Parameters<typeof KhungPanel>[0]['dau']; onClose: () => void; onDone?: () => void;
   /** MOCKUP-1111 K5 (V12): mở từ Công việc có việc kế → "Lưu · việc tiếp ›" (chỉ sang việc kế khi máy chủ đã nhận; lỗi ở lại, giữ chữ). */
   onTiep?: (() => void) | null;
 }) {
@@ -35,6 +37,8 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   const [ghiChu, setGhiChu] = useState('');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
+  /* R4 P6: lỗi lưu / 409 hiện ở chân (⚠ Không lưu được — lý do · Thử lại), chữ đang gõ giữ. */
+  const [loiLuu, setLoiLuu] = useState<string | null>(null);
   /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
   const taiCho = useContext(KhungTaiCho);
   const [daLuu, setDaLuu] = useState<string | null>(null);
@@ -49,10 +53,10 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
 
   if (!studentId) return null;
   const tieuDe = t('Khai / sửa cấp bậc vi phạm');   // AUDIT-1611 A1-21: tên panel = tên mục "Khai / sửa cấp bậc" (như panel cả lớp)
-  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
-  if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
+  if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
-  const dau = { ...dauViec({ em: { id: studentId, ten: d.ten }, ngCanh: t('Thang {x}', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan }) }),
+  const dau = { ...dauViec({ han: dauTai?.han, em: { id: studentId, ten: d.ten }, lop, ngCanh: t('Thang {x}', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan }) }),
     loai: t('Việc · Ý thức & Phối hợp') };
   if (daLuu) {
     return (
@@ -69,7 +73,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   const luu = async (): Promise<boolean> => {
     lf.bam();
     if (loi.length || bac === null) return false;
-    setBusy(true);
+    setBusy(true); setLoiLuu(null);
     try {
       const body = { bac, thang: thang || undefined, ghiChu: ghiChu.trim() };
       if (laSua) await api.put(`/students/${studentId}/y-thuc/khai-bac`, { ...body, bacCu: d.khai?.bac });
@@ -81,7 +85,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
       if (taiCho || onTiep) setDaLuu(chu); else onClose();   // V12 ①: có việc kế → "Lưu" ở lại, "✓ Đã lưu" + Việc tiếp ›
       return true;
     } catch (e: any) {
-      toast.push('error', e.message);
+      setLoiLuu(e.message);
       if (e?.status === 409) { giuChu.current = ghiChu; reload(); }   // N66: người khác vừa khai / sửa — tải bậc mới, giữ chữ ghi chú
       return false;
     } finally { setBusy(false); }
@@ -92,6 +96,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
       chan={{
         daSua: !daLuu && (bac !== (laSua && d.khai ? d.khai.bac : null) || thang !== (laSua && d.khai?.thang ? d.khai.thang : '') || ghiChu !== (laSua && d.khai ? d.khai.ghiChu : '')),
         conThieu: lf.conThieu(loi),
+        trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
         /* V12: có việc kế → "Lưu" phụ + "Lưu · việc tiếp ›" chính; không có → một nút như cũ. */
         /* GD-4d (lời 36, dòng 40c ⓪): "Đóng" đứng trước nút Lưu phụ; 375 chân dính đáy chỉ "Lưu · Lưu · việc tiếp ›" (Đóng qua ✕). */
         ...(onTiep ? { huy: null } : {}),

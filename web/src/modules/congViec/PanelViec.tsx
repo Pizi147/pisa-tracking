@@ -39,6 +39,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
 import { KhoiGiaoViec, useGiaoViec } from './KhoiGiaoViec.tsx';
 import { PanelNhapDiemTuan, chanViecTiep, hetViec } from './PanelNhapDiemTuan.tsx';
+import { dauTuViec } from './dauPanelViec.tsx';
 const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
 const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelSauThi));
 const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
@@ -113,13 +114,13 @@ export function PanelViec(p: PropsViec) {
  * "Lưu · em tiếp ›" / "Bỏ qua ›" qua em kế; hết em thì đóng. Danh sách em chốt lúc mở (lưu xong dòng việc có thể đổi nhưng thứ tự không nhảy).
  * Không chuyển trang, không đụng bộ lọc / vị trí cuộn của trang đang đứng.
  */
-function PanelBoSungHoSo({ emIds, onDong, onDaLam }: { emIds: readonly number[]; onDong: () => void; onDaLam: () => void }) {
+function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly number[]; lop: string | null; ten: (id: number) => string; onDong: () => void; onDaLam: () => void }) {
   const [ds] = useState(emIds);
   const [i, setI] = useState(0);
   const daLuu = useRef(false);
   const tiep = () => (i + 1 < ds.length ? setI(i + 1) : onDong());
   return (
-    <SuaThongTinMotEm key={ds[i]} studentId={ds[i]} studentName="" lop={null}
+    <SuaThongTinMotEm key={ds[i]} studentId={ds[i]} studentName={ten(ds[i])} lop={lop}
       tiep={{ stt: i + 1, tong: ds.length, conLai: i + 1 < ds.length, boQua: tiep }}
       /* Panel Sửa thông tin gọi onDone() rồi onClose() sau khi lưu — onClose ngay sau onDone không phải "người dùng đóng". */
       onDone={() => { daLuu.current = true; onDaLam(); tiep(); }}
@@ -164,29 +165,29 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       }
       if (it.group === 'yt_xem') {
         return (
-          <PanelXemViPham key={it.key} studentId={it.studentId!} onDong={onDong} onDaLam={doi} onTiep={onTiep}
+          <PanelXemViPham key={it.key} studentId={it.studentId!} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep}
             dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.yt_xem ?? 'viec-van-hanh'} han={it.due} /> : null, em: hv ? { id: it.studentId!, ten: hv } : null, lop })} />
         );
       }
-      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} onTiep={onTiep} />;
+      return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} dau={dauTuViec(it)} onClose={onDong} onDone={doi} onTiep={onTiep} />;
     case 'yt_hoi_tinh_hinh':
       /* TINH-HINH (mockup v20 F2): TVV hỏi tình hình — GVCN ghi kết quả tại chỗ. */
-      return <PanelHoiTinhHinh key={it.key} id={soCuaKhoa(it.key)!} ten={it.studentName} lop={lop} cauHoi={it.reason} han={it.due}
+      return <PanelHoiTinhHinh key={it.key} id={soCuaKhoa(it.key)!} ten={it.studentName} lop={lop} cauHoi={it.reason} han={it.due} dau={dauTuViec(it)}
         onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'yt_tra_lai':
       /* TL-2 (mockup v22 T4 / T5): Vi phạm / lần xử lý bị trả lại — GV chọn Sửa rồi gửi lại · Giữ nguyên + trả lời · Xoá (cả lần: Thu hồi) tại chỗ. */
       return <PanelTraLai key={it.key} id={soCuaKhoa(it.key)!} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'yt_thuc_hien':
-      return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} onTiep={onTiep} />;
+      return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} dau={dauTuViec(it)} onClose={onDong} onDone={doi} onTiep={onTiep} />;
     case 'khai_bac':
       /* GD-4d: gọi thẳng panel lô (LoYThucPanel chỉ chuyển tiếp 'cap-bac') để truyền việc kế. */
-      if (it.studentId === null) return <KhaiBacLoPanel key={it.key} classId={it.classId!} lop={lop} studentIds={it.emIds ?? null} onClose={onDong} onDone={doi} onTiep={onTiep} />;
-      return <KhaiBacPanel key={it.key} studentId={it.studentId} onClose={onDong} onDone={doi} onTiep={onTiep} />;
+      if (it.studentId === null) return <KhaiBacLoPanel key={it.key} classId={it.classId!} lop={lop} han={it.due} studentIds={it.emIds ?? null} onClose={onDong} onDone={doi} onTiep={onTiep} />;
+      return <KhaiBacPanel key={it.key} studentId={it.studentId} lop={lop} dau={dauTuViec(it)} onClose={onDong} onDone={doi} onTiep={onTiep} />;
     case 'mgmt':
       return <NganViecVanHanh key={it.key} taskId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     /* UI-CV-TVV (mockup `tvv.html`): KQ thi thật + Chọn bước tiếp = MỘT panel Sau thi hai bước. */
     case 'buoc_tiep': case 'thi_that':
-      return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
+      return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} han={dauTuViec(it).han} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'bao_ph_yt':
       return <PanelBaoPhTvv key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'phoi_hop_tvv':
@@ -207,7 +208,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'bo_sung_ho_so':
-      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} onDong={onDong} onDaLam={doi} />;
+      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={lop} ten={(id) => it.con?.find((c) => c.studentId === id)?.studentName ?? ''} onDong={onDong} onDaLam={doi} />;
     /* P9a: thanh Việc cần làm ở hồ sơ lớp — panel Xét lại tại chỗ (ở Công việc: "Xét lại ›" đổi trang, `lamTaiCho` = false). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
@@ -299,7 +300,7 @@ function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void;
   /* GV-2 (N58): việc Báo PH kết quả Test (`baoph:<id>` = hành động Phối hợp) — khối Phụ trách · Hạn · Theo dõi đầu thân. */
   const gv = useGiaoViec('phoi_hop', soCuaKhoa(it.key));
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauViec({ em: { id: it.studentId!, ten: it.studentName }, lop: it.classCode, ngCanh: it.contextLabel })} onDong={onDong}
+    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauTuViec(it, it.contextLabel)} onDong={onDong}
       /* Lời 40: còn lượt chưa xong mà bạn làm được mới hiện câu — đã báo PH hết thì không. */
       quyChe={data?.rows.some((r) => r.canAct && !r.summary.complete) ? quyCheBaoPhTest() : null}>
       <div className="flex flex-col gap-3 pt-3">
@@ -365,7 +366,8 @@ function PanelPhanCongMon({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =>
   };
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong} quyChe={quyChePhanCong()}
-      dau={dauViec({ em: it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel })}>
+      dau={dauTuViec(it, it.contextLabel)}>
+      {it.reason && <p className="m-0 pt-3 text-sm text-slate-300">{dich(it.reason)}</p>}
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
           : (
@@ -393,7 +395,8 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${it.caseId}`, [it.caseId]);
   return (
     <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong} quyChe={quyChePhanCong()}
-      dau={dauViec({ em: it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel })}>
+      dau={dauTuViec(it, it.contextLabel)}>
+      {it.reason && <p className="m-0 pt-3 text-sm text-slate-300">{dich(it.reason)}</p>}
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={3} /></div>
           : (
