@@ -28,6 +28,8 @@ export type LoaiYeuCau = (typeof LOAI_YEU_CAU)[number];
  */
 export const LOAI_NGUOI_XIN_SUA: readonly LoaiYeuCau[] = ['sua_thong_tin', 'de_xuat_chuyen_lop', 'khong_theo_doi', 'y_thuc', 'thu_hoi_y_thuc'];
 export const LY_DO_RUT = t('Người gửi đã rút');
+/** N70: thẻ sửa cấp bậc tự đóng vì bậc khai đã khác lúc gửi (Head / Quản trị vừa sửa thẳng) — ở shared để `loaiYeuCau.ts` ↔ `yThuc/xuLy.ts` không đọc hằng của nhau lúc nạp (vòng import). */
+export const LY_DO_SUA_KHAI_LECH = t('Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa');
 
 /** `da_tra_loi` chỉ của Xin ý kiến; `tu_dong` = hệ thống tự đóng (đối tượng không còn ý nghĩa). */
 export const TRANG_THAI_YC = ['cho', 'duyet', 'tu_choi', 'tu_dong', 'da_tra_loi'] as const;

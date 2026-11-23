@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  LY_DO_SUA_KHAI_LECH, bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { boVaiCx, can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -280,7 +280,6 @@ export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; 
 // ---------------------------------------------------------------- N70 · GVCN sửa bậc đã khai → thẻ `sua_khai_bac` chờ Head
 
 const theSuaKhai = (studentId: number) => ({ loai: 'sua_khai_bac' as const, doiTuongLoai: 'hoc_vien_khai_bac', doiTuongId: studentId });
-export const LY_DO_SUA_KHAI_LECH = 'Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa';
 type DuLieuSuaKhai = { bacCu: number; bac: number; thang: string | null; ghiChu: string; cycleId: number };
 
 /**

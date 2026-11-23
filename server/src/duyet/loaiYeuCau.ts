@@ -10,7 +10,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { sqlNguongMiniTest } from '../platform/cauHinh.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  BAC_0_NHAN, CO_DIEM_SQL, INTERVENTION_KIND_LABEL, LY_DO_SUA_KHAI_LECH, hienONgay, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -35,7 +35,7 @@ import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { LY_DO_SUA_KHAI_LECH, apDungSuaKhai, chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, kiemRutSuaKhai, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { apDungSuaKhai, chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, kiemRutSuaKhai, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 

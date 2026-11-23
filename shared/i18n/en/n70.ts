@@ -21,6 +21,7 @@ export const EN_N70 = {
   'Ghi lý do sửa bậc ở ô Ghi chú — Head đọc để duyệt.': 'Give the reason for the change in the note — the Head reads it to approve.',
   'Yêu cầu sửa bậc của em không còn chờ Head — không hoàn tác em này.': 'This student’s level-change request is no longer pending — not undone.',
   'Sửa bậc đã khai cần Head duyệt — không hoàn tác em này.': 'Changing a declared level needs Head approval — not undone.',
+  'Bậc đã đổi sau lúc gửi — gửi lại nếu vẫn cần sửa': 'The level changed after this was sent — send again if still needed',
   /* Hướng dẫn (GV: thẻ khai-bac · Head: thẻ duyet-y-thuc) */
   'Chọn <b>Bậc đã xử lý</b> và ngày hoặc tháng.': 'Pick the <b>Level handled</b> and a date or month.',
   'Sửa bậc đã khai: <b>Sửa cấp bậc</b>, ghi <b>Lý do sửa</b>, <b>Gửi Head duyệt</b>; bậc cũ giữ tới khi Head duyệt.': 'To change a declared level: <b>Edit level</b>, fill <b>Reason for the change</b>, <b>Send to Head</b>; the old level stays until approved.',
