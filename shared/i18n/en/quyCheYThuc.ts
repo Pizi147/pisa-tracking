@@ -21,7 +21,7 @@ export const EN_QUY_CHE_YTHUC = {
   'Gửi Head duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại · TVV báo lại PH': (b) => `Sent for approval (${b.n} days) · overdue withdraws · level recalculated · counsellor re-informs`,
   'Gửi Head duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại': (b) => `Sent for approval (${b.n} days) · overdue withdraws · level recalculated`,
   'Quá {n} ngày Head chưa duyệt: thu hồi theo bạn. TVV đã báo PH thì nhận việc báo lại.': (b) => `No Head decision after ${b.n} days: withdrawn as you asked. If parents were informed, the counsellor re-informs them.`,
-  'Khai một lần cho chuỗi này · quá {n} ngày việc tự hết': 'Declared once for this chain · task expires after {n} days',
+  'Sửa được mọi lúc · quá {n} ngày việc tự hết': 'Editable any time · task expires after {n} days',
   'Bỏ: chọn lý do · em rời dòng': 'Skip: pick a reason · student leaves the list',
   'Meeting: hạn {han} · xác nhận xong: BPXL xếp lịch · CX ghi kết quả · TVV báo PH': (b) => `Meeting: due ${b.han} · once confirmed: Scheduler sets the meeting · CX records the result · counsellor calls parents`,
   'Meeting: xác nhận xong: BPXL xếp lịch · CX ghi kết quả · TVV báo PH': 'Meeting: once confirmed: Scheduler sets the meeting · CX records the result · counsellor calls parents',

@@ -51,7 +51,7 @@ export const quyCheThuHoi = (o: { ql: boolean; soNgay: number; daBaoPh: boolean;
   };
 
 /** Q51 (luat/3 Y-12, việc khai_bac): Xác nhận cấp bậc HV cũ (một em hoặc cả lớp). */
-export const quyCheKhaiBac = (): QuyChe => ({ chu: t('Khai một lần cho chuỗi này · quá {n} ngày việc tự hết', { n: HAN_HANG.khai_bac }) });
+export const quyCheKhaiBac = (): QuyChe => ({ chu: t('Sửa được mọi lúc · quá {n} ngày việc tự hết', { n: HAN_HANG.khai_bac }) });
 
 /** Q53 / Q54 / Q55 (luat/2 C-21, mục 4; luat/3 Y-19): GVCN › Phối hợp SOS theo lựa chọn. */
 export const quyChePhoiHopSos = (chon: 'xac-nhan' | 'meeting' | 'bo', han: string | null): QuyChe => ({

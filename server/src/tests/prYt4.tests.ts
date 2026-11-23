@@ -540,7 +540,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const hs = xuLy.yThucHocVien(gvcn, sid);
     assert(hs.dongThang.filter((x: any) => x.trangThai === 'khai').length === 2 && hs.dongThang[2].trangThai === 'lan-nay' && !hs.coTheKhai, 'thang');
     const l = loiCua(() => xuLy.khaiBac(gvcn, sid, { bac: 3, ghiChu: 'khai lần hai' }));
-    assert(l.status === 400 && /đã xác nhận cấp bậc vi phạm/.test(l.msg), l.msg);
+    assert(l.status === 409 && /đã xác nhận cấp bậc vi phạm/.test(l.msg), l.msg);   // N66: so-và-đổi → 409
   });
   /* OV-7a (chủ SP 13/10) thay "GVCN 403 · QL 400 sau lần xử lý": GVCN sửa bậc mình khai khi chuỗi chưa có lần xử lý; QL sửa cả sau lần xử lý (prOv7a 2c). */
   check('YT4 (4) · Sửa khai: GVCN + QL sửa được; N50 (8): sau lần xử lý đầu GVCN VẪN sửa (nhật ký), QL vẫn sửa; khai lại (chưa khai) sau lần xử lý → 400', () => {
@@ -555,7 +555,36 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8): GVCN sửa sau lần xử lý');
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'Head sửa sau khi đã xử lý' });
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
-    assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
+    assert(xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' }).ok === true && em(sid2).bac === 2, 'N66: khai (chưa khai) sau lần xử lý được');
+  });
+  /* N66 (chủ SP 24/11 "Cho GVCN sửa luôn"): khai / sửa MỚI HƠN lần xử lý xong gần nhất = bậc đã tới (nâng hoặc hạ); lần xử lý mới hơn khai → max. */
+  check('N66 · GVCN khai / sửa cấp bậc mọi lúc: hạ về R1 dù đã có R2 → kế R2; nâng WL1 → kế R4; xử lý mới sau khai → max; so-và-đổi 409; GVBM / TVV 403 (hoàn tác lô: KHAI-BAC-LO)', () => {
+    const sid = hv();
+    const m1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]); const m2 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    conn.prepare(`UPDATE discipline_measures SET confirmed_at = '2026-01-01T00:00:00.000Z' WHERE id IN (?, ?)`).run(m1.id, m2.id);   // tách mốc rõ ràng (không phụ thuộc mili giây)
+    assert(em(sid).bac === 2 && xuLy.yThucHocVien(gvcn, sid).coTheKhai === true, 'đã có Report 2 trên web: vẫn có nút khai');
+    xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Thực ra mới Report 1' });
+    assert(em(sid).bac === 1 && em(sid).keTiep.kind === 'report_2', `hạ: bậc ${em(sid).bac}`);
+    assert(xuLy.yThucHocVien(gvcn, sid).canSuaKhai === true && xuLy.yThucHocVien(gvcn, sid).bac === 1, 'hồ sơ cùng bậc, có Sửa');
+    xuLy.suaKhaiBac(gvcn, sid, { bac: 3, ghiChu: 'WL 1 bản giấy', bacCu: 1 });
+    assert(em(sid).bac === 3 && em(sid).keTiep.kind === 'report_4_meeting', 'nâng WL1 → kế Report 4');
+    assert(loiCua(() => xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'so-và-đổi', bacCu: 1 })).status === 409 && em(sid).bac === 3, 'bậc đã đổi → 409, không ghi');
+    /* Lần xử lý MỚI sau khai: bậc theo max (khai 1, Report 2 mới → 2; lần cũ trước khai không đẩy). */
+    xuLy.suaKhaiBac(gvcn, sid, { bac: 0, ghiChu: 'Chưa có xử lý' });
+    conn.prepare(`UPDATE y_thuc_khai_bac SET sua_luc = '2026-02-01T00:00:00.000Z' WHERE student_id = ?`).run(sid);
+    assert(em(sid).bac === 0 && em(sid).keTiep.kind === 'report_1', 'hạ về 0 dù đã có hai lần');
+    const m3 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
+    assert(m3.kind === 'report_1' && em(sid).bac === 1 && em(sid).keTiep.kind === 'report_2', `xử lý sau khai: bậc ${em(sid).bac}`);
+    assert(xuLy.yThucHocVien(gvcn, sid).dongThoiGian.filter((x: any) => x.loai === 'xu-ly').length >= 3, 'lần xử lý cũ vẫn trong lịch sử');
+    /* Quyền: GVBM, TVV 403 — DB không đổi. */
+    const bacDb = () => (conn.prepare('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?').get(sid) as any).bac;
+    const tvvId = (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' ORDER BY ur.user_id LIMIT 1`).get() as any)?.id;
+    for (const [ten, p] of [['GVBM', gvbm], ['TVV', tvvId ? loadPrincipal(tvvId) : null]] as const) {
+      assert(!!p, `${ten}: thiếu tài khoản thử`);
+      assert(loiCua(() => xuLy.suaKhaiBac(p, sid, { bac: 5, ghiChu: 'x' })).status === 403 && bacDb() === 0, `${ten} sửa: 403`);
+    }
+    const sid3 = hv(); xl(gvcn, sid3, [ghiVp(gvbm, sid3)]);
+    assert(loiCua(() => xuLy.khaiBac(gvbm, sid3, { bac: 2, ghiChu: 'x' })).status === 403, 'GVBM khai: 403');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc sai mới 400. */
   check('YT4 (4) · Khai bậc: bậc ngoài 0–6 → 400; ghi chú ngắn / rỗng hợp lệ', () => {
@@ -761,7 +790,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const hs = xuLy.yThucHocVien(gvcn, sid);
     assert(hs.dongThang.length === 7 && hs.dongThang[0].trangThai === 'qua' && hs.dongThang[1].trangThai === 'lan-nay', 'thang');
     assert(hs.macDinh.tick.length === 1 && hs.dongThoiGian.some((x: any) => x.loai === 'xu-ly' && x.nhan === 'Report 1'), 'tick + dòng xử lý');
-    assert(hs.demCuoi.tong === 2 && hs.demCuoi.theoNhom.length === 2 && hs.canManage && !hs.coTheKhai, JSON.stringify(hs.demCuoi));
+    assert(hs.demCuoi.tong === 2 && hs.demCuoi.theoNhom.length === 2 && hs.canManage && hs.coTheKhai, JSON.stringify(hs.demCuoi));   // N66: đã xử lý vẫn khai được
   });
 
   // ------------------------------------------------------------------ Task 5 · Đề xuất QL duyệt (thẻ y_thuc) + Báo QL (bao_len_y_thuc)

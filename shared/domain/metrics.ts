@@ -214,7 +214,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'hv-theo-bac', ten: 'Học viên theo bậc Ý thức',
     cauHoi: 'Học viên đang học ở bậc nào trên thang xử lý Ý thức?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Học viên đang học trong phạm vi, chia theo bậc hiện tại (0 = chưa bậc nào … 6 = WL 3) = max(lần xử lý đã xong trong chuỗi thang, cấp bậc vi phạm đã xác nhận từ trước khi dùng web). Lớp thường đếm liên tục qua các khoá liền nhau; FT theo lộ trình.',
+    tapDuDieuKien: 'Học viên đang học trong phạm vi, chia theo bậc hiện tại (0 = chưa bậc nào … 6 = WL 3) = max các lần xử lý đã xong trong chuỗi thang; có cấp bậc vi phạm đã xác nhận / sửa thì đó là bậc đã tới lúc lưu, chỉ lần xử lý sau đó đẩy tiếp (N66). Lớp thường đếm liên tục qua các khoá liền nhau; FT theo lộ trình.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-theo-bac',
   },
   /*
