@@ -93,10 +93,12 @@ export type ThamSoTutor = { paId?: number | null; chi?: boolean };
 function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: boolean) {
   const [kq, setKq] = useState<KetQuaTutorChon | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const [lan, setLan] = useState(0);
   const seq = useRef(0);
   const khoa = tutor?.paId ? String(tutor.paId) : '';
   useEffect(() => {
-    if (!active || !khoa) { setKq(null); return; }
+    if (!active || !khoa) { setKq(null); setLoi(null); return; }
     const my = ++seq.current;
     setLoading(true);
     const h = setTimeout(async () => {
@@ -104,12 +106,12 @@ function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: bool
         const qs = new URLSearchParams({ q: term.trim() });
         qs.set('paId', khoa);
         const r = await api.get<KetQuaTutorChon>(`/tutors/chon?${qs.toString()}`);
-        if (my === seq.current) setKq(r);
-      } catch { if (my === seq.current) setKq(null); } finally { if (my === seq.current) setLoading(false); }
+        if (my === seq.current) { setKq(r); setLoi(null); }
+      } catch (e: any) { if (my === seq.current) { setKq(null); setLoi(e?.message ?? ''); } } finally { if (my === seq.current) setLoading(false); }   // lỗi mạng ≠ "không thấy": báo + Thử lại
     }, 250);
     return () => clearTimeout(h);
-  }, [term, khoa, active]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { kq, loading };
+  }, [term, khoa, active, lan]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { kq, loading, loi, thuLai: () => setLan((n) => n + 1) };
 }
 
 /** Dòng phụ của một tutor: `L · R · Monbay · …908` (3 số cuối SĐT, không đủ số — đặc tả Tutor mục 12.5). */
@@ -281,7 +283,7 @@ export function ChonNguoi({
   const rowsHien = useMemo(() => (term.trim() ? rows : xepGanDay(rows, ganDay, { ganDay: t('Gần đây'), khac: t('Khác') }, coToi ? session?.user?.id : undefined)),
     [rows, ganDay, term, coToi, session?.user?.id]);
   const loading = (!ds && !chiTutor && (tim ? tx.loading : xa.loading)) || (!!tutor && tt.loading && !tt.kq);
-  const loiTai = ds || chiTutor ? null : tim ? tx.loi : xa.loi;
+  const loiTai = ds ? null : chiTutor ? tt.loi : tim ? tx.loi : xa.loi;
   const oId = id ?? `${uid}-o`;
   /* Nằm dưới Truong/Field: nhãn trỏ vào ô gõ (label htmlFor), không bọc cả danh sách + nút ✕ (`BaoOTrongNhan`). */
   const bao = useContext(BaoOTrongNhan);
@@ -308,7 +310,14 @@ export function ChonNguoi({
   const manMo = dt && editing && open && !disabled;
   const manRef = useRef(manMo);
   manRef.current = manMo;
-  useEffect(() => { if (manMo) inputRef.current?.focus(); }, [manMo]);
+  /* Rời màn 375 (Esc · ‹ · Xong · chọn): ô gõ trong màn bị gỡ → focus rơi về <body>. Trả về ô (hoặc nút Đổi khi đã chọn xong) mà KHÔNG mở lại danh sách. */
+  const manTruoc = useRef(false);
+  const veO = useRef(false);
+  useEffect(() => {
+    if (manMo) inputRef.current?.focus();
+    else if (manTruoc.current) { veO.current = true; document.getElementById(oId)?.focus({ preventScroll: true }); veO.current = false; }
+    manTruoc.current = !!manMo;
+  }, [manMo]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Giá trị đến sau khi ô đã vẽ (panel nạp phân công hiện tại) → hiện tên, trừ khi người dùng đang gõ trong danh sách.
      So theo người (kiểu/id), không theo object: nơi gọi dựng lại object mỗi lần vẽ. */
@@ -407,7 +416,7 @@ export function ChonNguoi({
     ? <div className="oc-tai" role="status"><span className="chu">{t('Đang tìm…')}</span>{[0, 1, 2].map((k) => <span key={k} className="xd"><i /><i /></span>)}</div>
     : loiTai !== null && !rows.length
       ? <div className="oc-loi" role="alert"><span><b>{t('Không tải được')}</b>{loiTai ? ` · ${loiTai}` : ''}</span>
-          <button type="button" className="btn btn-sm" onClick={() => (tim ? tx.thuLai() : xa.thuLai())}>{t('Thử lại')}</button></div>
+          <button type="button" className="btn btn-sm" onClick={() => (chiTutor ? tt.thuLai() : tim ? tx.thuLai() : xa.thuLai())}>{t('Thử lại')}</button></div>
       : tim && tx.ngan && !rows.length
         ? <div className="oc-rong">{tim.goiY ?? t('Gõ tên để tìm')}</div>
         : q && rows.length === 0
@@ -455,7 +464,7 @@ export function ChonNguoi({
         value={term}
         disabled={disabled}
         placeholder={placeholder ?? (nhom === 'giao_vien' ? t('Gõ tên giáo viên…') : t('Gõ tên…'))}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { if (!veO.current) setOpen(true); }}
         onChange={(e) => { setTerm(e.target.value); setOpen(true); setActiveIndex(-1); setTron(false); }}
         onKeyDown={(e) => {
           if (e.key !== 'Backspace') setTron(false);
