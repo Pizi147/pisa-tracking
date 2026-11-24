@@ -401,8 +401,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /** `gon` (thẻ < 1280, khung K3): chữ màu không viền, vùng bấm vẫn ≥ 44 px ở 375. */
   const nutDiem = (e: Em, chu: ReactNode, dat: boolean | null, nhan: string, gon = false) => (
     <button type="button" aria-label={nhan} aria-expanded={hopDiem === e.id} aria-haspopup="dialog"
-      className={`inline-flex items-center justify-center gap-1 rounded-md bg-transparent text-sm font-semibold tabular-nums hover:bg-[color:var(--accent-soft)] ${gon ? `border-0 px-0.5 ${HIT}` : 'h-[30px] min-w-[72px] border px-2'}`}
-      style={dat === true ? VIEN_DAT : dat === false ? VIEN_TRUOT : { borderColor: 'var(--line-strong)' }}
+      className={`inline-flex items-center justify-center gap-1 rounded-md bg-transparent text-sm font-semibold tabular-nums hover:bg-[color:var(--accent-soft)] border-0 hover:underline ${dat === null ? '[&>span]:hover:text-[color:var(--accent)]' : ''} ${gon ? `px-0.5 ${HIT}` : 'h-[30px] min-w-[72px] px-2'}`}
+      style={dat === true ? { color: VIEN_DAT.color } : dat === false ? { color: VIEN_TRUOT.color } : undefined}
       onClick={(ev) => { neoDiem.current = ev.currentTarget; setHopDiem(hopDiem === e.id ? null : e.id); }}>{chu}</button>
   );
   /** Ô Final: nút "✓ 78 %" xanh / "✗ 46 %" đỏ (có dấu, không chỉ màu); chưa thi → chữ mờ, có Progress / đang chấm thì vẫn bấm xem được. */
@@ -770,8 +770,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
 
   /* Cột cố định (khung v23 K1): QL tick 28 · Học viên ≥ 260 · Final 100 · MT0 100 · Kỳ vọng FT 124 · Bước tiếp 168 · Lớp mới 140 · Tuần 116;
      GVCN / người xem: … · Hướng · Head chốt · Nhận xét. Bàn giao (khung không vẽ — GIỮ) thành chip dưới tên. < 1280: thẻ hai dòng, "Sửa" mở ô tại thẻ. */
-  const LUOI = laQl ? 'xl:grid-cols-[28px_minmax(260px,1fr)_100px_100px_124px_168px_140px_116px]'
-    : 'xl:grid-cols-[28px_minmax(240px,1fr)_100px_100px_124px_220px_minmax(220px,1fr)]';
+  const coCotLop = laQl && dongs.some(({ x }) => { const hl = huongLenh(x); return !!hl && canLopDich(hl); });
+  const LUOI = laQl ? (coCotLop ? 'xl:grid-cols-[28px_minmax(260px,1fr)_92px_92px_92px_148px_148px_148px]' : 'xl:grid-cols-[28px_minmax(260px,1fr)_92px_92px_92px_minmax(148px,220px)]')
+    : 'xl:grid-cols-[28px_minmax(240px,1fr)_92px_92px_92px_220px_minmax(220px,1fr)]';
   const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (
     <button key={key} type="button" aria-pressed={bat} onClick={onClick}
       className={`btn btn-sm min-h-[44px] rounded-full sm:min-h-0 ${bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{nhan}</button>
@@ -825,12 +826,12 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           </span>
           <span className="justify-self-center max-xl:hidden">{oFinal(e)}</span>
           <span className="justify-self-center max-xl:hidden">{oMt0(e)}</span>
-          <span className="min-w-0 max-xl:hidden">{oKv(e, x)}</span>
+          <span className="flex min-w-0 justify-center max-xl:hidden">{oKv(e, x)}</span>
           {laQl ? (
             <>
               <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oHuong(e, x)}</span>
-              <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oLop(e, x)}</span>
-              <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oTuanDong(e, x)}</span>
+              {coCotLop && <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oLop(e, x)}</span>}
+              {coCotLop && <span className={`min-w-0 max-xl:[grid-column:2/-1] ${oSua}`}>{oTuanDong(e, x)}</span>}
             </>
           ) : (
             <>
@@ -952,8 +953,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
               <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })} className="border-t" style={{ borderColor: 'var(--line)' }}>
                 {/* Tiêu đề cột (chữ, không điều khiển — G9); < 1280 không có. */}
                 <div aria-hidden className={`hidden gap-x-3.5 border-b px-4 py-2 text-xs font-semibold text-slate-500 xl:grid ${LUOI}`} style={{ borderColor: 'var(--line)' }}>
-                  <span /><span>{t('Học viên')}</span><span className="text-center">Final</span><span className="text-center">MT0</span><span>{t('Kỳ vọng FT')}</span>
-                  {laQl ? <><span>{t('Bước tiếp')}</span><span>{t('Lớp mới')}</span><span>{t('Tuần')}</span></> : <><span>{t('Hướng · Head chốt')}</span><span>{t('Nhận xét')}</span></>}
+                  <span /><span>{t('Học viên')}</span><span className="text-center">Final</span><span className="text-center">MT0</span><span className="text-center">{t('Kỳ vọng FT')}</span>
+                  {laQl ? <><span>{t('Bước tiếp')}</span>{coCotLop && <><span>{t('Lớp mới')}</span><span>{t('Tuần')}</span></>}</> : <><span>{t('Hướng · Head chốt')}</span><span>{t('Nhận xét')}</span></>}
                 </div>
                 {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]}>{daiNhom(n.k, n.rows)}{n.rows.map((r) => dongEm(r, false))}</div>)}
                 {dsLe.map((r, i) => dongEm(r, i === 0 && dsDai.length > 0))}
