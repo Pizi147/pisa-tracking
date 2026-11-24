@@ -28,7 +28,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { useTrongKhung } from '../../ui/KhungPanel.tsx';
-import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
+import { ChuConCho, DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi, LuotChinhContext } from './DongThi.tsx';
 import { HopNhanXetThuong, NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';   /* HopNhanXetThuong: bản nạp lười (TD-WEB-2) — lưới không tải mảnh hộp trước khi mở */
 import { dich, t } from '@shared/i18n/index.ts';
@@ -276,11 +276,6 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
  * `tuanDangXem` (Lịch Test, PR-UX1 Q10): ô chưa có điểm của môn thi tuần khác → chữ mờ `W4 SEP`, không ô nhập — chưa
  * phải việc của tuần đang xem. Môn mang "-" giữ nguyên ô (có `→ tuần mới`).
  */
-/** "Còn chờ: A (L R) · B (W S)": mỗi người một khối không ngắt — xuống dòng chỉ ở dấu "·", không giữa "(W S)". */
-export const ChuConCho = ({ ds }: { ds: string }) => (
-  <>{t('Còn chờ: {ds}', { ds }).split(' · ').map((x, i, a) => <span key={i} className="whitespace-nowrap">{x}{i < a.length - 1 && ' · '}</span>)}</>
-);
-
 export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null, anNutTao = false, gon = false, conCho = '' }: {
   data: ThuongSheet; onReload: () => void; kn?: string | null; hv?: number | null; tuanDangXem?: string | null;
   /** G1-11 (mockup `thiet-ke/2026-11-13-test-g1/g1-11-nhap-diem.html`, #1434): lưới trong panel việc ~720 px — Kết quả (và % tổng Checkpoint) xuống DƯỚI tên ở cột

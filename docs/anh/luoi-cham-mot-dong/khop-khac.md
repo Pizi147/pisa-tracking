@@ -17,3 +17,11 @@
 - Dấu xanh lá sau dòng "Còn chờ" trong ảnh chủ SP: không có trong DOM / CSS của app (chỉ là nét đánh dấu của chủ SP).
 - Đo DOM (Playwright, Head): 1440 / 1280 / 1024 mỗi hàng một dòng (cao 33 px, 0 tràn); 800: hàng "Còn chờ" dài nhất → khối "Tổng số câu" xuống dưới cả khối, sát phải. 375 dùng màn "từng kỹ năng" (không đổi bố cục).
 - `ponytail:` không thêm. Kiểm: `npm run check` xanh; phép kiểm chuỗi `prUxG` / `prHsm` cập nhật theo.
+
+## Lưới FT (PTA rà #2115) — ảnh `ft-truoc-head-*` | `ft-sau-head-*`
+| Thành phần | TRƯỚC | SAU |
+|---|---|---|
+| "Còn chờ: … · chấm chéo S" | dòng riêng | cùng dòng, trái |
+| Ô "GV chấm S [Gõ tên…]" (+ chú giải em không học) | dòng riêng bên dưới, phải | cùng dòng, sát mép phải; hết chỗ (375) cả khối xuống dưới, sát phải |
+| Xuống dòng của "Còn chờ" | bất kỳ | chỉ giữa hai người, dấu "·" đi theo người sau; không cắt chữ |
+| Lưới cột / ô điểm, panel Công việc | — | không đổi |

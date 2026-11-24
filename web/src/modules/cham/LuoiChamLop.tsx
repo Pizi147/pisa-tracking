@@ -2,8 +2,8 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState, type Rea
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
-import { LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
-import { ChuConCho, LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
+import { ChuConCho, LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
+import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
 import type { OnHet } from './phienCham.ts';
 import { dongCuaBai, type TomTatLuot } from '@shared/domain/index.ts';
@@ -167,13 +167,13 @@ export function LuoiChamLop({
   const theHv = hep && laFt && sEx !== undefined && !xemBang;
   const tungKyNang = hep && !xemBang && !theHv;
   useEffect(() => { onMotKyNang?.(tungKyNang); }, [tungKyNang, onMotKyNang]);
-  const conChoRieng = !(!tungKyNang && !laFt && thuong);
+  const conChoRieng = tungKyNang;   /* lưới đủ cột (FT / thường): "Còn chờ" nằm trong dòng công cụ của chính lưới */
   const luoi = (
     <>
       {conChoRieng && <DongConCho ds={conCho} />}
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} anKetQua={anKetQua} sEx={sEx} the={theHv} onHet={onHet} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} anKetQua={anKetQua} sEx={sEx} the={theHv} onHet={onHet} conCho={conCho} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} gon={luoiGon} conCho={conCho} />}
     </>
   );
