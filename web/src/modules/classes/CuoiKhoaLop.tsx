@@ -616,7 +616,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     if (khoa(e)) return <b className="text-[13px] font-semibold text-slate-100">{e.lenh!.lopDichMa ?? lopCua.get(e.lenh!.lopDichId ?? 0)?.code ?? '—'}</b>;
     if (theoNhom(e, x)) {
       return (
-        <span className="flex flex-wrap items-center gap-x-2 text-[13px]"><b className="font-semibold text-slate-100">{lopCua.get(x.lop!)?.code}</b>
+        <span className="flex min-h-[34px] flex-wrap items-center gap-x-2 text-[13px]"><b className="font-semibold text-slate-100">{lopCua.get(x.lop!)?.code}</b>
           <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] xl:invisible xl:group-hover/hang:visible xl:group-focus-within/hang:visible sm:min-h-0"
             onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Đổi lớp')}</button></span>
       );
@@ -782,7 +782,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
      dưới dòng (`hopFt`). Bảng ≥ 1280 (trang) / ≥ 768 (panel); hẹp hơn: thẻ mỗi em, "Sửa" mở ô tại thẻ. Bàn giao (khung không vẽ — GIỮ) thành chip dưới tên. */
   /* QL: ba ô Bước tiếp · Lớp · Tuần LUÔN có (lưới đứng yên khi chọn hướng — trước: cột Lớp / Tuần chỉ hiện khi có em cần lớp, bảng giật). */
   const coCotLop = laQl;
-  const chieuK = laQl ? (coCotLop ? '3' : '1') : 'doc';
+  const chieuK = laQl ? '3' : 'doc';
   const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (
     <button key={key} type="button" aria-pressed={bat} onClick={onClick}
       className={`btn btn-sm min-h-[44px] rounded-full sm:min-h-0 ${bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{bat && <span aria-hidden>✓ </span>}{nhan}</button>
@@ -808,7 +808,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     return (
       <>
         <span className="flex flex-wrap items-center gap-x-1.5"><Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link><ChipXetLaiDong sid={e.id} />
-          {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <Nhan tone="doing">{t('đã sửa')}</Nhan>}</span>
+          {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && !(laQl && !khoa(e) && theoNhom(e, x)) && <Nhan tone="doing">{t('đã sửa')}</Nhan>}</span>
         {((mot && nhomCua(e) !== 'cho' && !anNhan) || e.cuoiKhoa?.goiY?.baoPhTvv || bg) && (
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
             {mot && nhomCua(e) !== 'cho' && !anNhan && <span className="inline-flex h-5 items-center gap-1.5 whitespace-nowrap rounded px-1.5 font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>
@@ -947,7 +947,10 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
       </div>
     );
   };
-  const nhomHien = THU_TU_NHOM.map((k) => ({ k, rows: hien.filter((r) => nhomCua(r.e) === k) })).filter((n) => n.rows.length);
+  /* QL: em đã chốt (🔒) lên đầu, ngoài dải nhóm — dải chỉ gồm em còn sửa được (mockup v25); vai khác giữ nguyên nhóm theo gợi ý. */
+  const daChotLen = laQl ? hien.filter((r) => khoa(r.e)) : [];
+  const conLai = laQl ? hien.filter((r) => !khoa(r.e)) : hien;
+  const nhomHien = THU_TU_NHOM.map((k) => ({ k, rows: conLai.filter((r) => nhomCua(r.e) === k) })).filter((n) => n.rows.length);
   const dsDai = nhomHien.filter((n) => coDai(n.k));
   const dsLe = nhomHien.filter((n) => !coDai(n.k)).flatMap((n) => n.rows);
   const tatCaQl = ds.filter(chonDuoc);
@@ -999,11 +1002,13 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
         <span>{t('Học viên')}</span><span className="ck-fin">Final %</span>
         {laQl ? <><span>{t('Bước tiếp')}</span>{coCotLop && <><span>{t('Lớp mới')}</span><span>{t('Tuần')}</span></>}</> : <><span>{t('Hướng · Head chốt')}</span><span>{t('Nhận xét')}</span></>}
       </div>
+      {daChotLen.map(dongBang)}
       {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]} className="ck-g">{daiBang(n.k, n.rows)}{n.rows.map(dongBang)}</div>)}
       {dsLe.map(dongBang)}
     </div>
   ) : (
     <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })} className="overflow-clip rounded-[10px] border" style={{ borderColor: 'var(--line)' }}>
+      {daChotLen.map(dongThe)}
       {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]}>{daiThe(n.k, n.rows)}{n.rows.map(dongThe)}</div>)}
       {dsLe.map(dongThe)}
     </div>
