@@ -287,7 +287,7 @@ type DuLieuSuaKhai = { bacCu: number; bac: number; thang: string | null; ghiChu:
  * Dòng khai KHÔNG đổi. `bacCu` (bậc panel đã thấy) lệch → 409 như sửa thẳng.
  */
 export function guiSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string, o: { bacCu?: number } = {}) {
-  if (!k.ghiChu) throw badRequest('Ghi lý do sửa bậc ở ô Ghi chú — Head đọc để duyệt.');
+  if (k.ghiChu.length < CHU_TOI_THIEU) throw badRequest(`Ghi lý do sửa bậc ở ô Ghi chú (ít nhất ${CHU_TOI_THIEU} ký tự) — Head đọc để duyệt.`);   // B-2 (N50 ⑥): một ngưỡng cho mọi ô lý do
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
@@ -1267,8 +1267,8 @@ export function quetYThucHetHan(conn: any, homNay: string): number {
     WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc', 'sua_khai_bac') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
     .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null; nguoi_xin: number | null }[];
   if (!ds.length) return 0;
-  tx(() => {
-    for (const y of ds) {
+  /* C-7: MỖI thẻ một savepoint + try/catch — thẻ lỗi (em không còn, thu hồi 409…) chỉ bị bỏ qua + log, các thẻ khác vẫn chốt; không làm 500 mọi đường đọc (`quetTheoMoc`). */
+  const chot = (y: (typeof ds)[number]) => {
       if (y.loai === 'sua_khai_bac') {
         /* N70: hết hạn → chốt theo GVCN (người gửi là người sửa). Bậc đã khác lúc gửi (lượt "chết" chưa kịp đóng) → đóng thẻ, không áp. */
         const d = JSON.parse(y.du_lieu ?? '{}') as { bacCu?: number; cycleId?: number };
@@ -1276,12 +1276,12 @@ export function quetYThucHetHan(conn: any, homNay: string): number {
         const khop = !!k && k.bac === d.bacCu && k.cycleId === d.cycleId && y.nguoi_xin != null;
         if (khop) apDungSuaKhai(y.nguoi_xin!, y, { tuChot: true });
         chotYeuCau(conn, theSuaKhai(y.doi_tuong_id), 'tu_dong', { lyDo: khop ? LY_DO_TU_CHOT_Y_THUC : LY_DO_SUA_KHAI_LECH });
-        continue;
+        return;
       }
       if (y.loai === 'y_thuc') chotDeXuatYThuc(y.doi_tuong_id, homNay, null, true);
       else {
         const m = loadXuLy(y.doi_tuong_id);
-        if (!THU_HOI_DUOC.has(m.status)) continue;
+        if (!THU_HOI_DUOC.has(m.status)) return;
         /* Như `khiDuyet` của thẻ: thẻ giữ số lúc chốt (bậc về / số vi phạm). */
         const sl = y.hoc_vien_id ? soLieuThuHoi([{ measureId: y.doi_tuong_id, studentId: y.hoc_vien_id }]).get(y.doi_tuong_id) : undefined;
         if (sl) conn.prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(y.du_lieu ?? '{}'), ...sl }), y.id);
@@ -1289,6 +1289,10 @@ export function quetYThucHetHan(conn: any, homNay: string): number {
         xoaNho();
       }
       chotYeuCau(conn, { loai: y.loai as 'y_thuc' | 'thu_hoi_y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: y.doi_tuong_id }, 'tu_dong', { lyDo: LY_DO_TU_CHOT_Y_THUC });
+  };
+  tx(() => {
+    for (const y of ds) {
+      try { tx(() => chot(y)); } catch (e) { console.error('[het-han-y-thuc]', y.id, e); }
     }
   });
   return ds.length;

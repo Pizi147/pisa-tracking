@@ -48,7 +48,7 @@ export async function runPrSl1Tests(t: YThucTestKit) {
     });
 
     await checkAsync('SL1-1b · máy chủ đọc `kieu=thang` đúng tháng (Báo cáo 09/2026 = 31/08 – 27/09, không phải 08/2026)', async () => {
-      const r = await goi(P.mbManager.userId, `/phan-tich/bao-cao?branchId=${MB}&ct=ft&kieu=thang&tu=2026-08-31&den=2026-09-27`);
+      const r = await goi(P.mbManager.userId, `/phan-tich/bao-cao/ket-qua-mt?branchId=${MB}&ct=ft&kieu=thang&tu=2026-08-31&den=2026-09-27`);
       assert(r.status === 200 && r.json.tu === '2026-08-31' && r.json.den === '2026-09-27', `${r.status} ${r.json?.tu} – ${r.json?.den}`);
     });
 

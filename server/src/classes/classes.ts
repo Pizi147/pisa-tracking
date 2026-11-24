@@ -457,7 +457,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
     if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
   }
   /* PR-UXF-a G-10 (Q17): cột Case đếm từ `listCases(p, { classId })` — THEO QUYỀN người xem, cùng nguồn với "n Case đang mở" đầu hồ sơ lớp. */
-  for (const c of listCases(p, { classId }).rows) {
+  for (const c of listCases(p, { classId, anSauThi: true }).rows) {   // D-01 (N46)
     if (c.status === 'done' || c.studentId === null) continue;
     openCaseCount.set(c.studentId, (openCaseCount.get(c.studentId) ?? 0) + 1);
   }
@@ -900,7 +900,7 @@ function classOverviewThat(p: Principal, classId: number) {
      * hiện học viên có trong ROSTER (đang active, không lưu trữ) nên KHÔNG hiện em đã tạm dừng — lọc thêm
      * theo đúng tập học viên ĐANG HỌC của `classId` để badge khớp lại với danh sách mở ra.
      */
-    soCaseMo: caseCuaLop.filter((c) => c.status !== 'done' && c.studentId !== null && emDangHoc.includes(c.studentId)).length,
+    soCaseMo: caseCuaLop.filter((c) => c.status !== 'done' && !c.sauThi && c.studentId !== null && emDangHoc.includes(c.studentId)).length,   // D-01 (N46)
     /** B4: cùng hai số với hộp lớp ở trang Học viên & Lớp (`viecHocVienTheoLop`). */
     soChoDuyet: vl.soChoDuyet.get(classId) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(classId) ?? 0,
     /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác và với FT). */

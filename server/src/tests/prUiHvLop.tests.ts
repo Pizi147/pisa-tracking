@@ -43,7 +43,7 @@ export async function runPrUiHvLopTests(t: Kit) {
     assert(coTvv > 0 && coTvv < hang.length, 'seed: phải có cả em có TVV và em chưa có TVV');
   });
 
-  check('UHL-3 · Lịch thi: chốt ngày rồi ghi chú → hàng HV ra "da-chot-ngay" (cùng ngày); chi tiết dưới hàng có lịch sử mới trước', () => {
+  check('N27 · UHL-3 · Lịch thi: chốt ngày rồi ghi chú → hàng HV ra "da-chot-ngay" (cùng ngày); chi tiết dưới hàng có lịch sử mới trước', () => {
     const r0 = lt.danhSachLichThi(P.mbManager, { thang: '2026-09', phamVi: 'tat-ca' });
     const em = r0.rows.find((x: any) => x.cycleId && x.coTheSua && x.lichThi.trangThai === 'chua-co');
     assert(em, 'seed: cần một em chưa có tháng thi');
@@ -94,7 +94,7 @@ export async function runPrUiHvLopTests(t: Kit) {
     assert(vt.some((c: any) => c.viecTiep.nguoi), 'seed: phải có việc tiếp có người làm');
   });
 
-  check('LICH-THI-UI (chủ SP 06/11) · Lịch thi: xếp theo LỚP (A→Z), trong lớp: có ngày → chỉ tháng → chưa có lịch → Xong cuối; lọc Lớp / khung của trang áp vào góc Lịch thi', () => {
+  check('N27 · LICH-THI-UI (chủ SP 06/11) · Lịch thi: xếp theo LỚP (A→Z), trong lớp: có ngày → chỉ tháng → chưa có lịch → Xong cuối; lọc Lớp / khung của trang áp vào góc Lịch thi', () => {
     const L = (o: any) => ({ trangThai: 'du-kien', ngay: null, thang: null, tuan: null, ...o });
     const em = (ten: string, classCode: string, buoc: string, lichThi: any) => ({ ten, classCode, buoc, lichThi });
     const ds = [
@@ -158,5 +158,32 @@ export async function runPrUiHvLopTests(t: Kit) {
       conn.exec('ROLLBACK TO lthoantac'); conn.exec('RELEASE lthoantac');
     }
   });
-}
 
+  check('A-2 (N46) · Lịch thi: em đã có KQ thi thật không còn "Test sắp tới" (MT chưa làm không còn là kế hoạch); hoàn KQ thì về lại', () => {
+    const q = { thang: [-1, 0, 1, 2].map((n) => addDays(TODAY, 30 * n).slice(0, 7)).join(','), phamVi: 'tat-ca' };
+    const em = lt.danhSachLichThi(P.mbManager, q).rows.find((x: any) => x.cycleId && x.chiTiet.sapToi);
+    assert(em, 'seed: một em có Test sắp tới');
+    const sapToi = () => lt.danhSachLichThi(P.mbManager, q).rows.find((x: any) => x.studentId === em.studentId)?.chiTiet.sapToi ?? null;
+    conn.exec('SAVEPOINT a2');
+    try {
+      conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE id = ?').run(em.cycleId);
+      assert(sapToi() === null, 'sau KQ thi thật vẫn hiện Test sắp tới');
+    } finally { conn.exec('ROLLBACK TO a2'); conn.exec('RELEASE a2'); }
+    assert(sapToi(), 'hoàn KQ: Test sắp tới về lại');
+  });
+
+  check('A-4 (N53) · aria-label ô điểm thi thật ở hồ sơ HV đi qua fmtBand ("S 7.0")', () => {
+    const src = fs.readFileSync(path.join(REPO, 'web/src/modules/students/StudentDetailPage.tsx'), 'utf8');
+    assert(src.includes('nhan={`${k.toUpperCase()} ${fmtBand(thiKq.diem[k])}`}') && !src.includes('${k.toUpperCase()} ${thiKq.diem[k]}'), 'nhãn đọc màn còn ghép số thô');
+  });
+
+  check('A-5 (N11) · mô tả quyền student.edit_more dùng MỘT tên "Tạm dừng / Kết thúc học" (không còn "Thôi học")', () => {
+    const moTa = d.MO_TA_QUYEN['student.edit_more'].moTa as string;
+    assert(moTa.includes('Tạm dừng / Kết thúc học') && !/Thôi học/.test(moTa), moTa);
+  });
+
+  check('E-10 (N52) · hồ sơ lớp: badge việc theo cờ máy chủ (workOps / workCx), CX không rơi nhánh GV', () => {
+    const src = fs.readFileSync(path.join(REPO, 'web/src/modules/classes/DauTrangLop.tsx'), 'utf8');
+    assert(src.includes('const laQl = laVaiQuanLy(session?.roles) || !!session?.nav?.workOps || !!session?.nav?.workCx;') && src.includes('soViecQuaHan: laQl ? soViecQuaHan : 0'), 'DauTrangLop chưa dùng cờ máy chủ cho vai quản lý');
+  });
+}

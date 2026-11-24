@@ -2776,6 +2776,8 @@ export function caseDetail(p: Principal, caseId: number) {
 }
 
 export type CaseFilters = {
+  /** D-01 (N46): bỏ Case của lộ trình đã có KQ thi thật — MỘT công tắc cho mọi số "Case đang mở / chưa có PA" (lọc sau SQL, không vào khoá nhớ). */
+  anSauThi?: boolean;
   branchId?: number | null;
   classId?: number | null;
   studentId?: number | null;
@@ -2845,6 +2847,8 @@ export type MappedCase = {
   parallel: boolean;
   /** OV-13a (Q2): Case tạm của lượt chưa chốt — không là việc (Thêm PA, chọn người phụ trách). */
   tam: boolean;
+  /** D-01 (N46): Case của lộ trình FT đã có KQ thi thật — ẩn khỏi mọi số "đang mở / chưa có PA" (như em Tạm dừng). */
+  sauThi: boolean;
   /** Case này nối tiếp Case nào (vấn đề cũ tái phát sau khi đã chốt). */
   previousCaseId: number | null;
   state: CaseState;
@@ -3018,6 +3022,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               u.full_name AS reporter_name,
               ${TEN_CHU_SQL('sc.owner_user_id')} AS owner_name,
               (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id) AS intervention_count,
+              ${CASE_SAU_THI_SQL('sc', 'COALESCE(sc.student_id, a.student_id)')} AS sau_thi,   /* D-01 (N46): cờ chung cho mọi số "Case đang mở / chưa có PA" */
               ${LA_CASE_SOS('sc')} AS tu_sos,
               /* PR-N1 (Task 13, K3-02/T53 Q1): hạn tiếp theo = hạn GHI KẾT QUẢ TUẦN (action_due, hết Thứ Hai) của PA đang
                  chạy — KHÔNG phải dự kiến kết thúc (followup_due, không bao giờ là hạn). Cùng luật với ô "Việc cần làm tiếp". */
@@ -3120,6 +3125,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       lastNextStep: lastResultOf.get(r.id)?.nextStep ?? null,
       parallel: !!r.parallel,
       tam: !!r.tam,
+      sauThi: !!r.sau_thi,
       previousCaseId: r.previous_case_id ?? null,
       interventionCount: r.intervention_count as number,
       nextDue: r.next_due as string | null,
@@ -3154,7 +3160,7 @@ export function listCases(p: Principal, f: CaseFilters = {}): {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
   return trongBoNho(() => {
-    const all = caseTrongPhamVi(p, f);
+    const all = f.anSauThi ? caseTrongPhamVi(p, f).filter((r) => !r.sauThi) : caseTrongPhamVi(p, f);
 
     /*
      * Hàng đợi lọc TRƯỚC, vì nó là câu hỏi đang đặt ra ("cái nào chưa ai làm?"). Nhóm và kỹ

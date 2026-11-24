@@ -420,7 +420,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const s = doc('web/src/modules/classes/DauTrangLop.tsx');
     assert(/<DaiChiSo nhan=\{t\('Số của lớp'\)\}>/.test(s) && /\{bConLai\.hien\.map\(nutBadge\)\}/.test(s) && /\{chipBadge\}(?:(?!<ODai|<\/DaiChiSo>)[\s\S])*<\/DaiChiSo>/.test(s), 'badge lớp phải ở cuối dải số');
     assert(!/tvvChinhCuaLop|tomTat\?\.tvv/.test(s), 'còn TVV ở đầu trang (lời 25)');
-    assert(/soViecQuaHan: laVaiQuanLy\(session\?\.roles\) \? soViecQuaHan : 0/.test(s), '[XM-2] GV còn badge "việc quá hạn của lớp"');
+    /* E-10: vai quản lý theo cờ máy chủ (Head / Quản trị / CX), GV vẫn không có badge. */
+    assert(s.includes('const laQl = laVaiQuanLy(session?.roles)') && s.includes('soViecQuaHan: laQl ? soViecQuaHan : 0'), '[XM-2] GV còn badge "việc quá hạn của lớp"');
     /* NHẸ HƠN PR-6 (v23 ⑧ Y2): hộp thang tab lớp = thanh bước (`ThangYThuc`) + các lần xử lý — thay dòng thang vạch (lời 28, 36). */
     assert(/<ThangYThuc d=\{hv\} homNay=\{homNay\} phu=\{ten\} lanXuLy khung=\{false\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'hộp thang tab Ý thức lớp thiếu thanh bước');
   });

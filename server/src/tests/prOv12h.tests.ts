@@ -262,6 +262,20 @@ export async function runPrOv12hTests(t: any) {
     assert(sau.length === 1 && sau[0].id === v.id && sau[0].trang_thai === 'bo' && sau[0].bo_ly_do === 'not_needed', `Sửa không sinh / mở lại việc TVV: ${JSON.stringify(sau)}`);
   }));
 
+  check('B-6 (N24 ②) · ghi lần liên hệ trên việc Báo PH đã bỏ → mở lại / xong và xoá dấu bỏ (bo_ly_do, bo_boi, bo_luc)', () => thu(() => {
+    const { id, studentId } = meeting(addDays(TODAY, -1));
+    const tvv = tvvMoi();
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, studentId);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    const v = viecTvv(id);
+    const dong = () => conn.prepare('SELECT trang_thai, bo_ly_do, bo_ly_do_chu, bo_boi, bo_luc FROM viec_bao_ph WHERE id = ?').get(v.id) as any;
+    bp.boViecBaoPh(tvv, v.id, { lyDo: 'not_needed' });
+    assert(dong().trang_thai === 'bo' && dong().bo_ly_do === 'not_needed' && dong().bo_luc, 'tiền đề: đã bỏ');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em học' });
+    const s = dong();
+    assert(s.trang_thai === 'xong' && s.bo_ly_do === null && s.bo_ly_do_chu === null && s.bo_boi === null && s.bo_luc === null, `dấu bỏ còn: ${JSON.stringify(s)}`);
+  }));
+
   check('PHV2-5b · rà PTA (10): việc hệ thống đóng (Đưa lại) có hạn chọn → xác nhận lại: hạn mới, hạn chọn xoá', () => thu(() => {
     const tvv = tvvMoi();
     const { id: id2, studentId: sid2 } = meeting(addDays(TODAY, -1));

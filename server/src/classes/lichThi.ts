@@ -25,6 +25,7 @@ import { diemCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
+import { LUOT_CON_KE_HOACH_SQL } from '../students/tamDung.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
 const GHI_CHU_TOI_DA = 300;
@@ -261,7 +262,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
   theoLo(cyc, (lo, ph) => {
     for (const a of db().prepare(
       `SELECT a.cycle_id, a.kind, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
+        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? AND ${LUOT_CON_KE_HOACH_SQL('a')} ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
       if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
     }
   });
@@ -271,7 +272,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
   const caseMo = new Map<number, { id: number; kyNang: string | null; sos: number | null; soPa: number }[]>();
   const ids = [...new Set(ds.map((r) => r.id as number))];
   const mo: MappedCase[] = [];
-  for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows);   // lô 500 như `xuatDanhSach` (trần tham số Turso)
+  for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500), anSauThi: true }).rows);   // D-01 (N46) · lô 500 như `xuatDanhSach` (trần tham số Turso)
   const dangMo = mo.filter((c) => c.status !== 'done' && c.studentId !== null && !c.tam);
   /* Số PA mỗi Case đang mở: MỘT câu đếm theo lô (PA chưa huỷ — cùng điều kiện `chiTietCaseMo`, không dựng cả chi tiết Case). */
   const soPa = new Map<number, number>();

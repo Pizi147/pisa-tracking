@@ -7900,11 +7900,13 @@ check('PR-F · Tỷ lệ có cải thiện là 2/3, KHÔNG phải 2/4: chưa xá
     `Câu hiển thị phải là 2/3, đang "${domain.rateText(after.n - before.n, after.N - before.N)}"`);
 });
 
+const { CASE_SAU_THI_SQL } = await import('../students/tamDung.ts');
 check('PR-F · Drill-down: số = độ dài tập, và tập trùng với đối chiếu độc lập bằng SQL', () => {
   const r = metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any;
   const sql = (conn.prepare(
     `SELECT COUNT(DISTINCT COALESCE(sc.student_id, a.student_id)) n FROM sos_cases sc
-       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done' AND sc.tam = 0`,   // OV-13a: Case tạm không đếm
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done' AND sc.tam = 0
+         AND NOT ${CASE_SAU_THI_SQL('sc', 'COALESCE(sc.student_id, a.student_id)')}`,   // OV-13a: Case tạm không đếm · D-01 (N46): em đã thi thật không đếm
   ).get() as any).n;
   assert(r.n === r.ids.length, `Số ${r.n} khác độ dài tập ${r.ids.length}`);
   assert(r.n === sql, `hv-co-case-mo=${r.n} nhưng đếm thẳng bằng SQL ra ${sql}`);

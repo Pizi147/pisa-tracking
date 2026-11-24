@@ -50,6 +50,15 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(mg.listMgmtTasks(gvcn, {}).scopeEmpty === true, 'GV không thấy bảng');
   }));
 
+  await checkAsync('C-5 (N63 ⑧) · 4 nhóm Vận hành khởi đầu chỉ Quản trị sửa: CX / Head toàn hệ thống 403 + coTheSua false; Quản trị 200', () => thu(async () => {
+    const cxAll = loadPrincipal(accounts.createAccount(P.admin, { email: `vanhanh.cxall${accounts.EMAIL_SUFFIX}`, password: 'matkhau-vanhanh-cxall', fullName: 'VANHANH CXALL', roles: [{ role: 'cx', branches: [] }] }).userId as number);
+    const g = mot(`SELECT id FROM task_groups WHERE khoa = 'teacher'`).id as number;
+    assert(await ma(() => mg.suaNhom(cxAll, g, { ten: 'Đổi tên khởi đầu' })) === 403, 'CX toàn hệ thống sửa nhóm khởi đầu → 403');
+    assert(mg.listNhom(cxAll).rows.filter((x: any) => x.khoa).every((x: any) => !x.coTheSua), 'CX toàn hệ thống: coTheSua phải false cho nhóm khởi đầu');
+    assert(await ma(() => mg.suaNhom(P.admin, g, { an: false })) === 200, 'Quản trị sửa nhóm khởi đầu → 200');
+    assert(mg.listNhom(P.admin).rows.filter((x: any) => x.khoa).every((x: any) => x.coTheSua), 'Quản trị: coTheSua true');
+  }));
+
   await checkAsync('VH1-2 · nhóm: tạo / đổi tên / sắp ▲▼ / ẩn (ô chọn bỏ nhóm ẩn, việc cũ giữ) · quyền chi nhánh · nhóm dùng chung', () => thu(async () => {
     const a = mg.taoNhom(cx, { ten: 'Cơ sở vật chất', branchId: MB }).rows.find((g: any) => g.ten === 'Cơ sở vật chất');
     const b = mg.taoNhom(cx, { ten: 'Tuyển sinh', branchId: MB }).rows.find((g: any) => g.ten === 'Tuyển sinh');

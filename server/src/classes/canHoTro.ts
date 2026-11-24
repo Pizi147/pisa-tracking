@@ -57,7 +57,7 @@ export function canHoTroLop(p: Principal, classId: number) {
   const prog = programmeOfClass(classId);
   const boMon = prog?.skills ?? [...ENTRY_SKILLS];
   /* Em ĐANG HỌC lớp này = lớp hiện tại của em (`homeClassId`, ghi danh `active`) — không tính em Tạm dừng (Case rơi về lớp lúc đánh giá). */
-  const mo = listCases(p, { classId }).rows.filter((c) => c.status !== 'done' && c.studentId !== null && c.homeClassId === classId);
+  const mo = listCases(p, { classId, anSauThi: true }).rows.filter((c) => c.status !== 'done' && c.studentId !== null && c.homeClassId === classId);
   const chiTiet = chiTietCaseMo(mo);
   const theoEm = new Map<number, { id: number; ten: string; ma: string; cases: CaseChiTiet[] }>();
   for (const c of mo) {

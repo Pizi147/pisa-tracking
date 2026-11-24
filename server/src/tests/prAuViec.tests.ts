@@ -12,6 +12,7 @@ export async function runPrAuViecTests(t: any) {
   const { metricSet } = await import('../worklist/metrics.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
+  const require_hoSo: any = await import('../giaoVien/hoSo.ts');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const NHOM_CASE = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'no_plan', 'ghi_ket_qua_pa', 'no_owner', 'phoi_hop_sos']);
@@ -183,5 +184,23 @@ export async function runPrAuViecTests(t: any) {
       try { gvbm = hoSo(P.subjectTeacher, sid); } catch (e: any) { if (e?.status !== 403) throw e; }
       assert(!gvbm.some((v) => v.loai === 'phoi-hop-sos'), `GV bộ môn xem em ${sid}: không có Phối hợp SOS`);
     }
+  });
+
+  check('D-01 / D-02 (N46) · em đã có KQ thi thật: Case rời "đang mở / chưa có PA / quá hạn" ở Tổng quan, Phân tích, hồ sơ GV — hoàn KQ thì về lại', () => {
+    const { caseMoCuaGv } = require_hoSo;
+    const c = one(`SELECT sc.id, sc.cycle_id cy, sc.owner_user_id gv FROM sos_cases sc JOIN learning_cycles cy ON cy.id = sc.cycle_id AND cy.route IS NOT NULL
+       JOIN students s ON s.id = sc.student_id AND s.status = 'active' AND s.archived_at IS NULL
+       WHERE sc.status != 'done' AND sc.tam = 0 AND sc.owner_user_id IS NOT NULL AND cy.thi_that_khong_thi = 0 AND cy.thi_that_l IS NULL AND cy.outcome_score IS NULL
+         AND COALESCE(cy.outcome, 'unknown') = 'unknown' ORDER BY sc.id LIMIT 1`);
+    assert(c, 'seed: Case mở của em FT chưa thi có người phụ trách');
+    const ids = () => { xoaNho(); return ['case-mo', 'case-cho-xac-dinh-nguyen-nhan', 'case-xac-dinh-nguyen-nhan-qua-han', 'case-thieu-pa'].map((k) => (metricSet(P.admin, k, {}).ids as number[]).includes(c.id)); };
+    const gvCo = () => { xoaNho(); return caseMoCuaGv(P.admin, c.gv, null).some((x: any) => x.id === c.id); };
+    assert(ids()[0] && gvCo(), 'trước: Case còn trong "đang mở" (Tổng quan, hồ sơ GV)');
+    conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE id = ?').run(c.cy);
+    try {
+      assert(!ids().some(Boolean), 'sau KQ thi thật: Case không còn ở case-mo / chưa chốt PA / quá hạn / thiếu PA');
+      assert(!gvCo(), 'hồ sơ GV không còn đếm Case');
+    } finally { conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 0 WHERE id = ?').run(c.cy); xoaNho(); }
+    assert(ids()[0] && gvCo(), 'hoàn KQ: Case về lại');
   });
 }

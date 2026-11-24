@@ -288,7 +288,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['TVV sửa Target', tv, 'PATCH', `/cycles/${chuKy}`, { targetScore: 7, lyDo: 'thử' }],
         ['CX phân công GV', cx, 'PUT', `/classes/${lop}/teachers`, { slots: [] }],
         /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không có khu Phân tích — mọi đường /phan-tich/* 403 (cả đường vốn trả rỗng, cả đổi hoa thường). */
-        ['TVV Phân tích', tv, 'GET', `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['TVV Báo cáo', tv, 'GET', '/phan-tich/bao-cao'],
+        ['TVV Phân tích', tv, 'GET', `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['TVV Báo cáo', tv, 'GET', '/phan-tich/bao-cao/o?o=hv-da-thi'],
         ['TVV Thi thật (đổi hoa thường)', tv, 'GET', '/PHAN-TICH/thi-that'], ['TVV Ý thức PT', tv, 'GET', '/phan-tich/y-thuc'],
       ];
       const sai: string[] = [];

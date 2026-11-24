@@ -79,7 +79,7 @@ export async function runPrOv12bTests(t: any) {
     assert(a3.length === 0, 'DB demo (schema.sql) đã có cột');
   });
 
-  check('OV12b-3 → LUAT-NX-MT · máy chủ: điểm MT thiếu / ngắn nhận xét → LƯU (không 400); đủ → lưu; đạt kỳ vọng không cần nhóm; dài quá → 400', () => thu(() => {
+  check('N9 · OV12b-3 → LUAT-NX-MT · máy chủ: điểm MT thiếu / ngắn nhận xét → LƯU (không 400); đủ → lưu; đạt kỳ vọng không cần nhóm; dài quá → 400', () => thu(() => {
     assert(luot, 'cần một lượt MT ở MB FT 101');
     dung(luot);
     luu('listening', { rawScore: 30 });
@@ -146,7 +146,7 @@ export async function runPrOv12bTests(t: any) {
     assert(dong('reading').no_show_period_id === W, '"-"');
   }));
 
-  check('OV12b-7 · lưới: ô cũ có điểm thiếu nhận xét → "ghi-nhan-xet"; dưới kỳ vọng thiếu nhóm → "chon-nhom"; đủ → null; MT cũ mới nhất vẫn nhắc (N8)', () => thu(() => {
+  check('N9 · OV12b-7 · lưới: ô cũ có điểm thiếu nhận xét → "ghi-nhan-xet"; dưới kỳ vọng thiếu nhóm → "chon-nhom"; đủ → null; MT cũ mới nhất vẫn nhắc (N8)', () => thu(() => {
     dung(luot);
     /* Dữ liệu trước luật: ghi thẳng bằng đường nội bộ (không phải người dùng). */
     attempts.saveScore(P.admin, luot, 'listening', { rawScore: 35 }, TRONG);

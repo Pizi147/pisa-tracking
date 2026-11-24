@@ -374,9 +374,8 @@ export function huyQuyetDinhDoi(p: Principal, requestId: number): void {
  * Không huỷ ngay lúc vừa gửi đề nghị: khoảng chờ là có thật, và nó là của Quản lý.
  */
 /* OV-1c: không xét chốt ở đây — hết hạn đưa kỹ năng `absent` (đã là chốt, `kyNangXongThieu`) sang `cancelled` (vẫn chốt): Case đã sinh lúc vắng. */
-export function sweepExpiredMoves(): number {
+export function sweepExpiredMoves(today = demoToday()): number {   // `today`: ngày của lượt quét (`quetYeuCau(homNay)`), mặc định hôm nay
   const conn = db();
-  const today = demoToday();
   const due = conn
     .prepare(`SELECT r.* FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
                WHERE r.status = 'pending' AND r.decide_by < ? AND a.status != 'cancelled'`)   /* lượt đã huỷ: không huỷ phần thi của nó */

@@ -769,7 +769,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ cái). */
     assert(x2.canhBao.includes('Lớp MB FT 101, MB FOU 12 sẽ thiếu GV môn Reading.') && x2.canhBao.filter((c) => /thiếu GV môn/.test(c)).length === 1,
       x2.canhBao.join(' | '));
-    assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`), x.canhBao.join(' | '));
+    assert(x.canhBao.some((c) => c === `Còn ${cs.length} Case/việc đang giao cho người này — Case / PA / Case chờ xác nhận nguyên nhân tự chuyển cho GV môn → GVCN lớp của em; chỗ không có ai thì để trống.`   /* E-5 */), x.canhBao.join(' | '));
   });
 
   check('PR-XOA T9 · Quyền: QL → 403 cả xem và xoá; xoá lần hai → 400 "Tài khoản đã xoá."', () => {

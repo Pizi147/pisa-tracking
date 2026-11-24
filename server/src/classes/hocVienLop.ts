@@ -238,7 +238,7 @@ export function danhSachHocVienLop(
    * thành đúng MỘT lời gọi — y hệt hành vi cũ.
    */
   const chiNhanhCuaLops = [...new Set(lops.map((r) => r.branchId))];
-  const allCases = chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b }).rows);
+  const allCases = chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows);   // D-01 (N46)
 
   /* Số Case đang mở của mỗi lớp — tra lớp HIỆN TẠI của học viên qua `lopCuaHv`, chỉ tính em đang học. */
   const soCaseByClass = new Map<number, number>();

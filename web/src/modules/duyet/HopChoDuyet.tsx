@@ -117,6 +117,12 @@ export function HopChoDuyet({ branchId, khuLoc }: {
   useEffect(() => { setChon(new Set()); }, [url]);
   useEffect(() => { if (!chon.size) { setLyDoTc(null); setTcDaBam(false); } }, [chon.size]);
   const ds = data?.the ?? [];
+  /* C-6: sau khi danh sách tải lại (lô lỗi mạng giữa chừng, người khác vừa xử lý) chỉ giữ thẻ CÒN chờ — không để id ma trong thanh chọn. */
+  useEffect(() => {
+    if (!data) return;
+    const cho = new Set(data.the.filter((x) => x.trangThai === 'cho').map((x) => x.id));
+    setChon((s) => { const con = new Set([...s].filter((id) => cho.has(id))); return con.size === s.size ? s : con; });
+  }, [data]);
   const [soHien, setSoHien] = useState(5);
   const loaiChon = useMemo(() => (ds.find((x) => chon.has(x.id))?.loai ?? null) as LoaiYeuCau | null, [ds, chon]);
   /* CV-LOI (A1-14): "Chọn hết" chỉ lấy thẻ ĐANG HIỆN — không duyệt thẻ chưa đọc sau "Xem thêm". */

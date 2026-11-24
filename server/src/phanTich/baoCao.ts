@@ -267,6 +267,7 @@ const gop = (ds: Map<number, SosLop>): SosLop => {
   return all;
 };
 
+/* D-03: route `GET /phan-tich/bao-cao` + `kemBaoCao` đã gỡ (không client nào gọi). ponytail: hàm giữ làm HÀM ĐỐI CHIẾU của ~7 tệp phép kiểm (số Báo cáo = số panel); gỡ khi viết lại các phép kiểm đó. */
 export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
   const r = tinh(p, f);
   const ft = f.ct === 'ft';

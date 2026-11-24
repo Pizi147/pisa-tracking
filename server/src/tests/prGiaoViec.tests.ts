@@ -218,7 +218,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const k = gv.xongPhanMeeting(tvv, kq.id, { ketQua: 'Gia đình đồng ý kèm em thêm' });
     assert(k.meeting.trangThai === 'xong' && k.meeting.nhapHoBoi === 'GIAOVIEC TVV', 'TVV nhập hộ');
     assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', bpId).trang_thai === 'mo', 'Báo PH độc lập');
-    gv.moLaiPhanMeeting(ql, xep.id);   // N67: Xếp lịch họp đã tự xong theo Kết quả — mở lại để thử quyền / sửa hạn / ngày giờ
+    conn.prepare("UPDATE meeting_phan SET trang_thai = 'mo', xong_boi = NULL, xong_luc = NULL WHERE id = ?").run(xep.id);   // N67: Xếp lịch họp đã tự xong theo Kết quả — dựng lại 'chưa xong' để thử quyền / sửa hạn (API mo-lai nay 409, C-9)
     assert(await ma(() => gv.xongPhanMeeting(gvbm, xep.id, {})) === 403, 'GVBM (không phụ trách) → 403');
     assert(await ma(() => gv.suaHan(gvbm, 'meeting', xep.id, { han: TODAY, hanCu: null })) === 403, 'GVBM sửa hạn phần Meeting → 403');
     gv.suaHan(gvcn, 'meeting', xep.id, { han: addDays(TODAY, 2), hanCu: null });   // N34 ①: GVCN sửa hạn được
@@ -240,7 +240,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(!items(cx).some((x) => x.key === `meeting_xep_lich:${xep.id}`), 'phần đã đóng rời /my-work');
   })));
 
-  await checkAsync('N67 · Kết quả meeting xong → Xếp lịch họp tự xong (lịch sử, rời /my-work); Hoàn tác Kết quả → về như trước; Xếp lịch người làm đã Hoàn thành giữ; mở lại Meeting', () => thu(async () => {
+  await checkAsync('N67 + C-9 (mo-lai Xếp lịch khi Kết quả xong → 409) · Kết quả meeting xong → Xếp lịch họp tự xong (lịch sử, rời /my-work); Hoàn tác Kết quả → về như trước; Xếp lịch người làm đã Hoàn thành giữ; mở lại Meeting', () => thu(async () => {
     const sid = moiEm();
     const { aid, xep, kq } = meeting(sid);
     const tt = () => mot('SELECT trang_thai, xong_boi, xong_luc, ngay_gio FROM meeting_phan WHERE id = ?', xep.id);
@@ -265,8 +265,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     /* Mở lại Meeting (Đưa lại → xác nhận lại) mà Kết quả vẫn xong → Xếp lịch tự xong. */
     gv.moLaiPhanMeeting(ql, xep.id);
     gv.xongPhanMeeting(cx, kq.id, {});
-    gv.moLaiPhanMeeting(ql, xep.id);   // người làm mở lại Xếp lịch sau khi tự xong → chưa xong
-    assert(tt().trang_thai === 'mo', 'mở lại tay Xếp lịch');
+    assert(await ma(() => gv.moLaiPhanMeeting(ql, xep.id)) === 409 && tt().trang_thai === 'xong', 'C-9: Kết quả đã xong → mở lại Xếp lịch 409, Xếp lịch giữ xong (không hiện lại việc / quá hạn)');
+    conn.prepare("UPDATE meeting_phan SET trang_thai = 'mo', xong_boi = NULL, xong_luc = NULL WHERE id = ?").run(xep.id);   // dựng 'chưa xong' để thử nhánh Đưa về Cần xử lý
     ph.moLaiCoordination(gvcn, aid);
     assert(tt().trang_thai === 'bo', 'đưa về Cần xử lý → Xếp lịch đã bỏ');
     ph.confirmCoordination(gvcn, aid, { performedOn: TODAY, note: 'Xác nhận lại' });
@@ -721,7 +721,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(!b.some((d) => d.startsWith('N67')), `chạy lại không đổi: ${b.join(' | ')}`);
   }));
 
-  await checkAsync('N69 · xoá tài khoản / gỡ hết vai → Case / PA / tín hiệu / lần xử lý người nghỉ đứng tên về người theo luật (lịch sử); đổi vai còn vai không chuyển; em không đang học → để nguyên; Khôi phục không trả', () => thu(async () => {
+  await checkAsync('N69 + E-5 (xem trước nói đúng · trả số đã chuyển) · xoá tài khoản / gỡ hết vai → Case / PA / tín hiệu / lần xử lý người nghỉ đứng tên về người theo luật (lịch sử); đổi vai còn vai không chuyển; em không đang học → để nguyên; Khôi phục không trả', () => thu(async () => {
     const NOW = new Date().toISOString();
     const gvL = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill = 'listening' ORDER BY id LIMIT 1`, lop)?.user_id ?? null;
     const cn = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 1 ORDER BY id LIMIT 1`, lop).user_id as number;
@@ -747,14 +747,18 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     /* Xoá tài khoản. */
     const a = taiKhoan('nghi', 'teacher');
     const ia = tao(a.userId, moiEm());
-    xoaTK.xoaTaiKhoan(P.admin, a.userId);
+    const xem: any = xoaTK.xemXoaTaiKhoan(P.admin, a.userId);
+    assert(xem.canhBao.some((c: string) => /tự chuyển/.test(c)) && !xem.canhBao.some((c: string) => /sau khi xoá/.test(c)), `E-5: câu cảnh báo cũ: ${JSON.stringify(xem.canhBao)}`);
+    const kqXoa: any = xoaTK.xoaTaiKhoan(P.admin, a.userId);
+    assert(kqXoa.chuyen.soCase === 1 && kqXoa.chuyen.soPa === 1 && kqXoa.chuyen.soTinHieu === 1 && kqXoa.chuyen.soXuLy === 1, `E-5: xoá phải trả số đã chuyển: ${JSON.stringify(kqXoa.chuyen)}`);
     dung(ia, a.userId, 'xoá tài khoản');
     xoaTK.khoiPhucTaiKhoan(P.admin, a.userId);
     assert(chu(ia)[0] === luat, 'Khôi phục tài khoản không tự trả Case');
     /* Gỡ hết vai. */
     const b = taiKhoan('nghi2', 'teacher');
     const ib = tao(b.userId, moiEm());
-    accounts.setRoles(P.admin, b.userId, []);
+    const kqVai: any = accounts.setRoles(P.admin, b.userId, []);
+    assert(kqVai.chuyen?.soCase === 1, `E-5: gỡ hết vai phải trả số đã chuyển: ${JSON.stringify(kqVai)}`);
     dung(ib, b.userId, 'gỡ hết vai');
     /* Đổi vai, vẫn còn vai → không chuyển. */
     const c = taiKhoan('nghi3', 'teacher');
@@ -768,6 +772,25 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(sid);
     xoaTK.xoaTaiKhoan(P.admin, d.userId);
     assert(chu(id).every((x) => x === d.userId), `không ai: để nguyên ${JSON.stringify(chu(id))}`);
+  }));
+
+  await checkAsync('E-3 (N69) · gỡ hết vai (phân công lớp chưa đóng): người nghỉ không còn được chọn làm chủ Case mới của lớp', () => thu(async () => {
+    const { suggestCaseOwner } = await import('../cases/owner.ts');
+    const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+    const e = taiKhoan('e3', 'teacher');
+    conn.prepare(`UPDATE teacher_assignments SET user_id = ? WHERE class_id = ? AND status = 'active'`).run(e.userId, lop);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'tiền đề: còn vai thì được chọn');
+    accounts.setRoles(P.admin, e.userId, []);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === null, 'đã gỡ hết vai mà vẫn được chọn làm chủ Case');
+    /* Branch-aware: chỉ còn vai ở chi nhánh KHÁC chi nhánh của lớp → cũng không được chọn; có lại vai ở chi nhánh lớp → chọn được. */
+    accounts.setRoles(P.admin, e.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === null, 'chỉ có vai ở CP mà vẫn được chọn làm chủ Case của lớp MB');
+    accounts.setRoles(P.admin, e.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'có vai ở chi nhánh của lớp thì chọn được');
   }));
 
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {

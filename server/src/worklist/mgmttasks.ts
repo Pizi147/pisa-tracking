@@ -121,9 +121,12 @@ function tenViecConMo(titles: string[]): string {
 
 export type NhomViec = { id: number; ten: string; thuTu: number; an: boolean; branchId: number | null; khoa: string | null; coTheSua: boolean };
 const NHOM_COT = 'id, ten, thu_tu, an, branch_id, khoa';
+/** C-5 (N63 ⑧): 4 nhóm Vận hành khởi đầu (có `khoa`) chỉ Quản trị sửa; nhóm khác theo quản lý Vận hành của chi nhánh. */
+const suaDuocNhom = (p: Principal, g: { khoa?: string | null; branch_id?: number | null }) =>
+  g.khoa ? can(p, PERMISSIONS.ADMIN_CONFIG, { branchId: null }) : quanLyVanHanh(p, { branchId: g.branch_id ?? null });
 const nhomRa = (p: Principal) => (g: any): NhomViec => ({
   id: g.id, ten: g.ten, thuTu: g.thu_tu, an: !!g.an, branchId: g.branch_id ?? null, khoa: g.khoa ?? null,
-  coTheSua: quanLyVanHanh(p, { branchId: g.branch_id ?? null }),
+  coTheSua: suaDuocNhom(p, g),
 });
 
 /**
@@ -169,7 +172,7 @@ export function taoNhom(p: Principal, input: { ten?: unknown; branchId?: number 
 export function suaNhom(p: Principal, id: number, input: { ten?: unknown; an?: unknown; doi?: unknown; branchId?: number | null }): { rows: NhomViec[] } {
   const g = db().prepare(`SELECT ${NHOM_COT} FROM task_groups WHERE id = ?`).get(id) as any;
   if (!g) throw notFound('Không tìm thấy nhóm.');
-  if (!quanLyVanHanh(p, { branchId: g.branch_id ?? null })) throw forbidden(g.branch_id ? 'Chỉ Head, Quản trị hoặc CX của chi nhánh sửa được nhóm này.' : 'Nhóm dùng chung chỉ người có quyền toàn hệ thống sửa được.');
+  if (!suaDuocNhom(p, g)) throw forbidden(g.khoa ? 'Nhóm khởi đầu chỉ Quản trị sửa được.' : g.branch_id ? 'Chỉ Head, Quản trị hoặc CX của chi nhánh sửa được nhóm này.' : 'Nhóm dùng chung chỉ người có quyền toàn hệ thống sửa được.');
   tx(() => {
     const CHAM = 'Nhóm vừa được người khác sửa — mở lại hộp Nhóm để xem.';
     if (input.ten !== undefined) {

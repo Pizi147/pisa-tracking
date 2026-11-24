@@ -496,7 +496,9 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
   /* RKC-4a (chủ SP 07/11 "không chặn cứng"; trước: chặn "quá 24 giờ" / "tuần bắt đầu đã tới" / "do hệ thống huỷ"): khôi phục lúc nào cũng được khi dữ liệu
      còn hợp lệ (em còn ở lớp nguồn, lớp đến còn chạy, chưa có quyết định khác). Tuần bắt đầu đã qua → hỏi MỘT câu, đồng ý = dời sang tuần sau. */
   const tuanSau = mondayOf(addDays(homNay, 7));
-  const quaTuan = ds.filter((id) => { const r = db().prepare(`SELECT tuan_bat_dau, trang_thai FROM lenh_chuyen_lop WHERE id = ?`).get(id) as any; return r?.trang_thai === 'huy' && r.tuan_bat_dau <= homNay; }).length;
+  /* D-08: MỘT câu đếm theo lô (trước: một SELECT mỗi lệnh). */
+  let quaTuan = 0;
+  theoLo(ds, (lo, ph) => { quaTuan += (conn.prepare(`SELECT COUNT(*) AS n FROM lenh_chuyen_lop WHERE id IN (${ph}) AND trang_thai = 'huy' AND tuan_bat_dau <= ?`).get(...lo, homNay) as any).n; });
   if (quaTuan) canXacNhan('{n} quyết định có tuần bắt đầu đã qua — khôi phục với tuần bắt đầu {tuan}?', { n: quaTuan, tuan: tuanLich(tuanSau, homNay) }, 'Khôi phục, dời tuần');
   for (const id of ds) {
     let l: any = null;

@@ -424,7 +424,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
       entityLabel: user.full_name,
       after: { note: roles.map((r) => `${r.role}:${(r.branches ?? []).join('/') || 'toàn hệ thống'}`).join(' · ') || 'gỡ hết vai', ...(chuyen ? { chuyen } : {}) },
     });
-    return { ok: true };
+    return { ok: true, ...(chuyen ? { chuyen } : {}) };   // E-5: web báo số đã chuyển
   });
 }
 

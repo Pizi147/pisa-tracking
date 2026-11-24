@@ -58,4 +58,9 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
     const f = than(doc('server/src/duyet/yeuCau.ts'), 'export function lichSuYeuCau');
     assert(f.includes('nhanHanhDongNhatKy(r.action)') && !/\[r\.action, r\.entity_label\]/.test(f), 'lichSuYeuCau còn trả mã thô');
   });
+
+  check('C-6 · Duyệt / Từ chối nhiều: sau khi danh sách tải lại, thanh chọn chỉ giữ thẻ còn chờ (không id ma sau lô lỗi mạng)', () => {
+    const f = than(hop, 'export function HopChoDuyet');
+    assert(f.includes('C-6: sau khi danh sách tải lại') && f.includes("x.trangThai === 'cho'") && f.includes('}, [data]);'), 'thiếu bước lọc chon theo thẻ còn chờ sau khi tải lại');
+  });
 }

@@ -355,6 +355,25 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assert(c.rows.length === 1 && c.hocVien.length === soEm, `Tìm mã lớp: ${c.rows.length} lớp, ${c.hocVien.length}/${soEm} em`);
   });
 
+  check('D-01 (N46) · MỘT lớp: hộp lớp (Học viên & Lớp) = "n Case đang mở" đầu hồ sơ lớp = tổng cột Case; em đã có KQ thi thật thì cả ba cùng bớt', () => {
+    const lop = hvl.danhSachHocVienLop(P.admin, {}).rows.find((x: any) => x.code === 'MB FT 101');
+    const ba = () => {
+      const r = hvl.danhSachHocVienLop(P.admin, {}).rows.find((x: any) => x.id === lop.id).soCaseMo as number;
+      const tong = classes.classRoster(P.admin, lop.id).filter((s: any) => !s.archived).reduce((n: number, s: any) => n + s.openCases, 0);
+      return [r, classes.classOverview(P.admin, lop.id).soCaseMo as number, tong];
+    };
+    const [a0, b0, c0] = ba();
+    assert(a0 === b0 && b0 === c0 && a0 > 0, `tiền đề: ${a0}/${b0}/${c0}`);
+    const cy = conn.prepare(`SELECT cy.id FROM sos_cases sc JOIN learning_cycles cy ON cy.id = sc.cycle_id JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
+        WHERE sc.status != 'done' AND sc.tam = 0 AND cy.route IS NOT NULL AND cy.thi_that_khong_thi = 0 AND cy.thi_that_l IS NULL AND cy.outcome_score IS NULL AND COALESCE(cy.outcome, 'unknown') = 'unknown' LIMIT 1`).get(lop.id) as any;
+    assert(cy, 'seed: Case mở của em FT chưa thi trong lớp');
+    conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 1 WHERE id = ?').run(cy.id);
+    try {
+      const [a1, b1, c1] = ba();
+      assert(a1 === b1 && b1 === c1 && a1 < a0, `sau KQ thi thật: ${a1}/${b1}/${c1} (trước ${a0})`);
+    } finally { conn.prepare('UPDATE learning_cycles SET thi_that_khong_thi = 0 WHERE id = ?').run(cy.id); }
+  });
+
   check('PR-Qa · Q2/Q5 "n Case đang mở" của lớp = tổng cột Case của danh sách lớp; cờ nút theo quyền', () => {
     const r = hvl.danhSachHocVienLop(P.admin, {});
     for (const lop of r.rows.filter((x: any) => x.code === 'MB FT 101' || x.code === 'MB FOU 12')) {
