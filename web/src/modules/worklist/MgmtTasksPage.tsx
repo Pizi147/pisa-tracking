@@ -7,6 +7,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, Field, Forbidden, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { OChonThuong } from '../../ui/OChonThuong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { TrangThaiLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
@@ -456,6 +457,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const { session } = useSession();
   const toi = session?.user?.id;
   const toast = useToast();
+  const dt = useDienThoai();
   const { data: tai, loading, reload } = useApi<any>(taskId ? `/mgmt-tasks/${taskId}` : null, [taskId]);
   /* Bản máy chủ vừa trả sau thao tác (PATCH trả chi tiết) — vẽ ngay, không GET lại. */
   const [ban, setBan] = useState<any>(null);
@@ -535,7 +537,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
         han: data.due ? (dong(data.progress) ? <HanO han={data.due} xong /> : <Han trongBang loai="viec-van-hanh" han={data.due} />) : undefined,
         /* B3-16 (AUDIT-2111): "{tên} giao" chỉ ở chip khối Phụ trách — không lặp ở dòng phụ đầu panel. */
         dong2: [tenNhom, data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ')],
-        ghim: menuViec.length ? <MenuDong nhan={t('Thao tác khác')} muc={menuViec} lopNut={NUT_DONG} /> : null,
+        ghim: menuViec.length ? <MenuDong nhan={t('Thao tác khác')} muc={menuViec} lopNut={NUT_DONG} mat={dt ? <span aria-hidden>⋯</span> : undefined} /> : null,
       } : undefined}
       quyChe={data?.viewer?.canUpdate && !dong(data.progress) ? (lap && !lap.dung ? quyCheViecLap({ ky: chuLap(lap), khoang: null }) : quyCheViecGiao()) : null}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, huyPhai: true, trai: <TrangThaiLuu tt={luu?.tt ?? null} loi={luu?.loi} /> }}>
