@@ -83,6 +83,7 @@
  "web/src/modules/congViec/gioVn.ts",
  "web/src/modules/congViec/lamTaiCho.ts",
  "web/src/modules/duyet/DeXuatSuaPanel.tsx",
+ "web/src/modules/duyet/DemNguocYThuc.tsx",
  "web/src/modules/duyet/TheYeuCau.tsx",
  "web/src/modules/duyet/YeuCauCuaToi.tsx",
  "web/src/modules/fasttrack/CaseLuotKn.tsx",

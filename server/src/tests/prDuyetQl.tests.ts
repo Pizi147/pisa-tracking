@@ -33,25 +33,24 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
   });
 
   check('D1 · Lịch sử · n: chỉ tải /lich-su?loai=yeu-cau khi mở; ẩn khi 0', () => {
-    const ls = than(hop, 'function LichSuYeuCau');
+    const ls = than(doc('web/src/modules/duyet/LichSuYeuCau.tsx'), 'export function LichSuYeuCau');
     assert(/useApi<[^>]*>\(mo \? `\/lich-su\?loai=yeu-cau&id=\$\{id\}` : null/.test(ls), `Lịch sử phải tải khi mở: ${ls.slice(0, 300)}`);
     assert(/if \(!n\) return null/.test(ls) && ls.includes('<LichSuGap so={n}'), 'Lịch sử thiếu ẩn khi 0 / kiểu gập chung');   // GD-4c: details của LichSuGap thay aria-expanded tự viết
     assert(/<LichSuYeuCau id=\{yc\.id\} n=\{yc\.soLichSu/.test(hop), 'PanelDuyet chưa vẽ Lịch sử');
     /* Sửa nhỏ 05/11: quyết xong → n theo số máy chủ trả kèm; danh sách đang mở tải lại khi n đổi. */
-    assert(the.includes('onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu)') && hop.includes('soLichSu != null ? { ...y, soLichSu } : y'), 'panel kết quả chưa cộng Lịch sử');
+    assert(the.includes('onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu)') && the.includes('onXong(yc.id)'), 'quyết xong chưa cộng Lịch sử');
     assert(ls.includes(': null, [mo, id, n]);'), 'danh sách đang mở chưa tải lại khi n đổi');
   });
 
   check('D1 · chip SOS ở Chờ bạn duyệt (y.sos) + đầu panel; dòng Điểm ở bối cảnh dùng DongDiem', () => {
-    assert(/sos && <ChipSos muc=\{[^}]*sos\.muc\}/.test(than(hop, 'function CayDuyet')), 'CayDuyet chưa vẽ ChipSos theo sos');
+    assert(/y\.sos && <span className="dyc-sos"><ChipSos tinh muc=\{y\.sos\.muc\}/.test(doc('web/src/modules/duyet/DsDuyet.tsx')), 'dòng duyệt chưa vẽ ChipSos theo sos');
     assert(/yc\.sos && <ChipSos/.test(than(hop, 'function PanelDuyet')), 'đầu panel chưa có ChipSos');
     assert(/panel && yc\.diemHv && [\s\S]{0,600}<DongDiem d=\{yc\.diemHv\}/.test(the), 'bối cảnh chưa có dòng Điểm');
   });
 
   check('D2 · dòng vừa duyệt giữ chỗ "✓ … · Hoàn tác" (cả Duyệt tại dòng và ở panel); panel sau Duyệt có chân "✓ Đã lưu · Yêu cầu tiếp ›"', () => {
-    assert(/setGiu\(/.test(than(hop, 'export function HopChoDuyet')), 'chưa giữ chỗ dòng vừa làm');
-    const dd = than(hop, 'function DongDuyet');
-    assert(dd.includes('giu') && dd.includes("t('Hoàn tác')"), 'DongDuyet chưa vẽ dòng giữ chỗ + Hoàn tác');
+    /* v24 H1: dòng vừa duyệt biến mất, toast "✓ Đã duyệt · … · Hoàn tác" (10 s) thay dải giữ chỗ. */
+    assert(/toast\.hoanTac\(chu, \(\) => \{ void huyQd\(y\.id\)/.test(than(hop, 'export function HopChoDuyet')), 'duyệt tại dòng chưa có toast Hoàn tác');
     assert(hop.includes("t('✓ Đã lưu')") && hop.includes("t('Yêu cầu tiếp ›')"), 'panel sau Duyệt thiếu chân Đã lưu / Yêu cầu tiếp');
   });
 

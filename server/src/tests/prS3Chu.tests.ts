@@ -174,7 +174,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
   khongCon('S3 (4) · Nút: thoát hộp là "Đóng" (không Thôi / Huỷ trần), Thao tác khác, Đánh dấu đã đọc, Nhập điểm, Thêm PA, Báo QL, Gửi Quản lý duyệt…', [
     /* PR-OV2b: "Thôi học" là tên việc đã duyệt (mockup overhaul-2 §6), không phải nút thoát hộp. */
     ['Thôi', /\bThôi\b(?! học)/],
-    ['Huỷ (thoát hộp)', />Huỷ<|'Huỷ'|nhan: 'Huỷ'/],
+    /* v24 H1 (chủ SP 24/11): ô "Lý do từ chối" mở tại dòng có Huỷ · Gửi từ chối theo mockup — `t('Huỷ')` trong DsDuyet / TheYeuCau / HopChoDuyet được. */
+    ['Huỷ (thoát hộp)', />Huỷ<|nhan: 'Huỷ'/],
     ['Thêm thao tác / Thao tác với lớp', /Thêm thao tác|Thao tác với lớp/],
     ['Đọc hết', /Đọc hết/],
     ['Nhập điểm Test', /Nhập điểm Test|→ Nhập\b|>Chấm<|\? (t\()?'Chấm'\)?/],   /* 13/11: bắt cả t('Chấm') lồng ternary (nút ghi điểm = "Nhập điểm") */
