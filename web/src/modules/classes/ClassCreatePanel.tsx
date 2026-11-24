@@ -32,8 +32,10 @@ type Kieu = 'FT' | 'THUONG';
  * Lỗi ô thường theo PR-N1 (YC-12.5.2, `useLoiForm`): hiện khi rời ô / sau khi bấm; chân một dòng xám `n ô cần sửa ↑`.
  * PR-QU (C): "Nhiều lớp" = lưới `LuoiTaoLop` (một lớp là trường hợp riêng); chỉ hiện khi mở từ "+ Lớp mới" (không `macDinh`).
  */
-export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
+export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayLai }: {
   onClose: () => void;
+  /** CHOT-LO-TRINH-PANEL (v25): mở THAY nội dung khe panel (không đè) — "‹ Quay lại" về panel gọi, phần đang sửa của nơi gọi giữ nguyên. */
+  quayLai?: { nhan: string; onClick: () => void };
   /** P9b (trang Cuối khoá, "+ Mở lớp mới…"): chương trình (suy từ hướng) + chi nhánh (lớp nguồn) khoá theo `macDinh`; `khoa` = ngữ cảnh dưới tiêu đề. */
   khoa?: string;
   onDone?: (lop: { id: number; code: string }) => void;
@@ -152,7 +154,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   const loiPcDau = loiPc[0] ? `${oList.find((o) => o.khoa === loiPc[0].khoa || o.gop?.includes(loiPc[0].khoa))?.nhan ?? ''}: ${dich(loiPc[0].lyDo)}` : undefined;
 
   return (
-    <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
+    <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa && !quayLai} quayLai={quayLai} onDong={onClose}
       chan={{
         /* 6c (lỗi 5): số lớp đã gõ hoặc GV đã chọn chưa tạo lớp → ✕ hỏi. */
         daSua: !daTao && (so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== '')),

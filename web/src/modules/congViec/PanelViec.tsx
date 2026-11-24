@@ -49,6 +49,7 @@ const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) 
 const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const PanelXetLai = lazyHop(() => import('../classes/PanelXetLai.tsx').then((x) => x.PanelXetLai));
+const PanelChotLoTrinh = lazyHop(() => import('../classes/CuoiKhoaLop.tsx').then((x) => x.PanelChotLoTrinh));
 const StudentPlanPanel = lazyHop(() => import('../students/StudentPlanPanel.tsx').then((x) => x.StudentPlanPanel));
 const BanGiaoPanel = lazyHop(() => import('../classes/BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
 const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
@@ -62,6 +63,8 @@ const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').th
  */
 type PropsViec = {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null;
+  /** CHOT-LO-TRINH-PANEL: việc làm DẦN (Chốt lộ trình — chốt xong một phần, dòng vẫn còn): tải lại danh sách MỘT lần để số "n em" đổi ngay, không ẩn dòng như `onDaLam`. */
+  onTaiLai?: () => void;
   /** CV-LOI (CV-09): panel do trang tự mở (không phải người bấm) — lưới điểm không đặt con trỏ, không cuộn. */
   tuMo?: boolean;
   /** OV-13c: mở một việc khác tại chỗ (Xác nhận PA cùng lúc → "Đề xuất PA khác cho em này…" mở panel Xác nhận PA của em đó). */
@@ -129,7 +132,7 @@ function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly
   );
 }
 
-function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep }: PropsViec) {
+function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep, onTaiLai }: PropsViec) {
   const lop = it.classCode;
   const hv = it.studentId !== null ? it.studentName : null;
   const doi = () => { invalidate('/my-work'); onDaLam(); };
@@ -222,6 +225,9 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     /* P9a: panel Xét lại tại chỗ — thanh Việc cần làm ở hồ sơ lớp · R3-T2 (rà 24/11): cả Công việc (trước "Xét lại ›" mở trang lớp, ~125 câu, mất danh sách). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
+    /* CHOT-LO-TRINH-PANEL (v25, chủ SP duyệt 25/11): Chốt lộ trình + Kỳ vọng FT làm tại chỗ ở khe 720 — trước "Cuối khoá ›" mở trang. */
+    case 'chot_len_ft': case 'ky_vong_dau_ra':
+      return <PanelChotLoTrinh key={it.key} classId={it.classId!} onDong={onDong} onDone={onTaiLai} />;
     case 'no_owner':
       return it.thieuNguoi ? <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} /> : <PanelChonPhuTrach key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     default:
