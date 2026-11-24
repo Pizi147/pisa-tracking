@@ -77,22 +77,22 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
     const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_172px_128px_minmax(0,1fr)_140px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
-          <span className="the-kn dac self-start mt-[3px] [@container(min-width:640px)]:mt-0 [@container(min-width:640px)]:self-center">{r.short}</span>
+        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:740px)]:grid-cols-[34px_160px_112px_minmax(0,1fr)_140px_76px_24px] [@container(min-width:740px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
+          <span className="the-kn dac self-start mt-[3px] [@container(min-width:740px)]:mt-0 [@container(min-width:740px)]:self-center">{r.short}</span>
           <button type="button" aria-expanded={ngan ? undefined : moRa} onClick={bat}
-            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-4 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
-            <b className="flex basis-full flex-wrap items-center gap-2 text-[14px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
+            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:740px)]:col-span-4 [@container(min-width:740px)]:grid [@container(min-width:740px)]:grid-cols-subgrid`}>
+            <b className="flex basis-full flex-wrap items-center gap-2 text-[14px] font-semibold text-slate-100 [@container(min-width:740px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
             {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
-            <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
+            <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:740px)]:contents">
               <span className="shrink-0"><NhanTrangThai cham t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
               <span className="line-clamp-2 min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : chuPa ?? undefined}>{chuPa}</span>
             </span>
             <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim">{nguoi && <><IconNguoi /><span className="min-w-0">{nguoi}</span></>}</span>
             {/* Khung hẹp (375): hạn đi cùng dòng chi tiết để tên + SOS có đủ chỗ; khung rộng: cột hạn riêng bên phải. */}
-            {chuHan && <span className="[@container(min-width:640px)]:hidden">{chuHan}</span>}
+            {chuHan && <span className="[@container(min-width:740px)]:hidden">{chuHan}</span>}
           </button>
-          <span className={`flex items-center gap-2 [@container(min-width:640px)]:contents`}>
-            <span className="hidden [@container(min-width:640px)]:inline-flex">{chuHan}</span>
+          <span className={`flex items-center gap-2 [@container(min-width:740px)]:contents`}>
+            <span className="hidden [@container(min-width:740px)]:inline-flex">{chuHan}</span>
             {ngan ? <span aria-hidden className="w-6 text-center text-[16px] text-faint">›</span>
               : <button type="button" className="mui-pa" aria-label={moRa ? t('Gập Case') : t('Mở Case')} aria-expanded={moRa} onClick={bat}><IconGap mo={moRa} /></button>}
           </span>

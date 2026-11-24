@@ -442,10 +442,10 @@ export const coPaQuaHan = (r: DongSos) => r.cases.some((c) => c.viecTiep?.quaHan
 const COT_SOS: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 240 },
   { key: 'muc', nhan: t('Mức · kỹ năng'), kieu: 'chu', rong: 180 },
-  { key: 'tu', nhan: t('Từ'), kieu: 'tuan' },
+  { key: 'tu', nhan: t('Từ'), kieu: 'tuan', rong: 100 },
   { key: 'ovr', nhan: t('Overall / kỳ vọng'), kieu: 'chu', rong: 170 },
   { key: 'case', nhan: t('Case · PA'), kieu: 'chu', rong: 260 },
-  { key: 'viec', nhan: t('Việc cần làm'), kieu: 'viec' },
+  { key: 'viec', nhan: t('Việc cần làm'), kieu: 'viec', rong: 240 },
 ];
 
 /**
@@ -485,5 +485,5 @@ export function BangSosGon({ rows, hang, nguCanh, onMo, viec, tvv, onMoViec }: {
       default: return <OViecCan v={viec.get(r.studentId)} tvv={tvv} onMo={onMoViec} />;
     }
   };
-  return <Bang ten={t('Đang SOS')} cot={COT_SOS} hang={rows} khoa={(r) => r.attemptId} oCua={o} khung={false} dinh />;
+  return <Bang ten={t('Đang SOS')} cot={COT_SOS} hang={rows} khoa={(r) => r.attemptId} oCua={o} khung={false} deu dinh />;
 }

@@ -1,5 +1,5 @@
 // CONG-CU — ĐO BẢNG trên trang thật (từ `v2b-do-bang.mjs` + `v3a-cat.mjs` của đợt đánh giá 20/10). Mỗi <table> thấy được:
-// g1 lệch tiêu đề ↔ ô > 2 px (cột ≥ 3 ô; so theo kiểu căn THẬT của ô: mép trái / mép phải / tâm) · g2 lệch đường cơ sở trong hàng > 2 px
+// g1 lệch tiêu đề ↔ ô > 2 px (cột ≥ 3 ô; so theo kiểu căn THẬT của ô: mép trái / mép phải / tâm) · g2 lệch TÂM dọc mực các ô trong hàng > 2 px
 // g3 cao hàng ∉ {44, 64} ± 1 · g4 đè nhau: hai phần tử bấm được giao nhau > 2 px (kể cả nút opacity 0 chờ rê chuột — vẫn bấm được)
 // g5 cỡ chữ ngoài thang 12 · 13 · 14 · 16 · 20 · 26 (NHẸ HƠN).
 // Chạy trong `do-khung` ở MỌI kịch bản: 1440 tối, 1280 tối, 375 sáng. Lỗi đã biết nằm ở `scripts/mien-do.json` (mỗi dòng ghi PR sẽ gỡ).
@@ -115,8 +115,8 @@ export function doBang() {
       for (const td of tr.cells) {
         const ms = muc(td), ink = bao(ms);
         if (ink && (td.colSpan || 1) === 1 && cot.has(c)) cot.get(c).o.push({ ink, cam: canTheo(ink, td) });
-        const chu = ms.find((m) => m.chu);
-        if (chu) bl.push(chu.bl);
+        const chus = ms.filter((m) => m.chu);
+        if (chus.length) bl.push((Math.min(...chus.map((m) => m.y)) + Math.max(...chus.map((m) => m.b))) / 2);   // tâm dọc mực của ô (NH9)
         c += td.colSpan || 1;
       }
       if (bl.length > 1) coSo.push(Math.max(...bl) - Math.min(...bl));
@@ -136,7 +136,7 @@ export function doBang() {
     if (lech.length) ghi('g1', `lệch tiêu đề ↔ ô ${lech.length} cột: ${lech.slice(0, 8).join(' · ')}`);
     // g2
     const xau = coSo.filter((d) => d > 2);
-    if (xau.length) ghi('g2', `đường cơ sở lệch > 2px ${xau.length}/${coSo.length} hàng (tới ${r1(Math.max(...xau))})`);
+    if (xau.length) ghi('g2', `tâm dọc ô lệch > 2px ${xau.length}/${coSo.length} hàng (tới ${r1(Math.max(...xau))})`);
     // g3
     const caoSai = [...new Set(cao.filter((h) => Math.abs(h - 44) > 1 && Math.abs(h - 64) > 1))].sort((a, b) => a - b);
     if (caoSai.length) ghi('g3', `cao hàng ∉ {44, 64}: ${caoSai.slice(0, 6).join(' · ')}${caoSai.length > 6 ? ' …' : ''}`);

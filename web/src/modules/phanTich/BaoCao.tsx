@@ -110,7 +110,7 @@ export function BaoCao(pv: PhamViPhanTich) {
                 <i className="not-italic text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Em thi')}</i>
                 <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[26px]"><OSo giaTri={x.emThi} nguon={nThi(tong, 'tong:thi')} tieuDe={t('Em thi')} className="so-chinh" /></b>
                 {/* AUDIT-1611 A2-15: "· hiện tại" một cụm — không ngắt "hiện / tại". */}
-                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} {x.chuaCoKq ? <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> : <span className="o-so-tinh">0</span>} <span className="whitespace-nowrap">· {t('hiện tại')}</span></span>
+                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} {x.chuaCoKq ? <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> : <span className="o-so-tinh">0</span>} </span>
               </span>
             </span>
           </SoTo>
@@ -141,7 +141,7 @@ export function BaoCao(pv: PhamViPhanTich) {
   const cot: CotBang[] = [
     /* PT-b (mockup v19 khung 3a): Lớp 22 %, cột số bằng nhau đủ chỗ hộp % + phân số một dòng. */
     { key: 'ten', nhan: lop ? t('Lớp') : t('Chi nhánh'), kieu: 'ten', rong: 160 },
-    { key: 'hv', nhan: t('HV đang học'), kieu: 'so', rong: 120 },
+    { key: 'hv', nhan: t('HV đang học'), kieu: 'so', rong: 150 },
     ...(ft ? [
       { key: 'datMt', nhan: t('Đạt MT'), dv: t('HV'), kieu: 'so' as const, rong: 150 },
       { key: 'tienBo', nhan: t('Tiến bộ'), dv: t('lượt'), kieu: 'so' as const, rong: 150 },
@@ -285,7 +285,7 @@ const CAP_SO_DOC = '[&_.cap-so]:!grid [&_.cap-so]:![grid-template-columns:auto] 
 
 const COT_TB: readonly CotBang[] = [
   { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 64 },
-  { key: 'tang', nhan: `↑ ${t('Tăng')}`, kieu: 'so', rong: 80 }, { key: 'giu', nhan: t('Giữ nguyên'), kieu: 'so', rong: 92 }, { key: 'giam', nhan: `↓ ${t('Giảm')}`, kieu: 'so', rong: 80 },
+  { key: 'tang', nhan: `↑ ${t('Tăng')}`, kieu: 'so', rong: 80 }, { key: 'giu', nhan: t('Giữ nguyên'), kieu: 'so', rong: 80 }, { key: 'giam', nhan: `↓ ${t('Giảm')}`, kieu: 'so', rong: 80 },
 ];
 /** Tiến bộ theo kỹ năng (giữ bảng sẵn có): lượt có mốc MT trước của em, band kỹ năng tăng · giữ nguyên · giảm so mốc đó. */
 function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; nguon: (o: string) => string }) {

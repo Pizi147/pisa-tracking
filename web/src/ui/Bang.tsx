@@ -13,7 +13,7 @@ const VienNhom = createContext<ReadonlyMap<string, 'dau' | 'cuoi' | 'ca'>>(new M
 /**
  * MỘT BẢNG CHO CẢ HỆ (BANG-0, 04 mục 6). `<table>` chỉ được viết ở đây (phép kiểm BANG-3). Kiểu cột (`shared/domain/bang.ts`) quyết định
  * căn + rộng px, gắn CÙNG `data-kieu` lên `th` và `td` → CSS `.bang [data-kieu]` căn cả hai, tiêu đề và ô không thể lệch.
- * Hàng 44 px (một dòng) / 64 px (ô nào có dòng phụ `data-phu-odiem` — `phuCua` hoặc `ODiem`), mọi ô chung đường cơ sở. Công cụ (lọc, Xuất…) ở NGOÀI khung, trên viền bảng.
+ * Hàng 44 px (một dòng) / 64 px (ô nào có dòng phụ `data-phu-odiem` — `phuCua` hoặc `ODiem`), mọi ô thẳng TÂM dọc (NH9 24/11, thay "chung đường cơ sở"). Công cụ (lọc, Xuất…) ở NGOÀI khung, trên viền bảng.
  * Tiêu đề chỉ nhận chữ (`nhan`, `phu`) — cấm ô nhập / nút trong `th`. < 640 px: thẻ từ cùng định nghĩa cột.
  * Hàng bấm được (`onHang`) = `.bam` + Enter; đang mở = `.dang-mo`; bảng ≥ 8 cột không bấm = dò hàng `.do-hang`.
  */

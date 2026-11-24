@@ -27,10 +27,10 @@ type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
 /** Cột tên: 220 (mockup V11 U05), điện thoại 120 — tên dài xuống dòng, không cắt. */
-const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 220;
+const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 180;
 /** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
  *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
-const RONG_SEX = 110;
+const RONG_SEX = 100;   // chủ SP 25/11: ô MT rộng CỐ ĐỊNH, cột Thêm ngay sau MT cuối; ít MT thì phần trống dồn về phải (không giãn ô)
 const HANG_GON = 10;
 
 /**
@@ -76,7 +76,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 190 : 220;   // mockup V11: ô MT 190; lớp thường thêm tuần 4/8 ở dòng trạng thái   // lớp thường: tuần + tuần 4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 186 : 220;   // 1440 vừa ≥ 6 MT (180 + 6×186 + 100 ≤ 1400), 1280 vừa ≥ 5; nhiều hơn → cuộn ngang, cột tên dính trái
+  // lớp thường: tuần + tuần 4/8 + chữ trạng thái một dòng (ô 220)
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
@@ -121,14 +122,14 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
   /* GD-11b (mockup ⑦ B7, R7.7 — thay thẻ từng em U05 khu E): 375 cùng lưới 1440, cuộn ngang trong thẻ, cột Học viên dính trái (120), tự cuộn tới
      đợt đang tới. */
   return (
-    <div ref={cuon} className="overflow-x-auto">
+    <div ref={cuon} className="overflow-x-auto bg-[color:var(--surface)]">
       {/* Cột đợt rộng CỐ ĐỊNH (mockup PR 659) — cột "+ MT" / S Ex ngay SAU cột đợt cuối (RA-UI-1, mockup `v7/ke-hoach-test.html`), phần dư dồn vào cột trống cuối hàng. */}
       <table className="text-sm" style={{ tableLayout: 'fixed', width: '100%', minWidth: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
           {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
-          <col />
+          <col />   {/* cột đệm cuối: ăn phần thừa để đường kẻ dòng chạy hết khung; ô MT / tên / Thêm giữ rộng cố định */}
         </colgroup>
         <thead>
           <tr>
@@ -150,7 +151,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
             <tr id={`kht-hv-${data.classId}-${h.studentId}`} className={`kh-hang ${loai === 'ft' ? 'kh-hang-co-sex' : ''} ${hvChon === h.studentId ? 'row-active' : ''}`}
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
               {/* Q-d (chủ SP 03/11): bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô. Tên đủ, xuống dòng (ý 7). */}
-              <td className="kh-td sticky-col">
+              <td className="kh-td kh-td-giua sticky-col">
                 <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>
               </td>
               {cots.map((c, ci) => {
@@ -218,7 +219,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                 );
               })}
               {loai === 'ft' && !chiXem && (
-                <td className="kh-td">
+                <td className="kh-td kh-td-giua">
                   <div className="flex flex-col items-start gap-1">
                     {/* G1-09: hàng đã có ô "Xếp MT{n}" (MT kế tiếp còn trống) → "+ MT" không lặp mục MT{n}, chỉ còn S Ex. */}
                     <NutThemLuot hang={h as HangFT} coXep={cots.some((c) => c.dot.loai === 'ft' && c.dot.attemptNo === (h as HangFT).soKeTiep && o(h, c).attemptId === null && !o(h, c).huy)}
@@ -308,7 +309,7 @@ function NutThemLuot({ hang, coXep, onMt, onSEx }: { hang: HangFT; coXep: boolea
   /* Không ⋯ / menu một mục: còn mỗi S Ex thì là nút thẳng. */
   if (coXep) return <button type="button" className="nut-them self-start" onClick={onSEx}>{t('+ S Ex')}</button>;
   return (
-    <span ref={neo} className="self-start">
+    <span ref={neo} className="flex self-start">
       <MenuDong chu={t('+ MT')} lopNut="nut-them" muc={[
         { key: 'mt', nhan: t('MT{n} · MT thường', { n: hang.soKeTiep }), onChon: () => onMt(hang.soKeTiep, neo.current!) },
         { key: 'sex', nhan: t('S Ex · Speaking với chuyên gia'), onChon: onSEx },

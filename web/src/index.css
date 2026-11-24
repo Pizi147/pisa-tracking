@@ -575,6 +575,7 @@
   .kh-th { height: 36px; padding: 0 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface);
     color: var(--text-dim); font-size: 13px; font-weight: 600; text-align: left; vertical-align: middle; }
   .kh-td { padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--surface); vertical-align: top; }
+  .kh-td.kh-td-giua { vertical-align: middle; }   /* NH9: tên em / ô Thêm thẳng tâm với ô MT */
   .kh-th.sticky-col, .kh-td.sticky-col { padding-left: 14px; }
   .kh-td.sticky-col .ten-ho-so { font-size: 14px; line-height: 1.35; }
   .kh-hang:last-child > .kh-td { border-bottom: 0; }
@@ -634,7 +635,7 @@
     background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; line-height: 1.3; white-space: nowrap; pointer-events: none; }
   .bong-nut:hover .bong-nut-chu, .bong-nut:focus-within .bong-nut-chu { display: block; }
   .o-xep-ly-do { margin-top: 4px; font-size: 12px; color: var(--text-faint); white-space: nowrap; }
-  .nut-them { display: inline-flex; align-items: center; gap: 4px; height: 30px; margin-top: 15px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 6px;
+  .nut-them { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 6px;
     background: none; color: var(--text); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
   @media (max-width: 639.98px) {
     .hl-kh { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 6px 8px 36px; position: relative; }
@@ -906,18 +907,18 @@
   /*
    * BẢNG MỘT MẪU (BANG-0, 04 mục 6) — `ui/Bang.tsx`. Căn theo KIỂU CỘT: `data-kieu` gắn trên CẢ th và td (luật `KIEU_COT` ở
    * `shared/domain/bang.ts`; phép kiểm prBang0 so khối này với luật): chữ trái · số / điểm giữa · nút phải → tiêu đề và ô không lệch.
-   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô chung đường cơ sở. Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
+   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô thẳng TÂM dọc (NH9 24/11, thay "chung đường cơ sở"). Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
    */
   .bang { width: 100%; table-layout: fixed; }   /* cột px theo kiểu (colgroup), một cột linh hoạt; rộng hơn khung → cuộn trong khung */
-  .bang :is(th, td) { vertical-align: baseline; }
+  .bang :is(th, td) { vertical-align: middle; }   /* NH9 (chủ SP 24/11): mọi ô một dòng thẳng TÂM dọc — ô hai dòng (tên + lớp) không kéo ô số lên đỉnh */
   /* Một hàng = một dòng chính: chữ / việc dài thì cắt "…" (line-height 1.5 — không xén dấu). NHẸ HƠN (v23 luật bảng, N55): cột TÊN không cắt —
      hết chỗ thì xuống dòng ở chỗ cách; cột số / điểm hẹp, đều, chữ số thẳng cột (`tabular-nums`, dưới); cột kết quả (`chip`) co theo nội dung, trần 140. */
   .bang td:is([data-kieu="chu"], [data-kieu="viec"]) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bang td[data-kieu="ten"] { white-space: normal; overflow-wrap: break-word; }
-  .bang td[data-kieu="ten"] .bang-phu { white-space: nowrap; }   /* dòng phụ dưới tên (tuần · môn) vẫn một dòng, cắt "…" — chỉ TÊN không cắt */
+  .bang td[data-kieu="ten"] .bang-phu { white-space: normal; overflow-wrap: break-word; }   /* NH9 (24/11): dòng phụ dưới tên xuống dòng gọn, KHÔNG cắt "…" */
   /* NHẸ HƠN (v23 `.chip`): MỘT dáng chip — viền mảnh, KHÔNG NỀN, chữ phụ (`CHIP_VUONG` ở Nhan.tsx). Ở lớp components → lớp màu của chỗ gọi đè được. */
   .chip-vuong { border-color: var(--line-strong); background-color: transparent; color: var(--text-dim); }
-  .bang .bang-phu { overflow: hidden; text-overflow: ellipsis; }
+  .bang .bang-phu { overflow-wrap: break-word; }
   /* Chủ SP 09/11 — panel bảng số (`BangLuotPanel` `.pn-bang`, ≥ 640): cột ngắn (Lớp, Hạn, Bài, điểm…) co theo nội dung, không xuống dòng;
      cột tên HV và cột linh hoạt (Việc, Bài, PA) lấy phần còn lại, chữ dài xuống dòng thay vì cắt "…". Dòng gọn hơn. */
   @media (min-width: 640px) {
@@ -2221,7 +2222,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .ck-fin :is(button, span) { white-space: nowrap; }
   .ck-lg[data-m="trang"] { --ck-g: 2px; --ck-kc: 14px; --ck-fin: 96px; }
   .ck-lg[data-m="pan"][data-k="3"] { --ck-ten: minmax(176px, 1fr); --ck-sau: repeat(3, 112px); }
-  .ck-lg[data-m="trang"][data-k="3"] { --ck-ten: minmax(260px, 280px); --ck-sau: repeat(3, minmax(120px, 1fr)); }
+  .ck-lg[data-m="trang"][data-k="3"] { --ck-ten: minmax(260px, 1fr); --ck-sau: minmax(150px, 200px) minmax(150px, 200px) minmax(110px, 130px); }   /* NH9: tên co giãn, Bước tiếp = Lớp mới, Tuần (mã tuần ngắn) hẹp — cột cuối sát mép phải, không chừa khoảng trống */
   .ck-lg[data-k="doc"] { --ck-sau: minmax(170px, 1fr) minmax(200px, 2fr); }
   /* ô tìm lớp trong ô 112 px: bỏ kính lúp + dòng phụ để đủ chữ "Chọn lớp" / mã lớp (dòng phụ vẫn ở danh sách xổ) — chủ SP: không cắt chữ. */
   .ck-lg .oc { min-height: 34px; padding: 0 4px 0 8px; gap: 4px; font-size: 13px; }

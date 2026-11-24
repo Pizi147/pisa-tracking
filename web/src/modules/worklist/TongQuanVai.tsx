@@ -499,8 +499,9 @@ function PanelDiemAdmin({ diem, onDong }: { diem: Dong[]; onDong: () => void }) 
 
 type SoHv = { phamVi: 'cua-toi' | 'chi-nhanh' | 'tat-ca'; tong: number; dem: Record<'da-thi' | 'cho-buoc-tiep', number> };
 const COT_EM: readonly CotBang[] = [
-  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', linhHoat: true }, { key: 'lop', nhan: t('Lớp'), kieu: 'tuan', rong: 120 }, { key: 'sos', nhan: 'SOS', kieu: 'chip', rong: 96 },
-  { key: 'treo', nhan: t('Còn treo'), kieu: 'chu', rong: 300 }, { key: 'han', nhan: t('Hạn'), kieu: 'tuan', rong: 150 },
+  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 260 }, { key: 'lop', nhan: t('Lớp'), kieu: 'tuan', rong: 160 }, { key: 'sos', nhan: 'SOS', kieu: 'chip', rong: 160 },
+  /* NH9: dư chia đều (deu); việc còn treo dài xuống dòng, không cắt "…"; Hạn ở cột cuối căn phải sát mép. */
+  { key: 'treo', nhan: t('Còn treo'), kieu: 'ten', rong: 360 }, { key: 'han', nhan: t('Hạn'), kieu: 'nut', rong: 160 },
 ];
 type DongSos = { id: number; title: string; sub: string; href: string; sos?: { muc: number; tam: boolean } | null; lop?: string | null };
 /** CX: Em SOS 2–3 · Meeting chờ kết quả · Chưa chốt bước tiếp › · Em cần chú ý · Tình hình (ngang). */
@@ -535,7 +536,7 @@ export function TongQuanCx({ d, congTac }: { d: TongQuanV5Data; congTac: ReactNo
           action={<Link to={`/hoc-vien?view=sos&muc=23${cnQ}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Xem hết')} ›</Link>}>
           {em.error ? <ErrorState message={em.error.message} onRetry={em.reload} /> : !em.data ? <Skeleton rows={3} className="p-4" /> : (
             /* 375 (mockup T3b): `theRieng` — tên · chip SOS bên phải; lớp · việc còn treo · hạn ở dòng dưới. */
-            <Bang ten={t('Em cần chú ý')} khung={false} cot={COT_EM} hang={em.data.rows.slice(0, 8)} khoa={(r) => r.id}
+            <Bang ten={t('Em cần chú ý')} khung={false} deu cot={COT_EM} hang={em.data.rows.slice(0, 8)} khoa={(r) => r.id}
               oCua={(r, c) => {
                 const treo = treoDau(r.id);
                 if (c.key === 'hv') return <Link to={r.href} className="ten-ho-so font-semibold">{r.title}</Link>;

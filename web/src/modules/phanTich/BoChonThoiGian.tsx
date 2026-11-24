@@ -16,7 +16,7 @@ export function BoChonThoiGian({ khoang, onChange, toanBo = false, macDinh }: { 
   const tuanDau = khoang.tu, tuanCuoi = addDaysIso(khoang.den, -6);   // Thứ Hai tuần đầu / tuần cuối
   const dat = (tu: string, cuoi: string) => onChange(khoangVeTuan({ tu, den: addDaysIso(cuoi, 6) }, homNay, md));
   return (
-    <div className="flex flex-wrap items-center gap-2 max-sm:w-full" data-hd="pt-thoi-gian" role="group" aria-label={t('Thời gian')}>
+    <div className="flex shrink-0 flex-wrap items-center gap-2 max-sm:w-full" data-hd="pt-thoi-gian" role="group" aria-label={t('Thời gian')}>
       {toanBo && (
         <span role="group" aria-label={t('Thời gian')} className={DOAN}>
           <button type="button" aria-pressed={laTb} className={doanNut(laTb)}
