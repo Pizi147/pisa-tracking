@@ -422,7 +422,6 @@
   .o-trong { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--o-nhap-vien);
     background: var(--o-nhap-nen); color: var(--text-faint); font-size: 14px; text-align: left; cursor: text; }
   .o-trong.viec-toi { border: 1px solid var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--text-dim); }
-  .o-trong .nhan-viec { margin-left: auto; }
   .nhan-viec { display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 4px; background: var(--accent-soft); color: var(--accent);
     font-size: 12px; font-weight: 700; white-space: nowrap; }
   .o-mo { width: 100%; display: grid; gap: 6px; }
