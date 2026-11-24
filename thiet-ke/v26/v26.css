@@ -52,7 +52,8 @@
 .cs.v26 .duoi { display:contents; }
 .cs.v26 .ng { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); min-width:0; }
 .cs.v26 .hn { font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap; justify-self:start; }
-.cs.v26 .h-qua { color:var(--bad); font-weight:600; } .cs.v26 .h-nay { color:var(--soon); font-weight:600; } .cs.v26 .h-xa { color:var(--text-dim); }
+.h-qua { color:var(--bad); font-weight:600; } .h-nay { color:var(--soon); font-weight:600; } .h-xa { color:var(--text-dim); }
+.han-ngay { font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap; }   /* hạn = chỉ ngày tô màu (chủ SP 24/11), thay viên 'quá hạn n ngày' của v21 */
 .cs.v26 .chev { justify-self:end; }
 .dong-dc { display:flex; align-items:center; gap:8px; width:100%; min-height:44px; padding:10px 16px; border:0; border-top:1px solid var(--line-strong); background:transparent; color:var(--text-dim); font:600 14px var(--phong); text-align:left; }
 .dong-dc .chev { transform:none; }

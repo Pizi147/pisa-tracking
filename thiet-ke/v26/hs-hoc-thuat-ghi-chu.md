@@ -19,4 +19,8 @@ Giữ nguyên thao tác: + Ghi tiến độ (khi chọn kỹ năng / thẻ rỗn
 ## Critique (hai đánh giá độc lập: thiết kế + bộ dò / đo)
 - Detector: không tràn ngang, không cắt "…", tương phản v26 ≥ 7:1 sau khi đổi màu `.rong-c` (lỗi 2.2:1 đã sửa). Các cảnh báo còn lại (side-tab, cramped) thuộc phần v21 đã duyệt.
 - Đánh giá thiết kế: chọn A; P1 "Overall thiếu + Ghi tiến độ" = hiểu nhầm (luật cũ N33 ②: Overall chỉ đọc; đã ghi chú trên trang); P1 A6 thiếu W1 / S → đã sửa (đủ 5 kỹ năng). Còn P2 (chấp nhận, ghi cho chủ SP): ô trống dưới khi một ô nhận xét dài (ô cùng hàng cao bằng nhau); "Chưa có ghi nhận" lặp ở ô trống (giữ để 5 ô chia đều); Case rỗng ở Overall không có nút "+ Case" (như web nay — chỉ khi chọn một kỹ năng).
-- Điểm: đánh giá thiết kế ~29/40 quy đổi trước sửa; chưa chạy vòng chấm lại — còn lại không P0 / P1.
+- Điểm: vòng 1 ~29/40 (quy đổi) → **vòng 2 sau sửa: 31/40** (10 mục đều 3; chưa đạt ≥ 35, chạm vùng 30). Vòng 2 có 0 P0 và hai mục người chấm gọi P1, tôi xếp lại như sau (chủ SP quyết):
+  - a1: ô nhận xét dài kéo cao cả hàng ô → các ô khác trống dưới. Đây là bản chất hàng ô cùng chiều cao (đã ghi P2); bỏ cắt "…" thì không tránh được; muốn gọn hơn phải giới hạn độ dài nhận xét hoặc cho cuộn trong ô — để chủ SP chọn.
+  - A6 (375): Tiến độ xuống cuối trang do luật U02 dòng 16 (Case = việc trước); đổi thứ tự là quyết định luật giao diện, không tự đổi.
+  - P2 còn: Case rỗng ở A3 cao hơn thẻ Tiến độ rỗng (cùng ngăn đầu thẻ); câu rỗng mỗi nơi một chữ (giữ nguyên câu hiện có của web).
+  - Ghi chú đã sửa theo PTA: dải Việc cần làm trong khung dùng "ngày tô màu" (⚠ 08/09/2026), bỏ viên "quá hạn 6 ngày" của v21.
