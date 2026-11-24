@@ -135,7 +135,7 @@ export function PhanTich() {
       <div id="pt-vung" role="tabpanel" aria-label={dichGoc(nhanGocNhin(goc, ct))} className="o-so-hop space-y-3">
         {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
             ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
-        <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
+        <div className="flex flex-wrap items-center gap-2 min-[1280px]:flex-nowrap print:hidden" data-hd="pt-hang-loc">
           {/* GD-12a (⑨ L1, R9.3): MỘT thứ tự ô cố định ở 5 tab — ô không áp dụng vẫn đứng chỗ (mờ, viền đứt, `disabled`, lý do ở aria-label); 375 ẩn ô đó. */}
           <span className={coCt ? (canhDoan ? LOP_DOAN : 'contents') : 'contents max-sm:[&>*]:hidden'}>
             <ChonChuongTrinh value={coCt ? ct : goc === 'ket-qua-thi' ? 'ft' : null} onChange={setCt}
@@ -144,14 +144,14 @@ export function PhanTich() {
           <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
           <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo macDinh={mdPt} />
           {!coLop && (
-            <div role="combobox" aria-disabled="true" aria-expanded="false" aria-label={t('Lớp — báo cáo này không lọc theo lớp')} className="oc gon oc-tat w-[200px] max-sm:hidden">
+            <div role="combobox" aria-disabled="true" aria-expanded="false" aria-label={t('Lớp — báo cáo này không lọc theo lớp')} className="oc gon oc-tat w-[200px] min-w-[140px] shrink max-sm:hidden">
               <span className="oc-goi">{t('Mọi lớp')}</span>
               <svg aria-hidden className="ml-auto shrink-0" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>
             </div>
           )}
           {coLop && (
             /* GD-5 (R5.2 #51): ô lọc có tìm — lớp đang chạy → "Đã kết thúc" (nhóm sẵn có, lớp từ `/ref/classes` đã nạp). */
-            <ChonLop className="w-[200px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={classId ? Number(classId) : null}
+            <ChonLop className="w-[200px] min-w-[140px] shrink max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={classId ? Number(classId) : null}
               onChange={(v) => dat({ lop: v ? String(v) : null })}
               ds={[...classes.filter((c) => !c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, phu: phuLopPt(c), ...(classes.some((x) => x.ket_thuc) ? { nhom: t('Đang chạy') } : {}) })),
                 ...classes.filter((c) => c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, phu: phuLopPt(c), nhom: t('Đã kết thúc') }))]} />

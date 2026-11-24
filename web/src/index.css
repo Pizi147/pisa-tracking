@@ -907,7 +907,7 @@
   /*
    * BẢNG MỘT MẪU (BANG-0, 04 mục 6) — `ui/Bang.tsx`. Căn theo KIỂU CỘT: `data-kieu` gắn trên CẢ th và td (luật `KIEU_COT` ở
    * `shared/domain/bang.ts`; phép kiểm prBang0 so khối này với luật): chữ trái · số / điểm giữa · nút phải → tiêu đề và ô không lệch.
-   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô chung đường cơ sở. Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
+   * Hàng 44 px / 64 px khi ô có dòng phụ (`data-phu-odiem`), mọi ô thẳng TÂM dọc (NH9 24/11, thay "chung đường cơ sở"). Cột nổi bật (Kỳ vọng, Overall) = một dải nền nhấn.
    */
   .bang { width: 100%; table-layout: fixed; }   /* cột px theo kiểu (colgroup), một cột linh hoạt; rộng hơn khung → cuộn trong khung */
   .bang :is(th, td) { vertical-align: middle; }   /* NH9 (chủ SP 24/11): mọi ô một dòng thẳng TÂM dọc — ô hai dòng (tên + lớp) không kéo ô số lên đỉnh */
@@ -2222,7 +2222,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .ck-fin :is(button, span) { white-space: nowrap; }
   .ck-lg[data-m="trang"] { --ck-g: 2px; --ck-kc: 14px; --ck-fin: 96px; }
   .ck-lg[data-m="pan"][data-k="3"] { --ck-ten: minmax(176px, 1fr); --ck-sau: repeat(3, 112px); }
-  .ck-lg[data-m="trang"][data-k="3"] { --ck-ten: minmax(260px, 280px); --ck-sau: repeat(3, minmax(120px, 1fr)); }
+  .ck-lg[data-m="trang"][data-k="3"] { --ck-ten: minmax(260px, 1fr); --ck-sau: minmax(150px, 200px) minmax(150px, 200px) minmax(110px, 130px); }   /* NH9: tên co giãn, Bước tiếp = Lớp mới, Tuần (mã tuần ngắn) hẹp — cột cuối sát mép phải, không chừa khoảng trống */
   .ck-lg[data-k="doc"] { --ck-sau: minmax(170px, 1fr) minmax(200px, 2fr); }
   /* ô tìm lớp trong ô 112 px: bỏ kính lúp + dòng phụ để đủ chữ "Chọn lớp" / mã lớp (dòng phụ vẫn ở danh sách xổ) — chủ SP: không cắt chữ. */
   .ck-lg .oc { min-height: 34px; padding: 0 4px 0 8px; gap: 4px; font-size: 13px; }

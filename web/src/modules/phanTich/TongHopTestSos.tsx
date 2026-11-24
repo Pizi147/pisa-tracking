@@ -399,13 +399,13 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   return (
     <>
     <VaoHangLoc o="giua">
-      <OChon className="max-sm:w-[calc(50%-4px)]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label={t('Xếp theo')}>
+      <OChon className="shrink-0 max-sm:w-[calc(50%-4px)]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label={t('Xếp theo')}>
         {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => <option key={k} value={k}>{NHAN_XEP[k]}</option>)}
       </OChon>
     </VaoHangLoc>
     <VaoHangLoc o="phai">
       {/* GD-12a (⑨ L1): ⋯ trước, Xuất Excel luôn cuối hàng (như các tab khác). */}
-      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11 max-sm:w-11" />
+      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} mat="⋯" lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11 max-sm:w-11" />
       {!dienThoai && <NutXuat nhan={t('Xuất Excel')} onClick={xuatExcel} tat={khongXuat} title={lyDoKhongXuat} />}
     </VaoHangLoc>
 

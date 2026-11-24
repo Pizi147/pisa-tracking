@@ -254,7 +254,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <NutXuat nhan={t('Xuất Excel')} tat={!data || dangXuat} onClick={xuatExcel} />
       </VaoHangLoc>
       <VaoHangLoc>
-        <ChonLoc className="w-[220px] max-sm:w-[calc(100%-52px)]" ariaLabel={t('Tìm GV')} tatCa={t('Tìm GV')} placeholder={t('Tìm GV…')} value={chonGv} onChange={setChonGv} onGo={setTim}
+        <ChonLoc className="w-[220px] min-w-[150px] shrink max-sm:w-[calc(100%-52px)]" ariaLabel={t('Tìm GV')} tatCa={t('Tìm GV')} placeholder={t('Tìm GV…')} value={chonGv} onChange={setChonGv} onGo={setTim}
           ds={(data?.hang ?? []).map((h) => ({ gt: String(h.id), ten: h.ten, phu: h.mon || undefined }))} />
       </VaoHangLoc>
       {moChuaLam && (
