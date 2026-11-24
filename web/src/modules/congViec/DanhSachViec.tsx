@@ -178,7 +178,9 @@ function tachNhom(muc: readonly MucTab<WorkItem>[], dem: ReadonlyMap<string, { n
  * · chip "n việc" · "n quá hạn" đỏ (375 cũng ghi đủ chữ — AU-GON A1-11). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
-export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: ChungDong & {
+export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, cuoi, ...dong }: ChungDong & {
+  /** Khối nối sau mục cuối, CÙNG lưới cột (`.cvA`): "PA đang chạy" — thẳng cột với các mục trên. */
+  cuoi?: ReactNode;
   /** GAP-MO (N60): khoá nhớ gập / mở ở trình duyệt = người + tab (vd `u7:bao-ph`); không có = không nhớ. Mục theo khoá mục; mặc định mở. */
   nho?: string;
   muc: readonly MucTab<WorkItem>[];
@@ -252,6 +254,7 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
           </section>
         );
       })}
+      {cuoi}
       {dauPhai && !nhom.some((m) => m.mk === 'giao') && <div className="flex justify-end px-1">{dauPhai}</div>}
     </div></div>
   );
@@ -392,7 +395,7 @@ export function ThePhu({ ds, vien = [], xuong = false }: { ds: readonly string[]
  * Mỗi dòng MỘT lớp: bốn ô lớp · ai (tên em / "n em") · chi tiết · hạn, không cột nút. Cả dòng bấm được; "n em" có mũi tên mở ra từng em ngay dưới (cùng bộ cột).
  * Hạn luôn là ngày dd/mm/yyyy, chỉ tô màu chữ. Chi tiết ở `index.css` (`.cvA*`). Thao tác phụ (Hoàn thành · Gia hạn · Bỏ qua · Không thi · Xuất) vẫn có — một hàng nút nhỏ
  * ngay dưới dòng, không thành cột ([XM] khop-khac.md). */
-function HanA({ it, daXong }: { it: WorkItem; daXong: boolean }) {
+export function HanA({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (daXong) return <span className={`cvA-hn !font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>;
   if (!it.due) {
@@ -435,7 +438,7 @@ function dongDiem(it: WorkItem): { n: number; tuan: string | null; loai: string 
  * Loại test chỉ ghi khi đề mục chưa nói (`loaiDaNoi`: Mock Test · Checkpoint · Chấm Speaking); không có tuần thì loại đứng đầu, không dấu "-" treo.
  */
 const LOAI_THI = /^(?:(?:Progress|Final)(?: Test)?(?: \d+ ?%)?|Checkpoint|Mock(?: Test)?|MT\d+|Case)$/;
-function xepTin(mau: readonly string[], loaiDaNoi: boolean, tuan: string | null): string[] {
+export function xepTin(mau: readonly string[], loaiDaNoi: boolean, tuan: string | null): string[] {
   let loai: string | null = null;
   let tuanTin = tuan;
   const rest: string[] = [];
@@ -450,9 +453,18 @@ function xepTin(mau: readonly string[], loaiDaNoi: boolean, tuan: string | null)
       else rest.push(y);
     }
   }
-  const dau = loaiDaNoi || !loai ? tuanTin : tuanTin ? `${tuanTin} - ${loai}` : loai;
-  return duyNhat([dau, ...rest]);
+  const phan = duyNhat([loaiDaNoi ? null : loai, ...rest]);
+  /* Có tuần: MỘT dấu " - " ngay sau tuần, các phần sau cách nhau " · " (chủ SP 25/11: "W3 AUG - Progress · R", "W3 SEP - 3 bài"). */
+  return tuanTin ? (phan.length ? [`${tuanTin} - ${phan[0]}`, ...phan.slice(1)] : [tuanTin]) : phan;
 }
+const LA_MA_TUAN = /^W[1-5] [A-Z]{3}$/;
+/** Ghép các phần thông tin (đã có "tuần - …" ở phần đầu): `·` giữa các phần; chỉ có mỗi tuần mà còn phần sau (GV…) thì vẫn " - " sau tuần. */
+export const ghepChu = (parts: readonly (string | null | undefined | false)[]): string => {
+  const p = parts.filter((x): x is string => !!x);
+  return LA_MA_TUAN.test(p[0] ?? '') && p.length > 1 ? `${p[0]} - ${p.slice(1).join(' · ')}` : p.join(' · ');
+};
+/** Dấu đứng trước tên GV (phần cuối) cho ô thông tin `chu`. */
+const dauGv = (chu: string) => (!chu ? '' : LA_MA_TUAN.test(chu) ? ' - ' : ' · ');
 
 /** Việc TVV theo từng em (Báo PH · Sau thi · Chốt ngày thi). */
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
@@ -532,7 +544,7 @@ function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai
   const ct = chamS ? xepTin([t('{soBai} bài', { soBai: it.soBai ?? 0 }), it.baiQuaHan ? `${it.baiQuaHan} ${t('quá hạn')}` : ''], true, null) : chiTiet(it, gop, diem, ghiLoai, daXong, mk);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
-  const chu = [...ct, tvv, giao, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
+  const chu = ghepChu([...ct, tvv, giao, it.coNhap ? t('Có nháp') : null]);
   const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
@@ -547,7 +559,7 @@ function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai
           </button>
           {sosChip}
         </span>
-        <span className="cvA-ct" title={chu}>{chu}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="text-faint">{chu ? ' · ' : ''}{nguoi}</span>}</span>
+        <span className="cvA-ct" title={chu}>{chu}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
         <HanA it={it} daXong={daXong} />
         {dong.moTrang(it) && it.group !== 'xuat_bc_ph' && !con && !daXong && <MuiDi />}
       </div>
@@ -568,7 +580,7 @@ function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { co
   const nEm = diem?.n || it.emIds?.length || it.count || 0;
   const ai = it.studentId !== null || !nEm ? dich(it.conTen) : t('{n} em', { n: nEm });
   const ct = chiTiet(it, false, diem, ghiLoai, daXong, mk);
-  const chu = [...ct, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
+  const chu = ghepChu([...ct, it.coNhap ? t('Có nháp') : null]);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
       <span className="cvA-lop" aria-hidden />
@@ -577,7 +589,7 @@ function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { co
           {daXong && <span aria-hidden className="text-ok">✓ </span>}<span className={daXong ? 'line-through' : undefined}>{ai}</span></button>
         {!daXong && chipMucA(it)}
       </span>
-      <span className="cvA-ct" title={chu}>{chu}{nguoi && !daXong && <span className="text-faint">{chu ? ' · ' : ''}{nguoi}</span>}</span>
+      <span className="cvA-ct" title={chu}>{chu}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
       <HanA it={it} daXong={daXong} />
     </div>
   );
