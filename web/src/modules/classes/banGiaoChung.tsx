@@ -71,12 +71,17 @@ export function TuDienEm({ tuDien, daChup }: { tuDien: TuDien | null; daChup: bo
     <section aria-label={t('Hệ thống tự điền')} className="surface-2 rounded-lg p-3">
       <h4 className="mb-2 mt-0 text-[12px] font-semibold text-slate-500">{t('Tự điền · chỉ đọc')}{daChup && ` · ${t('chụp lúc xác nhận')}`}</h4>
       {tuDien ? (
-        <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+        <div className="grid grid-cols-[6.25rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
           <span className="text-[13px] font-medium text-slate-500">{t('Kết quả')}</span><span className="text-slate-200">{dich(tuDien.ketQua)}</span>
           <span className="text-[13px] font-medium text-slate-500">{t('Case đang mở')}</span>
-          <span className="text-slate-200">
-            {tuDien.caseMo.length ? tuDien.caseMo.map((c) => `${dich(c.ten)}${c.nguoiNhan ? ` · ${t('người nhận gợi ý: {ten}', { ten: c.nguoiNhan })}` : ''}`).join(' · ') : t('Không có')}
-          </span>
+          {/* HAI-BEN (chủ SP 25/11): mỗi Case MỘT dòng (tên · người nhận gợi ý mờ) — không nối cả chuỗi thành một đoạn chữ chi chít. */}
+          {tuDien.caseMo.length ? (
+            <ul className="m-0 grid list-none gap-1 p-0 text-slate-200">
+              {tuDien.caseMo.map((c) => (
+                <li key={c.id}>{dich(c.ten)}{c.nguoiNhan && <span className="block text-[13px] text-slate-400">{t('người nhận gợi ý: {ten}', { ten: c.nguoiNhan })}</span>}</li>
+              ))}
+            </ul>
+          ) : <span className="text-slate-200">{t('Không có')}</span>}
           <span className="text-[13px] font-medium text-slate-500">{t('Ý thức')}</span><span className="text-slate-200">{dich(tuDien.yThuc)}</span>
           <span className="text-[13px] font-medium text-slate-500">{t('Việc còn dở')}</span><span className="text-slate-200">{dich(tuDien.viecConDo)}</span>
         </div>

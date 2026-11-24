@@ -35,8 +35,10 @@ const TOI_DA_TINH_HINH = 8;
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
  * < 640 px menu neo đáy (F4).
  */
-export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false, dsHoi, dsEm }: {
+export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false, dsHoi, dsEm, ca375 = false }: {
   noi: 'dau' | 'noi'; lopId?: number; em?: EmTask;
+  /** HAI-BEN (chủ SP 25/11): trang Công việc 375 — nút ở hàng đầu trang cạnh "Lọc thêm" (chia đôi hàng), KHÔNG nút nổi che chữ dòng việc. */
+  ca375?: boolean;
   /** GD-7 (③ K6, [XM-6]): chỉ các mục người xem làm được (máy chủ quyết: `canReport` · `canRecord` · `coTheBao` / `coTheHoi`); bỏ trống = đủ 3 mục. */
   muc?: readonly Loai[];
   /** GD-7 ([XM-6]): TVV — mục Tình hình là "Hỏi tình hình học tập" (gửi GVCN), không "Báo". */
@@ -105,7 +107,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
     : <span className="grid h-[60px] w-[60px] min-w-fit place-items-center whitespace-nowrap px-2 text-sm font-bold">   {/* AU-GON A3-05: chữ dài (EN) nới nút, không cắt */}{t('+ Task')}</span>;
   return (
     <>
-      <span ref={neo} className={noi === 'noi' ? `fixed bottom-[80px] right-4 z-[35] sm:hidden${daCuon ? '' : ' !hidden'}${che ? ' pointer-events-none invisible' : ''}` : 'max-sm:hidden'} data-fab-task={noi === 'noi' && daCuon ? '' : undefined}>
+      <span ref={neo} className={noi === 'noi' ? `fixed bottom-[80px] right-4 z-[35] sm:hidden${daCuon ? '' : ' !hidden'}${che ? ' pointer-events-none invisible' : ''}` : ca375 ? 'max-sm:[&>*]:w-full max-sm:[&_button]:min-h-[44px] max-sm:[&_button]:w-full' : 'max-sm:hidden'} data-fab-task={noi === 'noi' && daCuon ? '' : undefined}>
         <MenuDong nhan={t('Task: {ds}', { ds: dsMuc.map(([, nhan]) => nhan).join(', ') })} mat={mat}   /* AUDIT-1611 A3-04: tên đọc màn = đúng các mục đang có */ tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? `btn ${phu ? '' : 'btn-primary '}!p-0` : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
           muc={dsMuc.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />

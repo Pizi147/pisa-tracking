@@ -182,7 +182,12 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
               <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Phương án')}</span>
               {!sua ? (
                 <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-slate-200">
-                  <span>{pa.mocChu ? pa.description.replace(/ · đến Cuối khoá(?= · |$)/, '') : pa.description}{pa.performer ? ` · ${pa.performer}` : ''}{pa.mocChu ? ` · ${dich(pa.mocChu)}` : ''}</span>
+                  {/* HAI-BEN (chủ SP 25/11): mô tả PA tách theo " · " thành các mẩu có viền — mỗi ý một mẩu, xuống dòng gọn (≤ 72 ký tự), không một dòng chữ dài chi chít. */}
+                  <span className="flex max-w-[72ch] flex-wrap gap-1.5">
+                    {`${pa.mocChu ? pa.description.replace(/ · đến Cuối khoá(?= · |$)/, '') : pa.description}${pa.performer ? ` · ${pa.performer}` : ''}${pa.mocChu ? ` · ${dich(pa.mocChu)}` : ''}`.split(' · ').filter(Boolean).map((m, i) => (
+                      <span key={i} className="rounded-md border px-2 py-0.5 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>{m}</span>
+                    ))}
+                  </span>
                   {/* Rà #389: chỉ người sửa được PA (`ghiDuoc` = luật Sửa PA) — FOU PA chung do GVCN dạy, GVBM không sửa (không để cả lần xác nhận bị từ chối). */}
                   {pa.ghiDuoc && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setSua(true)}>{t('Sửa')}</button>}
                 </p>
