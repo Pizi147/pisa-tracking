@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -50,11 +50,16 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
   const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
   const programmes = useApi<Programme[]>('/ref/programmes');
 
+  /* Giá trị mặc định lúc mở — gốc của "đang sửa" (lỗi 6), KHÔNG đọc từ state đã sửa. */
+  const kieu0: Kieu = macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? 'THUONG' : 'FT';
+  const loTrinh0 = macDinh?.loTrinh ?? 'LT1';
+  const chuongTrinh0 = macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? macDinh.chuongTrinh : 'FOU';
+  const so0 = locSoLop(macDinh?.so ?? '');
   const [branchId, setBranchId] = useState<number | null>(macDinh?.branchId ?? null);
-  const [kieu, setKieu] = useState<Kieu>(macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? 'THUONG' : 'FT');
-  const [loTrinh, setLoTrinh] = useState(macDinh?.loTrinh ?? 'LT1');
-  const [chuongTrinh, setChuongTrinh] = useState(macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? macDinh.chuongTrinh : 'FOU');
-  const [so, setSo] = useState(locSoLop(macDinh?.so ?? ''));
+  const [kieu, setKieu] = useState<Kieu>(kieu0);
+  const [loTrinh, setLoTrinh] = useState(loTrinh0);
+  const [chuongTrinh, setChuongTrinh] = useState(chuongTrinh0);
+  const [so, setSo] = useState(so0);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(macDinh?.startPeriodId ?? null);
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   const lf = useLoiForm();
@@ -121,14 +126,16 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
     : [mau?.weeks && t('{n} tuần', { n: mau.weeks }), moc('progress') && t('Progress Test tuần {n}', { n: moc('progress') }), moc('final') && t('Final Test tuần {n}', { n: moc('final') })]
       .filter(Boolean).join(' · ');
 
-  /* Lỗi 6: "đang sửa" = khác ẢNH CHỤP giá trị lúc mở (như `cases/CapNhatTuan.tsx` F06). Chụp khi chi nhánh đã tải (sau bước tự chọn một chi nhánh) và tuần
-     khai giảng đã neo (WeekPicker tự phát tuần hiện tại) — hai bước máy tự điền không tính là sửa. Ô GV trống `''` = chưa chọn. */
+  /* Lỗi 6: "đang sửa" = khác GIÁ TRỊ MẶC ĐỊNH lúc mở (như `cases/CapNhatTuan.tsx` F06). Gốc dựng từ mặc định + hai ô máy tự điền: chi nhánh duy nhất
+     (A2 §2.5) và tuần khai giảng WeekPicker neo lần đầu (mũi tên khoá tới khi neo xong) — PTA rà #2144 ④: gõ số lớp / đổi kiểu TRƯỚC khi tuần nạp
+     xong vẫn là "đang sửa". Ô GV trống `''` = chưa chọn. */
   const chup = JSON.stringify([branchId, kieu, loTrinh, chuongTrinh, so, startPeriodId,
     Object.entries(chon).filter(([, v]) => v !== '').sort(([a], [b]) => a.localeCompare(b))]);
-  const [goc, setGoc] = useState<string | null>(null);
-  const sanSangChup = !!branches.data && (branchId !== null || dsCn.length !== 1) && startPeriodId !== null;
-  useEffect(() => { if (goc === null && sanSangChup) setGoc(chup); }, [goc, sanSangChup, chup]);
-  const daSua = !daTao && (goc !== null ? chup !== goc : so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== ''));
+  const tuanDau = useRef<number | null>(macDinh?.startPeriodId ?? null);
+  if (tuanDau.current === null && startPeriodId !== null) tuanDau.current = startPeriodId;
+  const cn0 = macDinh?.branchId ?? (dsCn.length === 1 ? dsCn[0].id : null);
+  const goc = branches.data && tuanDau.current !== null ? JSON.stringify([cn0, kieu0, loTrinh0, chuongTrinh0, so0, tuanDau.current, []]) : null;
+  const daSua = !daTao && (goc !== null ? chup !== goc : so !== so0 || kieu !== kieu0 || chuongTrinh !== chuongTrinh0 || loTrinh !== loTrinh0 || Object.values(chon).some((v) => v !== ''));
 
   const tao = async () => {
     lf.bam();

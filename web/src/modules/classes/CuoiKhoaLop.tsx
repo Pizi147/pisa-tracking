@@ -67,7 +67,9 @@ const huongLenh = (d: Pick<Dong, 'huong' | 'quayLai'>): HuongLenh | null => (d.h
 const chonCua = (h: HuongLenh | null | undefined): ChonHuong => (h === 'bao_luu' || h === 'dung_hoc' ? 'dung' : h === 'chuyen_lop' || !h ? '' : h);
 const b1 = (n: number | null) => (n === null ? '—' : fmtBand(n));   // KY-VONG-MT0: có kỹ năng Đã huỷ → không Overall
 /** Em có nhận xét đang gõ KHÁC bản máy chủ (so chữ đã cắt khoảng trắng) — một hàm cho số đổi chặn rời trang, chân và nút Lưu nhận xét. */
-const nxKhac = (ds: readonly Em[], nx: Record<number, string>) => ds.filter((e) => nx[e.id] !== undefined && (nx[e.id].trim() || null) !== (e.nhanXet ?? null));
+/* PTA rà #2144 ②: chữ VỪA GỬI lưu xong (`daGui`, chờ tải lại) không còn tính là đổi — nút Lưu không gửi lại với `luc` cũ (409 tự đụng), rời trang không hỏi thừa. */
+const nxKhac = (ds: readonly Em[], nx: Record<number, string>, daGui?: ReadonlyMap<number, string>) =>
+  ds.filter((e) => nx[e.id] !== undefined && daGui?.get(e.id) !== nx[e.id] && (nx[e.id].trim() || null) !== (e.nhanXet ?? null));
 const AP_TRONG = { huong: '' as ChonHuong, quayLai: true, lop: null as number | null, tuan: '', kv: null as { dat: boolean; nn: 'trung_tam' | 'hoc_sinh' | null } | null };
 
 /** Lớp chuyển đến hợp lệ cho hướng: FT → lớp FT; Lên → chương trình kế; Học lại → cùng hoặc thấp hơn (`maHocLai`). Ứng viên máy chủ đã lọc cùng chi nhánh (N17). */
@@ -112,6 +114,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const [ketQua, setKetQua] = useState<{ ok: number; loi: number; loai: 'chot' | 'nhap' } | null>(null);
   /* N50 (7) (rà PTA ⑨): lớp chi nhánh khác — chỉ tải khi QL mở ô lớp của một em (một lần mỗi lần vào trang). */
   const [lopKhac, setLopKhac] = useState<Lop[]>([]);
+  /* PTA rà #2144 ⑤: lớp vừa mở ở "+ Mở lớp mới…" — dùng ngay (kiểm dòng, nhãn Chốt, ô Lớp) trong lúc chờ tải lại; tải lại về thì danh sách máy chủ có lớp đó. */
+  const [lopMoiTam, setLopMoiTam] = useState<Lop[]>([]);
   const daTaiKhac = useRef(false);
   const taiLopKhac = () => {
     if (daTaiKhac.current) return;
@@ -167,7 +171,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   }, [d, emMo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Không mất phần đang sửa: số em có thay đổi chưa lưu (hướng / lớp / Kỳ vọng / nhận xét) — ‹, link, Back, đổi tài khoản hỏi một lần (CHAN-ROI-NHAP-2). */
-  const soDoi = new Set([...Object.keys(sua).filter((k) => Object.keys(sua[Number(k)]).some((x) => x !== 'mo')).map(Number), ...nxKhac(kh.data?.students ?? [], nhanXet).map((e) => e.id)]).size;
+  const soDoi = new Set([...Object.keys(sua).filter((k) => Object.keys(sua[Number(k)]).some((x) => x !== 'mo')).map(Number), ...nxKhac(kh.data?.students ?? [], nhanXet, nxDaGui.current).map((e) => e.id)]).size;
   useChanRoiNhap(soDoi > 0, t('Thay đổi lộ trình của {n} em chưa lưu — rời đi sẽ mất.', { n: soDoi }), panel ? conTrongPanel : conTrongCuoiKhoa);
   const quayLai = () => { if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`); };
   const trongKhung = (nd: ReactNode) => (panel ? <KhungPanel tieuDe={t('Chốt lộ trình')} onDong={panel.onDong}>{nd}</KhungPanel> : nd);
@@ -183,7 +187,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const moc = d.tuanCuoiKhoa ? mocLoTrinh(d.tuanCuoiKhoa) : null;
   const tuanSauFinal = d.tuanCuoiKhoa ? addDaysIso(d.tuanCuoiKhoa, 7) : null;
   const tuanChung = tuanSauFinal && d.tuanChon.includes(tuanSauFinal) ? tuanSauFinal : d.tuanChon[0] ?? '';
-  const lopCua = new Map([...d.candidates, ...lopKhac].map((c) => [c.id, c]));
+  const ungVien = [...d.candidates, ...lopMoiTam.filter((m) => !d.candidates.some((c) => c.id === m.id))];
+  const lopCua = new Map([...ungVien, ...lopKhac].map((c) => [c.id, c]));
   const kvTen = ma ? KY_VONG_DAU_RA[ma] : undefined;
 
   /** Gốc của dòng: lệnh đã chốt › nháp › gợi ý máy theo Final (mặc định hiển nhiên, chưa lưu). */
@@ -271,7 +276,15 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
       }
       if (!khoa(r.e)) {   // dòng đã chốt: chỉ Kỳ vọng
         if ('huong' in p0 && a.huong) { p.huong = a.huong; p.quayLai = a.quayLai; if (a.huong !== r.x.huong) p.lop = null; }
-        if ('lop' in p0 && a.lop) p.lop = a.lop;
+        /* PTA rà #2144 ③ (làm điều hiển nhiên): lớp phụ thuộc hướng — em chưa có hướng / hướng theo gợi ý khác hướng của thanh → nhận kèm hướng của thanh;
+           em đã SỬA TAY hướng khác thì giữ hướng, chỉ gán lớp khi lớp hợp hướng đó. */
+        if ('lop' in p0 && a.lop) {
+          const h = a.huong && r.x.huong !== a.huong && (!r.x.huong || sua[r.e.id]?.huong === undefined) ? a.huong : r.x.huong;
+          if (h && lopTheoHuong([...ungVien, ...lopKhac], h, ma, ke).some((c) => c.id === a.lop)) {
+            if (h !== r.x.huong) { p.huong = h; p.quayLai = a.quayLai; }
+            p.lop = a.lop;
+          }
+        }
         if ('tuan' in p0 && a.tuan) p.tuan = a.tuan;
       }
       if (Object.keys(p).length) doi(r.e.id, p);
@@ -279,7 +292,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     setTam(false);
   };
   /* N50 (7): ô áp chung / nhóm (cả lớp) chỉ lớp cùng chi nhánh; ô lớp của từng em có thêm chi nhánh khác (cuối danh sách). */
-  const cungCn = d.candidates.filter((c) => c.branchId === d.from.branchId);
+  const cungCn = ungVien.filter((c) => c.branchId === d.from.branchId);
   const lopAp = lopTheoHuong(cungCn, ap.huong || (dsChon[0]?.x.huong ?? ''), ma, ke);
 
   /* ------------------------------------------------------------------ lưu */
@@ -377,7 +390,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   };
   const luuNhanXet = async () => {
     /* Lỗi 4: chụp chữ gửi đi; lưu xong KHÔNG xoá cả `nhanXet` — effect `nxDaGui` bỏ từng khoá khi máy chủ trả đúng chữ đó (chữ gõ thêm lúc đang lưu còn nguyên). */
-    const doiNx = nxKhac(ds, nhanXet).map((e) => ({ e, v: nhanXet[e.id] }));
+    const doiNx = nxKhac(ds, nhanXet, nxDaGui.current).map((e) => ({ e, v: nhanXet[e.id] }));
     setBusy(true);
     const hong: string[] = [];
     for (const { e, v } of doiNx) {
@@ -652,7 +665,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
             onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Sửa')}</button></span>
       );
     }
-    const dsLop = lopTheoHuong([...d.candidates, ...lopKhac], x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${c.branchCode} · ${c.studentCount} em` }));
+    const dsLop = lopTheoHuong([...ungVien, ...lopKhac], x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${c.branchCode} · ${c.studentCount} em` }));
     return (
       <span className="block" onFocusCapture={taiLopKhac}>
         <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })}
@@ -702,7 +715,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const mucChot = laQl && moc && daChot < ds.length && h ? mucHan(moc.hanChot, h) : null;
   const chipHan = mucChot && moc && (
     <span title={t('hạn chốt {ngay}', { ngay: ngay(moc.hanChot) })} className={`whitespace-nowrap ${LOP_MUC_HAN[mucChot]}`}>{mucChot === 'qua' && <DauQuaHan />}{ngay(moc.hanChot)}</span>);
-  const nxDoi = nxKhac(ds, nhanXet).length;
+  const nxDoi = nxKhac(ds, nhanXet, nxDaGui.current).length;
 
   const tomTat = (() => {
     const lenh = guiDuoc.filter((r) => r.lenh);
@@ -1126,6 +1139,10 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const xongLopMoi = (lop: { id: number; code: string }) => {
     const g = moLop!.ganCho;
     /* Lỗi 1: lớp mở từ thanh Áp vào NGAY các em đang chọn (cùng đường chọn lớp có sẵn). ClassCreatePanel đã báo "Đã tạo lớp" — không toast thứ hai. */
+    const h = moLop!.huong;
+    const moi: Lop = { id: lop.id, code: lop.code, ft: h === 'fast_track', programmeCode: h === 'fast_track' ? null : h === 'hoc_lai' ? ma : ke, studentCount: 0, branchId: d.from.branchId, branchCode: d.from.branchCode };
+    setLopMoiTam((m) => [...m, moi]);
+    ungVien.push(moi); lopCua.set(moi.id, moi);   // cùng lượt vẽ này (apNgay → apCho đọc danh sách ngay)
     if (typeof g === 'object') chonLopNhom(g.nhom as KhoaNhom, lop.id); else if (g === 'thanh') apNgay({ lop: lop.id }); else doi(g, { lop: lop.id });
     setMoLop(null); kh.reload();
   };
