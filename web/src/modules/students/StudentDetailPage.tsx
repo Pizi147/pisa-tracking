@@ -736,13 +736,15 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
     );
   }
   const so = 'td text-center tabular-nums';
+  /* Cột toàn MỘT lớp là thừa (đã nói ở đầu hồ sơ) — chỉ hiện khi em đã đổi lớp giữa các lượt. */
+  const coCotLop = new Set(attempts.map((a: any) => a.classCode ?? '—')).size > 1;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
             <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này.')}>MT</Th>
-            <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp lúc đánh giá')}</Th>
+            {coCotLop && <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp lúc đánh giá')}</Th>}
             <Th hint={t('Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.')}>{t('Tuần')}</Th>
             <Th align="center" hint="Band Listening">L</Th><Th align="center" hint="Band Reading">R</Th>
             <Th align="center" hint="Band Writing Task 1">W1</Th><Th align="center" hint="Band Writing Task 2">W2</Th><Th align="center" hint="Band Speaking">S</Th>
@@ -760,7 +762,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
                   <Link to={attemptHref(a)} className="link tabular-nums" onClick={(e) => e.stopPropagation()}>MT{a.attemptNo} ›</Link>
                   <NhanDot a={a} />
                 </td>
-                <td className="td text-slate-300">{a.classCode ?? '—'}</td>
+                {coCotLop && <td className="td text-slate-300">{a.classCode ?? '—'}</td>}
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}
                 </td>
@@ -781,8 +783,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
           })}
           {thi && (
             <tr className="hang-thi-that">
-              <td className="td whitespace-nowrap">{t('Thi thật')}</td>
-              <td className="td">IELTS</td>
+              <td className="td whitespace-nowrap">{t('Thi thật')}{!coCotLop && <span className="text-slate-400"> · IELTS</span>}</td>
+              {coCotLop && <td className="td">IELTS</td>}
               <td className="td whitespace-nowrap">{ngayThi}</td>
  {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={so}>{k === 'ovr' ? diemThi(k) : k === 'w' ? <span className="flex justify-center">{oThi(k)}</span> : oThi(k)}</td>)
                 : <td colSpan={6} className="td" />}
@@ -852,13 +854,14 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
       </div>
     );
   }
+  const coCotLop = new Set(attempts.map((a: any) => a.classCode ?? '—')).size > 1;   // như bảng Mock Test: cột toàn một lớp là thừa
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr>
             <Th hint={t('Progress Test hay Final Test của khoá học. Bấm để mở bảng điểm đợt.')}>{t('Bài')}</Th>
-            <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp')}</Th>
+            {coCotLop && <Th hint={t('Lớp em học VÀO LÚC làm bài này — chuyển lớp không viết lại lịch sử.')}>{t('Lớp')}</Th>}
             <Th hint={t('Tuần kế hoạch của lượt này. Một lượt chỉ thuộc đúng một tuần — không có ngày thi cụ thể.')}>{t('Tuần')}</Th>
             <Th hint={t('Số câu đúng / tổng số câu từng môn. Đạt khi từ 70% trở lên.')}>{t('Điểm từng phần')}</Th>
             <Th hint={t('Progress Test: số môn đạt trên tổng, kèm môn không đạt. Final Test: % tổng. Môn chưa có điểm không tính là chưa đạt.')}>{t('Kết quả')}</Th>
@@ -869,7 +872,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
             <tr key={a.id} id={`dot-${a.id}`} className="bam cursor-pointer" onClick={() => onOpen(a)}
               style={a.id === dotId ? { background: 'var(--accent-soft)' } : undefined}>
               <td className="td whitespace-nowrap">{oBai(a, 'link')}</td>
-              <td className="td text-slate-300">{a.classCode ?? '—'}</td>
+              {coCotLop && <td className="td text-slate-300">{a.classCode ?? '—'}</td>}
               <td className="td whitespace-nowrap">
                 {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}
               </td>
