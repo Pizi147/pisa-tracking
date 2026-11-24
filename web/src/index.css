@@ -2106,7 +2106,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .cvA-sub { display: block; }
     .cvA-v { display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'lop lop hn' 'ai ct ct'; grid-template-rows: auto auto; row-gap: 3px; padding: 10px 22px 10px 16px; }
     .cvA-v .cvA-lop { grid-area: lop; } .cvA-v .cvA-ai { grid-area: ai; } .cvA-v .cvA-hn { grid-area: hn; }
-    .cvA-v .cvA-ct { grid-area: ct; justify-self: start; font-size: 13px; max-width: 100%; }
+    .cvA-v .cvA-ct { grid-area: ct; justify-self: start; font-size: 13px; max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }   /* HAI-BEN: hai tầng cũng xuống dòng, không "…" cắt chữ */
     .cvA-v:not(.cvA-kl) .cvA-ai + .cvA-ct:not(:empty)::before { content: '·'; margin: 0 6px; color: var(--text-faint); }
     .cvA-con .cvA-v, .cvA-v.cvA-kl { grid-template-areas: 'ai ai hn' 'ct ct ct'; }
     .cvA-con .cvA-lop { display: none; }
