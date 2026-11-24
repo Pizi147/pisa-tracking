@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -88,15 +88,16 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
   if (rong && anKhiRong) return null;
   if (rong) {
     return (
-      <section className="card flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3" aria-label={t('Tiến độ trên lớp')}>
+      /* v26 (A3): thẻ rỗng MỘT hàng khi đủ rộng — tên ⓘ │ "Chưa có ghi nhận" │ nút phải; hẹp (375) xuống hai hàng. */
+      <section className="card flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2" aria-label={t('Tiến độ trên lớp')}>
         <span className="flex min-w-0 items-center gap-x-2.5"><h2 className="m-0 text-[16px] font-bold text-slate-100">{tieuDe}</h2>{nutLuat}</span>
-        <span className="order-3 min-w-0 flex-[1_1_calc(100%-140px)] text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</span>
-        {ghiDuoc && <button type="button" className="btn btn-sm order-4 ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
+        <span className="order-3 min-w-0 flex-[1_1_calc(100%-140px)] text-[14px] text-slate-400 sm:order-none sm:flex-[1_1_0]">{t('Chưa có ghi nhận')}</span>
+        {ghiDuoc && <button type="button" className="btn btn-sm order-4 ml-auto max-sm:min-h-[44px] sm:order-none" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
       </section>
     );
   }
   return (
-    <section className="card flex min-w-0 flex-col" aria-label={t('Tiến độ trên lớp')}>
+    <section className="card flex min-w-0 flex-col [container-type:inline-size]" aria-label={t('Tiến độ trên lớp')}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 className="m-0 text-[16px] font-bold text-slate-100">{tieuDe}</h2>
         {nutLuat}
@@ -107,22 +108,24 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
           : !data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
           /* Chưa kỹ năng nào có ghi nhận → thẻ gọn (`rong`, HS2) ở trên. */
           : (
-            <ul className="m-0 list-none p-0">
+            /* v26 (A1 / A2): khung ≥ 740 = MỘT hàng ô chia đều, mỗi kỹ năng một ô (ô chưa có ghi nhận vẫn giữ chỗ); hẹp (375) = mỗi kỹ năng một dòng. Không cắt "…". */
+            <ul className="m-0 grid list-none p-0 [@container(min-width:740px)]:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]" style={{ '--n': knTomTat.length } as CSSProperties}>
               {knTomTat.map((k) => {
                 const d = ds.find((x) => x.skill === k);
                 return (
-                  <li key={k} className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-3 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}
+                  <li key={k} className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-3 border-t px-4 py-3 first:border-t-0 [@container(min-width:740px)]:grid-cols-[auto_minmax(0,1fr)] [@container(min-width:740px)]:content-start [@container(min-width:740px)]:gap-y-1.5 [@container(min-width:740px)]:border-l [@container(min-width:740px)]:border-t-0 [@container(min-width:740px)]:pb-3.5 [@container(min-width:740px)]:first:border-l-0"
+                    style={{ borderColor: 'var(--line)' }}
                     onMouseEnter={d ? () => onRe?.(d.tuan) : undefined} onMouseLeave={d ? () => onRe?.(null) : undefined}>
                     <span className="the-kn dac">{tenMonNgan(ct, k)}</span>
                     {d ? (
-                      <span className="flex min-w-0 flex-col gap-1">
-                        <span className="flex flex-wrap gap-1.5"><span className="the-phu nhat tabular-nums">{d.tuanMa}</span></span>
-                        <span className="line-clamp-2 break-words text-[14px] leading-normal text-slate-200">
+                      <span className="flex min-w-0 flex-col gap-1 [@container(min-width:740px)]:contents">
+                        <span className="flex flex-wrap gap-1.5 [@container(min-width:740px)]:self-center"><span className="the-phu nhat tabular-nums">{d.tuanMa}</span></span>
+                        <span className="break-words text-[14px] leading-normal text-slate-200 [@container(min-width:740px)]:col-span-2">
                           {d.loai === 'gy' ? <ChuDich chu={d.noiDung} nguon={{ bang: 'gop_y_tuan', id: d.id, cot: 'noi_dung' }} />
                             : <><KetQuaBai b={d} />{d.nhanXet && <ChuDich chu={d.nhanXet} nguon={{ bang: 'bai_tren_lop', id: d.id, cot: 'nhan_xet' }} />}</>}
                         </span>
                       </span>
-                    ) : <span className="pt-0.5 text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</span>}
+                    ) : <span className="pt-0.5 text-[14px] text-slate-400 [@container(min-width:740px)]:col-span-2 [@container(min-width:740px)]:pt-0">{t('Chưa có ghi nhận')}</span>}
                   </li>
                 );
               })}
@@ -145,18 +148,21 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
                 const ai = d.loai === 'bai' ? d.suaBoi ?? d.ghiBoi : d.ghiBoi;
                 return (
                   <li key={`${d.loai}${d.id}`} onMouseEnter={() => onRe?.(d.tuan)} onMouseLeave={() => onRe?.(null)}
-                    className={`grid gap-1 border-b py-2.5 text-[14px] last:border-b-0 ${laVua ? 'my-0.5 rounded-[10px] border px-2.5' : ''}`}
+                    className={`grid gap-1 border-b py-2.5 text-[14px] last:border-b-0 [@container(min-width:740px)]:grid-cols-[96px_minmax(0,1fr)_220px] [@container(min-width:740px)]:items-center [@container(min-width:740px)]:gap-x-4 ${laVua ? 'my-0.5 rounded-[10px] border px-2.5' : ''}`}
                     style={laVua ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' } : { borderColor: 'var(--line)' }}>
-                    {/* Dòng sửa được: cả dòng là MỘT nút (Tab + Enter), chữ nhận xét vẫn chọn / dịch được ở dòng 2. */}
-                    <div className="flex items-baseline gap-2 text-[13px]">
+                    {/* Dòng sửa được: cả dòng là MỘT nút (Tab + Enter), chữ nhận xét vẫn chọn / dịch được ở dòng 2.
+                        v26 (A4): khung ≥ 740 = MỘT hàng ba cột tuần │ kết quả + nhận xét │ người ghi — nút phủ cả hàng (lưới con), chữ nhận xét đặt đè lên cột giữa. */}
+                    <div className="flex items-baseline gap-2 text-[13px] [@container(min-width:740px)]:col-span-3 [@container(min-width:740px)]:col-start-1 [@container(min-width:740px)]:row-start-1 [@container(min-width:740px)]:grid [@container(min-width:740px)]:grid-cols-subgrid [@container(min-width:740px)]:items-center">
                       {sua ? (
-                        <button type="button" className="flex min-w-0 flex-1 appearance-none items-baseline gap-2 border-0 bg-transparent p-0 text-left text-[13px] text-slate-100 hover:underline max-sm:-my-3.5 max-sm:py-3.5"
+                        <button type="button" className="flex min-w-0 flex-1 appearance-none items-baseline gap-2 border-0 bg-transparent p-0 text-left text-[13px] text-slate-100 hover:underline max-sm:-my-3.5 max-sm:py-3.5 [@container(min-width:740px)]:col-span-3 [@container(min-width:740px)]:grid [@container(min-width:740px)]:grid-cols-subgrid [@container(min-width:740px)]:items-center [@container(min-width:740px)]:self-stretch"
                           title={t('Sửa / xoá')} onClick={() => setMo(d as Bai)} onFocus={() => onRe?.(d.tuan)} onBlur={() => onRe?.(null)}>
                           <DauDong d={d} kn={kn} ct={ct} lopNay={lopNay} ai={ai} />
                         </button>
-                      ) : <span className="flex min-w-0 flex-1 items-baseline gap-2"><DauDong d={d} kn={kn} ct={ct} lopNay={lopNay} ai={ai} /></span>}
+                      ) : <span className="flex min-w-0 flex-1 items-baseline gap-2 [@container(min-width:740px)]:col-span-3 [@container(min-width:740px)]:grid [@container(min-width:740px)]:grid-cols-subgrid [@container(min-width:740px)]:items-center"><DauDong d={d} kn={kn} ct={ct} lopNay={lopNay} ai={ai} /></span>}
                     </div>
-                    <div className="min-w-0 break-words text-slate-200">
+                    <div className={`min-w-0 break-words text-slate-200 [@container(min-width:740px)]:col-start-2 [@container(min-width:740px)]:row-start-1 ${sua ? 'cursor-pointer' : ''}`}
+                      /* v26: chữ nằm đè lên nút của hàng (3 cột) → bấm vào chữ cũng mở sửa, trừ khi đang bôi chọn chữ hoặc bấm nút / link trong chữ (Dịch…). */
+                      onClick={sua ? (e) => { if (window.getSelection()?.toString() || (e.target as HTMLElement).closest('button,a')) return; setMo(d as Bai); } : undefined}>
                       {d.loai === 'gy' ? (
                         <>
                           <span className="mr-1.5 inline-flex h-5 items-center gap-1 whitespace-nowrap rounded border px-1.5 align-[1px] text-[12px] font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}
@@ -189,9 +195,11 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
 function DauDong({ d, kn, ct, lopNay, ai }: { d: Dong; kn: string | null; ct: string | null; lopNay: number | null; ai: string | null }) {
   return (
     <>
-      <span className="whitespace-nowrap font-semibold tabular-nums">{d.tuanMa}</span>
-      {!kn && <span className="font-bold text-slate-400">{tenMonNgan(ct, d.skill)}</span>}
-      <span className="ml-auto min-w-0 truncate text-right text-slate-400">
+      <span className="flex items-baseline gap-2 whitespace-nowrap [@container(min-width:740px)]:col-start-1">
+        <span className="font-semibold tabular-nums">{d.tuanMa}</span>
+        {!kn && <span className="font-bold text-slate-400">{tenMonNgan(ct, d.skill)}</span>}
+      </span>
+      <span className="ml-auto min-w-0 text-right text-slate-400 [@container(min-width:740px)]:col-start-3 [@container(min-width:740px)]:ml-0">
         {ai ?? '—'}{d.classId !== lopNay && <> · <span className="font-semibold text-soon">{d.lop}</span></>}
       </span>
     </>
