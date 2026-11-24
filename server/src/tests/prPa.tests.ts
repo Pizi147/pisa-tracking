@@ -485,8 +485,10 @@ export async function runPrPaTests(t: YThucTestKit) {
       caseId: c, kind: o.kind ?? 'tutor', description: 'Tutor nghe chép 10 buổi', status: 'started', soBuoi: 10, performerUserId: GV4[0],
       nhomBoTro: o.nhom ?? null, startedDate: t.addDays(TODAY, -14), cycleStartedOn: t.addDays(TODAY, -14), actionDue: t.addDays(TODAY, -1),
     }]);
-    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, sid);
-    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, b, TODAY, new Date().toISOString());
+    /* N71 (chủ SP 25/11): em chuyển 10 ngày trước — đã qua hạn GV cũ ghi nốt (thứ Ba tuần sau ngày chuyển), việc về người giữ mới như luật PR-PA. Trong hạn: prN71. */
+    const ngayChuyen = t.addDays(TODAY, -10);
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(ngayChuyen, sid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, b, ngayChuyen, new Date().toISOString());
     o.sauChuyen(b);
     return { c, iv: iv as number, a, b };
   };

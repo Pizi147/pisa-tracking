@@ -279,7 +279,7 @@ export type ViecXuatBc = { classId: number; code: string; dot: string; nhanDot: 
 function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, homNay: string, ql: { batTu: string } | null = null) {
   return nho(`bc-ph-cua-so:${[...cn].join(',')}:${branchId ?? ''}:${ql ? ql.batTu : ''}`, () => {
     const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
-    /* N71: + lớp đã kết thúc — Admin: trong 45 ngày (`lopConViec`, cửa sổ hạn + 30); QL (N49): như việc GV, tới khi xong (`lopBcConViec`). */
+    /* N71: + lớp đã kết thúc — Admin: trong 30 ngày sau khi lớp kết thúc (`lopConViec`); QL (N49): như việc GV, tới khi xong (`lopBcConViec`). */
     const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => (ql ? lopBcConViec(c, ql.batTu) : lopConViec(c, homNay)) && (cn.has(null) || cn.has(c.branch_id))
       && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
     const tienDo = classProgressMany(lop.map((c) => c.id));   // một lô cho mọi lớp (FT: tuần khai giảng — BC-PH-MOC)

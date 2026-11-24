@@ -177,12 +177,12 @@ export function lopDayDu(): ReadonlyMap<number, any> {
 }
 
 /**
- * N71 (chủ SP 25/11): lớp còn sinh việc cuối khoá — đang chạy, HOẶC vừa kết thúc (em cuối chuyển đi) trong `NGAY_LOP_XONG_CON_VIEC` ngày: Báo cáo PH đợt Final,
- * ô S MT0 chấm chéo của lớp đó không rời khỏi người làm ngay ngày lớp kết thúc. Việc gắn lượt (nhập điểm) đã có luật riêng không hạn (`LOP_CON_VIEC_SQL`).
- * ponytail: trần 45 ngày từ ngày kết thúc (đợt Final mở ≤ ngày kết thúc; hạn + 30 của Admin còn trong trần) — giữ danh sách lớp nhỏ; việc QL Báo cáo PH quá hạn (N49)
- * của lớp đã kết thúc quá 45 ngày thì rời. Cần lâu hơn thì đọc theo bản ghi còn thiếu thay vì theo lớp.
+ * N71 (chủ SP 25/11): lớp còn sinh việc — đang chạy, HOẶC vừa kết thúc (em cuối chuyển đi) trong `NGAY_LOP_XONG_CON_VIEC` ngày: ô S MT0 chấm chéo + việc Admin
+ * "Xuất báo cáo PH" của lớp đó không rời ngay ngày lớp kết thúc. Việc GV / QL Báo cáo PH giữ tới khi xong (`lopBcConViec`); nhập điểm có luật riêng (`LOP_CON_VIEC_SQL`).
+ * ponytail: chủ SP 25/11 chốt trần 30 ngày từ ngày kết thúc rồi rời (MT0 S chưa chấm sau 30 ngày rời hàng Chấm Speaking; Admin xuất vẫn trong cửa sổ hạn + 7 của
+ * việc) — giữ danh sách lớp nhỏ. Cần lâu hơn thì đọc theo ô còn thiếu thay vì theo lớp.
  */
-export const NGAY_LOP_XONG_CON_VIEC = 45;
+export const NGAY_LOP_XONG_CON_VIEC = 30;
 export const lopConViec = (c: { status?: string | null; finished_at?: string | null } | null | undefined, homNay: string): boolean =>
   !!c && (c.status === 'active' || (c.status === 'finished' && !!c.finished_at && c.finished_at.slice(0, 10) >= addDaysIso(homNay, -NGAY_LOP_XONG_CON_VIEC)));
 

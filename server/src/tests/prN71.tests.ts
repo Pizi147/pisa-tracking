@@ -34,10 +34,10 @@ export async function runPrN71Tests(t: any) {
     assert(!bc.emTrongDot({ tu: '2026-08-01', den: '2026-09-23', bai: 'final' }, d.dotThang(2026, 9), '2026-09-24'), 'đợt tháng FT giữ luật cũ');
   });
 
-  check('N71 · lopConViec: lớp đang chạy · lớp kết thúc ≤ 45 ngày → còn việc; kết thúc lâu hơn / không ngày → không', () => {
+  check('N71 · lopConViec (chủ SP 25/11: 30 ngày rồi rời): lớp đang chạy · lớp kết thúc ≤ 30 ngày → còn việc; lâu hơn / không ngày → không', () => {
     assert(lopConViec({ status: 'active' }, '2026-09-24') && lopConViec({ status: 'finished', finished_at: '2026-09-23' }, '2026-09-24'), 'đang chạy / vừa kết thúc');
-    assert(lopConViec({ status: 'finished', finished_at: '2026-08-10' }, '2026-09-24'), 'đúng 45 ngày');
-    assert(!lopConViec({ status: 'finished', finished_at: '2026-08-09' }, '2026-09-24') && !lopConViec({ status: 'finished', finished_at: null }, '2026-09-24'), 'quá 45 ngày / thiếu ngày');
+    assert(lopConViec({ status: 'finished', finished_at: '2026-08-25' }, '2026-09-24'), 'đúng 30 ngày');
+    assert(!lopConViec({ status: 'finished', finished_at: '2026-08-24' }, '2026-09-24') && !lopConViec({ status: 'finished', finished_at: null }, '2026-09-24'), 'quá 30 ngày / thiếu ngày');
   });
 
   if (!conn) return;
@@ -179,4 +179,76 @@ export async function runPrN71Tests(t: any) {
       } finally { datNgay(NGAY_GOC); }
     });
   }
+
+  /* 1b (chủ SP 25/11): Case / PA GV TỰ TẠO — GV cũ (Người dạy) ghi nốt kết quả tới thứ Ba tuần sau ngày chuyển; PA theo quy chế không qua đường này. */
+  const cases: any = await import('../cases/cases.ts');
+  const ma403 = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
+  check('N71 · PA tự tạo: em chuyển "Ngay hôm nay" T4 23/09 → GV cũ có việc "Ghi kết quả PA" hạn T3 29/09 (ghi được, ghi xong thì rời); quá hạn 30/09 → GV cũ hết việc + 403, việc về chủ Case mới; PA quy chế không gia hạn; chip Báo cáo PH quá hạn > 7 ngày vẫn hiện', () => {
+    try {
+      datNgay('2026-09-23');
+      const fou = lop('FOU', '2026-08-03'), be = lop('BE', '2026-09-28');
+      const ma = `MB N71-${seq - 1}`;
+      ganGv(fou, GV[0], null, true); ganGv(fou, GV[1], 'writing', false);
+      ganGv(be, GV[2], null, true); ganGv(be, GV[3], 'writing', false);
+      const sids = [0, 1].map(() => {
+        seq += 1;
+        const ten = `Hoc vien N71 ${seq}`;
+        intake.commitIntake(P.admin, { classId: fou, rows: [{ fullName: ten, target: 5, email: `n71-${seq}@thu.pisa`, dob: '2012-01-01' }], idempotencyKey: `n71-${seq}` });
+        return get('SELECT id FROM students WHERE full_name = ?', ten).id as number;
+      });
+      const now = new Date().toISOString();
+      const pa = (sid: number, preset: 0 | 1) => {
+        const cy = get(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).id;
+        const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, topic, category, origin_kind, status, reported_by, owner_user_id, summary, created_at)
+          VALUES (?, ?, 'writing', 'writing', 'teacher_report', 'open', ?, ?, 'Case N71 tự tạo', ?)`).run(sid, cy, GV[1], GV[1], now).lastInsertRowid);
+        return Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, status, preset, confirmed_at, description, performer_user_id, started_date, action_due, created_at)
+          VALUES (?, 'self_study', 'started', ?, ?, 'Tự luyện đoạn văn', ?, '2026-09-14', '2026-09-28', ?)`).run(caseId, preset, preset ? now : null, GV[1], now).lastInsertRowid);
+      };
+      const [pa1, pa2, paQc] = [pa(sids[0], 0), pa(sids[1], 0), pa(sids[1], 1)];
+      xoaNho();
+      htcn.chotCaLop(QL, fou, { tuanChung: null, dongs: sids.map((studentId) => ({ studentId, huong: 'len_lop', toClassId: be, tuan: '2026-09-23', lyDo: 'N71' })) });
+      xoaNho();
+      const gvW = () => loadPrincipal(GV[1]);
+      const viecPa = (u: number, id: number) => { xoaNho(); return (myWork(loadPrincipal(u), {}).items as any[]).find((x) => x.key === `action:${id}`); };
+      const kq = { outcome: 'unchanged', decision: 'keep', observedOn: '2026-09-29', note: 'Em viết đoạn khá hơn, lớp mới luyện tiếp.' };
+      /* Trước hạn (T3 29/09). */
+      for (const ngay of ['2026-09-23', '2026-09-29']) {
+        datNgay(ngay);
+        const it = viecPa(GV[1], pa1);
+        assert(it?.mine && it.due === '2026-09-29' && it.group === 'ghi_ket_qua_pa', `${ngay}: GV cũ phải có việc Ghi kết quả PA hạn 29/09: ${JSON.stringify(it)}`);
+        assert(cases.hanGvCuGhiPa(gvW(), get('SELECT * FROM case_interventions WHERE id = ?', pa1)) === '2026-09-29', `${ngay}: quyền ghi tới 29/09`);
+        assert(cases.hanGvCuGhiPa(gvW(), get('SELECT * FROM case_interventions WHERE id = ?', paQc)) === null, 'PA theo quy chế không qua đường GV cũ');
+      }
+      datNgay('2026-09-29');
+      assert(ma403(() => cases.updateResult(gvW(), pa1, kq)) === 200, 'GV cũ ghi nốt kết quả trước hạn phải 200');
+      /* Chủ SP 25/11: "ghi kết quả kia là lần cuối luôn … kết thúc case luôn" — PA khép, Case hoàn thành, không việc cho ai (GV cũ, chủ Case mới, Head). */
+      const cid1 = get('SELECT case_id FROM case_interventions WHERE id = ?', pa1).case_id;
+      assert(get('SELECT status FROM case_interventions WHERE id = ?', pa1).status === 'completed', 'PA phải khép sau lần ghi của GV cũ');
+      const c1 = get('SELECT status, outcome, closed_by FROM sos_cases WHERE id = ?', cid1);
+      assert(c1.status === 'done' && c1.outcome === 'unchanged' && c1.closed_by === GV[1], `Case phải hoàn thành: ${JSON.stringify(c1)}`);
+      for (const u of [GV[1], GV[3], QL.userId]) {
+        xoaNho();
+        const con = (myWork(loadPrincipal(u), u === QL.userId ? { nguoi: 'tat-ca' } : {}).items as any[]).filter((x) => x.caseId === cid1);
+        assert(!con.length, `còn việc Case ${cid1} cho ${u}: ${con.map((x) => x.key).join(', ')}`);
+      }
+      /* N24 ②: Mở lại Case như mọi Case đã hoàn thành (Head / GV đúng môn lớp em đang học — `coTheMoLaiCase`); mở lại rồi Hoàn thành lại để phần sau giữ nguyên. */
+      assert(ma403(() => cases.moLaiCase(QL, cid1)) === 200 && get('SELECT status FROM sos_cases WHERE id = ?', cid1).status !== 'done', 'Head mở lại được Case');
+      cases.closeCaseOutcome(QL, cid1, { outcome: 'unchanged', note: 'Đóng lại sau khi kiểm mở lại.' });
+      assert(!viecPa(GV[1], pa1), 'ghi xong → việc của GV cũ rời');
+      assert(cases.hanGvCuGhiPa(gvW(), get('SELECT * FROM case_interventions WHERE id = ?', pa1)) === null, 'ghi xong → hết gia hạn');
+      /* Sau hạn (T4 30/09): PA chưa ghi về chủ Case mới như cũ. */
+      datNgay('2026-09-30');
+      assert(!viecPa(GV[1], pa2), 'quá hạn: GV cũ không còn việc');
+      assert(ma403(() => cases.updateResult(gvW(), pa2, { ...kq, observedOn: '2026-09-30' })) === 403, 'quá hạn: GV cũ ghi phải 403');
+      const chu = get('SELECT owner_user_id FROM sos_cases WHERE id = (SELECT case_id FROM case_interventions WHERE id = ?)', pa2).owner_user_id;
+      assert(chu === GV[3], `chủ Case mới là GV W lớp mới: ${chu}`);
+      assert(ma403(() => cases.kiemQuyenPa(loadPrincipal(GV[3]), get('SELECT * FROM case_interventions WHERE id = ?', pa2), cases.loadCase(get('SELECT case_id FROM case_interventions WHERE id = ?', pa2).case_id))) === 200,
+        'chủ Case mới ghi được');
+      /* 3 (chủ SP 25/11): chip "quá hạn" tab Báo cáo PH còn tới khi viết đủ — 8/10 = quá hạn 9 ngày (trước: rời sau 7). */
+      datNgay('2026-10-08');
+      const chip = bc.chipBaoCaoPh(loadPrincipal(GV[1]), fou);
+      assert(chip?.dot === 'final:2026-09-21' && chip.quaHan === 9, `chip quá hạn > 7 ngày phải còn: ${JSON.stringify(chip)}`);
+      assert((myWork(loadPrincipal(GV[1]), {}).items as any[]).some((x) => x.group === 'bao_cao_ph' && x.classCode === ma), 'việc GV Báo cáo PH còn cùng lúc');
+    } finally { datNgay(NGAY_GOC); }
+  });
 }

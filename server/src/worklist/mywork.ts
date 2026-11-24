@@ -29,7 +29,7 @@ import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
-import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
+import { SQL_GV_CU_GHI_PA, ctxSuaCaseNhieu, hanGvCuTuNgayChuyen, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { bangChiNhanhNho, nhoThamChieu, quetTheoMoc } from '../platform/mocHeThong.ts';
@@ -1084,11 +1084,28 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const locGhiKq = `${f.branchId ? ' AND COALESCE(cc.branch_id, ac.branch_id) = ?' : ''}${tatCa ? '' : ` AND (COALESCE(cur.class_id, a.class_id) IN
           (SELECT ta.class_id FROM teacher_assignments ta WHERE ta.user_id = ?) OR sc.owner_user_id = ? OR iv.performer_user_id = ? OR iv.nhom_bo_tro IS NOT NULL)`}`;
-  const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
+  /*
+   * N71 (chủ SP 25/11): nhánh thứ hai CÙNG CÂU (UNION ALL, 0 câu thêm) — PA GV TỰ TẠO đang chạy mà em vừa rời lớp người xem dạy (14 ngày, chỉ mục ghi danh theo lớp):
+   * Người dạy (GV cũ) ghi nốt kết quả tới thứ Ba tuần sau ngày chuyển (`gv_cu_ngay` = ngày chuyển, cùng điều kiện quyền `hanGvCuGhiPa`). "Của tôi": lớp người xem
+   * dạy, Người dạy = người xem; "Tất cả": lớp trong phạm vi xem, mọi Người dạy (dòng của GV — "Của GV" = "Của một GV").
+   */
+  const lopGvCu = !co('ghi_ket_qua_pa') ? [] : !tatCa ? [...new Set(p.assignments.map((a) => a.classId))]
+    : [...bangLop()].filter(([id, l]) => scope.all || scope.classIds.includes(id) || (l.branchId != null && scope.branchIds.includes(l.branchId))).map(([id]) => id);
+  const nguoiDay = tatCa ? '' : ' AND iv.performer_user_id = ?', nguoiDay3 = tatCa ? '' : ' AND iv3.performer_user_id = ?';
+  const nhanhGvCu = !lopGvCu.length ? '' : ` UNION ALL ${cauPaGhiKetQua(`${nguoiDay} AND iv.performer_user_id IS NOT NULL AND COALESCE(iv.preset, 0) != 1 AND iv.kind NOT IN ('bo_tro', 'bo_tro_mien_phi')
+          AND iv.id IN (SELECT iv3.id FROM enrollments e3 JOIN sos_cases sc3 ON sc3.student_id = e3.student_id AND sc3.status != 'done'
+                          JOIN case_interventions iv3 ON iv3.case_id = sc3.id${nguoiDay3} AND iv3.status IN ('planned', 'started')
+                         WHERE e3.class_id IN (SELECT value FROM json_each(?)) AND e3.status IN ('transferred', 'completed') AND substr(e3.ended_at, 1, 10) >= ?)`,
+    ` 1 AS gv_cu, (${SQL_GV_CU_GHI_PA('iv', 'sc')}) AS gv_cu_ngay,`)}`;
+  const docGhiKq = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      cauPaGhiKetQua(locGhiKq),   /* K3-41: em Tạm dừng dừng hạn */
+      cauPaGhiKetQua(locGhiKq, nhanhGvCu ? ' 0 AS gv_cu, NULL AS gv_cu_ngay,' : '') + nhanhGvCu,   /* K3-41: em Tạm dừng dừng hạn */
     )
-    .all(hanGhiKetQuaToi(today), ...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId, p.userId, p.userId])) as any[];
+    .all(hanGhiKetQuaToi(today), ...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId, p.userId, p.userId]),
+      ...(nhanhGvCu ? ['9999-12-31', ...(tatCa ? [] : [p.userId, p.userId]), JSON.stringify(lopGvCu), addDays(today, -14)] : [])) as any[];
+  /* Lọc "Người dạy ≠ người giữ việc" sau khi tính người giữ (cùng lần `nguoiGiuKetQua` của 2b, bên dưới). */
+  let paGvCu = [...new Map(docGhiKq.filter((r) => r.gv_cu && r.gv_cu_ngay && today <= hanGvCuTuNgayChuyen(r.gv_cu_ngay)).map((r) => [r.id as number, r])).values()];
+  let ghiKetQua = docGhiKq.filter((r) => !r.gv_cu);
   /* TURSO-1211: câu đi chỉ mục hạn (`idx_iv_ghi_kq`) — xếp lại theo PA (sort ổn định) như thứ tự cũ (SCAN theo rowid), JSON không đổi. */
   ghiKetQua.sort((a, b) => a.id - b.id);
   /*
@@ -1183,7 +1200,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
     .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
-  const giu = nguoiGiuKetQua(ghiKetQua.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
+  const giu = nguoiGiuKetQua([...ghiKetQua, ...paGvCu].map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
+  /* N71 2b': trong hạn GV cũ (Người dạy ≠ người giữ việc — cùng `gvCu` của bảng kỹ năng) → dòng thuộc GV cũ, không thành việc của chủ Case mới cùng lúc. */
+  paGvCu = paGvCu.filter((r) => giu.get(r.id) !== r.performer_user_id);
+  const giaHanGvCu = new Set(paGvCu.map((r) => r.id as number));
+  ghiKetQua = ghiKetQua.filter((r) => !giaHanGvCu.has(r.id));
   for (const r of ghiKetQua) r.owner_id = giu.get(r.id) ?? null;
   /* PR-LT2a (M-03): PA bổ trợ chung gộp MỘT dòng mỗi nhóm — `reason` nêu các môn chung. */
   const monCuaNhom = new Map<string, string[]>();
@@ -1239,6 +1260,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* GV-CU-BO-TRO: PA bổ trợ miễn phí của Người dạy (GV cũ) — người khác thấy dòng (GVCN lớp mới) đã qua `quyenBoTro` → làm thay được. */
       ...(!mine && iv.kind === 'bo_tro_mien_phi' ? { lamThay: true } : {}),
     });
+  }
+
+  /* 2b'. N71: việc "Ghi kết quả PA" của GV cũ (nhánh `paGvCu` của câu 2b) — hạn = thứ Ba tuần sau ngày chuyển; ghi xong hoặc quá hạn → về chủ Case mới như cũ. */
+  {
+    const daCo = new Set(items.map((x) => x.key));
+    for (const iv of paGvCu) {
+      const han = hanGvCuTuNgayChuyen(iv.gv_cu_ngay);
+      if (today > han || daCo.has(`action:${iv.id}`) || (f.branchId && iv.eff_branch_id !== f.branchId)) continue;
+      const mine = iv.performer_user_id === p.userId;
+      /* "Tất cả": việc của GV khác chỉ khi người xem quản lý em (như "Của GV" của Ghi kết quả PA ở 2b). */
+      if (!mine && !can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id })) continue;
+      daCo.add(`action:${iv.id}`);
+      const tenPa = tenPaCua(iv);
+      items.push({
+        key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: urgencyOf(han, today), paId: iv.id,
+        studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên', classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
+        attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null, caseId: iv.case_id as number, level: levelOf(iv),
+        contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
+        reason: tenPa,
+        tieuDe: `Ghi kết quả PA${sauCham(iv.topic, ctCua(iv.eff_class_id))}`, phu: duoiKyNang(iv.topic, ctCua(iv.eff_class_id)).trim(), actionLabel: 'Ghi kết quả PA',
+        href: can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
+          ? duongHoSoHocVien(iv.eff_student_id, { caseId: iv.case_id, paId: iv.id, viec: 'ghi-ket-qua' })
+          : duongCaseRieng(iv.case_id, { paId: iv.id, viec: 'ghi-ket-qua' }),
+        ownerId: iv.performer_user_id, owner: null, mine, due: han, statusLabel: 'Chờ kết quả',
+      });
+    }
   }
 
   // ------------------------------------------------- 2d. PR-LCb: Chốt lộ trình (một việc mỗi lớp thường, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`

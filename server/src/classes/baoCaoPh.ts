@@ -5,7 +5,8 @@
  * Turso: mở tab ≈ 6 câu (lớp đã nhớ, tiến độ, phân công, em, bản ghi đợt); mở panel ≈ 5 câu (+ điểm gốc một câu); lưu một ô = 1 ghi + 1 nhật ký.
  */
 import { DS_JSON, chenNhieuDong, db, theoLoJson, tx } from '../db.ts';
-import { demoToday } from '../demoConfig.ts';
+import { demoToday, getConfig } from '../demoConfig.ts';
+import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
 import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
@@ -87,7 +88,8 @@ export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { p
     progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay, (tuyChinh ?? docTuyChinhDot([c.id])).get(c.id)) };
 }
 
-/** Chip trên tab (đặc tả §12): đợt đang mở "Tháng 11 · hạn 30/11"; đợt vừa quá hạn (≤ 7 ngày) mà lớp chưa đủ → "quá hạn n ngày". Không quyền / không mẫu → null. */
+/** Chip trên tab (đặc tả §12): đợt đang mở "Tháng 11 · hạn 30/11"; đợt quá hạn mà lớp chưa đủ → "quá hạn n ngày" — N71 (chủ SP 25/11): còn tới khi viết đủ, cùng việc GV
+ *  (`viecBaoCaoPhGv`: không đợt có hạn trước ngày bật). Không quyền / không mẫu → null. */
 export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot: string | null; nhan: string | null; han: string | null; quaHan: number } | null {
   const c = docLop(classId);
   if (!quyenBc(p, c).xem) return null;
@@ -99,10 +101,11 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
      MỚI NHẤT còn thiếu. Không có đợt thêm: đúng như cũ (một đợt, hai câu); có đợt thêm trong 7 ngày: thêm hai câu cho mỗi đợt đã đủ đứng trước. */
   const mo = d.ds.find((x) => soNgayQuaHan(x, homNay) === 0);
   if (mo) return { coTab: true, dot: mo.ma, nhan: nhanDotBc(mo, homNay), han: mo.han, quaHan: 0 };
+  const batTu = getConfig(KHOA_MOC_BC_PH_VIEC_GV) || homNay;
   for (const x of d.ds) {
     const qh = soNgayQuaHan(x, homNay);
-    if (qh > 7) continue;
-    /* Một câu em + một câu đếm (≤ em × phần dòng) — chỉ đợt trong 7 ngày sau hạn. */
+    if (qh > 7 && x.han < batTu) continue;   // N71: ≤ 7 ngày như cũ; quá 7 ngày còn khi việc GV còn (đợt từ ngày bật) — giữ tới khi đủ
+    /* Một câu em + một câu đếm (≤ em × phần dòng) — đợt từ ngày bật; dừng ở đợt đầu còn thiếu. */
     const em = emCuaDot(classId, x, homNay);
     const du = em.length ? (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (${DS_JSON})`)
       .get(x.ma, JSON.stringify(em.map((e) => e.id))) as any).n : 0;

@@ -145,7 +145,12 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         ds.push({ key: `xnpa:${pl.id}`, loai: 'xac-nhan-pa', ...kem('Xác nhận PA {pa} · {kn}', { pa: pl.name, kn }), kyNang: r.category, caseId: c.id, paId: pl.id,
           han: c.sos?.dueOn ?? null, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'xac-nhan-pa' } });
       }
-      if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id) && !(pl.lanCuoi && choMini && pl.nhom === choMini)) {
+      /* N71: PA tự tạo trong hạn GV cũ — việc của Người dạy cũ, hạn thứ Ba tuần sau ngày chuyển (cùng Công việc 2b'); chủ Case mới chưa có việc này. */
+      if (pl.gvCu) {
+        ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua', ...kem('Ghi kết quả PA · {kn}', { kn }), the: [{ chu: `PA ${pl.name}` }],
+          kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.gvCu.han, tone: 'info', nguoiId: pl.gvCu.nguoiId,
+          nut: 'Ghi kết quả PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
+      } else if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id) && !(pl.lanCuoi && choMini && pl.nhom === choMini)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
           /* U02 dòng 3, 8: tên việc nói kỹ năng ("Ghi kết quả PA · Writing Task 2"), kỳ + PA thành thẻ phụ; nút cùng tên việc (không nút trần "Kết quả"). */
