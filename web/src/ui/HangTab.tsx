@@ -53,10 +53,12 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
   /* Menu "Thêm": Esc hoặc bấm ra ngoài thì đóng (bàn phím + chuột cùng có lối ra). */
   useEffect(() => {
     if (!moThem) return undefined;
-    const dong = (e: Event) => { if (e instanceof KeyboardEvent ? e.key === 'Escape' : !hang.current?.contains(e.target as Node) && !menuThem.current?.contains(e.target as Node)) setMoThem(false); };
-    document.addEventListener('keydown', dong);
+    const dong = (e: Event) => { if (!hang.current?.contains(e.target as Node) && !menuThem.current?.contains(e.target as Node)) setMoThem(false); };
+    /* Esc chỉ đóng menu (không lan sang panel bên dưới), focus về nút "Thêm". */
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setMoThem(false); nutThem.current?.focus(); } };
+    document.addEventListener('keydown', esc, true);
     document.addEventListener('pointerdown', dong);
-    return () => { document.removeEventListener('keydown', dong); document.removeEventListener('pointerdown', dong); };
+    return () => { document.removeEventListener('keydown', esc, true); document.removeEventListener('pointerdown', dong); };
   }, [moThem]);
   /* Badge "Thêm": cộng số các tab trong menu — cùng nghĩa số từng tab (Chấm Speaking: bài quá hạn hoặc tổng bài). Đỏ khi có tab quá hạn, vàng khi hạn hôm nay, còn lại mờ. */
   const soThem = tabs.filter((x) => an.has(x.key)).reduce((a, x) => {
