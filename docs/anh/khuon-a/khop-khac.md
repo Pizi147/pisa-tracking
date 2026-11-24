@@ -106,3 +106,6 @@ Cách làm: trang rộng ≥ 1100 px (vai không có "Lớp của tôi") ô lớ
 ## 9. Thử "Bỏ qua việc này" ở đầu panel (ảnh `gv-1440-panel-bo-qua.png`)
 
 Demo không có việc `boQuaDuoc` thật (chỉ sinh khi Quản lý có PA chạy chưa có mốc MT / ngày thi) và dựng được bằng dữ liệu cần sửa seed, nên thử bằng Playwright chặn `GET /api/my-work` (gắn `boQuaDuoc: true` cho việc "Xác nhận Case · Phan Khánh Linh") và `POST /api/my-work/bo-qua` (trả ok) — KHÔNG đổi DB / seed. Kết quả: mở dòng → đầu panel có nút "Bỏ qua việc này" → bấm: gửi `{key:"cause:56", boQua:true}`, panel đóng, dòng biến khỏi danh sách, toast "Đã bỏ qua: Xác nhận Case · Listening · Phan Khánh Linh" có nút Hoàn tác. Phần máy chủ (`/my-work/bo-qua`, Hoàn tác = `boQua:false`) không đổi so với trước, đã có phép kiểm riêng. Chưa thử với việc `moc:` thật.
+
+## 10. Sau gộp #2072 (24/11)
+Gộp main, giữ khung panel 720 + danh sách `min(680, 100vw − 760)`. Ảnh `gv-1440-panel`, `gv-1280-panel`, `gv-1440-panel-bo-qua` chụp lại CHỈ phía web (mockup phần này không đổi). Nút "Bỏ qua việc này" + ✕ ở dòng tên, phần phụ xuống dòng; cột hạn không bị che / cắt. Check 6128 đạt.
