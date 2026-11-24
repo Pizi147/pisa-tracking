@@ -39,4 +39,12 @@ export const EN_UI_CON_LAI = {
   'Sau khi duyệt:': 'After approval:',
   'Việc · Duyệt': 'Task · approve',
   'Chọn một yêu cầu ở danh sách.': 'Pick a request from the list.',
+  /* CHO-DUYET-TAI-CHO (v24 H1): chi tiết mở tại dòng của Chờ bạn duyệt. */
+  'Bạn gửi': 'Sent by you',
+  'Người gửi sẽ đọc lý do này': 'The sender will read this reason',
+  'Sau khi duyệt': 'After approval',
+  'Hạn tự chốt': 'Auto-decision deadline',
+  'Hồ sơ Case ›': 'Case file ›',
+  '{n} vi phạm': '{n} incidents',
+  '{n} bằng chứng': '{n} evidence',
 } as const;
