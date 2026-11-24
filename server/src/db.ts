@@ -245,6 +245,11 @@ export function datKetNoiChoPhepKiem(c: Database.Database): void {
  * `recreateSchema` (xoá nhớ trước khi xoá bảng); kết nối mới (mất kết nối Turso, phép kiểm đổi DB) hỏi lại một lần.
  */
 const daKhoiTao = new WeakSet<object>();
+/**
+ * TOC-DO-2511: tuần (`report_periods`) theo id nhớ THEO TIẾN TRÌNH (`tuanTheoId`, fasttrack/skillSchedule.ts). Dòng tuần không đổi sau khi chèn
+ * (chỉ INSERT … DO NOTHING; mã tuần chỉ sửa ở migrate) — chỉ mất qua `recreateSchema` (xoá nhớ ở đây) hoặc kết nối mới.
+ */
+export const tuanTheoKetNoi = new WeakMap<object, Map<number, { week_start: string; week_end: string; code: string }>>();
 export function isInitialised(): boolean {
   if (!laDbTuXa() && !fs.existsSync(DB_PATH)) return false;
   const conn = db();
@@ -279,6 +284,7 @@ export function recreateSchema() {
   tuChoiXoaSachNeuTuXa();
   const conn = db();
   daKhoiTao.delete(conn);
+  tuanTheoKetNoi.delete(conn);
   conn.pragma('foreign_keys = OFF');
   const tables = conn
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")

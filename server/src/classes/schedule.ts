@@ -100,11 +100,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: numb
   const co = yc.filter((y) => cyOf.get(y.cycleId)?.start_period_id && cyOf.get(y.cycleId)?.route);
   if (!co.length) return out;
   const startOf = new Map<number, string>();
-  theoLo([...new Set(co.map((y) => cyOf.get(y.cycleId).start_period_id as number))], (lo, ph) => {
-    for (const r of conn.prepare(`SELECT id, week_start FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) {
-      startOf.set(r.id, weekInfo(r.week_start).weekStart);
-    }
-  });
+  for (const [id, r] of tuanTheoId(co.map((y) => cyOf.get(y.cycleId).start_period_id as number))) startOf.set(id, weekInfo(r.week_start).weekStart);   // TOC-DO-2511
   /* Lớp đang học (ghi danh active mới nhất) + bản chụp tuần MT của lớp đó. */
   const lopOf = new Map<number, { id: number; lich_mt: string | null; route: string | null }>();
   theoLo([...new Set(co.map((y) => cyOf.get(y.cycleId).student_id as number))], (lo, ph) => {

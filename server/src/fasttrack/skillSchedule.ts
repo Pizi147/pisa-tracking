@@ -1,6 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
-import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, theoLoJson, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, theoLoJson, tuanTheoKetNoi, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, docBoMonLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
@@ -10,7 +10,7 @@ import { can, explain, isCoreTeacherOf, require_, type Principal } from '../perm
 import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
-import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
+import { nhoThamChieu, thamChieuDayDuKhiKiem, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
@@ -256,6 +256,25 @@ function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): Sk
  * TQ-QT-NHE: tiến độ lớp (`classProgressMany`) dùng chung bộ nhớ này — tuần đã đọc cho lịch kỹ năng không đọc lại.
  */
 export function tuanTheoId(ids: readonly number[]): Map<number, { week_start: string; week_end: string; code: string }> {
+  /*
+   * TOC-DO-2511: GET chưa ghi gì → nhớ theo tiến trình (`tuanTheoKetNoi`): dòng tuần đã chèn không đổi, nên chỉ hỏi id chưa từng thấy (thường 0 câu —
+   * trước ~1 câu mỗi request, 944 / 1 766 lượt đo). Ngoài request có phiên (phép kiểm `trongBoNho`, lệnh ops), request ghi / GET đã ghi giữ đường cũ: tuần vừa chèn trong giao dịch có thể bị huỷ.
+   */
+  if (!ids.length) return new Map();
+  if (layMoc() != null && coNho() && !coGhiTrongRequest() && !thamChieuDayDuKhiKiem.bat) {   // như `nhoThamChieu`: chỉ request có phiên
+    const conn = db();
+    let nhoTt = tuanTheoKetNoi.get(conn);
+    if (!nhoTt) tuanTheoKetNoi.set(conn, nhoTt = new Map());
+    const thieu = [...new Set(ids)].filter((id) => !nhoTt!.has(id));
+    if (thieu.length) {
+      for (const t of conn.prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`).all(JSON.stringify(thieu)) as any[]) {
+        nhoTt.set(t.id, { week_start: t.week_start, week_end: t.week_end, code: t.code });
+      }
+    }
+    const out = new Map<number, { week_start: string; week_end: string; code: string }>();
+    for (const id of ids) { const t = nhoTt.get(id); if (t && !out.has(id)) out.set(id, { ...t }); }
+    return out;
+  }
   const m = nhoTheoId('tuan:', [...new Set(ids)], (thieu) => new Map((db().prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`)
     .all(JSON.stringify(thieu)) as any[]).map((t) => [t.id as number, [{ week_start: t.week_start as string, week_end: t.week_end as string, code: t.code as string }]])));
   return new Map([...m].map(([id, [t]]) => [id, t]));

@@ -8,7 +8,6 @@ import { duongTongQuanV5, vaiTongQuan } from './modules/worklist/duongTongQuan.t
 import { useChiNhanhMacDinh } from './ui/Filters.tsx';
 import { khungDaNho } from './ui/CongTacKhung.tsx';
 import { onInvalidate, xaGop } from './lib/api.ts';
-import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
 import { useBanPhim } from './ui/banPhim.ts';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
@@ -18,7 +17,6 @@ import type { ViecChuong } from './modules/platform/HopChuong.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
-import WelcomePage from './modules/platform/WelcomePage.tsx';
 import { KhoanhPhanTu } from './modules/huongDan/chiChoToi.tsx';
 import { MenuDong } from './ui/MenuDong.tsx';
 import { NAV_RONG, chiaMucThanh, chiaThanhDuoi, duongMoi, duongNhapDiemCu, moDiemLopCu, khuVucCuaDuong, khuVucHienThi, type DemYeuCau, type KhuVuc, type KhuVucMuc } from '@shared/domain/index.ts';
@@ -27,6 +25,9 @@ import { NGON_NGU, t } from '@shared/i18n/index.ts';
 const THEM = NGON_NGU === 'en' ? 'More' : 'Thêm';
 import { lazyTai } from './lib/taiLaiManh.ts';
 import { napHopSan } from './ui/lazyHop.tsx';
+/* TOC-DO-2511: thanh demo (bản chính không vẽ) và trang đăng nhập (chỉ khi chưa đăng nhập) ra mảnh riêng — gói đầu của người đã đăng nhập nhẹ hơn. */
+const DemoBar = lazyTai(() => import('./modules/platform/DemoBar.tsx').then((m) => ({ default: m.DemoBar })));
+const WelcomePage = lazyTai(() => import('./modules/platform/WelcomePage.tsx'));
 
 /**
  * Hotfix 15/10 (L4): lỗi render bất kỳ trong trang → câu lỗi + Tải lại thay vì màn tối; console ghi mã để đối chiếu khi chủ SP gửi ảnh.
@@ -365,7 +366,7 @@ export default function App() {
   }, [daDangNhap, navNap.analysis, navNap.test, navNap.work, navNap.admin, navNap.bangQuyDoi]);
 
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
-  if (!session?.authenticated) return <WelcomePage />;
+  if (!session?.authenticated) return <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}><WelcomePage /></Suspense>;
 
   /* Đường dẫn cũ (link đã lưu, thông báo, link máy chủ sinh ra) → chỗ mới. Một bảng luật: shared/domain/dieuHuong.ts. */
   const moi = duongMoi(location.pathname, location.search);
@@ -384,7 +385,7 @@ export default function App() {
     <div className="h-full flex flex-col">
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
-      {!banChinh && <div className="contents print:hidden"><DemoBar /></div>}
+      {!banChinh && <div className="contents print:hidden"><Suspense fallback={null}><DemoBar /></Suspense></div>}
       {/* CHAN-ROI-NHAP-2: bộ chặn rời trang DUY NHẤT (router chỉ giữ một) — trang / panel còn nháp ghi nguồn vào kho, hộp hỏi vẽ ở đây. */}
       <ChanRoiNhapGoc />
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}

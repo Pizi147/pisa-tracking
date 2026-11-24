@@ -25,7 +25,7 @@ import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { boTaskCuaDong, lichGopCua, loadSkillRows, monLuotSql } from '../fasttrack/skillSchedule.ts';
+import { boTaskCuaDong, lichGopCua, loadSkillRows, monLuotSql, tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { duocDoiLoTrinh, duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline, xemYThucHv } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
@@ -797,7 +797,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const doiMonLt = ftChay && duocDoiMon(p, { studentId });
   const doiLt = ftChay && (doiMonLt || duocDoiLoTrinh(p, { studentId }));
   const startWeekSel = selected?.start_period_id
-    ? (conn.prepare('SELECT week_start, code FROM report_periods WHERE id = ?').get(selected.start_period_id) as any) ?? null
+    ? (() => { const t = tuanTheoId([selected.start_period_id]).get(selected.start_period_id); return t ? { week_start: t.week_start, code: t.code } : null; })()   // TOC-DO-2511
     : null;
   const miniTest = (() => {
     const mt = miniTestCuaHocVien([studentId]).get(studentId);
