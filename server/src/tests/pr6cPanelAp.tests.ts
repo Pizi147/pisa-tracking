@@ -28,7 +28,7 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     const can: [string, RegExp][] = [
       ['classes/ThongTinLopPanel.tsx', /useBaoDangSua\(dangSua && daDoi\)/],
       ['classes/BanGiaoPanel.tsx', /daSua: daSuaNx/],
-      ['classes/ClassCreatePanel.tsx', /daSua: !daTao && \(so !== locSoLop/],
+      ['classes/ClassCreatePanel.tsx', /const daSua = !daTao && \(goc !== null \? chup !== goc/],
       ['test/keHoach/NganXepLichMt.tsx', /daSua: Object\.keys\(rieng\)/],
       ['test/keHoach/XepTheoHocVien.tsx', /daSua: soThayDoi > 0/],
       ['test/keHoach/NganXepHangLoat.tsx', /daSua: daChinh/],

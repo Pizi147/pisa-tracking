@@ -90,4 +90,12 @@ export const EN_P9B_CUOI_KHOA = {
   'Ghi phương án, không Case.': 'Write a plan, no Case.',
   '{n} em cần sửa': '{n} need fixing',
   'Bỏ thay đổi chưa lưu của {n} em?': 'Discard unsaved changes for {n} students?',
+  /* SUA-LOI-GOP-2511: nút Chốt nói tác động · tick ≠ chốt được · Lưu nháp lỗi một phần. */
+  'Chốt {n} em → {dich}': 'Confirm {n} → {dich}',
+  'Chốt {n} em · {dich}': 'Confirm {n} · {dich}',
+  '{n} em không chuyển lớp': '{n} not moving class',
+  '{k} sẵn sàng chốt': '{k} ready to confirm',
+  'Đã lưu nháp {n} em': 'Draft saved · {n}',
+  'Đã xử lý hết các em này': 'All of these are done',
+  'Mất kết nối, chưa lưu. Kiểm tra mạng rồi bấm Thử lại.': 'Connection lost, not saved. Check the network and press Retry.',
 };

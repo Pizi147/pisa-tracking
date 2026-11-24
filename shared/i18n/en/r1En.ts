@@ -113,6 +113,7 @@ export const EN_R1_EN = {
   'Tên lớp cũ chưa theo mẫu — Quản trị đổi lúc nâng cấp': 'Old class name not in the standard format — the system admin renames it during upgrade',
   '1–4 chữ số, được thêm một chữ cái cuối (101A)': '1–4 digits, optionally one trailing letter (101A)',
   'Lớp sẽ là': 'Class will be',
+  'Bạn chưa có quyền tạo lớp ở chi nhánh này — nhờ Head chi nhánh mở lớp.': 'You cannot create classes in this branch — ask the branch Head to open the class.',
   '🔒 Đổi chương trình khi lớp chưa có học viên / bài Test': '🔒 Programme can only change while the class has no students / Tests',
   'Lớp đã có {n} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kh} khác': (b) => `The class has ${so(b.n, 'student', 'students')} — to change pathway, move them to another ${b.kh} class`,
   'Chưa gõ số lớp': 'Class number not entered',
