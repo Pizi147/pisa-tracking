@@ -4,6 +4,10 @@ import type { Dich } from '../en.ts';
 export const EN_DUONG_LUI_2 = {
   'Đã chuyển {n} em sang lớp mới': (b) => `Moved ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'} to the new class`,
   'Chuyển ngay khi chốt': 'Moves on confirm',
+  'có Hoàn tác': 'with Undo',
+  'Chuyển ngay: {ten}': 'Moves now: {ten}',
+  '{a}/{b} em đã chốt': '{a}/{b} confirmed',
+  'Mở ở trang riêng': 'Open on its own page',
   'bị xoá cùng phân công giáo viên và kỹ năng lớp — khôi phục được trong 30 ngày ở Đã xoá.': 'is deleted with its teacher assignments and class skills — restorable for 30 days in Deleted.',
   'Bấm <b>Xoá lớp</b> — lớp vào Đã xoá, Hoàn tác ngay hoặc Khôi phục trong 30 ngày. Lớp đã có dữ liệu: dùng Kết thúc lớp.': 'Press <b>Delete class</b> — the class goes to Deleted; undo at once or restore within 30 days. A class with data: use End class.',
   'Đã lưu S Ex · {ten} · dời về tuần này': 'Expert S saved · {ten} · moved to this week',

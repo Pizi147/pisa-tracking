@@ -2210,6 +2210,51 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   }
 }
 
+/* CHOT-LO-TRINH-PANEL (mockup v25 `thiet-ke/v25/chot-lo-trinh-panel.html`, chủ SP duyệt 25/11): MỘT lưới cho panel Chốt lộ trình (khe 720) và trang Cuối khoá.
+   Mọi dòng / dải nhóm / hộp dưới dòng là subgrid của lưới → cột thẳng tuyệt đối. LUẬT CỘT (NH9): tên co giãn · Final số căn giữa · ba ô nhập bằng nhau ·
+   ô cuối sát lề (panel 14, trang 16). `data-m` = panel | trang; `data-k` = 3 (QL: Bước tiếp · Lớp · Tuần) · 1 (QL, không em nào chuyển lớp) · doc (vai chỉ xem). */
+@layer components {
+  .ck-lg { --ck-g: 6px; --ck-kc: 8px; --ck-ten: minmax(240px, 1.2fr); --ck-fin: 68px; --ck-sau: minmax(150px, 1fr);
+    display: grid; grid-template-columns: var(--ck-g) 28px var(--ck-ten) var(--ck-fin) var(--ck-sau) var(--ck-g); column-gap: var(--ck-kc);
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: clip; font-size: 14px; }
+  .ck-lg[data-m="pan"] { --ck-g: 6px; --ck-kc: 8px; --ck-fin: 76px; }
+  .ck-fin :is(button, span) { white-space: nowrap; }
+  .ck-lg[data-m="trang"] { --ck-g: 2px; --ck-kc: 14px; --ck-fin: 96px; }
+  .ck-lg[data-m="pan"][data-k="3"] { --ck-ten: minmax(176px, 1fr); --ck-sau: repeat(3, 112px); }
+  .ck-lg[data-m="trang"][data-k="3"] { --ck-ten: minmax(260px, 280px); --ck-sau: repeat(3, minmax(120px, 1fr)); }
+  .ck-lg[data-k="doc"] { --ck-sau: minmax(170px, 1fr) minmax(200px, 2fr); }
+  .ck-lg > *, .ck-g > * { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; }
+  .ck-g { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--line); }
+  .ck-th + .ck-g { border-top: 0; }
+  .ck-g.sel, .ck-g.sel > * { background: var(--accent-soft); }
+  .ck-g.loi, .ck-g.loi > * { background: rgb(var(--bad-bg-rgb)); }
+  .ck-th { min-height: 34px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--text-faint); }
+  .ck-th > :first-child { grid-column: 3; }
+  .ck-th > .ck-fin { text-align: center; justify-self: center; }
+  .ck-r { min-height: 56px; padding-block: 4px; }
+  .ck-r:hover { background: var(--accent-soft); }
+  .ck-r > .ck-tick, .ck-nh > .ck-tick { grid-column: 2; display: grid; place-items: center; }
+  .ck-r > .ck-ten { display: grid; gap: 1px; min-width: 0; }
+  .ck-r > .ck-fin { justify-self: center; text-align: center; }
+  .ck-r > :is(.ck-bt, .ck-lop, .ck-tuan, .ck-hd, .ck-nx) { min-width: 0; }
+  .ck-nh { min-height: 44px; border-top: 1px solid var(--line-strong); background: var(--surface-2); box-shadow: inset 3px 0 0 var(--m, var(--text-faint)); }
+  .ck-g > .ck-nh:first-child { border-top: 0; }
+  .ck-lg[data-k="3"] .ck-bl { grid-column: 3 / 6; }
+  .ck-lg:not([data-k="3"]) .ck-bl { grid-column: 3 / -2; }
+  .ck-dtr { align-items: start; padding-bottom: 12px; }
+  .ck-dtr > .ck-hop { grid-column: 3 / -2; }
+  .ck-lg[data-k="3"][data-m="trang"] .ck-dtr > .ck-hop { grid-column: 3 / -2; }
+  .ck-hop { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 13px; }
+  /* ô lớp / tuần của em theo lớp của dải: mờ (không viền), rê hoặc có tiêu điểm → viền */
+  .ck-mo .field, .ck-mo button { border-color: transparent; background-color: transparent; }
+  .ck-r:hover .ck-mo .field, .ck-r:hover .ck-mo button, .ck-mo:focus-within .field, .ck-mo:focus-within button { border-color: var(--o-nhap-vien); background-color: var(--o-nhap-nen); }
+  /* thanh Áp: một thẻ, ba ô bằng nhau + "Ngay hôm nay" */
+  .ck-ap { display: grid; gap: 8px; padding: 10px 12px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
+  .ck-ap-o { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px; align-items: center; }
+  .ck-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 36px; }
+  .ck-bar-loc { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+}
+
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
