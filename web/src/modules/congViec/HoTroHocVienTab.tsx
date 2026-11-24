@@ -741,15 +741,13 @@ export function HoTroHocVienTab() {
             <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : tab === 'van-hanh' && coVanHanh ? t('Không có việc quản lý nào của bạn') : t('Không còn việc đang mở')}
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : tab === 'van-hanh' && coVanHanh ? loiVanHanh : undefined} /></Card>
           )}
-          {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length > 0 && (
+          {data && !data.scopeEmpty && tab !== 'duyet' && (mucs.length > 0 || (tab === 'case-hoc-thuat' && !!data.paDangChay?.length)) && (
             <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
+              /* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. Cùng lưới cột với các nhóm trên. */
+              cuoi={tab === 'case-hoc-thuat' && !!data.paDangChay?.length ? <PaDangChayKhoi ds={data.paDangChay} uid={uid ?? null} chon={viec} onMo={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} /> : undefined}
             />
-          )}
-          {/* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. */}
-          {data && !data.scopeEmpty && tab === 'case-hoc-thuat' && !!data.paDangChay?.length && (
-            <PaDangChayKhoi ds={data.paDangChay} uid={uid ?? null} chon={viec} onMo={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} />
           )}
           {tab === 'van-hanh' && !!data?.daBoQua?.length && <DaBoQua ds={data.daBoQua} homNay={homNay} onKhoiPhuc={khoiPhuc} />}
           {laGv && data && !data.scopeEmpty && tab !== 'theo-doi' && session?.nav?.workRequests && (

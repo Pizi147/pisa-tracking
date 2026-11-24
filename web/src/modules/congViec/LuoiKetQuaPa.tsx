@@ -279,7 +279,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
                 {coTutorLuoi ? (
                   <span className="grid gap-0.5">
                     <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span></span>
-                    <span className="grid grid-cols-[150px_196px_minmax(0,1fr)] gap-2"><span>{t('Buổi: đã học / dự kiến')}</span><span>{t('Tutor')}</span><span>{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span></span>
+                    <span className="grid grid-cols-[132px_minmax(0,1fr)] gap-2"><span>{t('Buổi: đã học / dự kiến')}</span><span>{t('Tutor')}</span><span className="col-span-2">{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span></span>
                   </span>
                 ) : <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span> · {t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>}
                 <span>{t('Trạng thái')}</span>
@@ -420,10 +420,11 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, tutor, coCotTutor, thieu, k
           </div>
           {/* Ô tự giãn theo chữ (mockup ⑫ `.o`): một dòng khi ngắn, xuống dòng khi dài; 375 chữ gợi ý hiện đủ (hai dòng). */}
           {coCotTutor ? (
-            <div className="grid gap-2 sm:grid-cols-[150px_196px_minmax(0,1fr)]">
-              {tutor ? oAB : <span className="max-sm:hidden" />}
-              {tutor && a !== 0 ? <div className="min-w-0">{oTutor}</div> : <span className="max-sm:hidden" />}
-              {!tutor || a !== 0 ? oNx : null}
+            /* Nhận xét luôn một hàng riêng, hết bề ngang cột giữa (khung 720 chỉ còn ~300 px: ba cột 150 + 196 + Nhận xét làm Nhận xét co về 0, chữ xếp dọc). */
+            <div className="grid gap-2 sm:grid-cols-[132px_minmax(0,1fr)]">
+              {tutor ? oAB : null}
+              {tutor && a !== 0 ? <div className="min-w-0">{oTutor}</div> : tutor ? <span className="max-sm:hidden" /> : null}
+              {!tutor || a !== 0 ? <div className="min-w-0 sm:col-span-2">{oNx}</div> : null}
             </div>
           ) : oNx}
           {/* Dòng Tutor: ô còn thiếu nói một dòng (mockup E1 "Thiếu Tutor · Nhận xét ≥ 8 ký tự"). */}
