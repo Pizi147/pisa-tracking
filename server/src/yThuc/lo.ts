@@ -287,7 +287,8 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
       if (tr) {
         /* N70: "về bậc trước" là SỬA bậc đã khai — chỉ người áp thẳng được (Head / Quản trị); GVCN không có lần sửa thẳng nào để hoàn tác. */
         if (!c.laQl) throw forbidden('Sửa bậc đã khai cần Head duyệt — không hoàn tác em này.');
-        luuSuaKhai(p, hv, sid, kiemKhai(tr, true), c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
+        /* SUA-GOP-2511: `truoc` do web gửi → kiểm như khai thường (chặn ngày / tháng tương lai); bản lưu thật trước đó luôn ≤ hôm nay nên Hoàn tác thật không bị chặn. */
+        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
         return { nhan: Number(tr.bac) > 0 ? nhanLoaiXuLy(kindCuaBac(Number(tr.bac))) : BAC_0_NHAN };
       }
       tx(() => {

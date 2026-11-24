@@ -165,7 +165,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       WHERE ${dk.join(' AND ')}`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
   ).all(...thamSo) as any[];
   const out: WorkItem[] = [];
-  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number> }>();
+  /* [XM7] #2070 (Việc để sau 25/11): giữ từng em (lớp · tên · thiếu gì) để dòng gộp mở ra "lớp · em · Thiếu: …" — cùng câu đọc, 0 câu thêm. */
+  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number>; con: { r: any; thieu: string[] }[] }>();
   const daChot = new Set<number>();
   for (const r of ds.sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
     const chu = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
@@ -191,22 +192,34 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       student: { dob: r.dob, email: r.email }, isFastTrack: !!r.is_fast_track,
     });
     if (!thieu.length) continue;
-    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>() };
+    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>(), con: [] };
     if (g.em.has(r.id)) continue;
     g.em.add(r.id);
+    g.con.push({ r, thieu: thieu.map((m) => m.label) });
     for (const m of thieu) g.truong.set(m.label, (g.truong.get(m.label) ?? 0) + 1);
     theoNguoi.set(chu.ownerId, g);
   }
   for (const [ownerId, g] of theoNguoi) {
+    const khoa = `bo-sung-ho-so:${ownerId ?? 'ql'}`;
+    /* Rà #517: link mở đúng tập đếm — TVV: em của mình; QL: em CHƯA có TVV (`tvv=chua` của `/hoc-vien-lop`). Cùng tập với chip "Thiếu thông tin" (em có lớp đang học). */
+    const href = ownerId === p.userId && !ql ? '/hoc-vien?phamVi=cua-toi&view=thieu_tt' : g.mine ? '/hoc-vien?view=thieu_tt&tvv=chua' : '/hoc-vien?view=thieu_tt';
     out.push({
-      key: `bo-sung-ho-so:${ownerId ?? 'ql'}`, group: 'bo_sung_ho_so', urgency: 'normal',
+      key: khoa, group: 'bo_sung_ho_so', urgency: 'normal',
       studentId: null, studentName: 'Hồ sơ học viên', classId: null, classCode: null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: g.em.size, emIds: [...g.em],
       reason: [...g.truong].map(([ten, n]) => `${ten} ${n}`).join(' · '),
       tieuDe: `Bổ sung hồ sơ thiếu · ${g.em.size} em`, actionLabel: 'Bổ sung',
-      /* Rà #517: link mở đúng tập đếm — TVV: em của mình; QL: em CHƯA có TVV (`tvv=chua` của `/hoc-vien-lop`). Cùng tập với chip "Thiếu thông tin" (em có lớp đang học). */
-      href: ownerId === p.userId && !ql ? '/hoc-vien?phamVi=cua-toi&view=thieu_tt' : g.mine ? '/hoc-vien?view=thieu_tt&tvv=chua' : '/hoc-vien?view=thieu_tt',
-      ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn',
+      href, ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn',
+      /* Một em: chính dòng mang lớp · tên (bấm mở panel ngay, không thêm bấm). Từ 2 em: mở dòng → từng em lớp · tên · "Thiếu: …", bấm em mở panel
+         của đúng em (`emIds` một em). Số dòng / badge không đổi (dòng cha = 1 việc). */
+      ...(g.con.length === 1 ? { studentId: g.con[0].r.id, studentName: g.con[0].r.full_name, classId: g.con[0].r.class_id, classCode: g.con[0].r.class_code } : {}),
+      con: g.con.length < 2 ? undefined : g.con.map(({ r, thieu }) => ({
+        key: `${khoa}:${r.id}`, group: 'bo_sung_ho_so' as const, urgency: 'normal' as const,
+        studentId: r.id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null, emIds: [r.id],
+        reason: thieu.join(' · '), tieuDe: 'Bổ sung hồ sơ thiếu', actionLabel: 'Bổ sung', href,
+        ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn', conTen: r.full_name, conPhu: thieu.join(' · '),
+      })),
     });
   }
   return out;

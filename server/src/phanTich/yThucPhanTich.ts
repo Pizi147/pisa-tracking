@@ -265,7 +265,7 @@ function dongViPham(r: Tinh, ids: readonly number[]): MetricRow[] {
   const by = new Map<number, any>();
   for (const lo of chunks([...ids])) {
     for (const v of db().prepare(
-      `SELECT v.id, v.student_id, v.class_id, v.category, v.occurred_on, v.ten, v.description, s.full_name, c.code AS lop, u.full_name AS nguoi
+      `SELECT v.id, v.student_id, v.class_id, v.category, v.occurred_on, v.ten, v.description, v.han_xu_ly, s.full_name, c.code AS lop, u.full_name AS nguoi
          FROM violations v JOIN students s ON s.id = v.student_id LEFT JOIN classes c ON c.id = v.class_id LEFT JOIN users u ON u.id = v.reported_by
         WHERE v.id IN (${marks(lo.length)})`,
     ).all(...lo) as any[]) by.set(v.id, v);
@@ -277,7 +277,7 @@ function dongViPham(r: Tinh, ids: readonly number[]): MetricRow[] {
     const viPham: DongViPham = {
       id, studentId: v.student_id, ten: v.full_name, classId: v.class_id ?? null, lop: v.lop ?? '', ngay: String(v.occurred_on).slice(0, 10),
       nhom: VIOLATION_CATEGORY_LABEL[v.category as ViolationCategory] ?? v.category, moTa: [tm.ten, tm.moTa].filter(Boolean).join(' — '),
-      nguoiGhi: v.nguoi ?? null, trangThai: tt?.nhan ?? '—', trangThaiT: tt?.t ?? null,
+      nguoiGhi: v.nguoi ?? null, trangThai: tt?.nhan ?? '—', trangThaiT: tt?.t ?? null, han: v.han_xu_ly ? String(v.han_xu_ly).slice(0, 10) : null,
     };
     return { id, title: v.full_name, sub: '', href: `/hoc-vien/${v.student_id}`, viPham } as MetricRow;
   }).sort((a: any, b: any) => b.viPham.ngay.localeCompare(a.viPham.ngay) || a.id - b.id);

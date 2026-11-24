@@ -221,7 +221,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'bo_sung_ho_so':
-      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={lop} ten={(id) => it.con?.find((c) => c.studentId === id)?.studentName ?? ''} onDong={onDong} onDaLam={doi} />;
+      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={lop} ten={(id) => it.con?.find((c) => c.studentId === id)?.studentName ?? (id === it.studentId ? it.studentName : '')} onDong={onDong} onDaLam={doi} />;
     /* P9a: panel Xét lại tại chỗ — thanh Việc cần làm ở hồ sơ lớp · R3-T2 (rà 24/11): cả Công việc (trước "Xét lại ›" mở trang lớp, ~125 câu, mất danh sách). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
