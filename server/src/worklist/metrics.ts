@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, mondayOfDate, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -152,6 +152,8 @@ export type MetricRow = {
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
   ngayThiThat?: string;
+  /** SO-720 (B6): dòng HV — ngày khai giảng của lớp đang học (YYYY-MM-DD); null = lớp chưa có ngày khai giảng. */
+  khaiGiang?: string | null;
   viec?: ViecDong | null;
   /** Câu tình trạng khi không có việc để làm (Chờ Quản lý duyệt · không theo dõi…). */
   tinhTrang?: string | null;
@@ -237,10 +239,14 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
       for (const r of conn.prepare(
         `SELECT s.id, s.full_name, s.student_code,
                 (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id
-                  WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS class_code
+                  WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS class_code,
+                (SELECT c.start_date FROM enrollments e JOIN classes c ON c.id = e.class_id
+                  WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop_khai_giang
            FROM students s WHERE s.id IN (${ph})`,
       ).all(...chunk) as any[]) {
-        byId.set(r.id, { id: r.id, title: r.full_name, sub: [r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.id}` });
+        /* B6: `khaiGiang` = ngày khai giảng lớp đang học; web tính "Tuần học" với ngày nghiệp vụ (không thêm câu đọc `demoToday()`). */
+        const kg = typeof r.lop_khai_giang === 'string' ? r.lop_khai_giang.slice(0, 10) : null;
+        byId.set(r.id, { id: r.id, title: r.full_name, sub: [r.class_code].filter(Boolean).join(' · '), href: `/hoc-vien/${r.id}`, khaiGiang: kg });
       }
     } else if (unit === 'case') {
       const ds = conn.prepare(

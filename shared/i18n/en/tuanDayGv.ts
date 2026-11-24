@@ -3,6 +3,8 @@ import type { Dich } from '../en.ts';
 
 export const EN_TUAN_DAY_GV = {
   'Lệch': 'Gap',
+  'Tuần {n}': (b) => `Week ${b.n}`,
+  'MT gần nhất': 'Latest MT',
   'Điểm / KV': 'Score / Target',
   '{gt} — {ten}. Bấm để cuộn tới bảng': (b) => `${b.gt} — ${b.ten}. Press to scroll to the table`,
   'mỗi kỹ năng {n} GV dạy nhiều tuần nhất': (b) => `top ${b.n} teachers by weeks taught per skill`,
