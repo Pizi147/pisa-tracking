@@ -12,7 +12,8 @@ import { OTuanDay } from './TuanDayGv.tsx';
 import { HangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
-import { LOP_MUC_HAN, QuaHan } from './Nhan.tsx';
+import { LOP_MUC_HAN } from './Nhan.tsx';
+import { Han } from './Han.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { useSession } from '../lib/session.tsx';
 import { fmtBand } from '../lib/format.ts';
@@ -366,16 +367,20 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   type HV = (typeof tatV)[number]; type HVe = (typeof tatVe)[number]; type HVl = (typeof tatVl)[number];
   const cotV: DinhNghiaCot[] = [
     /* Panel 820, ô 14 (`day`): 140 + 96 + 70 + Vi phạm (phần còn lại ≈ 192, mô tả cắt một dòng có title) + 150 + 140 — tên Người ghi đọc đủ (PTA rà #984). */
-    /* SO-720 (B4): Học viên (+ lớp dưới tên) · Ngày · Vi phạm · Trạng thái — bỏ cột Lớp lặp và Người ghi; vừa 720 không cắt chữ. */
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 168 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'chu', rong: 104 },
-    { key: 'vp', nhan: t('Vi phạm'), kieu: 'chu', linhHoat: true }, { key: 'tt', nhan: t('Xử lý'), kieu: 'chu', rong: 150 },
+    /* SO-720 (B4): Học viên (+ lớp dưới tên) · Ngày · Vi phạm · Trạng thái — bỏ cột Lớp lặp và Người ghi; vừa 720 không cắt chữ.
+       SUA-GOP-2511 (Việc để sau 25/11): thêm "Hạn xử lý" THẬT (`han` = `violations.han_xu_ly`) — hai cột ngày cùng bề rộng, căn giữa (NH9); cột Xử lý cuối sát phải. */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 168 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'so', rong: 104 },
+    { key: 'vp', nhan: t('Vi phạm'), kieu: 'chu', linhHoat: true }, { key: 'han', nhan: t('Hạn xử lý'), kieu: 'so', rong: 104 },
+    { key: 'tt', nhan: t('Xử lý'), kieu: 'chu', rong: 128 },
   ];
   /* B5: panel của MỘT em — tên em đã ở đầu panel → bỏ cột Học viên (+ lớp dưới tên). Panel lớp (B4) giữ. */
   const motEm = tatV.length > 0 && new Set(tatV.map((h) => h.studentId)).size === 1;
   const cotVHien = motEm ? cotV.filter((c) => c.key !== 'ten') : cotV;
-  /* Chủ SP 24/11 (NH4): hạn chỉ là NGÀY tô màu — quá hạn → ngày đỏ (`QuaHan`: hạn = hôm nay − n); đã xử lý → chữ thường ("Report 1"), không chip / nền. */
+  /* Chủ SP 24/11 (NH4): hạn chỉ là NGÀY tô màu. Hạn thật ở cột "Hạn xử lý" (`Han` dùng chung, màu `mucHan`); quá hạn KHÔNG chỉ bằng màu: cột Xử lý ghi
+     nhãn "Quá hạn" (không đếm "n ngày" — ngày đã ở cột hạn). Đã xử lý → chữ thường ("Report 1"), không chip / nền. */
+  const hanV = (h: HV): ReactNode => (h.han ? <Han loai="xu-ly-vi-pham" han={h.han} trongBang mo={h.trangThaiT === 'da_xu_ly'} /> : mo('—'));
   const ttV = (h: HV): ReactNode => {
-    if (h.trangThaiT === 'qua_han') { const n = Number(/(\d+)/.exec(h.trangThai)?.[1]); return Number.isFinite(n) ? <QuaHan ngay={n} /> : <span className="font-semibold text-late">{dich(h.trangThai)}</span>; }
+    if (h.trangThaiT === 'qua_han') return <NhanViPham t="qua_han" nhan={t('Quá hạn')} />;
     if (h.trangThaiT === 'da_xu_ly') return <span className="text-dim">{dich(h.trangThai).replace(/^Đã xử lý\s*·\s*/, '')}</span>;
     return h.trangThaiT ? <NhanViPham t={h.trangThaiT as TrangThaiVp} nhan={dich(h.trangThai)} /> : mo(dich(h.trangThai));
   };
@@ -385,12 +390,13 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'ngay') return <span className="tabular-nums">{ddmm(h.ngay)}</span>;
     if (c.key === 'vp') return <b className="cat-2d font-semibold" title={dich(h.nhom)}>{dich(h.nhom)}</b>;
     if (c.key === 'nguoi') return h.nguoiGhi ?? mo('—');
+    if (c.key === 'han') return hanV(h);
     return ttV(h);
   };
   const theV = (h: HV) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto">{oV(h, cotV[3])}</span></div>
-      <div className="text-[14px]">{lkLop(h.classId, h.lop)} · <span className="tabular-nums">{ddmm(h.ngay)}</span>{h.nguoiGhi && <> · {h.nguoiGhi}</>}</div>
+      <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto">{ttV(h)}</span></div>
+      <div className="text-[14px]">{lkLop(h.classId, h.lop)} · <span className="tabular-nums">{ddmm(h.ngay)}</span>{h.nguoiGhi && <> · {h.nguoiGhi}</>}{h.han && <> · <span className="text-dim">{t('Hạn xử lý')}</span> {hanV(h)}</>}</div>
       <div className="text-[14px]"><b className="font-semibold">{dich(h.nhom)}</b>{h.moTa && <span className="block text-[13px] text-dim">{h.moTa}</span>}</div>
     </div>
   );

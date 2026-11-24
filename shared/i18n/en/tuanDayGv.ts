@@ -25,4 +25,6 @@ export const EN_TUAN_DAY_GV = {
   'Đang tải tuần dạy…': 'Loading teaching weeks…',
   'Đếm theo tuần, từ tuần bắt đầu lộ trình đến tuần thi; tuần GV được phân công kỹ năng này ở lớp em học thì tính cho GV đó. Tuần hai GV cùng dạy: chia đôi (0,5 mỗi người), tổng luôn 100 %. Chỉ tính lớp Fast Track.':
     'Counted by week, from the pathway start week to the exam week; a week counts for a teacher assigned this skill in the student’s class that week. A week two teachers share is split (0.5 each), so the total is always 100 %. Fast Track classes only.',
+  /* SUA-GOP-2511: cột hạn xử lý thật của vi phạm (panel số Ý thức). */
+  'Hạn xử lý': 'Handling due',
 } satisfies Record<string, Dich>;

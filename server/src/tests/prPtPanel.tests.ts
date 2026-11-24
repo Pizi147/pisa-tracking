@@ -6,6 +6,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
   const { check, assert, P, conn } = t;
+  const fs = await import('node:fs');
   console.log('\nPT-PANEL · panel bảng có điểm');
   const { oTongHop, tongHop, luotTrongKhoang, phanLoaiCacLuot } = await import('../phanTich/tongHop.ts');
   const { oBaoCao, baoCao } = await import('../phanTich/baoCao.ts');
@@ -293,5 +294,11 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
       so++;
     }
     assert(so >= 2, 'demo phải có ô Việc / Chấm Test của GV');
+  });
+  check('PT-VP-HAN · panel vi phạm: cột "Hạn xử lý" vẽ hạn THẬT bằng `Han` dùng chung (màu mucHan + dấu khi quá, không chỉ màu); cột Xử lý không còn "Quá hạn n ngày" suy từ số ngày', () => {
+    const src = fs.readFileSync('web/src/ui/BangLuotPanel.tsx', 'utf8') as string;
+    assert(src.includes("{ key: 'han', nhan: t('Hạn xử lý'), kieu: 'so', rong: 104 }") && src.includes("{ key: 'ngay', nhan: t('Ngày'), kieu: 'so', rong: 104 }"), 'thiếu cột Hạn xử lý / hai cột ngày không đều');
+    assert(src.includes('<Han loai="xu-ly-vi-pham" han={h.han} trongBang'), 'cột hạn không dùng Han chung');
+    assert(!src.includes('<QuaHan ngay={n} />') && src.includes(`<NhanViPham t="qua_han" nhan={t('Quá hạn')} />`), 'cột Xử lý còn suy hạn từ "Quá hạn n ngày" / quá hạn chỉ bằng màu');
   });
 }
