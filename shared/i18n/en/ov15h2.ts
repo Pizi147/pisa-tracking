@@ -16,7 +16,6 @@ export const EN_OV15H2 = {
   'Lưới điểm {dot}': (b) => `Scores ${b.dot}`,
   'Tổng số câu': 'Total questions',
   'Bảng điểm {x}': (b) => `Scores ${b.x}`,
-  'Điền ô trống': 'Fill empty cells',
   'Chọn cả danh sách': 'Select the whole list',
   'chốt {ngay}': (b) => `set ${b.ngay}`,
   'Tích hàng ở bảng để chọn': 'Tick rows in the table to select',

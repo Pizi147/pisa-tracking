@@ -420,7 +420,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   });
 
   /* ------------------------------------------------------------ LG-3: việc GV "Báo cáo PH" */
-  check('BC-20 · LG-3: việc GV "Báo cáo PH" — mỗi lớp × đợt một dòng (GVCN kiêm kỹ năng một dòng); xong khi đủ phần của mình; quá hạn 7 ngày rồi rời; không đợt trước ngày bật; vai khác không có', () => thu(() => {
+  check('BC-20 · LG-3: việc GV "Báo cáo PH" — mỗi lớp × đợt một dòng (GVCN kiêm kỹ năng một dòng); xong khi đủ phần của mình; N40 / N71: quá hạn GIỮ tới khi xong (cả sau 7 ngày, khi QL đã có dòng nhắc N49); không đợt trước ngày bật; vai khác không có', () => thu(() => {
     const han = d.addDaysIso(TODAY, 6);
     const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt việc GV', mo: TODAY, han });
     const ma = r.ma[0].ma;
@@ -445,8 +445,17 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     viet(lop, ma, tr.em, W1);
     xoaNho();
     assert(cua(P.w1Teacher).length === 0 && cua(P.sTeacher).length === 1, 'W1 đủ mọi em → việc rời; S còn');
-    /* quá hạn: hiện thêm 7 ngày rồi rời; không sinh cho đợt có hạn trước ngày bật */
-    assert(cua(P.sTeacher, d.addDaysIso(han, 7)).length === 1 && cua(P.sTeacher, d.addDaysIso(han, 8)).length === 0, 'quá hạn 7 ngày rồi rời');
+    /* N40 sửa theo N71 (chủ SP 25/11 "Giữ tới khi xong"): quá hạn KHÔNG rời sau 7 ngày — còn tới khi viết xong; không sinh cho đợt có hạn trước ngày bật */
+    assert(cua(P.sTeacher, d.addDaysIso(han, 7)).length === 1 && cua(P.sTeacher, d.addDaysIso(han, 8)).length === 1 && cua(P.sTeacher, d.addDaysIso(han, 60)).length === 1,
+      'N71 · quá hạn > 7 ngày GV vẫn giữ việc');
+    /* N49 giữ: quá hạn > 7 ngày → QL có MỘT dòng nhắc lớp × đợt, cùng lúc GV vẫn giữ việc; ≤ 7 ngày chưa nhắc QL. */
+    const qlNhac = (ngay: string) => { cfg.setConfig('demo_date', ngay); xoaNho(); return xbc.viecBcPhQuaHanQl(P.mbManager, null).filter((v: any) => v.classId === lop && v.dot === ma); };
+    try {
+      assert(qlNhac(d.addDaysIso(han, 7)).length === 0, 'N49 · quá hạn 7 ngày chưa nhắc QL');
+      const nhac = qlNhac(d.addDaysIso(han, 8));
+      assert(nhac.length === 1 && nhac[0].thieu > 0, `N49 · quá hạn 8 ngày: QL một dòng nhắc ${JSON.stringify(nhac)}`);
+      assert(cua(P.sTeacher, d.addDaysIso(han, 8)).length === 1, 'N71 · cùng lúc GV vẫn có việc');
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
     assert(cua(P.sTeacher, TODAY, d.addDaysIso(han, 1)).length === 0 && cua(P.sTeacher, TODAY, han).length === 1, 'ngày bật');
     /* em Tạm dừng không tính */
     conn.prepare("UPDATE students SET status = 'paused' WHERE id = ?").run(em[em.length - 1]);

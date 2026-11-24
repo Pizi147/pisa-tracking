@@ -9,7 +9,7 @@ import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, loi } from '../util.ts';
-import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
+import { COT_GV_CU_NGAY, ghiDuocPaMany, hanGvCuCuaPa, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { NOT_UNCONFIRMED_PRESET, xuLyCaseMany } from '../cases/sosState.ts';
 
@@ -706,7 +706,8 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
      */
     rows.push(...db()
       .prepare(
-        `SELECT iv.id, iv.kind, iv.nhom_bo_tro, iv.action_due, iv.followup_due, sc.topic, sc.owner_user_id,
+        `SELECT iv.id, iv.kind, iv.nhom_bo_tro, iv.action_due, iv.followup_due, sc.topic, sc.owner_user_id, iv.performer_user_id, iv.preset, iv.status,
+                ${COT_GV_CU_NGAY('iv', 's.id')} AS gv_cu_ngay,   -- N71: hạn GV cũ đọc cùng câu (0 câu thêm)
                 COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), a.class_id) AS class_id
            FROM case_interventions iv
            JOIN sos_cases sc ON sc.id = iv.case_id
@@ -727,7 +728,8 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
   for (const r of daiDien) {
     ids.push(r.id);
-    const nguoi = giu.get(r.id) ?? null;
+    /* N71: PA tự tạo trong hạn GV cũ (Người dạy ≠ người giữ) — người giữ là GV cũ, như Công việc 2b' (`hanGvCuCuaPa`, chỉ hỏi DB ở dòng đó). */
+    const nguoi = r.performer_user_id && giu.get(r.id) !== r.performer_user_id && hanGvCuCuaPa(r) ? r.performer_user_id : giu.get(r.id) ?? null;
     chiTiet.set(r.id, { nguoi: nguoi ? [nguoi] : [], han: [r.action_due] });
   }
   return { ids, chiTiet };

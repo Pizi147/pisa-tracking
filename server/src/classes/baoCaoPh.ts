@@ -5,7 +5,8 @@
  * Turso: mở tab ≈ 6 câu (lớp đã nhớ, tiến độ, phân công, em, bản ghi đợt); mở panel ≈ 5 câu (+ điểm gốc một câu); lưu một ô = 1 ghi + 1 nhật ký.
  */
 import { DS_JSON, chenNhieuDong, db, theoLoJson, tx } from '../db.ts';
-import { demoToday } from '../demoConfig.ts';
+import { demoToday, getConfig } from '../demoConfig.ts';
+import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
 import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
@@ -87,7 +88,8 @@ export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { p
     progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay, (tuyChinh ?? docTuyChinhDot([c.id])).get(c.id)) };
 }
 
-/** Chip trên tab (đặc tả §12): đợt đang mở "Tháng 11 · hạn 30/11"; đợt vừa quá hạn (≤ 7 ngày) mà lớp chưa đủ → "quá hạn n ngày". Không quyền / không mẫu → null. */
+/** Chip trên tab (đặc tả §12): đợt đang mở "Tháng 11 · hạn 30/11"; đợt quá hạn mà lớp chưa đủ → "quá hạn n ngày" — N71 (chủ SP 25/11): còn tới khi viết đủ, cùng việc GV
+ *  (`viecBaoCaoPhGv`: không đợt có hạn trước ngày bật). Không quyền / không mẫu → null. */
 export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot: string | null; nhan: string | null; han: string | null; quaHan: number } | null {
   const c = docLop(classId);
   if (!quyenBc(p, c).xem) return null;
@@ -99,14 +101,26 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
      MỚI NHẤT còn thiếu. Không có đợt thêm: đúng như cũ (một đợt, hai câu); có đợt thêm trong 7 ngày: thêm hai câu cho mỗi đợt đã đủ đứng trước. */
   const mo = d.ds.find((x) => soNgayQuaHan(x, homNay) === 0);
   if (mo) return { coTab: true, dot: mo.ma, nhan: nhanDotBc(mo, homNay), han: mo.han, quaHan: 0 };
-  for (const x of d.ds) {
-    const qh = soNgayQuaHan(x, homNay);
-    if (qh > 7) continue;
-    /* Một câu em + một câu đếm (≤ em × phần dòng) — chỉ đợt trong 7 ngày sau hạn. */
-    const em = emCuaDot(classId, x, homNay);
-    const du = em.length ? (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (${DS_JSON})`)
-      .get(x.ma, JSON.stringify(em.map((e) => e.id))) as any).n : 0;
-    if (du < em.length * d.bo.length) return { coTab: true, dot: x.ma, nhan: nhanDotBc(x, homNay), han: x.han, quaHan: qh };
+  const batTu = getConfig(KHOA_MOC_BC_PH_VIEC_GV) || homNay;
+  /* N71: ≤ 7 ngày như cũ; quá 7 ngày còn khi việc GV còn (đợt từ ngày bật) — giữ tới khi đủ. HAI câu cho MỌI đợt ứng viên (ghi danh lớp + số bản đủ theo đợt × em),
+     không một cặp câu mỗi đợt — số câu không lớn theo số đợt; trả đợt mới nhất còn thiếu. */
+  const ungVien = d.ds.filter((x) => soNgayQuaHan(x, homNay) <= 7 || x.han >= batTu);
+  if (!ungVien.length) return khong;
+  const ghiDanh = db().prepare(
+    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+       FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn'`,
+  ).all(classId) as any[];
+  const emDot = new Map(ungVien.map((x) => [x.ma, [...new Set(ghiDanh.filter((r) => emTrongDot(r, x, homNay)).map((r) => r.id as number))]]));
+  const moiEm = [...new Set([...emDot.values()].flat())];
+  const du = new Map<string, number>();
+  if (moiEm.length) {
+    for (const r of db().prepare(`SELECT dot, student_id, COUNT(*) n FROM bao_cao_ph WHERE du = 1 AND dot IN (SELECT value FROM json_each(?)) AND student_id IN (${DS_JSON}) GROUP BY dot, student_id`)
+      .all(JSON.stringify(ungVien.map((x) => x.ma)), JSON.stringify(moiEm)) as any[]) du.set(`${r.dot}|${r.student_id}`, r.n);
+  }
+  for (const x of ungVien) {
+    const em = emDot.get(x.ma)!;
+    const soDu = em.reduce((n, id) => n + (du.get(`${x.ma}|${id}`) ?? 0), 0);
+    if (soDu < em.length * d.bo.length) return { coTab: true, dot: x.ma, nhan: nhanDotBc(x, homNay), han: x.han, quaHan: soNgayQuaHan(x, homNay) };
   }
   return khong;
 }
@@ -114,12 +128,28 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
 /** Em trong đợt: ghi danh lớp phủ ngày mốc (hạn, hoặc hôm nay khi đợt còn mở) + em đang học (đặc tả §4). Xếp theo tên. */
 export function emCuaDot(classId: number, d: DotBc, homNay: string): { id: number; ten: string }[] {
   const moc = d.han < homNay ? d.han : homNay;
+  const thay = new Set<number>();
   return (db().prepare(
-    `SELECT DISTINCT s.id, s.full_name FROM enrollments e JOIN students s ON s.id = e.student_id
-      WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ?
-        AND (e.ended_at IS NULL OR substr(e.ended_at, 1, 10) > ?) AND e.status != 'withdrawn'
+    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+       FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ? AND e.status != 'withdrawn'
       ORDER BY s.full_name`,
-  ).all(classId, moc, moc) as any[]).map((r) => ({ id: r.id, ten: r.full_name }));
+  ).all(classId, moc) as any[]).filter((r) => emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id)).map((r) => ({ id: r.id, ten: r.full_name }));
+}
+
+/** N71: loại bài Progress / Final em có ở lớp của ghi danh ĐÃ RỜI (`group_concat`); ghi danh còn mở → NULL, không đọc lượt. `e` bí danh `enrollments`. */
+export const COT_BAI_ROI = (e: string) => `CASE WHEN ${e}.ended_at IS NOT NULL THEN (SELECT group_concat(DISTINCT a.kind) FROM assessment_attempts a
+  WHERE a.student_id = ${e}.student_id AND a.class_id = ${e}.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled') END`;
+/**
+ * Em có trong đợt: ghi danh phủ ngày mốc (hạn; đợt còn mở: hôm nay). N71 (chủ SP 25/11): em rời lớp TRONG đợt Progress / Final (Cuối khoá "Ngay hôm nay" /
+ * "Từ tuần", chuyển một em) mà bài đợt đó ở lớp này → vẫn trong đợt tới khi GV lớp cũ viết xong — trước: em rơi khỏi đợt ngay ngày rời lớp.
+ * `emCuaDot` và `emTheoLo` (việc GV / Admin / QL, xuất) dùng chung.
+ */
+export function emTrongDot(r: { tu: string | null; den: string | null; bai: string | null }, d: DotBc, homNay: string): boolean {
+  const moc = d.han < homNay ? d.han : homNay;
+  if (!r.tu || r.tu > moc) return false;
+  if (!r.den || r.den > moc) return true;
+  return (d.loai === 'progress' || d.loai === 'final') && r.den >= d.mo && (r.bai ?? '').split(',').includes(d.loai);
 }
 
 /** GV phân công đang giữ mỗi phần (người giữ lúc xem — đặc tả §10). Hai GV cùng kỹ năng: cả hai. */

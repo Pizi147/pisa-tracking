@@ -37,7 +37,7 @@ const laPhimTim = (e: KeyboardEvent) => {
   return !(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)));
 };
 
-type LopRef = { id: number; code: string; student_count: number };
+type LopRef = { id: number; code: string; student_count: number; /** N71: lớp đã kết thúc (`kemKetThuc=1`). */ ket_thuc?: boolean };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 
@@ -80,7 +80,8 @@ export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null 
   const timGv = !!session?.nav?.analysis;
   const timDu = q.trim().length >= 2;
   /* Danh sách lớp trong phạm vi: đọc khi bắt đầu gõ tìm (TAI-NHANH: không đọc ở mỗi lần mở trang), useApi nhớ sẵn; lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
-  const lopRef = useApi<LopRef[]>(timDu ? '/ref/classes' : null);
+  /* N71 (chủ SP 25/11): kèm lớp đã kết thúc trong phạm vi (GV: lớp từng dạy) — mở lại lớp cũ để làm nốt việc / xem; xếp sau lớp đang chạy. */
+  const lopRef = useApi<LopRef[]>(timDu ? '/ref/classes?kemKetThuc=1' : null);
   const khoaLop = chuanHoaMaLop(q);
   const lops = timDu && khoaLop
     ? (lopRef.data ?? []).filter((l) => chuanHoaMaLop(l.code).includes(khoaLop)).slice(0, 4)
@@ -176,7 +177,7 @@ export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null 
       <li key={`lop${l.id}`} role="none">
         <button {...nutMuc(hits.length + j)}>
           <span className="font-semibold text-slate-100">{l.code}</span>
-          <span className="text-slate-500 text-xs ml-2 tabular-nums">· {t('{n} HV', { n: l.student_count })}</span>
+          <span className="text-slate-500 text-xs ml-2 tabular-nums">· {l.ket_thuc ? t('Đã kết thúc') : t('{n} HV', { n: l.student_count })}</span>
         </button>
       </li>
     )) },

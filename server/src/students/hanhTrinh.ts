@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
   mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4, trangThaiHop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { can, require_, type Principal } from '../permissions.ts';
 import { allProgrammes, maCtCuaLuot, programmeByCode } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
@@ -371,6 +371,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       soTuan: ft ? null : soTuanGiua(e.started_at, e.ended_at ?? homNay), tuanHoc,
       gvcn: gvcnCua(e), endKind: e.end_kind ?? null, status: e.status, endReason: e.end_reason ?? null,
       lenh: lenh ? { id: lenh.id, xacNhan: !!lenh.xac_nhan_luc } : null,
+      /* N71 (chủ SP 25/11): lớp cũ của em có link sang hồ sơ lớp khi người xem mở được lớp đó (cùng quyền `classOverview`) — không link dẫn tới 403. */
+      xemLop: !dangHoc && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: e.class_id }),
     };
   });
   const toneCua = (iv: any): TonePaChuong => {

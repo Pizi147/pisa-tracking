@@ -425,7 +425,8 @@ export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dic
 
   return (
     <div ref={box} className="cs-than">
-      {!vw.canEdit && canDong && !s && <p className="bao-chi-xem m-0 mt-4">{chuAiLamDuoc(data.owner)}</p>}
+      {/* N71: GV cũ còn ghi được kết quả cuối PA của mình — không nói "chỉ người phụ trách làm được" (sai với nút đang có). */}
+      {!vw.canEdit && canDong && !s && !(data.interventions ?? []).some((x: any) => x.gvCuCuoi) && <p className="bao-chi-xem m-0 mt-4">{chuAiLamDuoc(data.owner)}</p>}
       {data.status !== 'done' && (() => { const od = [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat'); return od ? (
         <p className="m-0 mt-3 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">{t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: od.dot ?? (od.attemptNo ? `MT${od.attemptNo}` : '') })}</p>
       ) : null; })()}
@@ -862,7 +863,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             pa={{
               id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null, performerUserId: iv.performerUserId ?? null,
               actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
-              batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
+              batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, gvCuCuoi: !!iv.gvCuCuoi, gvCuDongCase: !!iv.gvCuDongCase, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
               laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
               nhap: iv.nhapKetQua ?? null, mocQuyChe: iv.mocQuyChe ?? null,
               /* TU2: b điền sẵn — b của lần ghi gần nhất; chưa có thì Số buổi cũ của PA quy chế (nhập dưới nhãn "/ 2 tuần"). */

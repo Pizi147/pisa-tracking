@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import {
   ASSESSED_SKILLS, nhanDotNgan, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
-  duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
+  duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich, xemDen,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type PaDangChay, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
@@ -362,6 +362,21 @@ export function testSapToiCuaGv(p: Principal) {
     const testKeTiep = bang.get(classId)?.isFastTrack ? keTiep.get(classId) ?? null : mocThuong(tienDo.get(classId), today);
     return { classId, testKeTiep, testTuanNay: testKeTiep?.endsWith(thang) ?? false };
   });
+}
+
+/**
+ * N71 (chủ SP 25/11: "cần phải có access vào được những khu vực đó một cách hợp lý"): lớp ĐÃ KẾT THÚC mà GV còn phân công — "Lớp của tôi" giữ dòng mờ
+ * "Đã kết thúc" khi GV còn việc ở lớp đó (web đếm từ `/my-work`) hoặc còn trong hạn xem N68 (`conXem`: `xemDen(ngày kết thúc)`, mặc định 30 ngày). 0 câu (bảng lớp nhớ tiến trình).
+ */
+export function lopKetThucCuaGv(p: Principal): { classId: number; code: string; ketThuc: string; conXem: boolean }[] {
+  const today = demoToday();
+  const lop = lopDayDu();
+  return [...new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId))].flatMap((classId) => {
+    const c = lop.get(classId);
+    if (c?.status !== 'finished' || !c.finished_at) return [];
+    const ketThuc = String(c.finished_at).slice(0, 10);
+    return [{ classId, code: c.code as string, ketThuc, conXem: today <= xemDen(ketThuc) }];
+  }).sort((a, b) => b.ketThuc.localeCompare(a.ketThuc) || a.classId - b.classId);
 }
 
 /**

@@ -524,12 +524,13 @@ const NutHdQuyChe = () => (
   <button type="button" className="-m-[15px] cursor-pointer border-0 bg-transparent p-[15px] text-sm font-normal leading-none text-slate-500 hover:text-slate-200 sm:m-0 sm:p-0"
     title={t('Hướng dẫn việc này')} aria-label={t('Hướng dẫn việc này')} onClick={moHuongDan}>ⓘ</button>
 );
-export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string; chiTiet?: string }; px?: string; /** false: đứng đầu chân (chân đã có vạch trên) — vạch DƯỚI tách khỏi hàng nút. */ vien?: boolean }) {
+export function DongQuyChe({ qc, px = 'px-4', vien = true, nhanQuyChe = true }: { qc: { chu: string; chiTiet?: string }; px?: string; /** false: đứng đầu chân (chân đã có vạch trên) — vạch DƯỚI tách khỏi hàng nút. */ vien?: boolean;
+  /** N71: false = câu hậu quả không phải quy chế (vd GV cũ ghi kết quả cuối Case tự tạo) — cùng kiểu dòng, không nhãn "Quy chế". */ nhanQuyChe?: boolean }) {
   /* HD3-1: "?" đọc câu quy chế đang hiện (dòng gắn sau cùng) cho đầu thẻ việc. */
   useEffect(() => ghiQuyCheMo({ chu: qc.chu, chiTiet: qc.chiTiet }), [qc.chu, qc.chiTiet]);
   return (
     <div data-quy-che className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
-      <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
+      {nhanQuyChe && <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>}
       {/* GD-20c (PTA rà #1738) + PANEL-GON (panel 720): câu xuống dòng đủ chữ, không "…" ở mọi bề rộng. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
           đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng; ⓘ vẫn chỉ khi có chi tiết. */}
       <span className="min-w-0 flex-1">{qc.chu}</span>

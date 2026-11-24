@@ -210,7 +210,7 @@ const HD_QL_DAY: HuongDan = {
       tuKhac: ['phụ huynh', 'báo cáo ph', 'parent report', 'đợt', 'pdf'],
     },
     {
-      /* N49 (chủ SP 16/11): việc QL "Báo cáo PH quá hạn" — đợt quá hạn > 7 ngày (việc GV đã rời) còn em chưa đủ. */
+      /* N49 (chủ SP 16/11): việc QL "Báo cáo PH quá hạn" — đợt quá hạn > 7 ngày còn em chưa đủ; N71: GV vẫn giữ việc tới khi xong. */
       id: 'bc-ph-qua-han', ten: 'Báo cáo PH quá hạn', nhom: 'hv', tab: 'van-hanh', viecWeb: ['bc_ph_qua_han'],
       tep: ['web/src/modules/classes/TabBaoCaoPh.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Báo cáo PH', duong: CV },

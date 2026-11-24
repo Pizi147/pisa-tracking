@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useContext, useEffect, useState, type ReactNode } from 'react';
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
@@ -105,10 +105,25 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, gvCham, hienTuan = false }: {
+/** "Còn chờ: A (L R) · B (W S)": mỗi người một khối không ngắt — xuống dòng chỉ giữa hai người (dấu "·" đi theo người sau), không giữa "(W S)". */
+export const ChuConCho = ({ ds }: { ds: string }) => (
+  <>{t('Còn chờ: {ds}', { ds }).split(' · ').map((x, i, a) => <Fragment key={i}><span className="whitespace-nowrap">{i > 0 && '· '}{x}</span>{i < a.length - 1 && ' '}</Fragment>)}</>
+);
+
+/** Dòng công cụ lưới FT: trái "Còn chờ", phải (nguyên khối, hết chỗ thì cả khối xuống dưới) chú giải + ô "GV chấm S". */
+const ThanhGv = ({ conCho, phai, className }: { conCho: string; phai: ReactNode; className: string }) => (
+  <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-3 ${className}`}>
+    {conCho && <span className="min-w-0 text-[13px] leading-snug text-dim"><ChuConCho ds={conCho} /></span>}
+    {phai && <span className="ml-auto inline-flex flex-wrap items-center justify-end gap-x-4 gap-y-1">{phai}</span>}
+  </div>
+);
+
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, gvCham, hienTuan = false, conCho = '' }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   /** S-CHEO-CN: lưới nhiều tuần (panel Chấm Speaking) — tuần thi dưới tên em cả khi không vắng (`DongVang`). */
   hienTuan?: boolean;
+  /** Lịch Test: "GV (môn) · … · chấm chéo S" — cùng dòng với "GV chấm S". */
+  conCho?: string;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
   hangMo?: HangMo[];
@@ -239,8 +254,12 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   if (the) {
     return (
       <div>
-        {coKhongHoc && <div className="flex justify-end px-3 py-1"><ChuGiaiKhongHoc /></div>}
-        {nutGv && <div className="flex justify-end px-3 py-1 max-sm:pt-4"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+        {(conCho || coKhongHoc || nutGv) && (
+          <ThanhGv conCho={conCho} className="py-1 max-sm:pt-4" phai={(coKhongHoc || nutGv) && (<>
+            {coKhongHoc && <ChuGiaiKhongHoc />}
+            {nutGv && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
+          </>)} />
+        )}
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null} hop={mo?.aid === r.attemptId ? hop : null} dsLuot={dsLuot}
@@ -265,11 +284,11 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
-    {(coKhongHoc || (nutGv && hien('speaking'))) && (
-      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 py-2">
+    {(conCho || coKhongHoc || (nutGv && hien('speaking'))) && (
+      <ThanhGv conCho={conCho} className="py-2" phai={(coKhongHoc || (nutGv && hien('speaking'))) && (<>
         {coKhongHoc && <ChuGiaiKhongHoc />}
         {nutGv && hien('speaking') && <NutGvCham oChon nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
-      </div>
+      </>)} />
     )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
     <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={hangLuoi} khoa={(r) => r.attemptId} day deu the375={false} khung={false} dinh={gon ? '1440' : false}

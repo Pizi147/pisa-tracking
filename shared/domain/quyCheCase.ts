@@ -37,7 +37,10 @@ export const quyCheThemPa = (deXuat: boolean, han?: string | null): QuyChe => de
  * Q20–Q26 Ghi kết quả PA theo lựa chọn đang chọn (luat/2 C-14 – C-17, C-20). Thứ tự: Mini Test (Q26) · kỳ cuối (Q25) · Xin hỗ trợ QL (Q23) · Kết thúc (Q22)
  * · Điều chỉnh / Thay / Đề xuất PA khác (Q21) · PA quy chế giữ nguyên (Q24, câu Q20 vào ⓘ) · mặc định (Q20).
  */
-export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean; ketThucSom?: boolean; sapToi?: boolean }): QuyChe => {
+export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean; ketThucSom?: boolean; sapToi?: boolean;
+  /** N71 (chủ SP 25/11): GV cũ ghi lần cuối PA tự tạo sau khi em chuyển lớp — 'case' = lưu là Case hoàn thành · 'pa' = chỉ PA kết thúc (hậu quả nói trước). */ gvCu?: 'case' | 'pa' }): QuyChe => {
+  if (x.gvCu === 'case') return { chu: t('Lưu là Case hoàn thành — không thêm PA, không chuyển việc.') };
+  if (x.gvCu === 'pa') return { chu: t('Lưu là PA kết thúc') };
   if (x.miniTest) return { chu: t('Từ 70 %: Case tự hoàn thành · dưới 70 %: Head quyết') };
   if (x.lanCuoi) return { chu: t('Kết quả cuối: lưu xong PA khép') };
   if (x.decision === 'ask_manager') return { chu: t('Xin hỗ trợ Head: PA vẫn chạy · Head nhận thẻ') };

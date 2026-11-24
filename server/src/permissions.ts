@@ -1,5 +1,5 @@
 import { DS_JSON, db, theoLoJson } from './db.ts';
-import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, PHIEU_BAN_GIAO_MO_SQL, xemCuDen, type WorkScope } from '../../shared/domain/index.ts';
+import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, PHIEU_BAN_GIAO_MO_SQL, addDaysIso, xemCuDen, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoBang } from './platform/nguCanhRequest.ts';
@@ -175,6 +175,16 @@ export function bangLop(): Map<number, { branchId: number | null; isFastTrack: b
 export function lopDayDu(): ReadonlyMap<number, any> {
   return nhoThamChieu('lop-day-du', () => new Map((db().prepare('SELECT * FROM classes').all() as any[]).map((r) => [r.id as number, r])));
 }
+
+/**
+ * N71 (chủ SP 25/11): lớp còn sinh việc — đang chạy, HOẶC vừa kết thúc (em cuối chuyển đi) trong `NGAY_LOP_XONG_CON_VIEC` ngày: ô S MT0 chấm chéo + việc Admin
+ * "Xuất báo cáo PH" của lớp đó không rời ngay ngày lớp kết thúc. Việc GV / QL Báo cáo PH giữ tới khi xong (`lopBcConViec`); nhập điểm có luật riêng (`LOP_CON_VIEC_SQL`).
+ * ponytail: chủ SP 25/11 chốt trần 30 ngày từ ngày kết thúc rồi rời (MT0 S chưa chấm sau 30 ngày rời hàng Chấm Speaking; Admin xuất vẫn trong cửa sổ hạn + 7 của
+ * việc) — giữ danh sách lớp nhỏ. Cần lâu hơn thì đọc theo ô còn thiếu thay vì theo lớp.
+ */
+export const NGAY_LOP_XONG_CON_VIEC = 30;
+export const lopConViec = (c: { status?: string | null; finished_at?: string | null } | null | undefined, homNay: string): boolean =>
+  !!c && (c.status === 'active' || (c.status === 'finished' && !!c.finished_at && c.finished_at.slice(0, 10) >= addDaysIso(homNay, -NGAY_LOP_XONG_CON_VIEC)));
 
 /** TL-VIEC: một dòng phân công `status = 'active'` (mọi lớp, mọi ngày hiệu lực) — bộ lọc ngày / GVCN / trạng thái lớp là của nơi dùng. */
 export type DongPhanCong = { id: number; classId: number; userId: number; ten: string; skill: string | null; isCore: boolean;
@@ -378,7 +388,8 @@ export function lopMt0ChoGvSpeaking(p: Principal, date = demoToday()): number[] 
   const toanHt = gv.some((g) => g.branchId === null);
   const cn = new Set(gv.map((g) => g.branchId));
   const ds = lopDayDu();
-  return [...bangLop()].filter(([id, l]) => !l.isFastTrack && l.branchId != null && ds.get(id)?.status === 'active' && (toanHt || cn.has(l.branchId)))
+  /* N71: + lớp vừa kết thúc (Cuối khoá chuyển hết em ở tuần Final) — MT0 của lớp đó vẫn chờ chấm S. */
+  return [...bangLop()].filter(([id, l]) => !l.isFastTrack && l.branchId != null && lopConViec(ds.get(id), date) && (toanHt || cn.has(l.branchId)))
     .map(([id]) => id);
 }
 export const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
@@ -414,7 +425,7 @@ export function lopSChiNhanhKhac(p: Principal, date = demoToday()): number[] {
   if (gv.some((g) => g.branchId === null)) return [];
   const cn = new Set(gv.map((g) => g.branchId));
   const ds = lopDayDu();
-  return [...bangLop()].filter(([id, l]) => l.branchId != null && !cn.has(l.branchId) && (l.isFastTrack || ds.get(id)?.status === 'active')).map(([id]) => id);
+  return [...bangLop()].filter(([id, l]) => l.branchId != null && !cn.has(l.branchId) && (l.isFastTrack || lopConViec(ds.get(id), date))).map(([id]) => id);   // N71
 }
 /**
  * Quyền SỬA ô S chấm chéo (`editableSkills`, `scoreEditPath`): chi nhánh mình (`laGvSpeakingLop`) + S-CHEO-CN chi nhánh khác — CHỈ khi biết lượt là
@@ -425,7 +436,7 @@ const laGvSpeakingSua = (p: Principal, classId: number, date?: string, kind?: st
   if (kind !== 'mock' && kind !== 'mt0') return false;
   const l = bangLop().get(classId);
   return !!l && l.branchId != null && laGvSpeaking(p, date)
-    && (kind === 'mock' ? l.isFastTrack : !l.isFastTrack && lopDayDu().get(classId)?.status === 'active');
+    && (kind === 'mock' ? l.isFastTrack : !l.isFastTrack && lopConViec(lopDayDu().get(classId), date ?? demoToday()));   // N71: lớp vừa kết thúc vẫn chấm S MT0
 };
 
 /** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo (lớp FT; lớp thường khi lượt MT0 — `kind`). Chỉ dùng ở đường chấm. */

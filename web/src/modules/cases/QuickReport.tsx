@@ -439,7 +439,7 @@ export function QuickReport({
       <div className="rounded-lg border p-3" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
         <p className="m-0 text-sm text-slate-100">
           {t('Đã có Case')} <strong className="inline-flex max-w-full align-bottom"><TenCase c={{ title: d.title, tenSos: tachTenSos(d.title) }} /></strong> {t('chưa xử lý xong ở {categoryLabel}.', { categoryLabel: topicLabel(kn) })}
-          <span className="text-slate-400"> {t('Mở {tuanLich}{x}.', { tuanLich: tuanLich(d.detectedAt, homNay), x: d.soPa > 0 ? ` · ${d.soPa} PA` : t(' · chưa có PA') })}</span>
+          {d.detectedAt && <span className="text-slate-400"> {t('Mở {tuanLich}{x}.', { tuanLich: tuanLich(d.detectedAt, homNay), x: d.soPa > 0 ? ` · ${d.soPa} PA` : t(' · chưa có PA') })}</span>}
         </p>
         <div className="mt-2 grid gap-2 sm:grid-cols-2" role="group" aria-label={t('Case đang có')}>
           <NutChon chon={gop === 'ghi-vao'} className="justify-center" onClick={() => sua(kn, { gop: 'ghi-vao' })}>{t('Ghi vào Case đang có')}</NutChon>

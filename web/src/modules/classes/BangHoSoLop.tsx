@@ -481,7 +481,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
             <>
               {/* Mockup `.ba-cot`: giá trị = nguyên nhân chính (600 15 trắng); chưa tải / không có → tên Case. */}
               <span className="text-[14px] font-semibold text-slate-100">{dich(ct.data?.issues.find((i: any) => i.role === 'primary')?.label ?? ca.title).replace(' - ', ' · ')}</span>
-              <span className="text-[13px] text-dim">{t('Case mở {tuan}', { tuan: tuanLich(ca.detectedAt, homNay) })}</span>
+              {ca.detectedAt && <span className="text-[13px] text-dim">{t('Case mở {tuan}', { tuan: tuanLich(ca.detectedAt, homNay) })}</span>}
               {ct.error ? null : !ct.data ? <Skeleton rows={1} /> : pa.length ? pa.slice(0, 2).map((iv: any) => (
                 <Fragment key={iv.id}>
                   <span className="mt-1 text-[14px] font-semibold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>

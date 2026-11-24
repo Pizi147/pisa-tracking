@@ -1982,7 +1982,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .luoi-khung { border: 1px solid var(--line); border-radius: 10px; overflow: clip; background: var(--surface); }   /* PANEL-GON v24 `.lc`: lưới một lớp trong panel 720 */
   .luoi-khung { position: relative; }
   .luoi-khung .luoi-cong-cu { padding: 8px 14px 0; }
-  /* PTA rà #2072: lưới lớp thường — MỘT hàng công cụ trên lưới: trái Tổng số câu + Điền ô trống, phải Mở lưới đầy đủ › · Cả lớp.
+  /* Tổng số câu dồn phải ở Lịch Test (25/11); trong panel việc giữ khung đã duyệt: trái, công cụ "Mở lưới đầy đủ › · Cả lớp" ở phải. */
+  .luoi-khung .cong-cu-tong > .ml-auto { margin-left: 0; }
+  /* PTA rà #2072: lưới lớp thường — MỘT hàng công cụ trên lưới: trái Tổng số câu (panel việc), phải Mở lưới đầy đủ › · Cả lớp.
      < 640: hàng nút một dòng (không rải bậc thang), Tổng số câu hàng dưới. */
   @media (min-width: 640px) {
     .luoi-khung:has(.cong-cu-tong) .luoi-cong-cu { position: absolute; top: 0; right: 0; z-index: 2; }

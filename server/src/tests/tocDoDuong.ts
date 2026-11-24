@@ -2303,6 +2303,10 @@ export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 d�
  */
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
+/** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */
+export const TRAN_CHIP_BC = 10;   // đo 9 (gồm đọc lớp, quyền, tiến độ, tuỳ chỉnh đợt) — không đổi theo số đợt
+/** N71: `/my-work` của GV lớp đã kết thúc còn việc (Báo cáo PH, bàn giao, Ghi kết quả PA GV cũ) — đo ở prN71 (myWork trong request). */
+export const TRAN_MY_WORK_GV_LOP_CU = 60;   // đo 54 (GV demo dạy ~15 lớp)
 export const TRAN_GHI_LO = {
   /**
    * TD-GHI (chủ SP 18/11): lưu điểm — trần = đo + 10 câu (chặt hơn max(đo + 10, ⌈đo × 1,3⌉): giữ phần vừa giảm), dòng ⌈đo × 1,3⌉. Đo bộ demo (QL, lượt FT

@@ -21,7 +21,7 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
-import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
+import { LopCuaToi, dungLopCuaToi, type LopKetThuc, type TestSapToi } from './LopCuaToi.tsx';
 import { BaoCaoPhSapMo, type SapToiGv } from './SapToi.tsx';
 import { PaDangChayKhoi, viecPdcTheoKhoa } from './PaDangChay.tsx';
 import { NutTask } from './NutTask.tsx';
@@ -67,6 +67,8 @@ type Work = {
   cnAn?: string[];
   /** LG-8: "Test sắp tới" từng lớp GV đang dạy (chỉ vai GV) — cột Test của "Lớp của tôi". */
   testSapToi?: TestSapToi[];
+  /** N71: lớp đã kết thúc GV còn phân công — "Lớp của tôi" giữ dòng mờ khi còn việc / trong hạn xem. */
+  lopKetThuc?: LopKetThuc[];
   /** GD-21 (LG-13 H7): việc CHƯA sinh trong 7 ngày (PA tới kỳ · đợt Báo cáo PH sắp mở) — dòng "Sắp tới"; không có thì không có khoá. */
   sapToi?: SapToiGv;
   /** TU2-4 (TU8, TU9): PA đang chạy chưa tới hạn người xem giữ — khối "PA đang chạy"; không phải việc (không vào số việc / badge / chuông). Không có thì không có khoá. */
@@ -516,8 +518,8 @@ export function HoTroHocVienTab() {
   /* GV-2 (mockup v22 G8a): BPXL (`trangDauTest`, không dạy lớp) — không khối "Lớp của tôi" / "+ Task" của GV. */
   const laGv = laGvThuong && !session?.nav?.trangDauTest;
   /* GD-1: "Lớp của tôi" — phân công trong phiên + việc đã nạp (`/my-work`), không request thêm. */
-  const dongLop = useMemo(() => (laGv ? dungLopCuaToi(session?.assignments ?? [], dsGoc, data?.testSapToi, moCaDong) : []),
-    [laGv, session?.assignments, dsGoc, data?.testSapToi]);
+  const dongLop = useMemo(() => (laGv ? dungLopCuaToi(session?.assignments ?? [], dsGoc, data?.testSapToi, moCaDong, data?.lopKetThuc) : []),
+    [laGv, session?.assignments, dsGoc, data?.testSapToi, data?.lopKetThuc]);
   const [xemLop, setXemLop] = useState(false);
   /* GD-8 (mockup v21 ④, [XM-13]): trang đầu TVV — MỘT GET em + chỉ số (`/tong-quan/tvv/em`); việc từng em từ `/my-work` đã nạp. */
   const hvTvv = useApi<{ em: EmTvv[]; chiSo?: ChiSoTvv }>(laTvv ? '/tong-quan/tvv/em' : null, [laTvv]);

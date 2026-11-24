@@ -8,7 +8,7 @@ import { chuOChuaLuu } from '@shared/domain/index.ts';
 import type { DongNoLop } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { useManHinh } from '../../../ui/TheDong.tsx';
-import { COT_LICH_TEST, ColLichTest, DauCotLichTest, DongConCho, DongGv,DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
+import { COT_LICH_TEST, ColLichTest, DauCotLichTest, DongGv,DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** OV-11e (TE-7): số bài của người xem — người có phân công chỉ đếm phần của mình (dải số, badge khối, cột Còn cùng số). */
@@ -127,12 +127,11 @@ export function KhoiNo({ no, gvLop, mo, onMo, dongMo, onMoDong, hep, onDaLuu, kn
                     <tr>
                       <td colSpan={soCot} className="lt-luoi p-0" style={{ background: 'var(--hang-con-bg)' }}>
                         <div className="muc-con py-1.5">
-                          <DongConCho ds={conCho} />
                           {d.luoi.map((l, j) => (
                             <Fragment key={l.kind ?? 'ft'}>
                               {d.luoi.length > 1 && <div className="px-1 pt-1.5 text-xs font-medium text-dim">{dich(l.nhan)}</div>}
                               <LuoiNhung classId={d.classId} periodId={null} kind={l.kind} tuanDangXem={null} chiAttempt={chiAttempt}
-                                kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro && j === 0} coLinkRieng luotDuoiTen luotChinh={dot.nhanChinh}
+                                kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro && j === 0} coLinkRieng luotDuoiTen luotChinh={dot.nhanChinh} conCho={j === 0 ? conCho : ''}
                                 onDaLuu={onDaLuu} onSoOChuaLuu={(n) => baoLoiLuoi(khoa, j, n)} />
                             </Fragment>
                           ))}

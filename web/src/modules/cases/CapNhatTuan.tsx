@@ -44,6 +44,8 @@ export type PaCanCapNhat = {
   performerUserId?: number | null;
   /** PR-SOS (T22, T63): PA theo quy chế · lần ghi này là "Kết quả cuối" · chữ mốc (`đến MT2 · W2 OCT`). */
   batBuoc?: boolean; lanCuoi?: boolean; mocChu?: string | null;
+  /** N71: GV cũ ghi lần cuối PA tự tạo (em vừa chuyển lớp) — PA kết thúc; `gvCuDongCase` = Case hoàn thành theo (Case GV báo, PA cuối còn mở). */
+  gvCuCuoi?: boolean; gvCuDongCase?: boolean;
   /** PR-PA (§8): Số buổi của PA (null = không đếm) · Đã dạy (tổng Số buổi tuần này các lần trước). */
   soBuoi?: number | null; daDay?: number;
   /** OV-13b: PA mặc định (quy chế · Bổ trợ) — Điều chỉnh có "Đề xuất PA khác"; `doiPaCho` = đã có đề xuất chờ QL (ẩn lựa chọn). */
@@ -358,7 +360,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế. Chủ SP 13/11: không Hoàn tác — sai thì "Sửa kết quả" ở thẻ PA. */
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
-        chu: daHt ? t('Đã lưu kết quả · đã hoàn thành Case') : loiHt ? t('Đã lưu kết quả · chưa hoàn thành Case: {loi}', { loi: loiHt }) : sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Head duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
+        chu: daHt || (pa.gvCuCuoi && pa.gvCuDongCase && outcome !== 'insufficient' && !sua) ? t('Đã lưu kết quả · đã hoàn thành Case') : pa.gvCuCuoi && !sua ? DA_LUU.end : loiHt ? t('Đã lưu kết quả · chưa hoàn thành Case: {loi}', { loi: loiHt }) : sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Head duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
       });
     } catch (e: any) {
@@ -621,7 +623,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
               </div>
             </div>
           )}
-          {lanCuoi && !sua && (
+          {lanCuoi && !sua && !pa.gvCuCuoi && (
             <p className="m-0 text-[13px] text-slate-300">{t('Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.', { moc: pa.mocChu ? ` (${dich(pa.mocChu)})` : '' })}</p>
           )}
           <div>
@@ -710,8 +712,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
             </p>
           )}
           {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
-          {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
-            lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, sapToi: sapToiHan, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
+          {!sua && <DongQuyChe px="px-0" nhanQuyChe={!pa.gvCuCuoi} qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
+            lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, sapToi: sapToiHan, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined,
+            gvCu: !pa.gvCuCuoi ? undefined : pa.gvCuDongCase && outcome !== 'insufficient' ? 'case' : 'pa' })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>
         </CanLam>
       </div>

@@ -4,10 +4,13 @@ import { ChipKy, lopBadgeHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
+import { fmtDate } from '../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** LG-8: "Test sắp tới" từng lớp GV đang dạy hôm nay (`/my-work`, chỉ vai GV) — cũng là danh sách lớp còn hiệu lực. */
 export type TestSapToi = { classId: number; testKeTiep: string | null; testTuanNay: boolean };
+/** N71 (`/my-work` `lopKetThuc`): lớp đã kết thúc GV còn phân công — `conXem` = còn trong hạn xem N68. */
+export type LopKetThuc = { classId: number; code: string; ketThuc: string; conXem: boolean };
 
 /** Chủ SP 14/11 (lời 17, 20): chip "Việc cần làm" theo LOẠI việc, thứ tự cố định; không có Chấm Speaking (chỉ ở tab của nó); Báo cáo PH nằm trong Vận hành. */
 const LOAI_CHIP = [
@@ -21,19 +24,23 @@ const xepHan = (a: WorkItem, b: WorkItem) => nang(a.urgency) - nang(b.urgency) |
 /** `ds` = mọi việc (lá) của loại đó ở lớp, quá hạn trước — panel mở từ chip đi hết `ds` bằng "Việc tiếp ›" (hồ sơ lớp, GD-6). */
 export type ChipViec = { tab: string; nhan: string; so: number; doc: string; quaHan: boolean; dau: WorkItem; ds: WorkItem[] };
 type Chip = ChipViec;
-type Dong = { classId: number; code: string; mon: string[]; chuNhiem: boolean; test: { chu: string; han: WorkItem | null } | null; chip: Chip[] };
+type Dong = { classId: number; code: string; mon: string[]; chuNhiem: boolean; test: { chu: string; han: WorkItem | null } | null; chip: Chip[];
+  /** N71: lớp đã kết thúc (ngày) — dòng mờ "Đã kết thúc", đứng sau lớp đang chạy. */ ketThuc?: string };
 
 /**
  * Dựng dòng "Lớp của tôi" — dữ liệu ĐÃ NẠP (phiên + `/my-work`), không request thêm (`04-thiet-ke.md` 11.2). Một lớp một dòng; lớp có việc lên trên.
  * Chip Nhập điểm đếm BÀI (`soBai`, đơn vị dòng Nhập điểm); chip khác đếm DÒNG của tab có lớp đó (`dongTab`, cùng đơn vị badge).
  */
 export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly WorkItem[], testSapToi: readonly TestSapToi[] | undefined,
-  caDong: (it: WorkItem) => boolean): Dong[] {
+  caDong: (it: WorkItem) => boolean, lopKetThuc: readonly LopKetThuc[] = []): Dong[] {
   const conHieuLuc = testSapToi ? new Set(testSapToi.map((x) => x.classId)) : null;
+  const ketThuc = new Map(lopKetThuc.map((x) => [x.classId, x]));
   const lop = new Map<number, Dong>();
   for (const a of phanCong) {
-    if (conHieuLuc && !conHieuLuc.has(a.classId)) continue;
-    const d = lop.get(a.classId) ?? { classId: a.classId, code: a.classCode ?? `#${a.classId}`, mon: [], chuNhiem: false, test: null, chip: [] };
+    const kt = ketThuc.get(a.classId);
+    if (conHieuLuc && !conHieuLuc.has(a.classId) && !kt) continue;
+    const d = lop.get(a.classId) ?? { classId: a.classId, code: a.classCode ?? kt?.code ?? `#${a.classId}`, mon: [], chuNhiem: false, test: null, chip: [],
+      ...(kt && !conHieuLuc?.has(a.classId) ? { ketThuc: kt.ketThuc } : {}) };
     if (a.isCore) d.chuNhiem = true;
     const mon = a.nhanMon ?? a.skill;
     if (mon && !d.mon.includes(mon)) d.mon.push(mon);
@@ -53,7 +60,10 @@ export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly Wo
       : sapToi ? { chu: ngan(sapToi), han: null } : null;
   }
   const hanSom = (d: Dong) => d.chip.map((c) => c.dau).sort(xepHan)[0];
-  return [...lop.values()].sort((a, b) => {
+  /* N71 (chủ SP 25/11): lớp đã kết thúc ở lại khi GV còn việc ở đó hoặc còn hạn xem (N68); hết cả hai → rời (vẫn tìm được ở Lưu trữ / ô tìm). Đứng sau lớp đang chạy. */
+  const giu = [...lop.values()].filter((d) => !d.ketThuc || d.chip.length > 0 || ketThuc.get(d.classId)?.conXem);
+  return giu.sort((a, b) => {
+    if (!!a.ketThuc !== !!b.ketThuc) return a.ketThuc ? 1 : -1;
     const x = hanSom(a), y = hanSom(b);
     if (!!x !== !!y) return x ? -1 : 1;
     if (x && y) { const k = xepHan(x, y); if (k) return k; }
@@ -154,8 +164,10 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
   return (
     <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-x-2 [@container(max-width:639px)]:gap-y-0.5 [@container(max-width:639px)]:min-h-0 [@container(max-width:639px)]:py-2.5`}
       style={{ borderColor: 'var(--line)' }}>
-      <span className="flex min-w-0 items-center gap-2 [@container(max-width:639px)]:flex-1 [@container(max-width:639px)]:flex-wrap">
-        <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[14px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
+      <span className={`flex min-w-0 items-center gap-2 [@container(max-width:639px)]:flex-1 [@container(max-width:639px)]:flex-wrap ${d.ketThuc ? 'flex-wrap gap-y-0' : ''}`}>
+        <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[14px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat || d.ketThuc ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
+        {/* N71: nhãn mờ dưới mã lớp (một dòng riêng — không chen sang cột Tôi dạy). */}
+        {d.ketThuc && <span className="order-last basis-full whitespace-nowrap text-xs text-faint" title={t('Kết thúc {ngay}', { ngay: fmtDate(d.ketThuc) })}>{t('Đã kết thúc')}</span>}
         <span className="hidden [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:gap-1">{monCua(d, nhat)}</span>
       </span>
       {/* C1 (rà 19/11): cột 164 px — 5 môn một dòng, "chủ nhiệm" xuống dòng TRONG ô, không tràn sang cột Test. */}
