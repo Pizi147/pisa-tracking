@@ -169,6 +169,8 @@ export const KhungTrongThe = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …"). */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
 export const DauViecCongViec = createContext<{ loai: string; dai?: ReactNode;
+  /** Khuôn A (24/11): nút ⋯ đầu panel của việc (vd "Bỏ qua") — dùng khi panel con không tự khai `dau.ghim`. */
+  ghim?: ReactNode;
   /** N56 ① (PTA rà #1880): dải "Bạn đang làm thay … · Chỉ xem" — LUÔN thấy: ngay dưới đầu panel, ngoài vùng cuộn (1440), dính đầu vùng nhìn (375). */
   daiLamThay?: ReactNode;
   /** UI-CONG-VIEC (khung A3): đang làm thay — dải sự kiện thêm "Phụ trách {tên}". */
@@ -421,8 +423,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         </div>
       )}
       </div>
-      {(quyChe || oDem || dau?.ghim || nutDong) && (
-        <span className="ml-auto flex shrink-0 items-center max-sm:self-start">{quyChe && <NutQuyChe qc={quyChe} />}{oDem}{dau?.ghim}{nutDong}</span>
+      {(quyChe || oDem || (dau?.ghim ?? cvNgoai?.ghim) || nutDong) && (
+        <span className="ml-auto flex shrink-0 items-center max-sm:self-start">{quyChe && <NutQuyChe qc={quyChe} />}{oDem}{dau?.ghim ?? cvNgoai?.ghim}{nutDong}</span>
       )}
     </header>
   );
