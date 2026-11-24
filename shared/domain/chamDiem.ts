@@ -77,6 +77,16 @@ export function oLuoiThuong(i: { diem: number | null; tong: number | null; tongC
 }
 
 /**
+ * PANEL-GON (PTA rà #2072): nhãn Kết quả MỘT dòng của lưới điểm trong panel việc (lớp thường lẫn Mock). "✗" chỉ khi bài ĐÃ ĐỦ điểm (chốt) mà
+ * trượt; còn môn chưa có điểm (kể cả ô của người xem) → "Chưa đủ điểm" dù đã có môn trượt — không đọc như em đã trượt môn còn trống.
+ */
+export function nhanKetQuaLuoi(i: { daCham: number; du: boolean; dat: boolean }): 'chua-co' | 'chua-du' | 'dat' | 'truot' {
+  if (i.daCham === 0) return 'chua-co';
+  if (!i.du) return 'chua-du';
+  return i.dat ? 'dat' : 'truot';
+}
+
+/**
  * CÂU KẾT QUẢ CỦA MỘT DÒNG LỚP THƯỜNG. Thiếu điểm KHÁC chưa đạt (spec §3.5): môn chưa chấm không bị đếm thành môn
  * trượt, nên khi chưa đủ điểm thì nói rõ "trên số môn ĐÃ CHẤM".
  */
