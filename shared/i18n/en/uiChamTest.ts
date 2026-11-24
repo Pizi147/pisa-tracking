@@ -33,6 +33,7 @@ export const EN_UI_CHAM_TEST = {
   'đã xếp': 'scheduled',
   '+ {n} HV': '+ {n} students',
   'Hiện tất cả {n}': 'Show all {n}',
+  'Đã có điểm · {n} em': 'Scored · {n} students',
   '+ MT': '+ Mock',
   'Lượt thêm': 'Extra rounds',
   'MT{n} · MT thường': 'MT{n} · regular MT',

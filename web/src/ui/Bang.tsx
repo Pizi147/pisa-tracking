@@ -1,7 +1,8 @@
-import { Fragment, createContext, useContext, type KeyboardEvent, type MouseEvent, type ReactNode, type TdHTMLAttributes } from 'react';
+import { Fragment, createContext, useContext, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode, type TdHTMLAttributes } from 'react';
 import { chiaThe, nhomTieuDe, rongCot, vienNhom, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { Empty } from './ui.tsx';
 import { useDienThoai } from './TheDong.tsx';
+import { MuiChev } from './HangNhom.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
@@ -138,8 +139,11 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
         <VienNhom.Provider value={vien}>
-        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0) }}>
-          <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
+        <table className="bang" data-day={day || undefined} data-chat={chat || undefined} data-deu={deu || undefined} aria-label={ten}
+          /* PANEL-GON: `--ten-pt` = phần của cột tên trong luật cột lưới panel 720 (index.css: tên 2 phần, mỗi cột còn lại 1 phần). Chrome bỏ qua
+             calc() trộn % với px trên <col> → tính sẵn %; sàn của cột tên vẫn là min-width của bảng (cuộn ngang trong lưới). */
+          style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0), '--ten-pt': `${(200 / (cot.length + 1)).toFixed(3)}%`, '--so-cot': cot.length } as CSSProperties}>
+          <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} data-kieu={c.kieu} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
             {nhom && (
               <tr className="bang-nhom">
@@ -192,5 +196,18 @@ export function OBang({ c, className = '', children, ...td }: { c: DinhNghiaCot;
   const vn = useContext(VienNhom).get(c.key);
   return (
     <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-vn={vn} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
+  );
+}
+
+/**
+ * PANEL-GON (v24 P1 · P2): dòng tách nhóm TRONG cùng lưới — "Đã có điểm · n em", bấm gập / mở nhóm dưới nó. Chữ dính trái khi lưới cuộn ngang.
+ */
+export function DongTach({ soCot, nhan, mo, onDoi }: { soCot: number; nhan: string; mo: boolean; onDoi: () => void }) {
+  return (
+    <tr className="dong-tach">
+      <td colSpan={soCot}>
+        <button type="button" aria-expanded={mo} onClick={onDoi}><MuiChev mo={mo} cl="text-faint" />{nhan}</button>
+      </td>
+    </tr>
   );
 }
