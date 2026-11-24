@@ -155,6 +155,10 @@ function napNguoiNhac(conn: any, ds: YeuCauRow[], them: Map<number, any>): Map<n
 }
 const ngay = (iso: string | null | undefined, ngu: NguCanhThe) => shortDate(iso ?? null, ngu.homNay);
 const nguoiXin = (yc: YeuCauRow, ngu: NguCanhThe) => (yc.nguoi_xin == null ? 'Hệ thống' : ngu.nguoi.get(yc.nguoi_xin) ?? 'Giáo viên');
+/** Dòng Chờ duyệt (mockup v24 H1): chip LOẠI PA "Tutor" / "Bổ trợ" trước chip đợt — chỉ hai loại có người dạy / buổi riêng, loại khác chỉ chip đợt. */
+const nhanPaDong = (kind: string | null | undefined) => (kind === 'tutor' ? 'Tutor' : kind === 'bo_tro' || kind === 'bo_tro_mien_phi' ? 'Bổ trợ' : null);
+const phuPa = (kind: string | null | undefined, x: { attempt_kind: string | null; attempt_no: number | null } | undefined) =>
+  [nhanPaDong(kind), x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null].filter(Boolean).join(' · ') || null;
 
 /** MỖI PR THÊM MỘT PHẦN TỬ VÀO CUỐI MẢNG — không sửa phần tử của PR khác. */
 export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
@@ -198,7 +202,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         const moi = x ? tenLoaiPa(x.kind) : 'PA mới';
         return {
           tieuDe: `${doi.goc.chay ? 'Đổi PA' : 'PA khác'}${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
-          phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+          phu: phuPa(x?.kind, x),
           dong: [
             `${goc}${doi.goc.chay ? '' : ' (quy chế, chưa chạy)'} → ${[moi, x?.nguoi_day].filter(Boolean).join(' · ')}`,
             ...(x?.description ? [`“${x.description}”`] : []),
@@ -212,7 +216,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const moTa = yc.ly_do || (x ? INTERVENTION_KIND_LABEL[x.kind as InterventionKind] ?? 'PA học thuật' : 'PA học thuật');
       return {
         tieuDe: `Đề xuất PA${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
-        phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+        phu: phuPa(x?.kind, x),
         dong: [`${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${moTa}”`, ...(x ? [] : ['PA đã xoá'])],
         /* KHUNG-LOI (A1-09): hạn ghi NGÀY (chốt 19/10) — hạn kết quả đầu tiên của PA bắt đầu hôm nay, cùng hàm hạn kỳ PA (OV-12a). */
         neuDuyet: `PA bắt đầu hôm nay · ghi kết quả hai tuần một lần · hạn đầu ${ngay(hanKyGhiKetQua(ngu.homNay), ngu)}.`,
@@ -997,7 +1001,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { kindQ?: string; kindG?: string };
       return {
         tieuDe: `PA khác quy chế${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
-        phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+        phu: phuPa(d.kindG, x),
         dong: [
           `${tenLoaiPa(d.kindQ ?? '')} (quy chế) → ${[tenLoaiPa(d.kindG ?? ''), x?.nguoi_gv].filter(Boolean).join(' · ')} (GV)`,
           ...(x?.mo_ta_gv ? [`“${x.mo_ta_gv}”`] : []),

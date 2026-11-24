@@ -358,4 +358,44 @@ export async function runPrCuoiKhoaTests(t: any) {
     const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
     assert(src.includes('datFinalMon(') && src.includes('datMt0Mon(') && !src.includes('+ Ghi chú'), 'trang dùng hàm mốc chung; bỏ nút "+ Ghi chú"');
   });
+  /* SUA-GOP-2511 (tệp rà ngoài `01-CRM-PISA-sua-loi.md`, PTA Plan xác nhận 25/11): 6 lỗi Cuối khoá / Tạo lớp + 3 nâng cấp chủ SP duyệt 25/11 — kiểm nguồn
+     (trang không có phép kiểm dựng React; mỗi mẫu là đúng chỗ sửa, gỡ là lỗi quay lại). */
+  check('CK-10 · lỗi 1: "+ Mở lớp mới…" từ thanh Áp đổ lớp vào NGAY các em đang chọn (apNgay), không toast "Đã mở" trùng "Đã tạo lớp"', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(src.includes("else if (g === 'thanh') apNgay({ lop: lop.id });"), 'lớp mới từ thanh chỉ vào ô thanh, không vào các em đã tick');
+    assert(!src.includes("t('Đã mở {lop}'"), 'còn toast thứ hai');
+  });
+  check('CK-11 · lỗi 2: thanh Áp chỉ áp Ô VỪA ĐỔI; bỏ hết lựa chọn → thanh về trống', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(src.includes("const apCho = (a: typeof ap, p0: Partial<typeof ap>)") && src.includes("'tuan' in p0 && a.tuan") && src.includes("'lop' in p0 && a.lop")
+      && src.includes("'huong' in p0 && a.huong") && src.includes("'kv' in p0 && a.kv") && src.includes('apCho(a, p)'), 'đổi một ô ghi lại cả hướng / lớp / tuần');
+    assert(src.includes('if (Object.keys(p).length) doi(r.e.id, p)'), 'dòng không đổi gì vẫn bị đánh dấu "đã sửa"');
+    assert(src.includes('useEffect(() => { if (!chon.size) setAp(AP_TRONG); }, [chon.size]);'), 'chọn lại sau khi bỏ hết vẫn mang giá trị thanh cũ');
+  });
+  check('CK-12 · lỗi 3: Lưu nháp — xoá nháp từng em có try riêng, em lỗi giữ dòng + "Thử lại" chỉ gửi em lỗi', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(/try \{ await api\.del\(`\/classes\/\$\{classId\}\/lo-trinh-nhap\/\$\{x\.e\.id\}`\); r\.ok\.push\(x\.e\.id\); \}\s*catch/.test(src), 'vòng DELETE nháp thiếu try từng em');
+    assert(src.includes("ketThuc(r.ok, r.failed, 'nhap')") && src.includes("(ketQua.loai === 'nhap' ? luuNhap : chot)(Object.keys(loi).map(Number))"), 'Thử lại của Lưu nháp gọi nhầm Chốt');
+    assert(src.includes('const trong = (r: (typeof dongs)[number]) => !chiEm || chiEm.includes(r.e.id)') && src.includes('onClick={() => luuNhap()}'), 'Thử lại gửi lại cả em đã lưu');
+  });
+  check('CK-13 · lỗi 4: Lưu nhận xét không xoá chữ gõ trong lúc lưu; số đổi so NỘI DUNG (gõ rồi trả về như cũ = 0)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(!src.includes('setNhanXet({})'), 'lưu xong xoá cả bản đang gõ');
+    assert(src.includes('if (may.get(id) === (v.trim() || null)) { if (n[id] === v) delete n[id]; gui.delete(id); }'), 'chỉ bỏ khoá khi máy chủ trả đúng chữ đã gửi VÀ ô vẫn là chữ đó');
+    assert(src.includes('...nxKhac(kh.data?.students ?? [], nhanXet).map((e) => e.id)') && src.includes('const nxDoi = nxKhac(ds, nhanXet).length;'), 'soDoi và chân phải cùng hàm nxKhac');
+    assert(!src.includes('...Object.keys(nhanXet)]'), 'soDoi còn đếm mọi khoá đã chạm');
+  });
+  check('CK-14 · lỗi 5 · 6: Tạo / Mở lớp — chi nhánh lỗi có Thử lại, đang tải khoá ô; "đang sửa" so ảnh chụp lúc mở', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/ClassCreatePanel.tsx'), 'utf8') as string;
+    assert(src.includes('onRetry={branches.reload}') && src.includes('disabled={cnDangTai}') && src.includes("cnDangTai ? '…' : '—'"), 'chi nhánh lỗi / đang tải bị coi là "không có"');
+    assert(src.includes('cnNgoaiQuyen') && !/setBranchId\(macDinh/.test(src), 'chi nhánh ngoài quyền phải báo, không tự đổi');
+    assert(src.includes('JSON.stringify([branchId, kieu, loTrinh, chuongTrinh, so, startPeriodId,') && src.includes("filter(([, v]) => v !== '')")
+      && src.includes('(branchId !== null || dsCn.length !== 1) && startPeriodId !== null'), 'ảnh chụp thiếu ô / chụp trước bước tự chọn');
+  });
+  check('CK-15 · nâng cấp 25/11: (a) nút Chốt nói tác động · (b) số thiếu ở chân bấm được → lọc + con trỏ · (c) tách "đã chọn" với "sẵn sàng chốt"', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
+    assert(src.includes("t('Chốt {n} em → {dich}'") && src.includes("t('{n} lớp', { n: maLop.length })") && src.includes("t('{n} tuần', { n: tuan.length })") && src.includes(': chuChot}</button>'), '(a)');
+    assert(src.includes('onClick={() => locThieu(m)}') && src.includes('locTam ? locTam.ids.has(e.id)') && src.includes('o?.focus()'), '(b)');
+    assert(src.includes("t('{k} sẵn sàng chốt'") && src.includes("{t('{n} em đã chọn', { n: chon.size })}{chonChot}"), '(c)');
+  });
 }
