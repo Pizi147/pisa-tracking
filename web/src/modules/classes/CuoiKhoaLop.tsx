@@ -154,7 +154,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const quayLai = () => { if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`); };
   const trongKhung = (nd: ReactNode) => (panel ? <KhungPanel tieuDe={t('Chốt lộ trình')} onDong={panel.onDong}>{nd}</KhungPanel> : nd);
   if (kh.error) return trongKhung(<ErrorState message={kh.error.message} hint={kh.error.hint} status={kh.error.status} onRetry={kh.reload} />);
-  if (kh.loading || !d) return trongKhung(<div className="page"><Skeleton rows={8} /></div>);
+  if (kh.loading || !d) return trongKhung(panel ? <Skeleton rows={8} /> : <div className="page"><Skeleton rows={8} /></div>);
 
   const h = homNay ?? '';
   const laQl = d.coTheRaLenh;
@@ -378,7 +378,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     const ds2 = dongNhomHuong(k); const l = ds2[0]?.x.lop ?? null;
     return l !== null && ds2.every((r) => r.x.lop === l) ? l : null;
   };
-  const theoNhom = (e: Em, x: Dong) => { const k = nhomCua(e); return coDai(k) && !!HUONG_NHOM[k] && x.huong === HUONG_NHOM[k] && x.lop !== null && x.lop === lopCuaNhom(k) && !doiLopRieng.has(e.id); };
+  const theoNhom = (e: Em, x: Dong) => { const k = nhomCua(e); return coDai(k) && !!HUONG_NHOM[k] && x.huong === HUONG_NHOM[k] && x.lop !== null && x.lop === lopCuaNhom(k) && x.tuan === tuanNhom(k) && !doiLopRieng.has(e.id); };
   /* Lớp / tuần cho cả nhóm: áp cho mọi em trong nhóm đang chọn đúng bước của nhóm (trừ em đã "Đổi lớp" riêng). */
   const chonLopNhom = (k: KhoaNhom, id: number | null) => { setLopNhom((m) => ({ ...m, [k]: id })); for (const r of dongNhomHuong(k)) if (!doiLopRieng.has(r.e.id)) doi(r.e.id, { lop: id }); };
   const tuanNhom = (k: KhoaNhom) => { const ds2 = dongNhomHuong(k); const t0 = ds2[0]?.x.tuan ?? tuanChung; return ds2.every((r) => r.x.tuan === t0) ? t0 : ''; };
@@ -614,11 +614,12 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     if (!hl) return null;
     if (!canLopDich(hl)) return <span className="text-[13px] text-slate-500">{t('Không chuyển lớp')}</span>;
     if (khoa(e)) return <b className="text-[13px] font-semibold text-slate-100">{e.lenh!.lopDichMa ?? lopCua.get(e.lenh!.lopDichId ?? 0)?.code ?? '—'}</b>;
+    /* Em theo dải (v25): lớp / tuần thừa hưởng = chữ mờ cùng đường chữ với ô Bước tiếp, không khung; "Sửa" (hiện khi rê / tiêu điểm / cảm ứng) mở ô riêng cho em (ngoại lệ). */
     if (theoNhom(e, x)) {
       return (
-        <span className="flex min-h-[34px] flex-wrap items-center gap-x-2 text-[13px]"><b className="font-semibold text-slate-100">{lopCua.get(x.lop!)?.code}</b>
-          <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] xl:invisible xl:group-hover/hang:visible xl:group-focus-within/hang:visible sm:min-h-0"
-            onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Đổi lớp')}</button></span>
+        <span className="ck-ke">{lopCua.get(x.lop!)?.code}
+          <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] invisible group-hover/hang:visible group-focus-within/hang:visible [@media(hover:none)]:visible sm:min-h-0"
+            onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Sửa')}</button></span>
       );
     }
     const dsLop = lopTheoHuong([...d.candidates, ...lopKhac], x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${c.branchCode} · ${c.studentCount} em` }));
@@ -635,6 +636,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     if (!hl || !canLopDich(hl)) return null;
     const ngayNay = laChuyenNgay(x.tuan, h);
     if (khoa(e)) return <span className="whitespace-nowrap text-[13px] tabular-nums text-dim">{ngayNay ? t('Ngay hôm nay · {ngay}', { ngay: ngay(x.tuan) }) : tuanLich(x.tuan, h)}</span>;
+    if (laQl && theoNhom(e, x)) return <span className="ck-ke tabular-nums">{ngayNay ? t('Hôm nay') : tuanLich(x.tuan, h)}</span>;
     return <OTuan tuanChon={d.tuanChon} value={ngayNay ? '' : x.tuan} onChange={(v) => doi(e.id, { tuan: v })} ariaLabel={t('Tuần · {ten}', { ten: e.fullName })}
       chuaChon={ngayNay ? t('Hôm nay') : tuanLich(tuanChung, h)} gon />;   // ô 112 px: "Hôm nay" (tooltip / thanh Áp ghi đủ "Ngay hôm nay")
   };
@@ -689,9 +691,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     const dong1 = [t('{n} em sẵn sàng', { n: guiDuoc.length }), ...[...theoLop].map(([lop, n]) => `${n} → ${lop}`),
       ...(tuan.length === 1 ? [t('bắt đầu {tuan}', { tuan: laChuyenNgay(tuan[0], h) ? t('ngay hôm nay') : tuanLich(tuan[0], h) })] : [])].join(' · ');
     /* Chuyển ngay (Hoàn tác, không hộp hỏi — chủ SP 25/11): tên em hiện ở chân để thấy ngay trước khi bấm Chốt. */
-    const ngay = lenh.filter((r) => laChuyenNgay(r.x.tuan, h)).map((r) => r.e.fullName);
+    const tenNgay = lenh.filter((r) => laChuyenNgay(r.x.tuan, h)).map((r) => r.e.fullName);
     const dong2 = [
-      ...(ngay.length ? [`⚠ ${t('Chuyển ngay: {ten}', { ten: ngay.join(', ') })}`] : []),
+      ...(tenNgay.length ? [`⚠ ${t('Chuyển ngay: {ten}', { ten: tenNgay.join(', ') })}`] : []),
       ...(choFinal ? [t('Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final')] : []),
       ...(td.caseBoTro ? [t('Tạo {n} Case bổ trợ Final', { n: td.caseBoTro })] : []),
       ...(td.baoPh ? [`${t('{n} việc Báo PH kết quả Test', { n: td.baoPh })}${baoPh.length ? ` (${baoPh.join(', ')})` : ''}`] : []),
@@ -825,9 +827,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
   const dongBang = ({ e, x }: (typeof hien)[number]) => {
     const duoi = oDuoi(e, x);
     const ft = hopFt(e, x);
-    const mo = laQl && !khoa(e) && theoNhom(e, x) ? 'ck-mo' : '';   // lớp / tuần theo dải: ô mờ, rê → viền
     return (
-      <div key={e.id} id={`ck-em-${e.id}`} className={`ck-g group/hang ${trangThaiDong(e)}`} role="rowgroup">
+      <div key={e.id} id={`ck-em-${e.id}`} className={`ck-g group/hang ${trangThaiDong(e)}`}>
         <div className="ck-r" role="row">
           <span className="ck-tick" role="cell">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
           <span className="ck-ten" role="cell">{oTenEm(e, x)}</span>
@@ -835,8 +836,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
           {laQl ? (
             <>
               <span className="ck-bt" role="cell">{oHuong(e, x)}</span>
-              {coCotLop && <span role="cell" className={`ck-lop ${mo}`}>{oLop(e, x) ?? <span className="text-faint">—</span>}</span>}
-              {coCotLop && <span role="cell" className={`ck-tuan ${mo}`}>{oTuanDong(e, x) ?? <span className="text-faint">—</span>}</span>}
+              {coCotLop && <span role="cell" className="ck-lop">{oLop(e, x) ?? <span className="text-faint">—</span>}</span>}
+              {coCotLop && <span role="cell" className="ck-tuan">{oTuanDong(e, x) ?? <span className="text-faint">—</span>}</span>}
             </>
           ) : (
             <><span className="ck-hd" role="cell">{oChiDoc(e)}</span><span className="ck-nx" role="cell">{oNhanXet(e)}</span></>
