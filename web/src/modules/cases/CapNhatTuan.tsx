@@ -712,7 +712,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
             </p>
           )}
           {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
-          {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
+          {!sua && <DongQuyChe px="px-0" nhanQuyChe={!pa.gvCuCuoi} qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
             lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, sapToi: sapToiHan, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined,
             gvCu: !pa.gvCuCuoi ? undefined : pa.gvCuDongCase && outcome !== 'insufficient' ? 'case' : 'pa' })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>

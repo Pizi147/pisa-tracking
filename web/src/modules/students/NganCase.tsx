@@ -126,7 +126,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     dong2: [
       em ? <Link className="font-semibold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(em.id)}>{em.ten}</Link> : hocVien ?? null,
       lop ?? null,
-      t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) }),
+      data.detectedAt ? t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) }) : null,   // chưa biết tuần mở → bỏ hẳn, không "mở —"
       data.reportedBy ? t('{ten} báo', { ten: data.reportedBy }) : null,
     ].filter(Boolean) as ReactNode[],
   };
