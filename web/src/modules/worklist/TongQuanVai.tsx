@@ -179,7 +179,6 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
   return (
     <Card bodyClass="p-0" className="h-full"
       title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Giáo viên')}
-        <span className="text-[13px] font-medium text-dim">{nhom.length ? <b className="font-semibold text-late">{t('{n} có việc quá hạn', { n: nhom.filter((g) => g.ownerId !== null).length })}</b> : t('không ai quá hạn')}</span>
         <NutLuat label={t('Giáo viên')}>{t('Việc quá hạn của từng người — cùng danh sách Công việc "Của GV" (dòng quá hạn, không tính bài S chấm chéo). Loại = mục của Công việc.')}</NutLuat></span>}>
       {!nhom.length ? <p className="m-0 px-4 py-6 text-sm text-dim">{t('Không GV nào có việc quá hạn.')}</p> : (
         <div data-hd="tq-gv">
@@ -391,7 +390,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
           <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]' : ''}`}>
             <div className="max-sm:order-2"><KhoiGiaoVien quaHan={quaHan} tenCn={tenCn} onMo={setPanel} /></div>
             {duyet && choN > 0 && <div className="max-sm:order-3">{hop.error ? <ErrorState message={hop.error.message} onRetry={hop.reload} /> : !hop.data ? <Skeleton rows={3} /> : (
-              <Card bodyClass="p-0" className="h-full" title={<span className="inline-flex items-baseline gap-2">{t('Chờ duyệt')}<span className="text-[13px] font-medium text-dim tabular-nums">{hop.data.the.length}</span></span>}
+              <Card bodyClass="p-0" className="h-full" title={t('Chờ duyệt')}
                 action={<Link to="/cong-viec?nhom=duyet" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Công việc')} ›</Link>}>
                 <DongDuyet ds={hop.data.the.slice(0, 5)} onMo={(y) => setDuyetMo({ dau: y })} />
                 {hop.data.the.length > 5 && <button type="button" className="link w-full border-0 border-t bg-transparent px-4 py-2.5 text-left text-[13px] max-sm:min-h-[44px]" style={{ borderColor: 'var(--line)' }}
