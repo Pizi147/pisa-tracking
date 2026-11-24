@@ -10,6 +10,7 @@ export const EN_NEN_PANEL = {
   /* B13: nút cuối danh sách panel số. */
   'Xem thêm {n} {dv}': 'Show {n} more {dv}',
   'Bỏ chữ, đóng': 'Discard and close',
+  'Bỏ chữ, đổi bộ lọc': 'Discard and change the filter',
   'Bỏ chữ, sang việc khác': 'Discard and open the other task',
   'Bỏ chữ, quay lại': 'Discard and go back',
   '{viec} chưa lưu — chữ đang gõ sẽ mất.': '{viec} is not saved — what you typed will be lost.',
