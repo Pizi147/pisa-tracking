@@ -537,15 +537,17 @@ function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai
   /* Chấm Speaking của GV S: MỘT dòng nhiều lớp — ô lớp "n lớp", ô em "n em", thông tin "n bài · m quá hạn" (cùng bốn ô với dòng lớp). */
   const chamS = it.key === KHOA_CHAM_SPEAKING;
   const boSung = it.group === 'bo_sung_ho_so';   // Bổ sung hồ sơ: không lớp — ô lớp trống, ô em "n em", thông tin "Thiếu: …" (tên việc đã ở đề mục)
+  /* [XM7] #2070 (SUA-GOP-2511): một em → ô lớp + ô em ghi đúng lớp · tên em (máy chủ trả `emBoSung`); nhiều em giữ "n em", panel ghi tên + lớp từng em. */
+  const motBs = boSung && it.emBoSung?.length === 1 ? it.emBoSung[0] : null;
   const soEm = diem ? diem.n : gop ? emCon : chamS ? it.count ?? 0 : it.emTen?.length ? it.count ?? it.emTen.length : soTong || it.count || 0;
   const aiChu = motEm ? it.studentName : it.gopLop && it.soBai ? t('{n} bài', { n: it.soBai }) : soEm ? t('{n} em', { n: soEm }) : null;
   const tenViecKl = !it.classCode && !motEm && !chamS && !boSung;   // việc không lớp (Task Vận hành được giao): tên việc chiếm ô lớp + ô em
-  const lopChu = it.classCode ?? (chamS && it.contextLabel ? dich(it.contextLabel) : null);
+  const lopChu = it.classCode ?? motBs?.lop ?? (chamS && it.contextLabel ? dich(it.contextLabel) : null);
   const ct = chamS ? xepTin([t('{soBai} bài', { soBai: it.soBai ?? 0 }), it.baiQuaHan ? `${it.baiQuaHan} ${t('quá hạn')}` : ''], true, null) : chiTiet(it, gop, diem, ghiLoai, daXong, mk);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
   const chu = ghepChu([...ct, tvv, giao, it.coNhap ? t('Có nháp') : null]);
-  const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : aiChu ?? '';
+  const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : motBs ? motBs.ten : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
     <div className="cvA-sub">
@@ -583,8 +585,7 @@ function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { co
   const chu = ghepChu([...ct, it.coNhap ? t('Có nháp') : null]);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
-      {/* [XM7] #2070: Bổ sung hồ sơ gộp nhiều lớp (dòng cha không lớp) → mỗi em ghi lớp của em; dòng gộp khác: lớp đã ở dòng cha, ô trống thẳng cột. */}
-      {it.group === 'bo_sung_ho_so' && it.classCode ? <span className="cvA-lop">{it.classCode}</span> : <span className="cvA-lop" aria-hidden />}
+      <span className="cvA-lop" aria-hidden />
       <span className="cvA-ai">
         <button type="button" className="cvA-ten" aria-current={dangChon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); bam(); }}>
           {daXong && <span aria-hidden className="text-ok">✓ </span>}<span className={daXong ? 'line-through' : undefined}>{ai}</span></button>

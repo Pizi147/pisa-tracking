@@ -210,16 +210,9 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       reason: [...g.truong].map(([ten, n]) => `${ten} ${n}`).join(' · '),
       tieuDe: `Bổ sung hồ sơ thiếu · ${g.em.size} em`, actionLabel: 'Bổ sung',
       href, ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn',
-      /* Một em: chính dòng mang lớp · tên (bấm mở panel ngay, không thêm bấm). Từ 2 em: mở dòng → từng em lớp · tên · "Thiếu: …", bấm em mở panel
-         của đúng em (`emIds` một em). Số dòng / badge không đổi (dòng cha = 1 việc). */
-      ...(g.con.length === 1 ? { studentId: g.con[0].r.id, studentName: g.con[0].r.full_name, classId: g.con[0].r.class_id, classCode: g.con[0].r.class_code } : {}),
-      con: g.con.length < 2 ? undefined : g.con.map(({ r, thieu }) => ({
-        key: `${khoa}:${r.id}`, group: 'bo_sung_ho_so' as const, urgency: 'normal' as const,
-        studentId: r.id, studentName: r.full_name, classId: r.class_id, classCode: r.class_code,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null, emIds: [r.id],
-        reason: thieu.join(' · '), tieuDe: 'Bổ sung hồ sơ thiếu', actionLabel: 'Bổ sung', href,
-        ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn', conTen: r.full_name, conPhu: thieu.join(' · '),
-      })),
+      /* Từng em: lớp · tên · thiếu gì — dòng một em ghi thẳng lớp · tên; panel ghi tên + lớp từng em. Chỉ hiển thị: việc vẫn MỘT dòng mỗi người giữ
+         (không `con` — `con` là việc thật, các đường đếm / gán việc theo em đọc nó). */
+      emBoSung: g.con.map(({ r, thieu }) => ({ id: r.id, ten: r.full_name, lop: r.class_code ?? null, thieu: thieu.join(' · ') })),
     });
   }
   return out;

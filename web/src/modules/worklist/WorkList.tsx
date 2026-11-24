@@ -42,6 +42,8 @@ export type WorkItem = {
   thieuNguoi?: { mon: string | null };
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */
   emIds?: number[];
+  /** [XM7] SUA-GOP-2511: Bổ sung hồ sơ — lớp · tên · thiếu gì từng em (hiển thị; không phải việc con). */
+  emBoSung?: { id: number; ten: string; lop: string | null; thieu: string }[];
   /** OV-13c: tuần thi (thứ Hai) · mức SOS · Nhập điểm: tuần + loại bài (lưới Lịch Test) · Xác nhận PA: PA đang chờ. */
   tuanThi?: string | null; sos?: number | null; periodId?: number | null; kind?: string | null; phu?: string | null;
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi?: number | null };

@@ -117,12 +117,11 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
     const it = viec(tvv, null, 'bo_sung_ho_so');
     assert(it.length === 1 && it[0].count === 2 && it[0].mine && it[0].ownerId === tvv.userId && it[0].due === null && /^Bổ sung hồ sơ thiếu · 2 em$/.test(it[0].tieuDe)
       && [a.sid, b.sid].every((x) => it[0].emIds.includes(x)), 'TVV: ' + JSON.stringify(it));
-    /* [XM7] #2070 (SUA-GOP-2511): dòng gộp mở ra từng em — lớp · tên · thiếu gì; bấm em mở panel của đúng em (`emIds` một em); số dòng không đổi. */
-    const con = it[0].con ?? [];
-    assert(con.length === 2 && con.every((x: any) => x.group === 'bo_sung_ho_so' && x.classCode && x.studentName && x.emIds?.length === 1 && x.emIds[0] === x.studentId && x.key.startsWith(`${it[0].key}:`))
-      && con.find((x: any) => x.studentId === a.sid)?.conPhu === 'Email' && con.find((x: any) => x.studentId === b.sid)?.conPhu === 'Ngày sinh', 'con: ' + JSON.stringify(con));
+    /* [XM7] #2070 (SUA-GOP-2511): lớp · tên · thiếu gì TỪNG em (`emBoSung`, chỉ hiển thị) — không `con` (việc thật), không đổi studentId / số dòng. */
+    const bs = it[0].emBoSung ?? [];
+    assert(bs.length === 2 && bs.every((x: any) => x.lop && x.ten && it[0].emIds.includes(x.id)) && bs.find((x: any) => x.id === a.sid)?.thieu === 'Email'
+      && bs.find((x: any) => x.id === b.sid)?.thieu === 'Ngày sinh' && !it[0].con && it[0].studentId === null, 'emBoSung: ' + JSON.stringify(it[0]));
     const q = viec(ql, null, 'bo_sung_ho_so');
-    assert(q[0].count > 1 || (q[0].studentId === q[0].emIds[0] && q[0].classCode && !q[0].con), 'một em: chính dòng mang lớp · tên, không con: ' + JSON.stringify(q[0]));
     assert(q.length === 1 && q[0].emIds.includes(c.sid) && !q[0].emIds.includes(a.sid) && q[0].ownerId === ql.userId, 'QL: ' + JSON.stringify(q.map((x: any) => x.emIds)));
     assert(viec(gvcn, null, 'bo_sung_ho_so').length === 0, 'GVCN không có');
     /* Rà #517: số trên việc = số dòng chip "Thiếu thông tin" của danh sách mà link mở (TVV: em của mình · QL: em chưa có TVV). */

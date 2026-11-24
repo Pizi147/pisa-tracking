@@ -118,13 +118,13 @@ export function PanelViec(p: PropsViec) {
  * "Lưu · em tiếp ›" / "Bỏ qua ›" qua em kế; hết em thì đóng. Danh sách em chốt lúc mở (lưu xong dòng việc có thể đổi nhưng thứ tự không nhảy).
  * Không chuyển trang, không đụng bộ lọc / vị trí cuộn của trang đang đứng.
  */
-function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly number[]; lop: string | null; ten: (id: number) => string; onDong: () => void; onDaLam: () => void }) {
+function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly number[]; /** [XM7]: lớp của TỪNG em (dòng gộp nhiều lớp). */ lop: (id: number) => string | null; ten: (id: number) => string; onDong: () => void; onDaLam: () => void }) {
   const [ds] = useState(emIds);
   const [i, setI] = useState(0);
   const daLuu = useRef(false);
   const tiep = () => (i + 1 < ds.length ? setI(i + 1) : onDong());
   return (
-    <SuaThongTinMotEm key={ds[i]} studentId={ds[i]} studentName={ten(ds[i])} lop={lop}
+    <SuaThongTinMotEm key={ds[i]} studentId={ds[i]} studentName={ten(ds[i])} lop={lop(ds[i])}
       tiep={{ stt: i + 1, tong: ds.length, conLai: i + 1 < ds.length, boQua: tiep }}
       /* Panel Sửa thông tin gọi onDone() rồi onClose() sau khi lưu — onClose ngay sau onDone không phải "người dùng đóng". */
       onDone={() => { daLuu.current = true; onDaLam(); tiep(); }}
@@ -221,7 +221,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
     case 'bo_sung_ho_so':
-      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={lop} ten={(id) => it.con?.find((c) => c.studentId === id)?.studentName ?? (id === it.studentId ? it.studentName : '')} onDong={onDong} onDaLam={doi} />;
+      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} lop={(id) => it.emBoSung?.find((e) => e.id === id)?.lop ?? lop}
+        ten={(id) => it.emBoSung?.find((e) => e.id === id)?.ten ?? ''} onDong={onDong} onDaLam={doi} />;
     /* P9a: panel Xét lại tại chỗ — thanh Việc cần làm ở hồ sơ lớp · R3-T2 (rà 24/11): cả Công việc (trước "Xét lại ›" mở trang lớp, ~125 câu, mất danh sách). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
