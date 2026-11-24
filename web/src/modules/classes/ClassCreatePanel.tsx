@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -7,7 +7,7 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm, type MucThieu } from '../../ui/loiForm.tsx';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { NutChon } from '../../ui/ui.tsx';
+import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { LuoiTaoLop, chuongTrinhThuong, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
 import {
@@ -50,11 +50,16 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
   const routes = useApi<{ code: string; name: string }[]>('/ref/routes');
   const programmes = useApi<Programme[]>('/ref/programmes');
 
+  /* Giá trị mặc định lúc mở — gốc của "đang sửa" (lỗi 6), KHÔNG đọc từ state đã sửa. */
+  const kieu0: Kieu = macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? 'THUONG' : 'FT';
+  const loTrinh0 = macDinh?.loTrinh ?? 'LT1';
+  const chuongTrinh0 = macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? macDinh.chuongTrinh : 'FOU';
+  const so0 = locSoLop(macDinh?.so ?? '');
   const [branchId, setBranchId] = useState<number | null>(macDinh?.branchId ?? null);
-  const [kieu, setKieu] = useState<Kieu>(macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? 'THUONG' : 'FT');
-  const [loTrinh, setLoTrinh] = useState(macDinh?.loTrinh ?? 'LT1');
-  const [chuongTrinh, setChuongTrinh] = useState(macDinh?.chuongTrinh && macDinh.chuongTrinh !== 'FT' ? macDinh.chuongTrinh : 'FOU');
-  const [so, setSo] = useState(locSoLop(macDinh?.so ?? ''));
+  const [kieu, setKieu] = useState<Kieu>(kieu0);
+  const [loTrinh, setLoTrinh] = useState(loTrinh0);
+  const [chuongTrinh, setChuongTrinh] = useState(chuongTrinh0);
+  const [so, setSo] = useState(so0);
   const [startPeriodId, setStartPeriodId] = useState<number | null>(macDinh?.startPeriodId ?? null);
   const [chon, setChon] = useState<Record<string, number | ''>>({});
   const lf = useLoiForm();
@@ -71,6 +76,10 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
   const dsCn = branches.data ?? [];
   useEffect(() => { if (branchId === null && dsCn.length === 1) setBranchId(dsCn[0].id); }, [branches.data, branchId]); // eslint-disable-line react-hooks/exhaustive-deps
   const branch = dsCn.find((b) => b.id === branchId) ?? null;
+  /* Lỗi 5: chi nhánh đang tải → khoá ô; tải lỗi → ErrorState + Thử lại (không im lặng coi là "không có chi nhánh"). Mở từ Chuyển lớp / Cuối khoá với chi nhánh
+     NGOÀI quyền tạo lớp (`macDinh.branchId` không có trong danh sách) → báo rõ, không tự đổi sang chi nhánh khác. */
+  const cnDangTai = !branches.data && !branches.error;
+  const cnNgoaiQuyen = !!branches.data && branchId !== null && !branch;
   /* OV-13p: khối Phân công theo cờ máy chủ `phanCong` (`class.assign` ở chi nhánh) — TVV / CX, GV được cấp riêng `class.create` không có. */
   const ganDuoc = !!branch?.phanCong;
   const teachers = useApi<{ id: number; name: string; classCount: number; skills?: string[] }[]>(
@@ -117,6 +126,17 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
     : [mau?.weeks && t('{n} tuần', { n: mau.weeks }), moc('progress') && t('Progress Test tuần {n}', { n: moc('progress') }), moc('final') && t('Final Test tuần {n}', { n: moc('final') })]
       .filter(Boolean).join(' · ');
 
+  /* Lỗi 6: "đang sửa" = khác GIÁ TRỊ MẶC ĐỊNH lúc mở (như `cases/CapNhatTuan.tsx` F06). Gốc dựng từ mặc định + hai ô máy tự điền: chi nhánh duy nhất
+     (A2 §2.5) và tuần khai giảng WeekPicker neo lần đầu (mũi tên khoá tới khi neo xong) — PTA rà #2144 ④: gõ số lớp / đổi kiểu TRƯỚC khi tuần nạp
+     xong vẫn là "đang sửa". Ô GV trống `''` = chưa chọn. */
+  const chup = JSON.stringify([branchId, kieu, loTrinh, chuongTrinh, so, startPeriodId,
+    Object.entries(chon).filter(([, v]) => v !== '').sort(([a], [b]) => a.localeCompare(b))]);
+  const tuanDau = useRef<number | null>(macDinh?.startPeriodId ?? null);
+  if (tuanDau.current === null && startPeriodId !== null) tuanDau.current = startPeriodId;
+  const cn0 = macDinh?.branchId ?? (dsCn.length === 1 ? dsCn[0].id : null);
+  const goc = branches.data && tuanDau.current !== null ? JSON.stringify([cn0, kieu0, loTrinh0, chuongTrinh0, so0, tuanDau.current, []]) : null;
+  const daSua = !daTao && (goc !== null ? chup !== goc : so !== so0 || kieu !== kieu0 || chuongTrinh !== chuongTrinh0 || loTrinh !== loTrinh0 || Object.values(chon).some((v) => v !== ''));
+
   const tao = async () => {
     lf.bam();
     if (loi.length || loiPc.length) return;
@@ -157,19 +177,21 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
     <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa && !quayLai} quayLai={quayLai} onDong={onClose}
       chan={{
         /* 6c (lỗi 5): số lớp đã gõ hoặc GV đã chọn chưa tạo lớp → ✕ hỏi. */
-        daSua: !daTao && (so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== '')),
+        daSua,
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
-            disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? t('Mở lớp') : t('Tạo lớp')}</button>
+            disabled={busy || loiPc.length > 0 || !branches.data || cnNgoaiQuyen} title={loiPcDau}>{khoa ? t('Mở lớp') : t('Tạo lớp')}</button>
         ),
         conThieu,
       }}>
       <div className="space-y-3 pt-3.5">
+        {branches.error && <ErrorState message={branches.error.message} hint={branches.error.hint} status={branches.error.status} onRetry={branches.reload} />}
+        {cnNgoaiQuyen && <p role="alert" className="m-0 text-sm text-late">{t('Bạn chưa có quyền tạo lớp ở chi nhánh này — nhờ Head chi nhánh mở lớp.')}</p>}
         {nutCheDo}
         {khoa ? (
           <div className="grid grid-cols-2 gap-2.5">
             <Truong nhan={t('Chương trình')}><input className="field w-full" value={kieu === 'FT' ? 'Fast Track' : kyHieuLop(ct, lt) ?? ct} disabled /></Truong>
-            <Truong nhan={t('Chi nhánh')}><input className="field w-full" value={branch?.name ?? '…'} disabled /></Truong>
+            <Truong nhan={t('Chi nhánh')}><input className="field w-full" value={branch?.name ?? (cnDangTai ? '…' : '—')} disabled /></Truong>
             {kieu === 'FT' && (
               <div className="col-span-2"><Truong nhan={t('Lịch MT mặc định')} as="div">
                 <PhanDoan nhan={t('Lịch MT mặc định')} giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
@@ -178,7 +200,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa, quayL
           </div>
         ) : <>
         <Truong nhan={t('Chi nhánh')} batBuoc loi={loiHien('chi-nhanh')}>
-          <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''}
+          <select className="field w-full" {...o('chi-nhanh')} value={branchId ?? ''} disabled={cnDangTai} aria-busy={cnDangTai || undefined}
             onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : null); setChon({}); }}>
             <option value="">{t('— Chọn chi nhánh —')}</option>
             {dsCn.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.code})</option>)}
