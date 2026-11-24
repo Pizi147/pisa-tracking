@@ -325,12 +325,12 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   const dienThoai = useDienThoai();
   const [het, setHet] = useState(false);
   const COT: CotBang[] = [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 260 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 130 },
-    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 100 },
-    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 160 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 100 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 200 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 140 },
+    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 140 },
+    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 200 },
+    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 140 },
+    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 140 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -539,7 +539,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   const ft = khung === 'ft';
   /* Chủ SP 23/10: khoảng trống dồn sau cột Kỹ năng (cột linh hoạt duy nhất); cột số gọn, sát nhau bên phải. Không cột "Chưa đạt Test" — % đã kèm n/N, bấm % ra danh sách có tab Chưa đạt. */
   const COT: CotBang[] = [
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true },
     { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
     ...(ft ? [{ key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: `${t('Chưa đạt')} · ${t('Đạt Target')} · ${t('Vượt')}` } as CotBang] : []),
   ];
@@ -600,13 +600,13 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
   };
   const COT: CotBang[] = ft ? [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true },
     { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
     { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
     { key: 'tt', nhan: t('Thi thật'), kieu: 'chu', rong: RONG_TL, goiY: `${t('Kết quả thi thật')} · % Pass Target` },
   ] : [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true },
     { key: 'luot', nhan: t('Bài Test trong kỳ'), kieu: 'chu', rong: 168 },
     { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
   ];

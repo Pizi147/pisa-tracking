@@ -121,13 +121,13 @@ export default function TutorPage() {
 
   const NHOM = t('Có / có trả lời');
   const cot: CotBang[] = [
-    { key: 'ten', nhan: t('Người dạy'), kieu: 'ten', rong: 260 },
-    { key: 'noi', nhan: t('Nơi dạy'), kieu: 'chu', rong: 120 },
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 100 },
-    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 96, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
-    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 112 })),
-    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 96 },
-    { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'chu', linhHoat: true },
+    { key: 'ten', nhan: t('Người dạy'), kieu: 'ten', rong: 240 },
+    { key: 'noi', nhan: t('Nơi dạy'), kieu: 'chu', rong: 110 },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 90 },
+    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 80, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
+    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 104 })),
+    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 90 },
+    { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'chu', linhHoat: true, rong: 220 },
   ];
   const oCua = (d: DongTutor, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -270,7 +270,7 @@ export default function TutorPage() {
             {rows.length > 0 && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
             {!ds.length ? <Empty title={t('Chưa có người dạy nào trong khoảng này')} hint={danhBa ? undefined : t('Người dạy hiện khi có kết quả PA Tutor được ghi.')} />
               : !rows.length ? <Empty title={t('Không có người dạy khớp bộ lọc')} action={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setTim(''); dat({ loc: 'tat-ca', noi: null, kn: null, loai: null }); }}>{t('Bỏ lọc')}</button>} />
-              : <Bang<DongTutor> ten={t('Người dạy')} khung={false} cot={cot} hang={pt.cat(rows)} khoa={(d) => d.id} oCua={oCua}
+              : <Bang<DongTutor> ten={t('Người dạy')} khung={false} deu cot={cot} hang={pt.cat(rows)} khoa={(d) => d.id} oCua={oCua}
                 hangRieng={hangRieng} theRieng={the} onHang={moHang} dangMo={(d) => mo?.id === d.id} lopHang={(d) => (ngung(d) ? 'hang-mo' : '')} />}
             {rows.length > 0 && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
           </div>
