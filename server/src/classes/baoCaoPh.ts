@@ -102,14 +102,25 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   const mo = d.ds.find((x) => soNgayQuaHan(x, homNay) === 0);
   if (mo) return { coTab: true, dot: mo.ma, nhan: nhanDotBc(mo, homNay), han: mo.han, quaHan: 0 };
   const batTu = getConfig(KHOA_MOC_BC_PH_VIEC_GV) || homNay;
-  for (const x of d.ds) {
-    const qh = soNgayQuaHan(x, homNay);
-    if (qh > 7 && x.han < batTu) continue;   // N71: ≤ 7 ngày như cũ; quá 7 ngày còn khi việc GV còn (đợt từ ngày bật) — giữ tới khi đủ
-    /* Một câu em + một câu đếm (≤ em × phần dòng) — đợt từ ngày bật; dừng ở đợt đầu còn thiếu. */
-    const em = emCuaDot(classId, x, homNay);
-    const du = em.length ? (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (${DS_JSON})`)
-      .get(x.ma, JSON.stringify(em.map((e) => e.id))) as any).n : 0;
-    if (du < em.length * d.bo.length) return { coTab: true, dot: x.ma, nhan: nhanDotBc(x, homNay), han: x.han, quaHan: qh };
+  /* N71: ≤ 7 ngày như cũ; quá 7 ngày còn khi việc GV còn (đợt từ ngày bật) — giữ tới khi đủ. HAI câu cho MỌI đợt ứng viên (ghi danh lớp + số bản đủ theo đợt × em),
+     không một cặp câu mỗi đợt — số câu không lớn theo số đợt; trả đợt mới nhất còn thiếu. */
+  const ungVien = d.ds.filter((x) => soNgayQuaHan(x, homNay) <= 7 || x.han >= batTu);
+  if (!ungVien.length) return khong;
+  const ghiDanh = db().prepare(
+    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+       FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn'`,
+  ).all(classId) as any[];
+  const emDot = new Map(ungVien.map((x) => [x.ma, [...new Set(ghiDanh.filter((r) => emTrongDot(r, x, homNay)).map((r) => r.id as number))]]));
+  const moiEm = [...new Set([...emDot.values()].flat())];
+  const du = new Map<string, number>();
+  if (moiEm.length) {
+    for (const r of db().prepare(`SELECT dot, student_id, COUNT(*) n FROM bao_cao_ph WHERE du = 1 AND dot IN (SELECT value FROM json_each(?)) AND student_id IN (${DS_JSON}) GROUP BY dot, student_id`)
+      .all(JSON.stringify(ungVien.map((x) => x.ma)), JSON.stringify(moiEm)) as any[]) du.set(`${r.dot}|${r.student_id}`, r.n);
+  }
+  for (const x of ungVien) {
+    const em = emDot.get(x.ma)!;
+    const soDu = em.reduce((n, id) => n + (du.get(`${x.ma}|${id}`) ?? 0), 0);
+    if (soDu < em.length * d.bo.length) return { coTab: true, dot: x.ma, nhan: nhanDotBc(x, homNay), han: x.han, quaHan: soNgayQuaHan(x, homNay) };
   }
   return khong;
 }

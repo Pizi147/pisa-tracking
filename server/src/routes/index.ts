@@ -3,7 +3,7 @@ import multer from 'multer';
 import { db, isInitialised, tx } from '../db.ts';
 import { cauHinhDich, laBanChinh } from '../moiTruong.ts';
 import {
-  ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
+  ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, chuanHoaMaLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   khoangChiNhanhMacDinh, khoangTuUrl, loiKhoang, mondayOfDate,
   type Role, type TheoDong, type WorkScope,
@@ -426,22 +426,32 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
   /* DOC-IT-4: phạm vi + chi nhánh lọc trong SQL — trước đọc MỌI lớp active cả hệ thống (+ đếm ghi danh từng lớp) rồi mới lọc ở dưới. */
   const pv = refLopCuKhiKiem.tat ? { sql: '1=1', params: [] } : classScopeSql(scope, 'c');
   const cn = branchId && !refLopCuKhiKiem.tat ? ' AND c.branch_id = ?' : '';
-  /* N71 (chủ SP 25/11): ô tìm (Ctrl K) — `kemKetThuc=1` thêm lớp ĐÃ KẾT THÚC trong phạm vi xem (GV: lớp từng dạy), `ket_thuc: true`, xếp sau lớp đang chạy. */
+  /* N71 (chủ SP 25/11): ô tìm (Ctrl K) — `kemKetThuc=1` thêm lớp ĐÃ KẾT THÚC trong phạm vi xem (GV: lớp từng dạy), `ket_thuc: true`, xếp sau lớp đang chạy:
+     câu riêng, không đếm ghi danh, lọc `q` (mã chuẩn hoá) nếu có, tối đa `TOI_DA_LOP_KET_THUC` lớp kết thúc gần nhất. */
   const kemKetThuc = qStr(req, 'kemKetThuc') === '1';
+  const TOI_DA_LOP_KET_THUC = 40;
+  const khoaQ = chuanHoaMaLop(qStr(req, 'q') ?? '');
+  const ketThuc = !kemKetThuc ? [] : (db().prepare(
+    `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, c.programme_code, pg.name AS programme_name, pg.scoring_mode,
+            b.name AS branch_name, b.code AS branch_code, 0 AS student_count
+       FROM classes c JOIN branches b ON b.id = c.branch_id LEFT JOIN programmes pg ON pg.code = c.programme_code
+      WHERE c.status = 'finished' AND ${pv.sql}${cn} ORDER BY c.finished_at DESC, c.id DESC`,
+  ).all(...pv.params, ...(cn ? [branchId] : [])) as any[])
+    .filter((c) => !khoaQ || chuanHoaMaLop(c.code).includes(khoaQ)).slice(0, TOI_DA_LOP_KET_THUC).map((c) => ({ ...c, ket_thuc: true }));
   const rows = db()
     .prepare(
       /* Tên và cách chấm của chương trình đi kèm luôn: ô chọn lớp cần nói lớp đó học gì. */
       `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, c.programme_code,
               pg.name AS programme_name, pg.scoring_mode,
               b.name AS branch_name, b.code AS branch_code,
-              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count${kemKetThuc ? ", c.status = 'finished' AS ket_thuc" : ''}
+              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count
          FROM classes c JOIN branches b ON b.id = c.branch_id
          LEFT JOIN programmes pg ON pg.code = c.programme_code
-        WHERE ${kemKetThuc ? "c.status IN ('active', 'finished')" : "c.status = 'active'"} AND ${pv.sql}${cn} ORDER BY b.id, c.code`,
+        WHERE c.status = 'active' AND ${pv.sql}${cn} ORDER BY b.id, c.code`,
     )
     .all(...pv.params, ...(cn ? [branchId] : [])) as any[];
-  rows.sort((a, b) => (a.ket_thuc ?? 0) - (b.ket_thuc ?? 0) || soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
-  if (kemKetThuc) for (const r of rows) r.ket_thuc = !!r.ket_thuc;
+  rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
+  rows.push(...ketThuc);
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   /* OV-11h (PT-10): `tg` = số tuần của Phân tích → thêm lớp đã kết thúc có lượt trong khoảng (`ket_thuc: true`, web xếp nhóm "Đã kết thúc"). */

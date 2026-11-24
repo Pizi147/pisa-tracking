@@ -82,7 +82,8 @@ const NAP_CASE = {
       AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`],
   nhom: ['case-nhom:', `SELECT case_id, taxonomy_code, taxonomy_version, role, observation FROM case_issues WHERE case_id IN (${DS_JSON}) AND role IN ('primary', 'secondary')
                ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`],
-  paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
+  paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name,
+         ${COT_GV_CU_NGAY('iv', '(SELECT x.student_id FROM sos_cases x WHERE x.id = iv.case_id)')} AS gv_cu_ngay FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
         WHERE iv.case_id IN (${DS_JSON}) AND iv.status != 'cancelled'
         ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`],
@@ -2439,7 +2440,7 @@ export function caseDetail(p: Principal, caseId: number) {
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
-              ap.full_name AS approver_name
+              ap.full_name AS approver_name, ${COT_GV_CU_NGAY('iv', '(SELECT x.student_id FROM sos_cases x WHERE x.id = iv.case_id)')} AS gv_cu_ngay
          FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id
          LEFT JOIN users r ON r.id = iv.recorded_by
@@ -2447,7 +2448,8 @@ export function caseDetail(p: Principal, caseId: number) {
         WHERE iv.case_id = ? ORDER BY
           COALESCE(iv.completed_date, iv.started_date, iv.planned_date, iv.created_at), iv.id`,
     )
-    .all(caseId) as any[]).map((iv, _i, _a, ghi = giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c) || !!hanGvCuGhiPa(p, iv)) => ({   // N71
+    .all(caseId) as any[]).map((iv, _i, ds, vai = giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c),
+      gvCuCuoi = !vai && !!hanGvCuGhiPa(p, iv), ghi = vai || gvCuCuoi) => ({   // N71: GV cũ ghi nốt = lần cuối (PA khép; Case hoàn thành khi `gvCuDongCase`)
       id: iv.id, kind: iv.kind, description: iv.description, status: iv.status,
       /** PR-PA (§8): Số buổi của PA (null = không đếm) và Đã dạy (tổng Số buổi tuần này). */
       soBuoi: (iv.so_buoi ?? null) as number | null,
@@ -2523,7 +2525,11 @@ export function caseDetail(p: Principal, caseId: number) {
         ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKeCua(iv), daXacNhan: !!iv.confirmed_at, mtCuoi: iv.moc_quy_che === 'until_exam' ? mtCuoiNho(c.cycle_id) : null }, demoToday())
         : null,
       lanCuoi: (iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, demoToday()))
-        || (giu.get(iv.id) !== p.userId && !quyenPaTheoVaiTro(p, iv, c) && !!hanGvCuGhiPa(p, iv)),   // N71: GV cũ ghi = lần cuối (PA khép, Case hoàn thành)
+        || gvCuCuoi,
+      /** N71: lần ghi tới của GV cũ (PA tự tạo, em vừa chuyển lớp) là lần cuối — PA kết thúc. */
+      gvCuCuoi,
+      /** N71: … và Case hoàn thành theo (Case GV báo, PA cuối còn mở) — cùng điều kiện `gvCuDongCase` lúc lưu (trừ "Chưa đủ dữ liệu": form tự xét). */
+      gvCuDongCase: gvCuCuoi && c.origin_kind === 'teacher_report' && !ds.some((x: any) => x.id !== iv.id && x.status !== 'cancelled' && x.status !== 'completed'),
       approvalState: iv.approval_state as string | null,
       approvalDue: iv.approval_due as string | null,
       approvalNote: iv.approval_note as string | null,
@@ -4328,10 +4334,17 @@ export function updateResult(p: Principal, interventionId: number, input: {
     });
     /* NHAP-KQ-PA: chốt kết quả kỳ này → bỏ nháp (Sửa lần ghi cũ — `khongTraCase` — không đụng nháp của kỳ đang chạy). */
     if (!opts.khongTraCase) conn.prepare('UPDATE case_interventions SET nhap_ket_qua = NULL WHERE id = ? AND nhap_ket_qua IS NOT NULL').run(interventionId);
-    /* N71: lần ghi cuối của GV cũ → hoàn thành Case (mức theo kết quả PA, kết luận = ghi chú). Không còn việc cho ai. */
-    if (gvCuCuoi) {
-      const muc = input.outcome === 'improved' ? 'much_better' : input.outcome === 'partial' ? 'improved' : input.outcome === 'worse' ? 'worse' : 'unchanged';
-      closeCaseOutcome(p, iv.case_id, { outcome: muc, note: note.length >= CHU_TOI_THIEU_CASE ? note : `${note} — em đã chuyển lớp`.trim(), closedOn: observedOn }, { gvCu: true });
+    /*
+     * N71: lần ghi cuối của GV cũ — PA khép (ở trên). Case hoàn thành CHỈ khi Case GV báo (`teacher_report`, không SOS / quy chế) VÀ PA này là PA cuối còn mở VÀ kết quả
+     * có mức Case mặc định (`mucCaseTuKetQuaPa`, như form Hoàn thành Case); còn lại Case + PA khác để chủ Case. Đóng thì báo chủ Case mới.
+     */
+    const mucDong = gvCuCuoi ? gvCuDongCase(c, iv.case_id, interventionId, input.outcome) as CaseOutcome | null : null;
+    if (mucDong) {
+      closeCaseOutcome(p, iv.case_id, { outcome: mucDong, note, closedOn: observedOn }, { gvCu: true });
+      if (c.owner_user_id && c.owner_user_id !== p.userId) {
+        notify({ userId: c.owner_user_id, kind: 'case_dong_gv', title: `${p.fullName} ghi kết quả cuối, Case ${caseTitleOf(c)} đã hoàn thành`,
+          entityType: 'sos_case', entityId: iv.case_id, dedupKey: `case_dong_gv_cu:${iv.case_id}` });
+      }
     }
     return opts.khongTraCase ? null : caseDetail(p, iv.case_id);
   });
@@ -4999,21 +5012,42 @@ const laBoTro = (iv: any) => iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_ph
  * đúng ngày đó. Một câu nhỏ, chỉ khi người xem là Người dạy của PA tự tạo đang chạy.
  */
 export const hanGvCuTuNgayChuyen = (ngayChuyen: string): string => addDays(mondayOfDate(ngayChuyen), 8);
-export const SQL_GV_CU_GHI_PA = (iv: string, sc: string) => `SELECT substr(cur.started_at, 1, 10) AS ngay FROM enrollments cur
-   WHERE cur.student_id = ${sc}.student_id AND cur.status = 'active'
-     AND EXISTS (SELECT 1 FROM enrollments x WHERE x.student_id = cur.student_id AND x.id != cur.id AND substr(x.ended_at, 1, 10) = substr(cur.started_at, 1, 10))
+/**
+ * Ngày chuyển (null = không thuộc luật): em đang học lớp mới từ ngày đó, ghi danh lớp CŨ rời đúng ngày đó (`transferred` / `completed`) và lớp cũ là lớp Người dạy
+ * có phân công; Người dạy chưa ghi kết quả từ ngày đó. Cùng câu cho quyền (`hanGvCuCuaPa`), Công việc 2b', bảng kỹ năng, Ngăn Case, chỉ số. `sid` = biểu thức id em.
+ * M-04 (chuyển lớp) chỉ đổi chủ Case, không đổi `performer_user_id` — Người dạy giữ nguyên (phép kiểm N71).
+ */
+export function SQL_GV_CU_GHI_PA(iv: string, sid: string): string { return `SELECT substr(cur.started_at, 1, 10) AS ngay FROM enrollments cur
+   WHERE cur.student_id = ${sid} AND cur.status = 'active'
+     AND EXISTS (SELECT 1 FROM enrollments x WHERE x.student_id = cur.student_id AND x.id != cur.id AND x.status IN ('transferred', 'completed')
+                   AND substr(x.ended_at, 1, 10) = substr(cur.started_at, 1, 10)
+                   AND EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = x.class_id AND ta.user_id = ${iv}.performer_user_id AND ta.status = 'active'))
      AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = ${iv}.id AND substr(f.created_at, 1, 10) >= substr(cur.started_at, 1, 10))
-   ORDER BY cur.id DESC LIMIT 1`;
-/** Hạn GV cũ (Người dạy) của MỘT PA, không theo người xem — null = không trong hạn / không thuộc luật. Nhớ theo request. */
+   ORDER BY cur.id DESC LIMIT 1`; }
+/** Cột `gv_cu_ngay` cho câu đọc PA sẵn có (0 câu thêm) — chỉ tính ở PA tự tạo đang chạy có Người dạy. */
+export function COT_GV_CU_NGAY(iv: string, sid: string): string { return `CASE WHEN ${iv}.status IN ('planned', 'started') AND COALESCE(${iv}.preset, 0) != 1
+  AND ${iv}.kind NOT IN ('bo_tro', 'bo_tro_mien_phi') AND ${iv}.performer_user_id IS NOT NULL THEN (${SQL_GV_CU_GHI_PA(iv, sid)}) END` }
+/** Hạn GV cũ (Người dạy) của MỘT PA, không theo người xem — null = không trong hạn / không thuộc luật. Dòng có cột `gv_cu_ngay` thì không hỏi DB. */
 export function hanGvCuCuaPa(iv: any, homNay = demoToday()): string | null {
   if (!iv.performer_user_id || iv.preset === 1 || laBoTro(iv) || (iv.status !== 'planned' && iv.status !== 'started')) return null;
-  const ngay = nho(`gv-cu-pa:${iv.id}`, () => (db().prepare(`SELECT (${SQL_GV_CU_GHI_PA('iv', 'sc')}) AS ngay FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`)
-    .get(iv.id) as any)?.ngay ?? null) as string | null;
+  const ngay = ('gv_cu_ngay' in iv ? iv.gv_cu_ngay : nho(`gv-cu-pa:${iv.id}`, () => (db().prepare(`SELECT (${SQL_GV_CU_GHI_PA('iv', 'sc.student_id')}) AS ngay FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`)
+    .get(iv.id) as any)?.ngay ?? null)) as string | null;
   if (!ngay) return null;
   const han = hanGvCuTuNgayChuyen(ngay);
   return homNay <= han ? han : null;
 }
 export const hanGvCuGhiPa = (p: Principal, iv: any, homNay = demoToday()): string | null => (iv.performer_user_id === p.userId ? hanGvCuCuaPa(iv, homNay) : null);
+/** Mức Case mặc định từ kết quả PA — cùng luật form Hoàn thành Case (nhãn trùng nhau; "Chưa đủ dữ liệu" không có mức → null). */
+export const mucCaseTuKetQuaPa = (outcome: string): CaseOutcome | null =>
+  CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === FOLLOWUP_OUTCOME_LABEL[outcome as keyof typeof FOLLOWUP_OUTCOME_LABEL]) ?? null;
+/** N71: lần ghi cuối của GV cũ có hoàn thành Case không (`outcome` undefined = chưa chọn: chỉ xét Case + PA). Một câu đếm PA còn mở khác. */
+export function gvCuDongCase(c: any, caseId: number, paId: number, outcome?: string): CaseOutcome | null | true {
+  if (c.origin_kind !== 'teacher_report' || c.status === 'done') return null;
+  if (outcome !== undefined && !mucCaseTuKetQuaPa(outcome)) return null;
+  const khac = db().prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND id != ? AND status NOT IN ('cancelled', 'completed') LIMIT 1`).get(caseId, paId);
+  if (khac) return null;
+  return outcome === undefined ? true : mucCaseTuKetQuaPa(outcome);
+}
 /** PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02). */
 const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
   ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } }) || laNguoiGiuMiniTestCuaPa(p, iv)

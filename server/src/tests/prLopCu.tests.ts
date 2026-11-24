@@ -153,9 +153,20 @@ export async function runPrLopCuTests(t: YThucTestKit) {
     assertThrows(() => regular.saveRegularScore(lr, fA, 'listening', { score: 5, total: 10 }), /quyền|phạm vi|không được|phân công/i, 'GV lớp FT nhập điểm Final lớp cũ');
     assertThrows(() => attempts.saveScore(lr, m0A, 'listening', { band: 5 }), /quyền|phạm vi|không được|phân công/i, 'GV lớp FT nhập điểm MT0 lớp cũ');
     assertThrows(() => regular.regularAttemptDetail(gv2, fA), /phạm vi|quyền/i, 'GV không dạy A xem Final của A');
-    /* N71 (chủ SP 25/11): S của MT0 là chấm CHÉO — GV Speaking chi nhánh vẫn mở MT0 của lớp vừa kết thúc để chấm S (`lopConViec`); GV khác vẫn chặn. */
-    if (perms.laGvSpeaking(gv2)) attempts.attemptDetail(gv2, m0A);
-    else assertThrows(() => attempts.attemptDetail(gv2, m0A), /phạm vi|quyền/i, 'GV không dạy A xem MT0 của A');
+    /* N71 (chủ SP 25/11): S của MT0 là chấm CHÉO — GV Speaking chi nhánh vẫn mở MT0 của lớp vừa kết thúc để chấm S (`lopConViec`); GV không Speaking vẫn chặn.
+       Dựng cả hai người tất định (không dựa vào gv2 có kỹ năng S hay không). */
+    const khongDayA = `ur.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id IN (?, ?)) AND ur.user_id != ?`;
+    const gvS = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE ur.status = 'active' AND ur.branch_id = ?
+       AND EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = ur.user_id AND us.skill = 'speaking') AND ${khongDayA} ORDER BY ur.user_id LIMIT 1`, MB, L1.id, FT101, gv1Id)?.id;
+    const gvKhongS = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE ur.status = 'active' AND ur.branch_id = ?
+       AND NOT EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = ur.user_id AND us.skill = 'speaking')
+       AND NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.user_id = ur.user_id AND ta.skill = 'speaking' AND ta.status = 'active') AND ${khongDayA}
+       ORDER BY ur.user_id LIMIT 1`, MB, L1.id, FT101, gv1Id)?.id;
+    assert(gvS && gvKhongS, `seed: cần một GV Speaking (${gvS}) và một GV không Speaking (${gvKhongS}) không dạy A`);
+    const pS = perms.loadPrincipal(gvS), pKhong = perms.loadPrincipal(gvKhongS);
+    assert(perms.laGvSpeaking(pS) && !perms.laGvSpeaking(pKhong), 'tiền đề vai Speaking');
+    attempts.attemptDetail(pS, m0A);   // GV Speaking mở được MT0 lớp vừa kết thúc
+    assertThrows(() => attempts.attemptDetail(pKhong, m0A), /phạm vi|quyền/i, 'GV không Speaking, không dạy A xem MT0 của A');
     assertThrows(() => regular.regularAttemptDetail(lr, fB), /phạm vi|quyền/i, 'GV FT 101 xem Final của B (không dạy B)');
     /* Quản lý chỉ xem qua grant chi nhánh của lớp lượt — không có lối "đang dạy em" (không phân công). */
     assert(!perms.xemLuotQuaLopDangHoc(QL, A), 'Quản lý được mở qua "đang dạy em"');

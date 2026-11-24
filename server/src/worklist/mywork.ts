@@ -1096,7 +1096,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND iv.id IN (SELECT iv3.id FROM enrollments e3 JOIN sos_cases sc3 ON sc3.student_id = e3.student_id AND sc3.status != 'done'
                           JOIN case_interventions iv3 ON iv3.case_id = sc3.id${nguoiDay3} AND iv3.status IN ('planned', 'started')
                          WHERE e3.class_id IN (SELECT value FROM json_each(?)) AND e3.status IN ('transferred', 'completed') AND substr(e3.ended_at, 1, 10) >= ?)`,
-    ` 1 AS gv_cu, (${SQL_GV_CU_GHI_PA('iv', 'sc')}) AS gv_cu_ngay,`)}`;
+    ` 1 AS gv_cu, (${SQL_GV_CU_GHI_PA('iv', 's.id')}) AS gv_cu_ngay,`)}`;
   const docGhiKq = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
       cauPaGhiKetQua(locGhiKq, nhanhGvCu ? ' 0 AS gv_cu, NULL AS gv_cu_ngay,' : '') + nhanhGvCu,   /* K3-41: em Tạm dừng dừng hạn */
