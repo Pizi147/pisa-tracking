@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
-import { Modal } from '../../../ui/Drawer.tsx';
+import { Modal, NutDongHop } from '../../../ui/Drawer.tsx';
 import { Truong } from '../../../ui/KhungPanel.tsx';
 import { ONgay } from '../../../ui/ONgay.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
@@ -67,11 +67,11 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
   };
 
   return (
-    <Modal open onClose={busy ? () => {} : onDong} width="max-w-md" title={`${dong ? t('S Ex') : t('+ S Ex')} · ${ten}`}
+    <Modal open onClose={busy ? () => {} : onDong} viecChuaLuu={t('Nhận xét')} daSua={!busy && (nhanXet.trim() !== (dong?.nhanXet ?? '').trim() || diem !== (dong?.diem != null ? String(dong.diem) : ''))} width="max-w-md" title={`${dong ? t('S Ex') : t('+ S Ex')} · ${ten}`}
       footer={(
         <>
           {dong?.sua && <button type="button" className="btn btn-danger mr-auto min-h-[44px] sm:min-h-0" disabled={busy || !!khoaXoa} title={khoaXoa ?? undefined} onClick={() => void xoa()}>{t('Xoá')}</button>}
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
+          <NutDongHop className="btn min-h-[44px] sm:min-h-0" disabled={busy}>{t('Đóng')}</NutDongHop>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (!suaLich && !cham) || !!khoa} title={khoa ?? undefined} onClick={() => void luu()}>
             {busy ? t('Đang lưu…') : t('Lưu · đóng')}
           </button>

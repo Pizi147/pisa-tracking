@@ -34,7 +34,7 @@ export function HopKhoiPhucKetQua({ attemptId, nhan, ketQua, onDong, onXong }: {
   };
   return (
     <ConfirmDialog open z="z-[80]" busy={busy} closeLabel={t('Đóng')} confirmLabel={t('Khôi phục')} title={t('Khôi phục kết quả {nhan}?', { nhan })}
-      onClose={onDong} onConfirm={() => void lam()}
+      onClose={onDong} daSua={!!lyDo.trim()} onConfirm={() => void lam()}
       body={(
         <div className="space-y-3">
           <p className="m-0">{nhan}: {t('{n} điểm đã huỷ', { n: ketQua.soDiem })}{ketQua.vuotBoi ? ` ${t('khi dời {dot}', { dot: ketQua.vuotBoi })}` : ''}.</p>

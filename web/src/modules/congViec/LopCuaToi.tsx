@@ -110,8 +110,8 @@ export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBa
   );
 }
 
-/* NHẸ HƠN PR-2a (v23 ② G1): Lớp · Tôi dạy · Test kế · Việc (MỘT số) — bốn cột cố định. */
-const COT = 'grid grid-cols-[104px_164px_minmax(0,1fr)_56px] items-center gap-x-3 px-4';
+/* NHẸ HƠN PR-2a (v23 ② G1): Lớp · Tôi dạy · Test kế · Việc (MỘT số) — bốn cột. HAI-BEN (NH9, chủ SP 25/11): ô phải cố định 720 → cột chia hết bề ngang theo phần (không dồn về trái), số Việc căn giữa cột cuối. */
+const COT = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(56px,0.9fr)] items-center gap-x-3 px-4';
 /* C1 (rà 19/11): bốn cột cố định cần ≥ 640 px. Khung hẹp hơn (Công việc 1100: khung phải ~520 px; 375) → mỗi lớp một thẻ dọc — đo theo
    bề ngang KHUNG (container query `[container-type:inline-size]` ở <section>), không theo cửa sổ, nên chip không bao giờ tràn / bị cắt sang cột bên. */
 
@@ -138,7 +138,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
           : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[14px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint [@container(max-width:639px)]:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
-                <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test kế')}</span><span className="text-right">{t('Việc')}</span>
+                <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test kế')}</span><span className="text-center">{t('Việc')}</span>
               </div>
               <ul className="m-0 list-none p-0">
                 {dong.map((d, i) => <DongLop key={d.classId} d={d} dau={i === 0} onMo={onMo} />)}
@@ -170,15 +170,15 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
 
 /** Cột Việc: MỘT số (tổng các loại, cùng đơn vị chip cũ); quá hạn = số trong ô NỀN ĐẶC đỏ nhạt (cùng chip "quá hạn n ngày", `lopBadgeHan('qua')` — V22 không biểu tượng); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
 function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
-  if (!d.chip.length) return <span className="text-right text-faint [@container(max-width:639px)]:hidden" aria-hidden>—</span>;
+  if (!d.chip.length) return <span className="text-center text-faint [@container(max-width:639px)]:hidden" aria-hidden>—</span>;
   const so = d.chip.reduce((n, c) => n + c.so, 0);
   const qua = d.chip.some((c) => c.quaHan);
   const dau = d.chip.map((c) => c.dau).sort(xepHan)[0];
   const chu = d.chip.map((c) => `${c.nhan} · ${c.so}`).join(', ');
   return (
-    <span className="flex justify-end [@container(max-width:639px)]:order-2">
+    <span className="flex justify-center [@container(max-width:639px)]:order-2 [@container(max-width:639px)]:justify-end">
       <button type="button" onClick={() => onMo(dau)} title={chu} aria-label={`${qua ? `${t('Quá hạn')}: ` : ''}${chu} · ${d.code}`}
-        className="inline-flex min-h-7 min-w-[32px] items-center justify-end rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:-my-2 max-sm:min-h-11 max-sm:min-w-[44px]">
+        className="inline-flex min-h-7 min-w-[32px] items-center justify-center rounded-md border-0 bg-transparent px-1 hover:bg-[color:var(--accent-soft)] max-sm:-my-2 max-sm:min-h-11 max-sm:min-w-[44px]">
         {qua ? <span className={lopBadgeHan('qua')}>{so}</span> : <span className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{so}</span>}
       </button>
     </span>
