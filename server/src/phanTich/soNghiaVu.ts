@@ -16,9 +16,9 @@ import type { Principal } from '../permissions.ts';
 import { boMonLich, boMonTheoLuot, daGhiLuot, kyNangPhuTrach, laChamCheo } from '../../../shared/domain/index.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc, nguoiPcSau, type DongPc, type GhiDanh } from './luatBai.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
-import { nghiaVuKetQuaPa, parseObligation } from '../worklist/metrics.ts';
+import { nghiaVuKetQuaPa, parseObligation, type CtNghiaVuPa } from '../worklist/metrics.ts';
 import { viecXongCn, type ViecXong } from './viecDaXong.ts';
-import { VIEC_CO_HAN, quanLyCn } from './viecCoHan.ts';
+import { VIEC_CO_HAN, quanLyCn, quanLyNhieuCn } from './viecCoHan.ts';
 import { LA_CASE_MT } from '../cases/sosState.ts';
 
 /** Một dòng sổ (chưa có trạng thái — trạng thái so `han` với hôm nay lúc đọc). */
@@ -267,11 +267,16 @@ const NHAT_KY_HAN: [RegExp, string][] = [
  *   · người theo ngày: việc xong / Kết quả PA có ngày trước lần chuyển → người giữ cũ.
  * Lần chuyển trước khi có nhật ký này không tách (không biết hạn lúc chuyển).
  */
-function chuyenLopCn(cn: number) {
-  const rows = db().prepare(`SELECT h.id, h.loai, h.han_cu, h.han_moi, h.nguoi_cu, h.ngay, h.luc, sc.id AS case_id, sc.student_id, ${LA_CASE_MT('sc')} AS mt, sc.mo_ta_luc
+/** TOC-DO-2511c: mọi chi nhánh `cns` MỘT câu, chia theo chi nhánh của em (thứ tự `h.ngay, h.id` giữ trong từng chi nhánh). */
+function chuyenLopCn(cns: readonly number[]): Map<number, ReturnType<typeof chuyenLop1Cn>> {
+  const theoCn = new Map<number, any[]>(cns.map((cn) => [cn, []]));
+  for (const r of db().prepare(`SELECT h.id, h.loai, h.han_cu, h.han_moi, h.nguoi_cu, h.ngay, h.luc, sc.id AS case_id, sc.student_id, ${LA_CASE_MT('sc')} AS mt, sc.mo_ta_luc, s.branch_id AS cn_
       FROM viec_han_lan h LEFT JOIN case_interventions iv ON h.loai = 'chuyen_lop:action_due' AND iv.id = h.viec_id
       JOIN sos_cases sc ON sc.id = COALESCE(iv.case_id, h.viec_id) JOIN students s ON s.id = sc.student_id
-     WHERE h.loai LIKE 'chuyen_lop:%' AND s.branch_id = ? ORDER BY h.ngay, h.id`).all(cn) as any[];
+     WHERE h.loai LIKE 'chuyen_lop:%' AND s.branch_id IN (SELECT value FROM json_each(?)) ORDER BY h.ngay, h.id`).all(JSON.stringify(cns)) as any[]) theoCn.get(r.cn_)!.push(r);
+  return new Map(cns.map((cn) => [cn, chuyenLop1Cn(cn, theoCn.get(cn)!)]));
+}
+function chuyenLop1Cn(cn: number, rows: any[]) {
   const suKien = new Map<number, { luc: string; ngay: string; nguoiCu: number | null }[]>();
   const hanMoi = new Map<string, string>();
   for (const r of rows) {
@@ -335,16 +340,64 @@ export function khoaDonVi(key: string, it: { due?: string | null; caseId?: numbe
  *   Kết quả PA — CHÍNH nghĩa vụ `dung-han-cap-nhat` (`nghiaVuKetQuaPa`), mỗi kỳ một dòng, người = chủ Case.
  * Hạn gốc: lần đặt lại hạn đầu (`viec_han_lan`).
  */
-export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null })[] {
+type DongViec = DongNv & { hanGoc: string | null };
+export function tinhViecChiNhanh(cn: number): DongViec[] {
+  return tinhViecNhieuChiNhanh([cn]).get(cn)!;
+}
+
+/**
+ * Việc mở (Công việc "Tất cả" của QL chi nhánh, nhóm `VIEC_CO_HAN`) theo chi nhánh. Một chi nhánh: như cũ (`branchId`). Nhiều chi nhánh (TOC-DO-2511c): MỘT lượt
+ * Công việc của QL mọi chi nhánh đó, chia theo `it.cn` (chi nhánh lớp của việc — mọi nhánh lọc `branchId` của Công việc lọc theo lớp / Case cùng chi nhánh đó).
+ * Việc có `cn` ngoài tập → tính lại từng chi nhánh như cũ.
+ * Chia theo chi nhánh LỚP: em ở chi nhánh khác chi nhánh lớp đang học → `tinhViecNhieuChiNhanh` đã chuyển sang tính từng chi nhánh trước khi tới đây.
+ */
+function viecMoTheoCn(cns: readonly number[]): Map<number, WorkItem[]> {
+  const lay = (p: Principal, branchId: number | null) => ((myWork(p, { branchId, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
+  const rieng = () => new Map(cns.map((cn) => [cn, lay(quanLyCn(cn), cn)]));
+  if (cns.length < 2) return rieng();
+  const out = new Map<number, WorkItem[]>(cns.map((cn) => [cn, []]));
+  for (const it of lay(quanLyNhieuCn(cns), null)) {
+    const ds = it.cn == null ? undefined : out.get(it.cn);
+    if (!ds) return rieng();
+    ds.push(it);
+  }
+  return out;
+}
+
+/** `tinhViecChiNhanh` cho nhiều chi nhánh — số câu không theo số chi nhánh (TOC-DO-2511c; trước ~40 câu × chi nhánh). Từng chi nhánh ra Y HỆT gọi riêng. */
+export function tinhViecNhieuChiNhanh(dsCn: readonly number[]): Map<number, DongViec[]> {
+  const cns = [...new Set(dsCn)];
+  /*
+   * Rà #2154: việc mở chia theo chi nhánh LỚP, việc xong / chuyển lớp theo chi nhánh EM — em đang học lớp ở chi nhánh khác chi nhánh của em (trong tập) thì một việc
+   * có thể tách sang hai chi nhánh. Có em như vậy → tính từng chi nhánh như cũ (một câu kiểm; bản chép 12/11: 0 em).
+   */
+  if (cns.length > 1 && db().prepare(`SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id JOIN classes c ON c.id = e.class_id
+      WHERE e.status = 'active' AND c.branch_id IS NOT s.branch_id AND (c.branch_id IN (SELECT value FROM json_each(?)) OR s.branch_id IN (SELECT value FROM json_each(?))) LIMIT 1`)
+    .all(JSON.stringify(cns), JSON.stringify(cns)).length) return new Map(cns.map((cn) => [cn, tinhViecNhieuChiNhanh([cn]).get(cn)!]));
   const homNay = demoToday();
-  const ql = quanLyCn(cn);
   const hanGoc = hanGocCn();
   const goc = (key: string, caseId?: number | null) => {
     for (const [re, loai] of NHAT_KY_HAN) { const m = re.exec(key); if (m) return hanGoc(loai, Number(m[1])); }
     return key.startsWith('xnpa:') ? hanGoc('reset_case:han_xac_nhan', caseId) : null;
   };
-  const out = new Map<string, DongNv & { hanGoc: string | null }>();
-  const ch = chuyenLopCn(cn);
+  const chs = chuyenLopCn(cns);
+  const xongCn = viecXongCn({ cns, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay }, true);
+  const moCn = viecMoTheoCn(cns);
+  const { ct: pa, cnCase } = nghiaVuKetQuaPa(cns.length === 1 ? quanLyCn(cns[0]) : quanLyNhieuCn(cns), cns, homNay);
+  const chu = new Map<number, { owner: number | null; hv: number | null; lop: number | null; caseId: number }>();
+  for (const r of db().prepare(`SELECT iv.id, sc.id AS case_id, sc.owner_user_id, sc.student_id, COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active'
+        ORDER BY e.id DESC LIMIT 1), a.class_id) AS lop
+      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id IN (SELECT value FROM json_each(?))`)
+    .all(JSON.stringify([...new Set([...pa.values()].map((x) => x.iv))])) as any[]) chu.set(r.id, { owner: r.owner_user_id ?? null, hv: r.student_id ?? null, lop: r.lop ?? null, caseId: r.case_id });
+  const paCn = new Map<number, [number, CtNghiaVuPa][]>(cns.map((cn) => [cn, []]));
+  for (const [id, x] of pa) paCn.get(cnCase.get(x.caseId)!)!.push([id, x]);
+  return new Map(cns.map((cn) => [cn, motChiNhanh(cn, chs.get(cn)!, xongCn.get(cn)!, moCn.get(cn)!, paCn.get(cn)!, chu, goc, hanGoc, homNay)]));
+}
+
+function motChiNhanh(cn: number, ch: ReturnType<typeof chuyenLop1Cn>, dsXong: readonly ViecXong[], items: readonly WorkItem[], pa: readonly [number, CtNghiaVuPa][],
+  chu: Map<number, { owner: number | null; hv: number | null; lop: number | null; caseId: number }>,
+  goc: (key: string, caseId?: number | null) => string | null, hanGoc: ReturnType<typeof hanGocCn>, homNay: string): DongViec[] {
+  const out = new Map<string, DongViec>();
   for (const d of ch.cu) out.set(d.khoa, d);
   /* Khoá + hạn gốc theo phân đoạn chuyển lớp (ngày `d`: hôm nay cho việc mở, ngày xong cho việc xong). */
   /* `khoaGoc`: khoá Công việc / việc đã xong trước khi đổi sang khoá đơn vị — tra nhật ký đặt lại hạn. */
@@ -358,7 +411,7 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
    * Việc gộp: xong = ngày xong MUỘN NHẤT của các phần; một phần thiếu ngày xong → cả việc thiếu.
    */
   const xong = new Map<string, { it: ViecXong; xong: string; thieu: boolean; khoaGoc: string }>();
-  for (const it of viecXongCn({ cn, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay }, true)) {
+  for (const it of dsXong) {
     const k = khoaDonVi(it.key, it);
     const cu = xong.get(k);
     if (!cu) xong.set(k, { it, xong: it.xong, thieu: !it.xong, khoaGoc: it.key });
@@ -374,7 +427,6 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
       xongLuc: thieu ? (truoc ? it.due : null) : x.xong, nguoiLam: null,
       khongTinh: thieu && !truoc ? 'thieu-ngay-xong' : null, hanGoc: hg });
   }
-  const items = ((myWork(ql, { branchId: cn, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
   for (const it of items) {
     if (!it.due || !VIEC_CO_HAN.has(it.group)) continue;
     if (it.choGvSua) continue;   // TL-1 (rà #1927 (3)): Báo PH "Chờ GV sửa" — hạn tạm dừng, không là việc tới hạn / quá hạn (cùng luật `quaHanBaoPh`)
@@ -383,12 +435,6 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
       nguoi: nguoiChiuViec(it), sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
       xongLuc: null, nguoiLam: null, khongTinh: null, hanGoc: hg });
   }
-  const pa = nghiaVuKetQuaPa(ql, cn, homNay);
-  const chu = new Map<number, { owner: number | null; hv: number | null; lop: number | null; caseId: number }>();
-  for (const r of db().prepare(`SELECT iv.id, sc.id AS case_id, sc.owner_user_id, sc.student_id, COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active'
-        ORDER BY e.id DESC LIMIT 1), a.class_id) AS lop
-      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id IN (SELECT value FROM json_each(?))`)
-    .all(JSON.stringify([...new Set([...pa.values()].map((x) => x.iv))])) as any[]) chu.set(r.id, { owner: r.owner_user_id ?? null, hv: r.student_id ?? null, lop: r.lop ?? null, caseId: r.case_id });
   for (const [id, x] of pa) {
     const c = chu.get(x.iv);
     const khoa = khoaViec(`ket_qua_pa:${id}`);
@@ -452,7 +498,17 @@ export function lamMoiViec(cns: readonly number[], homNay = demoToday()): void {
   let loi: unknown = null;
   try {
     trongBoNho(() => {
+      /* TOC-DO-2511c: nhiều chi nhánh → MỘT lượt tính (`tinhViecNhieuChiNhanh`); lỗi → tính lại từng chi nhánh bên dưới (lỗi một chi nhánh chỉ trả lượt của nó). */
+      if (lam.length > 1 && lamMoiViecKhiKiem.nem == null) {
+        try {
+          anToan('ghiSoViecChiNhanh', () => {
+            const luc = new Date().toISOString();
+            for (const [cn, ds] of tinhViecNhieuChiNhanh(lam)) tinh.set(cn, { luc, ds });
+          });
+        } catch (e) { loi ??= e; tinh.clear(); }
+      }
       for (const cn of lam) {
+        if (tinh.has(cn)) continue;
         try {
           anToan('ghiSoViecChiNhanh', () => {
             if (lamMoiViecKhiKiem.nem === cn) throw new Error(`phép kiểm: tính sổ việc chi nhánh ${cn} lỗi`);

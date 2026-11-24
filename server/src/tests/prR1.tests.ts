@@ -110,7 +110,7 @@ export async function runPrR1Tests(t: any) {
     const xong = ins(em.id, 'xong', null);
     conn.prepare(`UPDATE students SET consultant_user_id = COALESCE(consultant_user_id, ?) WHERE id = ?`).run(P.admin.userId, em.id);
     conn.prepare(`INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_luc) VALUES (?, 'da_bao', '2026-11-18', '2026-11-18T03:00:00.000Z')`).run(xong);
-    const r = viecXongCn({ cn: em.cn, khung: 'ft', tu: '2026-11-01', cuoi: '2026-11-30', homNay: '2026-11-24' }).find((d: any) => d.key === `bao-ph:${xong}`);
+    const r = viecXongCn({ cns: [em.cn], khung: 'ft', tu: '2026-11-01', cuoi: '2026-11-30', homNay: '2026-11-24' }).get(em.cn)!.find((d: any) => d.key === `bao-ph:${xong}`);
     assert(r?.due === mong && r.dung === true, `Phân tích: ${JSON.stringify(r && { due: r.due, dung: r.dung })}, panel ${mong}`);
   }));
 

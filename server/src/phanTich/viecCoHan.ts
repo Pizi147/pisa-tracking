@@ -17,8 +17,20 @@ export const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
  * QL, QT) cùng MỘT cách gán: việc "chưa ai giữ" mà nhiều người làm được (Bước tiếp, Báo PH dự phòng QL) không thành việc của từng QL / TVV kiêm GV.
  */
 export const quanLyCn = (cn: number): Principal => nho(`pt-gv:ql-cn:${cn}`, () => {
-  const perms = (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
-    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string);
+  /* TOC-DO-2511c: quyền vai `manager` không theo chi nhánh — một câu cho mọi chi nhánh trong request. */
+  const perms = nho('pt-gv:ql-quyen', () => (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string));
   return { userId: -cn, code: '', fullName: '', title: null, roleKeys: ['manager'], assignments: [],
     grants: [{ id: 0, roleKey: 'manager', roleName: '', branchId: cn, branchName: null, permissions: new Set(perms) }] };
 });
+
+/**
+ * QL của MỌI chi nhánh `cns` (một grant mỗi chi nhánh) — sổ việc nhiều chi nhánh một lượt Công việc / Case (`tinhViecNhieuChiNhanh`).
+ * `userId` âm RIÊNG cho từng tập chi nhánh (≤ −1 000 000, không trùng `-cn` của `quanLyCn`): khoá nhớ theo người (`ds-case:<userId>`…) của [A,B] không bị [A,C] dùng lại (rà #2154).
+ */
+const ID_TAP_CN = new Map<string, number>();
+export const quanLyNhieuCn = (cns: readonly number[]): Principal => {
+  const khoa = [...new Set(cns)].sort((a, b) => a - b).join(',');
+  const userId = ID_TAP_CN.get(khoa) ?? ID_TAP_CN.set(khoa, -1_000_000 - ID_TAP_CN.size).get(khoa)!;
+  return { ...quanLyCn(cns[0]), userId, grants: cns.flatMap((cn) => quanLyCn(cn).grants) };
+};

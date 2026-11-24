@@ -213,7 +213,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const { TODAY } = t as any;
   const MB = get(`SELECT branch_id FROM classes WHERE code = 'MB FT 101'`).branch_id as number;
   const moViec = () => ((myWork(quanLyCn(MB), { branchId: MB, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as any).items ?? []).filter((x: any) => x.due && VIEC_CO_HAN.has(x.group));
-  const xongViec = () => viecXongCn({ cn: MB, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay: TODAY });
+  const xongViec = () => viecXongCn({ cns: [MB], khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay: TODAY }).get(MB)!;
   const mo0 = moViec(), xong0 = xongViec();
   /* Mỗi loại việc spec 1.1 một ca: việc mở (Công việc) → dòng cùng hạn + người, chưa xong; việc đã xong → dòng cùng ngày xong (đúng hạn / làm muộn theo ngày). */
   for (const g of [...VIEC_CO_HAN]) {
@@ -766,6 +766,35 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     ngu.chayTrongRequest('GET', () => nv.lamMoiViec(cns, TODAY));
     const chung = soViecHet();
     assert(JSON.stringify(chung) === JSON.stringify(rieng), `lệch: riêng ${rieng.length} dòng · chung ${chung.length} dòng; dòng đầu lệch ${JSON.stringify(chung.find((r, i) => JSON.stringify(r) !== JSON.stringify(rieng[i])))}`);
+  }));
+
+  /* TOC-DO-2511c: `tinhViecNhieuChiNhanh` — số câu KHÔNG theo số chi nhánh (trước ~40 câu × chi nhánh), từng chi nhánh = gọi riêng. */
+  check('NV-NHIEU-CN · tính sổ việc mọi chi nhánh một lượt: số câu ≈ một chi nhánh (≤ +10), từng chi nhánh trùng tinhViecChiNhanh', () => thu(() => {
+    const cns = moiCn();
+    const sx = (ds: any[]) => JSON.stringify([...ds].sort((a, b) => (a.khoa < b.khoa ? -1 : a.khoa > b.khoa ? 1 : 0)));
+    const dem = (fn: () => unknown) => ngu.chayTrongRequest('GET', () => { const c = ngu.soCauSql(); const kq = fn(); return { n: ngu.soCauSql() - c, kq }; });
+    const mot = dem(() => nv.tinhViecChiNhanh(cns[0]));
+    const nhieu = dem(() => nv.tinhViecNhieuChiNhanh(cns)) as { n: number; kq: Map<number, any[]> };
+    assert(cns.length >= 3 && nhieu.n <= mot.n + 10, `${cns.length} chi nhánh: ${nhieu.n} câu > một chi nhánh ${mot.n} + 10`);
+    for (const cn of cns) {
+      const rieng = (dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq;
+      assert(sx(nhieu.kq.get(cn)!) === sx(rieng), `chi nhánh ${cn}: gom ${nhieu.kq.get(cn)!.length} dòng ≠ riêng ${rieng.length} dòng`);
+    }
+    /* Rà #2154 (1): [A,B] rồi [A,C] trong CÙNG bộ nhớ request — khoá nhớ theo người (`ds-case:<userId>`…) không được dùng lại giữa hai tập. C = chi nhánh nhiều Kết quả PA nhất. */
+    const soPa = (cn: number) => (dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq.filter((r) => r.kieu === 'ghi_ket_qua_pa').length;
+    const [C, A, B] = [...cns].sort((x, y) => soPa(y) - soPa(x));
+    assert(soPa(C) > 0, 'seed cần một chi nhánh có Kết quả PA');
+    const ac = ngu.chayTrongRequest('GET', () => { nv.tinhViecNhieuChiNhanh([A, B]); return nv.tinhViecNhieuChiNhanh([A, C]); }) as Map<number, any[]>;
+    for (const cn of [A, C]) assert(sx(ac.get(cn)!) === sx((dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq), `[${A},${B}] rồi [${A},${C}]: chi nhánh ${cn} lệch gọi riêng`);
+    /* Rà #2154 (2): em đang học lớp ở chi nhánh khác chi nhánh của em → tính từng chi nhánh, vẫn trùng gọi riêng. */
+    /* Em có nhiều dòng sổ việc nhất (việc mở + đã xong) ở C, đang học lớp của C. */
+    const dongEm = new Map<number, number>();
+    for (const r of (dem(() => nv.tinhViecChiNhanh(C)) as { kq: any[] }).kq) if (r.hocVien) dongEm.set(r.hocVien, (dongEm.get(r.hocVien) ?? 0) + 1);
+    const dangHoc = new Set((conn.prepare(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.status = 'active' AND c.branch_id = ?`).all(C) as any[]).map((r) => r.id));
+    const em = { id: [...dongEm].filter(([id]) => dangHoc.has(id)).sort((x, y) => y[1] - x[1])[0][0] };
+    conn.prepare(`UPDATE students SET branch_id = ? WHERE id = ?`).run(A, em.id);
+    const lech = dem(() => nv.tinhViecNhieuChiNhanh(cns)) as { kq: Map<number, any[]> };
+    for (const cn of cns) assert(sx(lech.kq.get(cn)!) === sx((dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq), `em ${em.id} lệch chi nhánh: chi nhánh ${cn} gom ≠ riêng`);
   }));
 
   check('NV-LAM-MOI-LOI · một chi nhánh tính lỗi: lượt của nó được trả (ngay NULL, request sau tính lại), chi nhánh khác vẫn ghi sổ', () => thu(() => {

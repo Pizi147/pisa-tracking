@@ -11,7 +11,7 @@
  *   Chọn bước tiếp — `buoc_tiep_luc` · `trangThaiSauThi`  ·  Bàn giao — `xac_nhan_luc` / `ban_giao_mon.ghi_luc` / `ban_giao_gv.xong_luc` · hạn của lệnh
  *   Xử lý vi phạm — `phan_hoi_ngay` · `han_xu_ly` (một lần phản hồi một việc)  ·  Phối hợp SOS — meeting CX `performed_on` · `hanPhoiHop`
  * Người giữ việc: như Công việc khi đọc lại được (chủ Case, GVCN / GVBM theo phân công lúc hạn, TVV của em, người giữ Mini Test); không ai giữ → không tính.
- * Lớp như Công việc: Case — lớp của lượt, không thì lớp đang học (`COT_CASE`); việc khác — lớp đang học. Đọc: 6 câu một chi nhánh mỗi request (nhớ theo chi nhánh + kỳ).
+ * Lớp như Công việc: Case — lớp của lượt, không thì lớp đang học (`COT_CASE`); việc khác — lớp đang học. Đọc: 7 câu cho MỌI chi nhánh của lời gọi (TOC-DO-2511c).
  * ponytail: Bàn giao môn sửa lại câu thì `ghi_luc` là lần sửa cuối; Báo PH bỏ trượt hạn theo Tạm dừng — thêm cột "xong lần đầu" nếu chủ SP báo lệch.
  */
 import { db } from '../db.ts';
@@ -22,7 +22,9 @@ import { nguoiGiuMiniTest } from '../normal/cuoiKhoa.ts';
 import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
 
 export type ViecXong = ViecGopDuoc & { xong: string; dung: boolean };
-type Ky = { cn: number; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay: string };
+type Ky = { cns: readonly number[]; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay: string };
+/** Chi nhánh của câu: MỘT câu cho mọi chi nhánh (TOC-DO-2511c), dòng mang cột `cn_` để chia lại. */
+const CN_IN = 'IN (SELECT value FROM json_each(?))';
 
 /** Lớp em đang học (ghi danh active mới nhất), không thì lớp của lượt — như `napPa` / Công việc. `hv` = cột em. */
 const lopEm = (hv: string, luot: string) => `COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = ${hv} AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), ${luot})`;
@@ -31,25 +33,22 @@ const gvLop = (lop: string, ngay: string, mon: string | null) => `(SELECT ta.use
   AND ${mon ? `(ta.skill = ${mon} OR (${mon} = 'writing' AND ta.skill IN ('writing1', 'writing2')))` : 'ta.is_core = 1'} AND ta.effective_from <= ${ngay} AND (ta.effective_to IS NULL OR ta.effective_to >= ${ngay}) ORDER BY ta.id DESC LIMIT 1)`;
 
 /**
- * Việc đã xong của một chi nhánh, hạn trong [tu, cuoi] — mọi khung. `kemThieuNgay` (sổ nghĩa vụ, spec 1.3): thêm Xác nhận / Mô tả Case ĐÃ có mô tả mà
- * KHÔNG có ngày xong (dữ liệu cũ) với `xong = ''`.
+ * Việc đã xong theo chi nhánh (`cns`), hạn trong [tu, cuoi] — mọi khung; số câu không theo số chi nhánh. `kemThieuNgay` (sổ nghĩa vụ, spec 1.3): thêm
+ * Xác nhận / Mô tả Case ĐÃ có mô tả mà KHÔNG có ngày xong (dữ liệu cũ) với `xong = ''`.
  */
-export function viecXongCn(c: Ky, kemThieuNgay = false): ViecXong[] {
-  return dungTap(c, kemThieuNgay);
-}
-
-function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
+export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]> {
   const conn = db();
-  const out: ViecXong[] = [];
+  const out = new Map<number, ViecXong[]>(c.cns.map((cn) => [cn, []]));
+  const json = JSON.stringify([...new Set(c.cns)]);
   const trong = (han: string | null | undefined): han is string => !!han && han >= c.tu && han <= c.cuoi;
-  const them = (r: { owner: number | null; han: string | null; xong: string | null; lop: number | null; ma: string | null; ft: number | null; hv?: number | null; ten?: string | null; daXong?: boolean },
+  const them = (r: { cn: number; owner: number | null; han: string | null; xong: string | null; lop: number | null; ma: string | null; ft: number | null; hv?: number | null; ten?: string | null; daXong?: boolean },
     x: { key: string; group: string; tieuDe: string; href: string; caseSos?: boolean; sos?: number | null }) => {
     /* Ngày xong sau hôm nay nghiệp vụ (bản demo: dấu giờ máy đi trước ngày demo) — không tính. */
     if (!r.owner || r.owner <= 0 || !trong(r.han) || (r.xong ? r.xong > c.homNay : !(kemThieuNgay && r.daXong))) return;
-    out.push({ ...x, urgency: 'normal', due: r.han, studentId: r.hv ?? null, studentName: r.ten ?? (r.ma ? `Lớp ${r.ma}` : ''), classId: r.lop, classCode: r.ma,
+    out.get(r.cn)!.push({ ...x, urgency: 'normal', due: r.han, studentId: r.hv ?? null, studentName: r.ten ?? (r.ma ? `Lớp ${r.ma}` : ''), classId: r.lop, classCode: r.ma,
       khung: r.lop == null ? null : r.ft ? 'ft' : 'thuong', ownerId: r.owner, contextLabel: null, count: null, actionLabel: '', xong: r.xong ?? '', dung: !!r.xong && r.xong <= r.han });
   };
-  const lopCua = (r: any) => ({ lop: r.lop ?? null, ma: r.ma ?? null, ft: r.ft ?? null, hv: r.hv ?? null, ten: r.ten ?? null });
+  const lopCua = (r: any) => ({ cn: r.cn_ as number, lop: r.lop ?? null, ma: r.ma ?? null, ft: r.ft ?? null, hv: r.hv ?? null, ten: r.ten ?? null });
 
   /* 1. Case: Xác nhận / Mô tả Case, Xác nhận PA, Thêm PA — một câu (Case của em chi nhánh: đi chỉ mục idx_student_branch). */
   for (const r of conn.prepare(
@@ -60,12 +59,12 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
             (SELECT MAX(iv.confirmed_at) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.preset = 1 AND iv.kind != 'bo_tro') AS xnpa,
             (SELECT MIN(iv.created_at) FROM case_interventions iv WHERE iv.case_id = sc.id) AS pa_dau,
             EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.preset = 1) AS co_qc,
-            l.id AS lop, l.code AS ma, l.is_fast_track AS ft
+            l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_
        FROM sos_cases sc JOIN students s ON s.id = sc.student_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
        JOIN classes l ON l.id = COALESCE(a.class_id, ${lopEm('sc.student_id', 'NULL')})   -- lớp của lượt trước, như COT_CASE của Công việc
-      WHERE s.branch_id = ? AND l.branch_id = ? AND sc.owner_user_id IS NOT NULL
+      WHERE s.branch_id ${CN_IN} AND l.branch_id = s.branch_id AND sc.owner_user_id IS NOT NULL
         AND (sc.han_xac_nhan BETWEEN ? AND ? OR sc.han_them_pa BETWEEN ? AND ? OR COALESCE(sc.detected_at, substr(sc.created_at, 1, 10)) BETWEEN date(?, '-7 day') AND ?)`,
-  ).all(c.cn, c.cn, c.tu, c.cuoi, c.tu, c.cuoi, c.tu, c.cuoi) as any[]) {
+  ).all(json, c.tu, c.cuoi, c.tu, c.cuoi, c.tu, c.cuoi) as any[]) {
     /* `caseSos` + mức SOS: dòng gộp như Công việc (Case SOS FT giữ từng dòng / gộp theo mức SOS). */
     const ca = { href: duongHoSoHocVien(r.hv, { caseId: r.id }), caseSos: !!r.sos, sos: r.sos_level ?? null };
     if (r.sos) {
@@ -79,23 +78,23 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
 
   /* 2. Ghi Mini Test — người giữ như Công việc (`nguoiGiuMiniTest`: GVCN lớp đang học, không có thì chủ Case). */
   const mini = conn.prepare(
-    `SELECT m.id, m.student_id AS hv, s.full_name AS ten, m.han, m.ghi_luc, m.nhom_bo_tro, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
+    `SELECT m.id, m.student_id AS hv, s.full_name AS ten, m.han, m.ghi_luc, m.nhom_bo_tro, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
             (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS chu
        FROM mini_test m JOIN students s ON s.id = m.student_id LEFT JOIN classes l ON l.id = ${lopEm('m.student_id', 'NULL')}
-      WHERE s.branch_id = ? AND m.ty_le IS NOT NULL AND m.ghi_luc IS NOT NULL AND m.han BETWEEN ? AND ?`,
-  ).all(c.cn, c.tu, c.cuoi) as any[];
+      WHERE s.branch_id ${CN_IN} AND m.ty_le IS NOT NULL AND m.ghi_luc IS NOT NULL AND m.han BETWEEN ? AND ?`,
+  ).all(json, c.tu, c.cuoi) as any[];
   const giu = nguoiGiuMiniTest(mini.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.lop ?? null, owner: m.chu ?? null })));
   for (const m of mini) them({ ...lopCua(m), owner: giu.get(m.id) ?? null, han: m.han, xong: ngayTheoGioVN(m.ghi_luc) },
     { key: `minitest:${m.id}`, group: 'mini_test', tieuDe: 'Ghi Mini Test', href: duongHoSoHocVien(m.hv) });
 
   /* 3. Báo PH (TVV của em) — lần "đã báo" đầu. PHOI-HOP-V2: việc sau Meeting CX là loại việc riêng (`phoi_hop_tvv`, khớp Công việc). */
   for (const r of conn.prepare(
-    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
+    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
             (SELECT MIN(x.ngay) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id AND x.ket_qua = 'da_bao') AS xong,
             CASE WHEN v.han_chon IS NULL THEN ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} END AS dung   -- R1-L2: hạn như panel (Tạm dừng → Quay lại)
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN classes l ON l.id = ${lopEm('v.student_id', 'NULL')}
-      WHERE s.branch_id = ? AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
-  ).all(c.cn, c.tu, c.cuoi) as any[]) {
+      WHERE s.branch_id ${CN_IN} AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
+  ).all(json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon), xong: r.xong ? String(r.xong).slice(0, 10) : null },
       r.phoi_hop_id != null
         ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
@@ -105,11 +104,11 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
   /* 4. Chọn bước tiếp (TVV của em) — hạn tính lại như lúc chờ (`buoc_tiep` = NULL). */
   for (const r of conn.prepare(
     `SELECT c.id, c.student_id AS hv, s.full_name AS ten, s.consultant_user_id AS owner, ${COT_SAU_THI}, ${NGAY_CO_KQ} AS ngay_kq_dau, c.buoc_tiep_luc,
-            l.id AS lop, l.code AS ma, l.is_fast_track AS ft
+            l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
        LEFT JOIN classes l ON l.id = ${lopEm('c.student_id', 'NULL')}
-      WHERE s.branch_id = ? AND c.buoc_tiep IS NOT NULL AND c.buoc_tiep_luc >= date(?, '-60 day')`,
-  ).all(c.cn, c.tu) as any[]) {
+      WHERE s.branch_id ${CN_IN} AND c.buoc_tiep IS NOT NULL AND c.buoc_tiep_luc >= date(?, '-60 day')`,
+  ).all(json, c.tu) as any[]) {
     const han = trangThaiSauThi({ ...r, buoc_tiep: null, ngay_kq: r.ngay_kq_dau }, c.homNay).han;
     them({ ...lopCua(r), owner: r.owner, han, xong: r.buoc_tiep_luc ? String(r.buoc_tiep_luc).slice(0, 10) : null },
       { key: `buoc_tiep:${r.id}`, group: 'buoc_tiep', tieuDe: 'Chọn bước tiếp', href: duongHoSoHocVien(r.hv, { buocTiep: r.id }) });
@@ -118,18 +117,18 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
   /* 5. Bàn giao — GVCN (lệnh) · GVBM (lệnh × môn) · đổi GV; lớp nguồn, người giữ theo phân công lúc hạn (như `viecBanGiao`).
    *    Câu Writing chung cũ (`mon = 'writing'`, trước tách W1 / W2) do GV tự ghi → tính cho người ghi, không cho GV W phân công sau cùng (chủ SP 07/11). */
   for (const r of conn.prepare(
-    `SELECT 'gvcn' AS loai, k.id AS id, k.han_gvcn AS han, k.xac_nhan_luc AS xong, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)} AS owner, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, NULL AS mon
+    `SELECT 'gvcn' AS loai, k.id AS id, k.han_gvcn AS han, k.xac_nhan_luc AS xong, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)} AS owner, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, NULL AS mon, l.branch_id AS cn_
        FROM lenh_chuyen_lop k JOIN classes l ON l.id = k.lop_nguon_id
-      WHERE l.branch_id = ? AND k.xac_nhan_luc IS NOT NULL AND k.han_gvcn BETWEEN ? AND ?
+      WHERE l.branch_id ${CN_IN} AND k.xac_nhan_luc IS NOT NULL AND k.han_gvcn BETWEEN ? AND ?
      UNION ALL
-     SELECT 'gvbm', b.id, k.han_gvbm, b.ghi_luc, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END, l.id, l.code, l.is_fast_track, b.mon
+     SELECT 'gvbm', b.id, k.han_gvbm, b.ghi_luc, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END, l.id, l.code, l.is_fast_track, b.mon, l.branch_id
        FROM ban_giao_mon b JOIN lenh_chuyen_lop k ON k.id = b.lenh_id JOIN classes l ON l.id = k.lop_nguon_id
-      WHERE l.branch_id = ? AND b.lam_lai = 0 AND k.han_gvbm BETWEEN ? AND ?
+      WHERE l.branch_id ${CN_IN} AND b.lam_lai = 0 AND k.han_gvbm BETWEEN ? AND ?
      UNION ALL
-     SELECT 'gv', g.id, g.han, g.xong_luc, g.nguoi_lam, l.id, l.code, l.is_fast_track, NULL
+     SELECT 'gv', g.id, g.han, g.xong_luc, g.nguoi_lam, l.id, l.code, l.is_fast_track, NULL, l.branch_id
        FROM ban_giao_gv g JOIN classes l ON l.id = g.class_id
-      WHERE l.branch_id = ? AND g.trang_thai = 'xong' AND g.han BETWEEN ? AND ?`,
-  ).all(c.cn, c.tu, c.cuoi, c.cn, c.tu, c.cuoi, c.cn, c.tu, c.cuoi) as any[]) {
+      WHERE l.branch_id ${CN_IN} AND g.trang_thai = 'xong' AND g.han BETWEEN ? AND ?`,
+  ).all(json, c.tu, c.cuoi, json, c.tu, c.cuoi, json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), hv: null, ten: null, owner: r.owner, han: r.han, xong: ngayTheoGioVN(r.xong) },
       { key: `ban-giao-xong:${r.loai}:${r.id}${r.mon ? `:${r.mon}` : ''}`, group: 'ban_giao', tieuDe: 'Bàn giao', href: `/hoc-vien/lop/${r.lop}` });
   }
@@ -137,24 +136,24 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
   /* 6. Xử lý vi phạm bắt buộc (GVCN lớp lúc ghi, theo phân công lúc hạn) — một lần phản hồi (em × ngày phản hồi) một việc, hạn sớm nhất. */
   for (const r of conn.prepare(
     `SELECT v.student_id AS hv, s.full_name AS ten, v.phan_hoi_ngay AS xong, MIN(v.han_xu_ly) AS han, ${gvLop('v.class_id', 'v.phan_hoi_ngay', null)} AS owner,
-            l.id AS lop, l.code AS ma, l.is_fast_track AS ft
+            l.id AS lop, l.code AS ma, l.is_fast_track AS ft, l.branch_id AS cn_
        FROM violations v JOIN students s ON s.id = v.student_id JOIN classes l ON l.id = v.class_id
-      WHERE l.branch_id = ? AND v.phan_hoi_ngay IS NOT NULL AND v.han_xu_ly BETWEEN ? AND ?
+      WHERE l.branch_id ${CN_IN} AND v.phan_hoi_ngay IS NOT NULL AND v.han_xu_ly BETWEEN ? AND ?
       GROUP BY v.student_id, v.phan_hoi_ngay, v.class_id`,
-  ).all(c.cn, c.tu, c.cuoi) as any[]) {
+  ).all(json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: r.han, xong: String(r.xong).slice(0, 10) },
       { key: `yt-xong:${r.hv}:${r.xong}`, group: 'yt_xu_ly', tieuDe: 'Xử lý vi phạm', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc' }) });
   }
 
   /* 7. Phối hợp SOS — chỉ meeting CX có hạn (`hanPhoiHop`); GVCN lớp em đang học. */
   for (const r of conn.prepare(
-    `SELECT x.id, x.kind, x.created_at, x.han_chon, x.pb_moc, x.performed_on AS xong, x.phu_trach_id AS giao, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
+    `SELECT x.id, x.kind, x.created_at, x.han_chon, x.pb_moc, x.performed_on AS xong, x.phu_trach_id AS giao, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
             ${gvLop('l.id', 'x.performed_on', null)} AS owner
        FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN assessment_attempts a ON a.id = x.attempt_id
        JOIN classes l ON l.id = ${lopEm('x.student_id', 'a.class_id')}
-      WHERE s.branch_id = ? AND x.status = 'done' AND x.performed_on IS NOT NULL AND x.kind IN (${maViecCoHan().map(() => '?').join(',')})
+      WHERE s.branch_id ${CN_IN} AND x.status = 'done' AND x.performed_on IS NOT NULL AND x.kind IN (${maViecCoHan().map(() => '?').join(',')})
         AND COALESCE(x.han_chon, substr(x.created_at, 1, 10)) BETWEEN date(?, ?) AND ?`,
-  ).all(c.cn, ...maViecCoHan(), c.tu, `-${Math.max(10, hanViecLonNhat() + 5)} day`, c.cuoi) as any[]) {
+  ).all(json, ...maViecCoHan(), c.tu, `-${Math.max(10, hanViecLonNhat() + 5)} day`, c.cuoi) as any[]) {
     /* CAU-HINH-CASE-SOS: việc có hạn theo bản chụp của dòng (bản gốc: chỉ Meeting CX, 5 ngày → cửa sổ 10 như cũ; Quản trị đặt hạn dài → cửa sổ theo hạn). */
     const han = hanPhoiHop(r.kind, r.created_at, r.han_chon, r.pb_moc ?? null);
     if (!han) continue;
