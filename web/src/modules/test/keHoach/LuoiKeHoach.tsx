@@ -124,11 +124,12 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
   return (
     <div ref={cuon} className="overflow-x-auto bg-[color:var(--surface)]">
       {/* Cột đợt rộng CỐ ĐỊNH (mockup PR 659) — cột "+ MT" / S Ex ngay SAU cột đợt cuối (RA-UI-1, mockup `v7/ke-hoach-test.html`), phần dư dồn vào cột trống cuối hàng. */}
-      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
+      <table className="text-sm" style={{ tableLayout: 'fixed', width: '100%', minWidth: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
           {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
+          <col />   {/* cột đệm cuối: ăn phần thừa để đường kẻ dòng chạy hết khung; ô MT / tên / Thêm giữ rộng cố định */}
         </colgroup>
         <thead>
           <tr>
@@ -141,6 +142,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
             ))}
             {/* B23 (mockup V11): cột "+ MT ▾" có tiêu đề nhìn thấy "Thêm". */}
             {loai === 'ft' && !chiXem && <th scope="col" className="kh-th">{t('Thêm')}</th>}
+            <th className="kh-th" aria-hidden></th>
           </tr>
         </thead>
         <tbody>
@@ -226,6 +228,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                   </div>
                 </td>
               )}
+              <td className="kh-td" aria-hidden />
             </tr>
             {/* Chủ SP 06/11: hàng S Ex mảnh ngay dưới hàng MT (thay chip S Ex ở cột "Thêm"); mọi người thấy, chỉ người sửa lịch Test xếp. */}
             {loai === 'ft' && (() => {
@@ -245,6 +248,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                     </td>
                   ))}
                   {!chiXem && <td className="kh-td" aria-hidden />}
+                  <td className="kh-td" aria-hidden />
                 </tr>
               );
             })()}
