@@ -111,7 +111,9 @@ export async function runR1NoCuTests(t: YThucTestKit) {
   check('CHU-5 Case môn gộp (L+S): ứng viên = GV L + GV S + GV L+S + GVCN, không trùng người', () => thu(() => {
     const c = caseCuaLop();
     conn.prepare(`UPDATE sos_cases SET category = 'listening_speaking', topic = 'listening_speaking' WHERE id = ?`).run(c.id);
-    const gv = all(`SELECT id FROM users WHERE id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active') ORDER BY id LIMIT 3`, LOP).map((r) => r.id);
+    /* E-3 (N69): ứng viên phải có vai CÒN HIỆU LỰC ở chi nhánh của lớp (hoặc toàn hệ thống). */
+    const gv = all(`SELECT DISTINCT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' WHERE (ur.branch_id IS NULL OR ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?1))
+      AND u.id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?1 AND status = 'active') ORDER BY u.id LIMIT 3`, LOP).map((r) => r.id);
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND status = 'active' AND skill IN ('listening', 'speaking') AND is_core = 0`).run(LOP);
     const them = conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, ?, 0, 'active', '2026-09-01', '2026-09-01')`);
     them.run(LOP, gv[0], 'listening'); them.run(LOP, gv[1], 'speaking'); them.run(LOP, gv[2], 'listening_speaking');
@@ -212,7 +214,9 @@ export async function runR1NoCuTests(t: YThucTestKit) {
 
   check('CHU-14 MON_GOP chiều ngược: Case môn tách (L · W1) ← GV môn gộp (L+S · W · R+W) là ứng viên', () => thu(() => {
     const c = caseCuaLop();
-    const gv = all(`SELECT id FROM users WHERE id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active') ORDER BY id LIMIT 3`, LOP).map((r) => r.id);
+    /* E-3 (N69): ứng viên phải có vai CÒN HIỆU LỰC ở chi nhánh của lớp (hoặc toàn hệ thống). */
+    const gv = all(`SELECT DISTINCT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' WHERE (ur.branch_id IS NULL OR ur.branch_id = (SELECT branch_id FROM classes WHERE id = ?1))
+      AND u.id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?1 AND status = 'active') ORDER BY u.id LIMIT 3`, LOP).map((r) => r.id);
     const them = conn.prepare(`INSERT INTO teacher_assignments (class_id, user_id, skill, is_core, status, effective_from, created_at) VALUES (?, ?, ?, 0, 'active', '2026-09-01', '2026-09-01')`);
     them.run(LOP, gv[0], 'listening_speaking'); them.run(LOP, gv[1], 'writing'); them.run(LOP, gv[2], 'reading_writing');
     xoaNho();
