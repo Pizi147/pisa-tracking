@@ -58,6 +58,11 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
     document.addEventListener('pointerdown', dong);
     return () => { document.removeEventListener('keydown', dong); document.removeEventListener('pointerdown', dong); };
   }, [moThem]);
+  /* Badge "Thêm": cộng số các tab trong menu — cùng nghĩa số từng tab (Chấm Speaking: bài quá hạn hoặc tổng bài). Đỏ khi có tab quá hạn, vàng khi hạn hôm nay, còn lại mờ. */
+  const soThem = tabs.filter((x) => an.has(x.key)).reduce((a, x) => {
+    const b = x.badge;
+    return { so: a.so + (b ? (b.bai ? b.bai.quaHan || b.bai.n : b.so) : 0) + (x.so ?? 0), quaHan: a.quaHan + (b ? b.quaHan + (b.bai?.quaHan ?? 0) : 0), homNay: a.homNay + (b?.homNay ?? 0) };
+  }, { so: 0, quaHan: 0, homNay: 0 });
   const khoaTab = tabs.map((x) => `${x.key}${x.so ?? ''}${x.badge?.so ?? ''}`).join('|');
   useLayoutEffect(() => {
     const h = hang.current;
@@ -65,9 +70,12 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
     const tinh = () => {
       const nut = Array.from(h.querySelectorAll<HTMLElement>('[role="tab"]'));
       const goc = h.getBoundingClientRect().left;
-      const rong = h.clientWidth;
+      /* ỔN ĐỊNH (chủ SP 25/11): thanh cuộn của <main> hiện / ẩn theo độ dài danh sách từng tab → bề rộng hàng đổi 10 px → tab "Ý thức" lúc có lúc không.
+         Luôn tính như đang CÓ thanh cuộn: bề rộng chỉ đổi theo cửa sổ + panel, không theo tab chọn. */
+      const sc = h.closest('main');
+      const rong = h.clientWidth - (sc && sc.offsetWidth === sc.clientWidth ? 10 : 0);   // ponytail: 10 = bề rộng ::-webkit-scrollbar (index.css), Firefox khác vài px
       const het = nut.length ? nut[nut.length - 1].getBoundingClientRect().right - goc : 0;
-      const gioiHan = het <= rong ? rong : rong - 92;   // 92 = nút "Thêm ▾"
+      const gioiHan = het <= rong ? rong : rong - 124;   // 124 = nút "Thêm ▾" + badge (chỗ dành sẵn, có badge hay không cũng vậy)
       const ra = new Set(nut.filter((n) => n.getBoundingClientRect().right - goc > gioiHan).map((n) => n.dataset.tab!));
       setAn((a) => (a.size === ra.size && [...ra].every((k) => a.has(k)) ? a : ra));
     };
@@ -135,7 +143,11 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
         <span className="absolute inset-y-0 right-0 flex items-stretch" style={{ background: 'var(--bg)' }}>
           <button type="button" aria-haspopup="menu" aria-expanded={moThem} ref={nutThem} onClick={() => { const r = nutThem.current?.getBoundingClientRect(); if (r) setViTriThem({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMoThem(!moThem); }}
             className={`-mb-px inline-flex min-h-[44px] cursor-pointer appearance-none items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 text-sm font-semibold ${an.has(value) ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
-            {t('Thêm')} <span aria-hidden>▾</span>
+            {t('Thêm')}
+            {soThem.so > 0 && (soThem.quaHan || soThem.homNay
+              ? <BadgeTabSo b={{ so: soThem.so, n: soThem.so, quaHan: soThem.quaHan, homNay: soThem.homNay }} />
+              : <BadgeMo so={soThem.so} />)}
+            <span aria-hidden>▾</span>
           </button>
           {/* Menu qua portal ra <body>: danh sách (isolate) và panel 720 không che / cắt được. */}
           {moThem && viTriThem && createPortal(
@@ -143,7 +155,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
               {tabs.filter((x) => an.has(x.key)).map((x) => (
                 <li key={x.key} role="none">
                   <button type="button" role="menuitem" onClick={() => { setMoThem(false); onChange(x.key); }}
-                    className={`flex min-h-[40px] w-full cursor-pointer appearance-none items-center gap-2 rounded-md border-0 bg-transparent px-3 text-left text-sm font-semibold hover:bg-[color:var(--accent-soft)] ${x.key === value ? 'text-[color:var(--text)]' : 'text-dim'}`}>
+                    className={`flex min-h-[40px] w-full cursor-pointer appearance-none items-center gap-2 rounded-md border-0 bg-transparent px-3 text-left text-sm font-semibold hover:bg-[color:var(--accent-soft)] ${x.key === value ? 'bg-[color:var(--accent-soft)] text-[color:var(--text)]' : 'text-dim'}`} aria-current={x.key === value || undefined}>
                     {x.label}{x.badge && <BadgeTabSo b={x.badge} />}{!!x.so && x.so > 0 && <BadgeMo so={x.so} />}
                   </button>
                 </li>

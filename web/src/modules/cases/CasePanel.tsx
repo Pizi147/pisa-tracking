@@ -594,9 +594,13 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
     sua ? <GiaTriSua kieu="chu" nhan={t('Sửa mô tả')} onClick={() => setGo(true)}><ChuDich chu={chu} nguon={laMt && chinh ? { bang: 'case_issues', id: chinh.id, cot: 'observation' } : { bang: 'sos_cases', id: data.id, cot: 'summary' }} /></GiaTriSua>
       : <MoTaGon dai={chu.length > 180}><ChuDich chu={chu} nguon={laMt && chinh ? { bang: 'case_issues', id: chinh.id, cot: 'observation' } : { bang: 'sos_cases', id: data.id, cot: 'summary' }} /></MoTaGon>
   ) : sua ? (
-    <button type="button" className={`o-trong ${viec ? 'viec-toi' : ''}`} onClick={() => setGo(true)}>
-      <span>{t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}</span>{viec}
-    </button>
+    /* Chip "việc của …" nằm DƯỚI ô, không trong ô: không chen chỗ chữ gợi ý (chủ SP 25/11). */
+    <div className="grid w-full justify-items-start gap-1.5">
+      <button type="button" className={`o-trong ${viec ? 'viec-toi' : ''}`} onClick={() => setGo(true)}>
+        <span>{t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}</span>
+      </button>
+      {viec}
+    </div>
   ) : <span className="text-faint">{t('Chưa có')}</span>;
   return (
     <>
