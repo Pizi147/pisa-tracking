@@ -22,7 +22,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
   const xoaHV: any = await import('../students/xoaHocVien.ts');
   const rac: any = await import('../platform/khoiPhucRac.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const { hanBaoPh, hanTraLai } = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
   const ph: any = await import('../yThuc/phoiHop.ts');
@@ -606,7 +606,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       const sid = moiEm(); const { vids } = xuLy(sid);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;
       assert(dong(id).nguoi_nhan === gvbm.userId, 'ban đầu về GVBM');
-      accounts.setRoles(P.admin, gvbm.userId, [{ role: 'teacher', branches: ['CP'] }]);   // ĐẶT CUỐI: GVBM mất vai MB (không trả lại phân công)
+      voiXacNhan(() => accounts.setRoles(P.admin, gvbm.userId, [{ role: 'teacher', branches: ['CP'] }]));   // ĐẶT CUỐI: GVBM mất vai MB (không trả lại phân công)
       assert(dong(id).nguoi_nhan === gvcn.userId && tin(`tra-lai:${id}:nhan:${gvcn.userId}`).includes(gvcn.userId), `về GVCN + chuông: ${JSON.stringify(dong(id))}`);
       assert(items(gvcn).some((x) => x.key === `yt_tra_lai:${id}`) && !items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`), '/my-work theo người mới');
       ck.set(gvbm.userId, await vao(gvbm.userId));
