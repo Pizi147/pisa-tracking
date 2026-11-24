@@ -325,12 +325,12 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   const dienThoai = useDienThoai();
   const [het, setHet] = useState(false);
   const COT: CotBang[] = [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 260 },
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 130 },
-    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 80 },
-    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 220 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 120 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 120 },
+    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 100 },
+    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 160 },
+    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 100 },
+    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -370,7 +370,7 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   const hang = dienThoai && !het ? data.lop.slice(0, LOP_375) : data.lop;
   const an = data.lop.length - hang.length;
   return (
-    <Card bodyClass="p-0 o-so-hop"
+    <Card bodyClass="p-0"
       title={(
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">{t('Lớp đang dạy')}{data.lop.length > 0 && <DemDau n={data.lop.length} />}
           <NutLuat label={t('Lớp đang dạy')}>{t('Phân công đang hiệu lực. Chưa nhập · Quá hạn: bài Test của lớp chưa nhập điểm, tính tới hôm nay — bấm số xem từng bài và hạn.')}</NutLuat>
@@ -383,7 +383,7 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
       )}>
       {!data.lop.length ? <Empty title={t('Chưa có phân công lớp nào đang hiệu lực.')} /> : (
         <>
-          <Bang ten={t('Lớp đang dạy')} cot={COT} hang={hang} khoa={(l) => l.id} oCua={oCua} phuCua={(l, c) => (c.key === 'lop' ? phu?.get(l.id) ?? null : null)}
+          <Bang ten={t('Lớp đang dạy')} deu cot={COT} hang={hang} khoa={(l) => l.id} oCua={oCua} phuCua={(l, c) => (c.key === 'lop' ? phu?.get(l.id) ?? null : null)}
             khung={false} theRieng={the} />
           {an > 0 && (
             <div className="border-t px-4 py-3" style={{ borderColor: 'var(--line)' }}>
@@ -664,7 +664,7 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: { gvId: number; nguoiXem: { 
     return <OSo giaTri={h.quaHan} className={h.quaHan ? 'text-bad' : ''} tieuDe={`${t('Việc quá hạn')} · ${ten(h)}`} nguon={nguon(gvId, `cot=viec${loc(h)}&qh=1`)} />;
   };
   return (
-    <Card bodyClass="p-0 o-so-hop"
+    <Card bodyClass="p-0"
       title={(
         <span className="inline-flex items-center gap-x-1">{t('Việc đang tồn')}
           <NutLuat label={t('Việc đang tồn')}>{t('Tính tới hôm nay ({tuan}), không theo kỳ. Việc lấy từ Công việc — bấm số xem danh sách ngay tại đây; tên nhóm › mở Công việc đúng nhóm. Ý thức & Phối hợp: chỉ việc có hạn.', { tuan: tuanLich(homNay, homNay) })}</NutLuat>
@@ -673,11 +673,11 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: { gvId: number; nguoiXem: { 
       {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <Skeleton rows={2} className="p-4" />
         : (
-          <Bang ten={t('Việc đang tồn')} khung={false} the375={false} hang={hang} khoa={(h) => (h.tong ? 'tong' : h.nhom)} oCua={oCua} lopHang={(h) => (h.tong ? 'tong' : '')}
+          <Bang ten={t('Việc đang tồn')} deu khung={false} the375={false} hang={hang} khoa={(h) => (h.tong ? 'tong' : h.nhom)} oCua={oCua} lopHang={(h) => (h.tong ? 'tong' : '')}
             cot={[
-              { key: 'nhom', nhan: t('Nhóm'), kieu: 'ten', linhHoat: true },
-              { key: 'viec', nhan: t('Việc'), kieu: 'diem', rong: 76 },
-              { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 92 },
+              { key: 'nhom', nhan: t('Nhóm'), kieu: 'ten', linhHoat: true, rong: 200 },
+              { key: 'viec', nhan: t('Việc'), kieu: 'diem', rong: 100 },
+              { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
             ]}
             rong={{ tieuDe: t('Không có việc nào') }} />
         )}
@@ -699,12 +699,12 @@ function KhoiBoTro({ ds }: { ds: BoTroHs[] }) {
     return x.hanMiniTest ? <ChipHan loai="mini-test" han={x.hanMiniTest} vien /> : <span className="text-slate-500">—</span>;
   };
   return (
-    <Card title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
-      <Bang ten={t('Em đang bổ trợ')} khung={false} khoa={(x) => x.hvId} hang={ds}
+    <Card className="max-w-[720px]" title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
+      <Bang ten={t('Em đang bổ trợ')} deu khung={false} khoa={(x) => x.hvId} hang={ds}
         cot={[
-          { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 256 },
-          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', linhHoat: true },
-          { key: 'han', nhan: 'Mini Test', kieu: 'chu', rong: 180 },
+          { key: 'ten', nhan: t('Học viên'), kieu: 'ten', linhHoat: true, rong: 220 },
+          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 160 },
+          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 120 },
         ]}
         phuCua={(x, k) => (k.key === 'ten' && x.lopMa ? x.lopMa : null)}
         theRieng={(x) => (
@@ -757,7 +757,7 @@ function KhoiCase({ data, homNay, linkPa, onDoi }: { data: HoSo; homNay: string;
     <Card bodyClass="p-0"
       title={(
         <span className="inline-flex flex-wrap items-center gap-2">{t('Case đang phụ trách')}
-          {ds.length > 0 && <span className="o-so-hop text-[13px]"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} /></span>}
+          {ds.length > 0 && <span className="text-[13px]"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} /></span>}
         </span>
       )}
       action={linkPa ? <Link to={linkPa.den} className="link whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link> : undefined}>
@@ -845,13 +845,13 @@ function KhoiYeuCau({ data, coDuyet, coYeuCau }: { data: HoSo; coDuyet: boolean;
     return h.qh === null ? null : <OSo giaTri={h.qh} className={h.qh ? 'text-bad' : ''} tieuDe={t('Yêu cầu quá hạn duyệt')} nguon={nguon(id, 'cot=yc-cho&qh=1')} />;
   };
   return (
-    <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link} bodyClass={y.cho === 0 && y.tuChoi === 0 ? 'p-4' : 'p-0 o-so-hop'}>
+    <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link} bodyClass={y.cho === 0 && y.tuChoi === 0 ? 'p-4' : 'p-0'}>
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">{t('Không có yêu cầu nào đang chờ.')}</p> : (
-        <Bang ten={t('Yêu cầu đã gửi')} khung={false} the375={false} hang={hang} khoa={(h) => h.key} oCua={oCua}
+        <Bang ten={t('Yêu cầu đã gửi')} deu khung={false} the375={false} hang={hang} khoa={(h) => h.key} oCua={oCua}
           cot={[
-            { key: 'ten', nhan: t('Yêu cầu'), kieu: 'ten', linhHoat: true },
-            { key: 'so', nhan: t('Số'), kieu: 'diem', rong: 76 },
-            { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 92 },
+            { key: 'ten', nhan: t('Yêu cầu'), kieu: 'ten', linhHoat: true, rong: 200 },
+            { key: 'so', nhan: t('Số'), kieu: 'diem', rong: 100 },
+            { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
           ]} />
       )}
     </Card>

@@ -219,18 +219,18 @@ export default function LuuTruPage() {
     </span>
   );
   const COT_LOP: CotBang[] = [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 180 },
-    { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 180 },
-    { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', rong: 240 },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 200 },
+    { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 160 },
+    { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', rong: 200 },
     { key: 'hv', nhan: t('HV từng học'), kieu: 'so', rong: 120 },
-    { key: 'ketThuc', nhan: t('Kết thúc'), kieu: 'chu', linhHoat: true },
+    { key: 'ketThuc', nhan: t('Kết thúc'), kieu: 'chu', rong: 140 },
     { key: 'nut', nhan: '', kieu: 'nut', rong: 200 },
   ];
   const COT_HV: CotBang[] = [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 240 },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', linhHoat: true, rong: 240 },
     { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 230 },
     { key: 'lt', nhan: t('Lộ trình'), kieu: 'chu', rong: 110 },
-    { key: 'tu', nhan: t('Từ ngày'), kieu: 'chu', linhHoat: true },
+    { key: 'tu', nhan: t('Từ ngày'), kieu: 'chu', rong: 140 },
     { key: 'nut', nhan: '', kieu: 'nut', rong: 340 },
   ];
 
@@ -266,7 +266,7 @@ export default function LuuTruPage() {
           : cnLop.map((g) => (
             <section key={g.khoa} aria-label={g.ten} className="space-y-1.5">
               {dauCn(g.ten, t('{n} lớp', { n: g.ds.length }))}
-              <Bang<LopLuuTru | DaiNhom> ten={`${t('Lớp đã kết thúc')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangLop(g.ds)} cot={COT_LOP}
+              <Bang<LopLuuTru | DaiNhom> ten={`${t('Lớp đã kết thúc')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangLop(g.ds)} deu cot={COT_LOP}
                 lopHang={(h) => (laDai(h) ? 'hang-nhom-lop' : '')}
                 oCua={(h, c) => {
                   if (laDai(h)) return c.key === 'lop' ? nhanDai(h) : null;
@@ -301,7 +301,7 @@ export default function LuuTruPage() {
               {cnHv.map((g) => (
                 <section key={g.khoa} aria-label={g.ten} className="space-y-1.5">
                   {dauCn(g.ten, t('{n} em', { n: g.ds.length }))}
-                  <Bang<HocVienLuuTru | DaiNhom> ten={`${t('Học viên đã lưu trữ')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangHv(g.ds)} cot={COT_HV}
+                  <Bang<HocVienLuuTru | DaiNhom> ten={`${t('Học viên đã lưu trữ')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangHv(g.ds)} deu cot={COT_HV}
                     lopHang={(h) => (laDai(h) ? 'hang-nhom-lop' : chon.chon.has(h.id) ? 'bg-[color:var(--accent-soft)]' : '')}
                     oCua={(h, c) => {
                       if (laDai(h)) return c.key === 'hv' ? nhanDai(h) : null;

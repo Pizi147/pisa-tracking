@@ -17,6 +17,7 @@ import { PanelViec } from '../congViec/PanelViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import type { WorkItem } from './WorkList.tsx';
 import { PhanTram, ChuaCoDl, kyChu, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import {
   laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
@@ -205,6 +206,8 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
 
 /* ───────────── Lớp cần chú ý — ma trận C ───────────── */
 
+/** < 640 px: đầu cột một dòng (tên đủ ở `title` của đầu cột, `goiY`). */
+const NHAN_NGAN: Record<CotLop | 'sos', string> = { case: 'Case', diem: t('Điểm'), meeting: 'Meet.', bcph: 'BCPH', sos: 'SOS' };
 const NHAN_COT: Record<CotLop | 'sos', string> = { case: t('Case chưa PA'), diem: t('Điểm thiếu'), meeting: 'Meeting', bcph: t('Báo cáo PH'), sos: t('SOS 2–3') };
 /* Meeting: số ở ô = số VIỆC (mỗi việc là một phần meeting của lớp, có nhiều em) — ghi "em" làm ô "4 em" lệch 4 dòng việc (4 + 6 + 8 + 3 em). */
 const DON_VI: Record<CotLop, (n: number) => string> = { case: (n) => t('{n} em', { n }), diem: (n) => t('{n} bài', { n }), meeting: (n) => t('{n} việc', { n }), bcph: (n) => t('{n} việc', { n }) };
@@ -228,6 +231,7 @@ function OMaTran({ o, cot, lop, onBam }: { o: HangLop<Dong>['o'][CotLop]; cot: C
 function LopCanChuYC({ hang, cot, sos, onMo, xemHet }: { hang: HangLop<Dong>[]; cot: readonly CotLop[]; sos?: Map<number, { n: number; ids: number[] }>;
   onMo: (p: MoPanel) => void; xemHet: string }) {
   const ds = hang.slice(0, TOI_DA_LOP);
+  const dt = useDienThoai();
   const moO = (h: HangLop<Dong>, c: CotLop) => onMo({
     tieuDe: `${h.classCode} · ${NHAN_COT[c]}`, phu: DON_VI[c](h.o[c]!.so || h.o[c]!.viec.length),
     nhom: [{ khoa: `${h.classId}:${c}`, ten: h.classCode, viec: h.o[c]!.viec }],
@@ -241,8 +245,8 @@ function LopCanChuYC({ hang, cot, sos, onMo, xemHet }: { hang: HangLop<Dong>[]; 
         <div data-hd="tq-lop-chu-y" className="max-sm:[&_th]:whitespace-normal max-sm:[&_th]:text-xs [&_td]:py-1.5">
           {/* Mockup C: 375 GIỮ ma trận (không thành thẻ) — `the375={false}`; độ rộng cơ sở vừa 375 (96 + 4 × 62), ≥ 640 phần dư chia theo tỉ lệ (`deu`). */}
           <Bang ten={t('Lớp cần chú ý')} khung={false} the375={false} deu hang={ds} khoa={(h) => h.classId}
-            cot={[{ key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 96 }, ...cot.map((c) => ({ key: c, nhan: NHAN_COT[c], kieu: 'so' as const, rong: 62 })),
-              ...(sos ? [{ key: 'sos', nhan: NHAN_COT.sos.replace('–', '⁠–⁠'), kieu: 'so' as const, rong: 62 }] : [])]}
+            cot={[{ key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 96 }, ...cot.map((c) => ({ key: c, nhan: dt ? NHAN_NGAN[c] : NHAN_COT[c], goiY: NHAN_COT[c], kieu: 'so' as const, rong: 62 })),
+              ...(sos ? [{ key: 'sos', nhan: dt ? NHAN_NGAN.sos : NHAN_COT.sos.replace('–', '⁠–⁠'), goiY: NHAN_COT.sos, kieu: 'so' as const, rong: 62 }] : [])]}
             oCua={(h, c) => {
               if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so whitespace-nowrap font-semibold">{h.classCode}</Link>;
               if (c.key === 'sos') { const x = sos?.get(h.classId); return x?.n ? <OSo giaTri={x.n} tieuDe={`${t('SOS 2–3')} · ${h.classCode}`} nguon={`/tong-quan/chi-nhanh/sos23?ids=${x.ids.join(',')}`} className="so-chinh text-sm font-semibold" /> : null; }
@@ -384,7 +388,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
       {!viec.data ? null : (
         <div className="flex flex-col gap-4">
           {/* 375 (mockup T1b): Lớp cần chú ý → Giáo viên → Chờ duyệt → Tình hình — hai lưới thành `contents`, thứ tự bằng `order`. */}
-          <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1200px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ''}`}>
+          <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]' : ''}`}>
             <div className="max-sm:order-2"><KhoiGiaoVien quaHan={quaHan} tenCn={tenCn} onMo={setPanel} /></div>
             {duyet && choN > 0 && <div className="max-sm:order-3">{hop.error ? <ErrorState message={hop.error.message} onRetry={hop.reload} /> : !hop.data ? <Skeleton rows={3} /> : (
               <Card bodyClass="p-0" className="h-full" title={<span className="inline-flex items-baseline gap-2">{t('Chờ duyệt')}<span className="text-[13px] font-medium text-dim tabular-nums">{hop.data.the.length}</span></span>}

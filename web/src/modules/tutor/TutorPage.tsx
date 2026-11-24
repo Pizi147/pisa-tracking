@@ -124,9 +124,9 @@ export default function TutorPage() {
     { key: 'ten', nhan: t('Người dạy'), kieu: 'ten', rong: 260 },
     { key: 'noi', nhan: t('Nơi dạy'), kieu: 'chu', rong: 120 },
     { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 100 },
-    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 72, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
-    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: c.k === 'feedbackGv' ? 116 : 96 })),
-    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 92 },
+    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 96, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
+    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 112 })),
+    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 96 },
     { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'chu', linhHoat: true },
   ];
   const oCua = (d: DongTutor, c: CotBang): ReactNode => {
