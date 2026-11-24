@@ -31,9 +31,9 @@ type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; demBiet: number
 /** PR-LUI-a2: Từ chối nhiều gửi theo lô (mỗi thẻ ~16 câu SQL) — một request ≤ 200 câu. */
 const LO_TU_CHOI = 6;
 
-export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
+export function useTheNhanManh(ds: TheYeuCauDto[] | undefined, theGoc?: number | null): number | null {
   const [params] = useSearchParams();
-  const the = Number(params.get('the')) || null;
+  const the = theGoc !== undefined ? theGoc : Number(params.get('the')) || null;
   const [nhan, setNhan] = useState<number | null>(null);
   useEffect(() => {
     if (!the || !ds?.some((x) => x.id === the)) return;
@@ -52,24 +52,27 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
  * Dưới hàng lọc: danh sách khối em (V8-CV) · panel duyệt ở cột phải (`?the=`). Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): chỉ ở Chờ duyệt, cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
  */
-export function HopChoDuyet({ branchId, khuLoc }: {
+export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
   /** AUDIT-UI B6: ô hàng lọc hết bề ngang dưới hàng tab của Công việc (không có → vẽ ngay trên danh sách). */
   khuLoc?: HTMLElement | null;
   /** Không còn dùng (v24 H1: duyệt mở TẠI DÒNG, không panel phải) — giữ để chỗ gọi cũ không đổi. */
   khuPanel?: HTMLElement | null;
   /** SL1 (A7-01): chi nhánh của Công việc — số trên hàng lọc và thẻ cùng một phạm vi. `null` = mọi chi nhánh trong quyền. */
   branchId: number | null;
+  /** PANEL TỔNG QUAN (chủ SP 25/11): CHÍNH danh sách này trong panel — chỉ thẻ đang chờ, không hàng lọc, không đọc / ghi bộ lọc trên địa chỉ trang; `dau` = thẻ mở sẵn. */
+  gon?: boolean;
+  dau?: number | null;
 }) {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const thamXem = params.get('xem');
+  const thamXem = gon ? null : params.get('xem');
   const xem = thamXem === 'da-xu-ly' || thamXem === 'de-biet' ? thamXem : 'cho';
   /* Phân loại lọc ở Chờ duyệt và Đã xử lý; Báo QL chỉ có một phân loại. */
-  const phan = xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
+  const phan = !gon && xem !== 'de-biet' && laPhanLoai(params.get('phan')) && params.get('phan') !== 'bao-len' ? (params.get('phan') as KhoaChip) : 'tat-ca';
   /* PR-S4F #5: `?lop=` — từ badge "n chờ duyệt" của một lớp, hoặc ô "Lớp ▾". */
-  const lopId = Number(params.get('lop')) || null;
+  const lopId = gon ? null : Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
-  const quaHan = params.get('qua-han') === '1' && xem !== 'da-xu-ly';
+  const quaHan = !gon && params.get('qua-han') === '1' && xem !== 'da-xu-ly';
   /* C-2 (bảng kê 25/11): đổi bộ lọc làm `url` đổi → gập mọi dòng, bỏ chọn, xoá lý do Từ chối nhiều. Còn ô lý do đang mở thì HỎI trước ("Bỏ chữ đang gõ?"), không mất chữ âm thầm. */
   const [choDoi, setChoDoi] = useState<{ chay: () => void } | null>(null);
   const hoiTruocKhiDoi = (chay: () => void) => { if (dangO.size > 0 || !!lyDoTc?.trim()) setChoDoi({ chay }); else chay(); };
@@ -105,7 +108,7 @@ export function HopChoDuyet({ branchId, khuLoc }: {
   const url = `/yeu-cau?${qs}`;
   const { data, loading, error, reload } = useApi<Hop>(url, [url]);
   /* Mở từ chuông (`?the=12`) mà thẻ không còn trong danh sách đang xem (đã có người xử lý / tự đóng / khác chi nhánh đang lọc). */
-  const theTuLink = Number(params.get('the')) || null;
+  const theTuLink = gon ? dau ?? null : Number(params.get('the')) || null;
   const theMo = theTuLink ? data?.the.find((x) => x.id === theTuLink) ?? null : null;
 
   /* Hàng loạt: một loại một lúc (luật ở `chonMot` / `chonHet`). */
@@ -139,7 +142,7 @@ export function HopChoDuyet({ branchId, khuLoc }: {
   useEffect(() => { setMo(new Set()); setLenh(null); }, [url]);
   const [dangGui, setDangGui] = useState<number | null>(null);
   const { session } = useSession();
-  const nhanId = useTheNhanManh(data?.the);
+  const nhanId = useTheNhanManh(data?.the, gon ? dau ?? null : undefined);
   const boMo = (id: number) => { setMo((s) => { const n = new Set(s); n.delete(id); return n; }); setLenh((l) => (l?.id === id ? null : l)); };
   /* `?the=` từ chuông / Tổng quan: mở sẵn đúng dòng (kể cả thẻ nằm sau "Xem thêm"). */
   useEffect(() => {
@@ -277,8 +280,8 @@ export function HopChoDuyet({ branchId, khuLoc }: {
   );
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   return (
-    <div className="space-y-3">
-      {khuLoc ? createPortal(hangLoc, khuLoc) : hangLoc}
+    <div className={`space-y-3${gon ? ' dyc-panel pt-3' : ''}`}>
+      {gon ? null : khuLoc ? createPortal(hangLoc, khuLoc) : hangLoc}
 
       {/* v24 H1: thanh chọn nhiều — "Đã chọn n · Bỏ chọn · Duyệt n yêu cầu" (tick đầu = chọn / bỏ hết thẻ cùng loại đang hiện). */}
       {chon.size > 0 && (
@@ -340,7 +343,7 @@ export function HopChoDuyet({ branchId, khuLoc }: {
           onBam={bamDong} onNut={bamNut} onXong={(id) => xongDong(id)} onThemPa={setNgan}
           onO={(id, d) => setDangO((s) => { if (s.has(id) === d) return s; const n = new Set(s); if (d) n.add(id); else n.delete(id); return n; })} />
       )}
-      {data && (ds.length > soHien || !!data.khacChiNhanh) && (
+      {data && (ds.length > soHien || (!!data.khacChiNhanh && !gon)) && (
         /* V8-CV: chân danh sách — Xem thêm · n ở chi nhánh khác · Xem › (AUDIT-UI B6: bỏ "Mở hộp duyệt ›" — hộp là chính tab này). */
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[13px]">
           {ds.length > soHien && (
@@ -348,7 +351,7 @@ export function HopChoDuyet({ branchId, khuLoc }: {
               {t('Xem thêm {n} yêu cầu', { n: Math.min(10, ds.length - soHien) })}
             </button>
           )}
-          {!!data.khacChiNhanh && (
+          {!!data.khacChiNhanh && !gon && (
             <span className="text-dim">{t('{n} yêu cầu ở chi nhánh khác', { n: data.khacChiNhanh })} · <button type="button"
               className="link appearance-none border-0 bg-transparent p-0 font-semibold max-sm:inline-block max-sm:py-3" onClick={() => setParam('cn', 'tat-ca')}>{t('Xem ›')}</button></span>
           )}

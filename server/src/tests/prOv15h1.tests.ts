@@ -6,6 +6,9 @@
  *  · thông báo tự động ghi MỘT câu cho cả lô, không reset đã đọc; ghi xong (POST) thì lần mở chuông kế đồng bộ lại ngay;
  *  · Chờ bạn duyệt theo chi nhánh đang lọc.
  */
+import nodeFs from 'node:fs';
+import nodePath from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv15h1Tests(t: YThucTestKit) {
@@ -101,6 +104,19 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
       sum += n;
     }
     assert(sum <= tong && ds.length > 0, `Σ chi nhánh ${sum} > tổng ${tong}`);
+  });
+
+  check('H1-7 · ô "Chờ duyệt" Tổng quan = panel = tab Công việc: MỘT số (Admin Monbay: ô 12 ≠ panel 10 vì ô đọc `/yeu-cau/dem` mọi chi nhánh) — số lấy từ chip Tất cả của hộp theo chi nhánh trang', () => {
+    const hop = GET(() => yc.hopChoDuyet(P.admin, { branchId: MB, xem: 'cho' }));
+    const demCn = GET(() => yc.demYeuCau(P.admin, { branchId: MB })).cho;
+    const tong = GET(() => yc.demYeuCau(P.admin)).cho;
+    assert(hop.dem['tat-ca'] === hop.the.length && hop.the.length === demCn, `hộp ${hop.the.length} · dem['tat-ca'] ${hop.dem['tat-ca']} · /dem chi nhánh ${demCn}`);
+    assert(tong > demCn && hop.khacChiNhanh === tong - demCn, `demo cần có thẻ ở chi nhánh khác để phép kiểm có nghĩa: tổng ${tong} · chi nhánh ${demCn} · khác ${hop.khacChiNhanh}`);
+    /* Web (không chạy React ở đây): ô + đầu khối đọc số hộp; `dem.cho` (mọi chi nhánh) chỉ là công tắc tải hộp; panel là CHÍNH HopChoDuyet. */
+    const w = nodeFs.readFileSync(nodePath.resolve(nodePath.dirname(fileURLToPath(import.meta.url)), '../../../../web/src/modules/worklist/TongQuanVai.tsx'), 'utf8');
+    assert(/const choN = hop\.data \? hop\.data\.dem\['tat-ca'\]/.test(w) && /<OCan ten=\{t\('Chờ duyệt'\)\} so=\{choN\}/.test(w), "ô Chờ duyệt không đọc dem['tat-ca'] của hộp");
+    assert(!/so=\{dem \? choN/.test(w) && !/hop\.data\.the\.length\}<\/span>/.test(w), 'đầu khối / ô còn đếm theo nguồn khác');
+    assert(/<HopChoDuyet branchId=\{branchId\} gon dau=\{dau\} \/>/.test(w), 'panel Chờ duyệt Tổng quan không dùng HopChoDuyet của tab Công việc');
   });
 
 }
