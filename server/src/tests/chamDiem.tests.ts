@@ -82,6 +82,13 @@ export async function runChamDiemTests(t: YThucTestKit) {
     eq(d.ketQuaThuong({ dat: 2, daCham: 2, tong: 4, thieu: ['W', 'S'] }).chinh, '2/2 môn đạt', 'Mới chấm hai môn');
     eq(d.ketQuaThuong({ dat: 2, daCham: 2, tong: 4, thieu: ['W', 'S'] }).phu, 'còn W, S chưa chấm', 'Dòng phụ gọi tên môn');
     eq(d.ketQuaThuong({ dat: 3, daCham: 4, tong: 4, thieu: [] }).chinh, '3/4 môn đạt', 'Đủ điểm thì bỏ chữ "đã chấm"');
+    /* PANEL-GON (#2072): nhãn Kết quả một dòng trong panel — ✗ chỉ khi đủ điểm mà trượt. */
+    const nh = (daCham: number, du: boolean, dat: boolean) => d.nhanKetQuaLuoi({ daCham, du, dat });
+    eq(nh(0, false, false), 'chua-co', 'Chưa môn nào có điểm');
+    eq(nh(3, false, false), 'chua-du', 'Thiếu điểm (ô P trống) mà đã có môn trượt → Chưa đủ điểm, không ✗');
+    eq(nh(2, false, true), 'chua-du', 'Thiếu điểm, các môn đã chấm đều đạt → Chưa đủ điểm');
+    eq(nh(4, true, true), 'dat', 'Đủ điểm, đạt → ✓');
+    eq(nh(4, true, false), 'truot', 'Đủ điểm, trượt → ✗');
     eq(d.ketQuaThuong({ dat: 0, daCham: 0, tong: 4, thieu: ['L', 'R', 'W', 'S'] }).chinh, 'Chưa nhập điểm', 'Chưa có gì');
     assert(d.ketQuaThuong({ dat: 0, daCham: 0, tong: 4, thieu: ['L', 'R', 'W', 'S'] }).phu === null,
       'Chưa nhập môn nào thì không liệt kê cả bốn môn (G-3)');
