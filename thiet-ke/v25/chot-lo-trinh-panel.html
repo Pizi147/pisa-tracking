@@ -497,10 +497,10 @@ const E375 = (...ids) => ds(...ids);
 const dt = (st, sang = true, h = 812) => `<div class="dt ${sang ? 'sang' : 'toi'}" data-web style="height:${h}px">${thanhTrenDt}${panel({ ...st, dt: true })}</div>`;
 const S375 = {
   b: { ems: E375('q', 'c', 'n', 'k', 'h', 'l'), foot: { l1: '2 em sẵn sàng · 2 → MB BE 05 · bắt đầu <span class="nw">W3 SEP</span>', l2: '<span class="canh">⚠ 1 em chờ chọn lớp</span> · 2 em chưa có hướng', nut: nutChot(2) },
-    loc: [['Chưa chốt', 5, true]] },
+    loc: [['Chưa chốt', 5, false], ['Còn bàn giao', 1, false]] },
 };
 S375.b.ems = S375.b.ems.map((e) => (e.id === 'n' ? { ...e, hopTh: hopKv(e, {}, 'pan') } : e.id === 'l' ? { ...e, mo: true } : e));
-S375.c = { ems: E375('q', 'c', 'n', 'k', 'h', 'l').map((e) => ({ ...e, sel: ['q', 'c'].includes(e.id) })), n: 2, loc: [['Chưa chốt', 5, true]],
+S375.c = { ems: E375('q', 'c', 'n', 'k', 'h', 'l').map((e) => ({ ...e, sel: ['q', 'c'].includes(e.id) })), n: 2, loc: [['Chưa chốt', 5, false], ['Còn bàn giao', 1, false]],
   ap: { n: 2, bt: 'Lên BE', lop: 'MB BE 05', tuan: 'W3 SEP' }, foot: { l1: '2 em sẵn sàng · 2 → MB BE 05', l2: '1 em chờ chọn lớp · 2 em chưa có hướng', nut: nutChot(2) } };
 
 /* ---------- B: trang Cuối khoá ---------- */
@@ -520,7 +520,7 @@ function trang375() {
   const ems = E375('q', 'c', 'n', 'k', 'h', 'l').map((e) => ({ ...e, sel: ['q', 'c'].includes(e.id), ...(e.id === 'n' ? { hopTh: hopKv(e, {}, 'pan') } : {}) }));
   const meta = ['FOU', '6 em', 'Final W1 SEP', 'GVCN Vũ Thu Lan'].join(' · ') + ' · <span class="hn qua">27/08/2026</span>';
   return `<div class="dt sang tg" data-web>${thanhTrenDt}<div class="noi-dung"><a class="tg-quay" href="#">‹ MB FOU 21</a><section class="tg-the"><div class="tg-dau"><h1>Cuối khoá · MB FOU 21</h1><span class="meta">${meta}</span><span class="phai"><span><b>1/6</b> em đã chốt</span><button class="nut-i" aria-label="Quy chế">${ic('i')}</button></span></div>
-    <div class="ck-bar" style="margin:0 14px 6px"><label class="tat">${tick(false, 'Chọn tất cả', true)}Chọn tất cả <span class="so">· 6</span></label><span class="loc"><span class="lb">Lọc</span>${chipLoc('Chưa chốt', 5, false)}</span></div>
+    <div class="ck-bar" style="margin:0 14px 6px"><label class="tat">${tick(false, 'Chọn tất cả', true)}Chọn tất cả <span class="so">· 6</span></label><span class="loc"><span class="lb">Lọc</span>${chipLoc('Chưa chốt', 5, false)}${chipLoc('Còn bàn giao', 1, false)}</span></div>
     ${the375({ ems })}${sheet375(st.ap)}<div class="tg-chan"><div class="ck-tt"><b>Khi chốt:</b> 2 em sẵn sàng · 2 → MB BE 05<span class="l2">1 em chờ chọn lớp · 2 em chưa có hướng</span></div><span class="phai">${nutChot(2)}</span></div></section></div></div>`;
 }
 
