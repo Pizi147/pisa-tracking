@@ -117,6 +117,10 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
     assert(/const choN = hop\.data \? hop\.data\.dem\['tat-ca'\]/.test(w) && /<OCan ten=\{t\('Chờ duyệt'\)\} so=\{choN\}/.test(w), "ô Chờ duyệt không đọc dem['tat-ca'] của hộp");
     assert(!/so=\{dem \? choN/.test(w) && !/hop\.data\.the\.length\}<\/span>/.test(w), 'đầu khối / ô còn đếm theo nguồn khác');
     assert(/<HopChoDuyet branchId=\{branchId\} gon dau=\{dau\} \/>/.test(w), 'panel Chờ duyệt Tổng quan không dùng HopChoDuyet của tab Công việc');
+    /* Lưới cố định của panel (chủ SP 25/11 "cái lên cái xuống"): tick giữ chỗ · nội dung · ngày 92 · nút 176; dòng đầu 32 px cho tick / tên / ngày / nút cùng tâm. */
+    const css = nodeFs.readFileSync(nodePath.resolve(nodePath.dirname(fileURLToPath(import.meta.url)), '../../../../web/src/index.css'), 'utf8');
+    assert(/\.dyc-panel \.dyc-dong \{ grid-template-columns: 18px minmax\(0, 1fr\) 176px; align-items: start;/.test(css) && /\.dyc-panel \.dyc-mo \{[^}]*grid-template-columns: minmax\(0, 1fr\) 92px;/.test(css)
+      && /\.dyc-panel \.dyc-mo > \.dyc-ai, \.dyc-panel \.dyc-mo > \.dyc-hn \{ min-height: 32px;/.test(css) && /\.dyc-panel \.dyc-nut \{[^}]*height: 32px;/.test(css), 'lưới cột cố định của panel Chờ duyệt (tick · nội dung · ngày · nút) bị đổi');
   });
 
 }

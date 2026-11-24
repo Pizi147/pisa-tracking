@@ -2185,11 +2185,18 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .dyc-tc .dyc-hang { display: grid; grid-template-columns: 1fr 1fr; }
     .dyc-hang .btn { min-height: 44px; justify-content: center; }
   }
-  /* PANEL CHỜ DUYỆT Ở TỔNG QUAN (chủ SP 25/11, khung 720 → danh sách ~680 px: chưa đủ cho bộ cột 8 phần của tab, thừa cho dạng điện thoại): vẫn dạng hai-ba tầng
-     của 375 nhưng Từ chối / Duyệt đứng MỘT cột bên phải mọi dòng (thẳng cột, giữa dòng), không chiếm cả hàng dưới. Chỉ trong `.dyc-panel` (HopChoDuyet `gon`). */
+  /* PANEL CHỜ DUYỆT Ở TỔNG QUAN (chủ SP 25/11, khung 720 → danh sách ~680 px: chưa đủ cho bộ cột 8 phần của tab, thừa cho dạng điện thoại): LƯỚI CỐ ĐỊNH cho MỌI dòng —
+     [ô tick 18, luôn giữ chỗ] [nội dung] [ngày 92 phải] [nút 176 phải]. Dòng ĐẦU cao 32 px (tick · tên em · ngày · nút CÙNG TÂM, ngày và nút cùng top);
+     lớp · việc và chip · người gửi là hai dòng dưới, cao cố định 22 / 24 px (dòng có chip và không chip cao bằng nhau). Chỉ trong `.dyc-panel` (HopChoDuyet `gon`). */
   @container (min-width: 480px) and (max-width: 699px) {
-    .dyc-panel .dyc-dong { grid-template-columns: 18px minmax(0, 1fr) 176px; align-items: center; }   /* 176 = 2 nút 84 + 8: dòng một nút (Trả lời) vẫn thẳng cột hạn với dòng hai nút */
-    .dyc-panel .dyc-nut { grid-column: 3; display: flex; justify-content: flex-end; }
+    .dyc-panel .dyc-dong { grid-template-columns: 18px minmax(0, 1fr) 176px; align-items: start; padding-top: 12px; padding-bottom: 12px; }
+    .dyc-panel .dyc-chon { height: 32px; align-items: center; }
+    .dyc-panel .dyc-mo { min-height: 0; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; row-gap: 2px; }
+    .dyc-panel .dyc-mo > .dyc-ai, .dyc-panel .dyc-mo > .dyc-hn { min-height: 32px; display: flex; align-items: center; }
+    .dyc-panel .dyc-mo > .dyc-hn { justify-content: flex-end; }
+    .dyc-panel .dyc-mo > .dyc-vd { min-height: 22px; line-height: 22px; }   /* không flex: giữ khoảng trắng sau "lớp ·" */
+    .dyc-panel .dyc-mo .dyc-duoi { min-height: 24px; margin-top: 0; align-items: center; }
+    .dyc-panel .dyc-nut { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; height: 32px; }   /* 176 = 2 nút 84 + 8: dòng một nút (Trả lời) vẫn thẳng cột */
     .dyc-panel .dyc-nut .btn { height: 32px; }
   }
 }
