@@ -768,6 +768,20 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(JSON.stringify(chung) === JSON.stringify(rieng), `lệch: riêng ${rieng.length} dòng · chung ${chung.length} dòng; dòng đầu lệch ${JSON.stringify(chung.find((r, i) => JSON.stringify(r) !== JSON.stringify(rieng[i])))}`);
   }));
 
+  /* TOC-DO-2511c: `tinhViecNhieuChiNhanh` — số câu KHÔNG theo số chi nhánh (trước ~40 câu × chi nhánh), từng chi nhánh = gọi riêng. */
+  check('NV-NHIEU-CN · tính sổ việc mọi chi nhánh một lượt: số câu ≈ một chi nhánh (≤ +10), từng chi nhánh trùng tinhViecChiNhanh', () => thu(() => {
+    const cns = moiCn();
+    const sx = (ds: any[]) => JSON.stringify([...ds].sort((a, b) => (a.khoa < b.khoa ? -1 : a.khoa > b.khoa ? 1 : 0)));
+    const dem = (fn: () => unknown) => ngu.chayTrongRequest('GET', () => { const c = ngu.soCauSql(); const kq = fn(); return { n: ngu.soCauSql() - c, kq }; });
+    const mot = dem(() => nv.tinhViecChiNhanh(cns[0]));
+    const nhieu = dem(() => nv.tinhViecNhieuChiNhanh(cns)) as { n: number; kq: Map<number, any[]> };
+    assert(cns.length >= 3 && nhieu.n <= mot.n + 10, `${cns.length} chi nhánh: ${nhieu.n} câu > một chi nhánh ${mot.n} + 10`);
+    for (const cn of cns) {
+      const rieng = (dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq;
+      assert(sx(nhieu.kq.get(cn)!) === sx(rieng), `chi nhánh ${cn}: gom ${nhieu.kq.get(cn)!.length} dòng ≠ riêng ${rieng.length} dòng`);
+    }
+  }));
+
   check('NV-LAM-MOI-LOI · một chi nhánh tính lỗi: lượt của nó được trả (ngay NULL, request sau tính lại), chi nhánh khác vẫn ghi sổ', () => thu(() => {
     const docMoc = () => mocHt.docMoc(get(`SELECT json_group_object(khoa, json_array(so, luc, ngay)) AS j FROM moc_he_thong`).j);
     const cns = moiCn();

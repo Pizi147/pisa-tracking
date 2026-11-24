@@ -1257,7 +1257,7 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
   'QL /tong-quan/v5?ct=ft': 46,   // DOC-PT: đo 35 (trước 40) · NHẸ HƠN PR-3: bỏ Trễ chấm + caseGv — đo 34
   'ADMIN /my-work?nguoi=tat-ca&branchId={cn}': 26, 'CX /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,   // NHẸ HƠN PR-3: đo 16 · 8 → max(đo + 10, ⌈đo × 1,3⌉)
-  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 95, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 100, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 111, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 115, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 51,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)
+  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 95, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 100, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 111, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 115, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 48,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)   // TOC-DO-2511c: Admin −3 câu lặp (việc giao, Báo cáo PH ×2 — `docNho`) → 51 − 3
   'CX /tong-quan/v5?ct=ft&gon=1': 35,   // TQ-QT-NHE: đo QL 73 · QT 77 (trước 74 · 78) → max(đo + 10, ⌈đo × 1,3⌉) · NHẸ HƠN PR-3 (PTA rà #2002): đo 74 · 78 · 35 · 25 → max(đo + 10, ⌈đo × 1,3⌉)
   'QT /tong-quan/v5?ct=ft': 47,   // TL-TQ: đo 36 (trước 49)
   'QL /tong-quan/v5?ct=thuong': 35,   // DOC-PT: đo 25 (trước 29)
@@ -2472,7 +2472,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/ref/branches', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft&gon=1', '/my-work', '/tong-quan/chi-nhanh/sos23?ids={sos23}'],   // UI-TONG-QUAN: một GET · N52: + badge `/my-work` · NHẸ HƠN PR-3: + "Em cần chú ý" (panel SOS 2–3)
   },
   'Admin trang Tổng quan': {
-    vai: 'ADMIN', tran: 60,   // TQ-QT-NHE A2: như QL — đo 45; trang + badge 50 → 45 · NHẸ HƠN PR-3: `/tong-quan/v5?gon=1&kemViec=1` thay Mock Test + Lịch sắp tới — đo 41 (trước 46) ·   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 46 → max(46 + 10, ⌈46 × 1,3⌉) ·
+    vai: 'ADMIN', tran: 57,   // TOC-DO-2511c: −3 câu lặp   // TQ-QT-NHE A2: như QL — đo 45; trang + badge 50 → 45 · NHẸ HƠN PR-3: `/tong-quan/v5?gon=1&kemViec=1` thay Mock Test + Lịch sắp tới — đo 41 (trước 46) ·   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 46 → max(46 + 10, ⌈46 × 1,3⌉) ·
     urls: ['/demo/session', '/ref/branches', '/tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0'],   // NHẸ HƠN PR-3 ([XM-P3-3]): bỏ khối Mock Test + Lịch sắp tới
   },
 };
