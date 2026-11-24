@@ -21,9 +21,10 @@ export function NutLuat({ children, label = t('Luật'), phai = false }: {
   useBamNgoai(mo, () => setMo(false), hop, noi);
   useEffect(() => {
     if (!mo) return;
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMo(false); };
-    document.addEventListener('keydown', esc);
-    return () => document.removeEventListener('keydown', esc);
+    /* Esc chỉ đóng hộp ⓘ (lớp trên cùng), không lan sang panel / hộp chứa nó; focus về nút ⓘ. */
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setMo(false); nut.current?.focus(); } };
+    document.addEventListener('keydown', esc, true);
+    return () => document.removeEventListener('keydown', esc, true);
   }, [mo]);
   return (
     <span ref={hop} className="relative inline-flex">

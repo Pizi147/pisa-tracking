@@ -29,12 +29,12 @@ export function ChipSos({ muc, kyNang, hienKyNang = true, tam, dot, ten, thuong,
     if (!cho) return;
     hop.current?.focus({ preventScroll: true });   // không cuộn (cuộn = đóng hộp); hộp vẽ cuối <body>: đưa focus vào để bàn phím / trình đọc màn hình tới được việc trong hộp
     const dong = () => setCho(null);
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { dong(); nut.current?.focus(); } };
-    document.addEventListener('keydown', esc);
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dong(); nut.current?.focus(); } };   // chỉ đóng hộp, không lan sang panel chứa chip
+    document.addEventListener('keydown', esc, true);
     window.addEventListener('scroll', dong, true);
     window.addEventListener('resize', dong);
     return () => {
-      document.removeEventListener('keydown', esc);
+      document.removeEventListener('keydown', esc, true);
       window.removeEventListener('scroll', dong, true); window.removeEventListener('resize', dong);
     };
   }, [cho]);

@@ -247,7 +247,8 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
             )}
             {/* PTA Tutor 20/11: bảng Head tutor ĐỌC để đánh giá — không theo chuẩn hàng 44 / 64: đủ chữ ngay, hàng cao theo nội dung (`.bang-doc`). */}
             <div className="bang-doc"><Bang<BuoiDay> ten={t('Kết quả đã ghi')} khung={false} cot={cot} hang={kq} khoa={(b) => b.id} oCua={oKq} phuCua={phuKq}
-              rong={{ tieuDe: tatCa.length ? t('Không có lần ghi khớp bộ lọc.') : t('Chưa có kết quả nào trong khoảng này.') }} /></div>
+              rong={{ tieuDe: tatCa.length ? t('Không có lần ghi khớp bộ lọc.') : t('Chưa có kết quả nào trong khoảng này.'),
+                nut: tatCa.length && loc !== 'tat-ca' ? <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Xoá lọc')}</button> : undefined }} /></div>
           </div>
         )}
       <ConfirmDialog open={!!xoa} onClose={() => setXoa(null)} onConfirm={() => xoa && xoaNx(xoa)} busy={gui} danger z="z-[60]"

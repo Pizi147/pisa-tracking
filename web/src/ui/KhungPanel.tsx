@@ -311,6 +311,30 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     return () => { document.body.style.overflow = cu; };
   }, [taiCho, la720]);
 
+  /* Panel tại chỗ của Công việc không giữ focus (danh sách bên trái vẫn đi phím được) — nhưng đóng (✕ / Esc) thì trả focus về dòng đã mở nó, không rơi về <body>.
+     Chỉ khi focus đang ở <body> (không giành focus của chỗ người dùng đã chuyển sang). Panel mở sau thay panel cũ: dòng mở là dòng đang focus lúc dựng. */
+  const [moTu] = useState(() => (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
+  const dongMoi = useRef(dong);
+  dongMoi.current = dong;
+  useEffect(() => {
+    if (!taiCho || trongCot) return undefined;
+    /* Esc khi focus còn ở danh sách / nền (panel không giữ focus): đóng panel — lớp trên cùng của trang. Ô gõ, hộp, menu, danh sách chọn, toast có Esc riêng, đứng trước. */
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      const a = document.activeElement as HTMLElement | null;
+      if (khung.current?.contains(a)) return;   // focus trong panel: `onKeyDown` của khung lo
+      if (a && a !== document.body && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+      if (document.querySelector('[aria-modal="true"], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], .vung-toast > *')) return;
+      dongMoi.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      const a = document.activeElement;
+      if ((!a || a === document.body) && moTu?.isConnected) moTu.focus({ preventScroll: true });
+    };
+  }, [taiCho, trongCot, moTu]);
+
   useEffect(() => {
     if (taiCho) return undefined;   // tại chỗ: Esc chỉ khi focus trong panel (`onKeyDown` dưới)
     /* Esc chỉ đóng lớp TRÊN CÙNG: panel mở sau cùng (`nganPanel`); `Modal` mở chồng trong panel (không portal) tự đóng bằng Esc — panel đứng yên. */
