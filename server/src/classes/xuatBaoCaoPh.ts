@@ -7,13 +7,13 @@
  */
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { activeAt, lopDayDu, type Principal } from '../permissions.ts';
+import { activeAt, lopConViec, lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { nhoTheoGhi } from '../platform/mocHeThong.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { COT_BAI_ROI, diemGoc, docTuyChinhDot, dotCuaLop, emTrongDot, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
   addDaysIso, boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
@@ -93,14 +93,14 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
   const rows: any[] = [];
   theoLoJson([...new Set(ds.map((x) => x.c.id))], (json) => {
     rows.push(...db().prepare(
-      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, s.id, s.full_name FROM enrollments e JOIN students s ON s.id = e.student_id
+      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, s.id, s.full_name
+         FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`,
     ).all(json) as any[]);
   });
   for (const { c, d } of ds) {
-    const moc = d.han < homNay ? d.han : homNay;
     const thay = new Set<number>();
-    out.set(`${c.id}|${d.ma}`, rows.filter((r) => r.class_id === c.id && r.tu <= moc && (!r.den || r.den > moc) && !thay.has(r.id) && thay.add(r.id))
+    out.set(`${c.id}|${d.ma}`, rows.filter((r) => r.class_id === c.id && emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id))
       .map((r) => ({ id: r.id, ten: r.full_name })));
   }
   return out;
@@ -279,7 +279,8 @@ export type ViecXuatBc = { classId: number; code: string; dot: string; nhanDot: 
 function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, homNay: string, ql: { batTu: string } | null = null) {
   return nho(`bc-ph-cua-so:${[...cn].join(',')}:${branchId ?? ''}:${ql ? ql.batTu : ''}`, () => {
     const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
-    const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
+    /* N71: + lớp đã kết thúc — Admin: trong 45 ngày (`lopConViec`, cửa sổ hạn + 30); QL (N49): như việc GV, tới khi xong (`lopBcConViec`). */
+    const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => (ql ? lopBcConViec(c, ql.batTu) : lopConViec(c, homNay)) && (cn.has(null) || cn.has(c.branch_id))
       && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
     const tienDo = classProgressMany(lop.map((c) => c.id));   // một lô cho mọi lớp (FT: tuần khai giảng — BC-PH-MOC)
     const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
@@ -334,9 +335,9 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
 }
 
 /**
- * N49 (chủ SP 16/11, audit câu 4): Báo cáo PH quá hạn > 7 ngày (đã rời Công việc của GV, `viecBaoCaoPhGv`) mà lớp còn em chưa đủ → MỘT việc mỗi lớp × đợt
- * cho QL / Quản trị của chi nhánh lớp (tab "Việc quản lý"). Giữ tới khi lớp đủ, QL / Admin chọn "Không báo cáo đợt này" (`docTuyChinhDot`), hoặc lớp kết thúc
- * (rà #1788: không trần 30 ngày). `batTu`: như việc GV — đợt có hạn trước ngày bật không sinh việc (GV chưa từng có việc đó).
+ * N49 (chủ SP 16/11, audit câu 4; N71 25/11): Báo cáo PH quá hạn > 7 ngày mà lớp còn em chưa đủ → MỘT việc nhắc mỗi lớp × đợt cho QL / Quản trị của chi nhánh
+ * lớp (tab "Việc quản lý") — GV VẪN giữ việc của mình (`viecBaoCaoPhGv`). Giữ tới khi lớp đủ hoặc QL / Admin chọn "Không báo cáo đợt này" (`docTuyChinhDot`);
+ * lớp đã kết thúc vẫn tính (rà #1788: không trần 30 ngày). `batTu`: như việc GV — đợt có hạn trước ngày bật không sinh việc (GV chưa từng có việc đó).
  * Turso: tiến độ lớp + tuỳ chỉnh đợt (lớp của chi nhánh), rồi em + bản ghi CHỈ của đợt quá hạn > 7 ngày; nhớ theo tiến trình tới lần ghi kế tiếp
  * (`nhoTheoGhi`) → badge QL mở lại khi chưa ai ghi gì: 0 câu.
  */
@@ -349,7 +350,8 @@ export function viecBcPhQuaHanQl(p: Principal, branchId: number | null, batTu = 
 }
 /**
  * LG-3 VIỆC GV "Báo cáo PH" (chủ SP 13–14/11 — lời 12, 13, 16): mỗi lớp × đợt một việc cho người có phần phải viết theo phân công HÔM NAY
- * (GV kỹ năng: phần mình · GVCN: Chung · GVCN kiêm kỹ năng: MỘT dòng mọi phần của mình). Đợt: đang mở hoặc quá hạn ≤ 7 ngày (rồi tự rời, như việc Admin);
+ * (GV kỹ năng: phần mình · GVCN: Chung · GVCN kiêm kỹ năng: MỘT dòng mọi phần của mình). Đợt: đang mở hoặc quá hạn — N40 sửa theo N71 (chủ SP 25/11 "Giữ tới khi
+ * xong"): quá hạn GIỮ tới khi viết xong (bỏ "hiện thêm 7 ngày rồi rời"); lớp đã kết thúc (em cuối chuyển đi) vẫn tính;
  * mọi loại đợt (tháng FT, Progress / Final lớp thường, đợt QL thêm). Xong = mọi em trong đợt đủ mọi phần của mình — tính theo bản ghi em × phần nên hai GV
  * cùng phần: một người viết đủ thì cả hai cùng xong. `batTu`: không sinh việc cho đợt có hạn trước ngày này (ngày bật tính năng).
  * Turso: 0 câu khi không có phân công lớp có mẫu báo cáo; còn lại tiến độ lớp + tuỳ chỉnh đợt (lớp của GV, nhớ theo request) và — chỉ khi có đợt trong
@@ -358,8 +360,14 @@ export function viecBcPhQuaHanQl(p: Principal, branchId: number | null, batTu = 
 export type ViecBcGv = { userId: number; classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
 /** Người giữ phần: GV (chính người xem) hoặc mọi GV trong phạm vi khi QL / QT xem "Tất cả" — cùng câu đọc cho cả nhóm. */
 export type NguoiBc = { userId: number; assignments: readonly Pick<Principal['assignments'][number], 'classId' | 'skill' | 'isCore' | 'effectiveFrom' | 'effectiveTo'>[] };
+/**
+ * N71: lớp còn sinh việc Báo cáo PH tới khi xong — đang chạy, hoặc đã kết thúc từ sau (ngày bật − 31) (đợt có hạn trước ngày bật không sinh việc: lớp xong trước
+ * đó không thể còn đợt nào). ponytail: đợt QL thêm cho lớp ĐÃ kết thúc lâu trước ngày bật thì không tính — cần thì đọc theo `bao_cao_ph_dot`.
+ */
+const lopBcConViec = (c: Pick<LopBc, 'status'> & { finished_at?: string | null }, batTu: string): boolean =>
+  c.status === 'active' || (c.status === 'finished' && (!batTu || (c.finished_at ?? '').slice(0, 10) >= addDaysIso(batTu, -31)));
 /** Lớp × phần người giữ phải viết theo phân công hôm nay (lớp có mẫu báo cáo) — `viecBaoCaoPhGv` và `dotBcSapMoGv` dùng chung. */
-function phanCuaNguoi(nguoi: readonly NguoiBc[], homNay: string) {
+function phanCuaNguoi(nguoi: readonly NguoiBc[], homNay: string, batTu: string) {
   const cuaToi = new Map<string, Set<string>>();   // "người|lớp" → phần
   for (const n of nguoi) for (const a of n.assignments) {
     const k = a.isCore ? 'chung' : a.skill;
@@ -372,18 +380,18 @@ function phanCuaNguoi(nguoi: readonly NguoiBc[], homNay: string) {
   return [...cuaToi].flatMap(([khoa, k]) => {
     const [userId, id] = khoa.split('|').map(Number);
     const c = lop.get(id) as LopBc | undefined;
-    const phan = c?.status === 'active' ? boPhanBc(c.programme_code ?? c.kind)?.filter((x) => k.has(x.khoa)) ?? [] : [];
+    const phan = c && lopBcConViec(c, batTu) ? boPhanBc(c.programme_code ?? c.kind)?.filter((x) => k.has(x.khoa)) ?? [] : [];
     return phan.length ? [{ userId, c: c!, phan }] : [];
   });
 }
 
 export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu = ''): ViecBcGv[] {
-  const can = phanCuaNguoi(nguoi, homNay);
+  const can = phanCuaNguoi(nguoi, homNay, batTu);
   if (!can.length) return [];
   const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
   const dotLop = new Map(ids.map((id) => [id, (dotCuaLop(lopDayDu().get(id) as LopBc, homNay, tienDo, tuyChinh)?.ds ?? [])
-    .filter((d) => soNgayQuaHan(d, homNay) <= 7 && d.han >= batTu)]));
+    .filter((d) => d.mo <= homNay && d.han >= batTu)]));   // N40 / N71: quá hạn giữ tới khi xong
   const cap = can.flatMap((x) => (dotLop.get(x.c.id) ?? []).map((d) => ({ ...x, d })));
   if (!cap.length) return [];
   const emDot = emTheoLo(cap, homNay);
@@ -410,7 +418,7 @@ export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu 
  */
 export type DotBcSapMo = { classId: number; code: string; dot: string; nhanDot: string; mo: string };
 export function dotBcSapMoGv(n: NguoiBc, homNay: string, batTu = ''): DotBcSapMo[] {
-  const can = phanCuaNguoi([n], homNay);
+  const can = phanCuaNguoi([n], homNay, batTu);
   if (!can.length) return [];
   const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);

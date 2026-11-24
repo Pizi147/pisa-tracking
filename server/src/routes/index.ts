@@ -426,19 +426,22 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
   /* DOC-IT-4: phạm vi + chi nhánh lọc trong SQL — trước đọc MỌI lớp active cả hệ thống (+ đếm ghi danh từng lớp) rồi mới lọc ở dưới. */
   const pv = refLopCuKhiKiem.tat ? { sql: '1=1', params: [] } : classScopeSql(scope, 'c');
   const cn = branchId && !refLopCuKhiKiem.tat ? ' AND c.branch_id = ?' : '';
+  /* N71 (chủ SP 25/11): ô tìm (Ctrl K) — `kemKetThuc=1` thêm lớp ĐÃ KẾT THÚC trong phạm vi xem (GV: lớp từng dạy), `ket_thuc: true`, xếp sau lớp đang chạy. */
+  const kemKetThuc = qStr(req, 'kemKetThuc') === '1';
   const rows = db()
     .prepare(
       /* Tên và cách chấm của chương trình đi kèm luôn: ô chọn lớp cần nói lớp đó học gì. */
       `SELECT c.id, c.code, c.kind, c.route, c.branch_id, c.start_date, c.programme_code,
               pg.name AS programme_name, pg.scoring_mode,
               b.name AS branch_name, b.code AS branch_code,
-              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count
+              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count${kemKetThuc ? ", c.status = 'finished' AS ket_thuc" : ''}
          FROM classes c JOIN branches b ON b.id = c.branch_id
          LEFT JOIN programmes pg ON pg.code = c.programme_code
-        WHERE c.status = 'active' AND ${pv.sql}${cn} ORDER BY b.id, c.code`,
+        WHERE ${kemKetThuc ? "c.status IN ('active', 'finished')" : "c.status = 'active'"} AND ${pv.sql}${cn} ORDER BY b.id, c.code`,
     )
     .all(...pv.params, ...(cn ? [branchId] : [])) as any[];
-  rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
+  rows.sort((a, b) => (a.ket_thuc ?? 0) - (b.ket_thuc ?? 0) || soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
+  if (kemKetThuc) for (const r of rows) r.ket_thuc = !!r.ket_thuc;
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';
   /* OV-11h (PT-10): `tg` = số tuần của Phân tích → thêm lớp đã kết thúc có lượt trong khoảng (`ket_thuc: true`, web xếp nhóm "Đã kết thúc"). */
@@ -593,7 +596,8 @@ const nheMyWork = ({ items: _items, groups: _groups, cuaGv: _cuaGv, ...con }: an
 const kemTestSapToi = (p: Principal, kq: any, branchId?: number | null) => {
   if (!p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor')) return kq;
   const { sapToi, paDangChay } = tongQuanSvc.sapToiCuaGv(p, branchId);   // rà #1864: `?branchId` lọc như dòng việc
-  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
+  const lopKetThuc = tongQuanSvc.lopKetThucCuaGv(p);   // N71: lớp đã kết thúc còn việc / trong hạn xem — 0 câu
+  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(lopKetThuc.length ? { lopKetThuc } : {}), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
 };
 /** `/my-work` mặc định ("Của tôi") — route `/my-work` và phần `cuaToi` của Tổng quan (TQ-QT-NHE A2) gọi CHUNG, JSON y hệt. */
 const viecCuaToi = (p: Principal, branchId: number | null | undefined) => (can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })

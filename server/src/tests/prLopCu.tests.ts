@@ -153,7 +153,9 @@ export async function runPrLopCuTests(t: YThucTestKit) {
     assertThrows(() => regular.saveRegularScore(lr, fA, 'listening', { score: 5, total: 10 }), /quyền|phạm vi|không được|phân công/i, 'GV lớp FT nhập điểm Final lớp cũ');
     assertThrows(() => attempts.saveScore(lr, m0A, 'listening', { band: 5 }), /quyền|phạm vi|không được|phân công/i, 'GV lớp FT nhập điểm MT0 lớp cũ');
     assertThrows(() => regular.regularAttemptDetail(gv2, fA), /phạm vi|quyền/i, 'GV không dạy A xem Final của A');
-    assertThrows(() => attempts.attemptDetail(gv2, m0A), /phạm vi|quyền/i, 'GV không dạy A xem MT0 của A');
+    /* N71 (chủ SP 25/11): S của MT0 là chấm CHÉO — GV Speaking chi nhánh vẫn mở MT0 của lớp vừa kết thúc để chấm S (`lopConViec`); GV khác vẫn chặn. */
+    if (perms.laGvSpeaking(gv2)) attempts.attemptDetail(gv2, m0A);
+    else assertThrows(() => attempts.attemptDetail(gv2, m0A), /phạm vi|quyền/i, 'GV không dạy A xem MT0 của A');
     assertThrows(() => regular.regularAttemptDetail(lr, fB), /phạm vi|quyền/i, 'GV FT 101 xem Final của B (không dạy B)');
     /* Quản lý chỉ xem qua grant chi nhánh của lớp lượt — không có lối "đang dạy em" (không phân công). */
     assert(!perms.xemLuotQuaLopDangHoc(QL, A), 'Quản lý được mở qua "đang dạy em"');

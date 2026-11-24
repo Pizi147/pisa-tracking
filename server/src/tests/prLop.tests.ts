@@ -238,7 +238,7 @@ export async function runPrLopTests(t: YThucTestKit) {
   });
   check('LOP (10) · ô tìm đầu trang có nhóm Lớp; chữ mẫu tên lớp mới trong web + shared/domain (K1-43, T2)', () => {
     const h = docSach('web/src/modules/platform/Header.tsx');
-    assert(/'\/ref\/classes'/.test(h) && /chuanHoaMaLop\(/.test(h) && /\/hoc-vien\/lop\//.test(h) && /Tìm học viên, lớp…/.test(h)
+    assert(/'\/ref\/classes(\?kemKetThuc=1)?'/.test(h) && /chuanHoaMaLop\(/.test(h) && /\/hoc-vien\/lop\//.test(h) && /Tìm học viên, lớp…/.test(h)
       && /Không (tìm )?thấy/.test(h), 'Header chưa tìm lớp');   // UI-CON-LAI k1: chữ rỗng mới
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const sot: string[] = [];

@@ -25,7 +25,7 @@ type CaseDong = { caseId: number; ten: string; kyNang: string; sos: number | nul
   pa: { id: number; ten: string; tone: TonePaChuong }[] };
 export type ChuongWeb = {
   enrollmentId: number; classId: number; code: string; ngan: string; nhan: string; ct: string | null; ft: boolean;
-  tu: string; den: string | null; dangHoc: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null; gvcn: string | null;
+  tu: string; den: string | null; dangHoc: boolean; /** N71: lớp cũ — người xem mở được hồ sơ lớp. */ xemLop?: boolean; soTuan: number | null; tuanHoc: { tu: number | null; den: number | null; dangDung: boolean } | null; gvcn: string | null;
   tamDung: { tu: string; den: string | null }[]; ghim: Ghim[]; caseDong: CaseDong[];
   ra: { loai: string | null; chu: string; khoa?: string; bien?: Bien; how: string | null; tu: string | null; docBanGiao: { lenhId: number; lopNguonId: number } | null } | null;
 };
@@ -126,6 +126,8 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
         {/* Bàn phím: mã lớp là nút (cả thẻ bấm được bằng chuột) — Tab tới được mọi chương, không lồng liên kết ghim vào nút. */}
         <button type="button" className="self-start rounded border-0 bg-transparent p-0 text-left text-[14px] font-bold leading-tight text-slate-100"
           title={t('Xem trục tuần {lop}', { lop: c.code })} onClick={(e) => { e.stopPropagation(); onChon(c); }}>{c.code}</button>
+        {/* N71 (chủ SP 25/11): lớp cũ → hồ sơ lớp ("›" = đổi trang); chỉ khi người xem mở được lớp đó. */}
+        {c.xemLop && <Link to={`/hoc-vien/lop/${c.classId}`} onClick={(e) => e.stopPropagation()} className="self-start text-[12px] text-slate-400 no-underline hover:text-[color:var(--accent)] hover:underline">{t('Hồ sơ lớp ›')}</Link>}
         <span className="text-[12px] tabular-nums text-slate-400">{khiChuong(c, homNay)}</span>
         {c.gvcn && <span className="text-[12px] text-slate-400">{t('GVCN')} {c.gvcn}</span>}
       </div>

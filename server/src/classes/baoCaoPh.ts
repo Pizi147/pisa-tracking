@@ -114,12 +114,28 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
 /** Em trong đợt: ghi danh lớp phủ ngày mốc (hạn, hoặc hôm nay khi đợt còn mở) + em đang học (đặc tả §4). Xếp theo tên. */
 export function emCuaDot(classId: number, d: DotBc, homNay: string): { id: number; ten: string }[] {
   const moc = d.han < homNay ? d.han : homNay;
+  const thay = new Set<number>();
   return (db().prepare(
-    `SELECT DISTINCT s.id, s.full_name FROM enrollments e JOIN students s ON s.id = e.student_id
-      WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ?
-        AND (e.ended_at IS NULL OR substr(e.ended_at, 1, 10) > ?) AND e.status != 'withdrawn'
+    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+       FROM enrollments e JOIN students s ON s.id = e.student_id
+      WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ? AND e.status != 'withdrawn'
       ORDER BY s.full_name`,
-  ).all(classId, moc, moc) as any[]).map((r) => ({ id: r.id, ten: r.full_name }));
+  ).all(classId, moc) as any[]).filter((r) => emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id)).map((r) => ({ id: r.id, ten: r.full_name }));
+}
+
+/** N71: loại bài Progress / Final em có ở lớp của ghi danh ĐÃ RỜI (`group_concat`); ghi danh còn mở → NULL, không đọc lượt. `e` bí danh `enrollments`. */
+export const COT_BAI_ROI = (e: string) => `CASE WHEN ${e}.ended_at IS NOT NULL THEN (SELECT group_concat(DISTINCT a.kind) FROM assessment_attempts a
+  WHERE a.student_id = ${e}.student_id AND a.class_id = ${e}.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled') END`;
+/**
+ * Em có trong đợt: ghi danh phủ ngày mốc (hạn; đợt còn mở: hôm nay). N71 (chủ SP 25/11): em rời lớp TRONG đợt Progress / Final (Cuối khoá "Ngay hôm nay" /
+ * "Từ tuần", chuyển một em) mà bài đợt đó ở lớp này → vẫn trong đợt tới khi GV lớp cũ viết xong — trước: em rơi khỏi đợt ngay ngày rời lớp.
+ * `emCuaDot` và `emTheoLo` (việc GV / Admin / QL, xuất) dùng chung.
+ */
+export function emTrongDot(r: { tu: string | null; den: string | null; bai: string | null }, d: DotBc, homNay: string): boolean {
+  const moc = d.han < homNay ? d.han : homNay;
+  if (!r.tu || r.tu > moc) return false;
+  if (!r.den || r.den > moc) return true;
+  return (d.loai === 'progress' || d.loai === 'final') && r.den >= d.mo && (r.bai ?? '').split(',').includes(d.loai);
 }
 
 /** GV phân công đang giữ mỗi phần (người giữ lúc xem — đặc tả §10). Hai GV cùng kỹ năng: cả hai. */
