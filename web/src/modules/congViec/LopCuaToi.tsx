@@ -111,7 +111,7 @@ export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBa
 }
 
 /* NHẸ HƠN PR-2a (v23 ② G1): Lớp · Tôi dạy · Test kế · Việc (MỘT số) — bốn cột. HAI-BEN (NH9, chủ SP 25/11): ô phải cố định 720 → cột chia hết bề ngang theo phần (không dồn về trái), số Việc căn giữa cột cuối. */
-const COT = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(56px,1fr)] items-center gap-x-3 px-4';
+const COT = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.6fr)_minmax(56px,0.9fr)] items-center gap-x-3 px-4';
 /* C1 (rà 19/11): bốn cột cố định cần ≥ 640 px. Khung hẹp hơn (Công việc 1100: khung phải ~520 px; 375) → mỗi lớp một thẻ dọc — đo theo
    bề ngang KHUNG (container query `[container-type:inline-size]` ở <section>), không theo cửa sổ, nên chip không bao giờ tràn / bị cắt sang cột bên. */
 

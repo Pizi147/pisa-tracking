@@ -709,7 +709,7 @@ export function HoTroHocVienTab() {
             ))}
           </div>
         )}
-        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab ariaLabel={t('Hạng mục việc')} className="-mx-4 px-4 md:-mx-5 md:px-5" tabs={tabs.map((x) => ({ key: x.key, label: x.nhan, badge: x.badge }))} value={tab ?? ''} panelId="cv-tab-than" onChange={(k) => {
+        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab ariaLabel={t('Hạng mục việc')} thuGon={coPanel} className="-mx-4 px-4 md:-mx-5 md:px-5" tabs={tabs.map((x) => ({ key: x.key, label: x.nhan, badge: x.badge }))} value={tab ?? ''} panelId="cv-tab-than" onChange={(k) => {
           const next = new URLSearchParams(params); next.set('nhom', k); next.delete('loai'); next.delete('the'); setParams(next, { replace: true });
         }} /></div>}
         {tab === 'duyet' && <div ref={setKhuLocDuyet} />}
