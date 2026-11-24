@@ -533,7 +533,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/imLang = false/.test(xoa) && /if \(!imLang\) hoanTacXoa\(/.test(xoa), 'xoaViPham có cờ imLang bỏ toast xoá');
     assert(/xoaViPham\(toast, id, true\)/.test(ghi) && /t\('Đã hoàn tác'\)/.test(ghi), 'Hoàn tác ghi vi phạm gọi im lặng + báo "Đã hoàn tác"');
     /* GD-20c (PTA rà #1738): 375 quy chế xuống dòng đủ chữ, không "…"; ⓘ chỉ khi có chi tiết (bỏ ⓘ nhắc lại câu). */
-    assert(/className="min-w-0 flex-1 sm:truncate"/.test(kp) && /\{qc\.chiTiet && <(NutLuat|NutHdQuyChe)/.test(kp) && !/\{qc\.chu\}<\/NutLuat>/.test(kp), 'quy chế 375 không cắt "…"; ⓘ chỉ khi có chiTiet');
+    assert(/className="min-w-0 flex-1">\{qc\.chu\}/.test(kp) && /\{qc\.chiTiet && <(NutLuat|NutHdQuyChe)/.test(kp) && !/\{qc\.chu\}<\/NutLuat>/.test(kp), 'quy chế không cắt "…" ở mọi bề rộng (PANEL-GON 720); ⓘ chỉ khi có chiTiet');
   });
   check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
     const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'due' : 'scored' });
@@ -575,7 +575,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('BADGE-QUA-HAN · hạn đã qua = MỘT badge đỏ chung (`BadgeHan`); không chữ đỏ / chip tự dựng cạnh "quá hạn n ngày" (chủ SP 15/11)', () => {
     const nh = doc('web/src/ui/Nhan.tsx');
-    assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<DauQuaHan \/>\}\{ngayHien\(han\)\}/.test(nh), 'QuaHan vẽ qua BadgeHan; ChipHan (24/11) chỉ ngày tô màu, không badge');
+    assert(/export function BadgeHan/.test(nh) && /addDaysIso\(homNay, -ngay\)/.test(nh) && /<DauQuaHan \/>\}\{ngayHien\(han\)\}/.test(nh), 'QuaHan + ChipHan (24/11) chỉ ngày tô màu (QuaHan: hạn = hôm nay − n), không badge');
     assert(/if \(t === 'qua-han'\) return <BadgeHan muc="qua"/.test(doc('web/src/ui/ui.tsx')), 'NhanTrangThai quá hạn = BadgeHan');
     assert(/if \(tt === 'qua-han'\) return <BadgeHan/.test(nh) && /if \(tt === 'qua_han'\) return <BadgeHan/.test(doc('web/src/modules/yThuc/NhanViPham.tsx'))
       && /tong === 'qua'\s*\? `\$\{lopBadgeHan\('qua'\)\}/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), 'XM-1: quá hạn của Case / vi phạm / việc Ý thức = BadgeHan');

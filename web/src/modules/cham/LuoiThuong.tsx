@@ -13,8 +13,9 @@ import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
 import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
-import { Bang, OBang } from '../../ui/Bang.tsx';
-import { lyDoHuy, type DinhNghiaCot } from '@shared/domain/index.ts';
+import { Bang, DongTach, OBang } from '../../ui/Bang.tsx';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
+import { lyDoHuy, nhanKetQuaLuoi, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
@@ -298,6 +299,22 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
   const cotSuaDuoc = (k: string) => data.rows.some((r) => lichCua(r, k)?.canEdit);
+  /* PANEL-GON (v24 P1): trong panel việc 720 — cột Kết quả riêng ở mép phải (luật cột: tên 2 phần, cột môn / Kết quả bằng nhau, index.css) thay
+     "Kết quả dưới tên" (G1-11 `gon`); em còn ô trống lên trên, "Đã có điểm · n em" là dòng gập trong CÙNG lưới. Nhóm chốt lúc mở lưới. */
+  const trongPanel = useContext(OTrongPanel) && !gon;
+  const conOTrong = (r: Row) => skills.some((k) => { const o = oThuong(r, k, data.today); return o.canEdit && o.trong; });
+  const [xongLucMo] = useState(() => new Set(data.rows.filter((r) => !conOTrong(r)).map((r) => r.attemptId)));
+  const [moXong, setMoXong] = useState(true);
+  /* PANEL-GON (PTA rà #2072): hạn chấm hay gặp nhất của từng môn = hạn ở đầu panel — ô có đúng hạn đó không lặp dòng "Quá hạn …" dưới ô. */
+  const hanChung = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const k of skills) {
+      const dem = new Map<string, number>();
+      for (const r of data.rows) { const h = lichCua(r, k)?.deadline; if (h) dem.set(h, (dem.get(h) ?? 0) + 1); }
+      m.set(k, [...dem.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null);
+    }
+    return m;
+  }, [data.rows, skills]);
 
   const plan = async () => {
     setBusy(true);
@@ -355,13 +372,13 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     /* AUDIT-1611 A1-14: cột đệm cuối nhận phần thừa — tên giữ 200 px, ô điểm ngay sau tên (như lưới FT), không dồn mép phải. */
     { key: 'du', nhan: '', kieu: 'chu', linhHoat: true },
   ] : [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: trongPanel ? 180 : 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
-      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
+      key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: trongPanel ? 136 : cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
     ...(laCp ? [{ key: 'pt', nhan: t('% tổng'), kieu: 'phan-tram', goiY: t('Tổng điểm các môn / tổng số câu — khi đủ mọi môn.') } as const] : []),
-    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: COT_KQ, goiY: goiYKq },
+    { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 120 : COT_KQ, goiY: goiYKq },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* BANG-1 (cấm điều khiển trong tiêu đề): tổng số câu từng môn + "Điền ô trống" là CÔNG CỤ trên bảng, không ở đầu cột.
@@ -371,7 +388,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     ...monSua.flatMap((k) => { const n = soTong(k); return n === null ? [] : [[k, { gt: n, lan: (d[k]?.lan ?? 0) + 1 }]]; })]));
   /* Chủ SP 27/10: hàng công cụ thụt vào thẳng chữ cột đầu (px-3 như ô bảng), không dính mép khung. */
   const congCu = monSua.length > 0 && (
-    <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
+    <div className="cong-cu-tong flex flex-wrap items-center gap-2 px-3 pt-2">
       <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
       {monSua.map((k) => (
         <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
@@ -387,14 +404,19 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     </div>
   );
 
+  const dsThieu = data.rows.filter((r) => !xongLucMo.has(r.attemptId));
+  const dsXong = data.rows.filter((r) => xongLucMo.has(r.attemptId));
+  const TACH = { attemptId: -1 } as Row;
+  const hangLuoi = trongPanel && dsThieu.length > 0 && dsXong.length > 0 ? [...dsThieu, TACH, ...(moXong ? dsXong : [])] : data.rows;
   return (
     <div className={`luoi-thuong${gon ? ' luoi-thuong-gon' : ''}`}>
-      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
+      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={hangLuoi} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
         hangRieng={(r) => {
+          if (r === TACH) return <DongTach soCot={cotDs.length} nhan={t('Đã có điểm · {n} em', { n: dsXong.length })} mo={moXong} onDoi={() => setMoXong((x) => !x)} />;
           const ri = data.rows.indexOf(r);
           return (
             <DongThuong
-              row={r} rowIndex={ri} sheet={data} laCp={laCp} cc={cc} gon={gon}
+              row={r} rowIndex={ri} sheet={data} laCp={laCp} cc={cc} gon={gon} panel={trongPanel ? hanChung : null}
               active={hv !== null && r.studentId === hv}
               tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
               register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
@@ -469,8 +491,10 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
   return { menuO, hopO, lichSuO };
 }
 
-function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove, gon = false }: {
+function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove, gon = false, panel = null }: {
   row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; cc: Record<string, DinhNghiaCot>; active: boolean; tuanDangXem: string | null; gon?: boolean;
+  /** PANEL-GON: lưới trong panel việc — hạn chung từng môn (= hạn đầu panel); Kết quả một dòng. */
+  panel?: ReadonlyMap<string, string | null> | null;
   tongCot: (k: string) => number | null;
   dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
@@ -496,12 +520,14 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`) chữ thường, không link tới 403. */}
         {(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="ten-hv font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span>
           : <Link className="ten-hv ten-ho-so max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-end" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>}
+        {panel ? <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} /> : (
         <div className="bang-phu !flex flex-wrap items-center gap-x-1.5" data-phu-odiem="">
           {!lichTest && <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>}
           <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
             .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
+        )}
         {/* G1-11: Kết quả ngay dưới tên — thấy khi đang chấm, không cuộn ngang. Checkpoint: % tổng cùng dòng. */}
         {gon && (
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -579,6 +605,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         );
         return (
           <OBang key={k} c={cc[k]} className={`group relative ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k} tabIndex={canEdit ? undefined : 0}
+            /* PANEL-GON: hạn ở đầu panel — hạn riêng của ô (khác hạn chung) chỉ còn ở title, không dòng chữ dưới ô. */
+            title={panel && quaHan && panel.get(k) !== s!.deadline ? t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) }) : undefined}
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             {gon ? (
@@ -598,7 +626,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
                 {huy ? <OHuyGo ly={lyHuy}>{oDiem}</OHuyGo> : oDiem}{menuO(k, huy || !!s?.nhanXet, nutNx ? { chu: s?.nhanXet ?? null, mo: () => setNxMo(k) } : undefined)}
               </div>
             )}
-            {quaHan && (
+            {quaHan && !panel && (
               <div className="whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem=""
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
@@ -615,7 +643,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       {gon && <td aria-hidden />}
       {!gon && (
         <OBang c={cc.kq}>
-          <KetQua row={row} sheet={sheet} />
+          <KetQua row={row} sheet={sheet} motDong={!!panel} />
           {hopO}
           {lichSuO}
           {nxMo && (() => {
@@ -642,7 +670,10 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
  * nhỏ đứng CẠNH dòng chính ("Case L"), màu theo Case đại diện (đang mở trước — `cases[0]`), tooltip ghi đủ từng Case.
  */
 /** `anTyLe` (AUDIT-1611 A2-09, trang lượt): % tổng đã là số to ngay cạnh → không lặp chip "52%", giữ dòng gợi ý ("→ QL cân nhắc"). */
-export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean; anTyLe?: boolean }) {
+export function KetQua({ row, sheet, anCase = false, anTyLe = false, motDong = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean; anTyLe?: boolean;
+  /** PANEL-GON (PTA rà #2072, mockup P1 / P3): lưới trong panel — kết quả chính một dòng, dòng phụ mờ MỘT dòng (cắt, đủ chữ ở `title`), không chữ "quá hạn";
+   *  < 640 px chỉ dấu ✓ / ✗ / – (`.kq-ngan`, index.css). */
+  motDong?: boolean }) {
   const r = row.result;
   const ngan = (k: string) => tenMonNgan(sheet.programme.code, k);
   const du = (k: string) => tenMon(sheet.programme.code, k);
@@ -676,7 +707,7 @@ export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Ro
       ? { chu: dich(row.goiY.nhanNgan), tone: 'text-slate-500', title: `${nhanGoiY(row.goiY)}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip
       ? {
-        chu: `${kq.phu}${row.overdue ? t(' · quá hạn') : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500', xuong: row.overdue,
+        chu: `${kq.phu}${row.overdue && !motDong ? t(' · quá hạn') : ''}`, tone: row.overdue && !motDong ? 'text-rose-300' : 'text-slate-500', xuong: row.overdue && !motDong,
         title: `${kq.phu}${row.overdue ? t(' — có môn đã quá hạn chấm') : ''}`,
       }
       : null;
@@ -710,6 +741,25 @@ export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Ro
     </Status>
   );
 
+  if (motDong) {
+    /* PANEL-GON (chủ SP 24/11 "cột cuối chi chít", mockup P1): MỘT dòng ngắn — ✓ Đạt · ✗ Chưa đạt · Chưa có điểm / Chưa đủ điểm (mờ); % tổng (Final,
+       Pre FOU) đi sau dấu. Mọi ý phụ (n/m môn đạt, môn còn thiếu, dời tuần, gợi ý, Case, điểm từng môn) vào `title` — không chữ thứ hai trong ô.
+       < 640: chỉ dấu ✓ / ✗ / – (`.kq-ngan`). */
+    const nhan = nhanKetQuaLuoi({ daCham: r.scored, du: r.complete || !!row.chip, dat: row.chip ? row.chip.dat : !truot });
+    const dau = nhan === 'dat' ? '✓' : nhan === 'truot' ? '✗' : null;
+    const pt = (laTyLe || khongChiaMon) && r.tyLeTong != null ? ` ${Math.round(r.tyLeTong * 100)}%` : '';
+    const chu = nhan === 'chua-co' ? (r.required === 0 && r.daHuy?.length ? t('Đã huỷ') : t('Chưa có điểm'))
+      : dau === '✗' ? `✗ ${t('Chưa đạt')}${pt}` : dau === '✓' ? `✓ ${t('Đạt')}${pt}` : t('Chưa đủ điểm');
+    const mau = dau === '✓' ? 'text-kq-bang' : dau === '✗' ? 'text-kq-duoi' : 'text-faint';
+    const tieuDe = [row.chip ? dich(row.chip.chu) : kq.chinh, phu?.title, chiTiet,
+      ...cases.map((c) => `Case ${du(c.skill)} · ${dich(caseStatusLabel(c.status))}`)].filter(Boolean).join(' · ');
+    return (
+      <span className="kq-mot-dong inline-flex items-center whitespace-nowrap" title={tieuDe}>
+        <span aria-hidden className={`kq-ngan font-semibold ${mau}`}>{dau ?? '–'}</span>
+        <span className={`kq-day text-[14px] ${dau ? `font-semibold ${mau}` : 'font-medium text-faint'}`}>{chu}</span>
+      </span>
+    );
+  }
   return (
     <div className="flex flex-col items-start gap-0.5 min-w-0">
       <div className="flex flex-wrap items-center gap-1.5 min-w-0">
