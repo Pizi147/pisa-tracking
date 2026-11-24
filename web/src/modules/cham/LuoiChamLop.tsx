@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
 import { LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
@@ -108,7 +109,10 @@ export function LuoiChamLop({
   }), []);
   const soOChuaLuu = Object.values(loiTheoDong).reduce((a, b) => a + b, 0);
   useEffect(() => { onSoOChuaLuu?.(soOChuaLuu); }, [soOChuaLuu, onSoOChuaLuu]);
-  const [xemBang, setXemBang] = useState(false);
+  /* PANEL-GON (v24 P3 · P4, chủ SP duyệt 24/11): trong panel việc ở 375 mặc định là LƯỚI (cột tên dính trái, cột điểm cuộn ngang trong lưới);
+     "Chấm từng kỹ năng" vẫn mở lại màn mỗi em một ô to. */
+  const trongPanel = useContext(OTrongPanel);
+  const [xemBang, setXemBang] = useState(trongPanel);
   const [caLop, setCaLop] = useState(false);
   const cotHien = chiCot?.length && !caLop ? chiCot : null;
   const laFt = data.mode === 'ielts_band';
@@ -173,7 +177,7 @@ export function LuoiChamLop({
     <BaoLuuContext.Provider value={bao}>
     <div ref={khung}>
       {(hep || thanhTren || (nutCaLop && !!chiCot?.length)) && (
-        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+        <div className="luoi-cong-cu flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           {thanhTren}
           {nutCaLop && !!chiCot?.length && !tungKyNang && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={caLop} onClick={() => setCaLop((v) => !v)}>
