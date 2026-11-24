@@ -109,7 +109,7 @@ function DongYc({ y, nhom, mo, dangO, nhanId, lenh, dangGui, toi, chon, onBam, o
           )}
         </span>
       </div>
-      {loi?.get(y.id) && <div role="alert" className="dyc-ct text-[13px] font-semibold text-late" style={{ paddingTop: 0, borderTop: 0 }}><span aria-hidden>⚠ </span>{loi.get(y.id)}</div>}
+      {loi?.get(y.id) && <div role="alert" className="dyc-ct text-[13px] font-semibold text-late" style={{ paddingTop: 0, borderTop: 0 }}><span><span aria-hidden>⚠ </span>{loi.get(y.id)}</span></div>}
       {dangMo && <>
         <TheYeuCau yc={y} dong lenh={lenh?.id === y.id ? lenh : undefined} onXong={onXong} onO={(d) => onO(y.id, d)} onThemPa={onThemPa} />
         {(y.soLichSu ?? 0) > 0 && <div className="dyc-ct" style={{ paddingTop: 0, borderTop: 0 }}><LichSuYeuCau id={y.id} n={y.soLichSu ?? 0} className="mt-0" /></div>}
