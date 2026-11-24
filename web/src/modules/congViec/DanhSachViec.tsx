@@ -8,7 +8,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CASE_CATEGORY_SHORT, CHAM_CHEO, LOAI_HAN_CUA_VIEC, demBai, bacNgan, deadlineView, laViecChamCheo, mucHan, shortDate, type MucTab,
+  CASE_CATEGORY_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, demBai, bacNgan, deadlineView, laViecChamCheo, mucHan, shortDate, tuanLich, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -237,7 +237,7 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, ...dong }: 
             <ul className="cvA-sub">
               {items.slice(0, n).map((x) => (
                 <li key={`${x.key}|${x.ownerId ?? ''}`} className="cvA-sub">
-                  <VeDong x={x} dong={dong}><DongA it={x} ghiLoai={nhieuLoai} {...dong} /></VeDong>
+                  <VeDong x={x} dong={dong}><DongA it={x} ghiLoai={nhieuLoai} mk={m.mk} {...dong} /></VeDong>
                 </li>
               ))}
             </ul>
@@ -415,14 +415,43 @@ const duyNhat = (ds: readonly (string | null | undefined | false)[]) => [...new 
 const MON_GON = CASE_CATEGORY_SHORT as Record<string, string>;
 const THU_KN = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking', 'listening_speaking', 'reading_writing'];
 const thuKn = (k: string) => { const i = THU_KN.indexOf(k); return i < 0 ? THU_KN.length : i; };
-function dongDiem(it: WorkItem): { n: number; ct: string } | null {
+/** Tuần của dòng: mã tuần trong nhãn · không có thì từ `tuanThi`. Dòng gộp nhiều tuần → null (không ghi tuần của một con lên cả dòng). */
+function tuanDong(it: WorkItem): string | null {
+  const ds = it.con?.length ? it.con : [it];
+  const tuan = new Set(ds.map((x) => MA_TUAN.exec(x.contextLabel ?? '')?.[1] ?? (x.tuanThi ? tuanLich(x.tuanThi) : null)));
+  return tuan.size === 1 ? [...tuan][0] : null;
+}
+const LOAI_BAI: Record<string, string> = { mock: 'Mock', progress: 'Progress', final: 'Final', checkpoint: 'Checkpoint' };
+function dongDiem(it: WorkItem): { n: number; tuan: string | null; loai: string | null; mon: string } | null {
   if (it.group !== 'score' || !it.classCode) return null;
   const ds = it.con?.length ? it.con : [it];
   const em = new Set(ds.flatMap((x) => x.emIds ?? (x.studentId !== null ? [x.studentId] : [])));
   const kns = [...new Set(ds.flatMap((x) => x.kns ?? (x.kn ? [x.kn] : [])))].sort((x, y) => thuKn(x) - thuKn(y));
-  const tuan = MA_TUAN.exec(it.contextLabel ?? '')?.[1] ?? null;
-  const luot = (it.contextLabel ?? '').replace(MA_TUAN, '').trim().replace(/^(Progress|Final) Test$/, '$1') || ((it.kind ?? 'mock') === 'mock' ? 'Mock' : '');
-  return { n: em.size || it.count || 0, ct: duyNhat([[luot && dich(luot), tuan].filter(Boolean).join(' '), kns.map((k) => MON_GON[k] ?? k).join(' ')]).join(' · ') };
+  return { n: em.size || it.count || 0, tuan: tuanDong(it), loai: LOAI_BAI[it.kind ?? 'mock'] ?? null, mon: kns.map((k) => MON_GON[k] ?? k).join(' ') };
+}
+
+/**
+ * Ô THÔNG TIN — MỘT thứ tự cho mọi dòng, cha lẫn con (chủ SP 25/11): `{tuần} - {loại test} · {chi tiết…} · {GV}`.
+ * Loại test chỉ ghi khi đề mục chưa nói (`loaiDaNoi`: Mock Test · Checkpoint · Chấm Speaking); không có tuần thì loại đứng đầu, không dấu "-" treo.
+ */
+const LOAI_THI = /^(?:(?:Progress|Final)(?: Test)?(?: \d+ ?%)?|Checkpoint|Mock(?: Test)?|MT\d+|Case)$/;
+function xepTin(mau: readonly string[], loaiDaNoi: boolean, tuan: string | null): string[] {
+  let loai: string | null = null;
+  let tuanTin = tuan;
+  const rest: string[] = [];
+  for (const m of mau) {
+    for (const x of m.split(' · ').map((y) => y.trim()).filter(Boolean)) {
+      if (x.startsWith(t('Kỳ {ky}', { ky: '' }))) { rest.push(dich(x)); continue; }   // thẻ kỳ ("{kỳ} W4 AUG – W1 SEP") giữ nguyên
+      const w = MA_TUAN.exec(x);
+      const y = w ? `${x.slice(0, w.index)}${x.slice(w.index + w[0].length)}`.trim() : x;
+      if (w) tuanTin ??= w[1];
+      if (!y) continue;
+      if (LOAI_THI.test(y)) loai ??= y.replace(/^(Progress|Final) Test/, '$1');
+      else rest.push(y);
+    }
+  }
+  const dau = loaiDaNoi || !loai ? tuanTin : tuanTin ? `${tuanTin} - ${loai}` : loai;
+  return duyNhat([dau, ...rest]);
 }
 
 /** Việc TVV theo từng em (Báo PH · Sau thi · Chốt ngày thi). */
@@ -438,29 +467,50 @@ const tenLoaiNgan = (it: WorkItem) => {
   return tg ?? dich(it.tieuDe.split(' · ')[0]).replace(t('Thêm PA học thuật'), t('Thêm PA')).replace(t('Ghi Mini Test'), 'Mini Test');
 };
 
-/** Các mẩu chi tiết (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). `ghiLoai`: nhóm có nhiều loại việc → mở đầu bằng tên loại. */
-function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean, daXong: boolean): string[] {
-  if (diem) return diem.ct ? [diem.ct] : [];
+/** Việc có kỹ năng ở `phu` — dòng gộp ghi hợp các kỹ năng của em con ("Listening, Reading"). */
+const CO_MON = new Set(['ghi_nhan_xet', 'cause', 'xem_nx_s', 'xac_nhan_pa', 'no_plan', 'ghi_ket_qua_pa']);
+/** Chữ đề mục đã nói thì dòng không ghi lại: Chấm Speaking → "Speaking" / "S" ("Ý thức" bỏ ở mọi dòng — đề mục Ý thức & Phối hợp đã nói). */
+const TU_DE_MUC: Record<string, readonly string[]> = { 'cham-cheo': ['Speaking', 'S'] };
+
+/**
+ * Các mẩu thông tin (chữ, không chip) của một dòng — trừ lớp, tên em, số em (đã ở ô riêng). Cha và con cùng hàm này → cùng thứ tự (`xepTin`).
+ * `ghiLoai`: nhóm có nhiều loại việc → thêm tên loại · `mk`: mã mục (đề mục đã nói gì).
+ */
+function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, ghiLoai: boolean, daXong: boolean, mk: string): string[] {
+  const cheo = mk === 'cham-cheo';
+  const loaiDaNoi = mk === 'mock' || mk === 'cp' || cheo;
+  if (diem) {
+    /* Chấm Speaking: tuần · số bài (môn S đã ở đề mục); cha nhiều tuần: "n bài · m quá hạn". */
+    if (cheo) return xepTin([it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : '', gop && it.baiQuaHan ? `${it.baiQuaHan} ${t('quá hạn')}` : ''], true, diem.tuan);
+    return xepTin([diem.loai ?? '', diem.mon], loaiDaNoi, diem.tuan);
+  }
   if (it.group === 'bo_sung_ho_so') return it.reason ? [t('Thiếu: {x}', { x: it.reason.split(' · ').map((m) => dich(m.replace(/ \d+$/, ''))).join(', ') })] : [];   // reason "Email 1 · Target 1" → "Thiếu: Email, Target"
   /* 06/11: Xét lại lộ trình không liệt kê tên em (chỉ "n em"); G4-18: dòng vừa xong không ghi tiến độ cũ (bàn giao, việc cả lớp). */
   const boNgucCanh = it.group === 'xet_lai_lo_trinh' || (daXong && (it.group === 'ban_giao' || it.group === 'chot_len_ft' || it.group === 'ky_vong_dau_ra'));
-  if (boNgucCanh) return ghiLoai ? [tenLoaiNgan(it)] : [];
+  const lead = ghiLoai ? tenLoaiNgan(it).replace(/^Báo PH\s*/, '').replace(/^./, (c) => c.toUpperCase()) : '';
+  if (boNgucCanh) return lead ? [lead] : [];
+  /* Xử lý vi phạm (cha · con · lẻ): số vi phạm + bậc kế tiếp của chính dòng; cha = tổng số vi phạm của các em. */
+  if (it.group === 'yt_xu_ly') {
+    if (!it.con?.length) return it.phu ? [dich(it.phu)] : [];
+    const so = it.con.map((c) => Number(/^(\d+) vi phạm/.exec(c.phu ?? '')?.[1] ?? NaN));
+    return so.some(Number.isNaN) ? [] : [t('{n} vi phạm', { n: so.reduce((a, b) => a + b, 0) })];
+  }
   const laThe = (x: string) => LA_SO.test(x);
   const phan = (it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe).split(' · ').map((x) => x.trim());
   const meet = it.group.startsWith('meeting_');
   const tenCon = LA_GON.has(it.group) && it.group !== 'phoi_hop_sos' ? [] : phan.map((x, i) => (i === 0 ? x.replace(DONG_TU_DAU, '').trim() : x)).filter((x) => x && x !== it.classCode && x !== t('Công việc quản lý') && !x.startsWith(it.studentName) && !laThe(x) && !MA_TUAN.test(x)).map((x) => tenViec(x));
-  const phu = thePhu([
-    laViecTvvTheoEm(it) && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : meet ? it.phu : it.contextLabel ?? it.phu,
-    it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null,
-  ]).filter((x) => !laThe(x)).filter((x) => !/^SOS \d/.test(x) && x !== it.studentName);
+  const ctx = laViecTvvTheoEm(it) && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : meet ? it.phu : it.contextLabel ?? it.phu;
+  const monCon = gop && CO_MON.has(it.group) ? [duyNhat(it.con!.map((c) => c.phu && dich(c.phu))).join(', ')] : [];
   const bo = (x: string) => { const y = x.replace(/^\d+ (?:em|HV) (?=\S)/, ''); return y === x ? y : y.charAt(0).toUpperCase() + y.slice(1); };   // "1 em chưa chọn" → "Chưa chọn" (số em đã ở ô ai)
-  const hang = [ghiLoai ? tenLoaiNgan(it) : null, ...(gop && LA_GON.has(it.group) && it.group !== 'phoi_hop_sos' ? [] : tenCon), ...(gop && it.group === 'yt_xu_ly' ? [] : phu)]
-    .flatMap((x) => (x ? x.split(' · ').map(bo) : []));
-  return duyNhat(hang).filter((x) => x !== t('Công việc quản lý')).slice(0, 2);   // bốn ô, một dòng chữ: loại (nếu nhóm gộp) / kỹ năng · lượt — nhiều hơn thì ở panel
+  const deMuc = TU_DE_MUC[mk] ?? [];
+  const hang = [lead, ...tenCon, ...monCon, ctx]
+    .flatMap((x) => (x ? x.split(' · ').map((y) => bo(dich(y))) : []))
+    .filter((x) => !laThe(x) && !/^SOS \d/.test(x) && x !== it.studentName && x !== t('Công việc quản lý') && x !== t('Ý thức') && !deMuc.includes(x));
+  return xepTin(hang, loaiDaNoi, tuanDong(it)).slice(0, 2);   // bốn ô, một dòng chữ: tuần - loại · kỹ năng / chi tiết — nhiều hơn thì ở panel
 }
 
 /** MỘT DÒNG (mọi loại việc, mọi vai): lớp · ai · chi tiết · hạn. */
-function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: boolean }) {
+function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai: boolean; /** Mã mục chứa dòng — đề mục đã nói gì thì dòng không ghi lại. */ mk: string }) {
   const [mo, setMo] = useState(false);
   const { con, daXong, dangChon, nguoi } = useDong(it, dong);
   const gop = !!it.con?.length;
@@ -472,20 +522,24 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
   const emCon = gop ? new Set(it.con!.map((c) => c.studentId)).size : 0;
   const moiEm = it.studentId !== null && !gop && !(it.emTen && it.emTen.length > 1);
   const motEm = moiEm || (gop && emCon === 1 && !diem);
-  const soEm = diem ? diem.n : gop ? emCon : it.emTen?.length ? it.count ?? it.emTen.length : soTong || it.count || 0;
+  /* Chấm Speaking của GV S: MỘT dòng nhiều lớp — ô lớp "n lớp", ô em "n em", thông tin "n bài · m quá hạn" (cùng bốn ô với dòng lớp). */
+  const chamS = it.key === KHOA_CHAM_SPEAKING;
+  const boSung = it.group === 'bo_sung_ho_so';   // Bổ sung hồ sơ: không lớp — ô lớp trống, ô em "n em", thông tin "Thiếu: …" (tên việc đã ở đề mục)
+  const soEm = diem ? diem.n : gop ? emCon : chamS ? it.count ?? 0 : it.emTen?.length ? it.count ?? it.emTen.length : soTong || it.count || 0;
   const aiChu = motEm ? it.studentName : it.gopLop && it.soBai ? t('{n} bài', { n: it.soBai }) : soEm ? t('{n} em', { n: soEm }) : null;
-  const tenViecKl = !it.classCode && !motEm;   // việc không lớp (Task Vận hành, Bổ sung hồ sơ gộp nhiều lớp): tên việc chiếm ô lớp + ô em
-  const ct = chiTiet(it, gop, diem, ghiLoai, daXong);
+  const tenViecKl = !it.classCode && !motEm && !chamS && !boSung;   // việc không lớp (Task Vận hành được giao): tên việc chiếm ô lớp + ô em
+  const lopChu = it.classCode ?? (chamS && it.contextLabel ? dich(it.contextLabel) : null);
+  const ct = chamS ? xepTin([t('{soBai} bài', { soBai: it.soBai ?? 0 }), it.baiQuaHan ? `${it.baiQuaHan} ${t('quá hạn')}` : ''], true, null) : chiTiet(it, gop, diem, ghiLoai, daXong, mk);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
   const chu = [...ct, tvv, giao, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
-  const tenNut = tenViecKl ? (it.group === 'bo_sung_ho_so' ? dich(it.tieuDe) : tenViec(tenBoEmGoc(it))) : aiChu ?? '';
+  const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
     <div className="cvA-sub">
       <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))}
         className={`cvA-v ${tenViecKl ? 'cvA-kl' : ''} ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
-        <span className="cvA-lop">{it.classCode}{dong.theCn?.(it) && <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[1px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dong.theCn(it)}</span>}</span>
+        <span className="cvA-lop">{lopChu}{dong.theCn?.(it) && <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[1px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dong.theCn(it)}</span>}</span>
         <span className="cvA-ai">
           <button type="button" className={`cvA-ten ${tenViecKl ? '!font-semibold' : ''}`} aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}
             aria-current={dangChon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); bam(); }}>
@@ -493,33 +547,37 @@ function DongA({ it, ghiLoai, ...dong }: ChungDong & { it: WorkItem; ghiLoai: bo
           </button>
           {sosChip}
         </span>
-        <span className="cvA-ct" title={chu}>{chu}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="ml-2 text-faint">· {nguoi}</span>}</span>
+        <span className="cvA-ct" title={chu}>{chu}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="text-faint">{chu ? ' · ' : ''}{nguoi}</span>}</span>
         <HanA it={it} daXong={daXong} />
         {dong.moTrang(it) && it.group !== 'xuat_bc_ph' && !con && !daXong && <MuiDi />}
       </div>
       {con && mo && (
         <ul id={maDs} className="cvA-sub cvA-con" aria-label={dich(it.tieuDe)}>
-          {con.map((x) => <li key={x.key} className="cvA-sub"><VeDong x={x} dong={dong}><DongCon it={x as WorkItem & { conTen: string; conPhu: string }} {...dong} /></VeDong></li>)}
+          {con.map((x) => <li key={x.key} className="cvA-sub"><VeDong x={x} dong={dong}><DongCon it={x as WorkItem & { conTen: string; conPhu: string }} mk={mk} ghiLoai={ghiLoai} {...dong} /></VeDong></li>)}
         </ul>
       )}
     </div>
   );
 }
 
-/** Một em trong dòng gộp đã mở: ô lớp trống (thẳng cột), tên em (+ SOS) · chi tiết · hạn. */
-function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string; conPhu: string } }) {
+/** Một em (hoặc một tuần / một nhóm) trong dòng gộp đã mở: ô lớp trống (thẳng cột) · tên em hoặc "n em" · thông tin CÙNG thứ tự với dòng cha · hạn. */
+function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { conTen: string; conPhu: string }; mk: string; ghiLoai: boolean }) {
   const { daXong, dangChon, nguoi } = useDong(it, dong);
   const bam = () => dong.onOpen(it);
-  const chu = [it.conPhu ? dich(it.conPhu).split(' · ').filter((x) => x !== t('Ý thức')).join(' · ') : null, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
+  const diem = dongDiem(it);
+  const nEm = diem?.n || it.emIds?.length || it.count || 0;
+  const ai = it.studentId !== null || !nEm ? dich(it.conTen) : t('{n} em', { n: nEm });
+  const ct = chiTiet(it, false, diem, ghiLoai, daXong, mk);
+  const chu = [...ct, it.coNhap ? t('Có nháp') : null].filter(Boolean).join(' · ');
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
       <span className="cvA-lop" aria-hidden />
       <span className="cvA-ai">
         <button type="button" className="cvA-ten" aria-current={dangChon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); bam(); }}>
-          {daXong && <span aria-hidden className="text-ok">✓ </span>}<span className={daXong ? 'line-through' : undefined}>{dich(it.conTen)}</span></button>
+          {daXong && <span aria-hidden className="text-ok">✓ </span>}<span className={daXong ? 'line-through' : undefined}>{ai}</span></button>
         {!daXong && chipMucA(it)}
       </span>
-      <span className="cvA-ct" title={chu}>{chu}{nguoi && !daXong && <span className="ml-2 text-faint">· {nguoi}</span>}</span>
+      <span className="cvA-ct" title={chu}>{chu}{nguoi && !daXong && <span className="text-faint">{chu ? ' · ' : ''}{nguoi}</span>}</span>
       <HanA it={it} daXong={daXong} />
     </div>
   );
