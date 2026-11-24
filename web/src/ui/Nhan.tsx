@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { deadlineView, mucHan, ngay as ngayHien, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type BadgeTab, type DeadlineKind } from '@shared/domain/index.ts';
+import { addDaysIso, deadlineView, mucHan, ngay as ngayHien, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type BadgeTab, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -32,9 +32,11 @@ export function BadgeHan({ muc, title, children }: { muc: keyof typeof MUC_BADGE
  * "quá hạn 15 ngày" — badge đỏ (`BadgeHan`). `gon` bỏ chữ "quá hạn" ("15 ngày") cho chỗ đã có tiêu đề nói rõ — kèm chữ sr-only "quá hạn".
  * `mo`: việc của người khác — chữ mờ, không badge đỏ (đỏ chỉ khi là việc của người xem, LUOT-TEN-GV).
  */
-export function QuaHan({ ngay, gon, mo }: { ngay: number | null; gon?: boolean; mo?: boolean }) {
-  const chu = <>{nhanQuaHan(ngay, gon)}{gon && <span className="sr-only"> {t('quá hạn')}</span>}</>;
-  return mo ? <span className="whitespace-nowrap text-slate-400">{chu}</span> : <BadgeHan muc="qua">{chu}</BadgeHan>;
+export function QuaHan({ ngay, mo }: { ngay: number | null; /** Chỗ gọi cũ — không còn tác dụng (hạn chỉ là ngày). */ gon?: boolean; mo?: boolean }) {
+  const { homNay } = useNgayNghiepVu();
+  /* Chủ SP 24/11: hạn = NGÀY đỏ (không "quá hạn n ngày"); máy chủ chỉ trả số ngày trễ → hạn = hôm nay − n (cùng mốc máy chủ đếm). */
+  const han = ngay !== null && homNay ? addDaysIso(homNay, -ngay) : null;
+  return <span className={`whitespace-nowrap tabular-nums ${mo ? LOP_MUC_HAN.xa : LOP_MUC_HAN.qua}`}><span className="sr-only">{t('quá hạn')} </span>{han ? ngayHien(han) : t('quá hạn')}</span>;
 }
 
 /**

@@ -189,9 +189,10 @@ export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; x
 export const DemViecPanel = createContext<{ i: number; n: number; nhan: string } | null>(null);
 
 /**
- * KHUÔN PANEL CHUNG (PR-UX0, N-4 → NHẸ HƠN v23 `khung-panel.html`, chủ SP 22/11). Cao từ ngay dưới thanh menu tới đáy, không hở. Rộng (≥ 640):
- * panel việc ~58 % (`rong` 'viec' — 'hep' / 'rong' / 'nguoi-day' là tên cũ cùng nghĩa), panel bảng / lưới ~75 % ('bang' — 'vua' / 'so' cùng nghĩa),
- * 'toan' tới 1440; 375 toàn màn. Panel tại chỗ của Công việc (≥ 1024) cũng bám mép phải 58 % / 75 %, danh sách trái vẫn thấy.
+ * KHUÔN PANEL CHUNG (PR-UX0, N-4 → NHẸ HƠN v23 → PANEL-GON v24 `cong-viec-gon.html`, chủ SP 24/11 "panel to quá"). Cao từ ngay dưới thanh menu
+ * tới đáy, không hở. Rộng: MỘT khung 720 px cho mọi panel việc (`rong` 'viec' · 'bang' · tên cũ 'hep' / 'rong' / 'vua' / 'so' / 'nguoi-day' — cùng 720;
+ * lưới nhiều cột cuộn ngang TRONG lưới, cột tên dính trái); 'toan' tới 1440; màn < 720 toàn màn. Panel tại chỗ của Công việc (≥ 1024) bám mép phải
+ * 720, danh sách trái min(680, 100vw − 760) (nơi gọi).
  * Đầu ≥ 52 px MỘT dòng: ‹ · tên việc · em · lớp · hạn (`phu` / `dau.dong2` / `dau.han`) · ⓘ quy chế · ⋯ · ✕; tab (nếu có) dính dưới đầu.
  * Thân chia KHỐI (`Khoi`, tiêu đề nhỏ, luật dài vào ⓘ), nhãn TRÊN ô (`Truong`), ≤ 2 ô một hàng (`Hang2`).
  * Chân CỐ ĐỊNH: trái Huỷ / Xoá (viền đỏ), phải nút phụ + MỘT nút chính; dòng xám "n ô cần sửa ↑" trên chân (PR-N1,
@@ -403,9 +404,12 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     nutXem,
   ]).filter((x) => x !== null && x !== undefined && x !== false && x !== '');
   const dauMot = (
-    <header className={`flex min-h-[52px] shrink-0 flex-wrap items-center gap-x-3.5 gap-y-0.5 border-b py-1.5 pr-2 max-sm:pr-1 ${trongCot ? 'pl-0' : 'pl-5 max-sm:pl-4'}`} style={{ borderColor: 'var(--line)' }}>
+    <header className={`flex min-h-[52px] shrink-0 flex-wrap items-center gap-x-3.5 gap-y-0.5 border-b py-1.5 pr-2 sm:items-start sm:py-2 max-sm:pr-1 ${trongCot ? 'pl-0' : 'pl-5 max-sm:pl-4'}`} style={{ borderColor: 'var(--line)' }}>
       {nutLui}
-      <h2 className={`m-0 min-w-0 font-bold leading-snug text-slate-100 max-sm:flex-1 max-sm:py-2 sm:max-w-full sm:shrink-0 ${trongCot ? 'text-[14px]' : 'text-[16px]'}${dau?.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau?.tieu ?? tieuDe}</h2>
+      {/* PANEL-GON: tên + phần phụ trong MỘT khối co giãn — panel 720 thiếu chỗ thì phần phụ xuống dòng dưới tên; ≥ 640 đầu căn trên, dòng tên cao 36
+          = cùng tâm với ‹ và góc ⓘ · ⋯ · ✕ (vẫn ở dòng 1, mép phải). */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-0.5">
+      <h2 className={`m-0 min-w-0 font-bold leading-snug text-slate-100 max-sm:flex-1 max-sm:py-2 sm:flex sm:min-h-9 sm:max-w-full sm:shrink-0 sm:items-center ${trongCot ? 'text-[14px]' : 'text-[16px]'}${dau?.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau?.tieu ?? tieuDe}</h2>
       {meta.length > 0 && (
         <div className="-ml-1 min-w-0 overflow-x-clip pl-1 text-sm leading-snug text-dim max-sm:order-3 max-sm:basis-full max-sm:pb-1">
           <p className="m-0 -ml-5 flex flex-wrap items-center gap-y-0.5">
@@ -415,6 +419,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
           </p>
         </div>
       )}
+      </div>
       {(quyChe || oDem || dau?.ghim || nutDong) && (
         <span className="ml-auto flex shrink-0 items-center max-sm:self-start">{quyChe && <NutQuyChe qc={quyChe} />}{oDem}{dau?.ghim}{nutDong}</span>
       )}
@@ -435,7 +440,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
-        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`pn-than min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
@@ -471,10 +476,10 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     return (
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        /* NHẸ HƠN (v23 P1): ≥ 1024 panel tại chỗ BÁM MÉP PHẢI từ ngay dưới thanh menu tới đáy, 58 % (bảng 75 %) — danh sách trái (cột
-           min(556 px, 42 % − 48 px) ở nơi gọi) vẫn thấy, bấm dòng khác = đổi việc. < 1024 giữ thẻ trong luồng trang (375 toàn màn). */
+        /* NHẸ HƠN (v23 P1) + PANEL-GON (v24): ≥ 1024 panel tại chỗ BÁM MÉP PHẢI từ ngay dưới thanh menu tới đáy, 720 px — danh sách trái (nơi gọi)
+           vẫn thấy, bấm dòng khác = đổi việc. < 1024 giữ thẻ trong luồng trang (375 toàn màn). */
         style={{ '--pn-top': `${top}px` } as CSSProperties} data-pn={laBang ? 'bang' : 'viec'}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl ${laBang ? 'lg:w-[75%]' : 'lg:w-[58%]'} ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl lg:w-[720px] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );
@@ -484,7 +489,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     /* NHẸ HƠN (v23): khung bắt đầu NGAY DƯỚI thanh menu (menu không bị phủ), tới đáy. */
     <div className={`fixed inset-x-0 !mt-0 ${z} flex justify-end`} style={{ top, bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : laBang ? 'sm:w-[max(720px,75%)] sm:max-w-full' : 'sm:w-[max(480px,58%)] sm:max-w-full'}`}
+      <div ref={khung} tabIndex={-1} data-pn={rong === 'toan' ? undefined : laBang ? 'bang' : 'viec'} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : 'sm:w-[720px] sm:max-w-full'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {/* HD3-1 (15 mục 8.3): "?" nổi trên nền mờ, sát mép trái panel, cùng dáng "?" thanh trên — "?" thanh trên bị panel che. ≥ 640 px (375 panel phủ hết). */}
         {nutHd && rong !== 'toan' && (
@@ -525,9 +530,9 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
   return (
     <div data-quy-che className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
-      {/* GD-20c (PTA rà #1738): 375 câu xuống dòng đủ chữ, không "…"; ≥ 640 một dòng như mockup ⑤. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
+      {/* GD-20c (PTA rà #1738) + PANEL-GON (panel 720): câu xuống dòng đủ chữ, không "…" ở mọi bề rộng. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
           đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng; ⓘ vẫn chỉ khi có chi tiết. */}
-      <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
+      <span className="min-w-0 flex-1">{qc.chu}</span>
       {qc.chiTiet && <NutHdQuyChe />}
     </div>
   );

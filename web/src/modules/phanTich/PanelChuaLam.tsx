@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { duongHoSoGv, type DongViecHan } from '@shared/domain/index.ts';
+import { addDaysIso, duongHoSoGv, ngay, type DongViecHan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -9,7 +9,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { NutSaoChep } from '../../ui/NutSaoChep.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { BadgeHan } from '../../ui/Nhan.tsx';
+import { LOP_MUC_HAN } from '../../ui/Nhan.tsx';
 
 /**
  * PANEL "CHƯA LÀM" — tab Giáo viên (GD-12a, mockup ⑨ D5 / D6 / D7, R9.1): bấm số bài / việc Chưa làm của dải → mọi bài / việc ĐÃ QUA HẠN chưa làm trong kỳ,
@@ -39,6 +39,7 @@ function gopBai(ds: readonly DongViecHan[]): Dong[] {
 }
 
 function DongChiDoc({ d, n }: Dong) {
+  const { homNay } = useNgayNghiepVu();
   const bai = d.tab === 'cham';
   const cat = bai ? d.ten.indexOf(' · ') : -1;
   const dot = cat >= 0 ? d.ten.slice(0, cat) : null, mon = cat >= 0 ? d.ten.slice(cat + 3) : d.ten;
@@ -56,8 +57,8 @@ function DongChiDoc({ d, n }: Dong) {
         )}
       </span>
       {/* V22: quá hạn chỉ bằng màu (không ⚠). */}
-      {d.treNgay != null && d.treNgay > 0
-        ? <BadgeHan muc="qua">{t('quá hạn {n} ngày', { n: d.treNgay })}</BadgeHan>
+      {d.treNgay != null && d.treNgay > 0 && homNay
+        ? <span className={`whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN.qua}`}><span className="sr-only">{t('quá hạn')} </span>{ngay(addDaysIso(homNay, -d.treNgay))}</span>
         : <span />}
     </li>
   );
@@ -84,7 +85,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
   const chuChep = (ten: string, dong: DongViecHan[]) => [t('{gv} · {n} {dv} quá hạn (tới {ngay})', { gv: ten, n: dong.length, dv: donVi, ngay: ngan(homNay) }),
     ...gopBai(dong).map(({ d, n }) => {
       const cat = d.tab === 'cham' ? d.ten.indexOf(' · ') : -1;
-      return `• ${[d.lop?.ma, cat >= 0 ? `${d.ten.slice(0, cat)} · ${d.ten.slice(cat + 3)}` : d.ten, d.tab === 'cham' ? t('{n} bài', { n }) : null, d.treNgay ? t('quá hạn {n} ngày', { n: d.treNgay }) : null].filter(Boolean).join(' · ')}`;
+      return `• ${[d.lop?.ma, cat >= 0 ? `${d.ten.slice(0, cat)} · ${d.ten.slice(cat + 3)}` : d.ten, d.tab === 'cham' ? t('{n} bài', { n }) : null, d.treNgay ? t('hạn {ngay}', { ngay: ngay(addDaysIso(homNay, -d.treNgay)) }) : null].filter(Boolean).join(' · ')}`;
     })].join('\n');
   const khoi = (khoa: string, ten: ReactNode, n: number, dong: DongViecHan[], phu?: string, tenChep?: string) => (
     <section key={khoa} className="overflow-clip rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
