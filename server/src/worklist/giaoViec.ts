@@ -766,6 +766,10 @@ export function moLaiPhanMeeting(p: Principal, id: number): KhoiGiaoViec {
   requireDoc(p, v);
   if (v.row.trang_thai !== 'xong') throw conflict('Phần này chưa hoàn thành — không có gì để hoàn tác.');
   if (!coTheLamMeeting(p, v)) throw forbidden('Bạn không hoàn tác được phần này.');
+  /* C-9 (N67): Kết quả meeting đã xong thì Xếp lịch họp luôn xong (tự xong) — không mở lại để khỏi hiện lại việc / quá hạn. */
+  if (v.row.phan === 'xep_lich' && db().prepare(`SELECT 1 FROM meeting_phan WHERE phoi_hop_id = ? AND phan = 'ket_qua' AND trang_thai = 'xong'`).get(v.row.phoi_hop_id)) {
+    throw conflict('Kết quả meeting đã xong, Xếp lịch tự xong — muốn mở lại, Hoàn tác Kết quả meeting trước.');
+  }
   tx(() => {
     if (!db().prepare(`UPDATE meeting_phan SET trang_thai = 'mo', xong_boi = NULL, xong_luc = NULL, nhap_ho_boi = NULL WHERE id = ? AND trang_thai = 'xong'`).run(id).changes) {
       throw conflict('Phần này vừa được cập nhật — mở lại để xem.');

@@ -107,7 +107,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ MT0-1 · luật thuần
-  check('MT0-1 · hạn chấm, hạn chốt, tuần muộn nhất, kiểm tuần, SOS hiển thị, trạng thái, nhãn', () => {
+  check('N25 · MT0-1 · hạn chấm, hạn chốt, tuần muộn nhất, kiểm tuần, SOS hiển thị, trạng thái, nhãn', () => {
     assert(dm.hanChamMt0('2026-10-19') === '2026-10-28', dm.hanChamMt0('2026-10-19'));
     assert(dm.mocLoTrinh('2026-10-19').hanChot === '2026-10-15', JSON.stringify(dm.mocLoTrinh('2026-10-19')));   // N20 (P9b): T5 tuần trước Final
     assert(dm.tuanMuonNhatMt0({ tuanBatDauFt: '2026-10-26', tuanCuoiKhoa: '2026-10-19' }) === '2026-11-02', 'có FT');

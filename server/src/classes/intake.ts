@@ -450,6 +450,8 @@ export function hoanTacNhap(p: Principal, nhapVao: unknown, homNayIso = nowIso()
   if (!a) throw loiHttp(404, 'Không còn lô thêm học viên này.');
   /* PTA rà #2026: chỉ CHÍNH người thêm lô, hoặc người xoá được học viên của lớp (`cycle.edit`) — không phải ai thêm được HV ở lớp cũng bỏ được lô người khác. */
   if (a.actor_user_id !== p.userId) require_(p, PERMISSIONS.CYCLE_EDIT, { classId: a.entity_id }, 'Chỉ người thêm lô này hoặc Head của lớp hoàn tác được.');
+  /* E-9: người thêm cũng phải CÒN quyền thêm HV ở lớp (bị gỡ vai / đổi lớp trong 15 phút thì không bỏ được nữa). */
+  else require_(p, PERMISSIONS.STUDENT_ADD, { classId: a.entity_id }, 'Bạn không còn quyền thêm học viên ở lớp này — nhờ Head của lớp hoàn tác.');
   if (Date.parse(homNayIso) - Date.parse(a.created_at) > HOAN_TAC_PHUT * 60_000) throw loiHttp(409, 'Đã quá {n} phút — xoá từng em ở danh sách học viên.', { n: HOAN_TAC_PHUT });
   const ids = ((JSON.parse(a.after_json ?? '{}').hv ?? []) as { id: number }[]).map((h) => h.id);
   const con = new Set((conn.prepare('SELECT id FROM students WHERE id IN (SELECT value FROM json_each(?))').all(JSON.stringify(ids)) as any[]).map((r) => r.id as number));

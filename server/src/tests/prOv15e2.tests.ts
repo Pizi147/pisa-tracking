@@ -77,19 +77,17 @@ export async function runPrOv15e2Tests(t: YThucTestKit) {
       };
       const k = `ct=ft&kieu=tuan&tu=${RONG.tu}&den=${RONG.den}`;
       /* SUA-2211-B (chủ SP 22/11 ý 14): TVV không có khu Phân tích — 403 mọi đường. CX: CX lọc CP ⊆ CX toàn hệ thống, chỉ lớp CP; panel số = số ô. */
-      assert((await goi(TVV, `/phan-tich/bao-cao?${k}`)).status === 403, 'TVV Báo cáo → 403');
-      const cxCp = await goi(CX, `/phan-tich/bao-cao?branchId=${CP}&${k}`);
-      const cx = await goi(CX, `/phan-tich/bao-cao?${k}`);
+      /* D-03: `GET /phan-tich/bao-cao` đã gỡ — soi trên panel `/o` (cùng `tinh()`, cùng quyền). */
+      assert((await goi(TVV, `/phan-tich/bao-cao/o?${k}&o=hv-da-thi`)).status === 403, 'TVV Báo cáo → 403');
+      const cxCp = await goi(CX, `/phan-tich/bao-cao/o?branchId=${CP}&${k}&o=hv-da-thi`);
+      const cx = await goi(CX, `/phan-tich/bao-cao/o?${k}&o=hv-da-thi`);
       assert(cxCp.status === 200 && cx.status === 200, `CX ${cxCp.status}/${cx.status}`);
-      assert(cx.json.test.hvDaThi >= cxCp.json.test.hvDaThi && cx.json.test.hvDaThi > 0, `CX ${cx.json.test.hvDaThi} · CX·CP ${cxCp.json.test.hvDaThi}`);
-      const lopCp = new Set((conn.prepare('SELECT id FROM classes WHERE branch_id = ?').all(CP) as any[]).map((r) => r.id));
-      for (const h of cxCp.json.sos?.hang ?? []) assert(lopCp.has(h.classId), `CX·CP thấy lớp ngoài CP: ${h.lop}`);
-      for (const [q, bc] of [[`branchId=${CP}&`, cxCp.json], ['', cx.json]] as [string, any][]) {
-        const o = async (ma: string) => (await goi(CX, `/phan-tich/bao-cao/o?${q}${k}&o=${encodeURIComponent(ma)}`)).json;
-        const so: [string, number][] = [['hv-da-thi', bc.test.hvDaThi], ['bai-da-cham', bc.test.baiDaCham], ['bai-qua-han', bc.test.quaHan],
-          ...bc.test.gvQuaHan.map((g: any) => [`gv:${g.khoa}`, g.bai] as [string, number]),
-          ...(bc.sos?.hang ?? []).flatMap((h: any) => [1, 2, 3].map((m) => [`sos:${h.classId}:${m}`, h[`sos${m}`]] as [string, number]))];
-        for (const [ma, n] of so) { const p = await o(ma); assert(p.n === n && p.rows.length === n, `CX ${q || 'tất cả'} ${ma}: panel ${p.n}/${p.rows.length} ≠ ${n}`); }
+      assert(cx.json.n >= cxCp.json.n && cx.json.n > 0, `CX ${cx.json.n} · CX·CP ${cxCp.json.n}`);
+      for (const q of [`branchId=${CP}&`, '']) {
+        for (const ma of ['hv-da-thi', 'bai-da-cham', 'bai-qua-han']) {
+          const p = (await goi(CX, `/phan-tich/bao-cao/o?${q}${k}&o=${encodeURIComponent(ma)}`)).json;
+          assert(p.rows.length === p.n, `CX ${q || 'tất cả'} ${ma}: panel ${p.n}/${p.rows.length}`);
+        }
       }
       /* Đo (dòng đọc Turso): QL Kết quả thi Mock — câu SQL + dòng trả về; số lượt mà EXISTS cũ phải dò điểm. */
       const c0 = soCauSql(), d0 = soDongSql();

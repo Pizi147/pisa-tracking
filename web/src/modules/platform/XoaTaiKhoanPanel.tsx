@@ -7,6 +7,13 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /admin/accounts/:id/xoa` (chỉ Quản trị hệ thống) — `server/src/platform/xoaTaiKhoan.ts`. */
+/** E-5 (N69): câu báo số việc máy đã tự chuyển khi xoá tài khoản / gỡ hết vai — null khi không chuyển gì. */
+export function nhanDaChuyen(c: { soCase: number; soPa: number; soTinHieu: number; soXuLy: number } | null | undefined): string | null {
+  if (!c) return null;
+  const ds = [c.soCase && t('{n} Case', { n: c.soCase }), c.soPa && t('{n} PA', { n: c.soPa }), c.soTinHieu && t('{n} Case chờ xác nhận nguyên nhân', { n: c.soTinHieu }), c.soXuLy && t('{n} lần xử lý', { n: c.soXuLy })].filter(Boolean);
+  return ds.length ? `${t('Đã chuyển')} ${ds.join(' · ')}` : null;
+}
+
 export type XemXoaTaiKhoan = {
   id: number; ten: string; email: string | null; vai: string[]; chiNhanh: string[];
   soDauVet: number; chiTiet: { nhan: string; so: number }[];
@@ -28,11 +35,12 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
     if (!d) return;
     setBusy(true);
     try {
-      await api.post(`/admin/accounts/${userId}/xoa`, {});
+      const kq = await api.post<{ chuyen?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${userId}/xoa`, {});
+      const daChuyen = nhanDaChuyen(kq?.chuyen);
       const lamMoi = () => { invalidate('/admin/accounts'); invalidate('/demo/accounts'); };
       lamMoi();
       /* G5-10: Hoàn tác = Khôi phục (Đã xoá) — mật khẩu đặt lại như mọi lần khôi phục. */
-      toast.hoanTac(t('Đã xoá tài khoản {ten}', { ten: d.ten }), async () => {
+      toast.hoanTac(`${t('Đã xoá tài khoản {ten}', { ten: d.ten })}${daChuyen ? ` · ${daChuyen}` : ''}`, async () => {
         let canhBao: string[] = [];
         try { canhBao = (await api.post<{ canhBao: string[] }>(`/admin/accounts/${userId}/khoi-phuc`))?.canhBao ?? []; } catch (e: any) { toast.push('error', e.message); return; }
         lamMoi(); toast.push('ok', t('Đã khôi phục tài khoản {ten}', { ten: d.ten }));

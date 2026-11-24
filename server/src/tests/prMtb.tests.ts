@@ -688,7 +688,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   /* Rà code #MTb: ô L/R chỉ có band — mở "Sửa điểm" rồi Lưu không được đổi thành xoá điểm (giá trị đầu giữ band, như RawScoreInput). */
-  check('MTb (T10) · hộp nhập điểm L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
+  check('N53 · MTb (T10) · hộp nhập điểm L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
     const ed = nguon('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     assert(/cell\.rawScore !== null \? String\(cell\.rawScore\) : cell\.band !== null \? fmtBand\(cell\.band\)/.test(ed), 'giá trị đầu thiếu band');
     const cell: any = { skill: 'listening', rawScore: null, band: 6.5, criteria: [null, null, null, null], noShow: false };

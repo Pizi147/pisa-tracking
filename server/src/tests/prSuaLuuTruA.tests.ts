@@ -58,6 +58,14 @@ export async function runPrSuaLuuTruATests(t: { check: any; assert: any; assertT
     assert(get('SELECT thi_that_l FROM learning_cycles WHERE id = ?', x.cy).thi_that_l === 7.5, 'hoàn tác lần khôi phục không về 7.5');
   }));
 
+  check('A-3 (N53) · Khôi phục kết quả thi thật: dòng Hành trình ghi band một chữ số lẻ ("L 7.0"), không số thô', () => thu(() => {
+    const x = emKetThuc();
+    const r = thiThat.datKetQuaThiThat(QL, x.cy, { l: 7, r: 7, w: 7, s: 7 });
+    thiThat.khoiPhucThiThat(QL, x.cy, { auditId: r.khoiPhucId, hoanTac: true });
+    const ct = get(`SELECT detail FROM journey_events WHERE cycle_id = ? AND event_type = 'cycle_outcome' ORDER BY id DESC LIMIT 1`, x.cy).detail as string;
+    assert(ct.includes('khôi phục bản trước') && ct.includes('L 7.0') && !/[LRWS] [0-9](?![0-9.])/.test(ct), `Hành trình: ${ct}`);
+  }));
+
   check('SLT-a2 · Hoàn tác khi đã có người sửa sau → 409 (không đè); Khôi phục bản trước (Lịch sử) của mục cũ thì được', () => thu(() => {
     const x = emKetThuc();
     const goc = ly(x.cy);

@@ -7,7 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, NutChon } from '../../ui/ui.tsx';
 import {
-  COT_FT_GON, COT_FT_NX, COT_FT_THEM, DOT_XUAT_FT, DOT_XUAT_THUONG, bodyXuatMt, dichSheetXuat, docBoLocXuatMt, mondayOfDate, nhanKhoaDot, queryXuatMt,
+  COT_FT_GON, COT_FT_NX, COT_FT_THEM, DOT_XUAT_FT, DOT_XUAT_THUONG, bodyXuatMt, datBandXlsx, dichSheetXuat, docBoLocXuatMt, mondayOfDate, nhanKhoaDot, queryXuatMt,
   type Cell, type CotXuat, type KhungXuat, type ThoiGianXuat,
 } from '@shared/domain/index.ts';
 import type { LopKH } from './keHoach/kieu.ts';
@@ -135,6 +135,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
       const wb = XLSX.utils.book_new();
       r.sheets.forEach((s, i) => {
         const ws = XLSX.utils.aoa_to_sheet(s.aoa);
+        datBandXlsx(ws, s.aoa[0] ?? []);   // A-1 (N53): band "7.0"
         if (i < r.sheets.length - 1 && ws['!ref']) ws['!autofilter'] = { ref: ws['!ref'] };
         ws['!cols'] = doRong(s.aoa);
         XLSX.utils.book_append_sheet(wb, ws, s.ten);

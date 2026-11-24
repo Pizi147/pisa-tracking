@@ -202,6 +202,19 @@ export async function runPrR2HoanTacTests(t: any) {
     assert(ma(() => mgmt.xoaViec(P.mbManager, v.id)) === 400, 'đã có cập nhật → 400');
   }));
 
+  check('E-9 · Hoàn tác Thêm HV: người thêm bị gỡ quyền thêm HV ở lớp (hết phân công GVCN) trong 15 phút → 403, DB không đổi; Head của lớp vẫn bỏ được', () => thu(() => {
+    const L = lop('MB FT 101');
+    const gv = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`, L);
+    const GV = loadPrincipal(gv.user_id);
+    const r = intake.commitIntake(GV, { classId: L, rows: [{ fullName: 'E9 GVCN them', email: emailThu(), dob: '2010-01-01', target: 6.5 }] });
+    assert(r.added === 1 && r.nhap, 'tiền đề: GVCN thêm được');
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND user_id = ?`).run(L, gv.user_id);
+    const GV2 = loadPrincipal(gv.user_id);
+    assert(ma(() => intake.hoanTacNhap(GV2, r.nhap)) === 403, 'người thêm hết quyền thêm HV ở lớp → 403');
+    assert(one('SELECT COUNT(*) n FROM students WHERE id = ?', r.studentIds[0]).n === 1, '403 mà DB đổi');
+    assert(intake.hoanTacNhap(P.mbManager, r.nhap).ok.length === 1, 'Head của lớp vẫn bỏ được');
+  }));
+
   check('R2-C5b (PTA rà #2026) · người khác chỉ có quyền THÊM HV (GVCN) không bỏ được lô của Head; chính GVCN bỏ được lô mình; em đã có dữ liệu → `failed`, không xoá', () => thu(() => {
     const L = lop('MB FT 101');
     const gv = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`, L);

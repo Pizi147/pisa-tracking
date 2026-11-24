@@ -8,6 +8,7 @@ export async function runPrChuyenLopSuaSaiTests(t: any) {
   const lenh: any = await import('../classes/lenhChuyen.ts');
   const llt: any = await import('../classes/luatLoTrinh.ts');
   const htcn: any = await import('../classes/hoanTacChuyenNgay.ts');
+  const closeSys: any = await import('../cases/systemClose.ts');
   const banGiao: any = await import('../classes/banGiao.ts');
   const dai: any = await import('../classes/daiChuyenLop.ts');
   const hl: any = await import('../students/hangLoat.ts');
@@ -75,6 +76,28 @@ export async function runPrChuyenLopSuaSaiTests(t: any) {
       assert(ma(() => htcn.hoanTacChuyenNgay(P.mbManager, sid, r.dao)) === 409, 'Hoàn tác lần hai phải 409');
     }));
   }
+
+  check('B-1 (N24 ③) · "Ngay hôm nay" đóng việc Phối hợp SOS chờ (Kết thúc lộ trình) → Hoàn tác trả việc về chờ, so cả bảng', () => thu(() => {
+    const sid = emCua('MB FT 101');
+    const luot = one('SELECT id, cycle_id FROM assessment_attempts WHERE student_id = ? AND cycle_id IS NOT NULL ORDER BY id LIMIT 1', sid);
+    conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'b1_thu', 'pending', '2026-09-01T00:00:00Z')`).run(luot.id, sid);
+    const pc = () => one("SELECT status, remove_reason_code FROM sos_coordination_actions WHERE kind = 'b1_thu' AND student_id = ?", sid);
+    const truoc = chup();
+    const enr = llt.lopHienTaiCua(sid);
+    const dich = llt.lopDichHopLe(lop('MB FT 102'), enr.class_id);
+    const { boiCanh, huong } = llt.huongChuyenMotEm(enr, dich, today, llt.tuCuoiKhoaCua(enr, today, undefined));
+    const r = htcn.chuyenNgayCoHoanTac(P.mbManager, sid, [enr.class_id, dich.id], () => {
+      const kq = lenh.raLenh(P.mbManager, { lopNguonId: enr.class_id, boiCanh, tuanChung: today, dongs: [lenh.dongTuBody({ studentId: sid, huong, toClassId: dich.id, lyDo: 'Thử', mucTieu: 6.5 })] });
+      closeSys.dongPhoiHopLoTrinh([luot.cycle_id], today);   // như `dongPhoiHopLoTrinh` của Lộ trình mới / Cuối khoá (luatLoTrinh)
+      return kq;
+    }, (x: any) => x.daChuyen.includes(sid));
+    assert(pc().status === 'removed', 'tiền đề: việc Phối hợp đã đóng');
+    xoaNho();
+    htcn.hoanTacChuyenNgay(P.mbManager, sid, r.dao);
+    assert(pc().status === 'pending' && pc().remove_reason_code === null, `Hoàn tác phải trả việc về chờ: ${JSON.stringify(pc())}`);
+    const d = khac(truoc, chup());
+    assert(!d.length, `còn khác sau Hoàn tác: ${d.join(', ')}`);
+  }));
 
   check('CLSS-3 · Hoàn tác chuyển ngay: GVCN / QL chi nhánh khác 403; đã có thay đổi sau (đổi lớp lượt) → 409, không đảo nửa chừng; tuần sau không có `dao`', () => thu(() => {
     const sid = emCua('MB FT 101');

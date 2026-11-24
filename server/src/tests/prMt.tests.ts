@@ -224,6 +224,7 @@ export async function runPrMtTests(t: YThucTestKit) {
   // ---------------------------------------------------------------- khối 4: kỳ vọng / PA quy chế / Phối hợp theo lộ trình của lượt
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
   const scoringSvc: any = await import('../fasttrack/scoring.ts');
+  const yeuCauSvc: any = await import('../duyet/yeuCau.ts');
   const casesSvc: any = await import('../cases/cases.ts');
   const ptLop: any = await import('../classes/phanTichLop.ts');
   const tongHopSvc: any = await import('../phanTich/tongHop.ts');
@@ -593,6 +594,16 @@ export async function runPrMtTests(t: YThucTestKit) {
     } finally { demoCfg.setConfig('demo_date', TODAY); }
     const r = conn.prepare(`SELECT status FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening' ORDER BY id DESC`).get(a8.id) as any;
     assert(r.status === 'expired' && lich('listening').sit_status === 'cancelled', `${r.status} · ${lich('listening').sit_status}`);
+  });
+  check('C-8 · thẻ Dời lịch thi quá hạn: quét thẻ (Tổng quan / badge / hộp) tự huỷ như Công việc — không chờ ai mở Công việc', () => {
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?, 'listening', 3, ?, ?, 'Xin dời (thẻ cũ C-8)', '2026-09-21', '2026-09-27', 'pending', ?)`)
+      .run(a8.id, week.ensurePeriod('2026-09-14').id, week.ensurePeriod('2026-09-28').id, new Date().toISOString());
+    const id = (conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id as number;
+    demoCfg.setConfig('demo_date', '2026-09-28');
+    try { (yeuCauSvc as any).quetYeuCau('2026-09-28'); } finally { demoCfg.setConfig('demo_date', TODAY); }
+    const r = conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(id) as any;
+    assert(r.status === 'expired', `quetYeuCau không tự huỷ thẻ dời quá hạn: ${r.status}`);
   });
   /* N38 L5 thay K4-12 "QL đổi tuần bài vắng = +1": chọn tuần = xếp lại từ đầu — bộ đếm 0; vắng lần sau là lần 1 (dời), không huỷ. */
   check('PR-MT (8) · QL chọn tuần cho kỹ năng đang vắng = xếp lại từ đầu (bộ đếm 0, N38 L5); vắng sau đó là lần 1 → dời tuần sau tuần thi', () => {

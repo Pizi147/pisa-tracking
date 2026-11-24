@@ -144,7 +144,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
       else if (x === '/my-work' && !vuaTai) invalidate(duong);
     });
   }, [data.id]);
-  const laQl = laVaiQuanLy(session?.roles);
+  /* E-10 (N52): vai xem như Head theo cờ máy chủ (Head / Quản trị / CX), không chỉ danh sách vai — CX thấy cùng badge việc của lớp như Công việc "Tất cả". */
+  const laQl = laVaiQuanLy(session?.roles) || !!session?.nav?.workOps || !!session?.nav?.workCx;
   const bGoc = badgeLop({
     vai: laQl ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
@@ -152,7 +153,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     soViecChoCham: laQl ? viec.data?.soChoChamLop ?? 0 : null,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     /* GD-6 (XM-2, PTA 14/11): GV không có badge "n việc quá hạn của lớp" — máy chủ đếm việc của chính GV, trùng chip đỏ của Việc cần làm; QL giữ (cả lớp). */
-    phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soViecQuaHan: laVaiQuanLy(session?.roles) ? soViecQuaHan : 0,
+    phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soViecQuaHan: laQl ? soViecQuaHan : 0,
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
     chuongTrinh: data.programme?.code ?? null,

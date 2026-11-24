@@ -17,7 +17,7 @@ export async function runPrDiemTieuChiTests(t: YThucTestKit) {
   const loiCua = (fn: () => unknown): any => { try { fn(); return null; } catch (e: any) { return e; } };
   const L = d.LOI_TIEU_CHI_NGUYEN;
 
-  check('DTC-1 · kiemTieuChi: số nguyên 0–9 / null hợp lệ; 6.5, -1, 10, NaN → câu số nguyên', () => {
+  check('N16 · DTC-1 · kiemTieuChi: số nguyên 0–9 / null hợp lệ; 6.5, -1, 10, NaN → câu số nguyên', () => {
     for (const v of [6, 0, 9, null]) assert(d.kiemTieuChi(v) === null, `${v} phải hợp lệ`);
     for (const v of [6.5, -1, 10, NaN]) assert(d.kiemTieuChi(v) === L, `${v} phải lỗi`);
   });
@@ -46,7 +46,7 @@ export async function runPrDiemTieuChiTests(t: YThucTestKit) {
   };
   const o = (aid: number, skill: string) => get('SELECT c1, c2, c3, c4, band FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, skill);
 
-  check('DTC-4 · saveScore writing1: [6,6.5,6,6] → 400 câu số nguyên, ô không đổi; [6,7,6,7] → band 6.5', () => {
+  check('N16 · DTC-4 · saveScore writing1: [6,6.5,6,6] → 400 câu số nguyên, ô không đổi; [6,7,6,7] → band 6.5', () => {
     const aid = emFt('Luu');
     const e = loiCua(() => attemptsSvc.saveScore(P.admin, aid, 'writing1', { criteria: [6, 6.5, 6, 6] }, t.TODAY));
     assert(e?.status === 400 && e.message === L, `${e?.status} ${e?.message}`);

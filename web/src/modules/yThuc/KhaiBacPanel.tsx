@@ -11,7 +11,7 @@ import { ErrorState } from '../../ui/ui.tsx';
 import { ChipBac, nganBac } from './KhaiBacLoPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useSession } from '../../lib/session.tsx';
-import { BAC_0_NHAN, THANG, dsLoi, duongThe, hienONgay, kindCuaBac, luuRoiTiep, nhanLoaiXuLy, quyCheKhaiBac, bacDu } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, CHU_TOI_THIEU, THANG, dsLoi, duongThe, hienONgay, kindCuaBac, luuRoiTiep, nhanLoaiXuLy, quyCheKhaiBac, bacDu } from '@shared/domain/index.ts';
 import { lamMoiYThucCua, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -87,7 +87,7 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc là bắt buộc. N70: GVCN sửa → ô đó là "Lý do sửa", bắt buộc (Head đọc để duyệt). */
   /* PTA rà #2058: GVCN chưa đổi bậc lẫn ngày / tháng so với dòng khai → không có gì để gửi Head (máy chủ cũng 400). */
   const chuaDoi = canDuyet && !!d.khai && bac === d.khai.bac && thang === (d.khai.thang ?? '');
-  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, ...(canDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: 1 }] : [])],
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }, ...(canDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: CHU_TOI_THIEU }] : [])],
     { bac: bac === null || chuaDoi ? '' : 'co', ghiChu });
   const lamMoi = () => { onDone?.(); lamMoiYThucCua({ studentIds: [studentId] }); if (canDuyet) { invalidate('/yeu-cau'); invalidate('/my-work'); } };
   const rut = async () => {

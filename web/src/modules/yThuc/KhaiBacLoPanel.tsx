@@ -10,7 +10,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { IconKhoa } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, luuRoiTiep, nhanLoaiXuLy, ngay, quyCheKhaiBac, bacDu, bacNgan } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, CHU_TOI_THIEU, THANG, dsLoi, luuRoiTiep, nhanLoaiXuLy, ngay, quyCheKhaiBac, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { CO_LO, guiTheoLo } from './LoYThucPanel.tsx';
@@ -89,7 +89,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
   };
 
   /* Luật N1: bấm Lưu khi chưa đổi em nào → báo còn thiếu "Bậc mới" (không tắt nút im lặng). */
-  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }, ...(soGuiDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: 1 }] : [])],
+  const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }, ...(soGuiDuyet ? [{ khoa: 'ghiChu', nhan: t('Lý do sửa'), toiThieu: CHU_TOI_THIEU }] : [])],
     { bac: gui.length ? 'co' : '', ghiChu });
   /** true = mọi em gửi đều lưu được (Lưu · việc tiếp › mới sang việc kế; có em lỗi thì ở lại). */
   const luu = async (): Promise<boolean> => {

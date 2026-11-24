@@ -520,6 +520,8 @@ export function hoanTacGop(p: Principal, v: { nhatKyId?: unknown }): { ok: true 
   const sau = JSON.parse(nk.after_json ?? '{}');
   const ds = ((sau.hoanTac ?? []) as GoiGop).filter((h) => laId(h?.tutorId) && Array.isArray(h?.buoiIds));
   tx(() => {
+    /* B-5: mỗi lần gộp hoàn tác MỘT lần — lần gộp lại cùng tên (nhật ký mới) không bị nhật ký cũ đảo nhầm. */
+    if (conn.prepare(`SELECT 1 AS x FROM audit_logs WHERE action = 'tutor.gop_hoan_tac' AND entity_id = ? LIMIT 1`).get(v.nhatKyId)) throw badRequest('Lần gộp này đã hoàn tác rồi.');
     for (const h of ds) {
       theoLo(h.buoiIds.filter(laId), (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_id = ? AND id IN (${ph})`).run(h.tutorId, ...lo), 800);
     }

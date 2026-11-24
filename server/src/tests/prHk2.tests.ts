@@ -332,7 +332,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   /* OV-4b (mockup overhaul-1 §3): ô có điểm ghi band ("5.0"; L/R "14 · 4.5"), bỏ chữ "sửa". */
-  check('C23 · J9 (OV-15b: ô cần nhập = khung rỗng, "Nhập" chỉ cho trình đọc màn hình); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
+  check('N53 · C23 · J9 (OV-15b: ô cần nhập = khung rỗng, "Nhập" chỉ cho trình đọc màn hình); ô có điểm ghi band; đầu cột S ghi "GV chấm: tên thật" + title có tên', () => {
     const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
     /* OV-11a: chữ ô dựng ở `hienO` (chữ + câu đọc màn hình + kiểu ô). OV-15b (mockup 2 khung 1b): ô trống là khung rỗng. */
     assert(/return \{ chu: null, doc: t\('Nhập'\), kieu: 'trong' \};/.test(s), 'ô trống: khung rỗng + câu đọc "Nhập"');

@@ -317,7 +317,7 @@ export const EN_SOT_QUAN_TRI = {
   'GV: chỉ GVCN, học viên lớp mình chủ nhiệm.': 'Teacher: core teacher only, students of own class.',
   'GV: chỉ GVCN, lớp mình chủ nhiệm.': 'Teacher: core teacher only, own class.',
   'Sửa thông tin học viên: họ tên, ngày sinh, email, TVV, liên hệ, dự kiến thi, điểm đầu vào.': 'Edit student info: name, date of birth, email, counsellor, contacts, planned exam, entry score.',
-  'Sửa Target (có lý do), ghi chú; Tạm dừng / Quay lại học / Thôi học; nhập kết quả thi thật. Không mở việc học thuật.':
+  'Sửa Target (có lý do), ghi chú; Tạm dừng / Kết thúc học · Quay lại học; nhập kết quả thi thật. Không mở việc học thuật.':
     'Edit Target (with a reason) and notes; pause / resume / withdraw; enter real exam results. Does not open academic tasks.',
   'Vào Test: Lịch Test, Điểm theo lớp, Kế hoạch Test.': 'Open Test: Test schedule, Scores by class, Test plan.',
   'Xem tiến trình công việc và báo cáo.': 'View task progress and reports.',

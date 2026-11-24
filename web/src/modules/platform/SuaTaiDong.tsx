@@ -5,6 +5,7 @@ import { HopNeo } from '../../ui/HopNeo.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
+import { nhanDaChuyen } from './XoaTaiKhoanPanel.tsx';
 import { SuaVaiChiNhanh, capTuTaiKhoan, khoaVai, loiThieuChiNhanh, payloadVai, type CapVai } from './SuaVaiChiNhanh.tsx';
 import { roleLabel } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -99,9 +100,10 @@ export function OVaiTaiDong({ u, branches, laMinh, mat, onDaLuu }: {
       daDoi={khoaVai(ds) !== khoaVai(goc)} loiTruoc={loi.length > 0}
       onMo={() => setDs(capTuTaiKhoan(u.roles))}
       onLuu={async () => {
-        await api.put(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(ds) });
+        const kq = await api.put<{ chuyen?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(ds) });
         onDaLuu();
-        toast.hoanTac(t('Đã đổi vai {ten}: {vai}', { ten: u.fullName, vai: moTa(ds) }), () => {
+        const daChuyen = nhanDaChuyen(kq?.chuyen);   // E-5: gỡ hết vai → báo số Case / PA đã tự chuyển
+        toast.hoanTac(`${t('Đã đổi vai {ten}: {vai}', { ten: u.fullName, vai: moTa(ds) })}${daChuyen ? ` · ${daChuyen}` : ''}`, () => {
           api.put(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(goc) })
             .then(() => { onDaLuu(); toast.push('ok', t('Đã hoàn tác vai {ten}', { ten: u.fullName })); })
             .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));

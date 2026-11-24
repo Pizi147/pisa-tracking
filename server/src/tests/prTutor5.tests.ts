@@ -180,6 +180,17 @@ export async function runPrTutor5Tests(t: any) {
     assert(ma(() => tr.gopTen(QT, { muc: [{ khoa, gvId: HT.userId }] })) === 400, 'gvId không phải GV → 400');
   }));
 
+  check('B-5 (N54) · Hoàn tác Gộp tên dùng MỘT lần: gộp → hoàn tác → gộp lại → hoàn tác bằng nhật ký cũ = 400, lần gộp mới giữ nguyên', () => thu(() => {
+    const d = themDong(caChinh(), null, { ten: 'Cô Thử B5', lop: 'MB', n: 1 });
+    const khoa = tr.khoaTen('Cô Thử B5');
+    const a = themTutor('Thử Gộp B5', 'MB');
+    const nkA = tr.gopTen(HMB, { muc: [{ khoa, tutorId: a }] }).nhatKyId;
+    tr.hoanTacGop(HMB, { nhatKyId: nkA });
+    tr.gopTen(HMB, { muc: [{ khoa, tutorId: a }] });
+    assert(ma(() => tr.hoanTacGop(HMB, { nhatKyId: nkA })) === 400, 'hoàn tác lần hai bằng nhật ký cũ phải 400');
+    assert(one('SELECT tutor_id FROM case_followup_buoi WHERE id = ?', d).tutor_id === a, 'lần gộp mới bị đảo nhầm');
+  }));
+
   check('TU2-5 (5b) · Gộp: đích phải đúng một (tutorId HOẶC gvId, số nguyên — chuỗi 400); đích GV đã nghỉ / xoá tài khoản 400; Head chỉ gộp vào GV chi nhánh mình (Quản trị không giới hạn); ô chọn Gộp của Head chỉ GV chi nhánh mình', () => thu(() => {
     run('INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet, tutor_id, lop_id, so_buoi) VALUES (?,?,?,?,NULL,?,1)', caChinh(), 9001, 'Cô Đích Thử', 'x', lopCua('MB'));
     const khoa = tr.khoaTen('Cô Đích Thử');

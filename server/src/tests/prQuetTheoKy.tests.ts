@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM QUET-THEO-KY (giảm dòng đọc Turso, kế hoạch `docs/superpowers/plans/2026-10-30-toc-do.md`): quét theo chỉ mục, theo kỳ — số không đổi.
  *   Q1 `listAttempts` `kemChuaTuan`: `OR` → `UNION ALL` (vế ô chờ đi idx_attempt_o_cho[_lop]); thứ tự phá hoà theo `a.id`.
- *   Q3 Báo cáo một request: `/tong-quan/v5?…&kemBaoCao=1` = JSON `/tong-quan/v5` + `baoCao` = JSON `/phan-tich/bao-cao`, cùng quyền.
+ *   (Q3 `kemBaoCao=1` đã gỡ ở D-03.)
  * Q2 (`napBai` theo kỳ) đã gỡ sau rà sâu PTA: planner vẫn đi `idx_attempt_class` + đọc mọi ô kỹ năng mọi chi nhánh trong kỳ — cần cột / chỉ mục chi nhánh (TRANG-LON).
  * Mỗi đường so với đường đủ qua cờ chỉ phép kiểm bật (`…KhiKiem.bat`).
  */
@@ -93,35 +93,12 @@ export async function runPrQuetTheoKyTests(t: any) {
       const txt = await res.text();
       return { status: res.status, json: res.status === 200 ? JSON.parse(txt) : null };
     };
-    const LOC = ['ct=ft', 'ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20'];
 
-    await checkAsync('Q3 · /tong-quan/v5?…&kemBaoCao=1: baoCao = JSON /phan-tich/bao-cao, phần còn lại = JSON /tong-quan/v5 (QL, QT × ft, thường theo tuần)', async () => {
-      for (const vai of ['QL', 'QT']) for (const q of LOC) {
-        const gop = await goi(vai, `/tong-quan/v5?${q}&kemBaoCao=1`), tq = await goi(vai, `/tong-quan/v5?${q}`), bc = await goi(vai, `/phan-tich/bao-cao?${q}`);
-        assert(gop.status === 200 && tq.status === 200 && bc.status === 200, `${vai} ${q}: mã ${gop.status} / ${tq.status} / ${bc.status}`);
-        const { baoCao, ...conLai } = gop.json;
-        assert(JSON.stringify(baoCao) === JSON.stringify(bc.json), `${vai} ${q}: baoCao ≠ /phan-tich/bao-cao`);
-        assert(JSON.stringify(conLai) === JSON.stringify(tq.json), `${vai} ${q}: phần Tổng quan ≠ /tong-quan/v5`);
-      }
-    });
-
-    await checkAsync('Q3 · RF5 cùng quyền: GVCN kemBaoCao=1 → 403; CX, TVV: mã = mã xấu hơn của hai đường cũ; không kemBaoCao → không có baoCao', async () => {
-      const g = await goi('GVCN', '/tong-quan/v5?ct=ft&kemBaoCao=1');
-      assert(g.status === 403, `GVCN: ${g.status} (mong 403)`);
-      for (const vai of ['CX', 'TVV']) {
-        assert(U[vai], `seed: không có người vai ${vai}`);
-        const gop = await goi(vai, '/tong-quan/v5?ct=ft&kemBaoCao=1'), tq = await goi(vai, '/tong-quan/v5?ct=ft'), bc = await goi(vai, '/phan-tich/bao-cao?ct=ft');
-        assert(gop.status === Math.max(tq.status, bc.status), `${vai}: gộp ${gop.status} ≠ max(${tq.status}, ${bc.status})`);
-      }
-      const ql = await goi('QL', '/tong-quan/v5?ct=ft');
-      assert(ql.status === 200 && !('baoCao' in ql.json), 'không kemBaoCao mà vẫn có baoCao');
-    });
-
-    await checkAsync('Q3 · câu (gộp) < câu (tq) + câu (bc) — QL MB ft', async () => {
-      const dem = async (url: string) => { const c0 = soCauSql(); await goi('QL', url); return soCauSql() - c0; };
-      const gop = await dem('/tong-quan/v5?ct=ft&kemBaoCao=1'), tq = await dem('/tong-quan/v5?ct=ft'), bc = await dem('/phan-tich/bao-cao?ct=ft');
-      console.log(`    câu QL ft: gộp ${gop} · tq ${tq} + bc ${bc} = ${tq + bc}`);
-      assert(gop < tq + bc, `gộp ${gop} ≥ ${tq} + ${bc}`);
+    /* D-03: Q3 `kemBaoCao=1` + `GET /phan-tich/bao-cao` đã gỡ (không client nào gọi) — ba phép kiểm Q3 bỏ theo. */
+    await checkAsync('D-03 · `GET /phan-tich/bao-cao` đã gỡ (404) và `kemBaoCao=1` không còn kèm `baoCao`', async () => {
+      assert((await goi('QL', '/phan-tich/bao-cao?ct=ft')).status === 404, 'route cũ còn sống');
+      const tq = await goi('QL', '/tong-quan/v5?ct=ft&kemBaoCao=1');
+      assert(tq.status === 200 && !('baoCao' in tq.json), 'kemBaoCao vẫn kèm baoCao');
     });
 
     /* TQ-QT-NHE A2: Tổng quan kèm "Của tôi" của badge — `cuaToi` = JSON `/my-work` (cùng chi nhánh), phần còn lại = JSON không kèm; quyền như cũ. */

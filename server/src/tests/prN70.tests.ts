@@ -63,6 +63,8 @@ export async function runPrN70Tests(t: YThucTestKit) {
     const thieu = loi(() => xu.suaKhaiBac(gvcn, sid, { bac: 1, thang: THANG, ghiChu: '  ', bacCu: 2 }));
     assert(thieu.status === 400 && /lý do/i.test(thieu.msg) && the(sid).length === 0, `thiếu lý do: ${thieu.msg}`);
 
+    const ngan = loi(() => xu.suaKhaiBac(gvcn, sid, { bac: 1, thang: THANG, ghiChu: 'ok', bacCu: 2 }));   // B-2 (N50 ⑥): lý do ≥ 8 ký tự
+    assert(ngan.status === 400 && /8 ký tự/.test(ngan.msg) && the(sid).length === 0, `B-2: lý do 2 ký tự vẫn qua: ${ngan.status} ${ngan.msg}`);
     const r = xu.suaKhaiBac(gvcn, sid, { bac: 1, thang: NGAY, ghiChu: 'Thực ra mới Report 1', bacCu: 2 });
     const y = the(sid);
     assert(r.guiDuyet === true && r.yeuCauId === y[0].id && r.bac === 2, JSON.stringify(r));
@@ -85,7 +87,7 @@ export async function runPrN70Tests(t: YThucTestKit) {
     assert(r2.yeuCauId === y[0].id && y2.length === 1 && JSON.parse(y2[0].du_lieu).bac === 0 && y2[0].ly_do === 'Chưa xử lý lần nào' && khai(sid).bac === 2, JSON.stringify(y2));
 
     assert(loi(() => xu.suaKhaiBac(gvbm, sid, { bac: 5, ghiChu: 'x', bacCu: 2 })).status === 403 && the(sid).length === 1, 'GVBM 403');
-    assert(loi(() => xu.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'lệch', bacCu: 4 })).status === 409, 'bậc panel thấy đã cũ → 409');
+    assert(loi(() => xu.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'lệch bậc đã cũ', bacCu: 4 })).status === 409, 'bậc panel thấy đã cũ → 409');
   }));
 
   await checkAsync('N70-3 · Head DUYỆT → bậc đổi (ngày / tháng, ghi chú theo yêu cầu), thẻ "duyet", GVCN có chuông, nhật ký sửa cấp bậc; Head huỷ quyết định trong ngày → bậc về như cũ', () => thu(() => {
@@ -104,6 +106,18 @@ export async function runPrN70Tests(t: YThucTestKit) {
     assert(khai(sid).bac === 2 && khai(sid).thang === THANG && the(sid)[0].trang_thai === 'cho', 'huỷ quyết định: bậc + thẻ về như trước');
   }));
 
+  await checkAsync('C-4 (N70, RKC-3b) · Huỷ quyết định thẻ sửa bậc: đã có lần xử lý MỚI sau lần duyệt → chặn có lý do + bước tiếp, bậc giữ', () => thu(() => {
+    const sid = moiEm();
+    xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2' });
+    const r = xu.suaKhaiBac(gvcn, sid, { bac: 4, ghiChu: 'Lên bậc 4 theo hồ sơ', bacCu: 2 });
+    yc.duyetYeuCau(head, r.yeuCauId);
+    conn.prepare("INSERT INTO discipline_measures (student_id, kind, status, owner_user_id, created_by, created_at) VALUES (?, 'report_4_meeting', 'done', ?, ?, ?)")
+      .run(sid, gvcn.userId, gvcn.userId, new Date(Date.now() + 60_000).toISOString());
+    const l = loi(() => yc.huyQuyetDinh(head, r.yeuCauId));
+    assert(l.status === 409 && /xử lý theo bậc mới/.test(l.msg) && /tab Ý thức/.test(l.msg), `chặn: ${l.status} ${l.msg}`);
+    assert(khai(sid).bac === 4 && the(sid)[0].trang_thai === 'duyet', 'bậc + thẻ giữ nguyên');
+  }));
+
   await checkAsync('N70-4 · Head TỪ CHỐI (lý do bắt buộc) → bậc cũ giữ, thẻ "tu_choi" + lý do, chuông "bị từ chối" cho GVCN; GVCN gửi lại được (thẻ mới)', () => thu(() => {
     const sid = moiEm();
     xu.khaiBac(gvcn, sid, { bac: 3, ghiChu: 'WL 1' });
@@ -120,7 +134,7 @@ export async function runPrN70Tests(t: YThucTestKit) {
   await checkAsync('N70-5 · GVCN RÚT yêu cầu còn chờ → thẻ tự đóng "Người gửi đã rút", bậc giữ; người khác rút 403', () => thu(() => {
     const sid = moiEm();
     xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2' });
-    const r = xu.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Nhầm', bacCu: 2 });
+    const r = xu.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Nhầm bậc, xin hạ xuống', bacCu: 2 });
     assert(loi(() => yc.rutYeuCau(gvbm, r.yeuCauId)).status === 403, 'người khác rút: 403');
     yc.rutYeuCau(gvcn, r.yeuCauId);
     const y = the(sid)[0];
@@ -154,6 +168,22 @@ export async function runPrN70Tests(t: YThucTestKit) {
     assert(khai(a).bac === 1 && khai(a).thang === THANG && khai(a).sua_boi === gvcn.userId, JSON.stringify(khai(a)));
     assert(the(a)[0].trang_thai === 'tu_dong' && the(a)[0].ly_do_dong === xu.LY_DO_TU_CHOT_Y_THUC, JSON.stringify(the(a)[0]));
     assert(khai(b).bac === 2 && the(b)[0].trang_thai === 'cho', 'thẻ còn hạn giữ nguyên');
+  }));
+
+  await checkAsync('C-7 · quét hết hạn thẻ Ý thức: một thẻ lỗi (đối tượng không còn) bị bỏ qua + log, thẻ khác vẫn chốt — không ném lỗi cả lượt quét', () => thu(() => {
+    const a = moiEm();
+    xu.khaiBac(gvcn, a, { bac: 2, ghiChu: 'Report 2' });
+    const ra = xu.suaKhaiBac(gvcn, a, { bac: 1, thang: THANG, ghiChu: 'Hạ về Report 1', bacCu: 2 });
+    const han = addDays(TODAY, -1);
+    conn.prepare('UPDATE yeu_cau_duyet SET han_duyet = ? WHERE id = ?').run(han, ra.yeuCauId);
+    const xau = Number(conn.prepare(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, han_duyet, trang_thai, tao_luc) VALUES ('thu_hoi_y_thuc', 'can_quyet', 'discipline_measure', 987654321, ?, 'cho', ?)`)
+      .run(han, new Date().toISOString()).lastInsertRowid);
+    const log = console.error; let nhat = 0;
+    console.error = (...x: unknown[]) => { if (String(x[0]).includes('het-han-y-thuc')) nhat += 1; else log(...x); };
+    try { xu.quetYThucHetHan(conn, TODAY); } finally { console.error = log; }
+    assert(nhat === 1, `thẻ lỗi phải được log đúng một lần (${nhat})`);
+    assert(khai(a).bac === 1 && the(a)[0].trang_thai === 'tu_dong', 'thẻ tốt vẫn được chốt');
+    assert((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(xau) as any).trang_thai === 'cho', 'thẻ lỗi giữ nguyên (cuộn lại riêng)');
   }));
 
   await checkAsync('N70-8 · Lô cả lớp (GVCN): em chưa khai áp ngay, em đã khai → gửi Head duyệt từng em (bậc giữ); thiếu ghi chú chung → em đã khai báo riêng; Hoàn tác lô: xoá dòng vừa khai + rút thẻ vừa gửi; GVCN không hoàn tác "về bậc trước" được; Head lô áp ngay', () => thu(() => {

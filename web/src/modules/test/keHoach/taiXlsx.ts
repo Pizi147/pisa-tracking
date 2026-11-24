@@ -1,3 +1,5 @@
+import { datBandXlsx } from '@shared/domain/xuatMt.ts';
+
 /** Sheet máy chủ dựng sẵn (hàng 1 = tiêu đề). */
 export type SheetXuat = { ten: string; aoa: (string | number | null)[][] };
 
@@ -10,6 +12,7 @@ export async function taiXlsx(sheets: readonly SheetXuat[], tenTep: string): Pro
   const wb = XLSX.utils.book_new();
   sheets.forEach((s, i) => {
     const ws = XLSX.utils.aoa_to_sheet(s.aoa);
+    datBandXlsx(ws, (s.aoa[0] ?? []) as (string | number | null)[]);   // A-1 (N53): band "7.0"
     if (i === 0 && ws['!ref']) ws['!autofilter'] = { ref: ws['!ref'] };
     ws['!cols'] = (s.aoa[0] ?? []).map((_, c) => ({ wch: Math.min(48, Math.max(8, ...s.aoa.slice(0, 200).map((h) => String(h[c] ?? '').length + 2))) }));
     XLSX.utils.book_append_sheet(wb, ws, s.ten);

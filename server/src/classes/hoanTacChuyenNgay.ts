@@ -48,6 +48,8 @@ export function dongDaoChuyenNgay(sidVao: number | readonly number[], lopIds: re
     { bang: 'case_milestones', dk: caseEm, args: sids, k: 'them' },
     { bang: 'sos_case_history', dk: caseEm, args: sids, k: 'them' },
     { bang: 'case_signals', dk: `student_id ${em}`, args: sids, k: 'ca' },
+    /* B-1 (N24 ③): Lộ trình mới / Cuối khoá đóng việc Phối hợp SOS chờ (`dongPhoiHopLoTrinh`) — Hoàn tác trả việc về như cũ. */
+    { bang: 'sos_coordination_actions', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'lenh_chuyen_lop', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'ban_giao_mon', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
     { bang: 'ban_chup_lo_trinh', dk: `student_id ${em}`, args: sids, k: 'them' },

@@ -134,6 +134,21 @@ export async function runPrXuatTests(t: YThucTestKit) {
     assert(doc.Sheets['Bộ lọc đã dùng']['B2'].v === 'Nguyễn Khánh Vy', 'sheet Bộ lọc giữ dấu');
   });
 
+  await checkAsync('A-1 (N53) · tệp xuất: ô band là SỐ nhưng hiện một chữ số lẻ ("7.0"); cột không phải band (SOS) giữ nguyên', async () => {
+    const XLSX = await import('xlsx');
+    const aoa = d.bangFT([{ ...dong(), l: 7, r: 6.5, overall: 6, target: 7, kyVong: 6.5, sos: 2 }], 'gon');
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    d.datBandXlsx(ws, aoa[0]);
+    const dau = aoa[0] as string[];
+    const o = (ten: string) => ws[XLSX.utils.encode_cell({ r: 1, c: dau.indexOf(ten) })];
+    for (const k of ['L', 'R', 'Overall', 'Target', 'Kỳ vọng']) assert(o(k).t === 'n' && o(k).z === '0.0', `cột ${k} phải là số định dạng 0.0`);
+    assert(o('SOS').z === undefined, 'SOS không phải band');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'x');
+    const doc = XLSX.read(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }), { cellNF: true });
+    assert(doc.Sheets.x[XLSX.utils.encode_cell({ r: 1, c: dau.indexOf('L') })].w === '7.0', 'đọc lại: hiện 7.0');
+  });
+
   await mayChu(t);
 }
 

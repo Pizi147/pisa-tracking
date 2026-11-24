@@ -343,7 +343,8 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
       /* TL-1 (N61): TVV không bị chặn — báo PH xong khi đang "Chờ GV sửa" → yêu cầu trả lại còn mở tự đóng "TVV đã báo PH". Gọi TRƯỚC khi việc sang xong:
          hạn tính lại (hôm nay + 4) nên lần báo này không bị tính trễ ở sổ nghĩa vụ / "Báo PH đúng hạn" (rà #1927 (3)). */
       if (sau === 'xong' && x.tra_lai_id) dongTheoDuongSanCo({ baoPhId: id }, 'tvv_da_bao', p.userId);
-      db().prepare('UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ?').run(sau, id);
+      /* B-6 (N24 ②): ghi lại lần liên hệ trên việc đã bỏ = việc mở lại / xong → xoá dấu "bỏ" (không vừa xong vừa mang lý do bỏ). */
+      db().prepare('UPDATE viec_bao_ph SET trang_thai = ?, bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL WHERE id = ?').run(sau, id);
       if (x.tinh_hinh_id != null) {
         /* TINH-HINH: kết quả về GV đã báo (chuông khi Đã báo PH). */
         db().prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = ? WHERE id = ? AND trang_thai != 'rut'`).run(sau, x.tinh_hinh_id);

@@ -671,7 +671,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
   const diemThi = (k: 'l' | 'r' | 'w' | 's' | 'ovr') => (thiKq?.diem[k] != null ? <DiemKq diem={thiKq.diem[k]!} kyVong={thiKq.target} /> : '—');
   /* TL-GV (v20): điểm kỹ năng thi thật = ô hộp → hộp Tuần dạy (GV · số tuần · %). OVR có đủ L R W S cạnh → chữ thường. */
   const oThi = (k: 'l' | 'r' | 'w' | 's') => (thiKq?.diem[k] != null
-    ? <OTuanDay kn={k} cycleId={cycleId} ten={ten} diem={thiKq.diem} target={thiKq.target} nhan={`${k.toUpperCase()} ${thiKq.diem[k]}`}>{diemThi(k)}</OTuanDay> : diemThi(k));
+    ? <OTuanDay kn={k} cycleId={cycleId} ten={ten} diem={thiKq.diem} target={thiKq.target} nhan={`${k.toUpperCase()} ${fmtBand(thiKq.diem[k])}`}>{diemThi(k)}</OTuanDay> : diemThi(k));
   const ngayThi = !thi || thi === 'khong' ? '—' : thi.loai === 'du-kien' ? t('dự kiến {thang}', { thang: thi.nhan }) : thi.nhan;
   const dienThoai = useDienThoai();
   /* U02 dòng 14 (rỗng ≠ thiếu ≠ chưa tới): lượt chưa tới tuần, chưa điểm nào → một ô "Chưa tới tuần" thay sáu "—". */

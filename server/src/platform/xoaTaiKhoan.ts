@@ -212,7 +212,7 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
           + (SELECT COUNT(*) FROM discipline_measures WHERE owner_user_id = ?1 AND status = 'preparing')
           + (SELECT COUNT(*) FROM tasks WHERE assignee_user_id = ?1 AND completed_at IS NULL) AS n`,
   ).get(userId) as { n: number }).n;
-  if (viec > 0) canhBao.push(`Còn ${viec} Case/việc đang giao cho người này — đổi người phụ trách sau khi xoá.`);
+  if (viec > 0) canhBao.push(`Còn ${viec} Case/việc đang giao cho người này — Case / PA / Case chờ xác nhận nguyên nhân tự chuyển cho GV môn → GVCN lớp của em; chỗ không có ai thì để trống.`);   // E-5 (N69): máy tự chuyển, không còn "đổi sau khi xoá"
   /* OV-11b (QT-10e): TVV đang phụ trách học viên (chưa lưu trữ) — xoá thì các em không còn TVV. */
   const soHv = (conn.prepare('SELECT COUNT(*) n FROM students WHERE consultant_user_id = ?1 AND (archived_at IS NULL OR status = \'inactive\')').get(userId) as { n: number }).n;
   if (soHv > 0) canhBao.push(`${soHv} học viên sẽ không còn TVV.`);
@@ -229,7 +229,7 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
  * POST /admin/accounts/:id/xoa — xoá mềm (G5-10), trong MỘT giao dịch. DUONG-LUI-2 (B1-11): không bắt gõ lại email / họ tên — xoá mềm có Hoàn tác +
  * Khôi phục ở Đã xoá (như Xoá học viên G5-12); panel vẫn nêu hậu quả (dấu vết, lớp thiếu GVCN — hỏi một câu).
  */
-export function xoaTaiKhoan(p: Principal, userId: number): { ok: true; cach: 'mem' } {
+export function xoaTaiKhoan(p: Principal, userId: number): { ok: true; cach: 'mem'; chuyen: ReturnType<typeof chuyenViecNguoiNghi> } {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
   const homNay = demoToday();
   const u = docNguoi(userId, homNay);
@@ -266,7 +266,7 @@ export function xoaTaiKhoan(p: Principal, userId: number): { ok: true; cach: 'me
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,
       before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds, emailPhu, quyenRieng, phanCong }, after: { cach, soDauVet, chuyen },
     });
-    return { ok: true as const, cach };
+    return { ok: true as const, cach, chuyen };   // E-5: web báo "Đã chuyển n Case · m PA"
   });
 }
 

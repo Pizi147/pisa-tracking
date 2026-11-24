@@ -18,7 +18,7 @@ import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, moLaiCase, napTenCase, respo
 import { khoiPhucRac } from '../platform/khoiPhucRac.ts';
 import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungGiuPaGv, apDungKhongTheoDoi, quetGiuPaGv, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
-import { chuTheDoiLan2, decideAbsenceMove, huyQuyetDinhDoi } from '../fasttrack/absence.ts';
+import { chuTheDoiLan2, decideAbsenceMove, huyQuyetDinhDoi, sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
@@ -233,6 +233,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => { decideAbsenceMove(p, yc.doi_tuong_id, { approve: false, note: lyDo }); },
     /* RKC-3c (PTA 07/11): Huỷ quyết định dời lịch — đường đảo riêng (`huyQuyetDinhDoi`): kỹ năng về vắng chờ dời ở tuần cũ. */
     khiHuy: (p, yc) => huyQuyetDinhDoi(p, yc.doi_tuong_id),
+    /* C-8: hết hạn chưa duyệt = tự huỷ (cùng đường `sweepExpiredMoves` của Công việc) — Tổng quan / badge / chuông không đếm thẻ "quá hạn" sắp tự huỷ. */
+    quet: () => sweepExpiredMoves(),
     /* Đề nghị đã được trả lời ở trang lượt thi (modal cũ) hoặc hết hạn qua đường khác → thẻ tự đóng.
      * PR-MT: lượt đã huỷ hoặc MT lịch sử (không vào luồng vắng) cũng không còn thẻ chờ. */
     chet: {
@@ -1019,6 +1021,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     dao: {
       duyet: (yc) => [{ bang: 'y_thuc_khai_bac', dk: `student_id = ? AND chuoi_cycle_id = json_extract(?, '$.cycleId')`, args: [yc.doi_tuong_id, yc.du_lieu ?? '{}'], k: 'sua' }],
       tuChoi: () => [],
+      /* C-4 (RKC-3b): sau khi Head duyệt, GVCN đã lưu lần xử lý MỚI theo bậc mới → đảo dòng khai sẽ làm bậc và lịch sử lệch nhau → chặn, nói lý do + bước tiếp (như thẻ Ý thức). */
+      chan: (conn, yc) => (yc.trang_thai === 'duyet' && yc.xu_ly_luc && conn.prepare(
+        `SELECT 1 FROM discipline_measures WHERE student_id = ? AND status IN ('done', 'cho_duyet', 'da_duyet') AND created_at > ? LIMIT 1`).get(yc.doi_tuong_id, yc.xu_ly_luc)
+        ? 'GVCN đã xử lý theo bậc mới — không huỷ quyết định được. Muốn đổi: sửa lại bậc ở tab Ý thức của em.' : null),
     },
     /* Bậc khai đã khác lúc gửi (Head / Quản trị sửa thẳng, Hoàn tác lô xoá dòng khai) hoặc em đã lưu trữ → thẻ tự đóng, GVCN có chuông "Tự đóng: …". */
     chet: {

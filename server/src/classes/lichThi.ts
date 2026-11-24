@@ -25,6 +25,7 @@ import { diemCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
+import { LUOT_CON_KE_HOACH_SQL } from '../students/tamDung.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
 const GHI_CHU_TOI_DA = 300;
@@ -261,7 +262,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
   theoLo(cyc, (lo, ph) => {
     for (const a of db().prepare(
       `SELECT a.cycle_id, a.kind, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
+        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? AND ${LUOT_CON_KE_HOACH_SQL('a')} ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
       if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
     }
   });

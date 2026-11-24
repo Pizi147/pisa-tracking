@@ -217,7 +217,7 @@ export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?
           thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, ket_luan = ?, lam_moi_luc = ? WHERE id = ?`)
         .run(sau.thi_that_ngay ?? null, d.l, d.r, d.w, d.s, k2.ovr, sau.thi_that_khong_thi ? 1 : 0, sau.thi_that_nhap_boi ?? null, sau.thi_that_nhap_luc ?? null, k2.ketLuan, nowIso(), bcNay.id);
     }
-    const tom = (r: any) => (r.thi_that_khong_thi ? 'Không thi' : `L ${r.thi_that_l ?? '—'} · R ${r.thi_that_r ?? '—'} · W ${r.thi_that_w ?? '—'} · S ${r.thi_that_s ?? '—'}${r.outcome_score != null ? ` · OVR ${r.outcome_score}` : ''}`);
+    const tom = (r: any) => (r.thi_that_khong_thi ? 'Không thi' : `L ${fmtBand(r.thi_that_l)} · R ${fmtBand(r.thi_that_r)} · W ${fmtBand(r.thi_that_w)} · S ${fmtBand(r.thi_that_s)}${r.outcome_score != null ? ` · OVR ${fmtBand(r.outcome_score)}` : ''}`   /* A-3 (N53) */);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'cycle_outcome', eventDate: demoToday(), title: 'Kết quả thi thật',
       detail: `${tom(cu)} → ${tom(sau)} · khôi phục bản trước`, refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,

@@ -911,10 +911,6 @@ const filterBaoCaoOf = (req: Request) => {
   const k = khoangOf(req) ?? khoangTuUrl({ get: () => null }, demoToday());
   return { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), classId: qInt(req, 'lop') ?? null, tu: k.tu, den: k.den };
 };
-api.get('/phan-tich/bao-cao', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req));
-}));
 api.get('/phan-tich/bao-cao/ket-qua-mt', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return baoCaoSvc.ketQuaMt(principalOf(req), filterBaoCaoOf(req));
@@ -2471,8 +2467,7 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
     return chiNhanhSvc.chiNhanhV2(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den });
   }
   const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req), gon: qStr(req, 'gon') === '1' });
-  /* QUET-THEO-KY Q3: Báo cáo HV MỘT request — kèm CHÍNH `/phan-tich/bao-cao` (cùng hàm, cùng quyền); dưới `/tong-quan` để `invalidate('/tong-quan')` vẫn trúng. */
-  if (qStr(req, 'kemBaoCao') === '1') return { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) };
+  /* D-03: bỏ `kemBaoCao` + `GET /phan-tich/bao-cao` (không client nào gọi; web Báo cáo dùng `baoCao=chi-nhanh` + `/phan-tich/bao-cao/o`). */
   /* NHẸ HƠN PR-3 (PTA rà #2002, Turso): Tổng quan Head / Quản trị / Admin — kèm CHÍNH `dong` Công việc "Tất cả" (`myWork` nguoi=tat-ca, cùng hàm, cùng quyền
      route `/my-work`) trong CÙNG request: lượt / lịch kỹ năng / điểm đọc một lần cho cả SOS lẫn việc (bộ nhớ request `nhoTheoId`). */
   if (qStr(req, 'kemViec') === '1') {

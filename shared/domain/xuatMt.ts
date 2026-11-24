@@ -183,6 +183,24 @@ const ghepNx = (d: DongFT, cap: [string, ONhap][]) => {
   return ds.length ? ds.join(' · ') : null;
 };
 
+/** A-1 (N53): tiêu đề cột là điểm band — ô SỐ của cột hiện một chữ số lẻ ("7.0"), vẫn là số để lọc / sắp xếp. Gồm cả tên tiếng Anh. */
+const COT_BAND_XLSX = new Set(['L', 'R', 'W', 'S', 'W1', 'W2', 'Overall', 'Target', 'Kỳ vọng', 'Expected']);
+/**
+ * A-1 (N53): đặt định dạng `0.0` cho ô số của cột band trong một worksheet `xlsx` dựng từ `aoa_to_sheet(aoa)` — MỘT hàm cho mọi tệp xuất có điểm band.
+ * `tieuDe` = hàng 1 (tiêu đề) của `aoa`. Cột không phải band (SOS, số buổi…) giữ nguyên.
+ */
+export function datBandXlsx(ws: Record<string, any>, tieuDe: readonly Cell[]): void {
+  const cot = new Set<number>();
+  tieuDe.forEach((h, i) => { if (typeof h === 'string' && COT_BAND_XLSX.has(h.trim())) cot.add(i); });
+  if (!cot.size) return;
+  for (const k of Object.keys(ws)) {
+    const m = /^([A-Z]+)([0-9]+)$/.exec(k);
+    if (!m || m[2] === '1') continue;
+    const c = [...m[1]].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+    if (cot.has(c) && ws[k]?.t === 'n') ws[k].z = '0.0';
+  }
+}
+
 /** Hàng 1 = tiêu đề; mọi điểm là số hoặc `null`. */
 export function bangFT(dong: DongFT[], cot: CotXuat): Cell[][] {
   const day = cot === 'day-du', nx = cot === 'nx';
