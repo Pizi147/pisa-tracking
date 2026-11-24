@@ -6,10 +6,14 @@ import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, Field, Forbidden, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { OChonThuong } from '../../ui/OChonThuong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
+import { KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
+import { TrangThaiLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { BranchFilter, resolveWeek, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChipHan } from '../../ui/Nhan.tsx';
+import { Han } from '../../ui/Han.tsx';
 import { ChonNguoi, type NguoiTrongDs, type TimXa } from '../../ui/PeoplePicker.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -27,7 +31,7 @@ import { HOP_DON_VI_BAT } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_MUC_CV, HANG_SO, HANG_SO_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
-  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
+  TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
   trangThaiKyGiao, tuanLich, quyCheViecGiao, quyCheViecLap,
   type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc, ngay,
 } from '@shared/domain/index.ts';
@@ -66,7 +70,7 @@ const NhanViec = ({ progress, label }: { progress: string; label: string }) => <
 const dong = (pr: string) => pr === 'done' || pr === 'stopped';
 /** Hạn của việc / việc con: viên hạn (`.han-v`); việc đã khép chỉ còn ngày, không đếm quá hạn. */
 const HanO = ({ han, xong }: { han: string; xong: boolean }) => (xong
-  ? <span className="text-xs tabular-nums text-faint">{fmtDate(han)}</span> : <ChipHan vien loai="viec-van-hanh" han={han} />);
+  ? <span className="text-[13px] tabular-nums text-faint">{fmtDate(han)}</span> : <Han trongBang loai="viec-van-hanh" han={han} />);
 
 const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: t('Đang mở'), ...TASK_PROGRESS_LABEL, 'tat-ca': t('Mọi trạng thái') };
 
@@ -218,7 +222,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
           const n = hangSo[h] ?? 0;
           const active = hang === h;
           return (
-            <ODai key={h} nhan={HANG_SO_LABEL[h]}>
+            <ODai key={h} nhan={h === 'vua-xong' ? t('Hoàn thành 7 ngày') : HANG_SO_LABEL[h]}>
               {n === 0 && !active ? <SoTinh n={0} /> : (
                 <button type="button" aria-pressed={active}
                   className={`${mauOSo(h === 'qua-han' ? 'text-bad' : '')} text-[14px] ${active ? 'rounded bg-[color:var(--accent-soft)] px-1' : ''}`}
@@ -237,30 +241,30 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         })}
       </DaiChiSo></div>
 
-      <section className="overflow-clip rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} aria-label={t('Việc vận hành')}>
+      <section className="overflow-clip rounded-xl border" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }} aria-label={t('Việc được giao')}>
         <div className="flex min-h-[52px] flex-wrap items-center gap-2.5 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc vận hành')}</h2>
+          <h2 className="m-0 text-[16px] font-bold text-slate-100">{t('Việc được giao')}</h2>
           <span className="text-sm text-dim">{t('{n} việc', { n: rows.length })}</span>
-          <span className="ml-auto"><BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
+          <span className="ml-auto max-sm:ml-0 max-sm:w-full"><BranchFilter hetHang branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} /></span>
         </div>
         {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4) ── */}
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5 text-[13px] text-dim max-sm:grid max-sm:grid-cols-[max-content_minmax(0,1fr)] max-sm:gap-x-3" style={{ borderColor: 'var(--line)' }}>
           {/* A2-06 (AUDIT-2111): ô Nhóm có tìm (N45 — danh sách dài, không cố định); Trạng thái giữ ô thường (5 mục cố định). */}
-          <div className="flex items-center gap-2 whitespace-nowrap max-sm:w-full">
+          <div className="flex items-center gap-2 whitespace-nowrap max-sm:contents">
             <span>{t('Nhóm')}</span>
-            <span className="w-[220px] max-sm:min-w-0 max-sm:flex-1"><OLocNhom nhom={nhom} hangMuc={hangMucCo.map(([k]) => k)} value={locNhom} onChange={(v) => setParam('nhom', v)} /></span>
+            <span className="w-[220px] max-sm:w-auto max-sm:min-w-0"><OLocNhom nhom={nhom} hangMuc={hangMucCo.map(([k]) => k)} value={locNhom} onChange={(v) => setParam('nhom', v)} /></span>
           </div>
-          <label className="flex items-center gap-2 whitespace-nowrap">
+          <label className="flex items-center gap-2 whitespace-nowrap max-sm:contents">
             {t('Trạng thái')}
-            <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
+            <OChonThuong className="min-w-[150px] max-sm:min-w-0" dangLoc={progress !== 'mo'} value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
               {TRANG_THAI_LOC.map((tt) => (
                 <option key={tt} value={tt}>{TRANG_THAI_LABEL[tt]} ({data?.facets.progress[tt] ?? 0})</option>
               ))}
-            </select>
+            </OChonThuong>
           </label>
-          <div className="flex items-center gap-2 max-sm:w-full">
+          <div className="flex items-center gap-2 max-sm:contents">
             <span className="shrink-0">{t('Người phụ trách')}</span>
-            <div className="w-60 max-sm:min-w-0 max-sm:flex-1">
+            <div className="w-60 max-sm:w-auto max-sm:min-w-0">
               <ChonNguoi value={assigneeValue}
                 onChange={(v) => setParam('phuTrach', v?.kieu === 'toi' ? 'toi' : v?.kieu === 'tai_khoan' ? String(v.id) : null)}
                 nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Mọi người')} ariaLabel={t('Lọc theo người phụ trách')} />
@@ -275,12 +279,11 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
         {rows.length > 0 && (
           <>
             {/* ≥ 640 px: bảng 5 cột (V1). */}
-            <table className="bang-dinh w-full text-sm max-sm:hidden" style={{ tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-              <colgroup><col /><col style={{ width: 200 }} /><col style={{ width: 150 }} /><col style={{ width: 170 }} /><col style={{ width: 150 }} /></colgroup>
+            <table className="bang-dinh w-full text-sm max-sm:hidden" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr className="text-left text-xs font-semibold text-faint">
-                  {[t('Việc'), t('Người phụ trách'), t('Hạn'), t('Trạng thái'), t('Việc con')].map((h, i) => (
-                    <th key={h} scope="col" className={`whitespace-nowrap border-b py-2 pr-3 font-semibold ${i ? 'pl-3' : 'pl-4'}`} style={{ borderColor: 'var(--line)' }}>{h}</th>
+                  {[t('Việc'), t('Người phụ trách'), t('Hạn'), t('Trạng thái')].map((h, i) => (
+                    <th key={h} scope="col" className={`whitespace-nowrap border-b py-2 font-semibold ${i === 0 ? 'pl-4 pr-3' : `w-[1%] pl-8 ${i === 3 ? 'pr-4' : 'pr-0'}`}`} style={{ borderColor: 'var(--line)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -289,7 +292,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
                   const mo = !gap.has(p.khoa);
                   return [
                     <tr key={p.khoa}>
-                      <td colSpan={5} className="border-t p-0" style={{ borderColor: 'var(--line-strong)' }}>
+                      <td colSpan={4} className="border-t p-0" style={{ borderColor: 'var(--line-strong)' }}>
                         <HangNhom p={p} mo={mo} qh={quaHan(p.rows)} onBam={() => doiGap(p.khoa)} />
                       </td>
                     </tr>,
@@ -304,7 +307,7 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
                 const mo = !gap.has(p.khoa);
                 return (
                   <div key={p.khoa} className="border-t first:border-t-0" style={{ borderColor: 'var(--line-strong)' }}>
-                    <HangNhom p={p} mo={mo} qh={quaHan(p.rows)} onBam={() => doiGap(p.khoa)} cao />
+                    <HangNhom p={p} mo={mo} qh={quaHan(p.rows)} onBam={() => doiGap(p.khoa)} />
                     {mo && p.rows.map((r) => <TheViec key={r.id} r={r} chon={open === r.id} onMo={() => setOpen(r.id)} />)}
                   </div>
                 );
@@ -326,15 +329,15 @@ export function TasksBoard({ dau }: { /** Tiêu đề trang (nơi gọi) — đ�
 }
 
 /** Hàng nhóm (V1 `tr.nh`): cả hàng là nút — chevron sát tên, "n việc · m quá hạn" vẫn hiện khi gập; "Không phân loại" vạch xám. */
-function HangNhom({ p, mo, qh, onBam, cao }: { p: Phan; mo: boolean; qh: number; onBam: () => void; cao?: boolean }) {
+function HangNhom({ p, mo, qh, onBam }: { p: Phan; mo: boolean; qh: number; onBam: () => void }) {
   return (
     <button type="button" aria-expanded={mo} onClick={onBam}
-      className={`flex w-full flex-wrap items-center gap-x-2 gap-y-1 border-0 border-l-[3px] py-1.5 pl-[13px] pr-4 text-left text-[14px] font-bold text-slate-100 hover:bg-[color:var(--accent-soft)] ${cao ? 'min-h-[48px]' : 'min-h-[44px]'}`}
+      className="flex min-h-[48px] w-full flex-wrap items-center gap-x-2 gap-y-1 border-0 border-l-[3px] py-1.5 pl-[13px] pr-4 text-left text-[14px] font-bold leading-snug text-[color:var(--text)] hover:bg-[color:var(--accent-soft)]"
       style={{ background: 'var(--surface-2)', borderLeftColor: p.khongPl ? 'var(--text-faint)' : 'var(--accent)' }}>
-      <span className="whitespace-nowrap">{p.ten}</span>
+      <span className="whitespace-nowrap text-[16px]">{p.ten}</span>
       <Chev mo={mo} />
-      <span className="ml-1 inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs font-semibold tabular-nums text-dim" style={{ borderColor: 'var(--line-strong)' }}>{t('{n} việc', { n: p.rows.length })}</span>
-      {qh > 0 && <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{t('{n} quá hạn', { n: qh })}</span>}
+      <span className="whitespace-nowrap text-[13px] font-medium tabular-nums text-dim">{t('{n} việc', { n: p.rows.length })}</span>
+      {qh > 0 && <span className="ml-1 whitespace-nowrap text-[13px] font-semibold tabular-nums text-late">{t('{n} quá hạn', { n: qh })}</span>}
     </button>
   );
 }
@@ -344,6 +347,8 @@ function PhuViec({ r, tatCa }: { r: Row; tatCa?: boolean }) {
   const ds: ReactNode[] = [r.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ')];
   if (r.lap && !r.lap.dung) ds.push(<span className="inline-flex items-center gap-1 text-dim"><IcLap />{chuLap(r.lap)}</span>);
   if (r.soTep > 0) ds.push(<span className="inline-flex items-center gap-1"><IcTep />{t('{n} tệp', { n: r.soTep })}</span>);
+  if (r.subTotal > 0) ds.push(<span className="tabular-nums">{t('{xong}/{tong} việc con', { xong: r.subDone, tong: r.subTotal })}</span>);
+  if (r.subOverdueCount > 0) ds.push(<span className="font-semibold tabular-nums text-late" title={r.subOverdueTitles.join(', ')}>{t('{n} quá hạn', { n: r.subOverdueCount })}</span>);
   if (r.classCode) ds.push(r.classCode);
   if (tatCa && r.branchName) ds.push(r.branchName);
   return <span className="mt-0.5 flex flex-wrap items-center gap-x-1 text-xs text-faint">{ds.map((x, i) => <span key={i} className="inline-flex items-center gap-1">{i > 0 && <span aria-hidden>·</span>}{x}</span>)}</span>;
@@ -359,7 +364,7 @@ const bamDong = (onMo: () => void) => ({
 function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean; tatCa: boolean; homNay: string; toi: number | null; onMo: () => void }) {
   /* A2-06: phần trống không ghi "cần: —" / "xem lại —" (chữ thừa bị kẹp cắt). */
   const dongTam = [r.stopReason, r.helpName && t('cần: {ten}', { ten: r.helpName }), r.reviewOn && t('hẹn xem lại {ngay}', { ngay: fmtDate(r.reviewOn) })].filter(Boolean).join(' · ');
-  const phuTrangThai = r.progress === 'paused' ? catDongPhu(dongTam) : r.progress === 'stopped' ? r.stopReason : null;
+  const phuTrangThai = r.progress === 'paused' ? dongTam : r.progress === 'stopped' ? r.stopReason : null;
   const td = 'border-t py-[9px] pl-3 pr-3 align-top';
   const n = soTheoDoi(r, toi);
   return (
@@ -368,22 +373,18 @@ function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean
         <span className="block font-medium text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
         <PhuViec r={r} tatCa={tatCa} />
       </td>
-      <td className={`${td} text-slate-200`} style={{ borderColor: 'var(--line)' }}>
-        <span className="block truncate">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0 text-slate-200`} style={{ borderColor: 'var(--line)' }}>
+        <span className="block max-w-[240px] truncate">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
         {r.assigneeNgoai && <span className="block text-xs text-faint">{t('ngoài hệ thống')}</span>}
         {n > 0 && <span className="mt-0.5 block text-xs text-faint">{t('+{n} theo dõi', { n })}</span>}
       </td>
-      <td className={td} style={{ borderColor: 'var(--line)' }}>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0`} style={{ borderColor: 'var(--line)' }}>
         {r.due ? <HanO han={r.due} xong={dong(r.progress)} /> : <span className="text-xs text-faint">{t('Chưa có hạn')}</span>}
-        {r.hanGoc && <div className="mt-0.5 truncate text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
+        {r.hanGoc && <div className="mt-0.5 max-w-[240px] truncate text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
       </td>
-      <td className={td} style={{ borderColor: 'var(--line)' }}>
+      <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-4`} style={{ borderColor: 'var(--line)' }}>
         <NhanViec progress={r.progress} label={r.progressLabel} />
-        {phuTrangThai && <div className="mt-0.5 text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
-      </td>
-      <td className={td} style={{ borderColor: 'var(--line)' }}>
-        {r.subTotal > 0 ? <span className="text-slate-200">{t('{xong}/{tong} xong', { xong: r.subDone, tong: r.subTotal })}</span> : <span className="text-faint">—</span>}
-        {r.subOverdueCount > 0 && <div className="mt-0.5 text-xs text-bad" title={r.subOverdueTitles.join(', ')}>{t('{n} việc con quá hạn', { n: r.subOverdueCount })}</div>}
+        {phuTrangThai && <div className="mt-0.5 max-w-[440px] truncate text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
       </td>
     </tr>
   );
@@ -393,12 +394,13 @@ function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean
 function TheViec({ r, chon, onMo }: { r: Row; chon: boolean; onMo: () => void }) {
   const phu = [r.assigneeName ?? t('chưa giao'), r.subTotal > 0 ? t('{xong}/{tong} việc con', { xong: r.subDone, tong: r.subTotal }) : null].filter(Boolean).join(' · ');
   return (
-    <div role="button" aria-label={r.title} className={`grid gap-1 border-t px-3.5 py-2.5 ${chon ? 'bg-[color:var(--accent-soft)]' : ''}`} style={{ borderColor: 'var(--line)' }} {...bamDong(onMo)}>
+    <div role="button" aria-label={r.title} className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 border-t px-3.5 py-2.5 ${chon ? 'bg-[color:var(--accent-soft)]' : ''}`} style={{ borderColor: 'var(--line)' }} {...bamDong(onMo)}>
       <span className="font-medium text-slate-100">{r.title}</span>
-      <span className="flex flex-wrap items-center gap-x-1 text-xs text-faint">
+      <span className="whitespace-nowrap pt-0.5 text-right">{r.due ? <HanO han={r.due} xong={dong(r.progress)} /> : <span className="text-xs text-faint">{t('Chưa có hạn')}</span>}</span>
+      <span className="flex min-w-0 flex-wrap items-center gap-x-1 text-xs text-faint">
         {phu}{r.lap && !r.lap.dung && <span className="inline-flex items-center gap-1 text-dim"> · <IcLap />{chuLap(r.lap, true)}</span>}
       </span>
-      <span className="mt-1 flex flex-wrap items-center gap-2">{r.due && <HanO han={r.due} xong={dong(r.progress)} />}<NhanViec progress={r.progress} label={r.progressLabel} /></span>
+      <span className="text-right"><NhanViec progress={r.progress} label={r.progressLabel} /></span>
     </div>
   );
 }
@@ -455,6 +457,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const { session } = useSession();
   const toi = session?.user?.id;
   const toast = useToast();
+  const dt = useDienThoai();
   const { data: tai, loading, reload } = useApi<any>(taskId ? `/mgmt-tasks/${taskId}` : null, [taskId]);
   /* Bản máy chủ vừa trả sau thao tác (PATCH trả chi tiết) — vẽ ngay, không GET lại. */
   const [ban, setBan] = useState<any>(null);
@@ -464,18 +467,24 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const [editing, setEditing] = useState(false);
   const [addingSub, setAddingSub] = useState(false);
   const [dangTick, setDangTick] = useState<number | null>(null);
-  useEffect(() => { setUpdating(false); setEditing(false); }, [taskId]);
+  /* Chân panel: đang lưu / đã lưu / lỗi của MỌI thao tác lưu ngay (đổi người, hạn, theo dõi, tick việc con, dừng lặp). */
+  const [luu, setLuu] = useState<{ tt: TtLuu; loi: string | null } | null>(null);
+  const ghi = async <T,>(f: () => Promise<T>): Promise<T> => {
+    setLuu({ tt: 'dang', loi: null });
+    try { const r = await f(); setLuu({ tt: 'da', loi: null }); return r; } catch (e: any) { setLuu({ tt: 'loi', loi: e?.message ?? null }); throw e; }
+  };
+  useEffect(() => { setUpdating(false); setEditing(false); setLuu(null); }, [taskId]);
 
   if (taskId === null) return null;
   const xong = () => { invalidate('/mgmt-tasks'); onDone(); };
   /* 6c (bảng kê lỗi 9): Sửa việc = view kế trong CÙNG panel (‹ về việc, ✕ đóng cả panel), không mở panel đè. */
   if (data && editing) return <SuaViec onClose={() => setEditing(false)} dongCa={onClose} task={data} nhom={nhom} onDone={(moi) => { setBan(moi); xong(); }} />;
 
-  const patch = async (b: object) => {
+  const patch = (b: object) => ghi(async () => {
     const moi = await api.patch<any>(`/mgmt-tasks/${data.id}`, { ...b, phienBan: data.updatedAt });
     setBan(moi); xong();
     return khoiCua(moi);
-  };
+  });
   const thaoTac: ThaoTacKhoi = {
     trong: t('Chưa giao'), khongMacDinh: true,
     doiNguoi: (_g, userId) => patch({ assigneeUserId: userId }),
@@ -488,7 +497,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const lap: Lap | null = data?.lap ?? null;
   const dungLap = async (dung: boolean) => {
     try {
-      await api.post(`/mgmt-tasks/${lap!.gocId}/lap`, { dung });
+      await ghi(() => api.post(`/mgmt-tasks/${lap!.gocId}/lap`, { dung }));
       reload(); xong();
       if (dung) toast.hoanTac(t('Đã dừng lặp · bản đang mở giữ'), () => { void api.post(`/mgmt-tasks/${lap!.gocId}/lap`, { dung: false }).then(() => { reload(); xong(); }, (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'))); }, { ms: 10_000 });
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
@@ -496,12 +505,15 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
   const tick = async (x: any) => {
     setDangTick(x.id);
     try {
-      await api.post(`/mgmt-tasks/${x.id}/update`, { progress: x.progress === 'done' ? 'doing' : 'done' });
+      await ghi(() => api.post(`/mgmt-tasks/${x.id}/update`, { progress: x.progress === 'done' ? 'doing' : 'done' }));
       reload(); xong(); invalidate('/my-work');
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDangTick(null); }
   };
   const tenNhom = data ? (data.hangMuc ? tenHangMuc(data.hangMuc) : data.groupName ?? t('Không phân loại')) : null;
-  const laNguoiNhan = !!data && !data.viewer.canEdit;
+  const menuViec = data ? [
+    ...(data.viewer.canEdit ? [{ key: 'sua', nhan: t('Sửa công việc'), onChon: () => setEditing(true) }] : []),
+    ...(data.viewer.canXoa ? [{ key: 'xoa', nhan: t('Xoá việc'), keTruoc: data.viewer.canEdit ? ('do' as const) : false, nguyHiem: true, onChon: () => void xoaViec() }] : []),
+  ] : [];
   const lichSu: { luc: string; tieu: string; phu: string | null; nguoi: string | null }[] = data ? [
     ...data.updates.map((u: any) => ({ luc: u.on, tieu: dich(u.progressLabel), phu: u.note, nguoi: u.by })),
     ...data.dueHistory.map((h: any) => ({ luc: (h.at ?? '').slice(0, 10), tieu: h.old ? t('Sửa hạn') : t('Đặt hạn'),
@@ -520,17 +532,15 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai, nhom }: {
 
   return (
     <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
-      loai={data ? `${laNguoiNhan ? t('Việc được giao') : t('Bảng giao việc')} · ${tenNhom}` : null}
+      /* Đầu một dòng (NH8 / v24): tên việc · nhóm · loại · hạn (chỉ tô màu chữ) · ⓘ ⋯ ✕. Sửa / Xoá nằm ở ⋯ (cùng ô 36 px với ✕). */
       dau={data ? {
-        han: data.due ? <ChipHan loai="viec-van-hanh" han={data.due} /> : undefined,
-        dong2: [data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ'),
-          /* B3-16 (AUDIT-2111): "{tên} giao" chỉ ở chip khối Phụ trách — không lặp ở dòng phụ đầu panel. */
-          data.viewer.canXoa ? <button key="xoa" type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold text-late sm:min-h-0" onClick={() => void xoaViec()}>{t('Xoá việc')}</button> : null,
-          data.viewer.canEdit ? <button key="sua" type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setEditing(true)}>{t('Sửa công việc')}</button> : null,
-        ].filter(Boolean) as ReactNode[],
+        han: data.due ? (dong(data.progress) ? <HanO han={data.due} xong /> : <Han trongBang loai="viec-van-hanh" han={data.due} />) : undefined,
+        /* B3-16 (AUDIT-2111): "{tên} giao" chỉ ở chip khối Phụ trách — không lặp ở dòng phụ đầu panel. */
+        dong2: [tenNhom, data.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ')],
+        ghim: menuViec.length ? <MenuDong nhan={t('Thao tác khác')} muc={menuViec} lopNut={NUT_DONG} mat={dt ? <span aria-hidden>⋯</span> : undefined} /> : null,
       } : undefined}
       quyChe={data?.viewer?.canUpdate && !dong(data.progress) ? (lap && !lap.dung ? quyCheViecLap({ ky: chuLap(lap), khoang: null }) : quyCheViecGiao()) : null}
-      chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
+      chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, huyPhai: true, trai: <TrangThaiLuu tt={luu?.tt ?? null} loi={luu?.loi} /> }}>
       {loading && !data && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (
         <div className="space-y-4 pt-3.5">

@@ -1,3 +1,4 @@
+import { mondayOfDate } from '@shared/domain/index.ts';
 import {
   ATTEMPT_STATUS_LABEL, CASE_STATUS_LABEL,
   ROLE_LABEL, SKILL_PROGRESS_LABEL, SOS_LABEL, STUDENT_STATUS_LABEL,
@@ -76,3 +77,7 @@ export function unitTone(status: string | null): 'ok' | 'warn' | 'danger' | 'mut
 export function attemptHref(a: { id: number; kind?: string | null; classId?: number | null; studentId?: number | null }): string {
   return duongDotTest(a);   // PR-VAI-b (G5): một hàm đường dẫn ở shared — bản máy chủ (`fasttrack/attempts.ts`) chuyển ở PR-UXF-b
 }
+
+/** Tuần học = số tuần (thứ Hai → thứ Hai) từ tuần khai giảng tới ngày nghiệp vụ, tuần khai giảng = 1 (ghi chú v24 mục 11). */
+export const tuanHocTu = (khaiGiang: string, homNay: string): number => Math.max(1, Math.floor((Date.parse(`${mondayOfDate(homNay)}T00:00:00Z`) - Date.parse(`${mondayOfDate(khaiGiang.slice(0, 10))}T00:00:00Z`)) / (7 * 86_400_000)) + 1);
+
