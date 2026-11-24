@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { daGhiDb, demCau, demDong, demGhi, nhoTheoId, quenTheoBang, xoaNho, xoaNhoNeuRequestGhi } from './platform/nguCanhRequest.ts';
+import { daGhiDb, demCau, demDong, demGhi, nho, nhoTheoId, quenTheoBang, xoaNho, xoaNhoNeuRequestGhi } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
@@ -455,6 +455,11 @@ export function theoLo<T>(ds: readonly T[], fn: (lo: T[], ph: string) => void, c
  * (EXPLAIN: `SEARCH t USING INDEX … (col=?)` / `INTEGER PRIMARY KEY`, json_each là vòng ngoài — phép kiểm prS5JsonEach).
  * Chỉ số / chuỗi (không null, Buffer, boolean). Đặt `(${DS_JSON})` ở chỗ trước là `(${ph})`.
  */
+/**
+ * TOC-DO-2511: câu đọc nhớ trong request GET theo (văn bản, tham số) — `nho()`: câu ghi bất kỳ xoá nhớ, request ghi không nhớ. Dùng cho khối đọc mà một
+ * request gọi hai lần với cùng tham số (Tổng quan kèm "Tất cả" + "Của tôi": `myWork` chạy hai lượt). Mảng trả về DÙNG CHUNG — nơi gọi không sửa tại chỗ.
+ */
+export const docNho = (sql: string, ...args: unknown[]): any[] => nho(`sql:${sql}|${JSON.stringify(args)}`, () => db().prepare(sql).all(...args) as any[]);
 export const DS_JSON = 'SELECT value FROM json_each(?)';
 /**
  * Lô của `theoLoJson`: một tham số không chạm trần 900, nhưng giữ trần độ dài chuỗi gửi qua mạng (10 000 id ≤ ~80 KB JSON). Trang thường

@@ -4,7 +4,7 @@
  */
 import { NGON_NGU, NGON_NGU_KHOA, laNgonNgu, t, type NgonNgu } from '@shared/i18n/index.ts';
 import { api } from './api.ts';
-import { boChuRoi, coPanelDangSua } from '../ui/KhungPanel.tsx';
+import { boChuRoi, coPanelDangSua } from '../ui/khungPanelChung.ts';
 
 /** Đã bấm chọn tiếng khi CHƯA đăng nhập (màn đăng nhập): lần đăng nhập kế, tài khoản theo lựa chọn này thay vì kéo máy về tiếng cũ của tài khoản. */
 const VUA_CHON = 'pisa-ngon-ngu-vua-chon';

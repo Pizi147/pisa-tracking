@@ -1,3 +1,4 @@
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import {
   COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, tachBaiId, type ChuongTrinh, type CotBang,
@@ -177,7 +178,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
       return { khoa: `cn:${id}`, id, loai: 'chi-nhanh' as const, nhan: x.nhan, laFt: null, tap: t, lop: x.lop };
     });
   }
-  const tenChiNhanh = branchId ? (lop[0]?.branch_name ?? (conn.prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null) : null;
+  const tenChiNhanh = branchId ? (lop[0]?.branch_name ?? tenChiNhanhNho(branchId)) : null;
   /* OV-15h1 (C23): phân rã Case chưa chốt PA của hàng tổng — cùng tập `chot` (nhóm của chỉ số, đã lọc khung). */
   const giu = new Set(chotIds);
   const phanRa = f.chuY ? Object.fromEntries(Object.entries(chot.byKind ?? {}).map(([k, v]) => [k, v.filter((x) => giu.has(x)).length])) : null;
@@ -265,7 +266,7 @@ export function sos23ChiNhanh(p: Principal, f: { branchId: number | null; ids: r
   const ev = latestAttempts([...giu].sort((a, b) => a - b), 'valid', demoToday());
   const muc = (sid: number) => Math.min(3, ev.get(sid)?.sosLevel ?? 0);
   const ids = [...giu].filter((sid) => muc(sid) >= 2).sort((a, b) => muc(b) - muc(a) || a - b);
-  const ten = f.branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(f.branchId) as { name?: string } | undefined)?.name ?? '' : '';
+  const ten = f.branchId ? tenChiNhanhNho(f.branchId) ?? '' : '';
   const rows = rowsFor('hoc-vien', ids, 'hv-sos-hien-tai', p, false, new Map(ids.map((sid) => [sid, diemTuEval(ev.get(sid)!)])))
     .map((r) => ({ ...r, sos: { muc: muc(r.id), tam: !!ev.get(r.id)?.provisional } }));   // PTA rà #1710: dòng ghi rõ mức (0 câu thêm)
   return { n: ids.length, unit: 'hoc-vien', tieuDe: `${ids.length} HV — SOS 2–3${ten ? ` · ${ten}` : ''}`, rows };

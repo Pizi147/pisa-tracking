@@ -1,4 +1,4 @@
-import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, docNho, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich, type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { HttpError, addDays, badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
@@ -822,13 +822,12 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
 export function emChuaCoLenh(classIds: readonly number[]): Map<number, number[]> {
   const out = new Map<number, number[]>();
   theoLoJson([...classIds], (json) => {
-    for (const r of db().prepare(
+    for (const r of docNho(   // TOC-DO-2511: hồ sơ lớp đọc hai lần trong một request
       `SELECT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${DS_JSON}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
           AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.trang_thai = 'cho')
           AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.trang_thai = 'cho' AND y.loai = 'de_xuat_chuyen_lop' AND y.doi_tuong_loai = 'student:chuyen-lop' AND y.doi_tuong_id = e.student_id)
-        ORDER BY e.class_id, e.student_id`,
-    ).all(json) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
+        ORDER BY e.class_id, e.student_id`, json)) (out.get(r.class_id) ?? out.set(r.class_id, []).get(r.class_id)!).push(r.student_id);
   });
   return out;
 }
@@ -885,7 +884,7 @@ export function demChotTheoLop(ids: number[]): Map<number, DemChotLoTrinh & { em
   const conn = db();
   const dem = new Map<number, DemChotLoTrinh & { emIds: number[] }>();
   theoLo(ids, (lo, ph) => {
-    for (const r of conn.prepare(
+    for (const r of docNho(   // TOC-DO-2511: nhớ trong request (Tổng quan kèm hai lượt Công việc)
       `SELECT x.class_id, COUNT(*) AS tong, SUM(NOT x.co_lenh) AS chua_lenh, SUM(NOT x.co_lenh AND x.cho_duyet) AS cho_duyet,
               SUM(NOT x.co_lenh AND NOT x.cho_duyet AND x.co_huong) AS de_xuat,
               GROUP_CONCAT(CASE WHEN NOT x.co_lenh THEN x.student_id END) AS em_chua   -- OV-11c (CV-1): id em chưa có quyết định (dòng phạm vi đếm em riêng)
@@ -896,8 +895,7 @@ export function demChotTheoLop(ids: number[]): Map<number, DemChotLoTrinh & { em
                       EXISTS (SELECT 1 FROM lo_trinh_nhap n WHERE n.student_id = e.student_id AND n.class_id = e.class_id) AS co_huong
                  FROM enrollments e JOIN students s ON s.id = e.student_id
                 WHERE e.status = 'active' AND e.class_id IN (${ph}) AND ${HV_DANG_HOC_SQL('s')}) x
-        GROUP BY x.class_id`,
-    ).all(...lo) as any[]) {
+        GROUP BY x.class_id`, ...lo)) {
       const chuaLenh = Number(r.chua_lenh), choDuyet = Number(r.cho_duyet), deXuat = Number(r.de_xuat);
       dem.set(r.class_id, { tong: Number(r.tong), chuaLenh, choDuyet, deXuat, chuaHuong: chuaLenh - choDuyet - deXuat, emIds: String(r.em_chua ?? '').split(',').filter(Boolean).map(Number) });
     }

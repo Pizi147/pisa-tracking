@@ -1,4 +1,4 @@
-import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, docNho, theoLo, theoLoJson, tx } from '../db.ts';
 import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
 import { nhanDot, tenMonNgan, type DiemHv, cauHinh, viecKhiChot, CASE_OUTCOME_LABEL, nguongMiniTest, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
@@ -179,9 +179,8 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
   for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Final Test → bài id lớn nhất
   const tyLe = tyLeTongLo([...luotCuaEm.values()].filter((x): x is number => x !== null));
   const dinhKem = new Map<number, any>();
-  for (const r of conn.prepare(
-    `SELECT lt.*, u.full_name AS quyet_ten FROM lo_trinh_tiep_theo lt LEFT JOIN users u ON u.id = lt.quyet_boi WHERE lt.class_id = ?`,
-  ).all(classId) as any[]) dinhKem.set(r.student_id, r);
+  for (const r of docNho(   // TOC-DO-2511: đầu hồ sơ lớp + bảng Cuối khoá cùng request
+    `SELECT lt.*, u.full_name AS quyet_ten FROM lo_trinh_tiep_theo lt LEFT JOIN users u ON u.id = lt.quyet_boi WHERE lt.class_id = ?`, classId)) dinhKem.set(r.student_id, r);
   for (const [sid, attemptId] of luotCuaEm) {
     const t = attemptId ? tyLe.get(attemptId) : undefined;
     out.set(sid, {

@@ -11,6 +11,7 @@ import { t } from '@shared/i18n/index.ts';
 import type { PanelHd } from '@shared/huongDan/kieu.ts';
 import { ghiQuyCheMo, moHuongDan } from '../lib/hdNgCanh.ts';
 import { NutLuat } from './NutLuat.tsx';
+import { NUT_DONG, panelDangSua } from './khungPanelChung.ts';
 
 /**
  * NHẸ HƠN (v23 `.pn` top = dưới thanh menu): đáy thanh trên (`header.thanh-xanh`, cộng dải demo / mất mạng phía trên nếu có) — panel bám ngay dưới,
@@ -42,17 +43,8 @@ const nganPanel: string[] = [];
 let demHd = 0;
 const panelHd: { hd: PanelHd; thu: number }[] = [];
 export const panelHdTren = (): PanelHd | null => panelHd.reduce<{ hd: PanelHd; thu: number } | null>((a, x) => (!a || x.thu > a.thu ? x : a), null)?.hd ?? null;
-/**
- * PR-EN: panel đang sửa dở (`chan.daSua` hoặc còn nháp) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ.
- * NEN-PANEL (T16): mỗi panel ghi kèm cách HỎI của nó (hộp "Bỏ chữ đang gõ?" vẽ trong panel) — `boChuRoi` dùng khi đổi việc.
- */
-const panelDangSua = new Map<string, (tiep: () => void, o?: () => void, nut?: string) => void>();
-export const coPanelDangSua = () => panelDangSua.size > 0;
-/** Đổi việc / "‹ Công việc" / mở việc khác: còn chữ chưa lưu thì panel hỏi (Ở lại = nút chính); bỏ chữ hoặc không có chữ → `tiep`. */
-export function boChuRoi(tiep: () => void, nut?: string) {
-  const hoi = [...panelDangSua.values()].pop();
-  if (hoi) hoi(tiep, undefined, nut); else tiep();
-}
+/* TOC-DO-2511: kho "đang sửa" + hằng nút ✕ ở `khungPanelChung.ts` (gói đầu dùng — Toast, đổi ngôn ngữ — không kéo cả KhungPanel); xuất lại cho nơi cũ. */
+export { NUT_DONG, NUT_DONG_NHO, boChuRoi, coPanelDangSua } from './khungPanelChung.ts';
 
 type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean) => void; xoa: () => () => void };
 const NhapCuaPanel = createContext<NhapPanel | null>(null);
@@ -201,14 +193,6 @@ export const DemViecPanel = createContext<{ i: number; n: number; nhan: string }
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-/**
- * NÚT ✕ ĐẦU HỘP / PANEL — MỘT dáng (mockup v21 `.x`; chủ SP 15/11 "mấy nút ⋯ hay ✕ hay bị lệch"): ô 36 × 36 (điện thoại 44) không viền, nền trong,
- * ✕ 17 px giữa ô, rê mới có nền. Nơi đặt để ô cùng HÀNG với dòng tiêu đề (`items-center`) — tâm ✕ thẳng tâm chữ tiêu đề; mép phải cách hộp 12 px.
- */
-export const NUT_DONG = 'grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent p-0 text-[16px] leading-none text-dim hover:bg-[rgb(var(--phu-rgb)/0.1)] hover:text-[color:var(--text)] max-sm:h-11 max-sm:w-11';
-
-/** Bản nhỏ của `NUT_DONG` — ✕ xoá chữ TRONG ô gõ (mockup ⑤ `.oc .bo`: ô 28, ✕ 14; điện thoại 36 trong ô 44). Nơi đặt căn giữa theo chiều cao ô. */
-export const NUT_DONG_NHO = 'grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-sm leading-none text-dim hover:bg-[color:var(--accent-soft)] hover:text-[color:var(--text)] max-sm:h-9 max-sm:w-9';
 
 export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRieng, tabs, vungTab, ngCanh, daiLamThay: daiRieng, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, anDau = false, hd, nutHd = true, onDong, children }: {
   tieuDe: string;

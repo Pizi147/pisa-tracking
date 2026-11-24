@@ -407,11 +407,13 @@ export function ghiSoViecChiNhanh(cn: number): void {
   /* Bộ nhớ tạm cho lời gọi: ngoài request GET (ghi, đêm, phép kiểm) Công việc không nhớ tra cứu lặp → hàng trăm câu (bản chép UB 1 329); có nhớ ~50 câu. */
   anToan('ghiSoViecChiNhanh', () => trongBoNho(() => {
     const luc = new Date().toISOString();
-    const ds = tinhViecChiNhanh(cn);
-    ghiDong(ds, luc);
-    db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE loai = 'viec' AND chi_nhanh = ? AND khong_tinh IS NOT 'da-xoa'
-        AND khoa NOT IN (SELECT value FROM json_each(?))`).run(luc, cn, JSON.stringify(ds.map((d) => d.khoa)));
+    ghiSoViecDaTinh(cn, tinhViecChiNhanh(cn), luc);
   }));
+}
+function ghiSoViecDaTinh(cn: number, ds: ReturnType<typeof tinhViecChiNhanh>, luc: string): void {
+  ghiDong(ds, luc);
+  db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE loai = 'viec' AND chi_nhanh = ? AND khong_tinh IS NOT 'da-xoa'
+      AND khoa NOT IN (SELECT value FROM json_each(?))`).run(luc, cn, JSON.stringify(ds.map((d) => d.khoa)));
 }
 
 /**
@@ -429,17 +431,31 @@ export function ghiSoViecChiNhanh(cn: number): void {
 export const LAM_MOI_VIEC_MS = 5 * 60_000;
 export function lamMoiViec(cns: readonly number[], homNay = demoToday()): void {
   const m = layMoc() as MocHeThong | undefined;
+  const lam: number[] = [];
   for (const cn of new Set(cns)) {
-    if (!m) { ghiSoViecChiNhanh(cn); continue; }
+    if (!m) { lam.push(cn); continue; }
     const ghi = m.soViec.ghi ?? -1, da = m.soViec.cn.get(cn);
     if (da && da.ngay === homNay && (da.so === ghi || (da.luc && Date.now() - Date.parse(da.luc) < LAM_MOI_VIEC_MS))) continue;
     const r = db().prepare(`INSERT INTO moc_he_thong (khoa, so, luc, ngay) VALUES (?, ?, ?, ?)
         ON CONFLICT (khoa) DO UPDATE SET so = excluded.so, luc = excluded.luc, ngay = excluded.ngay WHERE so IS NOT excluded.so OR ngay IS NOT excluded.ngay RETURNING khoa`)
       .all(`so-viec:${cn}`, ghi, new Date().toISOString(), homNay) as unknown[];
-    if (r.length !== 1) continue;   // tiến trình khác vừa nhận lượt
-    try { ghiSoViecChiNhanh(cn); } catch (e) {
-      db().prepare(`UPDATE moc_he_thong SET ngay = NULL WHERE khoa = ?`).run(`so-viec:${cn}`);
-      throw e;
+    if (r.length === 1) lam.push(cn);   // khác 1: tiến trình khác vừa nhận lượt
+  }
+  /*
+   * TOC-DO-2511: nhận lượt mọi chi nhánh TRƯỚC, rồi TÍNH sổ việc mọi chi nhánh trong CÙNG bộ nhớ (chưa câu ghi nào xen giữa → tra cứu không theo chi nhánh —
+   * quyền vai, nhật ký hạn, bảng lớp… — đọc một lần), rồi mới GHI. Trước: ghi xen từng chi nhánh xoá bộ nhớ → hồ sơ GV dạy 4 chi nhánh 195 câu.
+   */
+  const boLuot = (cn: number, e: unknown) => {
+    if (m) db().prepare(`UPDATE moc_he_thong SET ngay = NULL WHERE khoa = ?`).run(`so-viec:${cn}`);
+    throw e;
+  };
+  const tinh = new Map<number, { luc: string; ds: ReturnType<typeof tinhViecChiNhanh> }>();
+  trongBoNho(() => {
+    for (const cn of lam) {
+      try { anToan('ghiSoViecChiNhanh', () => { const luc = new Date().toISOString(); tinh.set(cn, { luc, ds: tinhViecChiNhanh(cn) }); }); } catch (e) { boLuot(cn, e); }
     }
+  });
+  for (const [cn, { luc, ds }] of tinh) {
+    try { anToan('ghiSoViecChiNhanh', () => ghiSoViecDaTinh(cn, ds, luc)); } catch (e) { boLuot(cn, e); }
   }
 }

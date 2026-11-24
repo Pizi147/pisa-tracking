@@ -2651,6 +2651,9 @@ CREATE TRIGGER tg_tc_demo_config_del AFTER DELETE ON demo_config BEGIN UPDATE mo
 CREATE TRIGGER tg_tc_teacher_assignments_ins AFTER INSERT ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_teacher_assignments_upd AFTER UPDATE ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_teacher_assignments_del AFTER DELETE ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_branches_ins AFTER INSERT ON branches BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_branches_upd AFTER UPDATE ON branches BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_branches_del AFTER DELETE ON branches BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_users_ten AFTER UPDATE OF full_name ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_users_del AFTER DELETE ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 

@@ -145,6 +145,9 @@ export default function StudentDetailPage() {
   /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
   /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
   useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
+  /* TOC-DO-2511: dải Chờ bạn duyệt (`DaiChoDuyet`, vẽ khi `viewer.coTheDuyet`) — người có quyền duyệt gọi CÙNG LÚC hồ sơ, không chờ hồ sơ về. */
+  const duyetVai = !!useSession().session?.nav?.workApprove;
+  useEffect(() => { if (id && duyetVai) taiTruoc(`/yeu-cau?studentId=${id}`); }, [id, duyetVai]);
   /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). Cờ máy chủ `xemYThuc` (theo em) khi hồ sơ đã về;
      trước đó theo vai để vẫn gọi SONG SONG với hồ sơ (không thêm một lượt mạng cho mọi người). */
   const xemYtVai = xemYThucTheoVai(useSession().session?.roles);
