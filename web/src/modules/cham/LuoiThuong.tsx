@@ -276,20 +276,26 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
  * `tuanDangXem` (Lịch Test, PR-UX1 Q10): ô chưa có điểm của môn thi tuần khác → chữ mờ `W4 SEP`, không ô nhập — chưa
  * phải việc của tuần đang xem. Môn mang "-" giữ nguyên ô (có `→ tuần mới`).
  */
-export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null, anNutTao = false, gon = false }: {
+/** "Còn chờ: A (L R) · B (W S)": mỗi người một khối không ngắt — xuống dòng chỉ ở dấu "·", không giữa "(W S)". */
+export const ChuConCho = ({ ds }: { ds: string }) => (
+  <>{t('Còn chờ: {ds}', { ds }).split(' · ').map((x, i, a) => <span key={i} className="whitespace-nowrap">{x}{i < a.length - 1 && ' · '}</span>)}</>
+);
+
+export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem = null, anNutTao = false, gon = false, conCho = '' }: {
   data: ThuongSheet; onReload: () => void; kn?: string | null; hv?: number | null; tuanDangXem?: string | null;
   /** G1-11 (mockup `thiet-ke/2026-11-13-test-g1/g1-11-nhap-diem.html`, #1434): lưới trong panel việc ~720 px — Kết quả (và % tổng Checkpoint) xuống DƯỚI tên ở cột
    *  "Học viên · Kết quả", ô môn HAI TẦNG (đúng / tổng trên · Nhận xét + ⋯ dưới). 4 môn FOU / BE / ELE vừa panel, không cuộn ngang. Lưới đầy đủ (trang Test) không đổi. */
   gon?: boolean;
   /** PR-DL: Điểm theo lớp không tạo bài ("không tự tạo lịch") — ẩn nút "Tạo bài kiểm tra theo chương trình" và câu nhắc nút. */
   anNutTao?: boolean;
+  /** Lịch Test: "GV (môn) · …" còn chờ — cùng MỘT dòng công cụ với Tổng số câu (trái / phải). */
+  conCho?: string;
 }) {
   const toast = useToast();
   const skills = data.programme.skills;
   const grid = useRef<(HTMLInputElement | null)[][]>([]);
   /* Ô "tổng" đầu cột: người dùng gõ thì giữ đúng chữ đã gõ; chưa gõ thì lấy tổng hay gặp nhất của cột. */
   const [tongGo, setTongGo] = useState<Record<string, string>>({});
-  const [dien, setDien] = useState<Record<string, { gt: number; lan: number }>>({});
   const [busy, setBusy] = useState(false);
 
   const tongMacDinh = useMemo(
@@ -381,26 +387,26 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 120 : COT_KQ, goiY: goiYKq },
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
-  /* BANG-1 (cấm điều khiển trong tiêu đề): tổng số câu từng môn + "Điền ô trống" là CÔNG CỤ trên bảng, không ở đầu cột.
-     Điền: ô CÒN TRỐNG tổng của mọi môn có tổng lấy số đó; ô đã có tổng giữ nguyên (như nút cũ của từng cột). */
+  /* BANG-1 (cấm điều khiển trong tiêu đề): tổng số câu từng môn là CÔNG CỤ trên bảng, không ở đầu cột. ô tổng còn trống tự lấy số này.
+     Chủ SP 25/11: MỘT dòng — trái "Còn chờ: …" (đủ mọi người chấm, cả S / P), phải "Tổng số câu" + các ô (khối phải không bị cắt giữa chừng: hết chỗ thì cả khối xuống dưới). Bỏ "Điền ô trống". */
   const monSua = skills.filter(cotSuaDuoc);
-  const dienHet = () => setDien((d) => Object.fromEntries([...Object.entries(d),
-    ...monSua.flatMap((k) => { const n = soTong(k); return n === null ? [] : [[k, { gt: n, lan: (d[k]?.lan ?? 0) + 1 }]]; })]));
-  /* Chủ SP 27/10: hàng công cụ thụt vào thẳng chữ cột đầu (px-3 như ô bảng), không dính mép khung. */
-  const congCu = monSua.length > 0 && (
-    <div className="cong-cu-tong flex flex-wrap items-center gap-2 px-3 pt-2">
-      <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
-      {monSua.map((k) => (
-        <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
-          {tenMonNgan(data.programme.code, k)}
-          <input className="field w-12 px-1 py-0.5 text-center tabular-nums" inputMode="numeric" value={chuTong(k)} placeholder="—"
-            title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này; bấm Điền cả cột để điền luôn.')}
-            aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
-            onChange={(e) => setTongGo((x) => ({ ...x, [k]: e.target.value }))} />
-        </label>
-      ))}
-      <button type="button" className="btn btn-sm" disabled={!monSua.some((k) => soTong(k) !== null)}
-        title={t('Điền tổng này vào mọi ô còn trống tổng của cột. Ô đã có tổng giữ nguyên.')} onClick={dienHet}>{t('Điền ô trống')}</button>
+  const congCu = (conCho || monSua.length > 0) && (
+    <div className="cong-cu-tong flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-3 pt-2">
+      {conCho && <span className="min-w-0 text-[13px] leading-snug text-dim"><ChuConCho ds={conCho} /></span>}
+      {monSua.length > 0 && (
+        <span className="ml-auto inline-flex items-center gap-2 whitespace-nowrap">
+          <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
+          {monSua.map((k) => (
+            <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
+              {tenMonNgan(data.programme.code, k)}
+              <input className="field w-12 px-1 py-0.5 text-center tabular-nums" inputMode="numeric" value={chuTong(k)} placeholder="—"
+                title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này.')}
+                aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
+                onChange={(e) => setTongGo((x) => ({ ...x, [k]: e.target.value }))} />
+            </label>
+          ))}
+        </span>
+      )}
     </div>
   );
 
@@ -418,7 +424,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
             <DongThuong
               row={r} rowIndex={ri} sheet={data} laCp={laCp} cc={cc} gon={gon} panel={trongPanel ? hanChung : null}
               active={hv !== null && r.studentId === hv}
-              tongCot={soTong} dien={dien} onReload={onReload} tuanDangXem={tuanDangXem}
+              tongCot={soTong} onReload={onReload} tuanDangXem={tuanDangXem}
               register={(ci, el) => { grid.current[ri] = grid.current[ri] ?? []; grid.current[ri][ci] = el; }}
               onMove={move}
             />
@@ -491,12 +497,11 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
   return { menuO, hopO, lichSuO };
 }
 
-function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove, gon = false, panel = null }: {
+function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, onReload, tuanDangXem, register, onMove, gon = false, panel = null }: {
   row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; cc: Record<string, DinhNghiaCot>; active: boolean; tuanDangXem: string | null; gon?: boolean;
   /** PANEL-GON: lưới trong panel việc — hạn chung từng môn (= hạn đầu panel); Kết quả một dòng. */
   panel?: ReadonlyMap<string, string | null> | null;
   tongCot: (k: string) => number | null;
-  dien: Record<string, { gt: number; lan: number }>;
   onReload: () => void;
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
@@ -588,7 +593,6 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             /* C9: ô tổng trống hiện sẵn tổng chung của cột (chưa là bản nháp) — gõ số câu đúng là lưu kèm tổng đó. */
             tongLaySan={tongCot(k) !== null}
             canEdit={canEdit}
-            dienTong={dien[k] ?? null}
             chiChuKetQua={CHUONG_TRINH_KHONG_CHIA_MON.includes(sheet.programme.code)}
             tenMon={tenMon(sheet.programme.code, k)}
             tenHv={row.studentName}

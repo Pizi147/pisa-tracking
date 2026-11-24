@@ -3,11 +3,14 @@ import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { BaoLuuContext } from '../../ui/SaveState.tsx';
 import { Card } from '../../ui/ui.tsx';
 import { LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
-import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
+import { ChuConCho, LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
 import type { OnHet } from './phienCham.ts';
 import { dongCuaBai, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+
+/** Dòng nhỏ "Còn chờ: GV (môn) · …" ở đầu lưới FT / một kỹ năng (lớp thường: nằm trong dòng công cụ của `LuoiThuong`). Rỗng thì không vẽ. */
+const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim"><ChuConCho ds={ds} /></p> : null);
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
 export type Cham = {
@@ -71,7 +74,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang, luoiGon = false,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang, luoiGon = false, conCho = '',
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -89,6 +92,8 @@ export function LuoiChamLop({
   anKetQua?: boolean;
   /** G1-11: lưới lớp thường trong panel việc (~720 px) — Kết quả dưới tên, ô môn hai tầng (`LuoiThuong` `gon`). */
   luoiGon?: boolean;
+  /** Lịch Test: "Còn chờ" — lưới lớp thường gộp vào dòng công cụ; lưới FT / một kỹ năng vẽ dòng riêng ở đầu. */
+  conCho?: string;
   /** Nơi gọi có bộ chọn môn riêng (panel Nhập điểm lớp) — không vẽ nút "Cả lớp". */
   nutCaLop?: boolean;
   /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
@@ -162,12 +167,14 @@ export function LuoiChamLop({
   const theHv = hep && laFt && sEx !== undefined && !xemBang;
   const tungKyNang = hep && !xemBang && !theHv;
   useEffect(() => { onMotKyNang?.(tungKyNang); }, [tungKyNang, onMotKyNang]);
+  const conChoRieng = !(!tungKyNang && !laFt && thuong);
   const luoi = (
     <>
+      {conChoRieng && <DongConCho ds={conCho} />}
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
       {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} anKetQua={anKetQua} sEx={sEx} the={theHv} onHet={onHet} />}
-      {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} gon={luoiGon} />}
+      {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} gon={luoiGon} conCho={conCho} />}
     </>
   );
 

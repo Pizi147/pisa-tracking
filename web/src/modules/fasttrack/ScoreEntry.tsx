@@ -388,7 +388,6 @@ const SO_NGUYEN = /^\d+$/;
  *
  * Lưu khi rời CẢ CẶP ô (hoặc Enter), không lưu khi chỉ nhảy từ ô trái sang ô tổng — nếu không, gõ xong số câu đúng rồi
  * Tab sang ô tổng là máy chủ đã báo "thiếu tổng". Ô tổng viền vàng khi khác tổng đầu cột (em làm đề khác — Q7).
- * `dienTong` là lệnh "↓" của đầu cột: mỗi lần `lan` đổi thì ô CÒN TRỐNG tổng lấy `gt`; ô đã có tổng giữ nguyên.
  *
  * Các trường thêm của `cell` (không bắt buộc): `dau` (ô đang mang dấu "-", mặc định suy từ `tuanDoiTu`), `chuaToiTuan`
  * (chưa tới tuần thi — ô chỉ đọc hiện tuần thi thay cho "—"), `tiLe`/`ketQua` (để tô và ghi tooltip đạt/chưa đạt).
@@ -397,7 +396,7 @@ const SO_NGUYEN = /^\d+$/;
  * gõ gì thì không gửi gì; gõ số câu đúng thì lưu kèm tổng đó) — màn điện thoại không có ô tổng đầu cột + nút ↓.
  */
 export function ODiemThuong({
-  cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = t('Môn'), tenHv,
+  cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, tenMon = t('Môn'), tenHv,
   lon = false, tongLaySan = false, chiChuKetQua = false, onLoiNhap, moTaId,
 }: {
   cell: {
@@ -417,7 +416,6 @@ export function ODiemThuong({
   onDau: (bat: boolean, hoanTac?: () => void) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  dienTong?: { gt: number; lan: number } | null;
   tenMon?: string;
   tenHv?: string;
   lon?: boolean;
@@ -451,7 +449,6 @@ export function ODiemThuong({
   const [canhBao, setCanhBao] = useState<{ o: 'diem' | 'tong'; cau: string } | null>(null);
   const cap = useRef<HTMLSpanElement>(null);
   const dangGui = useRef(false);
-  const lanDaDien = useRef(dienTong?.lan ?? 0);
   /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
   const goDiem = useRef(false);
   /* NHAP-DIEM-b: chỉ cú bấm VÀO ô (lần focus đầu) giữ chọn cả số; bấm tiếp đặt con trỏ như thường. */
@@ -465,16 +462,6 @@ export function ODiemThuong({
     if (!dirty) { setDiem(diemDaLuu()); setTong(tongDaLuu()); }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hai hàm chỉ đọc ba trường đã có trong danh sách
   }, [cell.diem, cell.tong, dau, dirty, tongLaySan ? tongCot : null]);
-
-  /* Lệnh ↓ của đầu cột — KHÔNG đè ô đã có tổng (Q7), kể cả tổng đang gõ dở. */
-  useEffect(() => {
-    if (!dienTong || dienTong.lan === lanDaDien.current) return;
-    lanDaDien.current = dienTong.lan;
-    if (!canEdit || coDiem || cell.tong !== null || tong.trim() !== '') return;
-    setTong(String(dienTong.gt));
-    setDirty(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi có lệnh ↓ mới
-  }, [dienTong?.lan]);
 
   const soTong = SO_NGUYEN.test(tong.trim()) ? Number(tong.trim()) : null;
   const o = oLuoiThuong({ diem: cell.diem, tong: coDiem ? cell.tong : soTong, tongCot });
