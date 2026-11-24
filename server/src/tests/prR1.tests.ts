@@ -157,6 +157,7 @@ export async function runPrR1Tests(t: any) {
 
   const { dauNgayVnUtc, khoangMacDinh } = await import('../../../shared/domain/index.ts');
   const tqv: any = await import('../worklist/tongQuanV5.ts');
+  const hvlTvv: any = await import('../classes/hocVienLop.ts');
   const hvt: any = await import('../worklist/hvCuaToi.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { addDays } = await import('../util.ts');
@@ -167,13 +168,15 @@ export async function runPrR1Tests(t: any) {
     assert(em, 'seed thiếu em có TVV + lộ trình');
     const tvv = loadPrincipal(em.tvv);
     const thi = () => { xoaNho(); return tqv.tongQuanTvv(tvv).thiThangNay as number; };
-    conn.prepare("UPDATE learning_cycles SET exam_date = NULL WHERE student_id IN (SELECT id FROM students WHERE consultant_user_id = ?)").run(em.tvv);
-    assert(thi() === 0, 'tiền đề: không em nào có ngày thi');
+    /* D-05: ô và danh sách `/hoc-vien?phamVi=cua-toi&thi=1` (lọc `lich.ngay` cùng tháng) đếm MỘT cách. */
+    const danhSach = () => { xoaNho(); return (hvlTvv.danhSachHocVienLop(tvv, { phamVi: 'cua-toi' }).hocVien as any[]).filter((h) => h.lich?.ngay?.slice(0, 7) === TODAY.slice(0, 7)).length; };
+    conn.prepare("UPDATE learning_cycles SET exam_date = NULL, thi_that_ngay = NULL WHERE student_id IN (SELECT id FROM students WHERE consultant_user_id = ?)").run(em.tvv);
+    assert(thi() === 0 && danhSach() === 0, `tiền đề: không em nào có ngày thi (${thi()}/${danhSach()})`);
     conn.prepare("UPDATE learning_cycles SET exam_date = ? WHERE id = (SELECT id FROM learning_cycles WHERE student_id = ? AND status != 'abandoned' ORDER BY id DESC LIMIT 1)").run(`${TODAY.slice(0, 7)}-15`, em.id);
-    assert(thi() === 1, 'em có ngày thi trong tháng phải vào số');
+    assert(thi() === 1 && danhSach() === 1, `em có ngày thi trong tháng phải vào số: ô ${thi()} · danh sách ${danhSach()}`);
     conn.prepare("UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?").run(TODAY, em.id);
     conn.prepare("UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'").run(em.id);
-    assert(thi() === 0, 'em Tạm dừng không còn vào "Thi tháng này" (như QL)');
+    assert(thi() === 0 && danhSach() === 0, `em Tạm dừng không còn vào "Thi tháng này": ô ${thi()} · danh sách ${danhSach()}`);
   }));
 
   check('L6 · ngày VN: Báo PH tạo 01:00 VN ngày đầu kỳ vào kỳ, 01:00 VN ngày sau kỳ ra kỳ (Tổng quan TVV); Case tạo 00:30 VN ngày đầu cửa sổ vào "Cần chú ý"', () => thu(() => {

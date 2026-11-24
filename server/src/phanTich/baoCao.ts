@@ -157,20 +157,22 @@ export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; c
 
 /** D-05: "Thi tháng này" của TVV = CHÍNH định nghĩa của QL (ghi danh còn hiệu lực, chưa lưu trữ, lộ trình chưa bỏ dở) khoanh theo HV của TVV, cả hai khung; một nguồn `thiThangNayTheoPhamVi`. */
 export function tapThiThangNayTvv(tvvId: number): Map<number, { ngay: string; lop: number }> {
-  return thiThangNayTheoPhamVi({ sql: 's.consultant_user_id = ?', params: [tvvId] }, { ct: null });
+  return thiThangNayTheoPhamVi({ sql: 's.consultant_user_id = ?', params: [tvvId] }, { ct: null }, null, true);
 }
 
 /** Lõi dùng chung: `cs` = điều kiện phạm vi trên alias `c` (lớp) / `s` (học viên); `ct` null = cả hai khung. */
-function thiThangNayTheoPhamVi(cs: { sql: string; params: unknown[] }, f: { branchId?: number | null; ct: ChuongTrinh | null }, khoang?: { tu: string; den: string } | null): Map<number, { ngay: string; lop: number }> {
+function thiThangNayTheoPhamVi(cs: { sql: string; params: unknown[] }, f: { branchId?: number | null; ct: ChuongTrinh | null }, khoang?: { tu: string; den: string } | null, theoDanhSach = false): Map<number, { ngay: string; lop: number }> {
   const thang = demoToday().slice(0, 7);
   /* UI-PHAN-TICH "Thi đợt này": cùng câu, ngày thi trong khoảng đang xem (Báo cáo HV) thay cho tháng hiện tại. */
   const [tu, den] = khoang ? [khoang.tu, khoang.den] : [`${thang}-01`, `${thang}-31`];
-  const where = [cs.sql, ...(f.ct ? ['c.is_fast_track = ?'] : []), `cy.exam_date BETWEEN ? AND ?`, `cy.status != 'abandoned'`, 's.archived_at IS NULL'];
+  /* `theoDanhSach` (TVV): CHÍNH luật của danh sách `/hoc-vien?phamVi=cua-toi&thi=1` (`trangThaiLichThi`): lộ trình ĐANG CHẠY, ngày = thi thật ?? ngày thi dự kiến đã chốt — ô và danh sách đếm một cách. */
+  const ngayThi = theoDanhSach ? 'COALESCE(cy.thi_that_ngay, cy.exam_date)' : 'cy.exam_date';
+  const where = [cs.sql, ...(f.ct ? ['c.is_fast_track = ?'] : []), `${ngayThi} BETWEEN ? AND ?`, theoDanhSach ? `cy.status = 'active'` : `cy.status != 'abandoned'`, 's.archived_at IS NULL'];
   const args: unknown[] = [...cs.params, ...(f.ct ? [f.ct === 'ft' ? 1 : 0] : []), tu, den];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   const out = new Map<number, { ngay: string; lop: number }>();
   for (const r of db().prepare(
-    `SELECT cy.student_id, MIN(cy.exam_date) AS ngay, MIN(c.id) AS lop FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
+    `SELECT cy.student_id, MIN(${ngayThi}) AS ngay, MIN(c.id) AS lop FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
        JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active'   -- lớp em đang học (ghi danh còn hiệu lực)
        JOIN classes c ON c.id = e.class_id
       WHERE ${where.join(' AND ')} GROUP BY cy.student_id`).all(...args) as any[]) out.set(r.student_id, { ngay: r.ngay, lop: r.lop });
