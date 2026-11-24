@@ -393,7 +393,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
           <span className="text-[13px] font-semibold text-slate-400">{t('Tổng số câu')}</span>
           {monSua.map((k) => (
             <label key={k} className="inline-flex items-center gap-1 text-[13px] text-slate-300">
-              {tenMonNgan(data.programme.code, k)}
+              {monSua.length > 1 && tenMonNgan(data.programme.code, k)}
               <input className="field w-12 px-1 py-0.5 text-center tabular-nums" inputMode="numeric" value={chuTong(k)} placeholder="—"
                 title={t('Tổng số câu của đề cả lớp làm — ô còn trống tổng lấy sẵn số này.')}
                 aria-label={t('Tổng số câu chung của cột {tenMon}', { tenMon: tenMon(data.programme.code, k) })}
