@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { dauViec } from '../../ui/KhuonViec.tsx';
-import { ChipHan } from '../../ui/Nhan.tsx';
+import { DauQuaHan } from '../../ui/Nhan.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { shortDate } from '@shared/domain/index.ts';
-import { DONG, DaiNhom, IconNhom, O_HAN, O_NUT, docGap, ghiGap } from './DanhSachViec.tsx';
+import { mucHan, shortDate } from '@shared/domain/index.ts';
+import { DaiNhom, docGap, ghiGap } from './DanhSachViec.tsx';
 import { DaiChiXem, KhoiGiaoViec, dongLichSuGiao, useGiaoViec, useHn, type LoaiGiao } from './KhoiGiaoViec.tsx';
 import { PhanMeeting } from './PanelMeeting.tsx';
 import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
@@ -50,66 +49,48 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
   }
   const moXong = gap.has('+vua-xong');
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="cvA-cq"><div className="cvA">
       {nhom.filter((g) => g.mo.length).map((g) => {
         const dongGap = gap.has(g.loai), q = g.mo.filter((x) => x.quaHan).length;
         return (
-          <section key={g.loai} className="card overflow-clip p-0" aria-label={dich(g.ten)}>
+          <section key={g.loai} className="card cvA-sub overflow-clip p-0" aria-label={dich(g.ten)}>
             <DaiNhom k={ICON[g.loai]} nhan={dich(g.ten)} chip={t('{n} việc', { n: g.mo.length })} mo={!dongGap} onMo={() => doi(g.loai, !dongGap)} chevSauTen
               dieuKhien={dongGap ? undefined : `td-${g.loai}`} phu={q ? <span className="font-bold tabular-nums text-late">{q} {t('quá hạn')}</span> : null} />
-            {!dongGap && <ul id={`td-${g.loai}`} className="m-0 list-none p-0">
-              {g.mo.map((d, j) => {
-                const vach = q > 0 && q < g.mo.length && (j === 0 || g.mo[j - 1].quaHan !== d.quaHan);
-                return [
-                  vach && <li key={`v${j}`} className={`flex min-h-9 items-center px-4 text-[13px] font-semibold text-dim max-sm:px-3.5 ${j ? 'border-t' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
-                    {d.quaHan ? t('Quá hạn') : t('Còn hạn')}</li>,
-                  <li key={khoaTd(d)} className={j && !vach ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>,
-                ];
-              })}
+            {!dongGap && <ul id={`td-${g.loai}`} className="cvA-sub">
+              {g.mo.map((d) => <li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
             </ul>}
           </section>
         );
       })}
       {xong.length > 0 && (
-        <section className="card overflow-clip p-0" aria-label={t('Vừa xong 7 ngày')}>
+        <section className="card cvA-sub overflow-clip p-0" aria-label={t('Vừa xong 7 ngày')}>
           <DaiNhom k="vua-xong" nhan={t('Vừa xong 7 ngày')} chip={t('{n} việc', { n: xong.length })} mo={moXong} onMo={() => doi('+vua-xong', !moXong)} chevSauTen trungTinh
             dieuKhien={moXong ? 'td-vua-xong' : undefined} />
-          {moXong && <ul id="td-vua-xong" className="m-0 list-none p-0">
-            {xong.map((d, j) => <li key={khoaTd(d)} className={j ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
+          {moXong && <ul id="td-vua-xong" className="cvA-sub">
+            {xong.map((d) => <li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
           </ul>}
         </section>
       )}
-    </div>
+    </div></div>
   );
 }
 
-/** Mã lớp · tên việc (bỏ tên em ở cuối — em đã ở dòng phụ). */
-const tenDong = (d: DongTd) => [d.classCode, d.studentName ? d.tieuDe.slice(0, d.tieuDe.endsWith(` · ${d.studentName}`) ? -(d.studentName.length + 3) : undefined) : d.tieuDe].filter(Boolean).join(" · ");
+/** Tên việc (bỏ mã lớp và tên em — hai ô riêng của dòng). */
+const tenDong = (d: DongTd) => d.tieuDe.split(' · ').filter((x) => x !== d.classCode && x !== d.studentName).join(' · ');
 
+/** Khuôn A: lớp · em · việc · phụ trách · trạng thái · hạn (ngày tô màu; cờ quá hạn của máy chủ — Báo PH "Chờ GV sửa" không quá hạn). */
 function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: () => void }) {
-  const ten = tenDong(d);
   const hn = useHn();
+  const chu = [d.studentName ? dich(tenDong(d)) : null, d.phuTrach ? t('Phụ trách {ten}', { ten: dich(d.phuTrach) }) : null, dich(d.nhanTrangThai)].filter(Boolean).join(' · ');
+  const muc = d.quaHan ? 'qua' : d.han ? (mucHan(d.han, hn) === 'qua' ? 'xa' : mucHan(d.han, hn)) : 'xa';
+  const ten = d.studentName ?? dich(tenDong(d));
   return (
-    <div data-khoa={khoaTd(d)} onClick={onMo} className={`${DONG} ${chon ? 'row-active' : 'bam'}`}>
-      <span className="flex min-w-0 items-center gap-3 max-sm:items-start">
-        <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--surface-2)] text-dim"><IconNhom k="theo-doi" /></span>
-        <span className="grid min-w-0 gap-0.5">
-          <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[14px] font-medium leading-snug text-[color:var(--text)]"
-            aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>{dich(ten)}</button>
-          <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px]">
-            {d.studentId != null && <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>}
-            {d.phuTrach && <span className="whitespace-nowrap sm:h-5 sm:rounded-md sm:border sm:px-1.5 sm:text-xs sm:font-medium sm:leading-[18px]" style={{ borderColor: 'var(--line-strong)' }}>
-              <span aria-hidden className="sm:hidden">· </span>{t('Phụ trách {ten}', { ten: dich(d.phuTrach) })}</span>}
-          </span>
-        </span>
-      </span>
-      <span className={`grid min-w-0 content-center justify-items-start text-[13px] ${O_HAN}`}>
-        {/* Quá hạn theo cờ máy chủ (`quaHan` — Báo PH "Chờ GV sửa" không quá hạn), không tự so ngày. */}
-        {d.trangThai === 'mo' && d.han ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : d.xongLuc ? <span className="tabular-nums text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}
-      </span>
-      <span className={`flex min-w-0 items-center whitespace-nowrap text-[13px] font-medium ${d.trangThai === 'mo' ? 'text-dim' : 'text-ok'} ${O_NUT}`}>
-        {d.trangThai === 'xong' && <span aria-hidden>✓&nbsp;</span>}{dich(d.nhanTrangThai)}
-      </span>
+    <div data-khoa={khoaTd(d)} onClick={onMo} className={`cvA-v ${d.studentName || d.classCode ? '' : 'cvA-kl'} ${chon ? 'dang-chon' : ''}`}>
+      <span className="cvA-lop">{d.classCode}</span>
+      <span className="cvA-ai"><button type="button" className={`cvA-ten ${d.studentName ? '' : '!font-semibold'}`} aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>
+        {d.trangThai === 'xong' && <span aria-hidden className="text-ok">✓ </span>}{ten}</button></span>
+      <span className="cvA-ct" title={chu}>{chu}</span>
+      <span className={`cvA-hn ${muc === 'xa' ? '' : muc}`}>{d.trangThai === 'mo' && d.han ? <>{muc === 'qua' && <DauQuaHan />}{shortDate(d.han, hn)}</> : d.xongLuc ? <span className="text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}</span>
     </div>
   );
 }
