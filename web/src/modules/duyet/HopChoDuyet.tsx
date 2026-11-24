@@ -117,7 +117,11 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
   /* PR-LUI-a2: Từ chối nhiều — hàng lý do chung mở ngay trong thanh chọn. `null` = đang đóng. */
   const [lyDoTc, setLyDoTc] = useState<string | null>(null);
   const [tcDaBam, setTcDaBam] = useState(false);
-  useEffect(() => { setChon(new Set()); }, [url]);
+  /* Lỗi 7: thẻ lỗi của lần gửi lô gần nhất (id → lý do, hiện ngay dưới dòng) · `canDoiSoat` = lô trước lỗi (một phần / mạng): lần gửi kế tiếp đọc lại
+     trạng thái máy chủ TRƯỚC (`idsGui`). Không khoá nút chờ tải lại — tải lại lỗi (mất mạng) thì nút vẫn bấm được (PTA rà #2144 ①). */
+  const [loiThe, setLoiThe] = useState<ReadonlyMap<number, string>>(new Map());
+  const canDoiSoat = useRef(false);
+  useEffect(() => { setChon(new Set()); setLoiThe(new Map()); }, [url]);
   useEffect(() => { if (!chon.size) { setLyDoTc(null); setTcDaBam(false); } }, [chon.size]);
   const ds = data?.the ?? [];
   /* C-6: sau khi danh sách tải lại (lô lỗi mạng giữa chừng, người khác vừa xử lý) chỉ giữ thẻ CÒN chờ — không để id ma trong thanh chọn. */
@@ -125,6 +129,7 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
     if (!data) return;
     const cho = new Set(data.the.filter((x) => x.trangThai === 'cho').map((x) => x.id));
     setChon((s) => { const con = new Set([...s].filter((id) => cho.has(id))); return con.size === s.size ? s : con; });
+    canDoiSoat.current = false;   // lỗi 7: đã đối soát với máy chủ — thẻ người khác vừa xử lý đã rời lựa chọn
   }, [data]);
   const [soHien, setSoHien] = useState(5);
   const loaiChon = useMemo(() => (ds.find((x) => chon.has(x.id))?.loai ?? null) as LoaiYeuCau | null, [ds, chon]);
@@ -197,26 +202,45 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
     setMo((s) => new Set(s).add(y.id));
     setLenh(lenhMoi);
   };
-  /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
+  /* Lỗi 7: một câu tổng (toast) + lý do TỪNG thẻ ngay dưới dòng; thẻ lỗi GIỮ trong lựa chọn (cùng chữ lý do Từ chối) để "Thử lại" chỉ gửi chúng.
+     Chủ SP 07/11 (mục 7): thẻ đã được xử lý (người khác / tự đóng) và thẻ không còn (404) không phải lỗi — chỉ đếm trong câu tổng, rời lựa chọn.
+     Trước lần gửi kế tiếp: danh sách tải lại (`xong` → effect `data`); chưa về / tải lỗi thì `idsGui` tự đọc lại một lần lúc bấm. */
   const baoKetQua = (viec: 'duyet' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
-    /* Chủ SP 07/11 (mục 7): thẻ đã được xử lý (người khác / tự đóng) không phải lỗi — chỉ đếm trong câu tổng, không toast đỏ riêng. */
-    const chiTiet = loi.filter((l) => !laDaXuLy({ status: l.ma, message: l.loi }));
-    toast.push(chiTiet.length ? 'error' : loi.length ? 'info' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
-    for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? t('Yêu cầu #{id}', { id: l.id })}: ${dich(l.loi)}`);
-    if (chiTiet.length > 3) toast.push('error', t('…và {n} thẻ khác', { n: chiTiet.length - 3 }));
+    const giu = loi.filter((l) => l.ma !== 404 && !laDaXuLy({ status: l.ma, message: l.loi }));
+    toast.push(giu.length ? 'error' : loi.length ? 'info' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
+    setLoiThe(new Map(giu.map((l) => [l.id, dich(l.loi)])));
+    setChon(new Set(giu.map((l) => l.id)));
+    if (giu.length) canDoiSoat.current = true;
+  };
+  /** Id gửi lô: bình thường = lựa chọn; sau lô lỗi mà danh sách chưa tải lại được → đọc trạng thái máy chủ, chỉ gửi thẻ CÒN chờ. `null` = không đọc được (đã báo). */
+  const idsGui = async (): Promise<number[] | null> => {
+    if (!canDoiSoat.current) return [...chon];
+    try {
+      const m = await api.get<Hop>(url);
+      const cho = new Set(m.the.filter((x) => x.trangThai === 'cho').map((x) => x.id));
+      const con = [...chon].filter((id) => cho.has(id));
+      canDoiSoat.current = false;
+      if (con.length !== chon.size) setChon(new Set(con));
+      return con;
+    } catch (e: any) {
+      toast.push('error', e instanceof ApiError ? e.message : t('Không đọc lại được danh sách — kiểm tra mạng rồi bấm lại.'));
+      return null;
+    }
   };
   const duyetNhieu = async () => {
     if (busy || !chon.size) return;
     setBusy(true);
     try {
-      const r = await api.post<{ ok: number[]; loi: { id: number; loi: string; ma: number }[] }>('/yeu-cau/duyet-nhieu', { ids: [...chon] });
+      const ids = await idsGui();
+      if (!ids?.length) return;
+      const r = await api.post<{ ok: number[]; loi: { id: number; loi: string; ma: number }[] }>('/yeu-cau/duyet-nhieu', { ids });
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');   // SL1 (A7-14): số "Chờ duyệt n" + dải
       baoKetQua('duyet', r.ok.length, r.loi);
-      setChon(new Set());
       xong();
     } catch (e: any) {
       toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.'));
-      xong();
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
+      canDoiSoat.current = true; xong();
     } finally { setBusy(false); }
   };
   const tuChoiNhieu = async () => {
@@ -225,18 +249,22 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
     setBusy(true);
     try {
       /* Lô 6 thẻ mỗi request (~21 câu SQL mỗi thẻ, Case nhiều PA nhiều hơn → ≤ 200 câu, kịp trần 10 s). Lô lỗi mạng giữa chừng: báo, làm mới để thấy thẻ nào đã xong. */
+      const ids = await idsGui();
+      if (!ids?.length) return;
       const r = { ok: [] as number[], loi: [] as { id: number; loi: string; ma: number }[] };
-      for (const lo of chiaLo([...chon], LO_TU_CHOI)) {
+      for (const lo of chiaLo(ids, LO_TU_CHOI)) {
         const k = await api.post<typeof r>('/yeu-cau/tu-choi-nhieu', { ids: lo, lyDo: lyDoTc.trim() });
         r.ok.push(...k.ok); r.loi.push(...k.loi);
+        /* Lô sau lỗi mạng: thẻ của lô đã xong rời lựa chọn ngay — bấm lại chỉ gửi phần chưa gửi (chữ lý do giữ nguyên). */
+        setChon((s) => { const n = new Set(s); for (const id of k.ok) n.delete(id); return n; });
       }
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
       baoKetQua('tu-choi', r.ok.length, r.loi);
-      setChon(new Set());
       xong();
     } catch (e: any) {
       toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.'));
-      xong();
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
+      canDoiSoat.current = true; xong();
     } finally { setBusy(false); }
   };
   const dem = data?.dem;
@@ -297,7 +325,7 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
               <button type="button" className="btn btn-sm" onClick={() => setChon(new Set())} disabled={busy}>{t('Bỏ chọn')}</button>
               {loaiChon && LOAI_YC_META[loaiChon]?.kieuNut === 'duyet-tu-choi' && (
                 <button type="button" className="btn btn-sm" aria-pressed={lyDoTc !== null} disabled={busy}
-                  onClick={() => { setLyDoTc(lyDoTc === null ? '' : null); setTcDaBam(false); }}>{t('Từ chối {n}…', { n: chon.size })}</button>
+                  onClick={() => { setLyDoTc(lyDoTc === null ? '' : null); setTcDaBam(false); }}>{t('Từ chối {n} yêu cầu', { n: chon.size })}</button>
               )}
               <button type="button" className="btn btn-sm btn-primary" onClick={duyetNhieu} disabled={busy || lyDoTc !== null}>
                 {busy && lyDoTc === null ? t('Đang duyệt…') : t('Duyệt {n} yêu cầu', { n: chon.size })}
@@ -339,7 +367,7 @@ export function HopChoDuyet({ branchId, khuLoc, gon, dau }: {
         </div>
       )}
       {dsHien.length > 0 && (
-        <DsDuyet ds={dsHien} mo={mo} dangO={dangO} nhanId={nhanId} lenh={lenh} dangGui={dangGui} toi={session?.user?.id ?? null} chon={chonCua}
+        <DsDuyet ds={dsHien} mo={mo} dangO={dangO} nhanId={nhanId} lenh={lenh} dangGui={dangGui} toi={session?.user?.id ?? null} chon={chonCua} loi={loiThe}
           onBam={bamDong} onNut={bamNut} onXong={(id) => xongDong(id)} onThemPa={setNgan}
           onO={(id, d) => setDangO((s) => { if (s.has(id) === d) return s; const n = new Set(s); if (d) n.add(id); else n.delete(id); return n; })} />
       )}

@@ -63,4 +63,16 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
     const f = than(hop, 'export function HopChoDuyet');
     assert(f.includes('C-6: sau khi danh sách tải lại') && f.includes("x.trangThai === 'cho'") && f.includes('}, [data]);'), 'thiếu bước lọc chon theo thẻ còn chờ sau khi tải lại');
   });
+  check('C-7 · lỗi 7 (SUA-GOP-2511): lô Duyệt / Từ chối lỗi một phần GIỮ thẻ lỗi (bỏ thẻ đã xử lý + 404), giữ chữ lý do, lý do từng dòng, đối soát trước lần gửi sau', () => {
+    const f = than(hop, 'export function HopChoDuyet');
+    assert(f.includes('l.ma !== 404 && !laDaXuLy({ status: l.ma, message: l.loi })') && f.includes('setChon(new Set(giu.map((l) => l.id)))'), 'thẻ lỗi bị bỏ khỏi lựa chọn');
+    assert(!/baoKetQua\('(duyet|tu-choi)', r\.ok\.length, r\.loi\);\s*setChon\(new Set\(\)\)/.test(f), 'sau lô còn xoá hết lựa chọn (mất chữ lý do qua effect chon.size)');
+    assert(f.includes('loi={loiThe}') && !f.includes("t('…và {n} thẻ khác'"), 'lý do còn ở toast (3 thẻ đầu), chưa ở từng dòng');
+    /* PTA rà #2144 ①: không khoá nút chờ tải lại (tải lỗi → khoá mãi); lần gửi sau lô lỗi đọc lại trạng thái máy chủ trước (`idsGui`). */
+    assert(!f.includes('doiSoat') && f.includes('const ids = await idsGui();') && f.includes("m.the.filter((x) => x.trangThai === 'cho')")
+      && f.includes('chiaLo(ids, LO_TU_CHOI)') && f.includes("'/yeu-cau/duyet-nhieu', { ids }"), 'gửi lại trước khi đối soát danh sách máy chủ / nút khoá mãi');
+    assert(f.includes("t('Từ chối {n} yêu cầu'") && !f.includes("t('Từ chối {n}…'"), 'nút "Từ chối n…" (đọc như bị cắt chữ)');
+    const ds = doc('web/src/modules/duyet/DsDuyet.tsx');
+    assert(ds.includes('loi?: ReadonlyMap<number, string>;') && ds.includes('{loi?.get(y.id) && <div role="alert"'), 'DsDuyet chưa vẽ lý do dưới dòng');
+  });
 }

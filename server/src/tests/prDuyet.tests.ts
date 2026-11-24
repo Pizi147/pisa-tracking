@@ -218,6 +218,8 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const tren = yc.hopChoDuyet(P.mbManager).the.find((x: any) => x.id === the.id);
     assert(tren && tren.tieuDe.startsWith('Đề xuất PA · Listening') && tren.dong[0].includes('Tutor 1-1') && tren.neuDuyet?.includes('hạn đầu')
       && tren.mo?.includes(`case=${caseId}`), JSON.stringify(tren));
+    /* SUA-GOP-2511 (Việc để sau 24/11, mockup v24 H1): dòng Chờ duyệt có chip loại PA "Tutor" trước chip đợt — máy chủ trả trong `phu` (web tách theo " · "). */
+    assert(tren.phu?.split(' · ')[0] === 'Tutor', `phu thiếu nhãn Tutor: ${tren.phu}`);
     assert(!conn.prepare(`SELECT 1 FROM notifications WHERE kind IN ('approval', 'case') AND entity_type = 'sos_case' AND entity_id = ?`).get(caseId),
       'còn thông báo kiểu cũ (approval/plan/report)');
   });

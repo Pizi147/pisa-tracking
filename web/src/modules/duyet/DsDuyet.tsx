@@ -27,6 +27,8 @@ export type ChungDsDuyet = {
   onXong: (id: number, chu?: string, huy?: boolean, soLichSu?: number) => void;
   onO: (id: number, dang: boolean) => void;
   onThemPa: (caseId: number) => void;
+  /** Lỗi 7 (25/11): lý do thẻ chưa duyệt / từ chối được ở lần gửi lô gần nhất — hiện ngay dưới dòng. */
+  loi?: ReadonlyMap<number, string>;
 };
 
 /** Nhóm theo loại thẻ; các loại Ý thức (xử lý · thu hồi · sửa cấp bậc…) gộp một nhóm "Ý thức". Thứ tự nhóm = thẻ đầu tiên của nhóm (máy chủ đã xếp quá hạn trước). */
@@ -58,7 +60,7 @@ const Xo = () => (
   <svg aria-hidden viewBox="0 0 16 16" className="dyc-xo" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
 );
 
-function DongYc({ y, nhom, mo, dangO, nhanId, lenh, dangGui, toi, chon, onBam, onNut, onXong, onO, onThemPa }: { y: TheYeuCauDto; nhom: string } & ChungDsDuyet) {
+function DongYc({ y, nhom, mo, dangO, nhanId, lenh, dangGui, toi, chon, onBam, onNut, onXong, onO, onThemPa, loi }: { y: TheYeuCauDto; nhom: string } & ChungDsDuyet) {
   const { homNay, ngan } = useNgayNghiepVu();
   const cho = y.trangThai === 'cho';
   const choQuyet = cho && y.kieuNut !== 'nhac';
@@ -107,6 +109,7 @@ function DongYc({ y, nhom, mo, dangO, nhanId, lenh, dangGui, toi, chon, onBam, o
           )}
         </span>
       </div>
+      {loi?.get(y.id) && <div role="alert" className="dyc-ct text-[13px] font-semibold text-late" style={{ paddingTop: 0, borderTop: 0 }}><span><span aria-hidden>⚠ </span>{loi.get(y.id)}</span></div>}
       {dangMo && <>
         <TheYeuCau yc={y} dong lenh={lenh?.id === y.id ? lenh : undefined} onXong={onXong} onO={(d) => onO(y.id, d)} onThemPa={onThemPa} />
         {(y.soLichSu ?? 0) > 0 && <div className="dyc-ct" style={{ paddingTop: 0, borderTop: 0 }}><LichSuYeuCau id={y.id} n={y.soLichSu ?? 0} className="mt-0" /></div>}
