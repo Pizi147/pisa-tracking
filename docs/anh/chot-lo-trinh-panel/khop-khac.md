@@ -1,7 +1,7 @@
 # Khớp / khác — Chốt lộ trình panel 720 + trang Cuối khoá (mockup `thiet-ke/v25/chot-lo-trinh-panel.html`, chủ SP duyệt 25/11)
 
-Ảnh cặp (mockup trái | web phải, cả màn): `cap-panel-1440.png` (A1) · `cap-panel-1280.png` (A7) · `cap-panel-375.png` (A8) · `cap-trang-1440.png` (B1) · `cap-trang-1280.png` (B2) · `cap-trang-375.png` (B3).
-Web chụp lớp MB FOU 12 (7 em, chưa chốt) của dữ liệu demo — dữ liệu mockup (MB FOU 21, em đã chốt Lên FT) khác nên số dòng khác; so bố cục, cột, kiểu ô.
+Ảnh cặp (mockup trái | web phải, cùng trạng thái): `cap-panel-1440.png` (A1 mặc định) · `cap-panel-1440-chon-tat-ca.png` (A2) · `cap-panel-1440-sau-chot.png` (A5) · `cap-panel-1280.png` (A7) · `cap-panel-375.png` (A8) · `cap-trang-1440.png` (B1) · `cap-trang-1280.png` (B2) · `cap-trang-375.png` (B3).
+Web chụp lớp **MB FOU 21** của DB worktree (`npm run seed` rồi dựng bằng thao tác thật trên web: Vũ Gia An chốt Lên FT → lớp MB FT 101; 5 dòng SQL cục bộ ghi điểm MT0 3.5 cho lượt MT0 của em đó để có "MT0 ✗ 3.5"). Còn lại là dữ liệu seed: dải Lên BE 2 em, Học lại, Head cân nhắc, đang chấm, em đã chốt 🔒. A5 dùng phản hồi giả của máy chủ (1 em chuyển ngay → Hoàn tác, 1 em "đã đủ chỗ") vì không có lớp nào thật sự đầy.
 
 ## Số đo (Playwright, web thật)
 
@@ -21,13 +21,14 @@ Bố cục panel (đầu · thanh công cụ · thanh Áp thẻ · lưới 5 c�
 
 | Chỗ | Mockup | Web | Lý do |
 |---|---|---|---|
-| Ô Lớp | ô mờ có ▾ | ô tìm lớp có kính lúp (`ChonLop`, giữ gõ tìm) | giữ tính năng gõ tìm lớp; chữ "Chọn lớp" bị cắt còn "Chọn" ở 112 px |
+| Ô Lớp | ô mờ có ▾ | ô tìm lớp (`ChonLop`, giữ gõ tìm), **bỏ kính lúp + dòng phụ trong ô** để đủ chữ "Chọn lớp" / mã lớp ở 112 px (dòng phụ vẫn ở danh sách xổ) | giữ tính năng gõ tìm lớp; chủ SP không cho cắt chữ |
 | Ô Tuần | ô chữ "W3 SEP ▾" | ô tuần có nút lịch (`ONgay`) | giữ tính năng chọn tuần bằng lịch |
 | Ô dòng "Ngay hôm nay" | "Ngay hôm nay" | "Hôm nay" (thanh Áp vẫn đủ chữ) | ô 112 px có nút lịch, không đủ chữ |
 | Nút Đạt / Không đạt (Kỳ vọng) | đoạn chọn `.doan` | nút `btn-sm` có sẵn | giữ nút cũ, đổi kiểu sau nếu chủ SP muốn |
 | Chip "Chờ bàn giao" | không ngày | ngày chỉ khi quá hạn | không chen vào ô Final |
 | Đầu panel | ⓘ · ⋯ · ✕ | ⓘ · ✕, link "Mở ở trang riêng ›" cùng dòng meta | **Gia hạn không có đường ghi cho Chốt lộ trình** (hạn tính theo N20, không chặn; máy chủ chỉ có gia hạn cho hạn sau thi) — ⋯ chỉ còn một mục nên đưa thành link thẳng (luật không ⋯ một mục) |
-| Dải nhóm / chip "đã sửa" | không vẽ | giữ chip "đã sửa" sau tên | giữ cũ: trạng thái nháp phải rõ |
+| Chip "đã sửa" | không vẽ | giữ sau tên, trừ em chỉ nhận lớp / tuần từ dải | giữ cũ: trạng thái nháp phải rõ; em theo dải không cần chip |
+| Em đã chốt | lên đầu, ngoài dải | giống mockup | dải chỉ gồm em còn sửa được |
 | Ô Lớp / Tuần ở dòng không hướng | "—" | "—" | khớp |
 
 ## Thao tác TRƯỚC → SAU PR (mất thao tác nào = không có)
