@@ -396,7 +396,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const theV = (h: HV) => (
     <div className="grid gap-1">
       <div className="flex items-baseline gap-2 text-[14px]">{lkHv(h.studentId, h.ten)}<span className="ml-auto">{ttV(h)}</span></div>
-      <div className="text-[14px]">{lkLop(h.classId, h.lop)} · <span className="tabular-nums">{ddmm(h.ngay)}</span>{h.nguoiGhi && <> · {h.nguoiGhi}</>}{h.han && <> · <span className="text-dim">{t('Hạn xử lý')}</span> {hanV(h)}</>}</div>
+      <div className="text-[14px]">{lkLop(h.classId, h.lop)} · <span className="tabular-nums">{ddmm(h.ngay)}</span>{h.nguoiGhi && <> · {h.nguoiGhi}</>}{h.han && <> · <span className="whitespace-nowrap"><span className="text-dim">{t('Hạn xử lý')}</span> {hanV(h)}</span></>}</div>
       <div className="text-[14px]"><b className="font-semibold">{dich(h.nhom)}</b>{h.moTa && <span className="block text-[13px] text-dim">{h.moTa}</span>}</div>
     </div>
   );
