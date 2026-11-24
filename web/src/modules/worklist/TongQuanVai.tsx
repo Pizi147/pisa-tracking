@@ -14,12 +14,12 @@ import { DauViecCongViec, KhungPanel, QuayLaiPanel } from '../../ui/KhungPanel.t
 import { DaiLamThay } from '../../ui/DaiLamThay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelViec } from '../congViec/PanelViec.tsx';
-import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import type { WorkItem } from './WorkList.tsx';
 import { PhanTram, ChuaCoDl, kyChu, thamSoTq, type TongQuanV5Data } from './TongQuanV5.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import {
-  laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type TheYeuCauDto,
+  laViec, mucHan, ngay, tenMonNgan, tuanLich, loaiTq, maTranLop, nhanLoaiTq, nhomTheoGv, quaHanCuaGv, tabCuaViec, type CotLop, type HangLop, type KhoaChip, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -265,6 +265,9 @@ const qBc = (d: TongQuanV5Data, o: string) => `/phan-tich/bao-cao/o?${thamSoTq(d
 const qCn = (d: TongQuanV5Data, cot: string) => `/tong-quan/chi-nhanh/o?cot=${cot}&khoa=tong&chuY=1&${thamSoTq(d.branchId, d.ct)}`;
 /** Số Tình hình bấm được → panel giải thích (V11): màu nhấn như mọi ô số (`mauOSo`); SOS 2 / 3 giữ màu mức. */
 const SO_TH = 'so-chinh';
+/** Hàng Tình hình có MỘT số bấm được: cả hàng bấm (`ca-o` + `so-chinh`, như ô Cần xử lý) — rê = nền nhạt. Hàng SOS 1 · 2 · 3 có ba số → chỉ bấm từng số. */
+const CA_HANG = 'has-[.so-chinh:hover]:bg-[color:var(--accent-soft)]';
+const SOS3 = t('SOS 1 · 2 · 3');
 function TinhHinh({ d, congTac, ngang }: { d: TongQuanV5Data; congTac: ReactNode; ngang?: boolean }) {
   const ft = d.ct === 'ft';
   const muc: [string, ReactNode, ReactNode][] = [
@@ -283,13 +286,13 @@ function TinhHinh({ d, congTac, ngang }: { d: TongQuanV5Data; congTac: ReactNode
       title={<span className="inline-flex flex-wrap items-baseline gap-2">{t('Tình hình')}<span className="text-[13px] font-medium text-dim">{kyChu(d.ky)}</span></span>} action={congTac}>
       <dl data-hd="tq-tinh-hinh" className={`m-0 grid flex-1 ${ngang ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 lg:grid-cols-1'}`}>
         {muc.map(([ten, phu, so]) => (ngang ? (
-          <div key={ten} className="flex min-h-[64px] flex-col gap-0.5 border-t px-4 py-3 lg:border-l lg:border-t-0 lg:first:border-l-0" style={{ borderColor: 'var(--line)' }}>
+          <div key={ten} className={`${CA_HANG} flex min-h-[64px] flex-col gap-0.5 border-t px-4 py-3 lg:border-l lg:border-t-0 lg:first:border-l-0 ${ten !== SOS3 ? 'ca-o' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <dt className="text-sm font-semibold text-slate-100">{ten}</dt>
             <dd className="so-tinh-hinh m-0 text-[20px] font-bold tabular-nums text-slate-100">{so}</dd>
             {phu && <dd className="m-0 text-xs text-dim">{phu}</dd>}
           </div>
         ) : (
-          <div key={ten} className="flex min-h-[64px] flex-col gap-0.5 border-t px-4 py-2.5 max-lg:odd:border-r lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3" style={{ borderColor: 'var(--line)' }}>
+          <div key={ten} className={`${CA_HANG} flex min-h-[64px] flex-col gap-0.5 border-t px-4 py-2.5 max-lg:odd:border-r lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3 ${ten !== SOS3 ? 'ca-o' : ''}`} style={{ borderColor: 'var(--line)' }}>
             <dt className="text-sm font-semibold text-slate-100 lg:col-start-1 lg:row-start-1">{ten}</dt>
             <dd className="so-tinh-hinh m-0 text-[20px] font-bold tabular-nums text-slate-100 lg:col-start-2 lg:row-span-2 lg:row-start-1">{so}</dd>
             {phu && <dd className="m-0 text-xs text-dim lg:col-start-1 lg:row-start-2">{phu}</dd>}
@@ -302,22 +305,17 @@ function TinhHinh({ d, congTac, ngang }: { d: TongQuanV5Data; congTac: ReactNode
 
 /* ───────────── Chờ duyệt (dòng gọn → panel duyệt) ───────────── */
 
-type Hop = { the: TheYeuCauDto[]; homNay: string };
-function PanelDuyet({ ds, dau, onDong, onXong }: { ds: TheYeuCauDto[]; dau: TheYeuCauDto | null; onDong: () => void; onXong: () => void }) {
-  const [mo, setMo] = useState<TheYeuCauDto | null>(dau);
-  if (mo) {
-    return (
-      <KhungPanel hd="duyet" tieuDe={mo.tieuDe} hocVien={mo.hocVien} lop={mo.lop} onDong={onDong}
-        quayLai={dau ? undefined : { nhan: t('Chờ duyệt'), onClick: () => setMo(null) }}
-        chan={mo.mo ? { phu: <Link to={mo.mo} className="btn min-h-[44px] sm:min-h-[36px]">{t('Mở ›')}</Link> } : undefined}>
-        <TheYeuCau yc={mo} gon onXong={() => { setMo(null); onXong(); }} />
-      </KhungPanel>
-    );
-  }
+type Hop = { the: TheYeuCauDto[]; dem: Record<KhoaChip, number>; homNay: string };
+/**
+ * Panel Chờ duyệt (chủ SP 25/11): CHÍNH danh sách của tab Chờ duyệt ở Công việc (`HopChoDuyet` — nhóm theo loại, cột cố định, hạn tô màu, mở tại dòng,
+ * Duyệt / Từ chối / Trả lời, cùng quyền) trong khung 720; thân cuộn, chân "Công việc · Chờ duyệt ›" cố định dưới thân (không che dòng cuối).
+ * `n` = số của thẻ Tổng quan (một nguồn: `dem['tat-ca']` của hộp, cùng chi nhánh với trang).
+ */
+function PanelDuyet({ n, branchId, dau, onDong }: { n: number | null; branchId: number | null; dau: number | null; onDong: () => void }) {
   return (
-    <KhungPanel rong="viec" tieuDe={t('Chờ duyệt')} phu={t('{n} yêu cầu', { n: ds.length })} onDong={onDong}
+    <KhungPanel rong="viec" tieuDe={t('Chờ duyệt')} phu={n != null ? t('{n} yêu cầu', { n }) : undefined} onDong={onDong}
       chan={{ huy: null, chinh: <Link to="/cong-viec?nhom=duyet" className="btn min-h-[44px] sm:min-h-[36px]">{t('Công việc · Chờ duyệt')} ›</Link> }}>
-      <DongDuyet ds={ds} onMo={setMo} />
+      <HopChoDuyet branchId={branchId} gon dau={dau} />
     </KhungPanel>
   );
 }
@@ -344,7 +342,6 @@ function DongDuyet({ ds, onMo }: { ds: TheYeuCauDto[]; onMo: (y: TheYeuCauDto) =
 function useHop(branchId: number | null, co: boolean) {
   return useApi<Hop>(co ? `/yeu-cau?hop=cho-duyet${branchId ? `&branchId=${branchId}` : ''}` : null, [branchId, co]);
 }
-const lamMoiDuyet = (reload: () => void) => { reload(); invalidate('/yeu-cau/dem'); invalidate('/tong-quan'); };
 
 /**
  * HEAD / QL (một chi nhánh) và QUẢN TRỊ (Toàn hệ thống hoặc một chi nhánh): Cần xử lý (GV quá hạn · Chờ duyệt · Em SOS cần chú ý) ·
@@ -354,9 +351,12 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
   const { session } = useSession();
   const { homNay } = useNgayNghiepVu();
   const duyet = !!session?.nav?.workApprove;
+  /* MỘT SỐ "Chờ duyệt" (chủ SP 25/11: ô 12 ≠ panel 10): `dem` của khung App là mọi chi nhánh — Tổng quan một chi nhánh thì số đúng là `dem['tat-ca']` của CHÍNH
+     hộp theo chi nhánh trang (cùng hàm `demHop` với tab Công việc). `dem.cho` chỉ làm công tắc tải hộp: 0 toàn hệ thống thì 0 ở chi nhánh, khỏi GET. */
   const dem = useDemYeuCau();
-  const choN = dem?.cho ?? 0;
-  const hop = useHop(d.branchId, duyet && choN > 0);
+  const hop = useHop(d.branchId, duyet && (dem?.cho ?? 0) > 0);
+  const choN = hop.data ? hop.data.dem['tat-ca'] : dem && !dem.cho ? 0 : null;
+  const coKhoiDuyet = duyet && (choN ?? dem?.cho ?? 0) > 0;   // chưa có hộp: theo công tắc → khối hiện Skeleton, không nhảy bố cục
   const viec = { data: d.viec ? { dong: d.viec as Dong[] } : null };
   const cn = useApi<{ id: number; name: string }[]>(d.branchId ? null : '/ref/branches').data;
   const [panel, setPanel] = useState<MoPanel | null>(null);
@@ -380,7 +380,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
     <>
       <HangO n={3}>
         <OCan ten={t('GV quá hạn')} so={viec.data ? soGv : null} nguy phu={quaHan.length ? t('{n} việc quá hạn', { n: quaHan.length }) : undefined} onBam={moGvQuaHan} />
-        {duyet && <OCan ten={t('Chờ duyệt')} so={dem ? choN : null} phu={ganNhat ? <>{t('gần nhất')} <NgayHan han={ganNhat} /></> : undefined}
+        {duyet && <OCan ten={t('Chờ duyệt')} so={choN} phu={ganNhat ? <>{t('gần nhất')} <NgayHan han={ganNhat} /></> : undefined}
           onBam={hop.data ? () => setDuyetMo({ dau: null }) : undefined} />}
         <OCan ten={t('Em SOS cần chú ý')} so={s2 + s3} phu={s2 + s3 ? [s3 ? `${s3} SOS 3` : null, s2 ? `${s2} SOS 2` : null].filter(Boolean).join(' · ') : undefined}
           o={<span className="text-[26px] font-bold leading-none"><OSo giaTri={s2 + s3} tieuDe={t('Em SOS cần chú ý')} nguon={`/tong-quan/chi-nhanh/sos23?${thamSoTq(d.branchId, d.ct)}&ids=${sos23Ids.join(',')}`} className="so-chinh text-late" /></span>} />
@@ -388,10 +388,10 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
       {!viec.data ? null : (
         <div className="flex flex-col gap-4">
           {/* 375 (mockup T1b): Lớp cần chú ý → Giáo viên → Chờ duyệt → Tình hình — hai lưới thành `contents`, thứ tự bằng `order`. */}
-          <div className={`grid items-stretch gap-4 max-sm:contents ${duyet && choN > 0 ? 'min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]' : ''}`}>
+          <div className={`grid items-stretch gap-4 max-sm:contents ${coKhoiDuyet ? 'min-[1100px]:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]' : ''}`}>
             <div className="max-sm:order-2"><KhoiGiaoVien quaHan={quaHan} tenCn={tenCn} onMo={setPanel} /></div>
-            {duyet && choN > 0 && <div className="max-sm:order-3">{hop.error ? <ErrorState message={hop.error.message} onRetry={hop.reload} /> : !hop.data ? <Skeleton rows={3} /> : (
-              <Card bodyClass="p-0" className="h-full" title={<span className="inline-flex items-baseline gap-2">{t('Chờ duyệt')}<span className="text-[13px] font-medium text-dim tabular-nums">{hop.data.the.length}</span></span>}
+            {coKhoiDuyet && <div className="max-sm:order-3">{hop.error ? <ErrorState message={hop.error.message} onRetry={hop.reload} /> : !hop.data ? <Skeleton rows={3} /> : (
+              <Card bodyClass="p-0" className="h-full" title={<span className="inline-flex items-baseline gap-2">{t('Chờ duyệt')}<span className="text-[13px] font-medium text-dim tabular-nums">{choN}</span></span>}
                 action={<Link to="/cong-viec?nhom=duyet" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Công việc')} ›</Link>}>
                 <DongDuyet ds={hop.data.the.slice(0, 5)} onMo={(y) => setDuyetMo({ dau: y })} />
                 {hop.data.the.length > 5 && <button type="button" className="link w-full border-0 border-t bg-transparent px-4 py-2.5 text-left text-[13px] max-sm:min-h-[44px]" style={{ borderColor: 'var(--line)' }}
@@ -406,7 +406,7 @@ export function TongQuanHead({ d, congTac }: { d: TongQuanV5Data; congTac: React
         </div>
       )}
       {panel && <PanelDsViec {...panel} onDong={() => setPanel(null)} />}
-      {duyetMo && hop.data && <PanelDuyet ds={hop.data.the} dau={duyetMo.dau} onDong={() => setDuyetMo(null)} onXong={() => lamMoiDuyet(hop.reload)} />}
+      {duyetMo && hop.data && <PanelDuyet n={choN} branchId={d.branchId} dau={duyetMo.dau?.id ?? null} onDong={() => setDuyetMo(null)} />}
     </>
   );
 }

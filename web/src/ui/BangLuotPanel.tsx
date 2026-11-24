@@ -383,7 +383,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
     if (c.key === 'lop') return lkLop(h.classId, h.lop);
     if (c.key === 'ngay') return <span className="tabular-nums">{ddmm(h.ngay)}</span>;
-    if (c.key === 'vp') return <b className="font-semibold">{dich(h.nhom)}</b>;
+    if (c.key === 'vp') return <b className="cat-2d font-semibold" title={dich(h.nhom)}>{dich(h.nhom)}</b>;
     if (c.key === 'nguoi') return h.nguoiGhi ?? mo('—');
     return ttV(h);
   };
@@ -426,11 +426,12 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const MAU_KQ: Record<string, string> = { ok: 'text-ok', warn: 'text-soon', danger: 'text-bad', muted: 'text-faint' };
   const cotP: DinhNghiaCot[] = [
     /* Panel 820, ô 14 (`day`). Tuần bắt đầu PA = dòng phụ dưới Lớp ("từ W3 JUL"). Nghĩa vụ (Phân tích GV, một GV): bỏ cột Người phụ trách — luôn là chính GV đang xem. */
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 60 },
+    /* PTA 25/11 (panel 720 không đủ 6 cột): Lớp (+ "từ tuần") xuống dòng phụ dưới tên HV, không còn cột riêng. */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 60 },
     { key: 'pa', nhan: 'PA', kieu: 'chu', linhHoat: true },
     ...(nghiaVu
       ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 104 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 104 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 124 }] as DinhNghiaCot[]
-      : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Người phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
+      : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
   ];
   const oP = (h: HP, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
@@ -641,7 +642,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
               : vpk ? (tatVl.length ? <Bang deu day ten={tieuDe} cot={cotVl} hang={pt.cat(tatVl)} khoa={(h) => h.id} oCua={oVl} khung={false} />
                 : tatVe.length ? <Bang deu day ten={tieuDe} cot={cotVe} hang={pt.cat(tatVe)} khoa={(h) => h.id} oCua={oVe} khung={false} />
                 : <Bang deu day ten={tieuDe} cot={cotVHien} hang={pt.cat(tatV)} khoa={(h) => h.id} oCua={oV} phuCua={(h, c) => (c.key === 'vp' && h.moTa ? h.moTa : c.key === 'ten' ? lkLop(h.classId, h.lop) : null)} khung={false} theRieng={theV} />)
-              : pak ? <Bang deu day ten={tieuDe} cot={cotP} hang={pt.cat(tatP)} khoa={(h) => h.id} oCua={oP} phuCua={(h, c) => (c.key === 'pa' && h.moTa ? h.moTa : c.key === 'lop' && h.batDau && !nghiaVu ? t('từ {tuan}', { tuan: tuanLich(h.batDau, homNay) }) : null)} khung={false} theRieng={theP} />
+              : pak ? <Bang deu day ten={tieuDe} cot={cotP} hang={pt.cat(tatP)} khoa={(h) => h.id} oCua={oP} phuCua={(h, c) => (c.key === 'pa' && h.moTa ? h.moTa : c.key === 'ten' ? <>{lkLop(h.classId, h.lop)}{h.batDau && !nghiaVu && <> · {t('từ {tuan}', { tuan: tuanLich(h.batDau, homNay) })}</>}</> : null)} khung={false} theRieng={theP} />
               : bt ? nhomB.map((g) => (
                 /* A3: tên chương trình (khi panel có hơn một) trên mỗi bảng. */
                 <section key={g.ct} className="grid gap-1.5" aria-label={g.ct}>

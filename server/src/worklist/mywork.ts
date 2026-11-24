@@ -802,10 +802,11 @@ export const cauPaGhiKetQua = (them = '', cot = '') =>
               COALESCE(cur.class_id, a.class_id) AS eff_class_id,   -- PR-PA (§8): lớp HIỆN TẠI trước, như LOP_CUA_CASE
               COALESCE(cc.branch_id, ac.branch_id) AS eff_branch_id,
               COALESCE(cc.code, ac.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind
+              s.full_name, a.attempt_no, a.kind AS attempt_kind, rp.week_start AS tuan_thi   -- tuần thi của bài sinh Case (Công việc ghi "W3 AUG - MT2 · …", như Mô tả Case); 0 câu thêm
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
          LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
          LEFT JOIN classes ac ON ac.id = a.class_id
@@ -1237,7 +1238,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: u, paId: iv.id,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
       classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
-      attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null,
+      attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null, tuanThi: iv.tuan_thi ?? null,
       caseId: iv.case_id as number, level: levelOf(iv),
       contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
       reason: [tenPa, iv.kind === 'bo_tro' && iv.nhom_bo_tro && (monCuaNhom.get(iv.nhom_bo_tro)?.length ?? 0) > 1
@@ -1276,7 +1277,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: urgencyOf(han, today), paId: iv.id,
         studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên', classId: iv.eff_class_id ?? null, classCode: iv.class_code ?? null,
-        attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null, caseId: iv.case_id as number, level: levelOf(iv),
+        attemptId: iv.attempt_id ?? null, attemptNo: iv.attempt_no ?? null, tuanThi: iv.tuan_thi ?? null, caseId: iv.case_id as number, level: levelOf(iv),
         contextLabel: nhanDot(iv.attempt_kind, iv.attempt_no), count: null,
         reason: tenPa,
         tieuDe: `Ghi kết quả PA${sauCham(iv.topic, ctCua(iv.eff_class_id))}`, phu: duoiKyNang(iv.topic, ctCua(iv.eff_class_id)).trim(), actionLabel: 'Ghi kết quả PA',
@@ -1437,7 +1438,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       key: `support:${c.id}`, group: 'no_plan', urgency: u,
       studentId: c.eff_student_id, studentName: c.full_name ?? 'Học viên',
       classId: c.eff_class_id ?? null, classCode: c.class_code ?? null,
-      attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null,
+      attemptId: c.attempt_id ?? null, attemptNo: c.attempt_no ?? null, tuanThi: c.tuan_thi ?? null,
       caseId: c.id as number, level: levelOf(c),
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
