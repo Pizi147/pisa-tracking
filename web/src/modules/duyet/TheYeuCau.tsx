@@ -40,7 +40,7 @@ const DeXuatSuaPanel = lazyTai(() => import('./DeXuatSuaPanel.tsx').then((m) => 
  */
 type O = { loai: 'tu-choi' | 'tra-loi' | 'ghi-chu' | 'tuan' | 'sua' | 'sua-tra-loi' | 'rut' } | null;
 
-export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan, chanEl, dong, lenh, onO }: {
+export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemPa, panel, moSan, chanEl, dong, lenh, onO, boKetQua }: {
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết).
    *  `huy` = máy chủ báo quyết định vừa rồi còn Huỷ được (Q-RL2c: cờ `coTheHuy` trả về sau Duyệt / Từ chối). */
@@ -68,6 +68,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   lenh?: { loai: 'duyet' | 'tu-choi' | 'tra-loi'; n: number };
   /** Ô lý do / trả lời đang mở — dòng khoá nút và không gập khi còn chữ đang gõ. */
   onO?: (dang: boolean) => void;
+  /** v26: Yêu cầu của tôi đã hiện phản hồi ở dòng phụ — phần mở không lặp lại hàng "Kết quả". */
+  boKetQua?: boolean;
 }) {
   const toast = useToast();
   const { homNay, ngan } = useNgayNghiepVu();
@@ -335,7 +337,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               </span>
             </>}
             {(yThuc || yc.loai === 'sua_khai_bac') && cho && yc.hanDuyet && <><span>{t('Hạn tự chốt')}</span><span><DemNguocYThuc han={yc.hanDuyet} /></span></>}
-            {!cho && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
+            {!cho && !boKetQua && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
             {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
           </div>
           {viecPhu && (
