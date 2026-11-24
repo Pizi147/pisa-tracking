@@ -55,7 +55,8 @@ export const TienDo = ({ so, title, ti }: { so: ReactNode; title?: string; ti?: 
  * CỘT CHUNG của Lịch Test (v23 L1: mũi tên + Lớp 256 · Đợt giãn · Hạn chấm 140 · Tiến độ 180 · Trạng thái / nút 180 — NHẸ HƠN bỏ cột Môn) — hàng Quá hạn chấm và hàng lớp
  * cùng một bộ cột để thẳng hàng. LICH-TEST-GON (chủ SP 19/11): bỏ cột "Còn chờ"; cột Đợt giãn, Tiến độ rộng đủ chỗ cho thẻ "n bài chờ duyệt dời".
  */
-export const COT_LICH_TEST = [256, null, 140, 180, 180] as const;
+/* Chủ SP 25/11 (cân đối cột, thắng "Đợt giãn" 19/11): Lớp + Đợt vừa nội dung, Hạn chấm · Tiến độ · Trạng thái chia đều phần còn lại, cột cuối sát phải. */
+export const COT_LICH_TEST = [256, 220, null, null, null] as const;
 export const ColLichTest = () => <colgroup>{COT_LICH_TEST.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>;
 /** Hàng tiêu đề cột chung (v23 L1: MỌI nhóm có đầu cột, cùng chữ) — khối Quá hạn chấm đổi cột 4 thành "Còn lại" (chỉ biết số bài còn nợ). */
 export const DauCotLichTest = ({ cot4 = t('Tiến độ') }: { cot4?: string }) => (

@@ -372,7 +372,7 @@ export default function MockDetailPage() {
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
             <NhanGt n={t('Lớp lúc Test')} g={<LopLucTest lop={d.classId !== null && d.classCode ? { id: d.classId, code: d.classCode } : null} nay={d.lopHienTai ?? null} />} />
-            <NhanGt n={t('Lịch')} g={<span className="tabular-nums">{d.period ? tuanLich(d.period.weekStart, homNay) : t('Chưa chốt tuần')}</span>} />
+            {!d.period && <NhanGt n={t('Lịch')} g={<span className="tabular-nums">{t('Chưa chốt tuần')}</span>} />}
             {!d.mt0 && <NhanGt n="Target" g={<TargetText band={d.targetAtAttempt} kck={d.cycle.khongCamKet} />} />}
             {!d.mt0 && <NhanGt n={t('Kỳ vọng MT{attemptNo}', { attemptNo: d.attemptNo })} g={<span className="tabular-nums">{fmtBand(d.result.expectation)}{laRf && d.result.expectation !== null ? ' = Target' : ''}</span>} />}
           </div>
@@ -929,7 +929,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
             <div role="cell" className="min-w-0 md:col-start-5 md:row-start-1">
               {!r.required || !coDiemCells.length ? <span className="text-slate-500 max-md:hidden">—</span>
                 : coDiemCells.every((c) => c.nhanXet) ? <span className="text-slate-300">{[t('Có'), ...nguoiNx].join(' · ')}</span>
-                : <span className={cells.some((c) => c.thieuNhanXet) ? 'font-semibold text-soon' : 'text-slate-500'}>{t('Chưa nhận xét')}</span>}
+                : cells.some((c) => c.thieuNhanXet) ? <span className="font-semibold text-soon">{t('Chưa nhận xét')}</span> : <span className="text-slate-500 max-md:hidden">—</span>}
             </div>
             <div role="cell" className="min-w-0 md:col-start-6 md:row-start-1">
               {!cs.length ? <span className="text-slate-500 max-md:hidden">—</span> : (

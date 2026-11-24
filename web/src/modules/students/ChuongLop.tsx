@@ -83,7 +83,6 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
         <h3 className="m-0 text-[14px] font-semibold text-slate-100">
           {t('{n} lớp · từ {tuan} · {so} tuần', { n: chuong.length, tuan: tuanLich(chuong[0].tu, homNay), so: tongTuan })}
         </h3>
-        <span className="text-[12px] text-slate-400">{dienThoai ? t('Chương đang học mở sẵn; chương cũ bấm để mở') : t('Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau')}</span>
       </div>
 
       {dienThoai ? <ChuongDienThoai chuong={chuong} homNay={homNay} onChon={onChon} /> : (

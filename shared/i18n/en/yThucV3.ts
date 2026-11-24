@@ -19,6 +19,7 @@ export const EN_Y_THUC_V3 = {
   'Các em khác': 'Other students',
   'Các em': 'Students',
   '{n} HV · theo tên': (b) => `${b.n} students · by name`,
+  '{n} HV · không có vi phạm chờ · theo tên': (b) => `${b.n} students · nothing pending · by name`,
   'Không có vi phạm chờ': 'Nothing pending',
   'Chưa có vi phạm': 'No incidents',
   'Không tải được lịch sử.': 'Could not load history.',

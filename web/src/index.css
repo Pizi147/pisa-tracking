@@ -1951,6 +1951,8 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .lt-bang tr.lt-hang > td { background-color: transparent; height: 52px; padding: 6px 12px; border-top: 1px solid var(--line); font-weight: 400; font-size: 14px; vertical-align: middle; }
   .lt-bang > thead + tbody > tr.lt-hang > td { border-top: 0; }
   .lt-bang tr.lt-hang > td:last-child { padding-right: 16px; }
+  /* Cột cuối (Trạng thái / nút) sát mép phải, cùng đầu cột — chỉ hàng lớp, không đụng hàng lưới mở (`tr.lt-r-dai`). */
+  @media (min-width: 1024px) { .lt-bang > thead > tr.lt-cot > th:last-child, .lt-bang tr.lt-hang > td:last-child { text-align: right; } }
   .lt-bang tr.lt-hang:not(.dang-mo) > td:first-child { box-shadow: none; }
   .lt-bang tr.lt-hang.dang-mo > td { background-image: linear-gradient(color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), color-mix(in srgb, var(--accent-soft) 55%, var(--surface))); }
   .lt-ma { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; text-decoration: none; }

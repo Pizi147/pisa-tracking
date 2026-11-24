@@ -557,7 +557,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           )}
           {emKhac.length > 0 && (
             <>
-              {dauNhom(emCho.length ? t('Các em khác') : t('Các em'), t('{n} HV · theo tên', { n: emKhac.length }))}
+              {dauNhom(emCho.length ? t('Các em khác') : t('Các em'), t('{n} HV · không có vi phạm chờ · theo tên', { n: emKhac.length }))}
               <div className="mx-3 overflow-hidden rounded-[10px] border max-sm:mx-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
                 {emKhac.map((e) => (
                   <DongEmGon key={e.studentId} id={`yt-em-${e.studentId}`} hv={hvEm(e.studentId)} mo={moLs.has(e.studentId) || moHv === e.studentId}>
@@ -565,8 +565,8 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
                     <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 px-4 py-2.5 text-sm text-slate-400 max-sm:px-3 max-sm:pt-0">
                       {e.soLs > 0
                         ? <>{thanhLs(e.studentId)}<span>{nhacGan.some((x) => x.studentId === e.studentId)
-                          ? t('{n} nhắc nhở · không việc chờ', { n: nhacGan.filter((x) => x.studentId === e.studentId).length }) : t('Không có vi phạm chờ')}</span></>
-                        : <span><span aria-hidden className="text-ok">✓ </span>{t('Chưa có vi phạm')}</span>}
+                          ? t('{n} nhắc nhở · không việc chờ', { n: nhacGan.filter((x) => x.studentId === e.studentId).length }) : null}</span></>
+                        : <span><span aria-hidden className="text-ok">✓</span><span className="sr-only">{t('Chưa có vi phạm')}</span></span>}
                     </div>
                     {moLs.has(e.studentId) && khungLs(e.studentId)}
                   </DongEmGon>
