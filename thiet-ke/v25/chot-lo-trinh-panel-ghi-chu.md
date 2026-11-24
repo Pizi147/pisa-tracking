@@ -1,6 +1,6 @@
 # v25 · Chốt lộ trình — panel 720 + trang Cuối khoá cân cột — ghi chú
 
-Mockup: `chot-lo-trinh-panel.html` (mở bằng trình duyệt; mục lục A · A 1280 · A 375 · B). Ảnh: `anh/chot-lo-trinh-*.png` (12 ảnh).
+Mockup: `chot-lo-trinh-panel.html` (mở bằng trình duyệt; mục lục A · A 1280 · A 375 · C · B). Ảnh: `anh/chot-lo-trinh-*.png` (16 ảnh).
 Dữ liệu bịa: lớp **MB FOU 21**, 6 em, Final W1 SEP, hạn chốt 27/08/2026 (T5 tuần trước Final, N20), hôm nay thứ Hai 14/09/2026 (W2 SEP); QL Nguyễn Khánh Vy.
 Chưa có code. Chờ chủ SP duyệt (CLAUDE.md: màn / luồng đổi phải có mockup duyệt trước).
 
@@ -19,14 +19,17 @@ Chưa có code. Chờ chủ SP duyệt (CLAUDE.md: màn / luồng đổi phải 
 |---|---|
 | A1 · 1440 | Mặc định: gợi ý máy đã điền; dải Lên BE đã có lớp + tuần; Ngọc đã chốt Lên FT, MT0 + Kỳ vọng FT ở hộp dưới dòng; Gia Huy, Thịnh chưa có hướng; Khoa chờ chọn lớp |
 | A2 · 1440 | Chọn tất cả (6 em) + "Ngay hôm nay": khung vàng, chân nêu tên em sẽ chuyển ngay |
-| A3 · 1440 | Chọn dải Lên BE (3 em): thanh Áp + hộp chọn lớp có "+ Mở lớp mới…"; dòng "Reset bậc vi phạm" ở chân (N36) |
+| A3 · 1440 | Chọn dải Lên BE (2 em): thanh Áp + hộp chọn lớp có "+ Mở lớp mới…"; dòng "Reset bậc vi phạm" ở chân (N36) |
 | A4 · 1440 | Chặn: Khoa chờ chọn lớp · Gia Huy Tạm dừng thiếu lý do · Ngọc Không đạt / Học viên thiếu phương án · Thịnh Lên FT hiện Target; chân "2 em cần sửa", Chốt chỉ 2 em hợp lệ |
 | A5 · 1440 | Sau Chốt: 2 em chuyển ngay (rời lớp, thông báo **Hoàn tác**), 1 em lỗi → danh sách tự lọc "Lỗi", chân "Thử lại 1 em" |
 | A6 · 1440 | Lọc Chưa chốt rỗng: "Mọi em đã chốt", chân thành "Việc tiếp ›"; menu ⋯ mở |
 | A7 · 1280 | Danh sách 520 (dòng hai tầng) \| panel 720; hộp ⓘ mở; Ngọc đang "Sửa" (Bỏ sửa · Huỷ quyết định) |
 | A8 · 375 | Panel toàn màn, thẻ mỗi em; "Sửa" mở ô tại thẻ (Thịnh đang mở) |
 | A9 · 375 | Chọn 2 em: tấm Áp dưới, trên chân hai nút |
-| B1–B3 | Trang Cuối khoá cân cột: 1440 (đang chọn 2 em, thanh Áp một hàng) · 1280 · 375 |
+| C1 · 1440 | Bàn giao **thay trong khe 720** (chip Chờ bàn giao của Ngọc): ‹ Quay lại, dải "đang giữ nguyên", phiếu tự điền + mỗi môn một câu + Nhận xét chung → Xác nhận bàn giao |
+| C2 · 1440 | Mở lớp mới **thay trong khe 720** ("+ Mở lớp mới…"): chương trình · chi nhánh · số lớp · tuần khai giảng · phân công → Mở lớp, lớp điền sẵn vào ô Lớp của 2 em |
+| C3 · C4 · 375 | Hai màn trên toàn màn |
+| B1–B3 | Trang Cuối khoá **cùng bảng với panel** (MT0 + Kỳ vọng FT gập vào hộp dưới dòng), khung tối đa 1100 px canh giữa: 1440 · 1280 · 375 |
 
 ## 3. Panel: thiết kế
 
@@ -39,27 +42,29 @@ Chưa có code. Chờ chủ SP duyệt (CLAUDE.md: màn / luồng đổi phải 
 - **Ngoại lệ**: sửa ngay trên dòng (ô Bước tiếp / Lớp / Tuần của em) — cùng phép Áp-rồi-sửa như trang, em ngoài dải tự thành ô viền.
 - **Hộp dưới dòng** (chỉ khi cần, cùng bề ngang từ cột Học viên): em đã chốt Lên FT → MT0 (✓/✗ band · mốc) + Kỳ vọng FT [Đạt][Không đạt] + Nguyên nhân + Kỹ năng / Phương án; Tạm dừng → "Có thể quay lại học" + tuần xem lại + Lý do; Lên FT chưa có Target → Target + KCK; em đã chốt đang "Sửa" → Bỏ sửa · Huỷ quyết định. Lỗi báo ngay cạnh ô sai (chữ + ⚠, không chỉ màu).
 - **Chân dính** (khung chung, trái = "Khi chốt", phải = Lưu nháp · Chốt · n em): dòng 1 = n em sẵn sàng · n → lớp · bắt đầu tuần; dòng 2 = tác động (Case bổ trợ, Báo PH, Case Tutor FT) và việc còn thiếu (⚠ chờ chọn lớp · cần sửa · chưa có hướng); dòng 3 chỉ khi có em đang có bậc vi phạm = ô "Reset bậc vi phạm". Một em lỗi giữ dòng + lý do, chân thành "Thử lại n em" (Đóng · Thử lại).
-- **Ngay hôm nay** (N22 ③): không hộp xác nhận thêm — khung vàng "⚠ Chuyển ngay khi chốt · có Hoàn tác" ở thanh Áp, **tên em sẽ chuyển** nằm ngay ở chân (A2), sau Chốt có thông báo **Hoàn tác** một lời gọi cho cả lô.
+- **Ngay hôm nay** (N22 ③) — **lựa chọn cho chủ SP biết:** bản N22 ③ cũ có hộp xác nhận nêu tên em; code hiện hành (DUONG-LUI-2) bỏ hộp, thay bằng Hoàn tác; mockup theo code. Không hộp xác nhận thêm — khung vàng "⚠ Chuyển ngay khi chốt · có Hoàn tác" ở thanh Áp, **tên em sẽ chuyển** nằm ngay ở chân (A2), sau Chốt có thông báo **Hoàn tác** một lời gọi cho cả lô.
 - **Số đo** (Playwright, 12 khung, máy dò chữ tràn ô / lòi khung / lề phải): **0 lỗi**. Panel: tâm cột Final lệch **0 px** giữa các dòng, ba ô 112 / 112 / 112, lề phải 15 px. Trang 1440: tên 259,4 · Final, MT0, Kỳ vọng FT mỗi cột 129,7 (căn giữa) · ba ô 194,5 · lề phải 16 px; 1280: tên 230 · 112,3 · 168,4 · 16 px.
 
-## 4. Trang Cuối khoá: cân cột (B)
+## 4. Trang Cuối khoá: cùng bảng với panel, cân cột (B)
+
+PTA 25/11: gập MT0 + Kỳ vọng FT vào hộp dưới dòng như panel, bỏ hai cột gần như trống. Trang và panel dùng MỘT lưới (cùng subgrid, cùng hộp dưới dòng, cùng thanh công cụ + thanh Áp); trang chỉ rộng hơn. Bảng chỉ còn 5 cột nên **thu khung** (NH9 "bảng ít cột thì thu khung bảng"): khung trang tối đa 1100 px, canh giữa.
 
 | | Trước (`CuoiKhoaLop.tsx` `LUOI`) | Sau |
 |---|---|---|
-| Cột | 28 · tên `minmax(260,1fr)` · 92 · 92 · 92 · 148 · 148 · 148 | 28 · tên **2 phần** (≥ 230) · Final · MT0 · Kỳ vọng FT **1 phần mỗi cột** · Bước tiếp · Lớp · Tuần **1,5 phần mỗi ô** |
-| Tên ở 1440 (thẻ rộng 1392) | ≈ 514 px (37 % bề ngang, chữ tên dài nhất ≈ 170) — nuốt hết chỗ thừa | **259 px** |
-| Tên ở 1280 | ≈ 354 px | **230 px** |
-| Cột số | 92 px, dính trái cột tên | 129,7 (1440) / 112,3 (1280), căn giữa |
-| Ô nhập | 148 px | 194,5 (1440) / 168,4 (1280) |
-| Ô cuối | sát lề 16 | sát lề 16 |
+| Cột | 28 · tên `minmax(260,1fr)` · 92 · 92 · 92 · 148 · 148 · 148 (8 cột, MT0 + Kỳ vọng 5/6 ô "—") | 28 · tên · Final % · Bước tiếp · Lớp · Tuần (5 cột) |
+| Tên ở 1440 (thẻ 1392) | ≈ 514 px, nuốt chỗ thừa | **210 px** (chữ dài nhất ≈ 174: thừa 36) |
+| Final | 92 | 88 (nội dung 52; số căn giữa) |
+| Ba ô nhập | 148, dính trái | **212 bằng nhau** (máy đo) |
+| Ô cuối | sát lề 16 | sát lề 16 (đo 17 gồm viền) |
+| 1280 | tên ≈ 354 | như 1440 (khung 1100 canh giữa; thẻ 1232 không còn rộng hơn) |
 
-Cùng bảng, cùng thao tác, cùng hộp dưới dòng (Kỳ vọng FT từ cột Kỳ vọng tới Tuần). 375: thẻ như panel.
+Số đo (Playwright, cùng phép đo như panel): track 2 · 28 · 210 · 88 · 212 · 212 · 212 · 2; **không cột nào thừa > 40 px** so với nội dung; tâm cột Final lệch 0 px giữa các dòng. 375: thẻ như panel.
 
 ## 5. Bỏ / gộp — và vì sao
 
 | Thông tin ở trang | Ở panel | Lý do |
 |---|---|---|
-| Cột MT0 + cột Kỳ vọng FT cho mọi em | **Chỉ em Lên FT**, trong hộp dưới dòng (MT0 · mốc · Kỳ vọng) | 5/6 em ô "—"; Kỳ vọng chỉ có ở em đã Lên FT (N17 / N22) và chỉ QL chốt |
+| Cột MT0 + cột Kỳ vọng FT cho mọi em (panel **và trang**) | **Chỉ em Lên FT**, trong hộp dưới dòng (MT0 · mốc · Kỳ vọng) | 5/6 em ô "—"; Kỳ vọng chỉ có ở em đã Lên FT (N17 / N22) và chỉ QL chốt |
 | Dải "Kỳ vọng FT · n em đạt · n em chờ MT0" | Bỏ | Đếm lại điều đã thấy ở từng hộp; luật Kỳ vọng FT vào ⓘ |
 | "‹ MB FOU 21" quay lại, tiêu đề "Cuối khoá · MB FOU 21" | ✕ + danh sách ở lại; tiêu đề "Chốt lộ trình" (đúng tên việc) | Không còn đổi trang |
 | Meta "FOU · 6 em · Final W1 SEP · GVCN …" | Còn mã lớp · n/n đã chốt · hạn; phần còn lại vào ⓘ | Không dùng để quyết định |
@@ -86,26 +91,33 @@ Không bỏ thao tác nào. Mọi thao tác TRƯỚC → SAU:
 | Kỳ vọng FT (Đạt / Không đạt, nguyên nhân, kỹ năng, phương án) | Cột + hộp dưới dòng | Giữ, trong hộp dưới dòng của em Lên FT |
 | Target + KCK, Tạm dừng (quay lại học, tuần xem lại), Lý do | Hộp dưới dòng | Giữ |
 | Sửa · Bỏ sửa · Huỷ quyết định (có lý do, Hoàn tác) | Có | Giữ (A7) |
-| Chip Chờ bàn giao → mở Bàn giao | Có | Giữ — xem [XM1] |
+| Chip Chờ bàn giao → Bàn giao | Panel riêng | Thay trong khe 720, có ‹ Quay lại (C1, C3) |
 | Hoàn tác chuyển ngay | Thông báo | Giữ (A5) |
-| Mở trang Cuối khoá đầy đủ | — | Mới: ⋯ → "Mở ở trang riêng ›" — [XM4] |
+| Mở trang Cuối khoá đầy đủ | — | Mới (PTA đồng ý): ⋯ → "Mở ở trang riêng ›" |
 | Việc tiếp sau khi xong | — | Mới: chân thành "Việc tiếp ›" (khung chung) |
 
-## 6. Còn mở — cần PTA / chủ SP xem ([XM])
+## 6. Đã chốt (PTA Plan 25/11) và còn mở
 
-- **[XM1] Panel lồng panel.** Hai chỗ hiện mở panel riêng: chip Chờ bàn giao (`BanGiaoPanel`) và "+ Mở lớp mới…" (`ClassCreatePanel`). Luật "không panel lồng panel": đề xuất **thay trong cùng khe 720** có "‹ Quay lại Chốt lộ trình", phần đã sửa chưa lưu giữ nguyên (đã có chặn rời nháp); lớp mới tạo xong điền thẳng vào ô lớp. Mockup chưa vẽ hai màn thay này (khuôn là khung panel v24).
-- **[XM2] Xác nhận nêu tên em (N22 ③) vs Hoàn tác (DUONG-LUI-2, code hiện hành).** Mockup theo code: không hộp xác nhận; tên em chuyển ngay nằm ở chân + Hoàn tác. Muốn hộp xác nhận thì nói; mất thêm một bấm.
-- **[XM3] Panel chỉ cho QL** (`coTheRaLenh`). GVCN (nhận xét) và vai chỉ đọc không có việc "Chốt lộ trình" trong Công việc, nên họ vẫn dùng trang Cuối khoá (B) — giả định, chưa vẽ panel cho họ.
-- **[XM4] ⋯ có hai mục:** "Mở ở trang riêng ›" (mới, lối ra bảng rộng) và "Gia hạn" (khung chung, [XM2] của v24). Nếu chủ SP muốn ⋯ chỉ 1 mục thì bỏ "Mở ở trang riêng".
-- **[XM5] Nhãn ô.** "Tạm dừng" thay cho "Tạm dừng / Kết thúc học" trong ô 112 px; menu và tooltip giữ đủ chữ. Nếu muốn ô rộng hơn thì giảm cột Học viên (còn 177 → ≥ 160 mới không cắt tên dài nhất).
-- **[XM6] Nhóm "Chờ Final" chốt trước Final** được (N22), mockup hiện nhãn "Chờ Final" nhỏ dưới tên, không dải — giữ luật 11/11.
-- **[XM8] Trang giữ cột MT0 + Kỳ vọng FT** (đề bài: "cùng bảng") nhưng 5/6 em ô "—" (~20 % bề ngang). Khuyến nghị: trang cũng gập hai cột này vào hộp dưới dòng như panel cho một kiểu duy nhất — chủ SP quyết.
-- **[XM9] A5:** sau khi 2 em chuyển ngay rời lớp, mẫu số "n/6" thành "n/4" (lớp còn 4 em).
+Đã chốt:
+
+- **Không panel lồng panel** (luật CLAUDE.md): chip Chờ bàn giao và "+ Mở lớp mới…" **thay nội dung ngay trong khe 720**, có "‹ Quay lại" về Chốt lộ trình, giữ phần đang sửa → C1 – C4. Đã có mẫu trên web: Bàn giao mở thay panel Lộ trình ở Tổng quan, nút "‹ Lộ trình" (`quayLai`).
+- **Hoàn tác, không hộp hỏi** (theo code, bỏ N22 ③ cũ) — ghi ở mục 3.
+- Panel **chỉ cho QL**; vai khác (GVCN nhận xét, vai chỉ đọc) dùng trang.
+- ⋯ có "Mở ở trang riêng ›" + "Gia hạn".
+- Trang Cuối khoá gập MT0 + Kỳ vọng FT như panel, bỏ hai cột trống (mục 4).
+
+Còn mở:
+
+- **[XM5] Nhãn ô.** "Tạm dừng" thay cho "Tạm dừng / Kết thúc học" trong ô 112 px; menu và tooltip giữ đủ chữ.
+- **[XM6] Nhóm "Chờ Final"** chốt trước Final được (N22), mockup hiện nhãn "Chờ Final" nhỏ dưới tên, không dải — giữ luật 11/11.
 - **[XM7]** Tên em, nhãn, hạn trong mockup là minh hoạ; khi code lấy đúng trường đang có.
+- **[XM9] A5:** mẫu số giữ "3/6 đã chốt" (2 em chuyển ngay + Ngọc); nếu máy chủ chỉ đếm em còn ở lớp thì thành "1/4".
+- **[XM10] Khung trang 1100 px canh giữa** ở 1440 / 1280 (hai bên trống ~ 170 / 70 px) — hệ quả của "bảng ít cột thì thu khung". Muốn trang rộng hết khung thì ô nhập và cột tên sẽ lại giãn.
+- **[XM11] C1 / C2 là bản rút gọn** của Bàn giao (`BanGiaoPanel`, 3 dạng theo người mở) và Mở lớp (`ClassCreatePanel`): chỉ vẽ khuôn thay-trong-khe và nút quay lại; ruột từng màn giữ nguyên như web.
 
 ## 7. Skill đã chạy
 
-- `impeccable`: `context` → `shape` (khung dưới) → `critique` (một lượt rà độc lập bằng ảnh, không nhận kết luận của người vẽ): **panel 29/40, trang 26/40, không P0**; P1 đã sửa: nhóm Lên BE lẫn em đã chốt · ba tên cho "Ngay hôm nay" · "sẵn sàng" tính khác nhau giữa B1 / B2 · chip lọc mất ở 375 · vùng bấm 375 · Kỳ vọng FT lặp ba chỗ ở trang · P2 rẻ: chip lọc không sáng khi chưa lọc, ✓ ở chip đang chọn, em chưa hướng ghi "—", nhận xét GVCN 2 dòng, A6 bớt lặp "6/6" + lối "Xem lộ trình đã chốt ›", nút Ngay hôm nay đủ tương phản. Lượt 2 sau sửa: xem mô tả PR.
+- `impeccable`: `context` → `shape` (khung dưới) → `critique` (một lượt rà độc lập bằng ảnh, không nhận kết luận của người vẽ): **panel 29/40, trang 26/40, không P0**; P1 đã sửa: nhóm Lên BE lẫn em đã chốt · ba tên cho "Ngay hôm nay" · "sẵn sàng" tính khác nhau giữa B1 / B2 · chip lọc mất ở 375 · vùng bấm 375 · Kỳ vọng FT lặp ba chỗ ở trang · P2 rẻ: chip lọc không sáng khi chưa lọc, ✓ ở chip đang chọn, em chưa hướng ghi "—", nhận xét GVCN 2 dòng, A6 bớt lặp "6/6" + lối "Xem lộ trình đã chốt ›", nút Ngay hôm nay đủ tương phản. Sau ba lượt (có PTA 25/11 gập cột trang + hai màn C): lượt 2 panel 30 · màn C 28 · trang 28, P1 đã sửa (vùng bấm 375 đo ≥ 44, số đếm lỗi A4 một kiểu, dải "đang giữ nguyên" ở 375, cột tên trang). **Lượt 3 (cuối): panel 29 · màn C 30 · trang 29, 0 P0 / P1** — chưa chạm 35; P2 còn lại: hộp MT0 / Kỳ vọng rộng hơn nội dung ở trang, tấm Áp 375 chiếm ~45 % màn, "Chọn tất cả" vẫn chọn em đã chốt (cố ý: em Lên FT còn Kỳ vọng chờ), thuật ngữ "Reset bậc vi phạm" / KCK / "Điền thay" lấy đúng chữ web đang dùng.
 - `ui-ux-pro-max` (domain ux): hành động chính một chỗ (Chốt), lỗi cạnh ô sai, vùng bấm 44 ở 375, trạng thái không chỉ màu (✓ ✗ ⚠ + chữ).
 - Chuẩn nội bộ: NH9 luật cột, NH10 khung 720, N17 / N20 / N21 / N22 / N25 / N36 / N71, v24 `cong-viec-gon-ghi-chu.md`.
 
