@@ -54,7 +54,7 @@ function DongYc({ y, mo, nhan, onBam, onXong }: { y: TheYeuCauDto; mo: boolean; 
     <li className="cvA-sub" id={`the-${y.id}`} style={nhan ? { boxShadow: 'inset 0 0 0 2px var(--accent-strong)' } : undefined}>
       <div data-hd="yc-dong" className={`cvA-v ${mo ? 'dang-chon' : ''}`} onClick={onBam}>
         <span className="cvA-lop">{y.lop}</span>
-        <span className="cvA-ai"><button type="button" className="cvA-ten" aria-expanded={mo} onClick={(e) => { e.stopPropagation(); onBam(); }}>{y.hocVien}</button></span>
+        <span className="cvA-ai"><button type="button" className="cvA-ten" aria-expanded={mo} aria-controls={mo ? `the-ct-${y.id}` : undefined} aria-label={[y.lop, y.hocVien, tin].filter(Boolean).join(' · ')} onClick={(e) => { e.stopPropagation(); onBam(); }}>{y.hocVien}</button></span>
         <span className="cvA-ct" title={tin}>{tin}</span>
         <span className={`cvA-hn ${muc === 'xa' ? '' : muc}`}>{muc === 'qua' && <DauQuaHan />}{cuoi}</span>
       </div>
