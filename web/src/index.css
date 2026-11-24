@@ -924,8 +924,15 @@
     .pn-bang .bang { table-layout: auto; }
     .pn-bang .bang col { width: auto !important; }
     .pn-bang .bang :is(th, td) { width: 1%; white-space: nowrap; }
-    .pn-bang .bang :is(th, td):is([data-kieu="ten"], [data-linh]) { width: auto; white-space: normal; overflow-wrap: anywhere; }
-    .pn-bang .bang :is(td[data-kieu="ten"], td[data-linh]) .bang-phu { white-space: normal; }
+    .pn-bang .bang :is(th, td)[data-linh] { width: auto; white-space: normal; overflow-wrap: anywhere; }
+    /* PTA 25/11: cột tên HV vừa TÊN dài nhất (không giành chỗ với cột chữ dài); cột linh hoạt (Vi phạm, PA, lý do) nhận phần dư, nhóm / mô tả tối đa 2 dòng, đủ chữ ở title. */
+    .pn-bang .bang :is(th, td)[data-kieu="ten"] { width: 1%; white-space: nowrap; }
+    [data-pn] .pn-than .pn-bang table.bang[data-deu] col[data-kieu="ten"] { width: 1% !important; }   /* thắng `--ten-pt` (40 % của cột tên) ở khối panel trên */
+    /* NH9 (chủ SP 25/11 "cân đối hàng cột"): cột số cùng bề rộng (đủ chữ "Chưa xử lý"), cột cuối căn phải sát mép panel. */
+    .pn-bang .bang :is(th, td)[data-kieu="so"] { min-width: 92px; }
+    [data-pn="so720"] .bang :is(th, td):last-child:not(:first-child, [data-linh]) { text-align: right; padding-right: 1.25rem; }
+    .pn-bang .bang td[data-linh] .bang-phu { white-space: normal; }
+    .pn-bang .bang td[data-linh] :is(.bang-phu, .cat-2d) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
     .pn-bang .bang > tbody > tr > td { padding-top: 0.45rem; padding-bottom: 0.45rem; }
   }
   .bang td[data-kieu="chip"] { white-space: nowrap; }
@@ -1588,9 +1595,10 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
    Số 0 / "—" không phải nút → không phủ, ô không bấm. Rê / focus: viền nhấn như ô mẫu GV "Việc của tôi ›". Ngoài @layer để thắng `relative` / `after:*` của `VUNG_BAM_SO`. */
 .ca-o { position: relative; }
-.ca-o :is(button, a).so-chinh { position: static; }
-.ca-o :is(button, a).so-chinh::after { content: ''; position: absolute; inset: 0; width: auto; height: auto; min-width: 0; transform: none; border-radius: inherit; }
+.ca-o.ca-o :is(button, a).so-chinh { position: static; }   /* `.ca-o.ca-o`: thắng `.o-so-hop .so-bam { position: relative }` (SO-TRON 24/11) — Tổng quan nằm trong `.o-so-hop`, lớp phủ cả ô bị co về 32 × 32 quanh số */
+.ca-o.ca-o :is(button, a).so-chinh::after { content: ''; position: absolute; inset: 0; width: auto; height: auto; min-width: 0; transform: none; border-radius: inherit; }
 .ca-o :is(button, a):not(.so-chinh) { position: relative; z-index: 1; }
+.ca-o:has(:is(button, a).so-chinh) { cursor: pointer; }
 .ca-o:has(:is(button, a).so-chinh:hover) { border-color: var(--accent); }
 .ca-o:has(:is(button, a).so-chinh:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -2183,6 +2191,20 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .dyc-kv > :nth-child(odd) { margin-top: 6px; }
     .dyc-tc .dyc-hang { display: grid; grid-template-columns: 1fr 1fr; }
     .dyc-hang .btn { min-height: 44px; justify-content: center; }
+  }
+  /* PANEL CHỜ DUYỆT Ở TỔNG QUAN (chủ SP 25/11, khung 720 → danh sách ~680 px: chưa đủ cho bộ cột 8 phần của tab, thừa cho dạng điện thoại): LƯỚI CỐ ĐỊNH cho MỌI dòng —
+     [ô tick 18, luôn giữ chỗ] [nội dung] [ngày 92 phải] [nút 176 phải]. Dòng ĐẦU cao 32 px (tick · tên em · ngày · nút CÙNG TÂM, ngày và nút cùng top);
+     lớp · việc và chip · người gửi là hai dòng dưới, cao cố định 22 / 24 px (dòng có chip và không chip cao bằng nhau). Chỉ trong `.dyc-panel` (HopChoDuyet `gon`). */
+  @container (min-width: 480px) and (max-width: 699px) {
+    .dyc-panel .dyc-dong { grid-template-columns: 18px minmax(0, 1fr) 176px; align-items: start; padding-top: 12px; padding-bottom: 12px; }
+    .dyc-panel .dyc-chon { height: 32px; align-items: center; }
+    .dyc-panel .dyc-mo { min-height: 0; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; row-gap: 2px; }
+    .dyc-panel .dyc-mo > .dyc-ai, .dyc-panel .dyc-mo > .dyc-hn { min-height: 32px; display: flex; align-items: center; }
+    .dyc-panel .dyc-mo > .dyc-hn { justify-content: flex-end; }
+    .dyc-panel .dyc-mo > .dyc-vd { min-height: 22px; line-height: 22px; }   /* không flex: giữ khoảng trắng sau "lớp ·" */
+    .dyc-panel .dyc-mo .dyc-duoi { min-height: 24px; margin-top: 0; align-items: center; }
+    .dyc-panel .dyc-nut { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; height: 32px; }   /* 176 = 2 nút 84 + 8: dòng một nút (Trả lời) vẫn thẳng cột */
+    .dyc-panel .dyc-nut .btn { height: 32px; }
   }
 }
 
