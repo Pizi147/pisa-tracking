@@ -111,9 +111,6 @@ export const DongGv = ({ ds }: { ds: readonly string[] | undefined }) => {
   return chu ? <small className="lt-gv" title={ds!.length > soTenHien(ds!) ? ds!.join(' · ') : undefined}>{chu}</small> : null;
 };
 
-/** Dòng nhỏ "Còn chờ: GV (môn) · …" ở ĐẦU phần lớp đã mở (1440 và 375). Rỗng thì không vẽ. */
-export const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim">{t('Còn chờ: {ds}', { ds })}</p> : null);
-
 /**
  * GIAM-COMPUTE C1 (chủ SP 21/11 "Làm C1"): lưới hàng lớp đang mở chỉ gắn (gọi `/classes/:id/cham`) khi tới gần khung nhìn — lề một màn trên / dưới. "Mở tất cả lớp"
  * trước bắn mọi lưới song song (mỗi request một máy Netlify → khởi động lạnh). Đã gắn thì giữ (cuộn đi không mất dữ liệu / ô đang gõ); `ngay` (hàng mở tay / theo
@@ -212,10 +209,9 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
             {(mo || (chuaLuu[k] ?? 0) > 0) && (
               <HangCon className={mo ? '' : 'hidden'}>
                 <td colSpan={soCot} className="lt-luoi !p-0">
-                  <DongConCho ds={conCho} />
                   <KhiToiGan ngay={conTro.has(k)}>
                     <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
-                      tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
+                      tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu} conCho={conCho}
                       datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
                       onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} luotChinh={nhanChinh} />
                   </KhiToiGan>
