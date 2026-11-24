@@ -107,11 +107,14 @@ function PanelDsViec({ tieuDe, phu, nhom, chan, onDong }: { tieuDe: string; phu?
             </h3>
             <ul className="m-0 list-none p-0">
               {g.viec.map((x) => {
+                /* Nhóm đã là tên lớp thì dòng KHÔNG nhắc lại "Lớp MB FT 101 ·" ở đầu (không chữ lặp đề mục). */
+                const [dau, ...con] = tenDong(x).split(' · ');
+                const tenDong1 = x.classCode && g.ten === x.classCode && con.length && dau.includes(x.classCode) ? con.join(' · ') : tenDong(x);
                 const chu = (
                   <>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-100">{tenDong(x)}</span>
-                      <span className="block text-[13px] text-dim">{[nhanLoaiTq(loaiTq(x)), x.studentName ? x.classCode : null, x.soBai ? t('thiếu {n} bài', { n: x.soBai }) : null].filter(Boolean).join(' · ')}</span>
+                      <span className="block text-sm font-semibold text-slate-100">{tenDong1}</span>
+                      <span className="block text-[13px] text-dim">{[nhanLoaiTq(loaiTq(x)), x.studentName && g.ten !== x.classCode && !tenDong(x).includes(x.classCode ?? '') ? x.classCode : null, x.soBai ? t('thiếu {n} bài', { n: x.soBai }) : null].filter(Boolean).join(' · ')}</span>
                     </span>
                     {x.due && <span className="shrink-0 text-right"><NgayHan han={x.due} /></span>}
                   </>

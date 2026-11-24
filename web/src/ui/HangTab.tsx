@@ -47,6 +47,8 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
   const hang = useRef<HTMLDivElement>(null);
   const [an, setAn] = useState<ReadonlySet<string>>(new Set());
   const [moThem, setMoThem] = useState(false);
+  /** Lề trái nút "Thêm ▾" = mép phải tab còn hiện cuối cùng + 4 px (nút nằm ngay sau tab, không trôi sát mép phải hàng để hở khoảng trống ở giữa). */
+  const [traiThem, setTraiThem] = useState<number | null>(null);
   const nutThem = useRef<HTMLButtonElement>(null);
   const menuThem = useRef<HTMLUListElement>(null);
   const [viTriThem, setViTriThem] = useState<{ top: number; right: number } | null>(null);
@@ -80,6 +82,9 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
       const gioiHan = het <= rong ? rong : rong - 124;   // 124 = nút "Thêm ▾" + badge (chỗ dành sẵn, có badge hay không cũng vậy)
       const ra = new Set(nut.filter((n) => n.getBoundingClientRect().right - goc > gioiHan).map((n) => n.dataset.tab!));
       setAn((a) => (a.size === ra.size && [...ra].every((k) => a.has(k)) ? a : ra));
+      const conHien = nut.filter((n) => !ra.has(n.dataset.tab!));
+      const cuoi = conHien.length ? Math.round(conHien[conHien.length - 1].getBoundingClientRect().right - goc) + 4 : null;
+      setTraiThem((x) => (x === cuoi ? x : cuoi));
     };
     tinh();
     const ro = new ResizeObserver(tinh);
@@ -143,7 +148,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
       })}
       {thuGon && an.size > 0 && (
         /* Không vòng focus: hàng tab cắt (overflow-x-clip) nên vòng chỉ lộ MÉP TRÁI thành một sọc (chủ SP 25/11); focus bàn phím = nền nhấn như mục menu. */
-        <span className="absolute inset-y-0 right-0 flex items-stretch" style={{ background: 'var(--bg)' }}>
+        <span className={`absolute inset-y-0 flex items-stretch ${traiThem == null ? 'right-0' : ''}`} style={{ background: 'var(--bg)', ...(traiThem == null ? {} : { left: traiThem }) }}>
           <button type="button" aria-haspopup="menu" aria-expanded={moThem} ref={nutThem} onClick={() => { const r = nutThem.current?.getBoundingClientRect(); if (r) setViTriThem({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMoThem(!moThem); }}
             className={`-mb-px inline-flex min-h-[44px] cursor-pointer appearance-none items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 text-sm font-semibold focus-visible:bg-[color:var(--accent-soft)] focus-visible:outline-none ${an.has(value) ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
             {t('Thêm')}

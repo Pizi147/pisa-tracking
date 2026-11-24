@@ -254,7 +254,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <NutXuat nhan={t('Xuất Excel')} tat={!data || dangXuat} onClick={xuatExcel} />
       </VaoHangLoc>
       <VaoHangLoc>
-        <ChonLoc className="w-[220px] min-w-[150px] shrink max-sm:w-[calc(100%-52px)]" ariaLabel={t('Tìm GV')} tatCa={t('Tìm GV')} placeholder={t('Tìm GV…')} value={chonGv} onChange={setChonGv} onGo={setTim}
+        <ChonLoc className="w-[220px] min-w-[150px] shrink max-sm:w-[calc(100%-52px)]" ariaLabel={t('Tìm GV')} tatCa={t('Tìm GV')} placeholder={t('Tìm GV…')} value={chonGv} onChange={setChonGv} onGo={setTim} chuGo={tim}
           ds={(data?.hang ?? []).map((h) => ({ gt: String(h.id), ten: h.ten, phu: h.mon || undefined }))} />
       </VaoHangLoc>
       {moChuaLam && (
@@ -282,9 +282,10 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
                 phai={<Link to={lienKet} className="whitespace-nowrap text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Thi thật theo GV')} ›</Link>}
                 cachTinh={t('Chấm Test và Việc theo sổ nghĩa vụ: tỉ lệ = đúng hạn / (đúng hạn + làm muộn + chưa làm). S chéo chung = bài Speaking chấm chéo chưa ai nhận, mọi GV có kỹ năng S cùng thấy, không vào tỉ lệ. Xếp theo tên, không xếp hạng.')} />
               <div className="[&_tbody_td]:h-[52px] [&_tfoot_td]:h-[52px] [&_thead_th]:whitespace-normal [&_thead_th]:align-bottom [&_th[data-co-nhom]]:border-l-2 [&_th[data-co-nhom]]:border-[color:var(--line-strong)] [&_th[data-co-nhom]]:text-[color:var(--text)] [&_th[data-co-nhom]]:shadow-none">
-                <Bang ten={t('Giáo viên — Chấm Test và Việc')} cot={cot} hang={[...dong, ...(chuaPc && dienThoai ? [chuaPc] : []), ...(sChungDong && dienThoai ? [sChungDong] : [])]} cuoi={hangCpc} theRieng={theRieng} khoa={(d) => d.khoa} oCua={oCua} phuCua={phuCua} deu khung={false} theLuoi
+                <Bang ten={t('Giáo viên — Chấm Test và Việc')} cot={cot} hang={[...dong, ...(chuaPc && dienThoai ? [chuaPc] : []), ...(sChungDong && dienThoai ? [sChungDong] : [])]} cuoi={nguoi.length || !(timCo || chonGv) ? hangCpc : undefined} theRieng={theRieng} khoa={(d) => d.khoa} oCua={oCua} phuCua={phuCua} deu khung={false} theLuoi
                   lopHang={(d) => (d.con ? 'hang-con' : d.khoa === 'chua-pc' || d.khoa === 's-chung' ? 'tong' : '')}
-                  rong={{ tieuDe: timCo ? t('Không GV nào khớp "{q}"', { q: timCo }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }) }} />
+                  rong={{ tieuDe: timCo ? t('Không GV nào khớp "{q}"', { q: timCo }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }),
+                    nut: timCo || chonGv ? <button type="button" className="btn btn-sm" onClick={() => { setTim(''); setChonGv(''); }}>{t('Xoá lọc')}</button> : undefined }} />
               </div>
             </section>
             <PhanTrang {...pt.thanh} duoi />
