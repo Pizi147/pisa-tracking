@@ -21,6 +21,7 @@ const taiTsx = (dir: string, out: string[] = []): string[] => {
 
 /** BANG-3: tệp còn tự viết `<table>` (chưa vào `Bang`). Chỉ được GIẢM. */
 const MIEN_TABLE: string[] = [
+  'web/src/ui/BangSoPanel.tsx',   // SO-720: bảng panel số 720 (cột cố định, không lớp co giãn của Bang)
   'web/src/modules/classes/BangDiemLopThuong.tsx',
   'web/src/modules/classes/ClassIssueBoard.tsx',
   'web/src/modules/classes/PhanTichLopTab.tsx',
@@ -164,6 +165,19 @@ export async function runPrBang0Tests(t: YThucTestKit) {
   check('BANG-3 · <table> chỉ viết trong ui/Bang.tsx (tệp khác: danh sách miễn chỉ giảm)', () => {
     assert(nguon.some((x) => x.f === 'web/src/ui/Bang.tsx' && /<table\b/.test(x.text)), 'ui/Bang.tsx phải vẽ <table>');
     chiGiam('<table>', theo(/<table\b/).filter((f) => f !== 'web/src/ui/Bang.tsx'), MIEN_TABLE);
+  });
+
+  check('SO-720 · panel bảng: mở sẵn tab của con số (ô "Đạt …" → tab Đạt), bỏ cột Trạng thái hằng số của panel GV, khuôn so720 không chân Đóng', () => {
+    const s = nguon.find((x) => x.f === 'web/src/ui/BangLuotPanel.tsx')?.text ?? '';
+    assert(/const tab = tabChon \?\? \(\/\^Đạt\/\.test\(tieuDe\) && soDat > 0 \? 'dat' : 'chua'\)/.test(s), 'tab mở sẵn theo con số');
+    assert(/cotVcHien = cotVc\.filter\(\(c\) => c\.key !== 'tt'/.test(s), 'bỏ cột Trạng thái hằng số');
+    assert(/rong="so720"/.test(s) && !/chan=\{/.test(s), 'panel bảng dùng khuôn so720, không chân');
+  });
+
+  check('SO-720 · Case chưa chốt PA: trong nhóm bước xếp quá hạn trước, rồi hạn gần trước, cùng hạn theo tên', () => {
+    const t = nguon.find((x) => x.f === 'web/src/ui/SoLieu.tsx')?.text ?? '';
+    assert(/const theoHan = \(a: DongSoLieu, b: DongSoLieu\) => \(hanCua\(a\) \?\? '9999-12-31'\)\.localeCompare\(hanCua\(b\) \?\? '9999-12-31'\) \|\| /.test(t), 'hàm so thứ tự hạn gần trước, rồi tên');
+    assert(/\.filter\(\(r\) => !r\.xong && tre\(r\)\)\.sort\(theoHan\), \.\.\.cua\.filter\(\(r\) => r\.xong \|\| !tre\(r\)\)\.sort\(theoHan\)/.test(t), 'quá hạn trước, mỗi nửa xếp theo hạn');
   });
 
   check('BANG-4 · Bang / ODiem: cỡ chữ trong ô ∈ {12, 13, 14} (thang NHẸ HƠN 22/11; 26 chỉ ODiem lon; 16 ODiem to — hồ sơ lớp V5 "điểm to", UI-HO-SO-LOP; 16 số thẻ lưới 375 `theLuoi` — mockup v8 tong-quan `.luoi-so .g`, V8-TQ)', () => {
