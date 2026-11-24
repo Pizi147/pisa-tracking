@@ -1552,11 +1552,11 @@
 .o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3):is(:hover, :focus-visible) { filter: brightness(1.15); text-decoration-line: none; }
 .o-so-hop .so-bam:is(.so-m1, .so-m2, .so-m3)[aria-expanded="true"] { box-shadow: none; border-width: 2px; padding: 0 8px; }
 /* Số giữa câu (dòng phụ `.text-xs`, "vào 3 · kết thúc 1"): bỏ ô — chữ số đậm màu nhấn, giữ gạch chân (chỉ màu không đủ phân biệt link trong chữ, WCAG 1.4.1). */
-.o-so-hop :is(.text-xs, .text-sm) .so-bam:not([class~="!text-inherit"]) { display: inline; min-width: 0; height: auto; padding: 0; font-size: inherit; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; vertical-align: baseline; }
+.o-so-hop :is(.text-xs, .text-sm) .so-bam:not([class~="!text-inherit"], td .so-bam, th .so-bam, dd .so-bam) { display: inline; min-width: 0; height: auto; padding: 0; font-size: inherit; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; vertical-align: baseline; }
 /* Vùng bấm vô hình 32 × 32 (≤ 639: 44 × 44) bằng ::after — hình số không đổi, dòng bảng không phình. */
-.o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *, [class~="!text-inherit"])::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 32px); height: 32px; transform: translate(-50%, -50%); }
+.o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *:not(td *, th *, dd *), [class~="!text-inherit"])::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 32px); height: 32px; transform: translate(-50%, -50%); }
 @media (max-width: 639px) {
-  .o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *, [class~="!text-inherit"])::after { width: max(100%, 44px); height: 44px; }
+  .o-so-hop .so-bam:not(:is(.text-xs, .text-sm) *:not(td *, th *, dd *), [class~="!text-inherit"])::after { width: max(100%, 44px); height: 44px; }
 }
 /* PTA rà #1710: số PHỤ trong dòng phụ ô chỉ số ("trong 58 đang mở") — chữ số gạch chân màu nhấn, không hộp (mockup ⑧ T1 / T7). */
 .o-so-hop .so-bam.so-bam.so-phu { height: auto; min-width: 0; padding: 0; border: 0; background: none; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; }

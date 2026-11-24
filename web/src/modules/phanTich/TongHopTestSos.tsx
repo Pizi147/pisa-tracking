@@ -62,6 +62,9 @@ const demTheo = (theo: TheoDong, n: number) =>
 /** Thẻ 375 (FT): Kết quả xếp lưới 3 × 2 như mockup — Lượt MT · Đạt · Thiếu điểm / SOS 1 · SOS 2 · SOS 3. */
 const DAU_THE_KQ = ['luot', 'dat', 'chuaDu'];
 
+/** Dòng phụ tuần dạng ngắn một dòng: "14/09/2026-20/09/2026 · tuần này" → "14/09 – 20/09 · tuần này" (đủ chữ ở title; không cắt "…"). */
+const ngayNganTuan = (x: string) => x.replace(/(\d\d\/\d\d)\/\d{4}\s*[-–]\s*(\d\d\/\d\d)\/\d{4}/, '$1 – $2');
+
 export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   branchId: number | null; ct: ChuongTrinh; khoang: KhoangNgay; classId: number | null;
 }) {
@@ -262,7 +265,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const tenDong = (row: DongTongHop) => (
     <span className="block min-w-0 [overflow-wrap:anywhere]">
       {row.nhan}
-      {row.phu && <>{' '}<span className="inline-block max-w-full truncate align-bottom text-xs font-normal text-[color:var(--text-faint)]" title={row.phu}>{row.phu}</span></>}
+      {row.phu && <>{' '}<span className="inline-block max-w-full whitespace-nowrap align-bottom text-xs font-normal text-[color:var(--text-faint)]" title={row.phu}>{ngayNganTuan(row.phu)}</span></>}
     </span>
   );
 

@@ -233,8 +233,9 @@ function catCau(s: string, toiDa = 170): string {
 /** GD-21: hàng của bảng Case theo bước — dải nhóm (bước) hoặc một Case. */
 type HangCase = { k: string; ten: string; conCho: number; tre: number } | { k: string; r: DongSoLieu & { xong?: string } } | { k: string; them: number; nhom: string };
 const COT_CASE: readonly CotBang[] = [
-  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 200 }, { key: 'case', nhan: t('Case'), kieu: 'chu', linhHoat: true },
-  { key: 'gv', nhan: t('Phụ trách'), kieu: 'chu', rong: 180 }, { key: 'han', nhan: t('Hạn'), kieu: 'chip', rong: 150 },
+  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 168 }, { key: 'case', nhan: t('Case'), kieu: 'chu', linhHoat: true },
+  { key: 'diem', nhan: t('Điểm / KV'), kieu: 'chu', rong: 100 },
+  { key: 'gv', nhan: t('Phụ trách'), kieu: 'chu', rong: 130 }, { key: 'han', nhan: t('Hạn'), kieu: 'chip', rong: 112 },
 ];
 
 /**
@@ -286,7 +287,9 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     : [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
   const hienLoc = loc.length ? hien.filter((r) => loc.includes(buocCuaDong(r))) : hien;
-  const nhom = nhomCase ? BUOC_CASE.map((b) => { const cua = hienLoc.filter((r) => buocCuaDong(r) === b); return { buoc: b, ten: NHAN_BUOC_CASE[b], dong: [...cua.filter((r) => !r.xong && tre(r)), ...cua.filter((r) => r.xong || !tre(r))] }; }).filter((g) => g.dong.length > 0) : null;
+  /* v24 B3: trong nhóm — quá hạn trước, rồi HẠN GẦN TRƯỚC (không hạn cuối), cùng hạn theo tên. */
+  const theoHan = (a: DongSoLieu, b: DongSoLieu) => (hanCua(a) ?? '9999-12-31').localeCompare(hanCua(b) ?? '9999-12-31') || (a.em?.ten ?? a.title).localeCompare(b.em?.ten ?? b.title, 'vi');
+  const nhom = nhomCase ? BUOC_CASE.map((b) => { const cua = hienLoc.filter((r) => buocCuaDong(r) === b); return { buoc: b, ten: NHAN_BUOC_CASE[b], dong: [...cua.filter((r) => !r.xong && tre(r)).sort(theoHan), ...cua.filter((r) => r.xong || !tre(r)).sort(theoHan)] }; }).filter((g) => g.dong.length > 0) : null;
   const thuTu = nhom ? nhom.flatMap((g) => g.dong) : hien;
   /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
      không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. 6b-2: dòng Case có nhóm mở được cả khi chỉ xem / đã xử lý. */
@@ -380,7 +383,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
      (nền surface-2, chữ "Chờ mô tả · n · m quá hạn", vạch trung tính). Bấm dòng → view Case trong cùng panel. 375: thẻ. */
   const veNhom = (dong: (DongSoLieu & { xong?: string })[]) => {
     /* ⑬ B1: mỗi nhóm hiện vài dòng đầu rồi nút "+ n Case" (mở hết nhóm đó) — chọn một bước: 5 dòng, nhiều bước: 4, không chọn: 2. Dòng đang mở luôn hiện. */
-    const toiDa = loc.length === 1 ? 5 : loc.length ? 4 : 2;
+    const toiDa = Number.POSITIVE_INFINITY;   // v24 B3: một dòng một Case, 20 dòng đầu + "Xem thêm" chung (không "+ n Case" từng nhóm)
     const hang: HangCase[] = (nhom ?? []).map((g0) => ({ ...g0, dong: g0.dong.filter((r) => dong.includes(r)) })).filter((g) => g.dong.length > 0)
       .flatMap((g) => {
         const du = moRong.includes(g.buoc), hien = du ? g.dong : g.dong.filter((r, i) => i < toiDa || r.id === mo);
@@ -388,18 +391,19 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           ...hien.map((r) => ({ k: `c:${r.id}`, r }) as HangCase),
           ...(g.dong.length > hien.length ? [{ k: `m:${g.buoc}`, them: g.dong.length - hien.length, nhom: g.buoc } as HangCase] : [])];
       });
+    const cotCase = COT_CASE.filter((c) => c.key !== 'han' || hien.some((r) => hanCua(r)));   // không dòng nào có hạn → bỏ cột (không để cột trống)
     const thuChon = (r: DongSoLieu) => (e: React.KeyboardEvent) => { if (e.key === 'Enter' && e.target === e.currentTarget) moCase(r); };
     return (
-      <Bang<HangCase> ten={t('Case theo bước')} cot={COT_CASE} hang={hang} khoa={(h) => h.k} khung={false} dangMo={(h) => 'r' in h && h.r.id === mo}
+      <Bang<HangCase> ten={t('Case theo bước')} cot={cotCase} hang={hang} khoa={(h) => h.k} khung={false} dangMo={(h) => 'r' in h && h.r.id === mo}
         onHang={(h) => { if ('r' in h) moCase(h.r); }}
         hangRieng={(h) => ('them' in h ? (
-          <tr className="them"><td colSpan={COT_CASE.length} className="px-4 py-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => datMoRong((m) => [...m, h.nhom])}>+ {h.them} Case</button></td></tr>
+          <tr className="them"><td colSpan={cotCase.length} className="px-4 py-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => datMoRong((m) => [...m, h.nhom])}>+ {h.them} Case</button></td></tr>
         ) : 'r' in h ? (
           <tr data-dong={h.r.id} className={`bam ${h.r.id === mo ? 'dang-mo' : ''}`} tabIndex={0} onClick={(e) => { if (!(e.target as Element).closest('a')) moCase(h.r); }} onKeyDown={thuChon(h.r)}>
-            {COT_CASE.map((c) => <OBang key={c.key} c={c}>{oCase(h.r, c.key)}</OBang>)}
+            {cotCase.map((c) => <OBang key={c.key} c={c}>{oCase(h.r, c.key)}</OBang>)}
           </tr>
         ) : (
-          <tr className="nhom-b"><td colSpan={COT_CASE.length} className="px-4 py-2 text-[14px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
+          <tr className="nhom-b"><td colSpan={cotCase.length} className="px-4 py-2 text-[14px] font-bold text-slate-100" style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
             {h.ten}<span className="ml-2 inline-flex items-center gap-2 align-middle"><span className={`${CHIP_VUONG} ${h.conCho ? 'text-slate-200' : 'text-ok'}`} style={{ borderColor: 'var(--line-strong)' }} title={h.conCho ? t('{n} Case còn chờ', { n: h.conCho }) : t('Đã xử lý hết')}>{h.conCho || '✓'}</span>
               {h.tre > 0 && <span className="text-[13px] font-medium text-late">{t('{n} quá hạn', { n: h.tre })}</span>}</span>
           </td></tr>
@@ -425,20 +429,20 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       </span>
     );
     if (k === 'case') return (
-      <span className="flex min-w-0 flex-col items-start gap-0.5">
-        {r.deMuc && <span className="text-[14px] font-bold leading-snug text-slate-100">{r.deMuc}</span>}
-        <span className="flex min-w-0 max-w-full flex-nowrap items-center gap-x-2">
-          {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
-          <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
-          {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
-          {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
-        </span>
-        <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[fmtBand(r.diemCase.so), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(r.diemCase.kyVong) })]} />}</span>
-        {r.moTa ? <span className="max-w-[68ch] text-[13px] leading-snug text-slate-300 [text-wrap:pretty]">{catCau(r.moTa)}</span> : <span className="text-[13px] italic text-slate-500">{t('Chưa có mô tả')}</span>}
+      /* v24 B3: MỘT dòng — MT · kỹ năng + chip SOS (+ chờ Head); mô tả Case ở title, mở Case để đọc. */
+      <span className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-0.5" title={[r.deMuc, r.moTa].filter(Boolean).join(' — ') || undefined}>
+        {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
+        <span className="min-w-0">{r.kyNang ?? r.title}</span>
+        {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
+        {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
       </span>
     );
+    if (k === 'diem') return r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b>
+      : r.diemCase ? <span className="whitespace-nowrap tabular-nums"><span className={r.diemCase.kyVong != null && r.diemCase.so < r.diemCase.kyVong ? 'font-semibold text-kq-duoi' : 'font-semibold'}>{fmtBand(r.diemCase.so)}</span>{r.diemCase.kyVong != null && <span className="text-dim"> / {fmtBand(r.diemCase.kyVong)}</span>}</span>
+      : <span className="text-faint">—</span>;
     if (k === 'gv') return <span className="text-[13px]">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>;
-    return !r.xong && v?.loaiHan && v.han ? <ChipHan vien loai={v.loaiHan} han={v.han} /> : null;
+    const han = hanCua(r);
+    return !r.xong && han ? <HanDong han={han} loai={v?.loaiHan ?? r.viec?.loaiHan} /> : null;
   };
 
   /* Khối làm tại chỗ của dòng đang mở (Xác nhận PA bấm thẳng · việc khác mở panel làm việc) — dùng chung cho dòng HV và dòng cũ. */
@@ -594,8 +598,11 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     );
   };
 
+  /* SO-720 (v24 B0 / B3 / B6): panel BÁO CÁO (không dòng nào làm được) và panel Case chưa chốt PA dùng khuôn 720; panel việc của Tổng quan (Công việc) giữ khuôn cũ. */
+  const laBaoCao720 = nhomCase || !hien.some((r) => r.viec?.lam);
+  const veNgang = laBaoCao720 ? 'px-4 sm:px-5' : '';
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase ? 'bang' : goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={laBaoCao720 ? 'so720' : nhomCase ? 'bang' : goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
       loai={nhomCase ? t('Số liệu · Tổng quan') : hien.some((r) => r.viec?.lam) ? t('Việc') : t('Báo cáo · chỉ đọc')}
       dau={{
@@ -614,20 +621,19 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           : [data ? <span key="dem" className="tabular-nums">{data.n} {dv ?? t('mục')}</span> : null, soTre ? t('quá hạn lên đầu') : null],
       }}
       chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="flex flex-wrap items-center gap-x-3"><span className="font-semibold text-ok">✓ {vuaXong.chu}</span><NutHoanTac key={vuaXong.lan} hoanTac={vuaXong.hoanTac} onHoanTac={() => setVuaXong(null)} /></span> } : undefined}>
-      {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
-        : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
-        : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
+      {error ? <div className={`pt-3 ${veNgang}`}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
+        : loading || !data ? <div className={`pt-3 ${veNgang}`}><Skeleton rows={5} /></div>
+        : !hien.length ? <div className={veNgang}><Empty title={trong ?? t('Không có mục nào')} /></div>
         : (
           <>
-            {nhomCase && <DaiBuoc hien={hien} loc={loc} soLoc={hienLoc.length} datLoc={datLoc} />}
             {coTab && (
               /* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */
-              <HangTab<'chua' | 'dat' | 'vuot'> ariaLabel={t('Kết quả')} panelId={idPanel} value={tab} onChange={setTab} className="mb-1"
+              <HangTab<'chua' | 'dat' | 'vuot'> ariaLabel={t('Kết quả')} panelId={idPanel} value={tab} onChange={setTab} className={`mb-1 ${veNgang}`}
                 tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: laThi ? t('Đạt Target') : t('Đạt'), so: soDat },
                   ...(soVuot ? [{ key: 'vuot' as const, label: `★ ${t('Vượt')}`, so: soVuot }] : [])]} />
             )}
-            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(hienTab) : <ul className="-mx-4 m-0 list-none p-0">{xt.cat(hienTab).map(veDong)}</ul>}</div>
-            {!nhomCase && <XemThem {...xt} donVi={dv ?? t('mục')} />}
+            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(xt.cat(hienTab)) : <ul className={`m-0 list-none p-0 ${laBaoCao720 ? '' : '-mx-4'}`}>{xt.cat(hienTab).map(veDong)}</ul>}</div>
+            <div className={veNgang}><XemThem {...xt} donVi={nhomCase ? t('Case') : dv ?? t('mục')} /></div>
           </>
         )}
     </KhungPanel>
