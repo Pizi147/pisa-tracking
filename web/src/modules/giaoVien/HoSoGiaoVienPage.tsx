@@ -373,12 +373,12 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
     <Card bodyClass="p-0"
       title={(
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">{t('Lớp đang dạy')}{data.lop.length > 0 && <DemDau n={data.lop.length} />}
-          <NutLuat label={t('Lớp đang dạy')}>{t('Phân công đang hiệu lực. Chưa nhập · Quá hạn: bài Test của lớp chưa nhập điểm, tính tới hôm nay — bấm số xem từng bài và hạn.')}</NutLuat>
           {data.lop.length > 0 && (
             <span className="text-[13px] font-normal text-slate-400">
               {t('lớp')} · <OSo giaTri={data.tongHocVien} tieuDe={t('Học viên đang học')} nguon={nguon(id, 'cot=hoc-vien')} className={vung} /> HV
             </span>
           )}
+          <NutLuat label={t('Lớp đang dạy')}>{t('Phân công đang hiệu lực. Chưa nhập · Quá hạn: bài Test của lớp chưa nhập điểm, tính tới hôm nay — bấm số xem từng bài và hạn.')}</NutLuat>
         </span>
       )}>
       {!data.lop.length ? <Empty title={t('Chưa có phân công lớp nào đang hiệu lực.')} /> : (

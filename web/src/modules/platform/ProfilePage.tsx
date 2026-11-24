@@ -163,7 +163,7 @@ export default function ProfilePage() {
       <Card title={t('Đổi mật khẩu')}
         action={
           <button className="btn btn-sm" disabled={busy || !duMk} onClick={changePassword}>
-            {t('Đổi mật khẩu')}
+            {t('Lưu')}
           </button>
         }>
         <div className="grid gap-4 sm:grid-cols-3">

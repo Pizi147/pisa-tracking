@@ -98,12 +98,13 @@ export function BangQuyDoiAdmin({ dau, phai }: { dau?: ReactNode; phai?: ReactNo
         <Card title={t('Bảng quy đổi band')} className={`min-w-0 ${TRAN_MEP}`} bodyClass="p-0"
           action={data.suaDuoc ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>{t('Sửa')}</button> : undefined}>
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
-            <span><span className="max-sm:hidden">{t('Số câu đúng → band (số đậm = số câu đầu tiên lên band mới).')} </span>{t('Đang dùng:')} <b className="font-semibold text-slate-100">{tenPb(dangDung.id)}</b>
+            <span>{t('Đang dùng:')} <b className="font-semibold text-slate-100">{tenPb(dangDung.id)}</b>
               {dangDung.luc && <> · <span className="tabular-nums">{fmtDateTime(dangDung.luc)}</span>{dangDung.nguoi ? ` · ${dangDung.nguoi}` : ''}</>}</span>
             <span className="flex-1" />
             <span className="inline-flex items-center gap-1">{t('Áp cho điểm L / R nhập')} {t('từ lúc lưu')}
               <NutLuat label={t('Áp dụng')}>
                 <ul className="m-0 grid list-disc gap-1.5 pl-4">
+                  <li>{t('Số câu đúng → band (số đậm = số câu đầu tiên lên band mới).')}</li>
                   <li>{t('Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.')}</li>
                   <li>{t('Sửa số câu đúng của một bài cũ → tính lại theo bảng đang dùng (như nhập mới).')}</li>
                 </ul>
