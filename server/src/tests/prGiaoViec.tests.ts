@@ -721,7 +721,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(!b.some((d) => d.startsWith('N67')), `chạy lại không đổi: ${b.join(' | ')}`);
   }));
 
-  await checkAsync('N69 + E-5 (xem trước nói đúng · trả số đã chuyển) · xoá tài khoản / gỡ hết vai → Case / PA / tín hiệu / lần xử lý người nghỉ đứng tên về người theo luật (lịch sử); đổi vai còn vai không chuyển; em không đang học → để nguyên; Khôi phục không trả', () => thu(async () => {
+  await checkAsync('N69 + E-4 + E-5 + E-7 (mất vai một chi nhánh · xem trước nói đúng · Khôi phục ≤ 15 phút trả lại) · xoá tài khoản / gỡ hết vai → Case / PA / tín hiệu / lần xử lý người nghỉ đứng tên về người theo luật (lịch sử); đổi vai còn vai không chuyển; em không đang học → để nguyên; Khôi phục không trả', () => thu(async () => {
     const NOW = new Date().toISOString();
     const gvL = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill = 'listening' ORDER BY id LIMIT 1`, lop)?.user_id ?? null;
     const cn = mot(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND is_core = 1 ORDER BY id LIMIT 1`, lop).user_id as number;
@@ -753,13 +753,39 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(kqXoa.chuyen.soCase === 1 && kqXoa.chuyen.soPa === 1 && kqXoa.chuyen.soTinHieu === 1 && kqXoa.chuyen.soXuLy === 1, `E-5: xoá phải trả số đã chuyển: ${JSON.stringify(kqXoa.chuyen)}`);
     dung(ia, a.userId, 'xoá tài khoản');
     xoaTK.khoiPhucTaiKhoan(P.admin, a.userId);
-    assert(chu(ia)[0] === luat, 'Khôi phục tài khoản không tự trả Case');
+    /* E-7 (N69, chủ SP 25/11): Khôi phục TRONG 15 phút trả lại việc chưa ai sửa tiếp (Case, PA, tín hiệu, lần xử lý). */
+    assert(chu(ia).every((x) => x === a.userId), `E-7: Khôi phục ≤ 15 phút phải trả lại: ${JSON.stringify(chu(ia))}`);
+    assert(hang('SELECT old_value, new_value FROM sos_case_history WHERE case_id = ? ORDER BY id DESC LIMIT 1', ia.caseId)[0]?.new_value === String(a.userId), 'E-7: lịch sử ghi lần trả lại');
     /* Gỡ hết vai. */
     const b = taiKhoan('nghi2', 'teacher');
     const ib = tao(b.userId, moiEm());
     const kqVai: any = accounts.setRoles(P.admin, b.userId, []);
     assert(kqVai.chuyen?.soCase === 1, `E-5: gỡ hết vai phải trả số đã chuyển: ${JSON.stringify(kqVai)}`);
     dung(ib, b.userId, 'gỡ hết vai');
+    /* E-7: quá 15 phút → giữ nguyên + câu nói giữ cho ai; việc đã bị sửa tiếp (≤ 15 phút) cũng giữ nguyên. */
+    const f = taiKhoan('nghi7', 'teacher');
+    const iff = tao(f.userId, moiEm());
+    const iff2 = tao(f.userId, moiEm());
+    xoaTK.xoaTaiKhoan(P.admin, f.userId);
+    conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run('2099-01-01T00:00:00.000Z', iff2.caseId);   // có người sửa tiếp sau khi chuyển
+    const trongHan: any = xoaTK.khoiPhucTaiKhoan(P.admin, f.userId);
+    assert(chu(iff)[0] === f.userId && chu(iff2)[0] === luat, `E-7: việc chưa sửa trả lại, việc đã sửa giữ: ${JSON.stringify([chu(iff), chu(iff2)])}`);
+    assert(trongHan.canhBao.some((c: string) => /đã được sửa tiếp/.test(c)), `E-7: báo việc giữ nguyên: ${trongHan.canhBao.join(' | ')}`);
+    const g = taiKhoan('nghi8', 'teacher');
+    const ig = tao(g.userId, moiEm());
+    xoaTK.xoaTaiKhoan(P.admin, g.userId);
+    conn.prepare("UPDATE audit_logs SET created_at = ? WHERE action = 'user.delete' AND entity_id = ?").run(new Date(Date.now() - 16 * 60_000).toISOString(), g.userId);
+    const quaHan: any = xoaTK.khoiPhucTaiKhoan(P.admin, g.userId);
+    assert(chu(ig)[0] === luat && quaHan.canhBao.some((c: string) => /đã chuyển cho .* giữ nguyên — đổi lại ở từng Case/.test(c)), `E-7: quá 15 phút giữ nguyên + báo: ${chu(ig)} ${quaHan.canhBao.join(' | ')}`);
+    /* E-4 (N69): mất vai ở MỘT chi nhánh (còn vai chi nhánh khác) → việc của em chi nhánh đó chuyển; em chi nhánh còn vai giữ nguyên. */
+    const h = taiKhoan('nghi9', 'teacher');
+    accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    const emCp = mot("SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.branch_id = (SELECT id FROM branches WHERE code = 'CP') AND e.status = 'active' LIMIT 1").id as number;
+    const ihMb = tao(h.userId, moiEm());
+    const ihCp = tao(h.userId, emCp);
+    accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    dung(ihMb, h.userId, 'E-4 · bỏ vai chi nhánh MB, còn CP');
+    assert(chu(ihCp).every((x) => x === h.userId), `E-4: em chi nhánh còn vai phải giữ nguyên: ${JSON.stringify(chu(ihCp))}`);
     /* Đổi vai, vẫn còn vai → không chuyển. */
     const c = taiKhoan('nghi3', 'teacher');
     const ic = tao(c.userId, moiEm());

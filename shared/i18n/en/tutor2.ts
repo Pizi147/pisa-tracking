@@ -14,7 +14,7 @@ export const EN_TUTOR2 = {
   'dòng {x}: Nội dung ít nhất {n} ký tự': 'row {x}: content needs at least {n} characters',
   'dạy {a} / {b} buổi': 'taught {a} / {b} sessions',
   'Nháp có nhiều dòng Tutor hoặc đánh giá — Mở đầy đủ để ghi tiếp': 'The draft has several tutor rows or ratings — open the full form to continue',
-  'dòng {x} quá dài (tên ≤ 100, nội dung ≤ 1000 ký tự)': 'row {x} is too long (name ≤ 100, content ≤ 1000 characters)',
+  'dòng {x} quá dài (tên ≤ 100, nội dung ≤ {n} ký tự)': 'row {x} is too long (name ≤ 100, content ≤ {n} characters)',
   'dòng {x}: "Tutor buổi này" là Có, Không hoặc để trống': 'row {x}: "Tutor this session" is Yes, No or blank',
   'dòng {x}: hình thức là Offline hoặc Online': 'row {x}: mode is Offline or Online',
   'dòng {x}: đánh giá từ 1 đến 5, hoặc để trống': 'row {x}: rating 1 to 5, or leave blank',

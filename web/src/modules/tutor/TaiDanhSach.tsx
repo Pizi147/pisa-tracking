@@ -34,11 +34,21 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
     setGui(true);
     setLoi(null);
     try {
-      const x = await api.post<XemTruoc & { daLuu: boolean }>('/tutors/tai-len', { rows: r, luu });
+      const x = await api.post<XemTruoc & { daLuu: boolean; nhatKyId: number | null }>('/tutors/tai-len', { rows: r, luu });
       setRows(r);
       if (luu) {
         invalidate('/tutors');
-        toast.push('ok', t('Đã lưu danh sách: {a} mới · {b} cập nhật', { a: x.soMoi, b: x.soCapNhat }));
+        const daLuu = t('Đã lưu danh sách: {a} mới · {b} cập nhật', { a: x.soMoi, b: x.soCapNhat });
+        /* E-8: Hoàn tác ngắn (15 phút, máy chủ đọc nhật ký): xoá tutor mới còn trống, trả dòng Cập nhật về bản trước nếu chưa ai sửa tiếp. */
+        if (x.nhatKyId) {
+          toast.hoanTac(daLuu, async () => {
+            try {
+              const h = await api.post<{ xoa: number; khoiPhuc: number; giu: number }>('/tutors/tai-len/hoan-tac', { nhatKyId: x.nhatKyId });
+              invalidate('/tutors');
+              toast.push('ok', `${t('Đã hoàn tác: xoá {a} · khôi phục {b}', { a: h.xoa, b: h.khoiPhuc })}${h.giu ? ` · ${t('giữ {c} (đã có buổi hoặc đã sửa tiếp)', { c: h.giu })}` : ''}`);
+            } catch (e) { toast.push('error', e instanceof ApiError ? e.message : t('Không hoàn tác được')); }
+          }, { key: `tai-ds:${x.nhatKyId}` });
+        } else toast.push('ok', daLuu);
         if (!x.soLoi) { onDong(); return; }
         const lai = await api.post<XemTruoc>('/tutors/tai-len', { rows: r, luu: false });
         setKq(lai);

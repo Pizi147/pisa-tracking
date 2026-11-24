@@ -460,8 +460,14 @@ export function chuyenViecKhiDoi(o: {
  * `sos_case_history` (owner_user_id · pa_performer), tín hiệu / lần xử lý nhật ký thao tác. Mỗi người nhận MỘT thông báo. Khôi phục tài khoản KHÔNG tự trả lại.
  * ponytail: một câu lớp đang học mỗi em (đường Quản trị hiếm, ít dòng) — gom lô nếu người nghỉ đứng tên hàng trăm việc.
  */
-export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIso()): { soCase: number; soPa: number; soTinHieu: number; soXuLy: number } {
+export type MucChuyen = { k: 'c' | 'p' | 't' | 'x'; id: number; moi: number; luc: string; caseId: number | null };
+export type KqChuyen = { soCase: number; soPa: number; soTinHieu: number; soXuLy: number; ds: MucChuyen[] };
+export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIso(), o: { chiNhanhIds?: readonly number[] } = {}): KqChuyen {
   const conn = db();
+  /* E-4 (N69): mất vai ở MỘT chi nhánh (còn vai nơi khác) → chỉ việc của em thuộc chi nhánh vừa mất; không truyền = mọi chi nhánh (gỡ hết vai / xoá tài khoản). */
+  const cn = o.chiNhanhIds ? new Set(o.chiNhanhIds) : null;
+  const chiNhanhEm = (sid: number | null): number | null => (sid ? (conn.prepare(`SELECT COALESCE(c.branch_id, s.branch_id) AS b FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+    LEFT JOIN classes c ON c.id = e.class_id WHERE s.id = ? LIMIT 1`).get(sid) as any)?.b ?? null : null);
   const pc = new Map<number, PhanCong[]>();
   const theoLuat = (sid: number | null, category: string | null): number | null => {
     const lop = sid ? activeClassOf(sid) : null;
@@ -474,7 +480,7 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
   const tenCu = () => (tenCuNho ??= ten(userId));
   const nhan = new Map<number, { c: number; p: number; t: number; x: number }>();
   const cong = (u: number, k: 'c' | 'p' | 't' | 'x') => { const v = nhan.get(u) ?? { c: 0, p: 0, t: 0, x: 0 }; v[k] += 1; nhan.set(u, v); };
-  const kq = { soCase: 0, soPa: 0, soTinHieu: 0, soXuLy: 0 };
+  const kq: KqChuyen = { soCase: 0, soPa: 0, soTinHieu: 0, soXuLy: 0, ds: [] };
   /* MỘT câu đọc cả bốn loại (tài khoản không đứng tên gì: +1 câu cho lần xoá / gỡ vai). */
   const rows = conn.prepare(
     `SELECT 'c' AS k, sc.id AS id, sc.id AS case_id, sc.category AS category, COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -487,12 +493,13 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
   ).all(userId) as { k: 'c' | 'p' | 't' | 'x'; id: number; case_id: number | null; category: string | null; sid: number | null }[];
   const ls = rows.length ? conn.prepare('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)') : null;
   for (const r of rows) {
+    if (cn && !cn.has(chiNhanhEm(r.sid) as number)) continue;   // E-4: em không thuộc chi nhánh vừa mất vai
     if (r.k === 'x') {
       const g = r.sid ? gvcnCuaEm(r.sid, demoToday()).gvcn : null;
       const moi = g !== userId ? g : null;
       if (moi === null || conn.prepare(`UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')`).run(moi, r.id, userId).changes !== 1) continue;
       writeAudit({ actorUserId: actorId, action: 'measure.owner_assign', entityType: 'discipline_measure', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
-      cong(moi, 'x'); kq.soXuLy += 1;
+      cong(moi, 'x'); kq.soXuLy += 1; kq.ds.push({ k: 'x', id: r.id, moi, luc, caseId: null });
       continue;
     }
     const moi = theoLuat(r.sid, r.category);
@@ -500,15 +507,15 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
     if (r.k === 'c') {
       if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?').run(moi, luc, r.id, userId).changes !== 1) continue;
       ls!.run(r.id, 'owner_user_id', String(userId), String(moi), actorId, luc);
-      cong(moi, 'c'); kq.soCase += 1;
+      cong(moi, 'c'); kq.soCase += 1; kq.ds.push({ k: 'c', id: r.id, moi, luc, caseId: r.id });
     } else if (r.k === 'p') {
       if (conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ? WHERE id = ? AND performer_user_id = ?`).run(moi, luc, r.id, userId).changes !== 1) continue;
       ls!.run(r.case_id, 'pa_performer', tenCu(), `${tenCu()} → ${ten(moi)} (người cũ nghỉ)`, actorId, luc);
-      cong(moi, 'p'); kq.soPa += 1;
+      cong(moi, 'p'); kq.soPa += 1; kq.ds.push({ k: 'p', id: r.id, moi, luc, caseId: r.case_id });
     } else {
       if (conn.prepare(`UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'`).run(moi, r.id, userId).changes !== 1) continue;
       writeAudit({ actorUserId: actorId, action: 'signal.owner_assign', entityType: 'case_signal', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
-      cong(moi, 't'); kq.soTinHieu += 1;
+      cong(moi, 't'); kq.soTinHieu += 1; kq.ds.push({ k: 't', id: r.id, moi, luc, caseId: null });
     }
   }
   for (const [u, v] of nhan) {
@@ -517,6 +524,28 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
     notify({ userId: u, kind: 'case_giao', title: `Bạn nhận việc của ${tenCu().replace(/ \(đã xoá\)$/, '')}: ${ds}`, duong: '/cong-viec', dedupKey: `nguoi_nghi:${userId}:${luc}` });
   }
   return kq;
+}
+
+/**
+ * E-7 (N69, chủ SP 25/11): Khôi phục tài khoản TRONG `HOAN_TAC_PHUT_NGUOI_NGHI` phút sau khi xoá trả lại các việc đã chuyển mà CHƯA AI sửa tiếp (Case / PA: `updated_at` còn đúng
+ * mốc chuyển và người giữ còn là người nhận; tín hiệu / lần xử lý: người giữ còn là người nhận, còn đang chờ). Việc đã bị sửa tiếp giữ nguyên. Trả { traLai, giu } để báo.
+ */
+export const HOAN_TAC_PHUT_NGUOI_NGHI = 15;
+export function traLaiViecNguoiNghi(userId: number, actorId: number, ds: readonly MucChuyen[], luc = nowIso()): { traLai: number; giu: number } {
+  const conn = db();
+  let traLai = 0;
+  for (const m of ds) {
+    let doi = 0;
+    if (m.k === 'c') doi = conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND updated_at = ?').run(userId, luc, m.id, m.moi, m.luc).changes as number;
+    else if (m.k === 'p') doi = conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, updated_at = ? WHERE id = ? AND performer_user_id = ? AND updated_at = ? AND status IN ('planned', 'started')`).run(userId, luc, m.id, m.moi, m.luc).changes as number;
+    else if (m.k === 't') doi = conn.prepare("UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'").run(userId, m.id, m.moi).changes as number;
+    else doi = conn.prepare("UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')").run(userId, m.id, m.moi).changes as number;
+    if (!doi) continue;
+    traLai += 1;
+    if (m.caseId) conn.prepare('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
+      .run(m.caseId, m.k === 'c' ? 'owner_user_id' : 'pa_performer', String(m.moi), String(userId), actorId, luc);
+  }
+  return { traLai, giu: ds.length - traLai };
 }
 
 const inHang = (ds: readonly unknown[]) => ds.map(() => '?').join(',');

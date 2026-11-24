@@ -71,6 +71,15 @@ export async function runPrTuTests(t: any) {
 
   // ------------------------------------------------------------------ T2 · luật chung buổi tutor
   const du = (x: Record<string, unknown> = {}) => ({ tutorId: 1, tutor: 'Nguyễn Thu Lan', nhanXet: 'Chữa Section 3', hinhThuc: 'offline', chuanBi: true, taiLieu: false, feedbackGv: true, ...x });
+  check('B-4 (N35 / N54) · Nội dung mỗi dòng Tutor ≤ 200 ký tự: 200 qua, 201 lỗi; chữ cũ dài hơn của lần ghi đang sửa (chuCu) giữ nguyên không bị chặn', () => {
+    const dai = (n: number) => 'x'.repeat(n);
+    assert(d.kiemBuoiTutor(1, [du({ nhanXet: dai(200) })]) === null, '200 ký tự phải qua');
+    const loi = d.kiemBuoiTutor(1, [du({ nhanXet: dai(201) })]);
+    assert(typeof loi === 'string' && /nội dung ≤ 200/.test(loi), `201 ký tự phải lỗi: ${loi}`);
+    assert(d.kiemBuoiTutor(1, [du({ nhanXet: dai(250) })], new Set([dai(250)])) === null, 'chữ cũ 250 ký tự (đang sửa, giữ nguyên) không bị chặn');
+    assert(d.kiemBuoiTutor(1, [du({ nhanXet: dai(251) })], new Set([dai(250)])) !== null, 'sửa thành dài hơn chữ cũ vẫn bị chặn');
+  });
+
   check('TU-2a · kiemBuoiTutor (TU5 chủ SP 19/11): 3 ô tuỳ chọn (Có / Không / trống, sai kiểu vẫn lỗi); đánh giá 1–5 hoặc trống; hình thức offline / online / trống', () => {
     assert(d.kiemBuoiTutor(1, [du()]) === null, String(d.kiemBuoiTutor(1, [du()])));
     assert(d.kiemBuoiTutor(1, [du({ danhGia: null, nhanXetTutor: '', hinhThuc: null, tutorId: null })]) === null, 'tuỳ chọn trống được');

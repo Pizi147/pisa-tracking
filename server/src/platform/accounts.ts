@@ -418,7 +418,13 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
     for (const r of roles) grantRole(conn, userId, r.role, r.branches ?? []);
     if ([...cu.map((g) => g.key), ...roles.map((r) => r.role)].some((k) => VAI_THEO_DOI.has(k))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: thôi / thành Head · CX → dòng theo dõi chuyển theo; không có vai này cả trước lẫn sau → bỏ qua
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): hết vai ở chi nhánh của việc được giao → việc về người theo luật (có lịch sử)
-    const chuyen = roles.length ? null : chuyenViecNguoiNghi(userId, p.userId);   // N69: gỡ HẾT vai = người nghỉ → Case / PA / tín hiệu / lần xử lý về người theo luật; cấp lại vai không tự trả
+    /* N69: gỡ HẾT vai = người nghỉ → Case / PA / tín hiệu / lần xử lý về người theo luật; cấp lại vai không tự trả.
+       E-4: mất vai ở MỘT chi nhánh (không còn vai nào ở đó, còn vai nơi khác) → chuyển riêng việc của em thuộc chi nhánh đó. */
+    const conVaiToanHeThong = roles.some((r) => r.role === 'system_admin' || !r.branches.length);
+    const conMa = new Set(roles.flatMap((r) => r.branches));
+    const mat = conVaiToanHeThong ? [] : [...new Set(cu.map((g) => g.code).filter((c): c is string => !!c && !conMa.has(c)))];
+    const chiNhanhMat = mat.length ? (conn.prepare(`SELECT id FROM branches WHERE code IN (${mat.map(() => '?').join(',')})`).all(...mat) as { id: number }[]).map((b) => b.id) : [];
+    const chuyen = roles.length ? (chiNhanhMat.length ? chuyenViecNguoiNghi(userId, p.userId, undefined, { chiNhanhIds: chiNhanhMat }) : null) : chuyenViecNguoiNghi(userId, p.userId);
     writeAudit({
       actorUserId: p.userId, action: 'user_roles_set', entityType: 'users', entityId: userId,
       entityLabel: user.full_name,

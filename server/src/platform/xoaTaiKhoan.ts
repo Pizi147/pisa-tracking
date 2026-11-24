@@ -19,7 +19,7 @@ import { badRequest, canXacNhan, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
-import { chuyenViecNguoiNghi } from '../cases/owner.ts';
+import { HOAN_TAC_PHUT_NGUOI_NGHI, chuyenViecNguoiNghi, traLaiViecNguoiNghi, type MucChuyen } from '../cases/owner.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được tài khoản.';
 const DA_XOA = 'Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.';
@@ -282,7 +282,7 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
   const u = conn.prepare('SELECT id, full_name, email, status FROM users WHERE id = ?').get(userId) as any;
   if (!u) throw notFound('Không tìm thấy tài khoản.');
   if (u.status !== 'deleted') throw badRequest('Tài khoản này chưa bị xoá.');
-  const nk = conn.prepare(`SELECT before_json FROM audit_logs WHERE action = 'user.delete' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(userId) as any;
+  const nk = conn.prepare(`SELECT before_json, after_json, created_at FROM audit_logs WHERE action = 'user.delete' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(userId) as any;
   let truoc: { email?: string | null; vai?: string[]; roleIds?: number[]; emailPhu?: { email: string; created_at: string }[];
     quyenRieng?: { permission_id: number; branch_id: number | null; note: string | null; granted_by: number | null; created_at: string }[]; phanCong?: { id: number; den: string | null }[] } = {};
   try { truoc = JSON.parse(nk?.before_json ?? '{}'); } catch { truoc = {}; }
@@ -329,6 +329,18 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
         AND ${a.is_core ? 'is_core = 1' : 'skill = ?'} LIMIT 1`).get(...(a.is_core ? [a.class_id, userId] : [a.class_id, userId, a.skill]));
       if (coNguoi) { canhBao.push(`Lớp ${a.code}: ${a.is_core ? 'GVCN' : a.skill} đã có người khác — phân công lại ở hồ sơ lớp nếu cần.`); continue; }
       soPc += conn.prepare(`UPDATE teacher_assignments SET status = 'active', effective_to = ? WHERE id = ?`).run(pc.den ?? null, a.id).changes;
+    }
+    /* E-7 (N69): trong 15 phút trả lại việc đã chuyển mà chưa ai sửa tiếp; quá hạn thì nói rõ việc giữ nguyên cho ai. */
+    let dsChuyen: MucChuyen[] = [];
+    try { dsChuyen = (JSON.parse(nk?.after_json ?? '{}')?.chuyen?.ds ?? []) as MucChuyen[]; } catch { dsChuyen = []; }
+    if (dsChuyen.length) {
+      if (Date.now() - Date.parse(nk.created_at) <= HOAN_TAC_PHUT_NGUOI_NGHI * 60_000) {
+        const r = traLaiViecNguoiNghi(userId, p.userId, dsChuyen);
+        if (r.giu) canhBao.push(`${r.giu} Case / PA / việc đã được sửa tiếp sau khi chuyển — giữ nguyên, đổi lại ở từng Case.`);
+      } else {
+        const ten = (conn.prepare(`SELECT full_name FROM users WHERE id IN (${[...new Set(dsChuyen.map((m) => m.moi))].map(() => '?').join(',')})`).all(...new Set(dsChuyen.map((m) => m.moi))) as any[]).map((u) => u.full_name).join(', ');
+        canhBao.push(`Case / PA đã chuyển cho ${ten} giữ nguyên — đổi lại ở từng Case.`);
+      }
     }
     const coMatKhau = !!(conn.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId) as any)?.password_hash;
     if (!coMatKhau) canhBao.push(truoc.phanCong ? 'Đặt lại mật khẩu để người này đăng nhập.' : 'Đặt lại mật khẩu để người này đăng nhập; phân công lớp làm lại ở hồ sơ lớp.');

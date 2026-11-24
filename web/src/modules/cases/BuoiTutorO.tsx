@@ -3,7 +3,7 @@ import { useSession, type Session } from '../../lib/session.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { IconDat, IconKhong } from '../../ui/BieuTuong.tsx';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
-import { CHU_TOI_THIEU_CASE, TIEU_CHI_TUTOR, type BuoiTutor, type LoiTruong, type NguoiChon } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, TIEU_CHI_TUTOR, TRAN_CHU, type BuoiTutor, type LoiTruong, type NguoiChon } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Dòng trên form: thêm chữ phụ của tên đã chọn (chỉ hiển thị). */
@@ -21,11 +21,11 @@ export function phuSuyRa(b: BuoiTutor, s: Session | null | undefined): string | 
   return b.tutorId ? t('Tutor') : undefined;
 }
 
-/** TU2-3: trần chữ Nội dung của một dòng Tutor trên web (máy chủ giữ ≤ 1000 cho dữ liệu cũ). */
-export const TRAN_NOI_DUNG_TUTOR = 300;
+/** B-4 (N35 / N54): trần chữ Nội dung của một dòng Tutor = Nội dung PA (200). Chữ cũ dài hơn vẫn đọc / sửa được (ô `maxLength` ≥ độ dài hiện có), không bị cắt đến khi sửa. */
+export const TRAN_NOI_DUNG_TUTOR = TRAN_CHU.noiDungPa;
 
 /**
- * MỘT DÒNG TUTOR của Kết quả PA Tutor (TU3, TU5, TU6 — mockup Ⓣ1 A2, A6, A8): Tutor * (GV · tutor · tên gõ tay) · Nội dung * (n / 300) · khối
+ * MỘT DÒNG TUTOR của Kết quả PA Tutor (TU3, TU5, TU6 — mockup Ⓣ1 A2, A6, A8): Tutor * (GV · tutor · tên gõ tay) · Nội dung * (n / 200) · khối
  * "Về tutor {tên} · tuỳ chọn" (3 nút Có / Không, bấm lại = bỏ; "Cả 3 Có"; "Đánh giá thêm" gập) CHỈ khi dòng có tên Tutor. `nhieu`: có từ 2 dòng — dòng là
  * một thẻ, ô "Buổi" nhỏ đứng đầu (tổng các dòng = đã học). Khoá lỗi: `buoi-{i}-tutor` · `buoi-{i}-nx` · `buoi-{i}-so`.
  */

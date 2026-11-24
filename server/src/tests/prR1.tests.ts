@@ -35,10 +35,15 @@ export async function runPrR1Tests(t: any) {
     accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]);
     xoaNho();
     assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh khác bị coi là đã nghỉ');
+    /* E-4 (N69, chủ SP 25/11): mất vai ở chi nhánh CỦA EM (còn vai chi nhánh khác) → Case của em chi nhánh đó đã tự chuyển cho GV môn / GVCN lớp (không còn đứng tên người đó). */
+    const chuMoi = one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o;
+    assert(chuMoi !== c.chu && chuMoi !== null, `E-4: Case phải tự chuyển khi chủ mất vai ở chi nhánh của em: ${chuMoi}`);
     assert(owner.ganChuCaseThieu({ classId: c.lop, actorId: P.admin.userId, luc: '2026-11-24T03:00:00.000Z' }) === 0
-      && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
+      && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === chuMoi, 'ganChuCaseThieu gán đè chủ đã có người theo luật');
     const tenCon = cases.listCases(P.admin, { studentId: c.sid }).rows.find((r: any) => r.id === c.id)?.ownerName ?? '';
     assert(tenCon && !/đã nghỉ/.test(tenCon), `chủ còn làm mà tên có "(đã nghỉ)": ${tenCon}`);
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(c.chu, c.id);   // dựng lại chủ cũ cho phần R1 dưới đây
+    xoaNho();
     /* N69 (24/11): gỡ hết vai qua `setRoles` nay tự chuyển Case (phép N69 ở prGiaoViec). Ở đây đóng vai THẲNG ở DB — dữ liệu trước N69 / người không có ai thay —
        để thử trạng thái "chưa có người" của R1. */
     conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'`).run(c.chu);
@@ -149,6 +154,22 @@ export async function runPrR1Tests(t: any) {
   const hvt: any = await import('../worklist/hvCuaToi.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { addDays } = await import('../util.ts');
+  check('D-05 · "Thi tháng này" của TVV = định nghĩa của QL (ghi danh còn hiệu lực, chưa lưu trữ): em có ngày thi trong tháng vào số; em Tạm dừng rời số', () => thu(() => {
+    const em = one(`SELECT s.id, s.consultant_user_id AS tvv FROM students s JOIN user_roles ur ON ur.user_id = s.consultant_user_id AND ur.status = 'active'
+       JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant' JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+       JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status != 'abandoned' WHERE s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 1`);
+    assert(em, 'seed thiếu em có TVV + lộ trình');
+    const tvv = loadPrincipal(em.tvv);
+    const thi = () => { xoaNho(); return tqv.tongQuanTvv(tvv).thiThangNay as number; };
+    conn.prepare("UPDATE learning_cycles SET exam_date = NULL WHERE student_id IN (SELECT id FROM students WHERE consultant_user_id = ?)").run(em.tvv);
+    assert(thi() === 0, 'tiền đề: không em nào có ngày thi');
+    conn.prepare("UPDATE learning_cycles SET exam_date = ? WHERE id = (SELECT id FROM learning_cycles WHERE student_id = ? AND status != 'abandoned' ORDER BY id DESC LIMIT 1)").run(`${TODAY.slice(0, 7)}-15`, em.id);
+    assert(thi() === 1, 'em có ngày thi trong tháng phải vào số');
+    conn.prepare("UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?").run(TODAY, em.id);
+    conn.prepare("UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'").run(em.id);
+    assert(thi() === 0, 'em Tạm dừng không còn vào "Thi tháng này" (như QL)');
+  }));
+
   check('L6 · ngày VN: Báo PH tạo 01:00 VN ngày đầu kỳ vào kỳ, 01:00 VN ngày sau kỳ ra kỳ (Tổng quan TVV); Case tạo 00:30 VN ngày đầu cửa sổ vào "Cần chú ý"', () => thu(() => {
     assert(dauNgayVnUtc('2026-11-24') === '2026-11-23T17:00:00.000Z', dauNgayVnUtc('2026-11-24'));
     const em = one(`SELECT s.id, s.consultant_user_id AS tvv FROM students s JOIN user_roles ur ON ur.user_id = s.consultant_user_id AND ur.status = 'active'
