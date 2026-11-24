@@ -924,8 +924,15 @@
     .pn-bang .bang { table-layout: auto; }
     .pn-bang .bang col { width: auto !important; }
     .pn-bang .bang :is(th, td) { width: 1%; white-space: nowrap; }
-    .pn-bang .bang :is(th, td):is([data-kieu="ten"], [data-linh]) { width: auto; white-space: normal; overflow-wrap: anywhere; }
-    .pn-bang .bang :is(td[data-kieu="ten"], td[data-linh]) .bang-phu { white-space: normal; }
+    .pn-bang .bang :is(th, td)[data-linh] { width: auto; white-space: normal; overflow-wrap: anywhere; }
+    /* PTA 25/11: cột tên HV vừa TÊN dài nhất (không giành chỗ với cột chữ dài); cột linh hoạt (Vi phạm, PA, lý do) nhận phần dư, nhóm / mô tả tối đa 2 dòng, đủ chữ ở title. */
+    .pn-bang .bang :is(th, td)[data-kieu="ten"] { width: 1%; white-space: nowrap; }
+    [data-pn] .pn-than .pn-bang table.bang[data-deu] col[data-kieu="ten"] { width: 1% !important; }   /* thắng `--ten-pt` (40 % của cột tên) ở khối panel trên */
+    /* NH9 (chủ SP 25/11 "cân đối hàng cột"): cột số cùng bề rộng (đủ chữ "Chưa xử lý"), cột cuối căn phải sát mép panel. */
+    .pn-bang .bang :is(th, td)[data-kieu="so"] { min-width: 92px; }
+    [data-pn="so720"] .bang :is(th, td):last-child:not(:first-child, [data-linh]) { text-align: right; padding-right: 1.25rem; }
+    .pn-bang .bang td[data-linh] .bang-phu { white-space: normal; }
+    .pn-bang .bang td[data-linh] :is(.bang-phu, .cat-2d) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
     .pn-bang .bang > tbody > tr > td { padding-top: 0.45rem; padding-bottom: 0.45rem; }
   }
   .bang td[data-kieu="chip"] { white-space: nowrap; }

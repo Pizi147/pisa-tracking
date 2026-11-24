@@ -383,7 +383,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
     if (c.key === 'lop') return lkLop(h.classId, h.lop);
     if (c.key === 'ngay') return <span className="tabular-nums">{ddmm(h.ngay)}</span>;
-    if (c.key === 'vp') return <b className="font-semibold">{dich(h.nhom)}</b>;
+    if (c.key === 'vp') return <b className="cat-2d font-semibold" title={dich(h.nhom)}>{dich(h.nhom)}</b>;
     if (c.key === 'nguoi') return h.nguoiGhi ?? mo('—');
     return ttV(h);
   };
@@ -430,7 +430,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     { key: 'pa', nhan: 'PA', kieu: 'chu', linhHoat: true },
     ...(nghiaVu
       ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 104 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 104 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 124 }] as DinhNghiaCot[]
-      : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Người phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
+      : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
   ];
   const oP = (h: HP, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
