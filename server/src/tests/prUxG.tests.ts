@@ -101,9 +101,10 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const s = doc('web/src/modules/test/lichTest/KhoiNo.tsx');
     const m = /export const COT_LICH_TEST = \[([^\]]+)\]/.exec(doc('web/src/modules/test/lichTest/HangLop.tsx'));
     const COT_SO = m?.[1].split(',').length;
-    const cuoi = Number(m?.[1].split(',').pop());
-    assert(cuoi >= 110, `cột nút = ${cuoi}`);
-    assert(/<ColLichTest \/>/.test(s) && /w-full justify-center/.test(s), 'hàng Quá hạn: bộ cột chung + nút hết bề rộng cột');
+    /* Chủ SP 25/11 (cân đối cột): ba cột cuối chia đều phần còn lại (`null`, ≥ 194 px ở 1100) — nút giữ min-w 112 px, cột cuối sát phải. */
+    const cuoi = m?.[1].split(',').pop()?.trim();
+    assert(cuoi === 'null' || Number(cuoi) >= 110, `cột nút = ${cuoi}`);
+    assert(/<ColLichTest \/>/.test(s) && /justify-center/.test(s) && /min-w-\[112px\]/.test(s), 'hàng Quá hạn: bộ cột chung + nút không bị cắt (min 112 px)');
     const hl = doc('web/src/modules/test/lichTest/HangLop.tsx');
     assert(!/className="lt-gc"/.test(s + hl) && !/t\('Còn chờ'\)/.test(hl) && COT_SO === 5, 'Lịch Test: không cột "Còn chờ", không cột Môn (5 cột — LICH-TEST-GON, NHẸ HƠN)');
     assert(/conCho=\{[^}]*conCho/.test(s) && /conCho=\{conCho\}/.test(hl), 'Quá hạn + hàng lớp: ai còn chờ truyền xuống lưới (lớp thường: cùng dòng công cụ với Tổng số câu; điện thoại không có tooltip)');
