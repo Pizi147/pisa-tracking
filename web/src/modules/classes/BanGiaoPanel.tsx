@@ -219,7 +219,7 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
       }}>
       {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">{t('Không có em nào cần bàn giao.')}</p>}
       {em && (
-        <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[280px_minmax(0,1fr)]'}`}>
+        <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[236px_minmax(0,1fr)]'}`}>
           {!chiDoc && <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
             dau={loNx.vua ? <DaiChenLo n={loNx.vua.length} onHoanTac={() => { void loNx.hoanTac(); setDaChenEm(new Set()); }} />
               : choChenNx.length >= 2 ? <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:min-h-0"

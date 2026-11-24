@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { Modal } from '../../ui/Drawer.tsx';
+import { Modal, NutDongHop } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -125,12 +125,12 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
     ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => { onClose(); onChuyenLop(); }}>{t('Chuyển lớp…')}</button>
     : null;
   return (
-    <Modal open onClose={busy ? () => {} : onClose} width="max-w-md"
+    <Modal open onClose={busy ? () => {} : onClose} daSua={!busy && !!lyDo.trim()} width="max-w-md"
       title={<span className="flex flex-col"><span>{tieuDe}</span><span className="text-xs font-normal text-slate-400">{nguCanh}</span></span>}
       footer={(
         <>
           {busy && <span className="mr-auto inline-flex items-center gap-1.5 text-[13px] font-semibold text-[color:var(--accent)]" role="status">{t('Đang lưu…')}</span>}
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
+          <NutDongHop className="btn min-h-[44px] sm:min-h-0" disabled={busy}>{t('Đóng')}</NutDongHop>
           {nutPhu}
           {!chan && (
             <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy || (!mot && ds.length === boQua.length)}>

@@ -6,7 +6,8 @@
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
  * PR-KHUNG G5: dưới 640px mép phải mờ + đệm pr-8 (cùng mẫu bộ lọc Học viên & Lớp) — biết là còn tab để vuốt.
  */
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { BadgeMo, BadgeTabSo, CHIP_TRON } from './Nhan.tsx';
 import type { BadgeTab } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -34,14 +35,47 @@ export function phimHangTab(e: KeyboardEvent<HTMLElement>) {
 const matMep = (m: { t: boolean; p: boolean }) =>
   `linear-gradient(to right, ${m.t ? 'transparent 0, #000 2rem' : '#000 0'}, ${m.p ? '#000 calc(100% - 2rem), transparent 100%' : '#000 100%'})`;
 
-export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, panelId, className = '' }: {
+export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, panelId, className = '', thuGon = false }: {
   /** TAB-A11Y: id của vùng nội dung (`role="tabpanel"`) mà hàng tab điều khiển → `aria-controls`. Không truyền = trang chưa có vùng riêng. */
   panelId?: string;
   tabs: readonly HangTabMuc<K>[]; value: K; onChange: (k: K) => void; ariaLabel: string;
   /** Lề âm hết bề ngang khối cha (tab hạng mục Công việc, mockup `.tabs` margin 0 -24px); tab con trong khối / panel không truyền (`.tabs.trong`). */
   className?: string;
+  /** HAI-BEN (chủ SP 25/11): hàng hẹp (Công việc khi panel mở) — tab không vừa dồn vào "Thêm ▾" (cuối hàng), KHÔNG cắt chữ giữa chừng, KHÔNG cuộn. */
+  thuGon?: boolean;
 }) {
   const hang = useRef<HTMLDivElement>(null);
+  const [an, setAn] = useState<ReadonlySet<string>>(new Set());
+  const [moThem, setMoThem] = useState(false);
+  const nutThem = useRef<HTMLButtonElement>(null);
+  const menuThem = useRef<HTMLUListElement>(null);
+  const [viTriThem, setViTriThem] = useState<{ top: number; right: number } | null>(null);
+  /* Menu "Thêm": Esc hoặc bấm ra ngoài thì đóng (bàn phím + chuột cùng có lối ra). */
+  useEffect(() => {
+    if (!moThem) return undefined;
+    const dong = (e: Event) => { if (e instanceof KeyboardEvent ? e.key === 'Escape' : !hang.current?.contains(e.target as Node) && !menuThem.current?.contains(e.target as Node)) setMoThem(false); };
+    document.addEventListener('keydown', dong);
+    document.addEventListener('pointerdown', dong);
+    return () => { document.removeEventListener('keydown', dong); document.removeEventListener('pointerdown', dong); };
+  }, [moThem]);
+  const khoaTab = tabs.map((x) => `${x.key}${x.so ?? ''}${x.badge?.so ?? ''}`).join('|');
+  useLayoutEffect(() => {
+    const h = hang.current;
+    if (!thuGon || !h) { setAn((a) => (a.size ? new Set() : a)); return undefined; }
+    const tinh = () => {
+      const nut = Array.from(h.querySelectorAll<HTMLElement>('[role="tab"]'));
+      const goc = h.getBoundingClientRect().left;
+      const rong = h.clientWidth;
+      const het = nut.length ? nut[nut.length - 1].getBoundingClientRect().right - goc : 0;
+      const gioiHan = het <= rong ? rong : rong - 92;   // 92 = nút "Thêm ▾"
+      const ra = new Set(nut.filter((n) => n.getBoundingClientRect().right - goc > gioiHan).map((n) => n.dataset.tab!));
+      setAn((a) => (a.size === ra.size && [...ra].every((k) => a.has(k)) ? a : ra));
+    };
+    tinh();
+    const ro = new ResizeObserver(tinh);
+    ro.observe(h);
+    return () => ro.disconnect();
+  }, [thuGon, khoaTab]);   // eslint-disable-line react-hooks/exhaustive-deps -- tinh chỉ đọc ref
   /* PTA rà #1690: hàng tab tràn (375) mờ MÉP còn tab — trái khi đã cuộn qua tab đầu, phải khi còn tab sau — để không tưởng mất tab. Đệm phải 32 px
      (chỗ cho vùng mờ phải) chỉ khi còn tab bên phải: cuộn tới cuối thì tab đầu còn ló dưới vùng mờ trái. */
   const [mep, setMep] = useState({ t: false, p: false });
@@ -75,14 +109,14 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
   return (
     /* `relative`: chữ `sr-only` (absolute) của badge bám vào hàng tab, không kéo <main> trượt ngang ở 375 (RA-GD-0711). */
     <div ref={hang} role="tablist" aria-label={ariaLabel} onKeyDown={phimHangTab} onScroll={doMep}
-      className={`relative flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] ${mep.p ? 'max-sm:pr-8' : ''} ${className}`}
+      className={`relative flex gap-1 border-b max-sm:[scrollbar-width:none] ${thuGon ? 'overflow-x-clip overflow-y-visible' : 'overflow-x-auto overflow-y-hidden'} ${mep.p ? 'max-sm:pr-8' : ''} ${className}`}
       style={{ borderColor: 'var(--line)', ...(mep.t || mep.p ? { maskImage: matMep(mep), WebkitMaskImage: matMep(mep) } : {}) }}>
       {tabs.map((t, i) => {
         const active = t.key === value;
         return (
           /* GD-4c (mockup v21 H1 `.tab`): MỘT dáng — 14 / 600 mọi trạng thái, chọn = chữ chính + gạch 2 px nhấn; 1440 đệm 11 14 12, 375 đệm 12 10, cao ≥ 44. */
-          <button key={t.key} type="button" role="tab" data-tab={t.key} aria-selected={active} aria-controls={panelId} tabIndex={active || (i === 0 && !coChon) ? 0 : -1} onClick={() => onChange(t.key)}
-            className={`-mb-px inline-flex min-h-[44px] shrink-0 cursor-pointer appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-2.5 py-3 text-sm font-semibold sm:px-3.5 sm:pb-3 sm:pt-[11px] ${
+          <button key={t.key} type="button" role="tab" data-tab={t.key} aria-selected={active} aria-controls={panelId} tabIndex={active || (i === 0 && !coChon) ? 0 : -1} aria-hidden={an.has(t.key) || undefined} onClick={() => onChange(t.key)}
+            className={`-mb-px inline-flex min-h-[44px] shrink-0 cursor-pointer appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-2.5 py-3 text-sm font-semibold sm:px-3.5 sm:pb-3 sm:pt-[11px] ${an.has(t.key) ? 'invisible pointer-events-none ' : ''}${
               active ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
             {/* A3-18: nhãn đủ vẫn là tên truy cập (sr-only ở 375), chỉ nhãn ngắn hiện. */}
             {t.ngan ? <><span aria-hidden className="sm:hidden">{t.ngan}</span><span className="max-sm:sr-only">{t.label}</span></> : t.label}
@@ -97,6 +131,28 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
           </button>
         );
       })}
+      {thuGon && an.size > 0 && (
+        <span className="absolute inset-y-0 right-0 flex items-stretch" style={{ background: 'var(--bg)' }}>
+          <button type="button" aria-haspopup="menu" aria-expanded={moThem} ref={nutThem} onClick={() => { const r = nutThem.current?.getBoundingClientRect(); if (r) setViTriThem({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMoThem(!moThem); }}
+            className={`-mb-px inline-flex min-h-[44px] cursor-pointer appearance-none items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 text-sm font-semibold ${an.has(value) ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
+            {t('Thêm')} <span aria-hidden>▾</span>
+          </button>
+          {/* Menu qua portal ra <body>: danh sách (isolate) và panel 720 không che / cắt được. */}
+          {moThem && viTriThem && createPortal(
+            <ul ref={menuThem} role="menu" className="fixed z-[80] m-0 grid min-w-[200px] list-none gap-0.5 rounded-lg border p-1 shadow-lg" style={{ top: viTriThem.top, right: viTriThem.right, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+              {tabs.filter((x) => an.has(x.key)).map((x) => (
+                <li key={x.key} role="none">
+                  <button type="button" role="menuitem" onClick={() => { setMoThem(false); onChange(x.key); }}
+                    className={`flex min-h-[40px] w-full cursor-pointer appearance-none items-center gap-2 rounded-md border-0 bg-transparent px-3 text-left text-sm font-semibold hover:bg-[color:var(--accent-soft)] ${x.key === value ? 'text-[color:var(--text)]' : 'text-dim'}`}>
+                    {x.label}{x.badge && <BadgeTabSo b={x.badge} />}{!!x.so && x.so > 0 && <BadgeMo so={x.so} />}
+                  </button>
+                </li>
+              ))}
+            </ul>,
+            document.body,
+          )}
+        </span>
+      )}
     </div>
   );
 }

@@ -1,21 +1,39 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useGiuFocus } from './giuFocus.ts';
 import { t } from '@shared/i18n/index.ts';
 
-export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg', z = 'z-50' }: {
+/** E-6: hàm đóng CÓ HỎI của `Modal` — nút "Đóng" ở chân hộp dùng `NutDongHop` để cùng đường với nền / Esc / ✕. */
+const DongHop = createContext<(() => void) | null>(null);
+export function NutDongHop({ children, ...rest }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type'>) {
+  const dong = useContext(DongHop);
+  return <button type="button" {...rest} onClick={dong ?? undefined}>{children}</button>;
+}
+
+export function Modal({ open, onClose, title, children, footer, width = 'max-w-lg', z = 'z-50', daSua = false, viecChuaLuu }: {
   open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode; width?: string;
   /** Lớp z — hộp mở TRÊN một popover `z-[60]` (HopKyNang) cần cao hơn. */
   z?: string;
+  /** E-6 (bảng kê 25/11): hộp đang có chữ chưa lưu — nền / Esc / ✕ hỏi MỘT lần "Bỏ chữ đang gõ?" (`HopBoChu`), không mất chữ âm thầm. Nơi gọi tự tắt khi đang lưu. */
+  daSua?: boolean;
+  /** Tên phần đang gõ trong câu hỏi ("{viec} chưa lưu…"); bỏ trống = "Lý do". */
+  viecChuaLuu?: string;
 }) {
+  const [hoi, setHoi] = useState(false);
+  const dong = hoi ? () => {} : daSua ? () => setHoi(true) : onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dong(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, dong]);
 
   if (!open) return null;
-  return <KhungModal onClose={onClose} title={title} footer={footer} width={width} z={z}>{children}</KhungModal>;
+  return (
+    <DongHop.Provider value={dong}>
+      <KhungModal onClose={dong} title={title} footer={footer} width={width} z={z}>{children}</KhungModal>
+      {hoi && <HopBoChu viec={viecChuaLuu ?? t('Lý do')} nut={t('Bỏ chữ, đóng')} onO={() => setHoi(false)} onBo={() => { setHoi(false); onClose(); }} />}
+    </DongHop.Provider>
+  );
 }
 
 /** Tách khỏi `Modal` để hook giữ focus chạy đúng lúc mở/đóng (Modal trả `null` khi `open = false`). */

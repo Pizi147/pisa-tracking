@@ -524,8 +524,8 @@ export function HoTroHocVienTab() {
   /* GD-1: GV có lớp. GD-8 (④ R4.5, [XM-7]): TVV luôn có "+ Task" = Hỏi tình hình học tập (em chọn từ HV của tôi đã nạp). */
   const coTask = (laGv && dongLop.length > 0) || laTvv;
   const nutTask = (noi: 'dau' | 'noi') => (laTvv
-    ? <NutTask noi={noi} muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten, phu: e.lop.map((l) => l.ma).join(', ') || undefined }))} />
-    : <NutTask noi={noi} />);
+    ? <NutTask noi={noi} ca375 muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten, phu: e.lop.map((l) => l.ma).join(', ') || undefined }))} />
+    : <NutTask noi={noi} ca375 />);
   /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */
   /* RA-LOI-0711d: QL chỉ một chi nhánh (không có ô Chi nhánh, `branchId` null) → chi nhánh duy nhất của quyền. */
   const cnQuyen = [...new Set((session?.grants ?? []).map((g) => g.branchId))];
@@ -626,7 +626,8 @@ export function HoTroHocVienTab() {
   return (
     <div className="space-y-3">
       {/* NHẸ HƠN + PANEL-GON: panel mở → đầu trang + lọc + tab vào cột trái (≥ 1024) — cùng bề rộng danh sách cạnh panel 720 (v24 `.cv`), không che nút lọc / + Task. */}
-      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[max(260px,min(680px,calc(100vw-760px)))]' : ''}`}>
+      {/* HAI-BEN: panel mở → đầu trang vào cột trái, đúng bề rộng danh sách (= 100% − 24 − ô phải min(720, 100vw − 584)), không chui dưới panel. */}
+      <div className={`space-y-2.5 ${anTrenDienThoai} ${coPanel ? 'lg:max-w-[max(260px,calc(100%-24px-min(720px,calc(100vw-584px))))]' : ''}`}>
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">
@@ -655,11 +656,11 @@ export function HoTroHocVienTab() {
             </button>
           )}
           {/* NHẸ HƠN PR-2a (v23 ② G1): vai không có nút phạm vi (GV, TVV, Admin) — Lọc thêm · + Task · + Giao việc ở mép phải hàng tiêu đề. */}
-          {!coPhamVi && <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-[1fr_auto] [&>*]:max-sm:min-w-0">{nutHang}</span>}
+          {!coPhamVi && <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2 [&>*]:max-sm:min-w-0">{nutHang}</span>}
         </header>
         {/* NHẸ HƠN PR-2a (v23 ⑨ vòng 3): hàng phạm vi RIÊNG dưới tiêu đề, trên hàng tab — Của tôi / Của GV / Tất cả · Lọc thêm · + Task · + Giao việc; panel mở không cắt chữ.
             375: phạm vi một khối liền hết bề rộng, nút 44 px. */}
-        {coPhamVi && <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:grid-cols-[1fr_auto] [&>*]:max-sm:min-w-0" data-hd="cv-pham-vi">{nutHang}</div>}
+        {coPhamVi && <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:grid-cols-2 [&>*]:max-sm:min-w-0" data-hd="cv-pham-vi">{nutHang}</div>}
         {/* U01 #1: "Lọc thêm" mở MỘT hàng ngay dưới (cùng kiểu "Bộ lọc thêm" HV & Lớp) — không popover lồng ô chọn có popover riêng. */}
         {moLocThem && (
           <div role="group" aria-label={t('Lọc thêm')} className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-1">
@@ -708,7 +709,7 @@ export function HoTroHocVienTab() {
             ))}
           </div>
         )}
-        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab ariaLabel={t('Hạng mục việc')} className="-mx-4 px-4 md:-mx-5 md:px-5" tabs={tabs.map((x) => ({ key: x.key, label: x.nhan, badge: x.badge }))} value={tab ?? ''} panelId="cv-tab-than" onChange={(k) => {
+        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab ariaLabel={t('Hạng mục việc')} thuGon={coPanel} className="-mx-4 px-4 md:-mx-5 md:px-5" tabs={tabs.map((x) => ({ key: x.key, label: x.nhan, badge: x.badge }))} value={tab ?? ''} panelId="cv-tab-than" onChange={(k) => {
           const next = new URLSearchParams(params); next.set('nhom', k); next.delete('loai'); next.delete('the'); setParams(next, { replace: true });
         }} /></div>}
         {tab === 'duyet' && <div ref={setKhuLocDuyet} />}
@@ -716,8 +717,8 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* PANEL-GON (v24 `.cv`, chủ SP 24/11): panel MỘT khung 720 bám mép phải, danh sách trái min(680, 100vw − 760) không đè. Khuôn A: danh sách không co theo loại panel. */}
-      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel ? 'lg:grid-cols-[max(260px,min(680px,calc(100vw-760px)))_minmax(0,1fr)]' : coKhoiPhai ? 'lg:grid-cols-[minmax(0,1fr)_420px]' : ''} lg:gap-6`}`}>
-        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel || coKhoiPhai ? 'lg:grid-cols-[minmax(260px,1fr)_min(720px,calc(100vw-584px))]' /* HAI-BEN (chủ SP 25/11): hai cột CỐ ĐỊNH — ô phải 720 (1280: 696), danh sách phần còn lại; mở / đóng panel KHÔNG đổi bề rộng danh sách */ : ''} lg:gap-6`}`}>
+        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel || coKhoiPhai ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
             <DanhSachViec nho={uid != null ? `u${uid}:xong` : undefined} muc={dsXong} dem={new Map(dsXong.map((m) => [m.key, { n: m.items.length, quaHan: 0 }]))} soHien={10}
@@ -833,7 +834,6 @@ export function HoTroHocVienTab() {
         </div>
       </div>
 
-      {coTask && !chon && !theId && nutTask('noi')}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
     </div>
   );

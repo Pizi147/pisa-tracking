@@ -173,7 +173,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
         </section>
 
         {!em ? <p className="m-0 text-sm text-slate-400">{t('Lớp không còn em nào đang học.')}</p> : (
-          <div className="grid gap-4 md:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="grid gap-4 md:grid-cols-[236px_minmax(0,1fr)]">
             <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={ds} chon={em.id}
               onChon={(id) => { setChon(id); setDaChenEm((s) => { if (!s.has(id)) return s; const m = new Set(s); m.delete(id); return m; }); }}
               dau={lo.vua ? <DaiChenLo n={new Set(lo.vua.map((c) => c.sid)).size} onHoanTac={() => { void lo.hoanTac(); setDaChenEm(new Set()); }} />
