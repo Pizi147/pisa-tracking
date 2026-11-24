@@ -29,7 +29,7 @@ Chưa có code. Chờ chủ SP duyệt (CLAUDE.md: màn / luồng đổi phải 
 | C1 · 1440 | Bàn giao **thay trong khe 720** (chip Chờ bàn giao của Ngọc): ‹ Quay lại, dải "đang giữ nguyên", phiếu tự điền + mỗi môn một câu + Nhận xét chung → Xác nhận bàn giao |
 | C2 · 1440 | Mở lớp mới **thay trong khe 720** ("+ Mở lớp mới…"): chương trình · chi nhánh · số lớp · tuần khai giảng · phân công → Mở lớp, lớp điền sẵn vào ô Lớp của 2 em |
 | C3 · C4 · 375 | Hai màn trên toàn màn |
-| B1–B3 | Trang Cuối khoá **cùng bảng với panel** (MT0 + Kỳ vọng FT gập vào hộp dưới dòng), khung tối đa 1100 px canh giữa: 1440 · 1280 · 375 |
+| B1–B3 | Trang Cuối khoá **cùng bảng với panel** (MT0 + Kỳ vọng FT gập vào hộp dưới dòng), khung rộng hết: 1440 · 1280 · 375 |
 
 ## 3. Panel: thiết kế
 
@@ -47,18 +47,17 @@ Chưa có code. Chờ chủ SP duyệt (CLAUDE.md: màn / luồng đổi phải 
 
 ## 4. Trang Cuối khoá: cùng bảng với panel, cân cột (B)
 
-PTA 25/11: gập MT0 + Kỳ vọng FT vào hộp dưới dòng như panel, bỏ hai cột gần như trống. Trang và panel dùng MỘT lưới (cùng subgrid, cùng hộp dưới dòng, cùng thanh công cụ + thanh Áp); trang chỉ rộng hơn. Bảng chỉ còn 5 cột nên **thu khung** (NH9 "bảng ít cột thì thu khung bảng"): khung trang tối đa 1100 px, canh giữa.
+PTA 25/11: gập MT0 + Kỳ vọng FT vào hộp dưới dòng như panel, bỏ hai cột gần như trống; **khung trang rộng hết như các trang khác** (không thu khung — chủ SP đã chê "dồn cột rồi thừa khoảng trống"). Trang và panel dùng MỘT lưới (cùng subgrid, hộp dưới dòng, thanh công cụ + thanh Áp); trang chỉ rộng hơn, nên chia 5 cột cho hết bề ngang.
 
 | | Trước (`CuoiKhoaLop.tsx` `LUOI`) | Sau |
 |---|---|---|
-| Cột | 28 · tên `minmax(260,1fr)` · 92 · 92 · 92 · 148 · 148 · 148 (8 cột, MT0 + Kỳ vọng 5/6 ô "—") | 28 · tên · Final % · Bước tiếp · Lớp · Tuần (5 cột) |
-| Tên ở 1440 (thẻ 1392) | ≈ 514 px, nuốt chỗ thừa | **210 px** (chữ dài nhất ≈ 174: thừa 36) |
-| Final | 92 | 88 (nội dung 52; số căn giữa) |
-| Ba ô nhập | 148, dính trái | **212 bằng nhau** (máy đo) |
-| Ô cuối | sát lề 16 | sát lề 16 (đo 17 gồm viền) |
-| 1280 | tên ≈ 354 | như 1440 (khung 1100 canh giữa; thẻ 1232 không còn rộng hơn) |
+| Cột | 28 · tên `minmax(260,1fr)` · 92 · 92 · 92 · 148 · 148 · 148 (8 cột, MT0 + Kỳ vọng 5/6 ô "—") | 28 · tên `minmax(260,280)` · Final 96 · Bước tiếp · Lớp · Tuần (5 cột) |
+| Tên ở 1440 (thẻ 1392) | ≈ 514 px, nuốt chỗ thừa | **280 px** (chỗ thừa đi vào hộp dưới dòng và dòng phụ: nhãn nhóm, nhận xét GVCN, chip bàn giao) |
+| Final | 92, dính trái | 96, số căn giữa |
+| Ba ô nhập | 148 | chia đều phần còn lại (số đo ở dưới) |
+| Ô cuối | sát lề 16 | sát lề 16 |
 
-Số đo (Playwright, cùng phép đo như panel): track 2 · 28 · 210 · 88 · 212 · 212 · 212 · 2; **không cột nào thừa > 40 px** so với nội dung; tâm cột Final lệch 0 px giữa các dòng. 375: thẻ như panel.
+Số đo (Playwright, cùng phép đo như panel): **1440** track 2 · 28 · 280 · 96 · **283,3 × 3** · 2; **1280** track 2 · 28 · 280 · 96 · **230 × 3** · 2; ba ô nhập bằng nhau ở cả hai bề rộng, tâm cột Final lệch 0 px giữa các dòng, ô cuối cách mép 16 px (đo 17 gồm viền); máy dò chữ tràn / lòi khung 0 lỗi. Tên 280 rộng hơn chữ dài nhất (≈ 174) theo chỉ định PTA (260–300): phần thừa nằm trong ô tên có nhãn nhóm, nhận xét GVCN, chip bàn giao. 375: thẻ như panel.
 
 ## 5. Bỏ / gộp — và vì sao
 
@@ -104,7 +103,7 @@ Không bỏ thao tác nào. Mọi thao tác TRƯỚC → SAU:
 - **Hoàn tác, không hộp hỏi** (theo code, bỏ N22 ③ cũ) — ghi ở mục 3.
 - Panel **chỉ cho QL**; vai khác (GVCN nhận xét, vai chỉ đọc) dùng trang.
 - ⋯ có "Mở ở trang riêng ›" + "Gia hạn".
-- Trang Cuối khoá gập MT0 + Kỳ vọng FT như panel, bỏ hai cột trống (mục 4).
+- Trang Cuối khoá gập MT0 + Kỳ vọng FT như panel, bỏ hai cột trống, **khung rộng hết** (không thu 1040 — PTA 25/11, mục 4).
 
 Còn mở:
 
@@ -112,12 +111,11 @@ Còn mở:
 - **[XM6] Nhóm "Chờ Final"** chốt trước Final được (N22), mockup hiện nhãn "Chờ Final" nhỏ dưới tên, không dải — giữ luật 11/11.
 - **[XM7]** Tên em, nhãn, hạn trong mockup là minh hoạ; khi code lấy đúng trường đang có.
 - **[XM9] A5:** mẫu số giữ "3/6 đã chốt" (2 em chuyển ngay + Ngọc); nếu máy chủ chỉ đếm em còn ở lớp thì thành "1/4".
-- **[XM10] Khung trang 1100 px canh giữa** ở 1440 / 1280 (hai bên trống ~ 170 / 70 px) — hệ quả của "bảng ít cột thì thu khung". Muốn trang rộng hết khung thì ô nhập và cột tên sẽ lại giãn.
 - **[XM11] C1 / C2 là bản rút gọn** của Bàn giao (`BanGiaoPanel`, 3 dạng theo người mở) và Mở lớp (`ClassCreatePanel`): chỉ vẽ khuôn thay-trong-khe và nút quay lại; ruột từng màn giữ nguyên như web.
 
 ## 7. Skill đã chạy
 
-- `impeccable`: `context` → `shape` (khung dưới) → `critique` (một lượt rà độc lập bằng ảnh, không nhận kết luận của người vẽ): **panel 29/40, trang 26/40, không P0**; P1 đã sửa: nhóm Lên BE lẫn em đã chốt · ba tên cho "Ngay hôm nay" · "sẵn sàng" tính khác nhau giữa B1 / B2 · chip lọc mất ở 375 · vùng bấm 375 · Kỳ vọng FT lặp ba chỗ ở trang · P2 rẻ: chip lọc không sáng khi chưa lọc, ✓ ở chip đang chọn, em chưa hướng ghi "—", nhận xét GVCN 2 dòng, A6 bớt lặp "6/6" + lối "Xem lộ trình đã chốt ›", nút Ngay hôm nay đủ tương phản. Sau ba lượt (có PTA 25/11 gập cột trang + hai màn C): lượt 2 panel 30 · màn C 28 · trang 28, P1 đã sửa (vùng bấm 375 đo ≥ 44, số đếm lỗi A4 một kiểu, dải "đang giữ nguyên" ở 375, cột tên trang). **Lượt 3 (cuối): panel 29 · màn C 30 · trang 29, 0 P0 / P1** — chưa chạm 35; P2 còn lại: hộp MT0 / Kỳ vọng rộng hơn nội dung ở trang, tấm Áp 375 chiếm ~45 % màn, "Chọn tất cả" vẫn chọn em đã chốt (cố ý: em Lên FT còn Kỳ vọng chờ), thuật ngữ "Reset bậc vi phạm" / KCK / "Điền thay" lấy đúng chữ web đang dùng.
+- `impeccable`: `context` → `shape` (khung dưới) → `critique` (một lượt rà độc lập bằng ảnh, không nhận kết luận của người vẽ): **panel 29/40, trang 26/40, không P0**; P1 đã sửa: nhóm Lên BE lẫn em đã chốt · ba tên cho "Ngay hôm nay" · "sẵn sàng" tính khác nhau giữa B1 / B2 · chip lọc mất ở 375 · vùng bấm 375 · Kỳ vọng FT lặp ba chỗ ở trang · P2 rẻ: chip lọc không sáng khi chưa lọc, ✓ ở chip đang chọn, em chưa hướng ghi "—", nhận xét GVCN 2 dòng, A6 bớt lặp "6/6" + lối "Xem lộ trình đã chốt ›", nút Ngay hôm nay đủ tương phản. Sau ba lượt (có PTA 25/11 gập cột trang + hai màn C): lượt 2 panel 30 · màn C 28 · trang 28, P1 đã sửa (vùng bấm 375 đo ≥ 44, số đếm lỗi A4 một kiểu, dải "đang giữ nguyên" ở 375). Lượt 3 chấm trên bản khung trang 1040 — sau đó PTA đổi sang khung rộng hết, chưa chấm lại. **Lượt 3 (cuối): panel 29 · màn C 30 · trang 29, 0 P0 / P1** — chưa chạm 35; P2 còn lại: hộp MT0 / Kỳ vọng rộng hơn nội dung ở trang, tấm Áp 375 chiếm ~45 % màn, "Chọn tất cả" vẫn chọn em đã chốt (cố ý: em Lên FT còn Kỳ vọng chờ), thuật ngữ "Reset bậc vi phạm" / KCK / "Điền thay" lấy đúng chữ web đang dùng.
 - `ui-ux-pro-max` (domain ux): hành động chính một chỗ (Chốt), lỗi cạnh ô sai, vùng bấm 44 ở 375, trạng thái không chỉ màu (✓ ✗ ⚠ + chữ).
 - Chuẩn nội bộ: NH9 luật cột, NH10 khung 720, N17 / N20 / N21 / N22 / N25 / N36 / N71, v24 `cong-viec-gon-ghi-chu.md`.
 
