@@ -55,7 +55,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
     if (!moThem) return undefined;
     const dong = (e: Event) => { if (!hang.current?.contains(e.target as Node) && !menuThem.current?.contains(e.target as Node)) setMoThem(false); };
     /* Esc chỉ đóng menu (không lan sang panel bên dưới), focus về nút "Thêm". */
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setMoThem(false); nutThem.current?.focus(); } };
+    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setMoThem(false); nutThem.current?.focus(); } };
     document.addEventListener('keydown', esc, true);
     document.addEventListener('pointerdown', dong);
     return () => { document.removeEventListener('keydown', esc, true); document.removeEventListener('pointerdown', dong); };
