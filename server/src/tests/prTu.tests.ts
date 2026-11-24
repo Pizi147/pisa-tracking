@@ -80,6 +80,13 @@ export async function runPrTuTests(t: any) {
     assert(d.kiemBuoiTutor(1, [du({ nhanXet: dai(251) })], new Set([dai(250)])) !== null, 'sửa thành dài hơn chữ cũ vẫn bị chặn');
   });
 
+  check('B-4b · lưới Kết quả PA (web): trần 200 và chữ cũ dài giữ nguyên không bị chặn (cùng `chuCu` của máy chủ); chú thích không còn "≤ 300"', () => {
+    const doc = (f: string) => readFileSync(join(process.cwd(), 'web/src', f), 'utf8');
+    const luoi = doc('modules/congViec/LuoiKetQuaPa.tsx'), buoi = doc('modules/cases/BuoiTutorO.tsx');
+    assert(luoi.includes('n <= TRAN_NOI_DUNG_TUTOR || v.note.trim() === goc') && luoi.includes("v.note.trim() !== goc && t('Tối đa {n} ký tự'"), 'lưới chưa miễn chữ cũ dài');
+    assert(!luoi.includes('≤ 300') && !buoi.includes('n / 300') && buoi.includes('TRAN_NOI_DUNG_TUTOR = TRAN_CHU.noiDungPa'), 'còn chú thích 300');
+  });
+
   check('TU-2a · kiemBuoiTutor (TU5 chủ SP 19/11): 3 ô tuỳ chọn (Có / Không / trống, sai kiểu vẫn lỗi); đánh giá 1–5 hoặc trống; hình thức offline / online / trống', () => {
     assert(d.kiemBuoiTutor(1, [du()]) === null, String(d.kiemBuoiTutor(1, [du()])));
     assert(d.kiemBuoiTutor(1, [du({ danhGia: null, nhanXetTutor: '', hinhThuc: null, tutorId: null })]) === null, 'tuỳ chọn trống được');

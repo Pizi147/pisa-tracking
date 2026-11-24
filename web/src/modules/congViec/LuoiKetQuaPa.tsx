@@ -36,16 +36,16 @@ type PaLuoi = {
 type TuChon = { tutorId?: number | null; gvId?: number | null; tutor: string; phu?: string };
 type GiaTri = { outcome: string; note: string; a?: string; b?: string; tu?: TuChon };
 const soNho = (s: string | undefined): number | null => (s && /^\d{1,2}$/.test(s.trim()) ? Number(s.trim()) : null);
-/** Đủ để lưu: Tiến triển · a (0–60) · b (1–60) · a ≥ 1 thì thêm Tutor + Nội dung (≥ 8, ≤ 300 ký tự). */
-const duTutor = (v: GiaTri): boolean => {
+/** Đủ để lưu: Tiến triển · a (0–60) · b (1–60) · a ≥ 1 thì thêm Tutor + Nội dung (≥ 8, ≤ 200 ký tự). `goc` = chữ đã lưu / nháp máy chủ: chữ CŨ dài hơn 200 giữ nguyên thì không bị chặn (như `chuCu` ở máy chủ, N35). */
+const duTutor = (v: GiaTri, goc = ''): boolean => {
   const a = soNho(v.a), b = soNho(v.b), n = v.note.trim().length;
   if (!v.outcome || a === null || a > 60 || b === null || b < 1 || b > 60) return false;
-  return a === 0 || (!!v.tu?.tutor.trim() && n >= CHU_TOI_THIEU_CASE && n <= TRAN_NOI_DUNG_TUTOR);
+  return a === 0 || (!!v.tu?.tutor.trim() && n >= CHU_TOI_THIEU_CASE && (n <= TRAN_NOI_DUNG_TUTOR || v.note.trim() === goc));
 };
-const thieuTutor = (v: GiaTri): string[] => {
+const thieuTutor = (v: GiaTri, goc = ''): string[] => {
   const a = soNho(v.a), b = soNho(v.b), n = v.note.trim().length;
   return [!v.outcome && t('Thiếu tiến triển'), (a === null || a > 60) && t('Thiếu số buổi đã học'), (b === null || b < 1 || b > 60) && t('Thiếu số buổi dự kiến'),
-    a !== null && a >= 1 && !v.tu?.tutor.trim() && t('Thiếu Tutor'), a !== null && a >= 1 && n < CHU_TOI_THIEU_CASE && t('Nhận xét ≥ {n} ký tự', { n: CHU_TOI_THIEU_CASE }), n > TRAN_NOI_DUNG_TUTOR && t('Tối đa {n} ký tự', { n: TRAN_NOI_DUNG_TUTOR })].filter((x): x is string => !!x);
+    a !== null && a >= 1 && !v.tu?.tutor.trim() && t('Thiếu Tutor'), a !== null && a >= 1 && n < CHU_TOI_THIEU_CASE && t('Nhận xét ≥ {n} ký tự', { n: CHU_TOI_THIEU_CASE }), n > TRAN_NOI_DUNG_TUTOR && v.note.trim() !== goc && t('Tối đa {n} ký tự', { n: TRAN_NOI_DUNG_TUTOR })].filter((x): x is string => !!x);
 };
 /** Phần Tutor của thân gửi: lưu chốt (`soBuoi` = a, đúng một dòng khi a ≥ 1) · nháp (chỉ phần có chữ). */
 const thanTutorChot = (v: GiaTri) => { const a = Number(v.a); return { soBuoi: a, buoiDuKien: Number(v.b), buoi: a > 0 ? [{ tutorId: v.tu?.tutorId ?? null, gvId: v.tu?.gvId ?? null, tutor: v.tu!.tutor.trim(), nhanXet: v.note.trim(), soBuoi: a }] : [] }; };
@@ -124,7 +124,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     const v = giaTri(id);
     const n = v.note.trim().length;
     if (laTutor(x)) {
-      if (duTutor(v)) return 'san';
+      if (duTutor(v, macDinhTutor(id).note.trim())) return 'san';
       if (!v.outcome && !n && !(v.a ?? '').trim()) return 'chua';
       return nhapCua(id) && !sua[id] ? 'nhap' : 'thieu';
     }
@@ -133,7 +133,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     const nh = nhapCua(id);
     return nh && !sua[id] ? 'nhap' : 'thieu';
   };
-  const du = (x: Em) => { const v = giaTri(x.paId!); const n = v.note.trim().length; return !phuc(x) && (laTutor(x) ? duTutor(v) : !!v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa); };
+  const du = (x: Em) => { const v = giaTri(x.paId!); const n = v.note.trim().length; return !phuc(x) && (laTutor(x) ? duTutor(v, macDinhTutor(x.paId!).note.trim()) : !!v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa); };
   /* PA máy chủ không trả (ngoài quyền xem) không tính vào "đủ / xong" của lưới — không chặn "Lưu · việc tiếp ›"; báo một dòng (PTA rà #1738). */
   const ngoai = data ? ds.filter((x) => !paCua.has(x.paId!)) : [];
   const dsLam = ngoai.length ? ds.filter((x) => paCua.has(x.paId!)) : ds;
@@ -290,7 +290,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
                   return (
                     <li key={id} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
                       <DongLuoi em={x} pa={paCua.get(id) ?? null} tt={trangThai(x)} v={giaTri(id)} daLuu={da.get(id)} loi={loi[id] ?? null} nhap={sua[id] ? null : nhapCua(id)}
-                        tutor={laTutor(x)} coCotTutor={coTutorLuoi} thieu={laTutor(x) ? thieuTutor(giaTri(id)) : []}
+                        tutor={laTutor(x)} coCotTutor={coTutorLuoi} thieu={laTutor(x) ? thieuTutor(giaTri(id), macDinhTutor(id).note.trim()) : []}
                         khoa={!!gui} datO={(p) => datO(id, p)} thuLai={() => void thuLai(id)} dungBanMoi={() => dungBanMoi(id)} moDay={(xem) => setDay({ em: x, xem })} />
                     </li>
                   );
