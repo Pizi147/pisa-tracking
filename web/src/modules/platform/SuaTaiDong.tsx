@@ -100,11 +100,24 @@ export function OVaiTaiDong({ u, branches, laMinh, mat, onDaLuu }: {
       daDoi={khoaVai(ds) !== khoaVai(goc)} loiTruoc={loi.length > 0}
       onMo={() => setDs(capTuTaiKhoan(u.roles))}
       onLuu={async () => {
-        const kq = await api.put<{ chuyen?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(ds) });
+        const kq = await api.put<{ nhatKyId?: number; chuyen?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(ds) });
         onDaLuu();
         const daChuyen = nhanDaChuyen(kq?.chuyen);   // E-5: gỡ hết vai → báo số Case / PA đã tự chuyển
+        /* E-4: có `nhatKyId` → Hoàn tác phía máy chủ: cấp lại vai cũ VÀ trả việc đã chuyển mà chưa ai sửa tiếp (≤ 15 phút). Nếu chính lần hoàn tác lại chuyển việc
+           (vd lần đổi đó đã THÊM chi nhánh) → nêu số đã chuyển và cho Hoàn tác tiếp. */
+        const hoanTac = (id: number): void => {
+          api.post<{ nhatKyIdMoi?: number | null; chuyenMoi?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles/hoan-tac`, { nhatKyId: id })
+            .then((r) => {
+              onDaLuu();
+              const moi = nhanDaChuyen(r?.chuyenMoi), nd = t('Đã hoàn tác vai {ten}', { ten: u.fullName });
+              if (moi && r?.nhatKyIdMoi) toast.hoanTac(`${nd} · ${moi}`, () => hoanTac(r.nhatKyIdMoi!), { key: `vai-${u.id}-${r.nhatKyIdMoi}` });
+              else toast.push('ok', moi ? `${nd} · ${moi}` : nd);
+            })
+            .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
+        };
         toast.hoanTac(`${t('Đã đổi vai {ten}: {vai}', { ten: u.fullName, vai: moTa(ds) })}${daChuyen ? ` · ${daChuyen}` : ''}`, () => {
-          api.put(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(goc) })
+          if (kq?.nhatKyId) hoanTac(kq.nhatKyId);
+          else api.put(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(goc) })
             .then(() => { onDaLuu(); toast.push('ok', t('Đã hoàn tác vai {ten}', { ten: u.fullName })); })
             .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
         }, { key: `vai-${u.id}` });

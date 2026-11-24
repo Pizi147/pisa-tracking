@@ -74,9 +74,9 @@ export function chipViecLop(viec: readonly WorkItem[], classId: number, caDong: 
     const laTab = la.filter((x) => tabCuaViec(x) === tab).sort(xepHan);
     if (!laTab.length) return [];
     const bai = tab === 'cham-diem';
-    const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0)
-      : dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
-    const doc = bai ? t('{n} bài chờ nhập điểm', { n: so }) : t('{n} việc', { n: so });
+    const soViec = dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
+    const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0) : soViec;
+    const doc = bai ? t('{n} bài · {m} việc', { n: so, m: soViec }) : t('{n} việc', { n: so });   // D-04: chip Nhập điểm đếm BÀI — title nói cả số việc (cùng đơn vị badge tab)
     return [{ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab }];
   });
 }

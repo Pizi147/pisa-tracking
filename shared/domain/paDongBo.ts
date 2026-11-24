@@ -145,7 +145,8 @@ export function kiemBuoiTutor(a: number, buoi: unknown, chuCu?: ReadonlySet<stri
     if (!nhanXet) return t('dòng {x} chưa có Nội dung', { x });
     /* TU6 (rà #1872 P2-14): Nội dung ≥ 8 ký tự ở máy chủ như web — trừ chữ của lần ghi đang sửa giữ nguyên (`chuCu`: lần ghi cũ trước luật không bị chặn). */
     if (nhanXet.length < CHU_TOI_THIEU_CASE && !chuCu?.has(nhanXet)) return t('dòng {x}: Nội dung ít nhất {n} ký tự', { x, n: CHU_TOI_THIEU_CASE });
-    if (tutor.length > 100 || nhanXet.length > 1000) return t('dòng {x} quá dài (tên ≤ 100, nội dung ≤ 1000 ký tự)', { x });
+    /* B-4 (N35 / N54, chủ SP 25/11): Nội dung mỗi dòng Tutor ≤ 200 (= Nội dung PA); chữ cũ dài hơn của lần ghi đang sửa giữ nguyên đến khi người dùng sửa chính dòng đó (`chuCu`, như N35). */
+    if (tutor.length > 100 || (nhanXet.length > TRAN_CHU.noiDungPa && !chuCu?.has(nhanXet))) return t('dòng {x} quá dài (tên ≤ 100, nội dung ≤ {n} ký tự)', { x, n: TRAN_CHU.noiDungPa });
     for (const { k } of TIEU_CHI_TUTOR) if (b[k] != null && !laCoKhong(b[k])) return t('dòng {x}: "Tutor buổi này" là Có, Không hoặc để trống', { x });
     if (b.hinhThuc != null && b.hinhThuc !== 'offline' && b.hinhThuc !== 'online') return t('dòng {x}: hình thức là Offline hoặc Online', { x });
     if (b.danhGia != null && !(Number.isInteger(b.danhGia) && b.danhGia >= 1 && b.danhGia <= 5)) return t('dòng {x}: đánh giá từ 1 đến 5, hoặc để trống', { x });

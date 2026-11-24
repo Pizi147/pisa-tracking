@@ -8,7 +8,7 @@ export async function runPrR1Tests(t: any) {
   console.log('\nGÓI R1 · hổng logic máy chủ');
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); } };
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const owner: any = await import('../cases/owner.ts');
   const cases: any = await import('../cases/cases.ts');
   const accounts: any = await import('../platform/accounts.ts');
@@ -32,13 +32,25 @@ export async function runPrR1Tests(t: any) {
     /* PTA rà #2024: chủ chỉ còn vai Giáo viên ở chi nhánh KHÁC chi nhánh lớp (dạy chéo / em chuyển chi nhánh) = vẫn còn làm — giữ Case, không gán đè. */
     const khac = one(`SELECT b.code FROM branches b WHERE b.id != (SELECT branch_id FROM classes WHERE id = ?) ORDER BY b.id LIMIT 1`, c.lop);
     assert(khac, 'seed thiếu chi nhánh thứ hai');
-    accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]);
+    const cnLop = one('SELECT b.code FROM branches b JOIN classes c ON c.branch_id = b.id WHERE c.id = ?', c.lop).code as string;
+    /* E-4 (thích nghi phép kiểm PTA rà #2024): chủ còn vai Ở CẢ chi nhánh của lớp lẫn chi nhánh khác = vẫn còn làm — giữ Case, `ganChuCaseThieu` không gán đè. */
+    accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [cnLop, khac.code] }]);
     xoaNho();
-    assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh khác bị coi là đã nghỉ');
+    assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh lớp + chi nhánh khác bị coi là đã nghỉ');
     assert(owner.ganChuCaseThieu({ classId: c.lop, actorId: P.admin.userId, luc: '2026-11-24T03:00:00.000Z' }) === 0
       && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
+    voiXacNhan(() => accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]));
+    xoaNho();
+    assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh khác bị coi là đã nghỉ');
+    /* E-4 (N69, chủ SP 25/11): mất vai ở chi nhánh CỦA EM (còn vai chi nhánh khác) → Case của em chi nhánh đó đã tự chuyển cho GV môn / GVCN lớp (không còn đứng tên người đó). */
+    const chuMoi = one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o;
+    assert(chuMoi !== c.chu && chuMoi !== null, `E-4: Case phải tự chuyển khi chủ mất vai ở chi nhánh của em: ${chuMoi}`);
+    assert(owner.ganChuCaseThieu({ classId: c.lop, actorId: P.admin.userId, luc: '2026-11-24T03:00:00.000Z' }) === 0
+      && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === chuMoi, 'ganChuCaseThieu gán đè chủ đã có người theo luật');
     const tenCon = cases.listCases(P.admin, { studentId: c.sid }).rows.find((r: any) => r.id === c.id)?.ownerName ?? '';
     assert(tenCon && !/đã nghỉ/.test(tenCon), `chủ còn làm mà tên có "(đã nghỉ)": ${tenCon}`);
+    conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(c.chu, c.id);   // dựng lại chủ cũ cho phần R1 dưới đây
+    xoaNho();
     /* N69 (24/11): gỡ hết vai qua `setRoles` nay tự chuyển Case (phép N69 ở prGiaoViec). Ở đây đóng vai THẲNG ở DB — dữ liệu trước N69 / người không có ai thay —
        để thử trạng thái "chưa có người" của R1. */
     conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'`).run(c.chu);
@@ -133,7 +145,6 @@ export async function runPrR1Tests(t: any) {
   }));
 
   const ab: any = await import('../fasttrack/absence.ts');
-  const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   check('L5 · Báo vắng trên lượt đã huỷ mà kiểm lỗi (kỹ năng không có) → lượt vẫn huỷ, không mở lại nửa chừng', () => thu(() => {
     const a = one(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE a.kind = 'mock' AND a.status = 'planned' AND a.class_id IS NOT NULL ORDER BY a.id LIMIT 1`);
     assert(a, 'seed thiếu lượt Mock');
@@ -146,9 +157,32 @@ export async function runPrR1Tests(t: any) {
 
   const { dauNgayVnUtc, khoangMacDinh } = await import('../../../shared/domain/index.ts');
   const tqv: any = await import('../worklist/tongQuanV5.ts');
+  const hvlTvv: any = await import('../classes/hocVienLop.ts');
   const hvt: any = await import('../worklist/hvCuaToi.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { addDays } = await import('../util.ts');
+  check('D-05 · "Thi tháng này" của TVV = định nghĩa của QL (ghi danh còn hiệu lực, chưa lưu trữ): em có ngày thi trong tháng vào số; em Tạm dừng rời số', () => thu(() => {
+    const em = one(`SELECT s.id, s.consultant_user_id AS tvv FROM students s JOIN user_roles ur ON ur.user_id = s.consultant_user_id AND ur.status = 'active'
+       JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant' JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+       JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status != 'abandoned' WHERE s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 1`);
+    assert(em, 'seed thiếu em có TVV + lộ trình');
+    const tvv = loadPrincipal(em.tvv);
+    const thi = () => { xoaNho(); return tqv.tongQuanTvv(tvv).thiThangNay as number; };
+    /* D-05: ô và danh sách `/hoc-vien?phamVi=cua-toi&thi=1` (lọc `lich.ngay` cùng tháng) đếm MỘT cách. */
+    const danhSach = () => { xoaNho(); return (hvlTvv.danhSachHocVienLop(tvv, { phamVi: 'cua-toi' }).hocVien as any[]).filter((h) => h.lich?.ngay?.slice(0, 7) === TODAY.slice(0, 7)).length; };
+    conn.prepare("UPDATE learning_cycles SET exam_date = NULL, thi_that_ngay = NULL WHERE student_id IN (SELECT id FROM students WHERE consultant_user_id = ?)").run(em.tvv);
+    assert(thi() === 0 && danhSach() === 0, `tiền đề: không em nào có ngày thi (${thi()}/${danhSach()})`);
+    conn.prepare("UPDATE learning_cycles SET exam_date = ? WHERE id = (SELECT id FROM learning_cycles WHERE student_id = ? AND status != 'abandoned' ORDER BY id DESC LIMIT 1)").run(`${TODAY.slice(0, 7)}-15`, em.id);
+    assert(thi() === 1 && danhSach() === 1, `em có ngày thi trong tháng phải vào số: ô ${thi()} · danh sách ${danhSach()}`);
+    /* Em của TVV KHÔNG có ghi danh còn hiệu lực (chưa học / vừa kết thúc ghi danh) nhưng chưa lưu trữ: ô và danh sách vẫn phải khớp. */
+    conn.prepare("UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND status = 'active'").run(em.id);
+    assert(thi() === danhSach(), `em không ghi danh còn hiệu lực: ô ${thi()} · danh sách ${danhSach()}`);
+    conn.prepare("UPDATE enrollments SET status = 'active' WHERE student_id = ? AND status = 'completed'").run(em.id);
+    conn.prepare("UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?").run(TODAY, em.id);
+    conn.prepare("UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'").run(em.id);
+    assert(thi() === 0 && danhSach() === 0, `em Tạm dừng không còn vào "Thi tháng này": ô ${thi()} · danh sách ${danhSach()}`);
+  }));
+
   check('L6 · ngày VN: Báo PH tạo 01:00 VN ngày đầu kỳ vào kỳ, 01:00 VN ngày sau kỳ ra kỳ (Tổng quan TVV); Case tạo 00:30 VN ngày đầu cửa sổ vào "Cần chú ý"', () => thu(() => {
     assert(dauNgayVnUtc('2026-11-24') === '2026-11-23T17:00:00.000Z', dauNgayVnUtc('2026-11-24'));
     const em = one(`SELECT s.id, s.consultant_user_id AS tvv FROM students s JOIN user_roles ur ON ur.user_id = s.consultant_user_id AND ur.status = 'active'

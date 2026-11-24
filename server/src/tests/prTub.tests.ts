@@ -30,6 +30,8 @@ export async function runPrTubTests(t: any) {
   };
   const HT = loadPrincipal(one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id);
   const QL = P.mbManager;
+  const QT = P.admin;
+  const ma = (fn: () => unknown): number => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
   const cn = (code: string) => one('SELECT id FROM branches WHERE code = ?', code).id as number;
   const lopCua = (code: string) => one('SELECT id FROM classes WHERE branch_id = ? ORDER BY id LIMIT 1', cn(code)).id as number;
   const FU = one('SELECT id FROM case_followups ORDER BY id LIMIT 1').id as number;
@@ -235,6 +237,36 @@ export async function runPrTubTests(t: any) {
   }));
 
   // ------------------------------------------------------------------ TUB-4 · tải danh sách
+  check('E-8b · Hoàn tác tải danh sách: tutor mới ĐÃ SỬA sau khi tải thì giữ (không xoá); SĐT cũ đã thuộc tutor khác → bỏ qua dòng đó + báo, không 500', () => thu(() => {
+    const luu = tl.taiLenTutor(HT, { rows: [['Họ tên', 'Số điện thoại', 'Nơi dạy', 'Kỹ năng'], ['Thử Tải E8b', '0901000809', 'Monbay', 'L']], luu: true });
+    run("UPDATE tutors SET ten = 'Thử Tải E8b sửa', updated_at = ? WHERE ten = 'Thử Tải E8b'", new Date().toISOString());   // có người sửa sau lần tải
+    /* Dòng Cập nhật (dựng nhật ký) có SĐT cũ nay thuộc tutor KHÁC → bỏ qua + báo (UNIQUE sdt không được ném 500). */
+    const a2 = themTutor('Thử E8b A', 'MB', 'L,R', '0933000222'), b2 = themTutor('Thử E8b B', 'MB', 'L,R', '0933000333');
+    const luc = '2026-11-25T01:00:00.000Z';
+    run('UPDATE tutors SET updated_at = ? WHERE id = ?', luc, a2);
+    const nk = JSON.parse(one('SELECT after_json FROM audit_logs WHERE id = ?', luu.nhatKyId).after_json);
+    nk.hoanTac.luc = luc; nk.hoanTac.cu = [{ id: a2, ten: 'Thử E8b A', sdt: '0933000333', noi: null, online: 0, kn: 'L,R', ub: null, ua: null }];
+    run('UPDATE audit_logs SET after_json = ? WHERE id = ?', JSON.stringify(nk), luu.nhatKyId);
+    const kq = tl.hoanTacTaiLen(HT, { nhatKyId: luu.nhatKyId });
+    assert(kq.xoa === 0 && kq.giu >= 1 && one("SELECT 1 x FROM tutors WHERE ten = 'Thử Tải E8b sửa'"), `tutor mới đã sửa phải giữ: ${JSON.stringify(kq)}`);
+    assert(kq.boQua.includes('Thử E8b A') && kq.khoiPhuc === 0 && one('SELECT sdt FROM tutors WHERE id = ?', a2).sdt === '0933000222' && b2, `SĐT bị chiếm phải báo, không 500: ${JSON.stringify(kq)}`);
+  }));
+  check('E-8 · Hoàn tác tải danh sách (≤ 15 phút, chỉ người tải): xoá tutor MỚI còn trống, trả dòng Cập nhật về bản trước; lần hai 400; người khác 403; quá 15 phút 409', () => thu(() => {
+    const rows = [['Họ tên', 'Số điện thoại', 'Nơi dạy', 'Kỹ năng'], ['Thử Tải E8', '0901000808', 'Monbay', 'L'], ['Nguyễn Thu Lan', '0912345908', '', 'L · R · S']];
+    const truoc = one(`SELECT ky_nang, updated_at FROM tutors WHERE ten = 'Nguyễn Thu Lan'`);
+    const luu = tl.taiLenTutor(HT, { rows, luu: true });
+    assert(luu.soMoi === 1 && luu.soCapNhat === 1 && Number.isInteger(luu.nhatKyId), `lưu: ${JSON.stringify([luu.soMoi, luu.soCapNhat, luu.nhatKyId])}`);
+    assert(ma(() => tl.hoanTacTaiLen(QT, { nhatKyId: luu.nhatKyId })) === 403, 'người khác hoàn tác → 403');
+    conn.prepare("UPDATE audit_logs SET created_at = ? WHERE id = ?").run(new Date(Date.now() - 16 * 60_000).toISOString(), luu.nhatKyId);
+    assert(ma(() => tl.hoanTacTaiLen(HT, { nhatKyId: luu.nhatKyId })) === 409, 'quá 15 phút → 409');
+    conn.prepare("UPDATE audit_logs SET created_at = ? WHERE id = ?").run(new Date().toISOString(), luu.nhatKyId);
+    const kq = tl.hoanTacTaiLen(HT, { nhatKyId: luu.nhatKyId });
+    assert(kq.xoa === 1 && kq.khoiPhuc === 1 && kq.giu === 0, `hoàn tác: ${JSON.stringify(kq)}`);
+    const lan = one(`SELECT ky_nang, updated_at FROM tutors WHERE ten = 'Nguyễn Thu Lan'`);
+    assert(lan.ky_nang === truoc.ky_nang && (lan.updated_at ?? null) === (truoc.updated_at ?? null) && !one(`SELECT 1 x FROM tutors WHERE ten = 'Thử Tải E8'`), 'tutor mới bị xoá, dòng cập nhật về bản trước');
+    assert(ma(() => tl.hoanTacTaiLen(HT, { nhatKyId: luu.nhatKyId })) === 400, 'lần hai → 400');
+  }));
+
   check('TUB-4 · tải danh sách: tiêu đề có / không; lỗi từng dòng; Cập nhật trước → sau; ô trống không xoá; lưu lại → 0 mới 0 cập nhật; SĐT Excel mất số 0; > 500 → 400', () => thu(() => {
     const TD = ['Họ tên', 'Số điện thoại', 'Nơi dạy', 'Kỹ năng'];
     const rows = [TD,

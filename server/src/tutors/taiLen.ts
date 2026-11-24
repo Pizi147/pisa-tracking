@@ -6,7 +6,7 @@
  * Ô trống trong tệp không xoá giá trị đang có. Tutor không có trong tệp: giữ nguyên. ≤ 500 dòng.
  */
 import { chenNhieuDong, db, tx } from '../db.ts';
-import { badRequest, loi, normalizeName, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
 import { type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { KN_TUTOR, chuanSdt } from '../../../shared/domain/index.ts';
@@ -56,7 +56,7 @@ function xemTruoc(conn: any, rows: unknown, p: Principal, q: QuyenDanhBa) {
   const vao = bang.map((r, i) => ({ r, so: i + 1 })).slice(laTieuDe ? 1 : 0).filter(({ r }) => r.some(Boolean));
   if (vao.length > TOI_DA) throw loi(400, 'Tối đa {n} dòng một lần — tách tệp rồi tải lần lượt.', { n: TOI_DA });
 
-  const tatCaTutor = conn.prepare('SELECT id, ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id, created_by, updated_by FROM tutors').all() as any[];
+  const tatCaTutor = conn.prepare('SELECT id, ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id, created_by, updated_by, updated_at FROM tutors').all() as any[];
   /* TU2-5: dòng danh bạ của GV (`user_id`) không khớp / không sửa bằng tệp tải lên — tên, kỹ năng lấy từ tài khoản. */
   const tutors = tatCaTutor.filter((t) => t.user_id == null);
   const chiNhanh = conn.prepare('SELECT id, code, name FROM branches').all() as any[];
@@ -151,6 +151,7 @@ function xemTruoc(conn: any, rows: unknown, p: Principal, q: QuyenDanhBa) {
 export function taiLenTutor(p: Principal, v: { rows?: unknown; luu?: unknown }) {
   const q = kiemQuyenDanhBa(p);   // TU13: Quản trị, Head tutor, Head (chỉ chi nhánh mình)
   const conn = db();
+  let nhatKyId: number | null = null;
   const lam = () => {
     const kq = xemTruoc(conn, v?.rows, p, q);
     if (v?.luu === true) {
@@ -163,10 +164,50 @@ export function taiLenTutor(p: Principal, v: { rows?: unknown; luu?: unknown }) 
         ...sua.map((x) => [x.id, x._sach.ten, x._sach.sdt, x._sach.noiDayBranchId, x._sach.chiOnline, x._sach.kyNang, luc, p.userId, luc, p.userId]),
       ], ` ON CONFLICT(id) DO UPDATE SET ten = excluded.ten, sdt = excluded.sdt, noi_day_branch_id = excluded.noi_day_branch_id,
         chi_online = excluded.chi_online, ky_nang = excluded.ky_nang, updated_at = excluded.updated_at, updated_by = excluded.updated_by`);
-      writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len', entityType: 'tutor',
-        after: { moi: moi.map((s) => s.ten), capNhat: kq.dong.filter((y) => y.kq === 'capNhat').map((y) => ({ id: y.id, doi: y.doi })) } });
+      /* E-8: nhật ký giữ đủ để Hoàn tác ngắn — id tutor MỚI (created_at = mốc lưu) + bản TRƯỚC của dòng Cập nhật (chỉ đảo khi chưa ai sửa tiếp: updated_at còn = mốc lưu). */
+      const moiIds = (conn.prepare('SELECT id FROM tutors WHERE created_at = ? AND created_by = ? AND updated_at IS NULL').all(luc, p.userId) as { id: number }[]).map((r) => r.id);
+      const cu = sua.map((x) => ({ id: x.id, ten: x._cu.ten, sdt: x._cu.sdt ?? null, noi: x._cu.noi_day_branch_id ?? null, online: x._cu.chi_online ? 1 : 0, kn: x._cu.ky_nang,
+        ub: x._cu.updated_by ?? null, ua: x._cu.updated_at ?? null }));
+      nhatKyId = writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len', entityType: 'tutor',
+        after: { moi: moi.map((s) => s.ten), capNhat: kq.dong.filter((y) => y.kq === 'capNhat').map((y) => ({ id: y.id, doi: y.doi })), hoanTac: { luc, moiIds, cu } } });
     }
-    return { ...kq, dong: kq.dong.map(({ _sach, _cu, ...x }) => x), daLuu: v?.luu === true };
+    return { ...kq, dong: kq.dong.map(({ _sach, _cu, ...x }) => x), daLuu: v?.luu === true, nhatKyId };
   };
   return v?.luu === true ? tx(lam) : lam();
+}
+
+/** E-8: Hoàn tác tải danh sách chỉ trong ngần này phút (như Hoàn tác Thêm HV). */
+export const HOAN_TAC_PHUT_TAI_LEN = 15;
+/**
+ * E-8 (rà 25/11): Hoàn tác "Tải danh sách tutor" — chỉ CHÍNH người tải, trong 15 phút, đọc ĐÚNG nhật ký `tutor.tai_len` (không tin danh sách web gửi): xoá tutor MỚI còn trống
+ * (chưa có buổi / nhận xét — có rồi thì giữ, đếm `giu`) và trả dòng Cập nhật về bản trước nếu chưa ai sửa tiếp. Mỗi lần tải hoàn tác MỘT lần.
+ */
+export function hoanTacTaiLen(p: Principal, v: { nhatKyId?: unknown }): { xoa: number; khoiPhuc: number; giu: number; boQua: string[] } {
+  kiemQuyenDanhBa(p);
+  const id = Number(v?.nhatKyId);
+  if (!Number.isInteger(id) || id <= 0) throw badRequest('Không tìm thấy lần tải để hoàn tác.');
+  const conn = db();
+  const nk = conn.prepare('SELECT actor_user_id, action, after_json, created_at FROM audit_logs WHERE id = ?').get(id) as any;
+  if (!nk || nk.action !== 'tutor.tai_len') throw notFound('Không tìm thấy lần tải để hoàn tác.');
+  if (nk.actor_user_id !== p.userId) throw forbidden('Chỉ người tải hoàn tác được lần tải này.');
+  if (Date.now() - Date.parse(nk.created_at) > HOAN_TAC_PHUT_TAI_LEN * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT_TAI_LEN} phút — xoá / sửa từng tutor ở danh sách.`);
+  const h = (JSON.parse(nk.after_json ?? '{}').hoanTac ?? {}) as { luc?: string; moiIds?: number[]; cu?: { id: number; ten: string; sdt: string | null; noi: number | null; online: number; kn: string; ub: number | null; ua: string | null }[] };
+  return tx(() => {
+    if (conn.prepare(`SELECT 1 AS x FROM audit_logs WHERE entity_type = 'tutor' AND action = 'tutor.tai_len_hoan_tac' AND entity_id = ? LIMIT 1`).get(id)) throw badRequest('Lần tải này đã hoàn tác rồi.');
+    let xoa = 0, khoiPhuc = 0, giu = 0;
+    const boQua: string[] = [];   // dòng Cập nhật không trả được (SĐT cũ đã thuộc tutor khác) — báo, không 500
+    for (const tid of h.moiIds ?? []) {
+      /* `updated_at IS NULL`: tutor mới mà SAU lần tải đã có người sửa thì giữ (đếm `giu`). */
+      const r = conn.prepare(`DELETE FROM tutors WHERE id = ? AND user_id IS NULL AND updated_at IS NULL AND NOT EXISTS (SELECT 1 FROM case_followup_buoi WHERE tutor_id = ?) AND NOT EXISTS (SELECT 1 FROM tutor_nhan_xet WHERE tutor_id = ?)`).run(tid, tid, tid);
+      if (r.changes) xoa += 1; else giu += 1;
+    }
+    for (const c of h.cu ?? []) {
+      if (c.sdt && conn.prepare('SELECT 1 AS x FROM tutors WHERE sdt = ? AND id != ? LIMIT 1').get(c.sdt, c.id)) { boQua.push(c.ten); continue; }
+      const r = conn.prepare(`UPDATE tutors SET ten = ?, sdt = ?, noi_day_branch_id = ?, chi_online = ?, ky_nang = ?, updated_by = ?, updated_at = ? WHERE id = ? AND updated_at = ?`)
+        .run(c.ten, c.sdt, c.noi, c.online, c.kn, c.ub, c.ua, c.id, h.luc ?? '');
+      if (r.changes) khoiPhuc += 1; else giu += 1;
+    }
+    writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len_hoan_tac', entityType: 'tutor', entityId: id, after: { xoa, khoiPhuc, giu, boQua } });
+    return { xoa, khoiPhuc, giu, boQua };
+  });
 }

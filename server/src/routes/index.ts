@@ -18,7 +18,7 @@ import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
 import * as timNguoiSvc from '../platform/timNguoi.ts';
 import { chonTutor } from '../tutors/chon.ts';
 import * as tutorSvc from '../tutors/trang.ts';
-import { taiLenTutor } from '../tutors/taiLen.ts';
+import { hoanTacTaiLen, taiLenTutor } from '../tutors/taiLen.ts';
 import * as violationSvc from '../yThuc/violations.ts';
 import * as accessSvc from '../yThuc/access.ts';
 import * as xuLySvc from '../yThuc/xuLy.ts';
@@ -533,6 +533,7 @@ api.get('/tutors/xuat-buoi', requireAuth, wrap((req) => tutorSvc.xuatSoBuoi(prin
 api.post('/tutors/gop', requireAuth, wrap((req) => tutorSvc.gopTen(principalOf(req), req.body)));
 api.post('/tutors/gop/hoan-tac', requireAuth, wrap((req) => tutorSvc.hoanTacGop(principalOf(req), req.body)));
 api.post('/tutors/tai-len', requireAuth, wrap((req) => taiLenTutor(principalOf(req), req.body)));
+api.post('/tutors/tai-len/hoan-tac', requireAuth, wrap((req) => hoanTacTaiLen(principalOf(req), req.body)));   // E-8
 api.post('/tutors', requireAuth, wrap((req) => tutorSvc.luuTutor(principalOf(req), req.body)));
 api.patch('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.suaNhanXet(principalOf(req), pInt(req, 'id'), req.body)));
 api.delete('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.xoaNhanXet(principalOf(req), pInt(req, 'id'))));
@@ -3431,6 +3432,7 @@ api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.de
 api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
 )));
+api.post('/admin/accounts/:id/roles/hoan-tac', requireAuth, wrap((req) => accountSvc.hoanTacDoiVai(principalOf(req), Number(req.params.id), req.body?.nhatKyId)));   // E-4
 api.put('/admin/accounts/:id/skills', requireAuth, wrap((req) => accountSvc.setUserSkills(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [],
 )));

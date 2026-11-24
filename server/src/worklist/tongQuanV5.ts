@@ -6,7 +6,7 @@ import type { Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
-import { tapDatMt, tapKqMt, tapThiThangNayLop } from '../phanTich/baoCao.ts';
+import { tapDatMt, tapKqMt, tapThiThangNayLop, tapThiThangNayTvv } from '../phanTich/baoCao.ts';
 import type { MetricRow } from './metrics.ts';
 
 /**
@@ -128,11 +128,7 @@ export function tongQuanTvv(p: Principal): { homNay: string; ky: { tu: string; d
   const homNay = demoToday();
   const ky = khoangMacDinh(homNay);
   const ds = baoPhTrongKy(p, ky);
-  const thang = homNay.slice(0, 7);
-  const thi = (db().prepare(
-    `SELECT COUNT(DISTINCT cy.student_id) AS n FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
-      WHERE s.consultant_user_id = ? AND s.archived_at IS NULL AND cy.status != 'abandoned' AND cy.exam_date BETWEEN ? AND ?`,
-  ).get(p.userId, `${thang}-01`, `${thang}-31`) as { n: number }).n;
+  const thi = tapThiThangNayTvv(p.userId).size;   // D-05: cùng định nghĩa "Thi tháng này" của QL (`tapThiThangNayLop`), khoanh theo HV của TVV
   return {
     homNay, ky: { tu: ky.tu, den: ky.den },
     baoPh: { dung: ds.filter(dungHan).length, tong: ds.length, treXong: ds.filter((d) => d.trangThai === 'xong' && !dungHan(d)).length },

@@ -71,6 +71,7 @@ export const EN_KHOA_CUNG = {
   'Chuỗi này đã có lần xử lý trên web — nhờ Head xác nhận cấp bậc.': 'This chain already has actions recorded on the web — ask a Head to confirm the level.',
   'Ngày thực hiện trước ngày Head duyệt ({x}) — vẫn lưu?': 'The action date is before the Head approval ({x}) — save anyway?',
   'Vẫn lưu': 'Save anyway',
+  'Đổi vai sẽ chuyển {n} Case / PA của em chi nhánh {cn} cho người khác — vẫn lưu?': 'Changing roles will move {n} cases / plans of students at {cn} to other people — save anyway?',
   'Đã có {ten} sau lần này — vẫn thu hồi? {ten} giữ nguyên, bậc tính lại.': '{ten} was recorded after this — revoke anyway? {ten} stays, the level is recalculated.',
   'Vẫn thu hồi': 'Revoke anyway',
   'Đã có {ten} sau lần này — vẫn huỷ quyết định thu hồi? Bậc tính lại.': '{ten} was recorded after this — undo the revocation anyway? The level is recalculated.',

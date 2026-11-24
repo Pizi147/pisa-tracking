@@ -392,12 +392,13 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/const timTaiCho: TimXa \| null = dsEm \?/.test(n) && /t\('Lớp này'\)/.test(n), '[XM-7] chọn em ở hồ sơ lớp phải lọc tại chỗ, nhóm "Lớp này"');
     assert(!/api\.get[^\n]*dsEm/.test(n), 'chọn em từ em đã nạp không được gọi máy chủ');
   });
-  check('GD-6 · "Việc cần làm": chip theo loại dùng chung với "Lớp của tôi", mở thẳng panel "i / n" + "Việc tiếp ›"; bỏ "+n việc ở Công việc"', () => {
+  check('D-04 · GD-6 · "Việc cần làm": chip theo loại dùng chung với "Lớp của tôi", mở thẳng panel "i / n" + "Việc tiếp ›"; bỏ "+n việc ở Công việc"', () => {
     const s = doc('web/src/modules/classes/ThanhViecLop.tsx');
     /* AUDIT-1611 P1-01: dải đếm trên DÒNG (`dongToi` giữ `con`) như "Lớp của tôi". */
     assert(/chipViecLop\(data\?\.dongToi \?\? \[\], classId, moCaDong\)/.test(s), 'dải không dùng chipViecLop chung');
     /* NHẸ HƠN PR-2a (v23 ② G1): "Lớp của tôi" cột Việc là MỘT số — cùng hàm đếm `chipViecLop` (tổng chip), không còn nút-chip; hồ sơ lớp giữ `NutChipViec`. */
     assert(/<NutChipViec /.test(s) && /d\.chip = chipViecLop\(/.test(doc('web/src/modules/congViec/LopCuaToi.tsx')), 'chip không dùng chung hàm đếm');
+    assert(doc('web/src/modules/congViec/LopCuaToi.tsx').includes("t('{n} bài · {m} việc', { n: so, m: soViec })"), 'D-04: title chip Nhập điểm phải nói cả số bài và số việc');
     assert(/<DemViecPanel\.Provider value=\{\{ i: mo\.i \+ 1, n: mo\.ds\.length/.test(s), 'thiếu "i / n" ở đầu panel');
     assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
     assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
