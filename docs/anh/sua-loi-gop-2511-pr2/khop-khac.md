@@ -7,7 +7,7 @@
 | Chỗ | Trước | Sau | Mất thao tác? |
 |---|---|---|---|
 | Bổ sung hồ sơ — 1 em | "1 em · Thiếu: Email", ô lớp trống | "MB FT 101 · Nguyễn Minh An · Thiếu: Email"; bấm mở panel Sửa thông tin đúng em (như cũ) | Không |
-| Bổ sung hồ sơ — ≥ 2 em | Bấm dòng mở panel lần lượt từng em ("Lưu · em tiếp ›") | Bấm dòng mở danh sách "lớp · em · Thiếu: …" (như mọi dòng gộp); bấm em mở panel của em đó | Không (thêm một bước mở dòng như các dòng gộp khác) |
+| Bổ sung hồ sơ — ≥ 2 em | "n em · Thiếu: …", panel từng em không ghi tên / lớp | Dòng giữ "n em · Thiếu: …"; panel "Lưu · em tiếp ›" ghi tên + lớp đúng từng em | Không |
 | Panel vi phạm — cột hạn | Cột Xử lý: quá hạn = ngày đỏ suy từ "Quá hạn n ngày" (hôm nay − n); việc chưa quá hạn không thấy hạn | Cột "Hạn xử lý" = hạn thật `violations.han_xu_ly`, dd/mm/yyyy tô màu bằng `Han` chung (xa · sắp · quá); chưa phải xử lý "—" | Không |
 | Panel vi phạm — cột Xử lý | Quá hạn hiện ngày đỏ (chỉ màu) | Nhãn "Quá hạn" (chữ + viền đỏ — không chỉ màu, không đếm "n ngày"); các trạng thái khác giữ | Không |
 | 375 thẻ vi phạm | Trạng thái góc phải · lớp · ngày · người ghi | Thêm "· Hạn xử lý dd/mm/yyyy" (một cụm không bẻ dòng) | Không |
