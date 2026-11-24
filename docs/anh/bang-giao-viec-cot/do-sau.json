@@ -1,0 +1,70 @@
+{
+ "375": {
+  "font": true,
+  "cot": null
+ },
+ "1280": {
+  "font": true,
+  "cot": {
+   "dau": [
+    421.3,
+    163.1,
+    165.6,
+    488
+   ],
+   "lechGiuaCacDong": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "noiDungDaiNhat": [
+    374,
+    119,
+    122,
+    580
+   ],
+   "khoangThuaMoiCot": [
+    19.3,
+    0,
+    0,
+    -140.3
+   ],
+   "tdCuoiCachMep": 1,
+   "soDong": 9,
+   "tran": false
+  }
+ },
+ "1440": {
+  "font": true,
+  "cot": {
+   "dau": [
+    581.3,
+    163.1,
+    165.6,
+    488
+   ],
+   "lechGiuaCacDong": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "noiDungDaiNhat": [
+    396,
+    119,
+    122,
+    580
+   ],
+   "khoangThuaMoiCot": [
+    157,
+    0,
+    0,
+    -140.3
+   ],
+   "tdCuoiCachMep": 1,
+   "soDong": 9,
+   "tran": false
+  }
+ }
+}
