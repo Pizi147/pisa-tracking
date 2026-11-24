@@ -213,7 +213,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const { TODAY } = t as any;
   const MB = get(`SELECT branch_id FROM classes WHERE code = 'MB FT 101'`).branch_id as number;
   const moViec = () => ((myWork(quanLyCn(MB), { branchId: MB, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as any).items ?? []).filter((x: any) => x.due && VIEC_CO_HAN.has(x.group));
-  const xongViec = () => viecXongCn({ cn: MB, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay: TODAY });
+  const xongViec = () => viecXongCn({ cns: [MB], khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay: TODAY }).get(MB)!;
   const mo0 = moViec(), xong0 = xongViec();
   /* Mỗi loại việc spec 1.1 một ca: việc mở (Công việc) → dòng cùng hạn + người, chưa xong; việc đã xong → dòng cùng ngày xong (đúng hạn / làm muộn theo ngày). */
   for (const g of [...VIEC_CO_HAN]) {

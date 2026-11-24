@@ -14,7 +14,7 @@
  *    `nguon`: gvcn · tvv (mặc định theo vai — đổi GVCN / TVV thì chuyển theo) · gv_ghi · head (mặc định, không chuyển) · tay (người dùng / người giao).
  *  · Lịch sử: `viec_giao_lan` (người, theo dõi, phần Meeting) + `viec_han_lan` (hạn — bảng sẵn có). Xoá dòng việc → `donViec` (id được dùng lại).
  */
-import { DS_JSON, db, tx } from '../db.ts';
+import { DS_JSON, db, docNho, tx } from '../db.ts';
 import { PERMISSIONS, TASK_PROGRESS_LABEL, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayCongBaoPhLonNhat, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
 import { can, laTvvCuaEm, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -961,7 +961,8 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     if (o.studentId) thamSo.push(o.studentId);
     ve.push(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE ${loc.join(' AND ')}${em('x')}`);
   }
-  const rows = db().prepare(
+  /* TOC-DO-2511c: `docNho` — Tổng quan kèm "Của tôi" gọi hai lượt Công việc cùng câu; dòng chép vì `vai_id` gán tại chỗ. */
+  const rows = docNho(
     `SELECT u.*, s.full_name, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS em_branch, g.full_name AS giao_ten,
             tg.ten AS nhom_ten, tg.thu_tu AS nhom_thu_tu, vc.code AS vh_lop FROM (
        ${ve.join(' UNION ALL ')}
@@ -970,8 +971,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
      LEFT JOIN classes c ON c.id = e.class_id LEFT JOIN users g ON g.id = u.giao_boi
      LEFT JOIN task_groups tg ON u.loai = 'van_hanh' AND tg.id = u.th_id
      LEFT JOIN classes vc ON u.loai = 'van_hanh' AND vc.id = u.bl
-    WHERE s.id IS NOT NULL OR u.loai = 'van_hanh'`,
-  ).all(...thamSo) as any[];
+    WHERE s.id IS NOT NULL OR u.loai = 'van_hanh'`, ...thamSo).map((r) => ({ ...r }));
   for (const r of rows) if (r.loai === 'meeting') r.vai_id = vaiTai(r.phan, r.em_branch ?? r.pb ?? null);
   const coVai = (key: string, b: number | null) => p.grants.some((g) => g.roleKey === key && (g.branchId === null || g.branchId === b));
   const giu = giuViecQl(p);

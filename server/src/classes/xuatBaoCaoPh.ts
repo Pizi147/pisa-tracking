@@ -5,7 +5,7 @@
  * File = ảnh lúc bấm xuất (điểm sống đọc lúc đó). Không đánh dấu "đã xuất". Quyền: QL · Admin · TVV (+ QT) ở chi nhánh lớp.
  * Turso: một lớp ≈ 5 + số phần có điểm câu; nhiều lớp đọc theo lô (em, bản ghi, GV một câu mỗi loại; điểm FT một câu mỗi kỹ năng, lớp thường mỗi lớp).
  */
-import { DS_JSON, db, theoLoJson } from '../db.ts';
+import { DS_JSON, db, docNho, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopConViec, lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -92,11 +92,11 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
   const out = new Map<string, Em[]>();
   const rows: any[] = [];
   theoLoJson([...new Set(ds.map((x) => x.c.id))], (json) => {
-    rows.push(...db().prepare(
+    /* TOC-DO-2511c: `docNho` — Tổng quan kèm "Của tôi" (Admin) gọi hai lượt Công việc cùng câu (dòng chỉ đọc). */
+    rows.push(...docNho(
       `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, s.id, s.full_name
          FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`,
-    ).all(json) as any[]);
+        WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`, json));
   });
   for (const { c, d } of ds) {
     const thay = new Set<number>();
@@ -298,8 +298,8 @@ function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, hom
     const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
     const dem = new Map<string, { du: number; luc: string }>();
     theoLoJson(sids, (json) => {
-      for (const r of db().prepare(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`)
-        .all(json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))])) as any[]) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
+      for (const r of docNho(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`,
+        json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))]))) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
     });
     return cap.flatMap(({ c, d, bo }) => {
       const em = emDot.get(`${c.id}|${d.ma}`) ?? [];

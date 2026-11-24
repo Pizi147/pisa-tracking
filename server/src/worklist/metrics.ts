@@ -593,7 +593,7 @@ function tuanGhiBu(due: string, den: string): { k: number; dung: boolean }[] {
 export const KQ_PA_TRE_TRUOC_RESET = { tinh: false };
 
 /** Chi tiết một nghĩa vụ Kết quả PA (sổ nghĩa vụ): hạn của kỳ, ngày ghi (null = chưa ghi), PA. */
-export type CtNghiaVuPa = { han: string; ghi: string | null; iv: number };
+export type CtNghiaVuPa = { han: string; ghi: string | null; iv: number; caseId: number };
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null, chiTiet?: Map<number, CtNghiaVuPa>) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
   const mocReset = KQ_PA_TRE_TRUOC_RESET.tinh ? '' : getConfig(KHOA_PR_RESET_HAN_CASE).slice(0, 10);
@@ -603,7 +603,7 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
     const ph = chunk.map(() => '?').join(',');
     for (const r of db()
       .prepare(
-        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late, MIN(f.observed_on) AS ghi
+        `SELECT f.intervention_id AS iv, f.cycle_no AS cycle, MIN(f.cycle_due) AS due, MIN(f.late) AS late, MIN(f.observed_on) AS ghi, MIN(f.case_id) AS ca
            FROM case_followups f
           WHERE f.case_id IN (${ph}) AND f.intervention_id IS NOT NULL AND f.cycle_no IS NOT NULL AND f.cycle_due IS NOT NULL
           GROUP BY f.intervention_id, f.cycle_no`,
@@ -615,12 +615,12 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       for (const { k, dung } of ks) {
         const han = addDaysIso(r.due, 14 * k);
         if (!dung && han < mocReset) continue;   // [XM-2] tắt: trễ trước reset không tính
-        if (inPeriod(han)) { den.set(obligationId(r.iv, r.cycle, k), dung); chiTiet?.set(obligationId(r.iv, r.cycle, k), { han, ghi: r.ghi ? String(r.ghi).slice(0, 10) : null, iv: r.iv }); }
+        if (inPeriod(han)) { den.set(obligationId(r.iv, r.cycle, k), dung); chiTiet?.set(obligationId(r.iv, r.cycle, k), { han, ghi: r.ghi ? String(r.ghi).slice(0, 10) : null, iv: r.iv, caseId: r.ca }); }
       }
     }
     for (const r of db()
       .prepare(
-        `SELECT iv.id, iv.cycle_no AS cycle, iv.action_due AS due FROM case_interventions iv
+        `SELECT iv.id, iv.cycle_no AS cycle, iv.action_due AS due, iv.case_id AS ca FROM case_interventions iv
           WHERE iv.case_id IN (${ph}) AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
             AND ${NOT_UNCONFIRMED_PRESET('iv')}
@@ -633,7 +633,7 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       for (const { k } of tuanGhiBu(r.due, today).filter((x) => !x.dung)) {
         if (!inPeriod(addDaysIso(r.due, 14 * k))) continue;
         den.set(obligationId(r.id, r.cycle, k), false);
-        chiTiet?.set(obligationId(r.id, r.cycle, k), { han: addDaysIso(r.due, 14 * k), ghi: null, iv: r.id });
+        chiTiet?.set(obligationId(r.id, r.cycle, k), { han: addDaysIso(r.due, 14 * k), ghi: null, iv: r.id, caseId: r.ca });
       }
     }
   }
@@ -643,13 +643,16 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
 
 /**
  * SỔ NGHĨA VỤ: mọi nghĩa vụ Kết quả PA (đã đến hạn) của Case học thuật một chi nhánh — CHÍNH tập `dung-han-cap-nhat` (cùng `obligations`, không khoảng),
- * kèm hạn + ngày ghi. `p`: người xem có quyền chi nhánh (QL chi nhánh).
+ * kèm hạn + ngày ghi. `p`: người xem có quyền các chi nhánh `cns` (QL chi nhánh). TOC-DO-2511c: nhiều chi nhánh MỘT lượt — Case trong phạm vi chia theo
+ * chi nhánh Case (`branchId` = `CN_CUA_CASE`, cùng điều kiện lọc `branchId`); `cnCase`: Case → chi nhánh.
  */
-export function nghiaVuKetQuaPa(p: Principal, branchId: number, today: string): Map<number, CtNghiaVuPa> {
-  const caseIds = listCases(p, { branchId }).rows.filter((c: any) => c.originKind !== 'backfill').map((c: any) => c.id as number);
+export function nghiaVuKetQuaPa(p: Principal, cns: readonly number[], today: string): { ct: Map<number, CtNghiaVuPa>; cnCase: Map<number, number> } {
+  const rows = cns.length === 1 ? listCases(p, { branchId: cns[0] }).rows : listCases(p).rows.filter((c: any) => cns.includes(c.branchId));
+  const cnCase = new Map<number, number>();
+  for (const c of rows as any[]) if (c.originKind !== 'backfill') cnCase.set(c.id, cns.length === 1 ? cns[0] : c.branchId);
   const ct = new Map<number, CtNghiaVuPa>();
-  obligations(caseIds, today, null, null, ct);
-  return ct;
+  obligations([...cnCase.keys()], today, null, null, ct);
+  return { ct, cnCase };
 }
 
 /** PHƯƠNG ÁN CHỜ DUYỆT của một tập case. */

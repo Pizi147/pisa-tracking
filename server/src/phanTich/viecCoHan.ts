@@ -17,8 +17,12 @@ export const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
  * QL, QT) cùng MỘT cách gán: việc "chưa ai giữ" mà nhiều người làm được (Bước tiếp, Báo PH dự phòng QL) không thành việc của từng QL / TVV kiêm GV.
  */
 export const quanLyCn = (cn: number): Principal => nho(`pt-gv:ql-cn:${cn}`, () => {
-  const perms = (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
-    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string);
+  /* TOC-DO-2511c: quyền vai `manager` không theo chi nhánh — một câu cho mọi chi nhánh trong request. */
+  const perms = nho('pt-gv:ql-quyen', () => (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
+    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string));
   return { userId: -cn, code: '', fullName: '', title: null, roleKeys: ['manager'], assignments: [],
     grants: [{ id: 0, roleKey: 'manager', roleName: '', branchId: cn, branchName: null, permissions: new Set(perms) }] };
 });
+
+/** QL của MỌI chi nhánh `cns` (một grant mỗi chi nhánh) — sổ việc nhiều chi nhánh một lượt Công việc / Case (`tinhViecNhieuChiNhanh`). `userId` âm như `quanLyCn`. */
+export const quanLyNhieuCn = (cns: readonly number[]): Principal => ({ ...quanLyCn(cns[0]), grants: cns.flatMap((cn) => quanLyCn(cn).grants) });
