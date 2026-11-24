@@ -117,13 +117,13 @@ export function noDiemCuaGv(p: Principal, gvId: number, homNay: string, lop: rea
 export type CaseGv = CaseChiTiet & { hocVien: string; maLop: string | null };
 /** Case đang mở GV làm người phụ trách chính, trong `branchIds`, khung `ct`; quá hạn trước, rồi hạn gần (Q8, Q17). */
 export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | null, ct: ChuongTrinh | null = null): CaseGv[] {
-  return caseGvTuRows(listCases(p, { ownerUserId: gvId }).rows.filter((c) => !c.sauThi), branchIds, ct)   /* D-01 (N46) */.map(({ chu, ...c }) => c);
+  return caseGvTuRows(listCases(p, { ownerUserId: gvId, anSauThi: true }).rows, branchIds, ct)   /* D-01 (N46) */.map(({ chu, ...c }) => c);
 }
 /** UI-TONG-QUAN (XM-2): Case đang mở theo người phụ trách ở chi nhánh `cn` — CÙNG luật bảng GV chi nhánh / panel `/giao-vien/:id/o?cot=case-mo&cn=&ct=`. */
 export function caseMoTheoChu(p: Principal, cn: number, ct: ChuongTrinh | null): Map<number, number[]> {
   const m = new Map<number, number[]>();
   /* DOC-PT: chỉ cần id theo người — không dựng `chiTietCaseMo` (5 câu đọc). Chi tiết có mục cho MỌI Case có em (dòng `sos_cases` luôn có) nên tập = tập của `caseGvTuRows`. */
-  for (const c of locCaseMoGv(listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null && !c.sauThi), [cn], ct)) {
+  for (const c of locCaseMoGv(listCases(p, { branchId: cn, anSauThi: true }).rows.filter((c) => c.ownerUserId !== null), [cn], ct)) {
     if (c.studentId !== null) (m.get(c.ownerUserId!) ?? m.set(c.ownerUserId!, []).get(c.ownerUserId!)!).push(c.id);
   }
   return m;
@@ -421,7 +421,7 @@ export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: strin
   const no = scoreDebtCells(p, homNay, [cn]);
 
   const caseTheoNguoi = new Map<number, CaseGv[]>();
-  const rowsCase = listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null && !c.sauThi);   // D-01 (N46)
+  const rowsCase = listCases(p, { branchId: cn, anSauThi: true }).rows.filter((c) => c.ownerUserId !== null);   // D-01 (N46)
   for (const c of caseGvTuRows(rowsCase, [cn], ct)) {
     (caseTheoNguoi.get(c.chu) ?? caseTheoNguoi.set(c.chu, []).get(c.chu)!).push(c);
   }

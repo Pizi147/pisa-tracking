@@ -2776,6 +2776,8 @@ export function caseDetail(p: Principal, caseId: number) {
 }
 
 export type CaseFilters = {
+  /** D-01 (N46): bỏ Case của lộ trình đã có KQ thi thật — MỘT công tắc cho mọi số "Case đang mở / chưa có PA" (lọc sau SQL, không vào khoá nhớ). */
+  anSauThi?: boolean;
   branchId?: number | null;
   classId?: number | null;
   studentId?: number | null;
@@ -3158,7 +3160,7 @@ export function listCases(p: Principal, f: CaseFilters = {}): {
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
   return trongBoNho(() => {
-    const all = caseTrongPhamVi(p, f);
+    const all = f.anSauThi ? caseTrongPhamVi(p, f).filter((r) => !r.sauThi) : caseTrongPhamVi(p, f);
 
     /*
      * Hàng đợi lọc TRƯỚC, vì nó là câu hỏi đang đặt ra ("cái nào chưa ai làm?"). Nhóm và kỹ

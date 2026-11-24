@@ -920,7 +920,7 @@ function metricSetGoc(
   }
 
   const branchId = scope.branchId ?? undefined;
-  const openCases = () => listCases(p, { branchId }).rows.filter((c: any) => c.state !== 'done' && !c.sauThi);   /* D-01 (N46): một chỗ cho mọi chỉ số Case mở / chưa PA / quá hạn (cũng D-02) */
+  const openCases = () => listCases(p, { branchId, anSauThi: true }).rows.filter((c: any) => c.state !== 'done');   /* D-01 (N46): một chỗ cho mọi chỉ số Case mở / chưa PA / quá hạn (cũng D-02) */
 
   switch (id) {
     case 'case-mo':

@@ -272,7 +272,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
   const caseMo = new Map<number, { id: number; kyNang: string | null; sos: number | null; soPa: number }[]>();
   const ids = [...new Set(ds.map((r) => r.id as number))];
   const mo: MappedCase[] = [];
-  for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows);   // lô 500 như `xuatDanhSach` (trần tham số Turso)
+  for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500), anSauThi: true }).rows);   // D-01 (N46) · lô 500 như `xuatDanhSach` (trần tham số Turso)
   const dangMo = mo.filter((c) => c.status !== 'done' && c.studentId !== null && !c.tam);
   /* Số PA mỗi Case đang mở: MỘT câu đếm theo lô (PA chưa huỷ — cùng điều kiện `chiTietCaseMo`, không dựng cả chi tiết Case). */
   const soPa = new Map<number, number>();

@@ -109,7 +109,7 @@ export function xuatDanhSach(
   const caseCua = new Map<number, { caseTt: string; paTt: string }>();
   if (coCot('caseTt') || coCot('paTt')) {
     const mo: ReturnType<typeof listCases>['rows'] = [];
-    for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows.filter((c) => c.studentId !== null && c.status !== 'done'));
+    for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500), anSauThi: true }).rows.filter((c) => c.studentId !== null && c.status !== 'done'));
     const tt = tomTatCase(mo);
     for (const c of mo) {
       const x = tt.get(c.id);
