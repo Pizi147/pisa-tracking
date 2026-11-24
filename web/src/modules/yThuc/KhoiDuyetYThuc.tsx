@@ -25,9 +25,49 @@ function DauMuc({ chu, n }: { chu: string; n: number }) {
  * #6 (rà 11/11 G3-5, mockup #1346 K3): panel duyệt của QL — vi phạm + bằng chứng của lần xử lý NGAY tại chỗ (không phải Mở › hồ sơ HV › quay lại).
  * MỘT request khi panel mở (`kemTep=1`); danh sách Chờ duyệt không đọc thêm. Ảnh xem ngay; tệp / liên kết mở tab mới.
  */
-export function KhoiDuyetYThuc({ measureId }: { measureId: number }) {
+export function KhoiDuyetYThuc({ measureId, luoi = false }: {
+  measureId: number;
+  /** v24 H1: phần mở tại dòng — trả các CẶP nhãn · giá trị ("3 vi phạm" · "1 bằng chứng") để xếp vào lưới `.dyc-kv` của thẻ, cùng cột nhãn. */
+  luoi?: boolean;
+}) {
   const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<XuLyView & { tep: Tep[] }>(`/y-thuc/xu-ly/${measureId}?kemTep=1`, [measureId]);
+  if (luoi) {
+    if (error) return <><span /><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></>;
+    if (!data) return <><span /><Skeleton rows={2} /></>;
+    return (
+      <>
+        <span>{t('{n} vi phạm', { n: data.viPham.length })}</span>
+        <ul className="m-0 grid list-none gap-2 p-0">
+          {data.viPham.map((v) => (
+            <li key={v.id} className="min-w-0">
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                <b className="whitespace-nowrap font-semibold tabular-nums">{ngay(v.occurredOn, homNay)}</b>
+                <span className="inline-flex items-baseline"><ChipMon skill={v.skill} /><span>{v.ten}</span></span>
+              </span>
+              <span className="block text-[13px] text-dim">
+                {[dich(v.categoryLabel), v.reportedByName ? t('{ten} ghi', { ten: v.reportedByName }) : null, v.moTa ? `“${v.moTa}”` : null].filter(Boolean).join(' · ')}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <span>{t('{n} bằng chứng', { n: data.tep.length })}</span>
+        {data.tep.length === 0 ? <span className="text-dim">{t('Không có tệp hoặc liên kết.')}</span> : (
+          <ul className="m-0 grid list-none gap-1.5 p-0">
+            {data.tep.map((f) => (
+              <li key={f.id} className="min-w-0">
+                <a className="link break-all font-semibold" href={f.href} target="_blank" rel="noopener noreferrer" aria-label={t('Mở {ten}', { ten: f.displayName })}>{f.displayName}</a>
+                <span className="ml-2 text-xs text-dim">{f.kind === 'file' ? (f.sizeBytes != null ? fmtSize(f.sizeBytes) : '') : tenMien(f.href)}</span>
+                {f.kind === 'file' && LA_ANH.test(f.displayName) && (
+                  <img src={f.href} alt={f.displayName} loading="lazy" className="mt-1.5 block max-h-40 max-w-full rounded-md border object-contain" style={{ borderColor: 'var(--line)' }} />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  }
   if (error) return <div className="mt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>;
   if (!data) return <div className="mt-3"><Skeleton rows={2} /></div>;
   return (

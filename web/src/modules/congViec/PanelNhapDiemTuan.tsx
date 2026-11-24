@@ -73,7 +73,7 @@ export function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: W
     <LuoiTrongPanel className={lopKhung}>
       <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={daLuu} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
-                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
+                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'}
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
     </LuoiTrongPanel>
@@ -82,10 +82,13 @@ export function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: W
   const chanTiep = chanViecTiep(onTiep, false);
   const chan = chanTiep || trai ? { ...(chanTiep ?? { huy: null }), trai } : undefined;
   return (
-    /* NHẸ HƠN (v23 C1): panel bảng ~75 % (`rong="bang"`). */
+    /* PANEL-GON (v24): khung chung 720 (`rong="bang"` cùng cỡ panel việc). */
     <KhungPanel hd="nhap-diem" rong="bang" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
       {chiXem && <p className="m-0 pt-2 text-[13px] text-dim">{t('Chỉ xem · GV / Head nhập')}</p>}
-      {(
+      {motLop ? (
+        /* PANEL-GON (v24 P1 · P2): một lớp → lưới ngay dưới đầu panel trong một khung viền (lớp · tuần · số bài đã ở đầu panel, không khối lớp lặp lại). */
+        luoiLop(lop[0], 'luoi-trong-panel luoi-khung mt-3')
+      ) : (
       /* NHẸ HƠN (v23 C1 `.kl` → `.pc-kl` ở index.css): MỖI LỚP MỘT KHỐI — đầu khối nổi (nền surface-2, vạch nhấn trái, mã lớp 16 / 700) · đợt + tuần · kỹ năng của bạn · số bài.
          Bấm đầu khối gập / mở (giữ: lưới chỉ tải khi mở — không thêm request). Không cắt chữ, xuống dòng khi chật. */
       <ul className="m-0 grid list-none gap-2 p-0 pt-3">

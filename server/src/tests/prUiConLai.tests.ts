@@ -65,8 +65,9 @@ export async function runPrUiConLaiTests(t: any) {
   check('UICL-7 (k3 → AUDIT-UI B6) · Hộp duyệt = tab Chờ bạn duyệt: dòng cây + panel duyệt TẠI CHỖ (`?the=`); hàng loạt giữ; /cong-viec/cho-duyet → tab giữ lọc', () => {
     const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
     const cvp = fs.readFileSync(path.join(REPO, 'web/src/modules/congViec/CongViecPage.tsx'), 'utf8');
-    assert(!/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<PanelDuyet key=\{`\$\{theMo\.id\}/.test(h) && /<TheYeuCau yc=\{yc\} panel /.test(h), 'cây + panel');
-    assert(/next\.set\('the', String\(id\)\)/.test(h) && /dsCay\.length > 0 &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · cây · hàng loạt');
+    /* CHO-DUYET-TAI-CHO (v24 H1): mở TẠI DÒNG — không panel phải; PanelDuyet còn cho tab lớp Ý thức. */
+    assert(!/<DongYeuCau /.test(h) && /<DsDuyet ds=\{dsHien\}/.test(h) && /<TheYeuCau yc=\{yc\} panel /.test(h) && /<TheYeuCau yc=\{y\} dong /.test(fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/DsDuyet.tsx'), 'utf8')), 'dòng mở tại chỗ + PanelDuyet');
+    assert(/theTuLink/.test(h) && /setMo\(\(s\) => \(s\.has\(theTuLink\)/.test(h) && /dsHien\.length > 0 &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= mở sẵn dòng · hàng loạt');
     assert(/q\.set\('nhom', 'duyet'\)/.test(cvp) && /new URLSearchParams\(params\)/.test(cvp) && !/<HopChoDuyet/.test(cvp), 'đường cũ → tab, giữ tham số');
   });
 
@@ -74,9 +75,10 @@ export async function runPrUiConLaiTests(t: any) {
     const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
     const cv = fs.readFileSync(path.join(REPO, 'web/src/modules/congViec/HoTroHocVienTab.tsx'), 'utf8');
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8');
-    assert(/<CayDuyet ds=\{(dsHien|dsCay)\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
-    assert(/onDuyet\(y\)/.test(h) && /onMo\(y, 'tu-choi'\)/.test(h) && /onMo\(y, 'tra-loi'\)/.test(h) && /t\('Mở ›'\)/.test(h), 'thao tác của dòng');
-    assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(id\) \{ next\.set\('the', String\(id\)\); next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
+    const ds = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/DsDuyet.tsx'), 'utf8');
+    assert(/<DsDuyet ds=\{dsHien\}/.test(h) && !/createPortal\(\s*vuaXong/.test(h), 'danh sách dòng mở tại chỗ, không panel phải');   // v24 H1
+    assert(/onNut\(y, 'tu-choi'\)/.test(ds) && /onNut\(y, 'duyet'\)/.test(ds) && /onNut\(y, 'tra-loi'\)/.test(ds) && /t\('Mở ›'\)/.test(the), 'thao tác của dòng');
+    assert(/huy-quyet-dinh/.test(h) && /toast\.hoanTac\(chu/.test(h), 'Hoàn tác');
     assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc(, kq\?\.soLichSu)?)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');
     /* CV-TAB (06/11): Chờ bạn duyệt là tab đầu (`tab === 'duyet'`), vẫn ở cột trái, trước danh sách việc. */
     const iTrai = cv.indexOf("{tab === 'duyet' && <HopChoDuyet"), iDs = cv.indexOf('<DanhSachViec muc={mucs}');   // AUDIT-UI B6: hàng lọc vẽ vào `khuLoc` dưới hàng tab
