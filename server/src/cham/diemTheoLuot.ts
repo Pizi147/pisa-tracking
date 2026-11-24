@@ -9,7 +9,7 @@
  *   bảng lịch nào khác.
  */
 import { badRequest, notFound } from '../util.ts';
-import { db, theoLo } from '../db.ts';
+import { db, docNho, theoLo } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { classScopeSql, defaultWorkScope, requireXemLuotCham, scopeXemLuotCham, type Principal } from '../permissions.ts';
 import { scoreDebtCells } from '../worklist/scoreDebt.ts';
@@ -39,7 +39,6 @@ type Gom = TomTatLuot & { classId: number; thuTu: number };
  * (T19 — chưa tới tuần / chưa xếp tuần thì chưa nhập được, không phải việc).
  */
 export function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<number, string>, coLo?: number): Map<number, TomTatLuot[]> {   // `coLo`: phép kiểm ép lô nhỏ
-  const conn = db();
   const thuHai = mondayOfDate(today);
   /* Mỗi attempt: lượt của nó (theo từng lớp — MT0-THEO-EM: một MT0 có thể ở cả lớp thường cũ lẫn lớp FT) + số ô trống `n`. */
   const luotCua = new Map<number, { g: Gom; ft: boolean; n: number; thieu: number; theoEm: boolean }[]>();
@@ -50,7 +49,7 @@ export function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMa
     /* TURSO-5: lượt CỦA LÔ NÀY (id → dòng lượt theo lớp của lô) — câu điểm / ô đọc theo id, không dựng lại `ll` (lượt lớp + MT0 theo em) hai lần nữa. Riêng
        mỗi lô (rà PTA #1957): MT0 thuộc lớp ở lô trước và lớp FT ở lô sau được đọc lại ở lô sau, và mỗi lô chỉ cộng `n` / `thieu` vào dòng của chính lô. */
     const cuaLo = new Map<number, { g: Gom; ft: boolean; n: number; thieu: number; theoEm: boolean }[]>();
-    for (const a of conn.prepare(
+    for (const a of docNho(   // TOC-DO-2511: đầu hồ sơ lớp + Điểm theo lượt cùng request đọc một lần
       `${LL(ph)}
        SELECT a.id, ll.lop AS class_id, a.class_id != ll.lop AS theo_em, a.kind, a.attempt_no, a.lich_su, CASE WHEN s.status = 'inactive' THEN NULL ELSE s.archived_at END AS archived_at, rp.week_start, c.programme_code
          FROM ll JOIN assessment_attempts a ON a.id = ll.id
@@ -59,7 +58,7 @@ export function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMa
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE a.status != 'cancelled'
           AND (c.status = 'finished' OR ${LUOT_HIEN_TAI_SQL('a', 's', true)})`,   // lỗi chủ SP 28/10: cùng tập hàng bảng điểm lớp (lớp đã kết thúc giữ lịch sử)
-    ).all(...lo, ...lo) as any[]) {
+      ...lo, ...lo)) {
       const ft = cheDoCua(a.programme_code) === 'ielts_band';
       let m: MaLuot;
       if (ft && a.kind === 'mock' && a.attempt_no) m = { loai: 'mt', so: a.attempt_no };
@@ -85,17 +84,15 @@ export function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMa
     if (!cuaLo.size) return;
     const json = JSON.stringify([...cuaLo.keys()]);
     const diem = new Map<string, any>();
-    for (const sc of conn.prepare(
+    for (const sc of docNho(
       `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
          FROM assessment_scores sc
-         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled'`,
-    ).all(json) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
-    for (const k of conn.prepare(
+         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled'`, json)) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
+    for (const k of docNho(
       `SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
          JOIN assessment_attempts a ON a.id = k.attempt_id
          LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
-        WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
-    ).all(json) as any[]) {
+        WHERE a.id IN (SELECT value FROM json_each(?1)) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`, json)) {
       for (const l of cuaLo.get(k.attempt_id) ?? []) {
         /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
         const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;

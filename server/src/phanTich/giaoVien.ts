@@ -6,6 +6,7 @@
  * Gán người (Q15): ô điểm → phân công ở HẠN NHẬP · kết quả, HV tiến bộ → phân công ở TUẦN THI ·
  * Ghi kết quả PA, PA hiệu quả → người phụ trách Case. Phân công hiệu lực ở ngày d: `effective_from ≤ d ≤ effective_to` (ngày đổi: dòng mới thắng).
  */
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import {
   ratioResult, kyNangDaBo, boMonDaBo, COT_KET_QUA_GV, PERMISSIONS, baiId, khoangPtGv, mondayOfDate, nhanDotNgan, oTuTap, oTuSo3, tenMonNgan, boMonLich, duongHoSoHocVien,
   KN_DAY, type KnDay, type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq, boMonTheoLuot, daGhiLuot,
@@ -81,7 +82,8 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
   const k = khoangPtGv(f, homNay);
   if ('loi' in k) throw badRequest(k.loi);
   const conn = db();
-  const cb = conn.prepare(`SELECT name FROM branches WHERE id = ?`).get(cn) as any;
+  const tenCn = tenChiNhanhNho(cn);   // TOC-DO-2511
+  const cb = tenCn == null ? undefined : { name: tenCn };
   if (!cb) throw notFound('Không tìm thấy chi nhánh này.');
   const khung = f.ct ?? 'ft';
   /* Một câu: lớp của chi nhánh + khung kèm MỌI dòng phân công (kể cả đã kết thúc — gán người theo ngày). */

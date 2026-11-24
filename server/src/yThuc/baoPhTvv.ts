@@ -9,7 +9,7 @@
  *  · Xử lý bị thu hồi (được duyệt) / QL từ chối / GVCN rút: việc chưa xong → "Đã bỏ" kèm lý do hệ thống; việc đã xong giữ + nhãn + chuông để biết.
  * Quyền ghi kiểm ở MÁY CHỦ: TVV của em / TVV cùng chi nhánh làm thay (chủ SP 22/10), hoặc QL / Quản trị trong phạm vi em. GV / GVCN / CX không ghi.
  */
-import { DS_JSON, db, tx } from '../db.ts';
+import { DS_JSON, db, docNho, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
   GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
@@ -506,10 +506,10 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
        LEFT JOIN classes c ON c.id = e.class_id
       WHERE v.trang_thai = 'mo'${o.studentId ? ' AND v.student_id = ?' : ''}`;
   const em = o.studentId ? [o.studentId] : [];
-  const rows = !ql && !tvv ? [] : db().prepare(
+  const rows = !ql && !tvv ? [] : docNho(   // TOC-DO-2511: nhớ trong request; chép dòng — dưới còn push + gán `r.nhan`
     `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'
         : pv.all ? '' : ` AND (s.consultant_user_id = ? OR ${CHI_NHANH_EM} IN (${DS_JSON}))`} ORDER BY v.han, v.id`,
-  ).all(o.today, ...em, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])) as any[];   // ?1 = hôm nay (GVCN hiệu lực)
+  o.today, ...em, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])).map((r) => ({ ...r }));   // ?1 = hôm nay (GVCN hiệu lực)
   if (lopCn.length) {
     const co = new Set(rows.map((r) => r.id));
     for (const r of db().prepare(`${COT} AND v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL AND e.class_id IN (${DS_JSON}) ORDER BY v.han, v.id`)

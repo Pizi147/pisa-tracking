@@ -22,7 +22,7 @@ for (const suffix of ['', '-wal', '-shm']) {
 /* PHẢI đặt TRƯỚC khi import db.ts (và mọi mã import db.ts): lộ chỗ sửa nhầm giá trị nhớ dùng chung trong request. */
 process.env.PISA_DONG_BANG_NHO = '1';
 
-const { db, closeDb, THAM_SO_TOI_DA, tuanTheoKetNoi } = await import('../db.ts');
+const { db, closeDb, THAM_SO_TOI_DA, tuanTheoKetNoi, docNho } = await import('../db.ts');
 const { tuanTheoId } = await import('../fasttrack/skillSchedule.ts');
 const { runSeed } = await import('../seed/seed.ts');
 const { createApp } = await import('../app.ts');
@@ -368,6 +368,19 @@ check('TOC-DO-2511 · tuần (`tuanTheoId`) nhớ theo tiến trình: GET sau 0 
   chayTrongRequest('POST', () => (nguCanhTd.datMoc({}), tuanTheoId([r.id])));
   assert(soCauSql() === n + 1, 'request ghi phải đọc lại (tuần vừa chèn trong giao dịch có thể bị huỷ)');
   assert(!tuanTheoKetNoi.get(conn)?.has(-1) && chayTrongRequest('GET', () => (nguCanhTd.datMoc({}), tuanTheoId([-1]))).size === 0, 'id không có phải trả rỗng');
+});
+
+check('TOC-DO-2511b · docNho: GET đọc một lần mỗi (câu, tham số); câu ghi xoá nhớ; POST đọc lại', () => {
+  const sql = 'SELECT id FROM report_periods WHERE id = ?';
+  let n = soCauSql();
+  chayTrongRequest('GET', () => { docNho(sql, 1); docNho(sql, 1); });
+  assert(soCauSql() === n + 1, `GET: ${soCauSql() - n} câu`);
+  n = soCauSql();
+  chayTrongRequest('GET', () => { docNho(sql, 1); conn.prepare("UPDATE moc_he_thong SET luc = luc WHERE khoa = 'tham-chieu'").run(); docNho(sql, 1); });
+  assert(soCauSql() === n + 3, `GET có ghi: ${soCauSql() - n} câu`);
+  n = soCauSql();
+  chayTrongRequest('POST', () => { docNho(sql, 1); docNho(sql, 1); });
+  assert(soCauSql() === n + 2, `POST: ${soCauSql() - n} câu`);
 });
 
 check("PR-TD Task1(c) · request 'POST' không mở bộ nhớ", () => {

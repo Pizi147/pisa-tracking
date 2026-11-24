@@ -4,7 +4,7 @@ import { GIAI_THICH_KCK, KCK, chuTrangThai, loaiHoSo, trangCha, type TrangThai }
 import { fmtBand } from '../lib/format.ts';
 import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
-import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
+import { BaoOTrongNhan, coOTuNhan } from './oTuNhan.ts';
 import { useNoiLoi } from './loiForm.tsx';
 import { BadgeHan, CHIP_TRON, CHIP_VUONG, ChipCham, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';

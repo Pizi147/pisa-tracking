@@ -5,6 +5,7 @@
  * lớp thường (`tongHop`, bài), Thi thật = `thiThatTrongKhoang` (em, trừ KCK) — rồi chỉ CHIA theo lớp (một chi nhánh) hoặc chi nhánh (Tất cả).
  * Số mới: "vào · kết thúc" (em, 1 câu mỗi số) và "Chưa có KQ" (hiện tại, `sauThiTheoEm` → `da_thi_cho_kq`).
  */
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import { DS_JSON, db, theoLo } from '../db.ts';
 import { PERMISSIONS, coMucThi, mucThi, soSanhLop, trangThaiSauThi, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import type { ChiNhanhV2Kq, DongChiNhanhV2, TyLeCn } from '../../../shared/domain/index.ts';
@@ -200,7 +201,7 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
 
   return {
     tu: f.tu, den: f.den, ct: f.ct, branchId, cheDo,
-    tenChiNhanh: branchId ? (lop[0]?.branch_name ?? (db().prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null) : null,
+    tenChiNhanh: branchId ? (lop[0]?.branch_name ?? tenChiNhanhNho(branchId)) : null,
     hv: { dangHoc: tong.hv, vao: vk.vao.size, ketThuc: vk.ketThuc.size },
     datMt, tienBo, tienBoKn, datTest, cuoiKhoa, thiThat,
     hang: [...hang.values()], tong: { ...tong, ten: cheDo === 'lop' ? '' : 'Toàn hệ thống' },

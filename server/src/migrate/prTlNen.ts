@@ -6,7 +6,8 @@
  * Chỉ thêm bảng + dòng + trigger, chạy lặp được. Cùng định nghĩa trong `schema.sql` (seed không chạy migrate).
  */
 /* GIAM-DOC-1011 (B' 12b): + `teacher_assignments` và tên / xoá `users` — `phanCongDangHoatDong` (Công việc) nhớ theo tiến trình như bảng lớp. */
-export const BANG_THAM_CHIEU = ['classes', 'programmes', 'programme_skills', 'programme_checkpoints', 'demo_config', 'teacher_assignments'] as const;
+/* TOC-DO-2511: + `branches` — đổi tên chi nhánh (`luuChiNhanh`) làm mới bảng nhớ chi nhánh (`bang-chi-nhanh`) mọi tiến trình; trước giữ tên cũ. */
+export const BANG_THAM_CHIEU = ['classes', 'programmes', 'programme_skills', 'programme_checkpoints', 'demo_config', 'teacher_assignments', 'branches'] as const;
 const VIEC = [['ins', 'INSERT'], ['upd', 'UPDATE'], ['del', 'DELETE']] as const;
 
 export const TRIGGER_THAM_CHIEU = BANG_THAM_CHIEU.flatMap((b) => VIEC.map(([ma, viec]) => ({

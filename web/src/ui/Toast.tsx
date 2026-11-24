@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { HOAN_TAC_MS, giayHoanTacConLai, themToast } from '@shared/domain/index.ts';
 import { IconDat } from './BieuTuong.tsx';
-import { NUT_DONG } from './KhungPanel.tsx';
+import { NUT_DONG } from './khungPanelChung.ts';
 import { t } from '@shared/i18n/index.ts';
 import { cauHuy } from '../lib/api.ts';
 

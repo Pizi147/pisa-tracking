@@ -159,7 +159,7 @@ export async function runPrNvTests(t: YThucTestKit) {
       assert(d.coDichLienKet(new URLSearchParams(q)) === true, q);
     }
     for (const q of ['', 'cn=2', 'xem=de-biet', 'periodId=4']) assert(d.coDichLienKet(new URLSearchParams(q)) === false, q);
-    assert(/coDichLienKet\(/.test(docNguon('web/src/ui/Filters.tsx')), 'useChiNhanhMacDinh chưa dùng coDichLienKet');
+    assert(/coDichLienKet\(/.test(docNguon('web/src/ui/chiNhanhMacDinh.ts')), 'useChiNhanhMacDinh chưa dùng coDichLienKet');
     assert(/coDichLienKet\(/.test(docNguon('web/src/modules/students/StudentsPage.tsx')), 'Học viên & Lớp gửi cnNho cả khi link trỏ lớp');
   });
 

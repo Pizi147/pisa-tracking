@@ -8,7 +8,7 @@
  *
  * Sửa / Rút khi chưa có kết quả (người gửi, QL); Hoàn tác ngay sau gửi (≤ 2 phút, chưa có kết quả) xoá hẳn. Mọi đổi ghi `writeAudit`.
  */
-import { DS_JSON, db, tx } from '../db.ts';
+import { DS_JSON, db, docNho, tx } from '../db.ts';
 import { CHU_TOI_THIEU, HAN_HANG, PERMISSIONS, addDaysIso, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
@@ -270,7 +270,7 @@ export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: b
   /* Lớp = lớp em ĐANG học (không phải lớp lúc hỏi) — cùng quyền trả lời (`discipline.manage`): em chuyển lớp thì GVCN mới giữ. GVCN không phải QL:
      chỉ đọc câu của lớp mình chủ nhiệm (đọc đúng phạm vi). */
   const LOP = `COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = t.student_id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1), t.class_id)`;
-  const rows = db().prepare(
+  const rows = docNho(   // TOC-DO-2511: nhớ trong request (Tổng quan kèm hai lượt Công việc)
     `SELECT x.*, c.code AS class_code, c.branch_id,
             (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = x.lop AND ta.is_core = 1 AND ta.status = 'active'
                 AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1) ORDER BY ta.id LIMIT 1) AS gvcn
@@ -278,7 +278,7 @@ export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: b
                FROM tinh_hinh_hoc_tap t JOIN students s ON s.id = t.student_id LEFT JOIN users gu ON gu.id = t.nguoi_gui
               WHERE t.chieu = 'tvv_gvcn' AND t.trang_thai = 'mo'${o.studentId ? ' AND t.student_id = ?' : ''}) x LEFT JOIN classes c ON c.id = x.lop
       ${ql ? '' : `WHERE x.lop IN (${DS_JSON})`} ORDER BY x.han, x.id`,
-  ).all(o.today, ...(o.studentId ? [o.studentId] : []), ...(ql ? [] : [JSON.stringify(lopCn)])) as any[];
+  o.today, ...(o.studentId ? [o.studentId] : []), ...(ql ? [] : [JSON.stringify(lopCn)]));
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;

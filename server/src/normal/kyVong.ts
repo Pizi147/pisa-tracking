@@ -1,4 +1,4 @@
-import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
+import { THAM_SO_TOI_DA, chenNhieuDong, db, docNho, theoLo, tx } from '../db.ts';
 import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, ketLuanKyVong, kyNangHuy, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -76,14 +76,13 @@ export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string |
   const mt0Cua = new Map<number, number>(), huyCua = new Map<number, string[]>();
   /* KY-VONG-MT0: kỹ năng Đã huỷ đọc kèm (câu con, 0 câu thêm) — `goiYKyVong` không lấy band của chúng, không Overall. */
   theoLo([...nguonCua.keys()], (lo, ph) => {
-    for (const a of conn.prepare(`SELECT a.id, a.student_id, a.class_id,
+    for (const a of docNho(`SELECT a.id, a.student_id, a.class_id,
         (SELECT GROUP_CONCAT(k.skill) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'cancelled') AS huy
-        FROM assessment_attempts a WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND a.student_id IN (${ph}) ORDER BY a.id`)
-      .all(...lo) as any[]) if (nguonCua.get(a.student_id)?.lop === a.class_id) { mt0Cua.set(a.student_id, a.id); huyCua.set(a.id, kyNangHuy(a.huy)); }
+        FROM assessment_attempts a WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND a.student_id IN (${ph}) ORDER BY a.id`, ...lo)) if (nguonCua.get(a.student_id)?.lop === a.class_id) { mt0Cua.set(a.student_id, a.id); huyCua.set(a.id, kyNangHuy(a.huy)); }
   });
   const diem = new Map<number, Record<string, number | null>>();
   theoLo([...mt0Cua.values()], (lo, ph) => {
-    for (const s of conn.prepare(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${ph})`).all(...lo) as any[]) {
+    for (const s of docNho(`SELECT attempt_id, skill, band FROM assessment_scores WHERE attempt_id IN (${ph})`, ...lo)) {   // TOC-DO-2511
       diem.set(s.attempt_id, { ...diem.get(s.attempt_id), [s.skill]: s.band });
     }
   });

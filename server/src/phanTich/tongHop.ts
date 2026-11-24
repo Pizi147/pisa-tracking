@@ -1,3 +1,4 @@
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import {
   KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, khoaBai, nhanBai, soSanhDiem, tenMonNgan, type DongBaiThuong, type DongLuotDiem, type ODiemLuot,
@@ -339,7 +340,7 @@ export function tongHop(p: Principal, f: FilterTongHop, r = tinh(p, f)): TongHop
 
 /** Tên chi nhánh cho đầu panel bảng (web ghép "· Fast Track · dữ liệu đến dd/mm"). */
 export const tenChiNhanh = (branchId: number | null | undefined): string | null =>
-  branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null : null;
+  branchId ? tenChiNhanhNho(branchId) : null;
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):

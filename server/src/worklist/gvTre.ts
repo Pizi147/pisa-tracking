@@ -1,3 +1,4 @@
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, docMaLuot, laChamCheo, emCuaViec, nhanMaLuot, tachBaiId, tenMonNgan, vietMaLuot, type ChuongTrinh, type MaLuot } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -55,7 +56,7 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
   const sc = scopeFor(p, PERMISSIONS.WORK_VIEW);
   const mot = branchId !== null ? (sc.all || sc.branchIds.includes(branchId) ? branchId : null)
     : !sc.all && sc.branchIds.length === 1 ? sc.branchIds[0] : null;
-  const chiNhanh = mot ? ((db().prepare('SELECT name FROM branches WHERE id = ?').get(mot) as any)?.name ?? null) : null;
+  const chiNhanh = mot ? tenChiNhanhNho(mot) : null;
   if (f.gv === undefined) {
     if (phamViXemViec(p) !== 'cham-diem') throw forbidden('Khối Mock Test chỉ dành cho Admin.');
     const w = myWork(p, { branchId, nguoi: 'tat-ca' }) as any;

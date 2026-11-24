@@ -4,6 +4,7 @@
  * Số ở ô và danh sách khi bấm (`oHoSoGv`) đi qua CÙNG các hàm tập bên dưới nên luôn bằng nhau.
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongCuaToi, dongNhinThay, laViecChamCheo, nhomCuaViec, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
@@ -393,7 +394,8 @@ export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: strin
   if (cn === null) throw badRequest('Chọn một chi nhánh.');
   if (!scope.all && !scope.branchIds.includes(cn)) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
-  const cb = conn.prepare(`SELECT name FROM branches WHERE id = ?`).get(cn) as any;
+  const tenCn = tenChiNhanhNho(cn);   // TOC-DO-2511
+  const cb = tenCn == null ? undefined : { name: tenCn };
   if (!cb) throw notFound('Không tìm thấy chi nhánh này.');
   const homNay = demoToday();
   const ct = chuongTrinhTuThamSo(q.ct);

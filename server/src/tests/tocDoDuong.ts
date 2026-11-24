@@ -606,9 +606,9 @@ export const TRAN: Record<string, number> = {
   'TVV /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 25,   // B2-14 (TURSO-5): URL trang gửi, đo 15
   'CX /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 34,   // B2-14 (TURSO-5): URL trang gửi, đo 24
   'ADMIN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 32,   // B2-14 (TURSO-5): URL trang gửi, đo 22
-  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 84,   // B2-14 (TURSO-5): URL trang gửi, đo 64
-  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 82,   // B2-14 (TURSO-5): URL trang gửi, đo 63
-  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 85,   // B2-14 (TURSO-5): URL trang gửi, đo 65
+  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 79,   // B2-14 (TURSO-5): URL trang gửi, đo 64
+  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 77,   // B2-14 (TURSO-5): URL trang gửi, đo 63
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 80,   // B2-14 (TURSO-5): URL trang gửi, đo 65
   'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 86,   // B2-14 (TURSO-5): URL trang gửi, đo 66
   'QT /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 88,   // B2-14 (TURSO-5): URL trang gửi, đo 67
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 49,   // B2-14 (TURSO-5): URL trang gửi, đo 37
@@ -648,7 +648,7 @@ export const TRAN: Record<string, number> = {
      một lần mỗi chi nhánh mỗi request) → +~30–40 câu. Trần nâng = min(100, max(đo + 10, ⌈đo × 1,3⌉)): đo bảng FT 79 · 78, thường 69 · 68, khoảng dài 75 · 74,
      panel 56 · 55, hồ sơ GV 80–82. Đã cảnh báo PTA (dòng / ngày trong mô tả PR). */
   /* GIAM-DOC-0611: đường GET mới đo (DUONG_DO cuối) — max(đo + 10, ⌈đo × 1,3⌉), đo 06/11 ×1; `/classes/3/phoi-hop-sos` GIAM-DOC-0611d: đo 11 (trước 23). */
-  'ADMIN /tong-quan/gv-tre': 25, 'GVBM /classes/3/phoi-hop-sos': 21, 'GVBM /ref/periods': 14, 'GVBM /students/1/phoi-hop-sos': 17, 'GVBM /students/1/s-expert': 16, 'GVCN /cham/lich-test/qua-han': 19, 'GVCN /cham/lich-test/qua-han?khung=ft': 20, 'QL /cham/lich-test/qua-han?khung=ft': 19, 'GVCN /classes/3/phoi-hop-sos': 21, 'GVCN /classes/3/y-thuc/lo': 18, 'GVCN /cycles/3/suggested-mocks': 32, 'GVCN /hoc-vien-lop/lich-thi/3/lich-su': 18, 'GVCN /ref/periods': 14, 'GVCN /students/1/phoi-hop-sos': 17, 'GVCN /students/1/s-expert': 16, 'GVCN_THUONG /classes/3/phoi-hop-sos': 21, 'GVCN_THUONG /ref/periods': 14, 'GVCN_THUONG /students/1/phoi-hop-sos': 17, 'GVCN_THUONG /students/1/s-expert': 16, 'QL /bao-cao-ph/lop?branchId=1': 12, 'QL /cham/lich-test/qua-han': 18, 'QL /classes/3/phoi-hop-sos': 21, 'QL /classes/3/teachers': 17, 'QL /classes/3/y-thuc/lo': 18, 'QL /cycles/3/suggested-mocks': 31, 'QL /hoc-vien-lop/lich-thi/3/lich-su': 17, 'QL /ref/periods': 14, 'QL /students/1/phoi-hop-sos': 17, 'QL /students/1/s-expert': 15, 'QL /tong-quan/gv-tre?gv=7': 24, 'QT /admin/mo-sua-lich-test': 12, 'QT /bao-cao-ph/lop?branchId=1': 12, 'QT /classes/3/phoi-hop-sos': 21, 'QT /classes/3/teachers': 17, 'QT /ref/periods': 14, 'QT /students/1/phoi-hop-sos': 15, 'QT /students/1/s-expert': 13, 'QT /tong-quan/gv-tre?gv=7': 23,
+  'ADMIN /tong-quan/gv-tre': 24, 'GVBM /classes/3/phoi-hop-sos': 21, 'GVBM /ref/periods': 14, 'GVBM /students/1/phoi-hop-sos': 17, 'GVBM /students/1/s-expert': 16, 'GVCN /cham/lich-test/qua-han': 19, 'GVCN /cham/lich-test/qua-han?khung=ft': 20, 'QL /cham/lich-test/qua-han?khung=ft': 19, 'GVCN /classes/3/phoi-hop-sos': 21, 'GVCN /classes/3/y-thuc/lo': 18, 'GVCN /cycles/3/suggested-mocks': 32, 'GVCN /hoc-vien-lop/lich-thi/3/lich-su': 18, 'GVCN /ref/periods': 14, 'GVCN /students/1/phoi-hop-sos': 17, 'GVCN /students/1/s-expert': 16, 'GVCN_THUONG /classes/3/phoi-hop-sos': 21, 'GVCN_THUONG /ref/periods': 14, 'GVCN_THUONG /students/1/phoi-hop-sos': 17, 'GVCN_THUONG /students/1/s-expert': 16, 'QL /bao-cao-ph/lop?branchId=1': 12, 'QL /cham/lich-test/qua-han': 18, 'QL /classes/3/phoi-hop-sos': 21, 'QL /classes/3/teachers': 17, 'QL /classes/3/y-thuc/lo': 18, 'QL /cycles/3/suggested-mocks': 31, 'QL /hoc-vien-lop/lich-thi/3/lich-su': 17, 'QL /ref/periods': 14, 'QL /students/1/phoi-hop-sos': 17, 'QL /students/1/s-expert': 15, 'QL /tong-quan/gv-tre?gv=7': 23, 'QT /admin/mo-sua-lich-test': 12, 'QT /bao-cao-ph/lop?branchId=1': 12, 'QT /classes/3/phoi-hop-sos': 21, 'QT /classes/3/teachers': 17, 'QT /ref/periods': 14, 'QT /students/1/phoi-hop-sos': 15, 'QT /students/1/s-expert': 13, 'QT /tong-quan/gv-tre?gv=7': 23,
   /* BAO-CAO-PH b: Excel một lớp (MB FT 101 33 em: em + bản ghi + GV + điểm gốc 5 kỹ năng) — max(đo + 10, ⌈đo × 1,3⌉), đo 06/11 QL / QT / Admin 12 · GVCN 403 2. */
   'QL /classes/3/bao-cao-ph/xuat': 21, 'QT /classes/3/bao-cao-ph/xuat': 22, 'ADMIN /classes/3/bao-cao-ph/xuat': 22, 'GVCN /classes/3/bao-cao-ph/xuat': 12,
   /* BCPH-PDF: cùng câu Excel + 1 câu địa chỉ / SĐT chi nhánh (1 dòng) — trần = Excel + 1. */
@@ -658,15 +658,15 @@ export const TRAN: Record<string, number> = {
   'QL /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 15, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 15,
   'QL /classes/6/bao-cao-ph': 16, 'QL /classes/6/bao-cao-ph/phan?phan=writing': 17, 'QT /classes/6/bao-cao-ph': 17, 'QT /classes/6/bao-cao-ph/phan?phan=writing': 17, 'GVCN_THUONG /classes/6/bao-cao-ph': 17, 'GVCN_THUONG /classes/6/bao-cao-ph/phan?phan=writing': 17,
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — trần = max(đo + 10, ⌈đo × 1,3⌉). */
-  'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 73, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 72,   // PT-VP-PA: đo 10 · 10 · 15 · 14
-  'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23,   // PT-LOP-THUONG: đo 12 · 12 · 13 · 13
+  'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 72, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 71,   // PT-VP-PA: đo 10 · 10 · 15 · 14
+  'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 22, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 22,   // PT-LOP-THUONG: đo 12 · 12 · 13 · 13
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22,   // PT-PANEL: đo 12
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21,   // PT-PANEL: đo 11
-  'QL /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38, 'QT /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38,   // PT-PANEL: đo 28
+  'QL /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 36, 'QT /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 36,   // PT-PANEL: đo 28
   'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 28, 'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 28,   // PT-PANEL: đo 18
-  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25,   // PT-PANEL: đo 15
-  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25,   // PT-PANEL: đo 15
-  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25,   // PT-PANEL: đo 15
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 24, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 24,   // PT-PANEL: đo 15
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 24, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 24,   // PT-PANEL: đo 15
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 24, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 24,   // PT-PANEL: đo 15
   'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 28, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'GVBM /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 27,   // PT-PANEL: đo 21 · 19 · 4 (403) · 19 · 20
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — đo 30/10 trước 138 câu (4 câu × tài khoản) → sau 11; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/accounts': 21,
@@ -693,7 +693,7 @@ export const TRAN: Record<string, number> = {
   'QL /classes/3/viec-theo-em?chi=toi': 56, 'QT /classes/3/viec-theo-em?chi=toi': 56,   // TL-VIEC: đo 46 · 46 (trước 66 · 66), GV đo 35 · 34 · 35 (trước 48 · 47 · 48); còn > 30 câu → trần = đo + 10 (PTA 31/10)
   'QL /classes/6/danh-gia-dau-ra': 18, 'QT /classes/6/danh-gia-dau-ra': 17, 'GVCN_THUONG /classes/6/danh-gia-dau-ra': 19,
   /* SV-SO2: hồ sơ GV theo kỳ, Đạt MT, Thi tháng này, khoảng ~29 tuần (P9) — trần = max(đo+10, ⌈đo×1,3⌉), đo ×3 22/10. `/giao-vien/…`: GIAM-DOC-HSGV hạ lại (xem khối PR-GV (3)). */
-  'QL /giao-vien/7/chi-so': 42, 'GVCN /giao-vien/7/chi-so': 41, 'GVBM /giao-vien/7/chi-so': 14, 'GVCN_THUONG /giao-vien/7/chi-so': 41, 'QT /giao-vien/7/chi-so': 42, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 42, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 21, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 20, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 34, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 33, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 29, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 98, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 97,   // TL-TQ: đo 22 (trước 29) · 23 (trước 28) · 19 (trước 23) · 23 (trước 26) · 41 (trước 47) · 40 (trước 44) · TL-NEN: đo 39 (trước 44)   // DOC-PT: Phân tích GV khoảng dài đo 36 · 35 (trước 43 · 42)
+  'QL /giao-vien/7/chi-so': 42, 'GVCN /giao-vien/7/chi-so': 41, 'GVBM /giao-vien/7/chi-so': 14, 'GVCN_THUONG /giao-vien/7/chi-so': 41, 'QT /giao-vien/7/chi-so': 42, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 42, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 21, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 20, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 34, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 33, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 29, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 97, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 96,   // TL-TQ: đo 22 (trước 29) · 23 (trước 28) · 19 (trước 23) · 23 (trước 26) · 41 (trước 47) · 40 (trước 44) · TL-NEN: đo 39 (trước 44)   // DOC-PT: Phân tích GV khoảng dài đo 36 · 35 (trước 43 · 42)
   /* OV-15g: Lịch sử thay đổi — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /lich-su?loai=hv&id=1': 16, 'QT /lich-su?loai=hv&id=1': 14, 'GVCN /lich-su?loai=hv&id=1': 19, 'GVBM /lich-su?loai=hv&id=1': 18,
   'QL /lich-su?loai=lop&id=3': 16, 'GVCN /lich-su?loai=lop&id=3': 17, 'GVBM /lich-su?loai=lop&id=3': 17, 'GVCN_THUONG /lich-su?loai=lop&id=3': 17, 'QT /lich-su?loai=lop&id=3': 15,
@@ -1197,11 +1197,11 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 29,
   'QT /giao-vien/7/o?cot=case-mo': 28,   // OV-13a (B): +1 câu MT cuối của lộ trình (chữ mốc "đến MT{n}") khi danh sách có PA "đến lúc thi" — một câu cho cả trang
   // PR-GV (4), 30/09/2026 — bảng GV chi nhánh: 36 (QL) / 34 (QT) câu, 403 = 9 câu; KHÔNG tăng theo số GV / lớp / Case (phép kiểm prGv.tests.ts).
-  'QL /giao-vien?cn=1&ct=ft': 41,
-  'QT /giao-vien?cn=1&ct=ft': 39,
+  'QL /giao-vien?cn=1&ct=ft': 40,
+  'QT /giao-vien?cn=1&ct=ft': 38,
   'GVCN /giao-vien?cn=1&ct=ft': 14,
-  'QL /giao-vien?cn=1&ct=thuong': 41,
-  'QT /giao-vien?cn=1&ct=thuong': 39,
+  'QL /giao-vien?cn=1&ct=thuong': 40,
+  'QT /giao-vien?cn=1&ct=thuong': 38,
   'GVCN /giao-vien?cn=1&ct=thuong': 14,
   // PR-Pb2-a (3), 01/10/2026 — Hiệu quả PA lọc gv + tu/den: đo 17 (QL) / 16 (QT) câu → max(đo+10, ⌈đo×1.3⌉).
   'QL /phan-tich/hieu-qua-pa?gv=7&tu=2026-08-31&den=2026-09-14': 24,
@@ -1212,13 +1212,13 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/tong-hop?ct=thuong&theo=dot': 25,
   'QT /phan-tich/tong-hop?ct=thuong&theo=dot': 25,
   // PR-Pb2-b — bảng Phân tích giáo viên (đo 01/10, bộ demo D18): max(đo+10, ⌈đo×1.3⌉)
-  'QL /phan-tich/giao-vien?cn=1&ct=ft': 100,   // DOC-PT: đo 38 (trước 43) — Case có PA không dựng chi tiết, HV cần chú ý chỉ em lớp đang dạy
-  'QT /phan-tich/giao-vien?cn=1&ct=ft': 100,   // DOC-PT: đo 37 (trước 42)
+  'QL /phan-tich/giao-vien?cn=1&ct=ft': 99,   // DOC-PT: đo 38 (trước 43) — Case có PA không dựng chi tiết, HV cần chú ý chỉ em lớp đang dạy
+  'QT /phan-tich/giao-vien?cn=1&ct=ft': 99,   // DOC-PT: đo 37 (trước 42)
   'GVCN /phan-tich/giao-vien?cn=1&ct=ft': 14,   // 403, đo 9
-  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 90,   // DOC-PT: đo 28 (trước 32)
-  'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 89,   // DOC-PT: đo 27 (trước 31)
+  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 89,   // DOC-PT: đo 28 (trước 32)
+  'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 88,   // DOC-PT: đo 27 (trước 31)
   /* DEM-QUA-HAN b: ô Chấm Test đúng hạn → panel số chung (thay panel Chấm điểm riêng, đo 24) — max(đo + 10, ⌈đo × 1,3⌉), đo 13 · 13. */
-  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23,
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 22, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 22,
   // OV-15e (19/10): Báo cáo · Kết quả thi · panel chỉ số GV — max(đo + 10, ⌈đo × 1,3⌉)
   'QL /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 23,   // TL-TQ: đo 13 (trước 15) · SV-SO3: đo 18
   'QT /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 24,   // TL-TQ: đo 14 (trước 16) · SV-SO3: đo 19
@@ -1228,7 +1228,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=kq-mt:mt2:dat': 14,   // SV-SO3: đo 4 (403)
   'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 27, 'CX /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 27, 'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 25,   // O-TQ-BAM: panel Đạt Target thi thật (chỉ khi bấm) — max(đo + 10, ⌈đo × 1,3⌉), đo 17 · 17 · 15
   /* Phân tích V2 · Chi nhánh (`baoCao=chi-nhanh`): đo seed QL FT 31 · LT 16 · QT FT 55 câu (Tiến bộ theo từng chi nhánh) — trần max(đo + 10, ⌈đo × 1,3⌉). */
-  'QL /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 41, 'QT /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 72,
+  'QL /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 40, 'QT /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 67,
   'GVCN /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 14,
   'QL /tong-quan/v5?ct=thuong&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 26,
   'QL /phan-tich/bao-cao/o?ct=ft&o=bai-qua-han': 30,   // TL-TQ: đo 20 (trước 24)
@@ -1244,8 +1244,8 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'QT /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'TVV /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'CX /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13,
   'QL /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6 · 6
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7
-  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 29,   // đo 19
-  'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 27,   // đo 17
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 28,   // đo 19
+  'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 26,   // đo 17
   /* V8-PT-2: panel thẻ chỉ số (chỉ khi MỞ, gồm ~4 câu đăng nhập) — max(đo+10, ⌈đo×1,3⌉). */
   'QL /phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 7
   'QT /phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 7
@@ -1257,7 +1257,7 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
   'QL /tong-quan/v5?ct=ft': 46,   // DOC-PT: đo 35 (trước 40) · NHẸ HƠN PR-3: bỏ Trễ chấm + caseGv — đo 34
   'ADMIN /my-work?nguoi=tat-ca&branchId={cn}': 26, 'CX /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,   // NHẸ HƠN PR-3: đo 16 · 8 → max(đo + 10, ⌈đo × 1,3⌉)
-  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 95, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 101, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 116, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 119, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 51,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)
+  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 95, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 100, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 111, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 115, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 51,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)
   'CX /tong-quan/v5?ct=ft&gon=1': 35,   // TQ-QT-NHE: đo QL 73 · QT 77 (trước 74 · 78) → max(đo + 10, ⌈đo × 1,3⌉) · NHẸ HƠN PR-3 (PTA rà #2002): đo 74 · 78 · 35 · 25 → max(đo + 10, ⌈đo × 1,3⌉)
   'QT /tong-quan/v5?ct=ft': 47,   // TL-TQ: đo 36 (trước 49)
   'QL /tong-quan/v5?ct=thuong': 35,   // DOC-PT: đo 25 (trước 29)
@@ -1333,8 +1333,8 @@ export const TRAN: Record<string, number> = {
   'QT /tong-quan/chi-nhanh-v2/o?ct=ft&o=chua-co-kq': 18,   // đo 8
   'QL /tong-quan/chi-nhanh-v2/o?ct=thuong&o=ck-dat&khoa=tong&kieu=tuan&tu=2026-08-31&den=2026-09-27': 24,   // đo 14
   'QT /tong-quan/chi-nhanh-v2/o?ct=thuong&o=ck-dat&khoa=tong&kieu=tuan&tu=2026-08-31&den=2026-09-27': 24,   // đo 14
-  'QL /phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27': 41,   // đo 31
-  'QT /phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27': 72,   // đo 55
+  'QL /phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27': 40,   // đo 31
+  'QT /phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27': 67,   // đo 55
   'QL /phan-tich/thi-that/o?o=tong:co-target&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6
   'QT /phan-tich/thi-that/o?o=tong:co-target&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6
   'QL /phan-tich/tong-hop/o?ct=thuong&theo=lop&khoa=tong&cot=dat-test&kieu=tuan&tu=2026-08-31&den=2026-09-27': 24,   // đo 14

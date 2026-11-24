@@ -50,7 +50,12 @@ const theoGhi = new WeakMap<object, Map<string, { so: string; giaTri: unknown }>
  * còn lại tính như cũ (vẫn một lần mỗi request qua `nho`). Giá trị dùng chung giữa request — nơi gọi KHÔNG sửa tại chỗ.
  */
 /** TD-GHI: nguồn của mọi `nhoThamChieu` — bảng có trigger `tham-chieu` + `users` (tên) + `cau_hinh_phien_ban` + `branches` (`bang-chi-nhanh`). */
-const NGUON_THAM_CHIEU = [...BANG_THAM_CHIEU, 'users', 'cau_hinh_phien_ban', 'branches'];
+const NGUON_THAM_CHIEU = [...BANG_THAM_CHIEU, 'users', 'cau_hinh_phien_ban'];
+/** Bảng chi nhánh (vài dòng) — nhớ theo tiến trình, khoá phiên bản DB (`branches` có trigger `tham-chieu` từ TOC-DO-2511). Nơi gọi không sửa tại chỗ. */
+export const bangChiNhanhNho = (): { id: number; code: string; name: string }[] =>
+  nhoThamChieu('bang-chi-nhanh', () => db().prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[]);
+/** Tên chi nhánh theo id (mọi trạng thái) — như `SELECT name FROM branches WHERE id = ?`, đọc bảng nhớ; không có → null. */
+export const tenChiNhanhNho = (id: number): string | null => bangChiNhanhNho().find((b) => b.id === id)?.name ?? null;
 export function nhoThamChieu<T>(khoa: string, tinh: () => T): T {
   return nhoTheoBang(NGUON_THAM_CHIEU, khoa, () => {   // TD-GHI: request ghi nhớ tới câu ghi chạm bảng tham chiếu
     const so = (layMoc() as MocHeThong | undefined)?.thamChieu;

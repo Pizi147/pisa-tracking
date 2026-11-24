@@ -3,7 +3,7 @@ import { t } from '../../../shared/i18n/index.ts';
 import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, KHONG_CHU_SQL, caseChuaCoNguoi } from '../cases/owner.ts';
-import { DS_JSON, db, tx } from '../db.ts';
+import { DS_JSON, db, docNho, tx } from '../db.ts';
 import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -32,7 +32,7 @@ import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
-import { nhoThamChieu, quetTheoMoc } from '../platform/mocHeThong.ts';
+import { bangChiNhanhNho, nhoThamChieu, quetTheoMoc } from '../platform/mocHeThong.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
@@ -1154,8 +1154,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .all(...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId])) as any[];
   const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
   henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
-  const miniTest = !co('mini_test') ? [] : conn
-    .prepare(
+  const miniTest = !co('mini_test') ? [] : docNho(   // TOC-DO-2511: Tổng quan kèm Tất cả + Của tôi đọc một lần
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
               (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
@@ -1168,8 +1167,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         WHERE m.ty_le IS NULL
           AND NOT EXISTS (SELECT 1 FROM case_interventions ivs JOIN sos_cases sc ON sc.id = ivs.case_id WHERE ivs.nhom_bo_tro = m.nhom_bo_tro AND ${CASE_SAU_THI_SQL('sc', 's.id')})   -- N46
         ORDER BY m.han, m.id`,
-    )
-    .all(p.userId) as any[];
+    p.userId).map((r) => ({ ...r }));   // chép dòng — dưới gán `m.gv`
   /*
    * TD-VIEC: việc Ý thức (5b) của em chỉ đến người xem khi họ là GVCN lớp em đang học (`gvcnId`) hoặc có `case.approve` (QL, Quản trị) — người không có
    * `case.approve` chỉ đọc em ở lớp mình chủ nhiệm (mọi phân công GVCN `active`, tập cha của GVCN hiệu lực hôm nay); trước đọc mọi em có vi phạm cả hệ thống.
@@ -1691,10 +1689,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
   if (xemNguoiKhac && co('missing_data')) {
-    const truoc = conn.prepare(SQL_MOC).all() as any[];
+    const truoc = docNho(SQL_MOC);
     if (truoc.length) {
       dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      const sau = conn.prepare(SQL_MOC).all() as any[];
+      const sau = docNho(SQL_MOC);
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
@@ -2001,7 +1999,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
 const chiNhanhCuaViec = (ds: readonly WorkItem[]) => {
   const ids = new Set(ds.map((it) => it.cn).filter((x): x is number => x != null));
-  return ids.size > 1 ? bangChiNhanh().filter((b) => ids.has(b.id)) : undefined;
+  return ids.size > 1 ? bangChiNhanhNho().filter((b) => ids.has(b.id)) : undefined;
 };
 
 /** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
@@ -2075,7 +2073,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
   const homNay = demoToday();
   const cnAnIds = new Set(x.assignments.filter((a) => activeAt(a, homNay) && !can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.classId }))
     .map((a) => bangLop().get(a.classId)?.branchId).filter((b): b is number => b != null));
-  const cnAn = cnAnIds.size ? bangChiNhanh().filter((b) => cnAnIds.has(b.id)).map((b) => b.name) : [];
+  const cnAn = cnAnIds.size ? bangChiNhanhNho().filter((b) => cnAnIds.has(b.id)).map((b) => b.name) : [];
   const items = loc
     .filter(xemDuoc)
     .map((it: any) => ({
@@ -2107,9 +2105,6 @@ export function gvDangXem(p: Principal, nguoi: number) {
   return { xemViec, pv: phamViHoSoGv(p, nguoi), x: loadPrincipal(nguoi) };
 }
 
-/** Bảng chi nhánh (vài dòng) — nhớ theo tiến trình, khoá phiên bản DB. */
-const bangChiNhanh = (): { id: number; code: string; name: string }[] =>
-  nhoThamChieu('bang-chi-nhanh', () => db().prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[]);
 
 /**
  * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
