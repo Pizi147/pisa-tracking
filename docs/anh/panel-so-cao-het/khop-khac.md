@@ -39,7 +39,7 @@ Ca cột chữ dài (1440 và 1280): ảnh "trước" của nhóm này là khung
 | Panel | TRƯỚC | SAU |
 |---|---|---|
 | Vi phạm (Ý thức) | Học viên 288 px, Ngày 111, Vi phạm 135 (mô tả 3–5 dòng), khoảng trống giữa Học viên và Ngày | Học viên 136 (vừa tên dài nhất), Ngày 111, Vi phạm 287 nhận phần dư, Xử lý sát phải; nhóm / mô tả tối đa 2 dòng, đủ chữ ở `title` |
-| PA có cải thiện | cột PA 91 (mô tả bị cắt), bảng tràn ngang ~20 px, "Người phụ trách" bị cắt mép phải | PA 179, đầu cột đổi "Phụ trách" (cùng tên với panel Chưa chốt PA), không tràn |
+| PA có cải thiện | 6 cột không vừa 720: bảng rộng 740, cột cuối "Phụ trách" bị CẮT ở mép phải ("Phụ trác", "Võ Mỹ Duyê") | bỏ cột Lớp — lớp (+ "từ W2 SEP") xuống dòng phụ dưới tên HV; còn 5 cột: Học viên 151 · Case 57 · PA 230 (2 dòng) · Kết quả 159 · Phụ trách 122 sát mép phải, chữ cuối cách mép panel ≥ 4 px |
 | Chưa chốt PA · Tổng hợp · HV có Case | không đổi | cột cuối (Hạn / Kỳ vọng) căn phải sát mép |
 | Thi thật (bảng điểm) | cột cuối (Lệch / Target / Overall) căn giữa, cách mép phải ~50 px | cột cuối căn phải sát mép (`BangSoPanel`) |
 | Ý thức theo HV | "Vi phạm" 77 ≠ "Chưa xử lý" 91 | cột số cùng 92 px (`min-width`) |
@@ -47,14 +47,14 @@ Ca cột chữ dài (1440 và 1280): ảnh "trước" của nhóm này là khung
 Gốc lỗi: khối panel đặt cột tên = 40 % bảng (`--ten-pt`). Sửa ở `web/src/index.css` (khối `.pn-bang`, ≥ 640): cột tên `width: 1%` + một dòng, cột linh hoạt nhận phần dư. Dùng chung nên mọi panel bảng số theo; đo 6 panel × 2 cỡ: `scrollWidth − clientWidth = 0`.
 
 ## Số đo cột (JS, dark, vai Head) — mọi bảng trong panel số Phân tích
-Mỗi ô: `cột: rộng px / thừa px (rộng − đệm − chữ rộng nhất) / số dòng tối đa`. Tiêu chí PTA: không cột nào thừa > 40 px khi cột khác > 2 dòng · cột số đều nhau (lệch ≤ 8 px) · cột cuối căn phải sát mép (chữ cách mép ≤ 26 px) · không tràn ngang. Kết quả: **36 / 36 mẫu đạt** (bảng khác nhau × 1440, 1280).
+Mỗi ô: `cột: rộng px / thừa px (rộng − đệm − chữ rộng nhất) / số dòng tối đa`. Tiêu chí PTA: không cột nào thừa > 40 px khi cột khác > 2 dòng · cột số đều nhau (lệch ≤ 8 px) · cột cuối căn phải sát mép (chữ cách mép ≤ 26 px) · KHÔNG CẮT: mép phải của bảng và của chữ trong MỌI ô ≤ mép panel − 4 px và ≤ mép ô (đo bằng `Range`, không chỉ `scrollWidth` — bản đo trước sót vì khung cắt không phải `.table-scroll`). Kết quả: **36 / 36 mẫu đạt** (bảng khác nhau × 1440, 1280).
 
 | Cỡ | Bảng (cột: rộng / thừa / dòng) |
 |---|---|
 | 1440 | Học viên:139/0/2d MT:74/0/2d L:68/-7/1d R:69/-7/1d W1:68/-7/1d W2:68/-7/1d S:69/-7/1d OVR:69/7/1d Kỳ vọng:97/49/1d |
 | 1440 | Học viên:124/0/2d MT:76/0/2d L:68/8/1d R:69/8/1d W1:70/-4/1d W2:70/-4/1d S:71/-4/1d OVR:71/10/1d Kỳ vọng:100/51/1d |
 | 1440 | Học viên:168/0/2d Case:209/0/1d Điểm / KV:100/18/1d Phụ trách:130/4/1d Hạn:112/-9/1d |
-| 1440 | Học viên:130/0/1d Lớp:93/0/2d Case:57/13/1d PA:179/0/3d Kết quả:159/0/1d Phụ trách:122/0/1d |
+| 1440 | Học viên:151/0/2d Case:57/13/1d PA:230/0/3d Kết quả:159/0/1d Phụ trách:122/0/1d |
 | 1440 | Học viên:176/0/2d Ngày thi:104/9/1d L:73/43/1d R:73/43/1d W:73/43/1d S:73/43/1d OVR:73/29/1d Target:73/27/1d |
 | 1440 | Học viên:220/107/1d Lớp:110/31/1d Tuần học:110/48/1d MT gần nhất:168/0/1d Overall / KV:110/14/1d |
 | 1440 | Học viên:220/0/2d Ngày thi:125/30/1d L:125/79/1d Target:125/95/1d Lệch:125/69/1d |
@@ -72,7 +72,7 @@ Mỗi ô: `cột: rộng px / thừa px (rộng − đệm − chữ rộng nh�
 | 1280 | Học viên:139/0/2d MT:74/0/2d L:68/-7/1d R:69/-7/1d W1:68/-7/1d W2:68/-7/1d S:69/-7/1d OVR:69/7/1d Kỳ vọng:97/49/1d |
 | 1280 | Học viên:124/0/2d MT:76/0/2d L:68/8/1d R:69/8/1d W1:70/-4/1d W2:70/-4/1d S:71/-4/1d OVR:71/10/1d Kỳ vọng:100/51/1d |
 | 1280 | Học viên:168/0/2d Case:209/0/1d Điểm / KV:100/18/1d Phụ trách:130/4/1d Hạn:112/-9/1d |
-| 1280 | Học viên:130/0/1d Lớp:93/0/2d Case:57/13/1d PA:179/0/3d Kết quả:159/0/1d Phụ trách:122/0/1d |
+| 1280 | Học viên:151/0/2d Case:57/13/1d PA:230/0/3d Kết quả:159/0/1d Phụ trách:122/0/1d |
 | 1280 | Học viên:176/0/2d Ngày thi:104/9/1d L:73/43/1d R:73/43/1d W:73/43/1d S:73/43/1d OVR:73/29/1d Target:73/27/1d |
 | 1280 | Học viên:220/107/1d Lớp:110/31/1d Tuần học:110/48/1d MT gần nhất:168/0/1d Overall / KV:110/14/1d |
 | 1280 | Học viên:220/0/2d Ngày thi:125/30/1d L:125/79/1d Target:125/95/1d Lệch:125/69/1d |
