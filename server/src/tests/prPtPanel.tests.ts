@@ -5,8 +5,10 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
-  const { check, assert, P, conn } = t;
+  const { check, assert, P } = t;
   const fs = await import('node:fs');
+  const { trangThaiYThuc } = await import('../yThuc/trangThai.ts');
+  const { demoToday } = await import('../demoConfig.ts');
   console.log('\nPT-PANEL · panel bảng có điểm');
   const { oTongHop, tongHop, luotTrongKhoang, phanLoaiCacLuot } = await import('../phanTich/tongHop.ts');
   const { oBaoCao, baoCao } = await import('../phanTich/baoCao.ts');
@@ -238,10 +240,13 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
       if (!r.n) continue;
       coDong(r, `${d.khoa} × ${cot}`, cot === 'hv-co-vi-pham' ? ['viPhamEm'] : ['viPham']);
       if (cot !== 'hv-co-vi-pham') assert(r.rows.every((row: any) => row.viPham.ngay && row.viPham.nhom && row.viPham.trangThai), `${cot}: thiếu ngày / nhóm / trạng thái`);
-      /* SUA-GOP-2511: cột Hạn xử lý THẬT = `violations.han_xu_ly` của đúng vi phạm (không suy từ số ngày trễ). */
-      if (cot !== 'hv-co-vi-pham') for (const row of r.rows) {
-        const han = (conn.prepare('SELECT han_xu_ly FROM violations WHERE id = ?').get(row.viPham.id) as any)?.han_xu_ly ?? null;
-        assert('han' in row.viPham && (row.viPham.han ?? null) === (han ? String(han).slice(0, 10) : null), `${cot}: hạn xử lý lệch ${JSON.stringify(row.viPham)} ≠ ${han}`);
+      /* SUA-GOP-2511 (PTA rà #2150 P1): cột Hạn xử lý = `han` của CÙNG `trangThaiViPham` sinh nhãn Xử lý (một số liệu một nguồn — dời mốc lớp, Head duyệt + 4). */
+      if (cot !== 'hv-co-vi-pham') {
+        const tt = trangThaiYThuc([...new Set<number>(r.rows.map((row: any) => row.viPham.studentId as number))], demoToday());
+        for (const row of r.rows) {
+          const k = tt.get(row.viPham.studentId)?.viPham.get(row.viPham.id);
+          assert('han' in row.viPham && (row.viPham.han ?? null) === (k?.han ?? null) && row.viPham.trangThaiT === (k?.t ?? null), `${cot}: hạn / nhãn lệch hàm trạng thái ${JSON.stringify(row.viPham)} ≠ ${JSON.stringify(k)}`);
+        }
       }
       so++;
     }
