@@ -91,12 +91,12 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const NHOM_CT = t('Chấm Test · bài'), NHOM_V = t('Việc');
   /* PT-a (mockup v19): tên 280 · 8 cột số đều 112 (mỗi nhóm Đúng hạn · Làm muộn · Chưa làm · % đúng hạn — % cột riêng, chữ thường) · Đạt kỳ vọng 200. */
   const cot: CotBang[] = [
-    { key: 'gv', nhan: t('Giáo viên'), kieu: 'ten', rong: 280 },
-    { key: 'cd-dung', nhan: t('Đúng hạn'), kieu: 'so', nhom: NHOM_CT, tach: true, rong: 112 }, { key: 'cd-muon', nhan: t('Làm muộn'), kieu: 'so', nhom: NHOM_CT, rong: 112 },
-    { key: 'cd-chua', nhan: t('Chưa làm'), kieu: 'so', nhom: NHOM_CT, rong: 112 }, { key: 'cd-pt', nhan: t('% đúng hạn'), kieu: 'phan-tram', nhom: NHOM_CT, rong: 112 },
-    { key: 'v-dung', nhan: t('Đúng hạn'), kieu: 'so', nhom: NHOM_V, tach: true, rong: 112 }, { key: 'v-muon', nhan: t('Làm muộn'), kieu: 'so', nhom: NHOM_V, rong: 112 },
-    { key: 'v-chua', nhan: t('Chưa làm'), kieu: 'so', nhom: NHOM_V, rong: 112 }, { key: 'v-pt', nhan: t('% đúng hạn'), kieu: 'phan-tram', nhom: NHOM_V, rong: 112 },
-    { key: 'dat', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), dv: ft ? t('lượt') : t('bài'), kieu: 'so', rong: 200, tach: true },
+    { key: 'gv', nhan: t('Giáo viên'), kieu: 'ten', rong: 220 },
+    { key: 'cd-dung', nhan: t('Đúng hạn'), kieu: 'so', nhom: NHOM_CT, tach: true, rong: 96 }, { key: 'cd-muon', nhan: t('Làm muộn'), kieu: 'so', nhom: NHOM_CT, rong: 96 },
+    { key: 'cd-chua', nhan: t('Chưa làm'), kieu: 'so', nhom: NHOM_CT, rong: 96 }, { key: 'cd-pt', nhan: t('% đúng hạn'), kieu: 'phan-tram', nhom: NHOM_CT, rong: 96 },
+    { key: 'v-dung', nhan: t('Đúng hạn'), kieu: 'so', nhom: NHOM_V, tach: true, rong: 96 }, { key: 'v-muon', nhan: t('Làm muộn'), kieu: 'so', nhom: NHOM_V, rong: 96 },
+    { key: 'v-chua', nhan: t('Chưa làm'), kieu: 'so', nhom: NHOM_V, rong: 96 }, { key: 'v-pt', nhan: t('% đúng hạn'), kieu: 'phan-tram', nhom: NHOM_V, rong: 96 },
+    { key: 'dat', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), dv: ft ? t('lượt') : t('bài'), kieu: 'so', rong: 184, tach: true },
   ];
   const GACH = <span className="text-slate-500">—</span>;
   const oCua = (d: Dong, c: CotBang): ReactNode => {

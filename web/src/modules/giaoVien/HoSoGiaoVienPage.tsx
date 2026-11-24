@@ -325,12 +325,12 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
   const dienThoai = useDienThoai();
   const [het, setHet] = useState(false);
   const COT: CotBang[] = [
-    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 260 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 130 },
-    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 100 },
-    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 160 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 100 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true, rong: 200 },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 128 },
+    { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 128 },
+    { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 128 },
+    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 128 },
+    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 128 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -514,7 +514,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
         {cs.error ? <ErrorState message={cs.error.message} hint={cs.error.hint} status={cs.error.status} onRetry={cs.reload} />
           : !d ? <Skeleton rows={3} className="p-4" />
           : (
-            <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div className="grid gap-4 p-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
               <BangKyNang id={data.gv.id} d={d} ky={ky} khung={khung} />
               <BangLop data={data} d={d} ky={ky} khung={khung} />
             </div>
@@ -539,7 +539,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   const ft = khung === 'ft';
   /* Chủ SP 23/10: khoảng trống dồn sau cột Kỹ năng (cột linh hoạt duy nhất); cột số gọn, sát nhau bên phải. Không cột "Chưa đạt Test" — % đã kèm n/N, bấm % ra danh sách có tab Chưa đạt. */
   const COT: CotBang[] = [
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true, rong: 140 },
     { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
     ...(ft ? [{ key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: `${t('Chưa đạt')} · ${t('Đạt Target')} · ${t('Vượt')}` } as CotBang] : []),
   ];
@@ -557,7 +557,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
       <NutLuat label={t('Ký hiệu')} phai><span className="flex gap-2.5 font-semibold"><span className={MAU_THI.chua}>▼ {t('Chưa đạt')}</span><span className={MAU_THI.dat}>▲ {t('Đạt Target')}</span><span className={MAU_THI.vuot}>★ {t('Vượt')}</span></span></NutLuat>
     )}>
       {dienThoai ? <BangGon cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} />
-        : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}
+        : <Bang ten={t('Theo kỹ năng')} deu cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}
             rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />}
     </KhungBang>
   );
@@ -600,13 +600,13 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
   };
   const COT: CotBang[] = ft ? [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true, rong: 140 },
     { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
     { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
     { key: 'tt', nhan: t('Thi thật'), kieu: 'chu', rong: RONG_TL, goiY: `${t('Kết quả thi thật')} · % Pass Target` },
   ] : [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
-    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
+    { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu', linhHoat: true, rong: 140 },
     { key: 'luot', nhan: t('Bài Test trong kỳ'), kieu: 'chu', rong: 168 },
     { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
   ];
@@ -635,7 +635,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
         </span>
       )}>
       {dienThoai ? <BangGon cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} dau={['lop', 'ky']} />
-        : <Bang ten={t('Theo lớp')} cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
+        : <Bang ten={t('Theo lớp')} deu cot={COT} hang={hang.length ? [...trangNay, tong] : []} khoa={(h) => h.khoa} oCua={oCua} khung={false}
             rong={{ tieuDe: t('Chưa có dữ liệu'), goiY: t('Không có lượt Test nào trong kỳ này.') }} />}
       </KhungBang>
   );
@@ -675,9 +675,9 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: { gvId: number; nguoiXem: { 
         : (
           <Bang ten={t('Việc đang tồn')} deu khung={false} the375={false} hang={hang} khoa={(h) => (h.tong ? 'tong' : h.nhom)} oCua={oCua} lopHang={(h) => (h.tong ? 'tong' : '')}
             cot={[
-              { key: 'nhom', nhan: t('Nhóm'), kieu: 'ten', linhHoat: true, rong: 200 },
-              { key: 'viec', nhan: t('Việc'), kieu: 'diem', rong: 100 },
-              { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
+              { key: 'nhom', nhan: t('Nhóm'), kieu: 'ten', linhHoat: true, rong: 150 },
+              { key: 'viec', nhan: t('Việc'), kieu: 'diem', rong: 84 },
+              { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 84 },
             ]}
             rong={{ tieuDe: t('Không có việc nào') }} />
         )}
@@ -849,9 +849,9 @@ function KhoiYeuCau({ data, coDuyet, coYeuCau }: { data: HoSo; coDuyet: boolean;
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">{t('Không có yêu cầu nào đang chờ.')}</p> : (
         <Bang ten={t('Yêu cầu đã gửi')} deu khung={false} the375={false} hang={hang} khoa={(h) => h.key} oCua={oCua}
           cot={[
-            { key: 'ten', nhan: t('Yêu cầu'), kieu: 'ten', linhHoat: true, rong: 200 },
-            { key: 'so', nhan: t('Số'), kieu: 'diem', rong: 100 },
-            { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 100 },
+            { key: 'ten', nhan: t('Yêu cầu'), kieu: 'ten', linhHoat: true, rong: 150 },
+            { key: 'so', nhan: t('Số'), kieu: 'diem', rong: 84 },
+            { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 84 },
           ]} />
       )}
     </Card>
