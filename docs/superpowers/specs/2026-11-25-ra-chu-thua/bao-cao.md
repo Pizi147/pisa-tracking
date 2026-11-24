@@ -29,13 +29,13 @@ Trạng thái: **SỬA** = dự kiến làm trong PR khu (mục 2–6; mỗi PR 
 | # | Ở đâu · vai · cỡ | Ảnh | Trước → Sau | Luật | |
 |---|---|---|---|---|---|
 | HL-1 | Danh sách lớp · mọi vai · 1440 | `hl-danh-sach-gv-1440.jpg` | "33 HV · … · SOS 1 **4 HV** · SOS 2 **2 HV** · SOS 3 **5 HV**" → "SOS 1 · 4 · SOS 2 · 2 · SOS 3 · 5": đơn vị "HV" đã nói một lần ở đầu dòng | R1 | GIỮ (thử bỏ "HV" → "SOS 1 4" mất nghĩa) |
-| HL-2 | Tab Lịch thi · mọi vai · 1440 | — | Cột "Ghi chú" 43 / 43 ô là "—" (chiếm ~20 % bề ngang, ô trống) → ẩn cột khi không dòng nào có ghi chú; có ghi chú thì hiện lại | R3 R7 | [XM] cột là nơi bấm "+ Ghi chú" |
+| HL-2 | Tab Lịch thi · mọi vai · 1440 | — | Cột "Ghi chú" 43 / 43 ô là "—" (chiếm ~20 % bề ngang, ô trống) → ẩn cột khi không dòng nào có ghi chú; có ghi chú thì hiện lại | R3 R7 | GIỮ (PTA quyết: còn nút "+ Ghi chú") |
 | HL-3 | Hồ sơ lớp · KPI phải | `hl-lop-y-thuc-1440.jpg` | "Chờ duyệt · 8", "Chờ chấm · **15 việc**", "Quá hạn của lớp · 14" — chỉ ô giữa có đơn vị → "Chờ chấm · 15" | R8 | GIỮ ("việc" ≠ "bài" ở danh sách lớp; có phép kiểm) |
 | HL-4 | Hồ sơ lớp · tab Ý thức & Phối hợp | `hl-lop-y-thuc-1440.jpg` | Nhóm "Các em khác 29 HV · theo tên" rồi **25 dòng** "✓ Chưa có vi phạm" và 8 dòng "Không có vi phạm chờ" → dòng em chỉ còn tên (+ nút Lịch sử nếu có); tên nhóm nói rõ "Các em khác · không có vi phạm chờ" | R1 R3 | ĐÃ SỬA #2129 |
 | HL-5 | Hồ sơ lớp · tab Phân tích lớp | — | "Đạt theo kỹ năng · 33 HV **· ô = HV đạt / HV có điểm** ⓘ" — chú thích tĩnh cạnh ⓘ → "33 HV ⓘ" (giải nghĩa nằm trong ⓘ) | R4 | ĐÃ SỬA #2129 |
 | HL-6 | Hồ sơ lớp · Phân tích lớp | — | Cột MT4, MT5 toàn "—" khi lớp mới có MT1–MT3 | R7 | [XM] bảng cố định 5 cột MT để lớp so được; chủ SP quyết |
 | HL-7 | Hồ sơ lớp · header | `hl-lop-y-thuc-1440.jpg` | Nhãn "Fast Track" cạnh tên lớp và bộ chuyển lớp "1/6 · Fast Track" | R1 | GIỮ (chưa thấy trùng trong mã) |
-| HL-8 | Hồ sơ HV · Học thuật · bảng Mock Test | `hl-hv-hoc-thuat-1440.jpg` | Cột "Lớp lúc đánh giá": MB FT 101 · MB FT 101 · MB FT 101, trùng ô "Lớp MB FT 101" ở đầu hồ sơ → ẩn cột khi mọi hàng là lớp hiện tại; em đã đổi lớp thì hiện | R3 R7 | [XM] cần xử lý em đã chuyển lớp + hàng Thi thật dùng chung cột |
+| HL-8 | Hồ sơ HV · Học thuật · bảng Mock Test | `hl-hv-hoc-thuat-1440.jpg` | Cột "Lớp lúc đánh giá": MB FT 101 · MB FT 101 · MB FT 101, trùng ô "Lớp MB FT 101" ở đầu hồ sơ → ẩn cột khi mọi hàng là lớp hiện tại; em đã đổi lớp thì hiện | R3 R7 | ĐÃ SỬA #2129 (PTA quyết: ẩn khi mọi dòng cùng một lớp) |
 | HL-9 | Hồ sơ HV · chân bảng Mock Test | `hl-hv-hoc-thuat-1440.jpg` | "Target đã đổi 1 lần — lần gần nhất W2 AUG: 7.0 → 6.5 (Mục tiêu lúc tư vấn). **Các lượt đã chốt vẫn giữ kỳ vọng tính theo Target lúc đó.**" → câu 1 giữ, câu 2 vào ⓘ của khung | R4 | GIỮ (hệ quả của đổi Target) |
 | HL-10 | Hồ sơ HV · Lộ trình & lớp | — | "Mới nhất ở bên phải · cuối mỗi thẻ là cách em sang lớp sau" (chữ tĩnh trên bảng chương) → bỏ (thẻ tự đọc được) | R4 | ĐÃ SỬA #2129 |
 | HL-11 | Hồ sơ HV · Thi thật hiện **3 lần** | `hl-hv-hoc-thuat-1440.jpg` | "Thi thật Dự kiến 03/2027" + "Target 6.5" ở đầu hồ sơ, rồi hàng "Thi thật · IELTS · dự kiến 03/2027 · Target 6.5 · chưa thi" cuối bảng Mock Test | R3 | [XM] hàng cuối bảng là nơi sửa ngày thi / Target (thao tác) |
@@ -49,7 +49,7 @@ Trạng thái: **SỬA** = dự kiến làm trong PR khu (mục 2–6; mỗi PR 
 
 | # | Ở đâu · vai · cỡ | Ảnh | Trước → Sau | Luật | |
 |---|---|---|---|---|---|
-| TE-1 | Lịch Test tuần · bảng "Test tuần này" · 1440 | `te-lich-1440.jpg` | Cột "Đợt" rộng ~640 px chỉ chứa "Final Test · 4 em" (~120 px) → hai khoảng trống ~500 px trước "Hạn chấm"; cột "Tiến độ" lấy phần còn lại | R7 | [XM] "Đợt giãn" chủ SP 19/11 đã chốt; đề xuất chia lại cột |
+| TE-1 | Lịch Test tuần · bảng "Test tuần này" · 1440 | `te-lich-1440.jpg` | Cột "Đợt" rộng ~640 px chỉ chứa "Final Test · 4 em" (~120 px) → hai khoảng trống ~500 px trước "Hạn chấm"; cột "Tiến độ" lấy phần còn lại | R7 | ĐÃ SỬA #2132 (PTA quyết: cân đối cột thắng "Đợt giãn") |
 | TE-2 | Lịch Test tuần · hàng mở ra | `te-lich-1440.jpg` | "Tổng hợp /50" (đầu cột) · ô "Tổng số câu **Tổng hợp** [50]" cùng một hàng | R1 | ĐÃ SỬA #2132 |
 | TE-3 | Lịch Test tuần · thanh tóm tắt | `te-lich-1440.jpg` | "Quá hạn **45**" (thanh) + nhóm "Quá hạn chấm · 4 lớp · **45 bài**" ngay dưới | R3 | GIỮ (thanh tóm tắt toàn chi nhánh, nhóm là nơi mở) |
 | TE-4 | Hồ sơ Mock Test · bảng kỹ năng | `te-mock-1440.jpg` | Cột "Lịch" là W2 JUL ở **cả 4 hàng**, trùng "Lịch W2 JUL" ở đầu trang và "MT1 · W2 JUL" ở ô chọn → bỏ cột "Lịch" khi mọi hàng cùng tuần; hàng khác tuần (dời riêng kỹ năng) thì hiện | R3 R7 | GIỮ (mỗi kỹ năng có thể dời tuần riêng) |
@@ -110,8 +110,8 @@ Trạng thái: **SỬA** = dự kiến làm trong PR khu (mục 2–6; mỗi PR 
 | Khu | PR | Mục đã sửa | Ghi chú |
 |---|---|---|---|
 | Tổng quan | #2127 | TQ-1, TQ-2 | |
-| Học viên & Lớp | #2129 | HL-4, HL-5, HL-10 | HL-1, HL-3, HL-9 đọc mã rồi GIỮ; HL-2, HL-8 → [XM] |
-| Test | #2132 | TE-2, TE-5, TE-6, TE-8 | TE-1 → [XM] (đo: cột Đợt ~640 px, chữ ~120 px) |
+| Học viên & Lớp | #2129 | HL-4, HL-5, HL-8, HL-10 | HL-1, HL-2, HL-3, HL-9 GIỮ |
+| Test | #2132 | TE-1, TE-2, TE-5, TE-6, TE-8 | TE-1: Đợt 642 px → 220 px, ba cột sau chia đều (307 px ở 1440) |
 | Phân tích | — | — | không mở PR: mọi chỗ lặp nằm trong ô số (#2120) |
 | Tutor · Hồ sơ GV · Quản trị · Hồ sơ cá nhân | PR này | TG-1, TG-5, TG-9, TG-10 | TG-2, TG-3, TG-4, TG-6, TG-7, TG-12 → [XM]; TG-8, TG-11 GIỮ |
 
