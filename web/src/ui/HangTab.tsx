@@ -140,9 +140,10 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
         );
       })}
       {thuGon && an.size > 0 && (
+        /* Không vòng focus: hàng tab cắt (overflow-x-clip) nên vòng chỉ lộ MÉP TRÁI thành một sọc (chủ SP 25/11); focus bàn phím = nền nhấn như mục menu. */
         <span className="absolute inset-y-0 right-0 flex items-stretch" style={{ background: 'var(--bg)' }}>
           <button type="button" aria-haspopup="menu" aria-expanded={moThem} ref={nutThem} onClick={() => { const r = nutThem.current?.getBoundingClientRect(); if (r) setViTriThem({ top: r.bottom + 4, right: window.innerWidth - r.right }); setMoThem(!moThem); }}
-            className={`-mb-px inline-flex min-h-[44px] cursor-pointer appearance-none items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 text-sm font-semibold ${an.has(value) ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
+            className={`-mb-px inline-flex min-h-[44px] cursor-pointer appearance-none items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 text-sm font-semibold focus-visible:bg-[color:var(--accent-soft)] focus-visible:outline-none ${an.has(value) ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
             {t('Thêm')}
             {soThem.so > 0 && (soThem.quaHan || soThem.homNay
               ? <BadgeTabSo b={{ so: soThem.so, n: soThem.so, quaHan: soThem.quaHan, homNay: soThem.homNay }} />

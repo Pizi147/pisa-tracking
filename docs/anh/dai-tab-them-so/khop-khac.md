@@ -19,3 +19,6 @@ Script ở scratchpad. Vai Quản trị (1) · Head QL (2) · GV (7); 1440 / 128
 
 ## [XM] / để sau
 - Nhãn "Thêm · <tên tab>" khi tab chọn nằm trong menu: chưa làm (gạch chân + mục nền nhấn đã đủ báo; nhãn dài dễ vỡ ở 1280).
+
+## Vòng 2 (chủ SP 25/11: "thêm cái sọc làm gì vậy?")
+Sọc dọc ở mép trái "Thêm" = vòng focus bàn phím (hiện sau Esc / Tab) bị hàng tab cắt, chỉ lộ cạnh trái. Bỏ vòng; focus bàn phím của "Thêm" = nền nhấn như mục menu. Ảnh `sau-tab-1280/1440` chụp lại. Kiểm lại ma trận 1440 / 1280 · panel đóng / mở · vai 1, 2, 7: ổn.
