@@ -2249,6 +2249,8 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .ck-hop { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 13px; }
   /* ô lớp / tuần của em theo lớp của dải: mờ (không viền), rê hoặc có tiêu điểm → viền */
   .ck-mo .field, .ck-mo button { border-color: transparent; background-color: transparent; }
+  @media (pointer: coarse) { .ck-lg .oc { min-height: 44px; } }   /* cảm ứng ≥ 768 (khay): vùng bấm 44 */
+  @media (hover: none) { .ck-mo .field, .ck-mo button { border-color: var(--line-strong); } }   /* cảm ứng: không có rê chuột — ô luôn thấy viền */
   .ck-r:hover .ck-mo .field, .ck-r:hover .ck-mo button, .ck-mo:focus-within .field, .ck-mo:focus-within button { border-color: var(--o-nhap-vien); background-color: var(--o-nhap-nen); }
   /* thanh Áp: một thẻ, ba ô bằng nhau + "Ngay hôm nay" */
   .ck-ap { display: grid; gap: 8px; padding: 10px 12px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }

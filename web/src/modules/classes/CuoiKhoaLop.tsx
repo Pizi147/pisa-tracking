@@ -767,7 +767,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
       ))}
     </span>
   );
-  const apVang = laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay khi chốt')} · {t('có Hoàn tác')}</span>;
+  const apVang = laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}><span aria-hidden>⚠ </span>{t('Chuyển ngay khi chốt')} · {t('có Hoàn tác')}</span>;
   const nxChungO = laGvcn && (
     <span className="flex min-w-0 flex-[1_1_22rem] items-center gap-2 max-sm:col-span-2">
       <input className="field min-h-[44px] min-w-0 flex-1 text-[13px] sm:min-h-0" maxLength={2000} value={nxChung} onChange={(ev) => setNxChung(ev.target.value)}
@@ -827,22 +827,22 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     const ft = hopFt(e, x);
     const mo = laQl && !khoa(e) && theoNhom(e, x) ? 'ck-mo' : '';   // lớp / tuần theo dải: ô mờ, rê → viền
     return (
-      <div key={e.id} id={`ck-em-${e.id}`} className={`ck-g ${trangThaiDong(e)}`}>
-        <div className="ck-r">
-          <span className="ck-tick">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
-          <span className="ck-ten">{oTenEm(e, x)}</span>
-          <span className="ck-fin">{oFinal(e)}</span>
+      <div key={e.id} id={`ck-em-${e.id}`} className={`ck-g group/hang ${trangThaiDong(e)}`} role="rowgroup">
+        <div className="ck-r" role="row">
+          <span className="ck-tick" role="cell">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
+          <span className="ck-ten" role="cell">{oTenEm(e, x)}</span>
+          <span className="ck-fin" role="cell">{oFinal(e)}</span>
           {laQl ? (
             <>
-              <span className="ck-bt">{oHuong(e, x)}</span>
-              {coCotLop && <span className={`ck-lop ${mo}`}>{oLop(e, x) ?? <span className="text-faint">—</span>}</span>}
-              {coCotLop && <span className={`ck-tuan ${mo}`}>{oTuanDong(e, x) ?? <span className="text-faint">—</span>}</span>}
+              <span className="ck-bt" role="cell">{oHuong(e, x)}</span>
+              {coCotLop && <span role="cell" className={`ck-lop ${mo}`}>{oLop(e, x) ?? <span className="text-faint">—</span>}</span>}
+              {coCotLop && <span role="cell" className={`ck-tuan ${mo}`}>{oTuanDong(e, x) ?? <span className="text-faint">—</span>}</span>}
             </>
           ) : (
-            <><span className="ck-hd">{oChiDoc(e)}</span><span className="ck-nx">{oNhanXet(e)}</span></>
+            <><span className="ck-hd" role="cell">{oChiDoc(e)}</span><span className="ck-nx" role="cell">{oNhanXet(e)}</span></>
           )}
         </div>
-        {(ft || duoi) && <div className="ck-dtr"><div className="ck-hop">{ft}{duoi}</div></div>}
+        {(ft || duoi) && <div className="ck-dtr" role="row"><div className="ck-hop" role="cell">{ft}{duoi}</div></div>}
       </div>
     );
   };
@@ -854,7 +854,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     const lopChu = x.lop ? lopCua.get(x.lop)?.code ?? e.lenh?.lopDichMa : null;
     const tuanChu = x.lop && x.tuan ? (laChuyenNgay(x.tuan, h) ? t('Ngay hôm nay') : tuanLich(x.tuan, h)) : null;
     return (
-      <div key={e.id} id={`ck-em-${e.id}`} className={`border-b ${chon.has(e.id) && !loi[e.id] ? 'bg-[color:var(--accent-soft)]' : ''}`}
+      <div key={e.id} id={`ck-em-${e.id}`} className={`group/hang border-b ${chon.has(e.id) && !loi[e.id] ? 'bg-[color:var(--accent-soft)]' : ''}`}
         style={{ borderColor: 'var(--line)', ...(loi[e.id] ? { background: 'rgb(var(--bad-bg-rgb))' } : {}) }}>
         <div className="grid min-h-12 grid-cols-[28px_minmax(0,1fr)] items-start gap-x-3.5 gap-y-1.5 px-4 py-2">
           <span className="flex pt-0.5">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
@@ -928,10 +928,10 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     const coO = laQl && coCotLop && !!HUONG_NHOM[k] && dongNhomHuong(k).length > 0;
     const o = coO ? oLopTuanNhom(k) : null;
     return (
-      <div className="ck-nh" style={{ '--m': mauNhom(k) } as CSSProperties}>
-        <span className="ck-tick">{nutTickNhom(k, rows)}</span>
-        <span className="ck-bl flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold text-slate-100">{nhanNhom(k, rows.length)}</span>
-        {o && <><span className="min-w-0" title={t('Lớp cho cả nhóm')}>{o.lop}</span><span className="min-w-0">{o.tuan}</span></>}
+      <div className="ck-nh" role="row" style={{ '--m': mauNhom(k) } as CSSProperties}>
+        <span className="ck-tick" role="cell">{nutTickNhom(k, rows)}</span>
+        <span role="cell" className="ck-bl flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold text-slate-100">{nhanNhom(k, rows.length)}</span>
+        {o && <><span role="cell" className="min-w-0" title={t('Lớp cho cả nhóm')}>{o.lop}</span><span role="cell" className="min-w-0">{o.tuan}</span></>}
       </div>
     );
   };
@@ -996,14 +996,14 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     </div>
   );
   const dsHien = hien.length > 0 && (bang ? (
-    <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })} className="ck-lg" data-m={panel ? 'pan' : 'trang'} data-k={chieuK}>
+    <div role="table" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })} className="ck-lg" data-m={panel ? 'pan' : 'trang'} data-k={chieuK}>
       {/* Tiêu đề cột (chữ, không điều khiển — G9). */}
-      <div aria-hidden className="ck-th">
-        <span>{t('Học viên')}</span><span className="ck-fin">Final %</span>
-        {laQl ? <><span>{t('Bước tiếp')}</span>{coCotLop && <><span>{t('Lớp mới')}</span><span>{t('Tuần')}</span></>}</> : <><span>{t('Hướng · Head chốt')}</span><span>{t('Nhận xét')}</span></>}
+      <div className="ck-th" role="row">
+        <span role="columnheader">{t('Học viên')}</span><span role="columnheader" className="ck-fin">Final %</span>
+        {laQl ? <><span role="columnheader">{t('Bước tiếp')}</span>{coCotLop && <><span role="columnheader">{t('Lớp mới')}</span><span role="columnheader">{t('Tuần')}</span></>}</> : <><span role="columnheader">{t('Hướng · Head chốt')}</span><span role="columnheader">{t('Nhận xét')}</span></>}
       </div>
       {daChotLen.map(dongBang)}
-      {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]} className="ck-g">{daiBang(n.k, n.rows)}{n.rows.map(dongBang)}</div>)}
+      {dsDai.map((n) => <div key={n.k} role="rowgroup" aria-label={TEN_NHOM[n.k]} className="ck-g">{daiBang(n.k, n.rows)}{n.rows.map(dongBang)}</div>)}
       {dsLe.map(dongBang)}
     </div>
   ) : (
