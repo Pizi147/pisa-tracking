@@ -482,7 +482,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         /* NHẸ HƠN (v23 P1) + PANEL-GON (v24): ≥ 1024 panel tại chỗ BÁM MÉP PHẢI từ ngay dưới thanh menu tới đáy, 720 px — danh sách trái (nơi gọi)
            vẫn thấy, bấm dòng khác = đổi việc. < 1024 giữ thẻ trong luồng trang (375 toàn màn). */
         style={{ '--pn-top': `${top}px` } as CSSProperties} data-pn={laBang ? 'bang' : 'viec'}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl lg:w-[720px] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl lg:w-[max(720px,min(740px,calc(100vw-564px)))] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );
@@ -505,7 +505,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     /* NHẸ HƠN (v23): khung bắt đầu NGAY DƯỚI thanh menu (menu không bị phủ), tới đáy. */
     <div className={`fixed inset-x-0 !mt-0 ${z} flex justify-end`} style={{ top, bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} data-pn={rong === 'toan' ? undefined : laBang ? 'bang' : 'viec'} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : 'sm:w-[720px] sm:max-w-full'}`}
+      <div ref={khung} tabIndex={-1} data-pn={rong === 'toan' ? undefined : laBang ? 'bang' : 'viec'} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : 'sm:w-[720px] sm:max-w-full'} ${rong === 'toan' ? '' : 'lg:w-[max(720px,min(740px,calc(100vw-564px)))]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {/* HD3-1 (15 mục 8.3): "?" nổi trên nền mờ, sát mép trái panel, cùng dáng "?" thanh trên — "?" thanh trên bị panel che. ≥ 640 px (375 panel phủ hết). */}
         {nutHd && rong !== 'toan' && (
