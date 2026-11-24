@@ -751,4 +751,40 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(soGv > 0, 'seed phải có GV có số');
   }));
 
+  /* TOC-DO-2511b (PTA rà #2106): `lamMoiViec` tính MỌI chi nhánh trong CÙNG bộ nhớ request rồi mới ghi — khoá `nho()` không theo chi nhánh sẽ lộ ở đây. */
+  const COT_NV = 'loai, kieu, khoa, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_nhap_sau, han_goc, han, tuan, xong_luc, nguoi_lam, khong_tinh';
+  const soViecHet = () => conn.prepare(`SELECT ${COT_NV} FROM nghia_vu WHERE loai = 'viec' ORDER BY khoa`).all() as any[];
+  const moiCn = () => (conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]).map((b) => b.id as number);
+  check('NV-LAM-MOI-NHIEU · lamMoiViec(mọi chi nhánh, một bộ nhớ) = ghiSoViecChiNhanh từng chi nhánh (bộ nhớ riêng): cùng từng dòng sổ việc', () => thu(() => {
+    const cns = moiCn();
+    conn.prepare(`DELETE FROM nghia_vu WHERE loai = 'viec'`).run();
+    for (const cn of cns) nv.ghiSoViecChiNhanh(cn);
+    const rieng = soViecHet();
+    const coCn = new Set(rieng.map((r) => r.chi_nhanh));
+    assert(cns.length >= 2 && coCn.size >= 2, `seed cần ≥ 2 chi nhánh có việc: ${[...coCn].join(', ')}`);
+    conn.prepare(`DELETE FROM nghia_vu WHERE loai = 'viec'`).run();
+    ngu.chayTrongRequest('GET', () => nv.lamMoiViec(cns, TODAY));
+    const chung = soViecHet();
+    assert(JSON.stringify(chung) === JSON.stringify(rieng), `lệch: riêng ${rieng.length} dòng · chung ${chung.length} dòng; dòng đầu lệch ${JSON.stringify(chung.find((r, i) => JSON.stringify(r) !== JSON.stringify(rieng[i])))}`);
+  }));
+
+  check('NV-LAM-MOI-LOI · một chi nhánh tính lỗi: lượt của nó được trả (ngay NULL, request sau tính lại), chi nhánh khác vẫn ghi sổ', () => thu(() => {
+    const docMoc = () => mocHt.docMoc(get(`SELECT json_group_object(khoa, json_array(so, luc, ngay)) AS j FROM moc_he_thong`).j);
+    const cns = moiCn();
+    for (const cn of cns) nv.ghiSoViecChiNhanh(cn);
+    const dem = (cn: number) => get(`SELECT COUNT(*) AS n FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`, cn).n as number;
+    const [loi, tot] = [...cns].sort((a, b) => dem(b) - dem(a));   // `tot`: chi nhánh còn lại nhiều việc nhất (phải được ghi lại)
+    assert(dem(tot) > 0, 'chi nhánh đối chứng phải có việc');
+    for (const cn of [loi, tot]) conn.prepare(`DELETE FROM moc_he_thong WHERE khoa = ?`).run(`so-viec:${cn}`);
+    conn.prepare(`DELETE FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`).run(tot);
+    nv.lamMoiViecKhiKiem.nem = loi;
+    let nem = false;
+    try { ngu.chayTrongRequest('GET', () => { ngu.datMoc(docMoc()); nv.lamMoiViec([loi, tot], TODAY); }); } catch { nem = true; }
+    finally { nv.lamMoiViecKhiKiem.nem = null; }
+    assert(nem === !!process.env.PISA_SO_NEM, 'lỗi tính ném ra khi PISA_SO_NEM, nuốt (ghi log) khi không');
+    const moc = (cn: number) => get(`SELECT so, ngay FROM moc_he_thong WHERE khoa = ?`, `so-viec:${cn}`);
+    assert(moc(loi) && moc(loi).ngay === null, `chi nhánh lỗi phải được trả lượt: ${JSON.stringify(moc(loi))}`);
+    assert(moc(tot)?.ngay === TODAY, `chi nhánh tốt giữ lượt: ${JSON.stringify(moc(tot))}`);
+    assert(dem(tot) > 0, 'chi nhánh tốt vẫn được ghi sổ việc');
+  }));
 }

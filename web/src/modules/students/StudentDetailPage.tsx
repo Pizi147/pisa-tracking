@@ -146,6 +146,7 @@ export default function StudentDetailPage() {
   /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
   useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
   /* TOC-DO-2511: dải Chờ bạn duyệt (`DaiChoDuyet`, vẽ khi `viewer.coTheDuyet`) — người có quyền duyệt gọi CÙNG LÚC hồ sơ, không chờ hồ sơ về. */
+  // ponytail: cổng theo vai (`nav.workApprove`), không theo em (`viewer.coTheDuyet` chỉ có sau hồ sơ) — Head xem em chi nhánh khác nhận danh sách rỗng (một GET thừa); cờ theo em lên phiên nếu thừa nhiều.
   const duyetVai = !!useSession().session?.nav?.workApprove;
   useEffect(() => { if (id && duyetVai) taiTruoc(`/yeu-cau?studentId=${id}`); }, [id, duyetVai]);
   /* N63 ⑤: BPXL không xem Ý thức (máy chủ 403) — không gọi; tab chỉ còn Phối hợp (việc Xếp lịch họp của BPXL mở ở đó). Cờ máy chủ `xemYThuc` (theo em) khi hồ sơ đã về;

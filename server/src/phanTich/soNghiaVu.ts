@@ -445,17 +445,29 @@ export function lamMoiViec(cns: readonly number[], homNay = demoToday()): void {
    * TOC-DO-2511: nhận lượt mọi chi nhánh TRƯỚC, rồi TÍNH sổ việc mọi chi nhánh trong CÙNG bộ nhớ (chưa câu ghi nào xen giữa → tra cứu không theo chi nhánh —
    * quyền vai, nhật ký hạn, bảng lớp… — đọc một lần), rồi mới GHI. Trước: ghi xen từng chi nhánh xoá bộ nhớ → hồ sơ GV dạy 4 chi nhánh 195 câu.
    */
-  const boLuot = (cn: number, e: unknown) => {
-    if (m) db().prepare(`UPDATE moc_he_thong SET ngay = NULL WHERE khoa = ?`).run(`so-viec:${cn}`);
-    throw e;
-  };
+  /* Chi nhánh đã nhận lượt mà KHÔNG ghi xong (tính / ghi lỗi — kể cả lỗi `anToan` nuốt, hoặc dừng giữa chừng) → trả lượt (`ngay = NULL`): request sau tính lại. */
+  const traLuot = (cn: number) => { if (m) db().prepare(`UPDATE moc_he_thong SET ngay = NULL WHERE khoa = ?`).run(`so-viec:${cn}`); };
   const tinh = new Map<number, { luc: string; ds: ReturnType<typeof tinhViecChiNhanh> }>();
-  trongBoNho(() => {
-    for (const cn of lam) {
-      try { anToan('ghiSoViecChiNhanh', () => { const luc = new Date().toISOString(); tinh.set(cn, { luc, ds: tinhViecChiNhanh(cn) }); }); } catch (e) { boLuot(cn, e); }
+  const xong = new Set<number>();
+  let loi: unknown = null;
+  try {
+    trongBoNho(() => {
+      for (const cn of lam) {
+        try {
+          anToan('ghiSoViecChiNhanh', () => {
+            if (lamMoiViecKhiKiem.nem === cn) throw new Error(`phép kiểm: tính sổ việc chi nhánh ${cn} lỗi`);
+            tinh.set(cn, { luc: new Date().toISOString(), ds: tinhViecChiNhanh(cn) });
+          });
+        } catch (e) { loi ??= e; }
+      }
+    });
+    for (const [cn, { luc, ds }] of tinh) {
+      try { anToan('ghiSoViecChiNhanh', () => { ghiSoViecDaTinh(cn, ds, luc); xong.add(cn); }); } catch (e) { loi ??= e; }
     }
-  });
-  for (const [cn, { luc, ds }] of tinh) {
-    try { anToan('ghiSoViecChiNhanh', () => ghiSoViecDaTinh(cn, ds, luc)); } catch (e) { boLuot(cn, e); }
+  } finally {
+    for (const cn of lam) if (!xong.has(cn)) traLuot(cn);
   }
+  if (loi) throw loi;
 }
+/** CHỈ phép kiểm: `nem` = chi nhánh mà bước tính sổ việc của `lamMoiViec` ném lỗi. */
+export const lamMoiViecKhiKiem: { nem: number | null } = { nem: null };
