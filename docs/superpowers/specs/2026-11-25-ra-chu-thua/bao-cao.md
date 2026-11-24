@@ -74,17 +74,17 @@ Trạng thái: **SỬA** = dự kiến làm trong PR khu (mục 2–6; mỗi PR 
 | # | Ở đâu · vai · cỡ | Ảnh | Trước → Sau | Luật | |
 |---|---|---|---|---|---|
 | TG-1 | Hồ sơ GV · tab Lớp · khung "Lớp đang dạy" | `tg-ho-so-gv-1440.jpg` | "Lớp đang dạy **10** ⓘ **lớp · 69 HV**" — ⓘ chen giữa số và đơn vị → "Lớp đang dạy **10 lớp** · 69 HV ⓘ" | R2 | ĐÃ SỬA (PR Tutor/GV/QT) |
-| TG-2 | Hồ sơ GV · đầu trang | `tg-ho-so-gv-1440.jpg` | Dòng "GVCN: MB FT 101 · MB Pre FOU 03 · … (8 lớp)" nhắc lại đúng danh sách lớp có nhãn "GVCN" ngay bên dưới → bỏ dòng ở đầu trang, bảng bên dưới đã đủ | R3 | [XM] đầu hồ sơ GVCN = mã lớp là yêu cầu R8.4 |
-| TG-3 | Hồ sơ GV · bảng lớp | `tg-ho-so-gv-1440.jpg` | Nhãn "GVCN" lặp ở **8 hàng** cạnh tên lớp, trong khi cột bên phải cũng tên "GVCN" (trống khi chính GV là GVCN) → cột GVCN luôn ghi tên người, bỏ nhãn lặp | R1 R7 | [XM] đổi nghĩa cột; chờ chủ SP |
-| TG-4 | Hồ sơ GV · "Em đang bổ trợ" | `tg-ho-so-gv-1440.jpg` | Khung chỉ rộng ~½ ngang, bên phải trống | R7 | [XM] mockup |
+| TG-2 | Hồ sơ GV · đầu trang | `tg-ho-so-gv-1440.jpg` | Dòng "GVCN: MB FT 101 · MB Pre FOU 03 · … (8 lớp)" nhắc lại đúng danh sách lớp có nhãn "GVCN" ngay bên dưới → bỏ dòng ở đầu trang, bảng bên dưới đã đủ | R3 | GIỮ (PTA quyết: yêu cầu R8.4) |
+| TG-3 | Hồ sơ GV · bảng lớp | `tg-ho-so-gv-1440.jpg` | Nhãn "GVCN" lặp ở **8 hàng** cạnh tên lớp, trong khi cột bên phải cũng tên "GVCN" (trống khi chính GV là GVCN) → cột GVCN luôn ghi tên người, bỏ nhãn lặp | R1 R7 | GIỮ (PTA quyết: đổi nghĩa cột cần luật) |
+| TG-4 | Hồ sơ GV · "Em đang bổ trợ" | `tg-ho-so-gv-1440.jpg` | Khung chỉ rộng ~½ ngang, bên phải trống | R7 | ĐÃ SỬA #2133 (PTA quyết: không để trống nửa phải — khung rộng hết hàng, cột chia lại) |
 | TG-5 | Tutor · khung bảng | `tg-tutor-1440.jpg` | Ô lọc "W4 AUG → W3 SEP" ngay trên, rồi tiêu đề khung "1 người dạy · **W4 AUG – W3 SEP**" | R3 | ĐÃ SỬA (PR Tutor/GV/QT; 375 giữ khoảng ngày) |
-| TG-6 | Tutor · cột Người dạy | `tg-tutor-1440.jpg` | Nhãn "Tutor" cạnh tên người dạy trên trang "Tutor" | R1 | [XM] có thể là nhãn phân biệt loại (Tutor / khác) — xác nhận dữ liệu |
-| TG-7 | Quản trị · tab Tài khoản | — | Tab "Tài khoản" rồi khung "Tài khoản **33**"; nút "Đang dùng 33 · Đã xoá 0" trùng tab "Đã xoá" | R1 R3 | [XM] công tắc Đang dùng / Đã xoá là thao tác |
+| TG-6 | Tutor · cột Người dạy | `tg-tutor-1440.jpg` | Nhãn "Tutor" cạnh tên người dạy trên trang "Tutor" | R1 | GIỮ (PTA quyết) |
+| TG-7 | Quản trị · tab Tài khoản | — | Tab "Tài khoản" rồi khung "Tài khoản **33**"; nút "Đang dùng 33 · Đã xoá 0" trùng tab "Đã xoá" | R1 R3 | GIỮ (PTA quyết) |
 | TG-8 | Quản trị · mọi tab | `tg-quan-tri-case-sos-1440.jpg` | Tab "Case & SOS" rồi dòng "Case & SOS" + 2 nút chuyển; ô "Nhật ký — Bản gốc · Đúng danh sách trước khi có màn này" | R1 R4 | GIỮ ("Bản gốc" là mốc khôi phục của nhật ký) |
 | TG-9 | Quản trị · Band & ngưỡng | — | "Số câu đúng → band (số đậm = số câu đầu tiên lên band mới). Đang dùng: Bảng gốc" nhắc ba lần ở 3 tầng | R4 | ĐÃ SỬA (PR Tutor/GV/QT; câu giải nghĩa vào ⓘ "Áp dụng") |
 | TG-10 | Hồ sơ cá nhân · khung "Đổi mật khẩu" | `tg-ho-so-ca-nhan-1440.jpg` | Tiêu đề khung "Đổi mật khẩu" + nút cùng chữ "Đổi mật khẩu" (xám, chưa nhập) → nút "Lưu" | R1 | ĐÃ SỬA (PR Tutor/GV/QT; nút "Lưu") |
 | TG-11 | Hồ sơ cá nhân · chân khung | `tg-ho-so-ca-nhan-1440.jpg` | "Bản demo không gửi email thật nên **không có luồng quên mật khẩu**. Quên thì nhờ Quản trị…" (chữ tĩnh, chỉ có ở demo) → ⓘ cạnh tiêu đề khung | R4 | GIỮ (hướng dẫn bước kế khi quên mật khẩu; CA1-7) |
-| TG-12 | Hồ sơ cá nhân · bố cục | `tg-ho-so-ca-nhan-1440.jpg` | Ba khung xếp một cột ~770 px, nửa phải trống ở 1440 | R7 | [XM] trang biểu mẫu, một cột là chuẩn đọc |
+| TG-12 | Hồ sơ cá nhân · bố cục | `tg-ho-so-ca-nhan-1440.jpg` | Ba khung xếp một cột ~770 px, nửa phải trống ở 1440 | R7 | ĐÃ SỬA #2133 (PTA quyết: Thông tin liên hệ | Vai trò + Đổi mật khẩu cùng một hàng từ 1024 px) |
 
 ## 7. Việc xem sau (không vào PR)
 
@@ -113,6 +113,6 @@ Trạng thái: **SỬA** = dự kiến làm trong PR khu (mục 2–6; mỗi PR 
 | Học viên & Lớp | #2129 | HL-4, HL-5, HL-8, HL-10 | HL-1, HL-2, HL-3, HL-9 GIỮ |
 | Test | #2132 | TE-1, TE-2, TE-5, TE-6, TE-8 | TE-1: Đợt 642 px → 220 px, ba cột sau chia đều (307 px ở 1440) |
 | Phân tích | — | — | không mở PR: mọi chỗ lặp nằm trong ô số (#2120) |
-| Tutor · Hồ sơ GV · Quản trị · Hồ sơ cá nhân | PR này | TG-1, TG-5, TG-9, TG-10 | TG-2, TG-3, TG-4, TG-6, TG-7, TG-12 → [XM]; TG-8, TG-11 GIỮ |
+| Tutor · Hồ sơ GV · Quản trị · Hồ sơ cá nhân | PR này | TG-1, TG-4, TG-5, TG-9, TG-10, TG-12 | TG-2, TG-3, TG-6, TG-7, TG-8, TG-11 GIỮ |
 
 Bài học khi rà: nhiều chỗ "lặp" đo được là do dữ liệu mẫu (mọi lớp cùng bước) hoặc là đơn vị / hệ quả có chủ đích — luôn đọc mã và luật trước khi bỏ chữ.

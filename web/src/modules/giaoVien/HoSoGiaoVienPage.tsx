@@ -699,12 +699,12 @@ function KhoiBoTro({ ds }: { ds: BoTroHs[] }) {
     return x.hanMiniTest ? <ChipHan loai="mini-test" han={x.hanMiniTest} vien /> : <span className="text-slate-500">—</span>;
   };
   return (
-    <Card className="max-w-[720px]" title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
+    <Card title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
       <Bang ten={t('Em đang bổ trợ')} deu khung={false} khoa={(x) => x.hvId} hang={ds}
         cot={[
           { key: 'ten', nhan: t('Học viên'), kieu: 'ten', linhHoat: true, rong: 220 },
-          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 160 },
-          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 120 },
+          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 240 },
+          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 240 },
         ]}
         phuCua={(x, k) => (k.key === 'ten' && x.lopMa ? x.lopMa : null)}
         theRieng={(x) => (

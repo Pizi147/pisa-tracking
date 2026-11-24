@@ -108,7 +108,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="page space-y-4 max-w-3xl">
+    <div className="page space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-100 m-0">{t('Hồ sơ cá nhân')}</h1>
         <p className="text-xs text-slate-500 mt-0.5 mb-0">
@@ -116,6 +116,8 @@ export default function ProfilePage() {
         </p>
       </div>
 
+      {/* Chủ SP 25/11 (PTA): không để trống nửa phải — ≥ 1024 px: Thông tin liên hệ | (Vai trò · Đổi mật khẩu) cùng một hàng. */}
+      <div className="grid items-start gap-4 lg:grid-cols-2">
       <Card title={t('Thông tin liên hệ')}
         action={<NutLuat label={t('Thông tin liên hệ')} phai>
           <span className="block">{t('Email khác: cách nhau bằng dấu phẩy, chỉ để liên lạc, không đăng nhập được.')}</span>
@@ -154,6 +156,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
+      <div className="grid min-w-0 gap-4">
       <Card title={t('Vai trò và phạm vi')}>
         <div className="flex flex-wrap gap-1.5 [&>span]:whitespace-normal">
           {(session?.grants ?? []).map((g, i) => <Info key={i}>{nhanPhamVi(g)}</Info>)}
@@ -166,7 +169,7 @@ export default function ProfilePage() {
             {t('Lưu')}
           </button>
         }>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 min-[1400px]:grid-cols-3">
           <Field label={t('Mật khẩu hiện tại')} required>
             <input className="field w-full" type="password" autoComplete="current-password"
               value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
@@ -188,6 +191,8 @@ export default function ProfilePage() {
           </SectionNote>
         )}
       </Card>
+      </div>
+      </div>
     </div>
   );
 }
