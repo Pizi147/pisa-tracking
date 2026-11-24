@@ -27,10 +27,10 @@ type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
 /** Cột tên: 220 (mockup V11 U05), điện thoại 120 — tên dài xuống dòng, không cắt. */
-const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 220;
+const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 180;
 /** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
  *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
-const RONG_SEX = 190;   // NH9: cột "Thêm" rộng bằng cột MT, không còn cột trống cuối
+const RONG_SEX = 100;   // chủ SP 25/11: ô MT rộng CỐ ĐỊNH, cột Thêm ngay sau MT cuối; ít MT thì phần trống dồn về phải (không giãn ô)
 const HANG_GON = 10;
 
 /**
@@ -76,7 +76,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 190 : 220;   // mockup V11: ô MT 190; lớp thường thêm tuần 4/8 ở dòng trạng thái   // lớp thường: tuần + tuần 4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 186 : 220;   // 1440 vừa ≥ 6 MT (180 + 6×186 + 100 ≤ 1400), 1280 vừa ≥ 5; nhiều hơn → cuộn ngang, cột tên dính trái
+  // lớp thường: tuần + tuần 4/8 + chữ trạng thái một dòng (ô 220)
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
@@ -121,9 +122,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
   /* GD-11b (mockup ⑦ B7, R7.7 — thay thẻ từng em U05 khu E): 375 cùng lưới 1440, cuộn ngang trong thẻ, cột Học viên dính trái (120), tự cuộn tới
      đợt đang tới. */
   return (
-    <div ref={cuon} className="overflow-x-auto">
+    <div ref={cuon} className="overflow-x-auto bg-[color:var(--surface)]">
       {/* Cột đợt rộng CỐ ĐỊNH (mockup PR 659) — cột "+ MT" / S Ex ngay SAU cột đợt cuối (RA-UI-1, mockup `v7/ke-hoach-test.html`), phần dư dồn vào cột trống cuối hàng. */}
-      <table className="text-sm" style={{ tableLayout: 'fixed', width: '100%', minWidth: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
+      <table className="text-sm" style={{ tableLayout: 'fixed', width: RONG_TEN + cots.length * rongDot + (loai === 'ft' && !chiXem ? RONG_SEX : 0) }}>
         <colgroup>
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
