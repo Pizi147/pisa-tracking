@@ -349,7 +349,7 @@ export function tinhViecChiNhanh(cn: number): DongViec[] {
  * Việc mở (Công việc "Tất cả" của QL chi nhánh, nhóm `VIEC_CO_HAN`) theo chi nhánh. Một chi nhánh: như cũ (`branchId`). Nhiều chi nhánh (TOC-DO-2511c): MỘT lượt
  * Công việc của QL mọi chi nhánh đó, chia theo `it.cn` (chi nhánh lớp của việc — mọi nhánh lọc `branchId` của Công việc lọc theo lớp / Case cùng chi nhánh đó).
  * Việc có `cn` ngoài tập → tính lại từng chi nhánh như cũ.
- * ponytail: chia theo chi nhánh LỚP — em ở chi nhánh khác chi nhánh lớp đang học (bản chép 12/11: 0 em) thì việc theo em có thể sang chi nhánh lớp; tách theo cả chi nhánh em nếu có ca đó.
+ * Chia theo chi nhánh LỚP: em ở chi nhánh khác chi nhánh lớp đang học → `tinhViecNhieuChiNhanh` đã chuyển sang tính từng chi nhánh trước khi tới đây.
  */
 function viecMoTheoCn(cns: readonly number[]): Map<number, WorkItem[]> {
   const lay = (p: Principal, branchId: number | null) => ((myWork(p, { branchId, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
@@ -367,6 +367,13 @@ function viecMoTheoCn(cns: readonly number[]): Map<number, WorkItem[]> {
 /** `tinhViecChiNhanh` cho nhiều chi nhánh — số câu không theo số chi nhánh (TOC-DO-2511c; trước ~40 câu × chi nhánh). Từng chi nhánh ra Y HỆT gọi riêng. */
 export function tinhViecNhieuChiNhanh(dsCn: readonly number[]): Map<number, DongViec[]> {
   const cns = [...new Set(dsCn)];
+  /*
+   * Rà #2154: việc mở chia theo chi nhánh LỚP, việc xong / chuyển lớp theo chi nhánh EM — em đang học lớp ở chi nhánh khác chi nhánh của em (trong tập) thì một việc
+   * có thể tách sang hai chi nhánh. Có em như vậy → tính từng chi nhánh như cũ (một câu kiểm; bản chép 12/11: 0 em).
+   */
+  if (cns.length > 1 && db().prepare(`SELECT 1 FROM enrollments e JOIN students s ON s.id = e.student_id JOIN classes c ON c.id = e.class_id
+      WHERE e.status = 'active' AND c.branch_id IS NOT s.branch_id AND (c.branch_id IN (SELECT value FROM json_each(?)) OR s.branch_id IN (SELECT value FROM json_each(?))) LIMIT 1`)
+    .all(JSON.stringify(cns), JSON.stringify(cns)).length) return new Map(cns.map((cn) => [cn, tinhViecNhieuChiNhanh([cn]).get(cn)!]));
   const homNay = demoToday();
   const hanGoc = hanGocCn();
   const goc = (key: string, caseId?: number | null) => {

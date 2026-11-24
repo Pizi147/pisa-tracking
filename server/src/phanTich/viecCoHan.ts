@@ -24,5 +24,13 @@ export const quanLyCn = (cn: number): Principal => nho(`pt-gv:ql-cn:${cn}`, () =
     grants: [{ id: 0, roleKey: 'manager', roleName: '', branchId: cn, branchName: null, permissions: new Set(perms) }] };
 });
 
-/** QL của MỌI chi nhánh `cns` (một grant mỗi chi nhánh) — sổ việc nhiều chi nhánh một lượt Công việc / Case (`tinhViecNhieuChiNhanh`). `userId` âm như `quanLyCn`. */
-export const quanLyNhieuCn = (cns: readonly number[]): Principal => ({ ...quanLyCn(cns[0]), grants: cns.flatMap((cn) => quanLyCn(cn).grants) });
+/**
+ * QL của MỌI chi nhánh `cns` (một grant mỗi chi nhánh) — sổ việc nhiều chi nhánh một lượt Công việc / Case (`tinhViecNhieuChiNhanh`).
+ * `userId` âm RIÊNG cho từng tập chi nhánh (≤ −1 000 000, không trùng `-cn` của `quanLyCn`): khoá nhớ theo người (`ds-case:<userId>`…) của [A,B] không bị [A,C] dùng lại (rà #2154).
+ */
+const ID_TAP_CN = new Map<string, number>();
+export const quanLyNhieuCn = (cns: readonly number[]): Principal => {
+  const khoa = [...new Set(cns)].sort((a, b) => a - b).join(',');
+  const userId = ID_TAP_CN.get(khoa) ?? ID_TAP_CN.set(khoa, -1_000_000 - ID_TAP_CN.size).get(khoa)!;
+  return { ...quanLyCn(cns[0]), userId, grants: cns.flatMap((cn) => quanLyCn(cn).grants) };
+};

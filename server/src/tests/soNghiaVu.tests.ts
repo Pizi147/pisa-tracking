@@ -780,6 +780,21 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
       const rieng = (dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq;
       assert(sx(nhieu.kq.get(cn)!) === sx(rieng), `chi nhánh ${cn}: gom ${nhieu.kq.get(cn)!.length} dòng ≠ riêng ${rieng.length} dòng`);
     }
+    /* Rà #2154 (1): [A,B] rồi [A,C] trong CÙNG bộ nhớ request — khoá nhớ theo người (`ds-case:<userId>`…) không được dùng lại giữa hai tập. C = chi nhánh nhiều Kết quả PA nhất. */
+    const soPa = (cn: number) => (dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq.filter((r) => r.kieu === 'ghi_ket_qua_pa').length;
+    const [C, A, B] = [...cns].sort((x, y) => soPa(y) - soPa(x));
+    assert(soPa(C) > 0, 'seed cần một chi nhánh có Kết quả PA');
+    const ac = ngu.chayTrongRequest('GET', () => { nv.tinhViecNhieuChiNhanh([A, B]); return nv.tinhViecNhieuChiNhanh([A, C]); }) as Map<number, any[]>;
+    for (const cn of [A, C]) assert(sx(ac.get(cn)!) === sx((dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq), `[${A},${B}] rồi [${A},${C}]: chi nhánh ${cn} lệch gọi riêng`);
+    /* Rà #2154 (2): em đang học lớp ở chi nhánh khác chi nhánh của em → tính từng chi nhánh, vẫn trùng gọi riêng. */
+    /* Em có nhiều dòng sổ việc nhất (việc mở + đã xong) ở C, đang học lớp của C. */
+    const dongEm = new Map<number, number>();
+    for (const r of (dem(() => nv.tinhViecChiNhanh(C)) as { kq: any[] }).kq) if (r.hocVien) dongEm.set(r.hocVien, (dongEm.get(r.hocVien) ?? 0) + 1);
+    const dangHoc = new Set((conn.prepare(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.status = 'active' AND c.branch_id = ?`).all(C) as any[]).map((r) => r.id));
+    const em = { id: [...dongEm].filter(([id]) => dangHoc.has(id)).sort((x, y) => y[1] - x[1])[0][0] };
+    conn.prepare(`UPDATE students SET branch_id = ? WHERE id = ?`).run(A, em.id);
+    const lech = dem(() => nv.tinhViecNhieuChiNhanh(cns)) as { kq: Map<number, any[]> };
+    for (const cn of cns) assert(sx(lech.kq.get(cn)!) === sx((dem(() => nv.tinhViecChiNhanh(cn)) as { kq: any[] }).kq), `em ${em.id} lệch chi nhánh: chi nhánh ${cn} gom ≠ riêng`);
   }));
 
   check('NV-LAM-MOI-LOI · một chi nhánh tính lỗi: lượt của nó được trả (ngay NULL, request sau tính lại), chi nhánh khác vẫn ghi sổ', () => thu(() => {
