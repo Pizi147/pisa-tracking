@@ -402,7 +402,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
     assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
     const k = doc('web/src/ui/KhungPanel.tsx');
-    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
+    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim(?: \?\? cvNgoai\?\.ghim)?\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
   });
   check('GD-6 · phần mở rộng em: TVV chỉ ở "Điểm theo lượt"; thẻ kỹ năng / môn quá hạn chỉ màu (V22); lịch sử Case + Nhật ký PA = LichSuGap', () => {
     const b = doc('web/src/modules/classes/BangHoSoLop.tsx');
@@ -533,7 +533,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/imLang = false/.test(xoa) && /if \(!imLang\) hoanTacXoa\(/.test(xoa), 'xoaViPham có cờ imLang bỏ toast xoá');
     assert(/xoaViPham\(toast, id, true\)/.test(ghi) && /t\('Đã hoàn tác'\)/.test(ghi), 'Hoàn tác ghi vi phạm gọi im lặng + báo "Đã hoàn tác"');
     /* GD-20c (PTA rà #1738): 375 quy chế xuống dòng đủ chữ, không "…"; ⓘ chỉ khi có chi tiết (bỏ ⓘ nhắc lại câu). */
-    assert(/className="min-w-0 flex-1 sm:truncate"/.test(kp) && /\{qc\.chiTiet && <(NutLuat|NutHdQuyChe)/.test(kp) && !/\{qc\.chu\}<\/NutLuat>/.test(kp), 'quy chế 375 không cắt "…"; ⓘ chỉ khi có chiTiet');
+    assert(/className="min-w-0 flex-1">\{qc\.chu\}/.test(kp) && /\{qc\.chiTiet && <(NutLuat|NutHdQuyChe)/.test(kp) && !/\{qc\.chu\}<\/NutLuat>/.test(kp), 'quy chế không cắt "…" ở mọi bề rộng (PANEL-GON 720); ⓘ chỉ khi có chiTiet');
   });
   check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
     const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'due' : 'scored' });

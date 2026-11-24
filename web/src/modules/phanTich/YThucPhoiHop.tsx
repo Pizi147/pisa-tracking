@@ -21,6 +21,16 @@ import {
  */
 /* AUDIT-UI B10 (chủ SP 08/11, G8 "báo cáo thuần"): không cột trạng thái "Quá hạn" / ô "n quá hạn" — việc quá hạn đã ở Công việc; số lần chưa xử lý ở cột "Chưa xử lý". */
 
+/** v24 (XM-3, chủ SP 24/11): số "HV cần chú ý" / "Lớp có vi phạm" KHÔNG mở panel lặp bảng — bấm thì cuộn tới bảng ngay dưới (số 0 mờ, không bấm). */
+function SoCuon({ n, den, nhan }: { n: number; den: string; nhan: string }) {
+  if (n <= 0) return <span className="font-medium text-faint">{n}</span>;
+  return (
+    <button type="button" className="so-bam appearance-none rounded border-0 bg-transparent p-0 cursor-pointer tabular-nums font-bold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]"
+      aria-label={t('{gt} — {ten}. Bấm để cuộn tới bảng', { gt: n, ten: nhan })}
+      onClick={() => { const e = document.getElementById(den); e?.scrollIntoView({ behavior: 'smooth', block: 'start' }); e?.focus?.({ preventScroll: true }); }}>{n}</button>
+  );
+}
+
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
   const dienThoai = useDienThoai();
@@ -203,11 +213,11 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     ].filter(Boolean).join(' · ');
     return (
       <DaiChiSo ds={[
-        { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: <OSo giaTri={d.hvCanChuY.length} nguon={nguon('hv-can-chu-y', 'hv')} tieuDe={t('HV cần chú ý')} vung="chi-so" />, mau: nhom || undefined },
+        { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: <SoCuon n={d.hvCanChuY.length} den="yt-hv" nhan={t('HV cần chú ý')} />, mau: nhom || undefined },
         { ten: t('Vi phạm'), ky: t('trong kỳ'), gt: <OSo giaTri={viPham} nguon={nguon('tong', 'vi-pham')} tieuDe={t('Vi phạm')} vung="chi-so" />, mau: `${nhanSoVoiTruoc(d.soVoiTruoc).chu} ${t('so kỳ trước')}` },
         /* AUDIT-1611 P1-08: "Chưa xử lý" = hiện tại (mọi vi phạm còn mở, như Công việc) — cùng tập bảng lớp + bảng học viên; "trong kỳ" chỉ cho Vi phạm. */
         { ten: t('Chưa xử lý'), ky: t('hiện tại'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" />, mau: t('vi phạm') },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh; B10 mockup: dòng phụ đơn vị
-        { ten: t('Lớp có vi phạm'), gt: <OSo giaTri={lop.length} nguon={nguon('tong', 'lop')} tieuDe={t('Lớp có vi phạm')} vung="chi-so" />, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
+        { ten: t('Lớp có vi phạm'), gt: <SoCuon n={lop.length} den="yt-lop" nhan={t('Lớp có vi phạm')} />, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
       ]} />
     );
   };
@@ -223,13 +233,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         : (
           <>
             {chiSo(data)}
-            <Card bodyClass="p-0">
+            <div id="yt-hv" className="scroll-mt-24"><Card bodyClass="p-0">
               <DauThe ten={t('Học viên cần chú ý')} dem={t('{n} HV', { n: data.hvCanChuY.length })} cachTinh={cachChon} />
               {data.hvCanChuY.length === 0
                 ? <RongDau chu={t('Không có học viên nào cần chú ý trong {ky}', { ky: nhanKy })} nut={<NutXemToanBo />} />
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
-            </Card>
-            <Card bodyClass="p-0">
+            </Card></div>
+            <div id="yt-lop" className="scroll-mt-24"><Card bodyClass="p-0">
               <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: [...data.lop, ...(data.gom?.hang ?? [])].filter(coViPhamLop).length })} cachTinh={(
                 <dl className="m-0 space-y-1">
                   <div>{t('xếp theo vi phạm chưa xử lý')}</div>
@@ -294,7 +304,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                   <div className="px-3"><PhanTrang {...ptLop.thanh} duoi /></div>
                   </>
                 )}
-            </Card>
+            </Card></div>
           </>
         )}
     </div>

@@ -265,8 +265,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     }
     assert(/export const BUOC_XEM_THEM = 20;/.test(doc('web/src/ui/PhanTrang.tsx')), 'Xem thêm mỗi lần 20 dòng');
     /* Chủ SP 09/11: panel bảng số rộng 1040; cột ngắn co theo nội dung, cột tên / linh hoạt xuống dòng thay vì cắt; tab Đã làm không lặp loại việc khi chỉ một loại. */
-    assert(/laBang \? 'sm:w-\[max\(720px,75%\)\]/.test(doc('web/src/ui/KhungPanel.tsx')), 'panel bảng số ~75 % (NHẸ HƠN, thay 1040)');
-    assert(/className="pn-bang /.test(doc('web/src/ui/BangLuotPanel.tsx')) && /\.pn-bang \.bang \{ table-layout: auto; \}/.test(doc('web/src/index.css')), 'pn-bang: cột co theo nội dung');
+    assert(/'sm:w-\[720px\] sm:max-w-full'/.test(doc('web/src/ui/KhungPanel.tsx')), 'panel bảng số một khung 720 (PANEL-GON v24, thay ~75 %)');
+    assert(/className=("|\{[^}]*')pn-bang /.test(doc('web/src/ui/BangLuotPanel.tsx')) && /\.pn-bang \.bang \{ table-layout: auto; \}/.test(doc('web/src/index.css')), 'pn-bang: cột co theo nội dung');
     assert(/!laBai && nhieuLoai/.test(doc('web/src/ui/BangLuotPanel.tsx')), 'Đã làm: không lặp loại việc');
   });
 }

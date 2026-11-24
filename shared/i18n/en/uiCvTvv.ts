@@ -38,6 +38,8 @@ export const EN_UI_CV_TVV = {
   'PH nói gì, hẹn gì': 'What the parent said or promised',
   'Sau thi': 'After exam',
   'Thao tác phụ': 'More actions',
+  'Bỏ qua việc này': 'Skip this task',
+  'Thiếu: {x}': 'Missing: {x}',
   'Việc kế: {ten}': 'Next: {ten}',
   'Việc đã xong · lịch sử giữ khi thu hồi': 'Task done · history kept if withdrawn',
   'chờ Head duyệt.': 'waiting for Head approval.',

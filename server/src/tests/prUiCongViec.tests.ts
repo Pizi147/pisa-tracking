@@ -50,10 +50,10 @@ export async function runPrUiCongViecTests(t: YThucTestKit) {
     const r = d.chiaVachHan(ds, '2026-09-14');
     assert(r.quaHan.length === 1 && r.denHetTuan.length === 1 && r.sau.length === 1 && r.cuoiTuan === '2026-09-20', JSON.stringify(r));
   });
-  check('CV-HANG-DEU (PTA 07/11) · dòng phụ ≥ 640 một dòng cắt "…" (người giữ đầu dòng); chỉ dòng có huy hiệu TVV THẬT giữ xuống dòng — `{tvv && …}` = false không tính', () => {
+  check('CV-HANG-DEU · khuôn A (24/11): chi tiết MỘT dòng (cắt "…", đủ chữ ở title), cột hạn không chứa người giữ việc', () => {
     const s = fs.readFileSync('web/src/modules/congViec/DanhSachViec.tsx', 'utf8');
-    const dp = s.slice(s.indexOf('const DongPhu'), s.indexOf('const TEN ='));
-    assert(/Children\.toArray\(children\)\.length > 0/.test(dp) && /coHuy \? '' : 'sm:h-5 sm:overflow-hidden'/.test(dp) && !/\$\{children \?/.test(dp), 'DongPhu: điều kiện một hàng sai');   // AUDIT-UI B4: thẻ một hàng, thẻ thiếu chỗ ẩn cả thẻ
-    assert(!/NguoiGiu/.test(s.slice(s.indexOf('function CotHan'), s.indexOf('export function NguoiGiu'))), 'CotHan còn người giữ việc (cột hạn phải 2 dòng)');
+    const css = fs.readFileSync('web/src/index.css', 'utf8');
+    assert(/\.cvA-ct \{[^}]*white-space: nowrap[^}]*text-overflow: ellipsis/.test(css), '.cvA-ct phải một dòng, cắt "…"');
+    assert(!/NguoiGiu/.test(s.slice(s.indexOf('function HanA'), s.indexOf('const chipMucA'))), 'HanA còn người giữ việc (cột hạn chỉ ngày)');
   });
 }

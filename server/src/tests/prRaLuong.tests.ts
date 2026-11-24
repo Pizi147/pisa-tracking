@@ -52,7 +52,9 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
     const fs: any = fsMod;
     const nguon = fs.readFileSync('web/src/modules/congViec/HoTroHocVienTab.tsx', 'utf8') as string;
     const dong = nguon.split('\n').find((l) => l.includes('nutPhu={(x) =>')) ?? '';
-    assert(/x\.group === 'buoc_tiep'/.test(dong) && !/thi_that/.test(dong), `nutPhu: ${dong.trim()}`);
+    /* Khuôn A (24/11): nút "Gia hạn" chuyển vào PanelSauThi — chỉ khi có hạn (`b.han`); dòng việc không còn nút Gia hạn. */
+    const panel = fs.readFileSync('web/src/modules/congViec/PanelSauThi.tsx', 'utf8') as string;
+    assert(!/Gia hạn/.test(dong) && /giaHan && b\.han/.test(panel), `nutPhu: ${dong.trim()}`);
   });
 
   check('RA-LUONG-7 · Case tái phát (Case cũ đã đóng): thừa kế chủ Case cũ CHỈ khi người đó còn dạy lớp; đã thôi dạy → GV đang dạy kỹ năng (N8 ②)', () => {
