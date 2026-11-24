@@ -30,7 +30,7 @@ type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau
 const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 220;
 /** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
  *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
-const RONG_SEX = 110;
+const RONG_SEX = 190;   // NH9: cột "Thêm" rộng bằng cột MT, không còn cột trống cuối
 const HANG_GON = 10;
 
 /**
@@ -128,7 +128,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
           <col style={{ width: RONG_TEN }} />
           {cots.map((c) => <col key={c.key} style={{ width: rongDot }} />)}
           {loai === 'ft' && !chiXem && <col style={{ width: RONG_SEX }} />}
-          <col />
         </colgroup>
         <thead>
           <tr>
@@ -141,7 +140,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
             ))}
             {/* B23 (mockup V11): cột "+ MT ▾" có tiêu đề nhìn thấy "Thêm". */}
             {loai === 'ft' && !chiXem && <th scope="col" className="kh-th">{t('Thêm')}</th>}
-            <th className="kh-th" aria-hidden></th>
           </tr>
         </thead>
         <tbody>
@@ -150,7 +148,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
             <tr id={`kht-hv-${data.classId}-${h.studentId}`} className={`kh-hang ${loai === 'ft' ? 'kh-hang-co-sex' : ''} ${hvChon === h.studentId ? 'row-active' : ''}`}
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
               {/* Q-d (chủ SP 03/11): bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô. Tên đủ, xuống dòng (ý 7). */}
-              <td className="kh-td sticky-col">
+              <td className="kh-td kh-td-giua sticky-col">
                 <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>
               </td>
               {cots.map((c, ci) => {
@@ -218,7 +216,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                 );
               })}
               {loai === 'ft' && !chiXem && (
-                <td className="kh-td">
+                <td className="kh-td kh-td-giua">
                   <div className="flex flex-col items-start gap-1">
                     {/* G1-09: hàng đã có ô "Xếp MT{n}" (MT kế tiếp còn trống) → "+ MT" không lặp mục MT{n}, chỉ còn S Ex. */}
                     <NutThemLuot hang={h as HangFT} coXep={cots.some((c) => c.dot.loai === 'ft' && c.dot.attemptNo === (h as HangFT).soKeTiep && o(h, c).attemptId === null && !o(h, c).huy)}
@@ -227,7 +225,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                   </div>
                 </td>
               )}
-              <td className="kh-td" aria-hidden />
             </tr>
             {/* Chủ SP 06/11: hàng S Ex mảnh ngay dưới hàng MT (thay chip S Ex ở cột "Thêm"); mọi người thấy, chỉ người sửa lịch Test xếp. */}
             {loai === 'ft' && (() => {
@@ -247,7 +244,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                     </td>
                   ))}
                   {!chiXem && <td className="kh-td" aria-hidden />}
-                  <td className="kh-td" aria-hidden />
                 </tr>
               );
             })()}
@@ -308,7 +304,7 @@ function NutThemLuot({ hang, coXep, onMt, onSEx }: { hang: HangFT; coXep: boolea
   /* Không ⋯ / menu một mục: còn mỗi S Ex thì là nút thẳng. */
   if (coXep) return <button type="button" className="nut-them self-start" onClick={onSEx}>{t('+ S Ex')}</button>;
   return (
-    <span ref={neo} className="self-start">
+    <span ref={neo} className="flex self-start">
       <MenuDong chu={t('+ MT')} lopNut="nut-them" muc={[
         { key: 'mt', nhan: t('MT{n} · MT thường', { n: hang.soKeTiep }), onChon: () => onMt(hang.soKeTiep, neo.current!) },
         { key: 'sex', nhan: t('S Ex · Speaking với chuyên gia'), onChon: onSEx },

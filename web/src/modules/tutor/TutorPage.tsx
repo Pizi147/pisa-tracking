@@ -127,7 +127,7 @@ export default function TutorPage() {
     { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 110, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
     ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 110 })),
     { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 110 },
-    { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'chu', linhHoat: true, rong: 220 },
+    { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'ten', linhHoat: true, rong: 220 },   // NH9: chữ dài xuống dòng, không cắt "…"
   ];
   const oCua = (d: DongTutor, c: CotBang): ReactNode => {
     switch (c.key) {
