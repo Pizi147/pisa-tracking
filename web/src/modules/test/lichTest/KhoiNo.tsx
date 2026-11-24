@@ -80,7 +80,7 @@ export function KhoiNo({ no, gvLop, mo, onMo, dongMo, onMoDong, hep, onDaLuu, kn
               const loi = chuaLuu[khoa] ?? 0;
               const doi = () => onMoDong(dangMo ? null : d, i);
               const nut = (
-                <button type="button" className={`btn btn-sm w-full justify-center ${gon ? 'min-h-[44px]' : ''}`}
+                <button type="button" className={`btn btn-sm justify-center ${gon ? 'min-h-[44px] w-full' : 'min-w-[112px]'}`}
                   aria-expanded={dangMo}
                   title={dangMo ? t('Thu lưới lại') : d.duocCham ? t('Mở lưới ngay dưới dòng, chỉ các em còn nợ') : t('Xem lưới (môn người khác dạy)')}
                   onClick={doi}>
