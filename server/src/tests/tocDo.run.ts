@@ -22,7 +22,8 @@ for (const suffix of ['', '-wal', '-shm']) {
 /* PHẢI đặt TRƯỚC khi import db.ts (và mọi mã import db.ts): lộ chỗ sửa nhầm giá trị nhớ dùng chung trong request. */
 process.env.PISA_DONG_BANG_NHO = '1';
 
-const { db, closeDb, THAM_SO_TOI_DA } = await import('../db.ts');
+const { db, closeDb, THAM_SO_TOI_DA, tuanTheoKetNoi } = await import('../db.ts');
+const { tuanTheoId } = await import('../fasttrack/skillSchedule.ts');
 const { runSeed } = await import('../seed/seed.ts');
 const { createApp } = await import('../app.ts');
 const { createSession } = await import('../auth.ts');
@@ -354,6 +355,19 @@ check("PR-TD Task1(b) · nho() trong chayTrongRequest('GET') nhớ đúng một 
     const r2 = nho('kiem-b', tinh);
     assert(calls === 1 && r1 === r2, `Phải nhớ đúng một lần: calls=${calls}`);
   });
+});
+
+check('TOC-DO-2511 · tuần (`tuanTheoId`) nhớ theo tiến trình: GET sau 0 câu, POST vẫn đọc', () => {
+  const r = conn.prepare('SELECT id, week_start, week_end, code FROM report_periods ORDER BY id LIMIT 1').get() as any;
+  chayTrongRequest('GET', () => (nguCanhTd.datMoc({}), tuanTheoId([r.id])));
+  let n = soCauSql();
+  const t = chayTrongRequest('GET', () => (nguCanhTd.datMoc({}), tuanTheoId([r.id, r.id])));
+  assert(soCauSql() === n, `GET thứ hai phải 0 câu, có ${soCauSql() - n}`);
+  assert(t.size === 1 && JSON.stringify(t.get(r.id)) === JSON.stringify({ week_start: r.week_start, week_end: r.week_end, code: r.code }), `sai dòng: ${JSON.stringify([...t])}`);
+  n = soCauSql();
+  chayTrongRequest('POST', () => (nguCanhTd.datMoc({}), tuanTheoId([r.id])));
+  assert(soCauSql() === n + 1, 'request ghi phải đọc lại (tuần vừa chèn trong giao dịch có thể bị huỷ)');
+  assert(!tuanTheoKetNoi.get(conn)?.has(-1) && chayTrongRequest('GET', () => (nguCanhTd.datMoc({}), tuanTheoId([-1]))).size === 0, 'id không có phải trả rỗng');
 });
 
 check("PR-TD Task1(c) · request 'POST' không mở bộ nhớ", () => {

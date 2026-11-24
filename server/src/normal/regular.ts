@@ -14,7 +14,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { chanKhoiPhucThuong, huyCua, moLaiLuotNeuHuy, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { coNho, nho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu } from '../platform/mocHeThong.ts';
-import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, doiVeTuanNayNeuChua, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, doiVeTuanNayNeuChua, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, setSkillWeek, tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
@@ -1297,9 +1297,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const periodCode = new Map<number, string>();
   const periodStart = new Map<number, string>();
   if (noShowPeriodIds.length) {
-    for (const r of conn
-      .prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${noShowPeriodIds.map(() => '?').join(',')})`)
-      .all(...noShowPeriodIds) as any[]) { periodCode.set(r.id, r.code); periodStart.set(r.id, r.week_start); }
+    for (const [id, r] of tuanTheoId(noShowPeriodIds)) { periodCode.set(id, r.code); periodStart.set(id, r.week_start); }   // TOC-DO-2511
   }
 
   return {

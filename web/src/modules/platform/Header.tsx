@@ -11,7 +11,8 @@ import { useDaXemHd } from '../huongDan/daXemHd.ts';
 import { MO_HD } from '../../lib/hdNgCanh.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { buocDanhSach, chuanHoaMaLop, ngayTheoGioVN, nhanPhamVi, type DemYeuCau } from '@shared/domain/index.ts';
-import { HopChuong, type ViecChuong } from './HopChuong.tsx';
+import type { ViecChuong } from './HopChuong.tsx';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -23,6 +24,8 @@ type SearchHit = { id: number; fullName: string; email: string | null; classCode
 type GvHit = { id: number; fullName: string };
 
 /* TAI-NHANH-0611: nội dung Hướng dẫn (~90 KB chữ mọi vai) chỉ tải khi bấm nút "?" — không nằm trong gói chính. */
+/* TOC-DO-2511: hộp chuông chỉ vẽ khi mở — mảnh riêng, nạp sẵn khi mạng yên (`napHopSan`) như các hộp khác. */
+const HopChuong = lazyHop(() => import('./HopChuong.tsx').then((m) => m.HopChuong), () => false);
 const PanelHuongDanManNay = lazyTai(() => import('../huongDan/NutHuongDan.tsx').then((m) => ({ default: m.PanelHuongDanManNay })));
 
 /** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */

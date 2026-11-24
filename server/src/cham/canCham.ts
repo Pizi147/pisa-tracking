@@ -20,6 +20,7 @@ import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '.
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
+import { tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
@@ -219,11 +220,7 @@ function dungLuiLich(
   const theoMa = new Map<string, string>();
   const vang = new Map<string, string>();   // `${attemptId}:${kỹ năng đánh giá}` → mã tuần cũ
 
-  theoLoJson([...new Set(doi.map((x) => x.moved.fromPeriodId).filter((x): x is number => !!x))], (json) => {
-    for (const r of conn.prepare(`SELECT id, code, week_start FROM report_periods WHERE id IN (${DS_JSON})`).all(json) as any[]) {
-      tuan.set(r.id, { code: r.code, weekStart: r.week_start });
-    }
-  });
+  for (const [id, r] of tuanTheoId(doi.map((x) => x.moved.fromPeriodId).filter((x): x is number => !!x))) tuan.set(id, { code: r.code, weekStart: r.week_start });   // TOC-DO-2511
   theoLoJson([...new Set(doi.filter((x) => x.moved.by === 'absence').map((x) => x.attemptId))], (json) => {
     for (const r of conn.prepare(
       `SELECT attempt_id, field, old_value FROM attempt_schedule_history
@@ -825,7 +822,8 @@ export function lichTest(
   };
   if (scope.none) return rong;
   const conn = db();
-  const tuan = conn.prepare('SELECT id, week_start, week_end FROM report_periods WHERE id = ?').get(periodId) as any;
+  const t = tuanTheoId([periodId]).get(periodId);   // TOC-DO-2511: tuần nhớ theo tiến trình
+  const tuan = t ? { id: periodId, week_start: t.week_start, week_end: t.week_end } : null;
   if (!tuan) return rong;
   const tuanNay = weekInfo(today).weekStart;
   const laTuanNay = String(tuan.week_start) === tuanNay;
