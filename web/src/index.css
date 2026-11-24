@@ -2248,6 +2248,12 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .ck-dtr > .ck-hop { grid-column: 3 / -2; }
   .ck-hop { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 13px; }
   /* ô lớp / tuần thừa hưởng từ dải: chữ mờ, cao 34 như ô Bước tiếp → cùng tâm dọc / đường chữ; "Sửa" mở ô riêng (ngoại lệ) */
+  /* Mép trái CHỮ: đầu cột = chữ trong ô có khung = chữ mờ thừa hưởng (--ck-in = mép chữ tính từ mép ô; ±1 px, đo bằng ảnh). */
+  .ck-lg { --ck-in: 9px; }
+  .ck-th > :nth-child(n+3) { padding-left: var(--ck-in); }
+  .ck-r > :is(.ck-bt, .ck-lop, .ck-tuan, .ck-hd, .ck-nx):not(:has(select, input, .oc)) { padding-left: var(--ck-in); }
+  .ck-lg select.field { padding-left: 4px; }
+  .ck-lg .ck-tuan input { padding-left: 8px; }
   .ck-ke { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; font-weight: 500; color: var(--text-dim); white-space: nowrap; }
   @media (pointer: coarse) { .ck-lg .oc { min-height: 44px; } }   /* cảm ứng ≥ 768 (khay): vùng bấm 44 */
   /* thanh Áp: một thẻ, ba ô bằng nhau + "Ngay hôm nay" */

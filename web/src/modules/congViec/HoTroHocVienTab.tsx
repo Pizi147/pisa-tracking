@@ -801,7 +801,7 @@ export function HoTroHocVienTab() {
                   {/* Panel vẫn gắn khi thẻ "Hết việc" hiện: "Xem lại việc vừa lưu" mở lại đúng panel đã lưu (sửa / hoàn tác của chính panel). */}
                   <div hidden={!!het}>
                     <ViecVuaLuu.Provider value={viecVuaLuu}><BaoHoanTac.Provider value={(f) => ghiHoanTac(chon.key, f)}><BaoDaGiao.Provider value={() => giaoDi.current.set(chon.key, chon)}>
-                    <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} onDong={dong} onDaLam={() => daLam(chon)}
+                    <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTaiLai={reload}
                       onTiep={keTiep ? () => mo(keTiep) : hienTai && !theoDoiChon ? () => setHet({ nhom: hienTai.nhom, ke: keNhomKhac }) : null}
                       tenTiep={keTiep?.studentId !== null ? keTiep?.studentName : null} onMo={(x) => boChuRoi(() => mo(x))} />
                     </BaoDaGiao.Provider></BaoHoanTac.Provider></ViecVuaLuu.Provider>

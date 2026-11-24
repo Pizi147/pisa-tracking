@@ -90,7 +90,7 @@ function lopTheoHuong(ds: readonly Lop[], huong: ChonHuong, ma: ProgrammeCode | 
 const conTrongPanel = (tu: { pathname: string; search: string }, den: { pathname: string; search: string }) =>
   tu.pathname === den.pathname && new URLSearchParams(tu.search).get('viec') === new URLSearchParams(den.search).get('viec');
 
-export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { classId: number; emMo: number | null; onDaMoEm: () => void; theoVai: boolean; panel?: { onDong: () => void } }) {
+export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { classId: number; emMo: number | null; onDaMoEm: () => void; theoVai: boolean; panel?: { onDong: () => void; onDone?: () => void } }) {
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
   const bang = useManHinh(panel ? '(min-width: 768px)' : '(min-width: 1280px)');
@@ -229,7 +229,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     setSua((m) => { const n = { ...m[sid], ...p }; if (p.huong !== undefined && p.huong !== 'fast_track') delete n.kv; return { ...m, [sid]: n }; });
     setLoi((m) => { if (!(sid in m)) return m; const { [sid]: _, ...con } = m; return con; });
   };
-  const lamMoi = () => { invalidate('/classes'); invalidate('/my-work'); invalidate('/hoc-vien-lop'); kh.reload(); };
+  /* Panel ở Công việc: báo danh sách bên trái tải lại ngay (số "n em" của dòng việc) — một lần, qua đường `onDaLam` có sẵn. */
+  const lamMoi = () => { invalidate('/classes'); invalidate('/my-work'); invalidate('/hoc-vien-lop'); kh.reload(); panel?.onDone?.(); };
 
   /* ------------------------------------------------------------------ nhóm chọn + thanh áp */
   const NHOM: { k: ChonHuong; nhan: string }[] = [
@@ -532,7 +533,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
     if (khoa(e)) {
       return (
         <span className="inline-flex flex-wrap items-center gap-x-2 text-sm font-semibold text-slate-100">
-          <span className="inline-flex items-center gap-1"><IconKhoa />{chuHuong(e)}</span>
+          <span className="-ml-0.5 inline-flex items-center gap-1"><IconKhoa />{chuHuong(e)}</span>
           {laQl && e.lenh!.huong !== 'chuyen_lop' && <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={() => doi(e.id, { mo: true })}>{t('Sửa')}</button>}
           {e.lenh!.huong === 'chuyen_lop' && <span className="text-xs font-normal text-slate-500">{t('sửa ở ⋯ Chuyển lớp… của em')}</span>}
         </span>
@@ -1115,7 +1116,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
 }
 
 /** Panel Chốt lộ trình ở Công việc (khe 720): vai xem như trang hồ sơ lớp. */
-export function PanelChotLoTrinh({ classId, onDong }: { classId: number; onDong: () => void }) {
+export function PanelChotLoTrinh({ classId, onDong, onDone }: { classId: number; onDong: () => void; onDone?: () => void }) {
   const vai = vaiXemHocVien(useSession().session?.roles);
-  return <CuoiKhoaLop classId={classId} emMo={null} onDaMoEm={() => undefined} theoVai={!!vai && vai !== 'cx'} panel={{ onDong }} />;
+  return <CuoiKhoaLop classId={classId} emMo={null} onDaMoEm={() => undefined} theoVai={!!vai && vai !== 'cx'} panel={{ onDong, onDone }} />;
 }
