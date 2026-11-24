@@ -501,7 +501,7 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
     if (r.k === 'x') {
       const g = r.sid ? gvcnCuaEm(r.sid, demoToday()).gvcn : null;
       const moi = g !== userId ? g : null;
-      if (moi === null || conn.prepare(`UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')`).run(moi, r.id, userId).changes !== 1) continue;
+      if (moi === null || conn.prepare(`UPDATE discipline_measures SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')`).run(moi, luc, r.id, userId).changes !== 1) continue;
       writeAudit({ actorUserId: actorId, action: 'measure.owner_assign', entityType: 'discipline_measure', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
       cong(moi, 'x'); kq.soXuLy += 1; kq.ds.push({ k: 'x', id: r.id, moi, luc, caseId: null });
       continue;
@@ -517,7 +517,7 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
       ls!.run(r.case_id, 'pa_performer', tenCu(), `${tenCu()} → ${ten(moi)} (người cũ nghỉ)`, actorId, luc);
       cong(moi, 'p'); kq.soPa += 1; kq.ds.push({ k: 'p', id: r.id, moi, luc, caseId: r.case_id });
     } else {
-      if (conn.prepare(`UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'`).run(moi, r.id, userId).changes !== 1) continue;
+      if (conn.prepare(`UPDATE case_signals SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'`).run(moi, luc, r.id, userId).changes !== 1) continue;
       writeAudit({ actorUserId: actorId, action: 'signal.owner_assign', entityType: 'case_signal', entityId: r.id, before: { ownerUserId: userId }, after: { ownerUserId: moi, _nguon: 'người cũ nghỉ' } });
       cong(moi, 't'); kq.soTinHieu += 1; kq.ds.push({ k: 't', id: r.id, moi, luc, caseId: null });
     }
@@ -532,15 +532,10 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
 
 /**
  * E-7 (N69, chủ SP 25/11): Khôi phục tài khoản / Hoàn tác đổi vai TRONG `HOAN_TAC_PHUT_NGUOI_NGHI` phút trả lại các việc đã chuyển mà CHƯA AI sửa tiếp:
- * Case / PA — `updated_at` còn đúng mốc chuyển và người giữ còn là người nhận; tín hiệu / lần xử lý (không có `updated_at`) — dòng nhật ký MỚI NHẤT của chính nó còn
- * là lần chuyển (`signal.owner_assign` / `measure.owner_assign`), nghĩa là chưa ai thao tác thêm. Việc đã bị sửa tiếp giữ nguyên người mới. Lịch sử PA ghi TÊN (như lúc chuyển);
+ * Case / PA — `updated_at` còn đúng mốc chuyển và người giữ còn là người nhận; tín hiệu / lần xử lý — cũng `updated_at` còn đúng mốc chuyển (lúc chuyển ghi `updated_at` = mốc, mọi sửa sau đó đổi nó). Việc đã bị sửa tiếp giữ nguyên người mới. Lịch sử PA ghi TÊN (như lúc chuyển);
  * mỗi người bị lấy lại việc nhận MỘT thông báo. Trả { traLai, giu }.
  */
 export const HOAN_TAC_PHUT_NGUOI_NGHI = 15;
-const NK_CHUYEN: Record<'t' | 'x', { loai: string; hanhDong: string }> = {
-  t: { loai: 'case_signal', hanhDong: 'signal.owner_assign' },
-  x: { loai: 'discipline_measure', hanhDong: 'measure.owner_assign' },
-};
 export function traLaiViecNguoiNghi(userId: number, actorId: number, ds: readonly MucChuyen[], luc = nowIso()): { traLai: number; giu: number } {
   const conn = db();
   const ten = (id: number) => (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? '—';
@@ -552,15 +547,9 @@ export function traLaiViecNguoiNghi(userId: number, actorId: number, ds: readonl
     let doi = 0;
     if (m.k === 'c') doi = conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND updated_at = ?').run(userId, luc, m.id, m.moi, m.luc).changes as number;
     else if (m.k === 'p') doi = conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, updated_at = ? WHERE id = ? AND performer_user_id = ? AND updated_at = ? AND status IN ('planned', 'started')`).run(userId, luc, m.id, m.moi, m.luc).changes as number;
-    else {
-      const nk = NK_CHUYEN[m.k];
-      const cuoi = conn.prepare('SELECT action FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(nk.loai, m.id) as { action: string } | undefined;
-      if (cuoi?.action !== nk.hanhDong) continue;   // đã có thao tác sau lần chuyển → giữ nguyên người mới
-      doi = m.k === 't'
-        ? conn.prepare("UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'").run(userId, m.id, m.moi).changes as number
-        : conn.prepare("UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')").run(userId, m.id, m.moi).changes as number;
-      if (doi) writeAudit({ actorUserId: actorId, action: nk.hanhDong, entityType: nk.loai, entityId: m.id, before: { ownerUserId: m.moi }, after: { ownerUserId: userId, _nguon: 'khôi phục / hoàn tác' } });
-    }
+    else if (m.k === 't') doi = conn.prepare("UPDATE case_signals SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND updated_at = ? AND status = 'pending'").run(userId, luc, m.id, m.moi, m.luc).changes as number;
+    else doi = conn.prepare("UPDATE discipline_measures SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND updated_at = ? AND status IN ('preparing', 'nhap')").run(userId, luc, m.id, m.moi, m.luc).changes as number;
+    if (doi && (m.k === 't' || m.k === 'x')) writeAudit({ actorUserId: actorId, action: m.k === 't' ? 'signal.owner_assign' : 'measure.owner_assign', entityType: m.k === 't' ? 'case_signal' : 'discipline_measure', entityId: m.id, before: { ownerUserId: m.moi }, after: { ownerUserId: userId, _nguon: 'khôi phục / hoàn tác' } });
     if (!doi) continue;
     traLai += 1;
     lay.set(m.moi, (lay.get(m.moi) ?? 0) + 1);

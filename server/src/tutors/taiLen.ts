@@ -193,7 +193,7 @@ export function hoanTacTaiLen(p: Principal, v: { nhatKyId?: unknown }): { xoa: n
   if (Date.now() - Date.parse(nk.created_at) > HOAN_TAC_PHUT_TAI_LEN * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT_TAI_LEN} phút — xoá / sửa từng tutor ở danh sách.`);
   const h = (JSON.parse(nk.after_json ?? '{}').hoanTac ?? {}) as { luc?: string; moiIds?: number[]; cu?: { id: number; ten: string; sdt: string | null; noi: number | null; online: number; kn: string; ub: number | null; ua: string | null }[] };
   return tx(() => {
-    if (conn.prepare(`SELECT 1 AS x FROM audit_logs WHERE action = 'tutor.tai_len_hoan_tac' AND entity_id = ? LIMIT 1`).get(id)) throw badRequest('Lần tải này đã hoàn tác rồi.');
+    if (conn.prepare(`SELECT 1 AS x FROM audit_logs WHERE entity_type = 'tutor' AND action = 'tutor.tai_len_hoan_tac' AND entity_id = ? LIMIT 1`).get(id)) throw badRequest('Lần tải này đã hoàn tác rồi.');
     let xoa = 0, khoiPhuc = 0, giu = 0;
     const boQua: string[] = [];   // dòng Cập nhật không trả được (SĐT cũ đã thuộc tutor khác) — báo, không 500
     for (const tid of h.moiIds ?? []) {

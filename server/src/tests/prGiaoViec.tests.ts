@@ -773,9 +773,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     xoaTK.xoaTaiKhoan(P.admin, f.userId);
     conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run('2099-01-01T00:00:00.000Z', iff2.caseId);   // có người sửa tiếp sau khi chuyển
     /* Tín hiệu / lần xử lý đã có thao tác SAU lần chuyển (nhật ký mới nhất không còn là lần chuyển) → giữ người mới. */
-    for (const [loai, id, hd] of [['case_signal', iff.tinId, 'signal.verify'], ['discipline_measure', iff.xlId, 'measure.update']] as const) {
-      conn.prepare("INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, created_at) VALUES (?, ?, ?, ?, ?)").run(P.admin.userId, hd, loai, id, new Date().toISOString());
-    }
+    conn.prepare('UPDATE case_signals SET updated_at = ? WHERE id = ?').run('2099-01-01T00:00:00.000Z', iff.tinId);
+    conn.prepare('UPDATE discipline_measures SET updated_at = ? WHERE id = ?').run('2099-01-01T00:00:00.000Z', iff.xlId);
     const trongHan: any = xoaTK.khoiPhucTaiKhoan(P.admin, f.userId);
     assert(chu(iff)[0] === f.userId && chu(iff)[1] === f.userId && chu(iff)[2] === luat && chu(iff)[3] === cn && chu(iff2)[0] === luat, `E-7: việc chưa sửa trả lại, việc đã sửa giữ: ${JSON.stringify([chu(iff), chu(iff2)])}`);
     assert(trongHan.canhBao.some((c: string) => /đã được sửa tiếp/.test(c)), `E-7: báo việc giữ nguyên: ${trongHan.canhBao.join(' | ')}`);
@@ -802,6 +801,19 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(mot("SELECT COUNT(*) n FROM user_roles ur JOIN branches b ON b.id = ur.branch_id WHERE ur.user_id = ? AND ur.status = 'active' AND b.code IN ('MB', 'CP')", h.userId).n === 2, 'E-4: vai cũ được cấp lại');
     assert((await ma(() => accounts.hoanTacDoiVai(P.admin, h.userId, kqH.nhatKyId))) === 400, 'E-4: Hoàn tác lần hai → 400');
     voiXacNhan(() => accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]));
+    /* E-4: Hoàn tác đổi vai bị từ chối khi vai đã đổi tiếp sau lần đó (cấp lại vai cũ sẽ ghi đè lần mới hơn). */
+    const k = taiKhoan('nghi11', 'teacher');
+    const k1: any = accounts.setRoles(P.admin, k.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    voiXacNhan(() => accounts.setRoles(P.admin, k.userId, [{ role: 'teacher', branches: ['MB'] }]));
+    const loiMoi: any = (() => { try { accounts.hoanTacDoiVai(P.admin, k.userId, k1.nhatKyId); return null; } catch (e: any) { return e; } })();
+    assert(loiMoi?.status === 409 && /đổi tiếp/.test(loiMoi.message), `E-4: vai đã đổi tiếp → Hoàn tác phải 409: ${loiMoi?.status} ${loiMoi?.message}`);
+    /* E-4: nếu chính lần Hoàn tác lại chuyển việc (lần đổi đó đã THÊM chi nhánh CP) → trả `nhatKyIdMoi` + `chuyenMoi` để web nêu và cho Hoàn tác tiếp. */
+    const m = taiKhoan('nghi12', 'teacher');
+    const m1: any = accounts.setRoles(P.admin, m.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    const iCp = tao(m.userId, emCp);
+    const undo: any = accounts.hoanTacDoiVai(P.admin, m.userId, m1.nhatKyId);
+    assert(undo.chuyenMoi?.soCase >= 1 && Number.isInteger(undo.nhatKyIdMoi), `E-4: Hoàn tác tự chuyển việc phải trả nhatKyIdMoi: ${JSON.stringify([undo.chuyenMoi?.soCase, undo.nhatKyIdMoi])}`);
+    assert(chu(iCp)[0] !== m.userId, 'E-4: việc chi nhánh CP đã chuyển khi Hoàn tác bỏ vai CP');
     /* E-4: mất vai TOÀN HỆ THỐNG (không gắn chi nhánh) = mất mọi chi nhánh không còn vai. */
     const gl = taiKhoan('nghi10', 'cx');
     accounts.setRoles(P.admin, gl.userId, [{ role: 'cx', branches: [] }]);

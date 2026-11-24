@@ -169,7 +169,7 @@ export function dangSos(p: Principal, f: LocSos = {}): TrangSos {
   const caseLapLai = new Set([...lapLai.values()].flat());
   /* ponytail: Case lấy theo chi nhánh lớp em ĐANG học — em vừa chuyển chi nhánh thì Case của lượt ở chi nhánh cũ không hiện trong dòng (panel một em vẫn đủ). */
   const cases = [...new Set([...cn.values()].map((x) => x.branchId))]
-    .flatMap((b) => listCases(p, { branchId: b }).rows)
+    .flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows)   // D-01 (N46): tóm tắt Case / PA đang mở bỏ Case của lộ trình đã thi thật
     .filter((c) => (c.attemptId !== null && idLuot.has(c.attemptId)) || caseLapLai.has(c.id));
   const tt = tomTatCase(cases);
 

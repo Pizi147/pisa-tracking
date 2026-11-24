@@ -155,7 +155,10 @@ export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; c
   return thiThangNayTheoPhamVi(cs, f, khoang);
 }
 
-/** D-05: "Thi tháng này" của TVV = CHÍNH định nghĩa của QL (ghi danh còn hiệu lực, chưa lưu trữ, lộ trình chưa bỏ dở) khoanh theo HV của TVV, cả hai khung; một nguồn `thiThangNayTheoPhamVi`. */
+/**
+ * D-05: "Thi tháng này" của TVV = CHÍNH luật của danh sách `/hoc-vien?phamVi=cua-toi&thi=1` (`trangThaiLichThi`): lộ trình ĐANG CHẠY (`status = 'active'`), ngày = `thi_that_ngay` ?? `exam_date`
+ * trong tháng, HV chưa lưu trữ, cả hai khung; khoanh theo HV của TVV. Khác định nghĩa của QL (`tapThiThangNayLop`: lộ trình chưa bỏ dở, ngày dự kiến) — cùng lõi `thiThangNayTheoPhamVi`, chỉ đổi cờ `theoDanhSach`.
+ */
 export function tapThiThangNayTvv(tvvId: number): Map<number, { ngay: string; lop: number }> {
   return thiThangNayTheoPhamVi({ sql: 's.consultant_user_id = ?', params: [tvvId] }, { ct: null }, null, true);
 }

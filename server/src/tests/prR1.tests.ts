@@ -174,6 +174,10 @@ export async function runPrR1Tests(t: any) {
     assert(thi() === 0 && danhSach() === 0, `tiền đề: không em nào có ngày thi (${thi()}/${danhSach()})`);
     conn.prepare("UPDATE learning_cycles SET exam_date = ? WHERE id = (SELECT id FROM learning_cycles WHERE student_id = ? AND status != 'abandoned' ORDER BY id DESC LIMIT 1)").run(`${TODAY.slice(0, 7)}-15`, em.id);
     assert(thi() === 1 && danhSach() === 1, `em có ngày thi trong tháng phải vào số: ô ${thi()} · danh sách ${danhSach()}`);
+    /* Em của TVV KHÔNG có ghi danh còn hiệu lực (chưa học / vừa kết thúc ghi danh) nhưng chưa lưu trữ: ô và danh sách vẫn phải khớp. */
+    conn.prepare("UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND status = 'active'").run(em.id);
+    assert(thi() === danhSach(), `em không ghi danh còn hiệu lực: ô ${thi()} · danh sách ${danhSach()}`);
+    conn.prepare("UPDATE enrollments SET status = 'active' WHERE student_id = ? AND status = 'completed'").run(em.id);
     conn.prepare("UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?").run(TODAY, em.id);
     conn.prepare("UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'").run(em.id);
     assert(thi() === 0 && danhSach() === 0, `em Tạm dừng không còn vào "Thi tháng này": ô ${thi()} · danh sách ${danhSach()}`);

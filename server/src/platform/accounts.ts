@@ -6,6 +6,7 @@ import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso,
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
+import { voiXacNhan } from './nguCanhRequest.ts';
 import { VAI_THEO_DOI, donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { HOAN_TAC_PHUT_NGUOI_NGHI, chuyenViecNguoiNghi, traLaiViecNguoiNghi, xemTruocChuyen, type MucChuyen } from '../cases/owner.ts';
 import { duocSuaKyNang } from '../giaoVien/phamVi.ts';
@@ -448,7 +449,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
  * E-4 (rà sâu): HOÀN TÁC đổi vai — chỉ CHÍNH người đổi, trong `HOAN_TAC_PHUT_NGUOI_NGHI` phút, một lần. Đọc ĐÚNG nhật ký `user_roles_set` (vai trước + việc đã chuyển — không tin web gửi):
  * cấp lại vai cũ rồi trả các việc đã chuyển mà chưa ai sửa tiếp (cùng `traLaiViecNguoiNghi` của Khôi phục tài khoản, E-7).
  */
-export function hoanTacDoiVai(p: Principal, userId: number, nhatKyId: unknown): { ok: true; traLai: number; giu: number } {
+export function hoanTacDoiVai(p: Principal, userId: number, nhatKyId: unknown): { ok: true; traLai: number; giu: number; nhatKyIdMoi: number | null; chuyenMoi: ReturnType<typeof chuyenViecNguoiNghi> | null } {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống đổi được vai trò.');
   const id = Number(nhatKyId);
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Không tìm thấy lần đổi vai để hoàn tác.');
@@ -460,11 +461,14 @@ export function hoanTacDoiVai(p: Principal, userId: number, nhatKyId: unknown): 
   const truoc = (JSON.parse(nk.before_json ?? '{}').roles ?? []) as { role: string; branches: string[] }[];
   const ds = (JSON.parse(nk.after_json ?? '{}').chuyen?.ds ?? []) as MucChuyen[];
   return tx(() => {
-    if (conn.prepare("SELECT 1 AS x FROM audit_logs WHERE action = 'user_roles_hoan_tac' AND entity_id = ? AND json_extract(after_json, '$.nhatKyId') = ? LIMIT 1").get(userId, id)) throw badRequest('Lần đổi vai này đã hoàn tác rồi.');
-    setRoles(p, userId, truoc);
+    if (conn.prepare("SELECT 1 AS x FROM audit_logs WHERE entity_type = 'users' AND action = 'user_roles_hoan_tac' AND entity_id = ? AND json_extract(after_json, '$.nhatKyId') = ? LIMIT 1").get(userId, id)) throw badRequest('Lần đổi vai này đã hoàn tác rồi.');
+    /* Vai đã đổi tiếp sau lần này (hoặc một Hoàn tác khác) → cấp lại vai cũ sẽ ghi đè lần đổi mới hơn. */
+    if (conn.prepare("SELECT 1 AS x FROM audit_logs WHERE entity_type = 'users' AND action = 'user_roles_set' AND entity_id = ? AND id > ? LIMIT 1").get(userId, id)) throw conflict('Vai đã đổi tiếp — sửa ở Sửa tài khoản');
+    /* Cấp lại vai cũ có thể tự nó chuyển việc (vd lần đổi đó đã THÊM chi nhánh) — Quản trị đã bấm Hoàn tác nên không hỏi lại; trả `nhatKyIdMoi` + `chuyenMoi` để web nêu và cho Hoàn tác tiếp. */
+    const lai = voiXacNhan(() => setRoles(p, userId, truoc)) as { nhatKyId?: number; chuyen?: ReturnType<typeof chuyenViecNguoiNghi> };
     const r = traLaiViecNguoiNghi(userId, p.userId, ds);
     writeAudit({ actorUserId: p.userId, action: 'user_roles_hoan_tac', entityType: 'users', entityId: userId, after: { nhatKyId: id, ...r } });
-    return { ok: true as const, ...r };
+    return { ok: true as const, ...r, nhatKyIdMoi: lai.chuyen ? lai.nhatKyId ?? null : null, chuyenMoi: lai.chuyen ?? null };
   });
 }
 
