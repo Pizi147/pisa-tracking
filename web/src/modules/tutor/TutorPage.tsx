@@ -265,7 +265,7 @@ export default function TutorPage() {
                 ? <><span>{t('Chưa có tutor trong danh sách')}</span><span className="flex-1" />
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setHop('tai')}>{t('Tải danh sách')}</button>
                   <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setHop('them')}>{t('Thêm tutor')}</button></>
-                : <span><b className="font-semibold tabular-nums text-slate-100">{rows.length}</b> {t('người dạy')} · {khoangChu}</span>}
+                : <span><b className="font-semibold tabular-nums text-slate-100">{rows.length}</b> {t('người dạy')}<span className="sm:hidden"> · {khoangChu}</span></span>}
             </div>
             {rows.length > 0 && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
             {!ds.length ? <Empty title={t('Chưa có người dạy nào trong khoảng này')} hint={danhBa ? undefined : t('Người dạy hiện khi có kết quả PA Tutor được ghi.')} />

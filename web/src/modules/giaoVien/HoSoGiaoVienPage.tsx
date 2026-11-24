@@ -373,12 +373,12 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
     <Card bodyClass="p-0"
       title={(
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">{t('Lớp đang dạy')}{data.lop.length > 0 && <DemDau n={data.lop.length} />}
-          <NutLuat label={t('Lớp đang dạy')}>{t('Phân công đang hiệu lực. Chưa nhập · Quá hạn: bài Test của lớp chưa nhập điểm, tính tới hôm nay — bấm số xem từng bài và hạn.')}</NutLuat>
           {data.lop.length > 0 && (
             <span className="text-[13px] font-normal text-slate-400">
               {t('lớp')} · <OSo giaTri={data.tongHocVien} tieuDe={t('Học viên đang học')} nguon={nguon(id, 'cot=hoc-vien')} className={vung} /> HV
             </span>
           )}
+          <NutLuat label={t('Lớp đang dạy')}>{t('Phân công đang hiệu lực. Chưa nhập · Quá hạn: bài Test của lớp chưa nhập điểm, tính tới hôm nay — bấm số xem từng bài và hạn.')}</NutLuat>
         </span>
       )}>
       {!data.lop.length ? <Empty title={t('Chưa có phân công lớp nào đang hiệu lực.')} /> : (
@@ -699,12 +699,12 @@ function KhoiBoTro({ ds }: { ds: BoTroHs[] }) {
     return x.hanMiniTest ? <ChipHan loai="mini-test" han={x.hanMiniTest} vien /> : <span className="text-slate-500">—</span>;
   };
   return (
-    <Card className="max-w-[720px]" title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
+    <Card title={<span className="inline-flex items-center">{t('Em đang bổ trợ')}<DemDau n={ds.length} /></span>} bodyClass="p-0">
       <Bang ten={t('Em đang bổ trợ')} deu khung={false} khoa={(x) => x.hvId} hang={ds}
         cot={[
           { key: 'ten', nhan: t('Học viên'), kieu: 'ten', linhHoat: true, rong: 220 },
-          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 160 },
-          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 120 },
+          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', rong: 240 },
+          { key: 'han', nhan: 'Mini Test', kieu: 'diem', rong: 240 },
         ]}
         phuCua={(x, k) => (k.key === 'ten' && x.lopMa ? x.lopMa : null)}
         theRieng={(x) => (
