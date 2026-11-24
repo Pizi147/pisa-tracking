@@ -803,6 +803,8 @@
    * Cột danh sách Công việc (`cv-ds`, ≥ 1024 khi panel mở) hẹp hơn 460 px → dòng việc bỏ nút, hạn sát tên (thay luật "panel bảng → 330 px" của PR-2a).
    */
   [data-pn] > .pn-than { container: pn / inline-size; }
+  /* HAI-BEN (chủ SP 25/11): ô nhập nhiều chữ trong panel TỰ DÃN theo chữ (≥ cỡ hiện có, ≤ 14rem rồi cuộn) — 300 ký tự không bị cắt ở dòng thứ 3. Trình duyệt chưa hỗ trợ `field-sizing` giữ ô cũ. */
+  [data-pn] .pn-than textarea { field-sizing: content; min-height: 4.5rem; max-height: 14rem; }
   /* Tên việc sửa được ở đầu panel (`.sd.tieu`): max-width 100 % làm tên co còn ~300 px, xuống dòng dù dòng còn chỗ — bỏ trần, h2 (max-w-full) giữ trong khung. */
   @media (min-width: 640px) { [data-pn] > header h2 .sd.tieu { max-width: none; } }
   @media (min-width: 640px) {
