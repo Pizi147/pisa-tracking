@@ -524,8 +524,8 @@ export function HoTroHocVienTab() {
   /* GD-1: GV có lớp. GD-8 (④ R4.5, [XM-7]): TVV luôn có "+ Task" = Hỏi tình hình học tập (em chọn từ HV của tôi đã nạp). */
   const coTask = (laGv && dongLop.length > 0) || laTvv;
   const nutTask = (noi: 'dau' | 'noi') => (laTvv
-    ? <NutTask noi={noi} muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten, phu: e.lop.map((l) => l.ma).join(', ') || undefined }))} />
-    : <NutTask noi={noi} />);
+    ? <NutTask noi={noi} ca375 muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten, phu: e.lop.map((l) => l.ma).join(', ') || undefined }))} />
+    : <NutTask noi={noi} ca375 />);
   /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */
   /* RA-LOI-0711d: QL chỉ một chi nhánh (không có ô Chi nhánh, `branchId` null) → chi nhánh duy nhất của quyền. */
   const cnQuyen = [...new Set((session?.grants ?? []).map((g) => g.branchId))];
@@ -656,11 +656,11 @@ export function HoTroHocVienTab() {
             </button>
           )}
           {/* NHẸ HƠN PR-2a (v23 ② G1): vai không có nút phạm vi (GV, TVV, Admin) — Lọc thêm · + Task · + Giao việc ở mép phải hàng tiêu đề. */}
-          {!coPhamVi && <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-[1fr_auto] [&>*]:max-sm:min-w-0">{nutHang}</span>}
+          {!coPhamVi && <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2 [&>*]:max-sm:min-w-0">{nutHang}</span>}
         </header>
         {/* NHẸ HƠN PR-2a (v23 ⑨ vòng 3): hàng phạm vi RIÊNG dưới tiêu đề, trên hàng tab — Của tôi / Của GV / Tất cả · Lọc thêm · + Task · + Giao việc; panel mở không cắt chữ.
             375: phạm vi một khối liền hết bề rộng, nút 44 px. */}
-        {coPhamVi && <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:grid-cols-[1fr_auto] [&>*]:max-sm:min-w-0" data-hd="cv-pham-vi">{nutHang}</div>}
+        {coPhamVi && <div className="flex flex-wrap items-center gap-2 max-sm:grid max-sm:grid-cols-2 [&>*]:max-sm:min-w-0" data-hd="cv-pham-vi">{nutHang}</div>}
         {/* U01 #1: "Lọc thêm" mở MỘT hàng ngay dưới (cùng kiểu "Bộ lọc thêm" HV & Lớp) — không popover lồng ô chọn có popover riêng. */}
         {moLocThem && (
           <div role="group" aria-label={t('Lọc thêm')} className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-1">
@@ -834,7 +834,6 @@ export function HoTroHocVienTab() {
         </div>
       </div>
 
-      {coTask && !chon && !theId && nutTask('noi')}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
     </div>
   );
