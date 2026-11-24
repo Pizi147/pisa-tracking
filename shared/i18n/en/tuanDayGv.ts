@@ -2,6 +2,8 @@
 import type { Dich } from '../en.ts';
 
 export const EN_TUAN_DAY_GV = {
+  'Lệch': 'Gap',
+  'mỗi kỹ năng {n} GV dạy nhiều tuần nhất': (b) => `top ${b.n} teachers by weeks taught per skill`,
   '+ {n} GV': (b) => `+ ${b.n} teacher${Number(b.n) === 1 ? '' : 's'}`,
   'Chưa có phân công GV {kn}': (b) => `No ${b.kn} teacher assigned`,
   'Chưa tải được tuần dạy. Điểm và bảng không đổi.': 'Could not load teaching weeks. Scores and the table are unchanged.',
