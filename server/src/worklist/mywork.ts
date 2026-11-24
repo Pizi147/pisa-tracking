@@ -146,6 +146,8 @@ export type WorkItem = {
   baiQuaHan?: number;
   /** OV-11c (CV-1): id các em của việc cả lớp (`studentId` null) — dòng phạm vi đếm em KHÁC NHAU, không cộng dồn `count`. */
   emIds?: number[];
+  /** [XM7] #2070 (SUA-GOP-2511): Bổ sung hồ sơ — lớp · tên · thiếu gì của TỪNG em (chỉ để hiển thị; KHÔNG phải việc con — `con` là việc thật). */
+  emBoSung?: { id: number; ten: string; lop: string | null; thieu: string }[];
   /** OV-13c (Q4): thứ Hai tuần thi của lượt (Case SOS FT · Nhập điểm) · mức SOS 1/2/3 của Case — khoá dòng gộp (`gopViec.ts`). */
   tuanThi?: string | null; sos?: number | null;
   /** OV-13c: Nhập điểm — tuần thi (lưới Lịch Test `LuoiNhung`) + loại bài. */

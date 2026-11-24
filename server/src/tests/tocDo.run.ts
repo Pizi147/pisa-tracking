@@ -1584,14 +1584,17 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        (tuần thi của bài sinh Case, cùng cột `rp.week_start` như Mô tả Case) vào việc Thêm PA và Ghi kết quả PA — Công việc ghi "W3 AUG - MT2 · Reading". 0 câu thêm (join sẵn).
        Đã kiểm: bỏ `tuanThi` khỏi hai loại việc đó → cả 11 băm cũ trùng ảnh cũ. Trước: GVCN toi 6f1b3ccac5a948f8, GVBM toi 648c908e8aad48db, GVCN_THUONG toi 6f1b3ccac5a948f8,
        QL tat-ca cb575aee748554d3, QT tat-ca 6185e2854a8f333b, QT tat-ca cn e6b16e15643a9390, QL gvcn 00ad6d45dc70a2b9, GVS toi 10640e5b9d61b1a6 */
-    'QL toi': '4f025585561f2eab', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '6dacfaab65010b5f', 'GVBM toi': 'ffba3d289a958121',
+    /* SUA-GOP-2511 ([XM7] #2070): chụp lại 'QL toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý CHỈ thêm `emBoSung` (lớp · tên · thiếu từng em, chỉ hiển thị)
+       vào việc Bổ sung hồ sơ thiếu; 0 câu thêm (dòng đã đọc). Đã kiểm: `emBoSung: undefined` → cả 11 băm trùng ảnh cũ.
+       Trước: QL toi 4f025585561f2eab, QL tat-ca 50125dbbf3460fcc, QT tat-ca 99b9f7ce08e5b071, QT tat-ca cn 41c0c2a404b291fa */
+    'QL toi': '4b9329d8861262f3', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '6dacfaab65010b5f', 'GVBM toi': 'ffba3d289a958121',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '6dacfaab65010b5f', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '50125dbbf3460fcc', 'QT tat-ca': '99b9f7ce08e5b071',
-    'QT tat-ca cn': '41c0c2a404b291fa', 'QL gvcn': 'f298a4e8477e0426', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '6dacfaab65010b5f', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '6619650d184e792e', 'QT tat-ca': 'c86ee14b9dbdd191',
+    'QT tat-ca cn': '9043067ed4ef66da', 'QL gvcn': 'f298a4e8477e0426', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

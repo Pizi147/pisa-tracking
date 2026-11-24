@@ -6,6 +6,9 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
   const { check, assert, P } = t;
+  const fs = await import('node:fs');
+  const { trangThaiYThuc } = await import('../yThuc/trangThai.ts');
+  const { demoToday } = await import('../demoConfig.ts');
   console.log('\nPT-PANEL · panel bảng có điểm');
   const { oTongHop, tongHop, luotTrongKhoang, phanLoaiCacLuot } = await import('../phanTich/tongHop.ts');
   const { oBaoCao, baoCao } = await import('../phanTich/baoCao.ts');
@@ -237,6 +240,14 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
       if (!r.n) continue;
       coDong(r, `${d.khoa} × ${cot}`, cot === 'hv-co-vi-pham' ? ['viPhamEm'] : ['viPham']);
       if (cot !== 'hv-co-vi-pham') assert(r.rows.every((row: any) => row.viPham.ngay && row.viPham.nhom && row.viPham.trangThai), `${cot}: thiếu ngày / nhóm / trạng thái`);
+      /* SUA-GOP-2511 (PTA rà #2150 P1): cột Hạn xử lý = `han` của CÙNG `trangThaiViPham` sinh nhãn Xử lý (một số liệu một nguồn — dời mốc lớp, Head duyệt + 4). */
+      if (cot !== 'hv-co-vi-pham') {
+        const tt = trangThaiYThuc([...new Set<number>(r.rows.map((row: any) => row.viPham.studentId as number))], demoToday());
+        for (const row of r.rows) {
+          const k = tt.get(row.viPham.studentId)?.viPham.get(row.viPham.id);
+          assert('han' in row.viPham && (row.viPham.han ?? null) === (k?.han ?? null) && row.viPham.trangThaiT === (k?.t ?? null), `${cot}: hạn / nhãn lệch hàm trạng thái ${JSON.stringify(row.viPham)} ≠ ${JSON.stringify(k)}`);
+        }
+      }
       so++;
     }
     for (const h of y.hvCanChuY.slice(0, 2)) for (const cot of ['vi-pham', 'chua-xu-ly']) {
@@ -288,5 +299,11 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
       so++;
     }
     assert(so >= 2, 'demo phải có ô Việc / Chấm Test của GV');
+  });
+  check('PT-VP-HAN · panel vi phạm: cột "Hạn xử lý" vẽ hạn THẬT bằng `Han` dùng chung (màu mucHan + dấu khi quá, không chỉ màu); cột Xử lý không còn "Quá hạn n ngày" suy từ số ngày', () => {
+    const src = fs.readFileSync('web/src/ui/BangLuotPanel.tsx', 'utf8') as string;
+    assert(src.includes("{ key: 'han', nhan: t('Hạn xử lý'), kieu: 'so', rong: 104 }") && src.includes("{ key: 'ngay', nhan: t('Ngày'), kieu: 'so', rong: 104 }"), 'thiếu cột Hạn xử lý / hai cột ngày không đều');
+    assert(src.includes('<Han loai="xu-ly-vi-pham" han={h.han} trongBang'), 'cột hạn không dùng Han chung');
+    assert(!src.includes('<QuaHan ngay={n} />') && src.includes(`<NhanViPham t="qua_han" nhan={t('Quá hạn')} />`), 'cột Xử lý còn suy hạn từ "Quá hạn n ngày" / quá hạn chỉ bằng màu');
   });
 }

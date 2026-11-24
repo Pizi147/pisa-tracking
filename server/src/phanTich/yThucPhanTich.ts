@@ -277,7 +277,7 @@ function dongViPham(r: Tinh, ids: readonly number[]): MetricRow[] {
     const viPham: DongViPham = {
       id, studentId: v.student_id, ten: v.full_name, classId: v.class_id ?? null, lop: v.lop ?? '', ngay: String(v.occurred_on).slice(0, 10),
       nhom: VIOLATION_CATEGORY_LABEL[v.category as ViolationCategory] ?? v.category, moTa: [tm.ten, tm.moTa].filter(Boolean).join(' — '),
-      nguoiGhi: v.nguoi ?? null, trangThai: tt?.nhan ?? '—', trangThaiT: tt?.t ?? null,
+      nguoiGhi: v.nguoi ?? null, trangThai: tt?.nhan ?? '—', trangThaiT: tt?.t ?? null, han: tt?.han ?? null,   // SUA-GOP-2511 (PTA rà #2150 P1): CÙNG hàm với nhãn Xử lý (`trangThaiViPham`) — dời mốc lớp / cấu hình hạn đổi theo
     };
     return { id, title: v.full_name, sub: '', href: `/hoc-vien/${v.student_id}`, viPham } as MetricRow;
   }).sort((a: any, b: any) => b.viPham.ngay.localeCompare(a.viPham.ngay) || a.id - b.id);

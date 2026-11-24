@@ -212,6 +212,12 @@ export async function runPrN70Tests(t: YThucTestKit) {
 
     const rh = lo.loCapBac(head, cid, { em: [{ studentId: cu, bac: 4 }, { studentId: moi, bac: 2 }] });
     assert(rh.em.every((x: any) => x.ok && !x.guiDuyet) && khai(cu).bac === 4 && khai(moi).bac === 2 && the(cu).length === 1, JSON.stringify(rh));
+    /* SUA-GOP-2511 (Việc để sau 25/11): `truoc` do web gửi — Hoàn tác KHÔNG được đặt ngày / tháng xử lý ở tương lai (như khai thường; bản lưu thật luôn ≤ hôm nay). */
+    const sau = addDays(TODAY, 40) as string;
+    for (const thang of [sau, sau.slice(0, 7)]) {
+      const tl = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: cu, bac: 4, truoc: { bac: 2, thang, ghiChu: 'giả tương lai' } }] });
+      assert(tl.em[0].ok === false && /tương lai/.test(tl.em[0].loi.chu) && khai(cu).bac === 4, `Hoàn tác nhận ${thang}: ${JSON.stringify(tl)}`);
+    }
     const hh = lo.loHoanTacCapBac(head, cid, { em: rh.em.map((x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })) });
     assert(hh.em.every((x: any) => x.ok) && khai(cu).bac === 2 && !khai(moi), JSON.stringify(hh));
   }));

@@ -56,6 +56,8 @@ export type DongBaiThuong = {
 export type DongViPham = {
   id: number; studentId: number; ten: string; classId: number | null; lop: string; ngay: string; nhom: string; moTa: string;
   nguoiGhi: string | null; trangThai: string; trangThaiT: string | null;
+  /** SUA-GOP-2511 (Việc để sau 25/11): hạn xử lý THẬT = `TrangThaiViPhamKq.han` (cùng hàm với `trangThai` — mốc lớp, Head duyệt + 4) YYYY-MM-DD; null = không có hạn. */
+  han?: string | null;
 };
 /** Ô đếm HV của Ý thức: một dòng một em (cùng cột bảng "Học viên cần chú ý"). `bac` = nhãn bậc hiện tại (dịch ở web). */
 export type DongViPhamEm = { studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number; bac: string | null; lanXuLy: string | null };
