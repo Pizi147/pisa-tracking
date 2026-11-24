@@ -167,6 +167,13 @@ export async function runPrBang0Tests(t: YThucTestKit) {
     chiGiam('<table>', theo(/<table\b/).filter((f) => f !== 'web/src/ui/Bang.tsx'), MIEN_TABLE);
   });
 
+  check('SO-720 · panel bảng: mở sẵn tab của con số (ô "Đạt …" → tab Đạt), bỏ cột Trạng thái hằng số của panel GV, khuôn so720 không chân Đóng', () => {
+    const s = nguon.find((x) => x.f === 'web/src/ui/BangLuotPanel.tsx')?.text ?? '';
+    assert(/const tab = tabChon \?\? \(\/\^Đạt\/\.test\(tieuDe\) && soDat > 0 \? 'dat' : 'chua'\)/.test(s), 'tab mở sẵn theo con số');
+    assert(/cotVcHien = cotVc\.filter\(\(c\) => c\.key !== 'tt'/.test(s), 'bỏ cột Trạng thái hằng số');
+    assert(/rong="so720"/.test(s) && !/chan=\{/.test(s), 'panel bảng dùng khuôn so720, không chân');
+  });
+
   check('BANG-4 · Bang / ODiem: cỡ chữ trong ô ∈ {12, 13, 14} (thang NHẸ HƠN 22/11; 26 chỉ ODiem lon; 16 ODiem to — hồ sơ lớp V5 "điểm to", UI-HO-SO-LOP; 16 số thẻ lưới 375 `theLuoi` — mockup v8 tong-quan `.luoi-so .g`, V8-TQ)', () => {
     for (const f of ['web/src/ui/Bang.tsx', 'web/src/ui/ODiem.tsx']) {
       const s = nguon.find((x) => x.f === f)?.text;
