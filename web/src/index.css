@@ -1595,9 +1595,10 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
    Số 0 / "—" không phải nút → không phủ, ô không bấm. Rê / focus: viền nhấn như ô mẫu GV "Việc của tôi ›". Ngoài @layer để thắng `relative` / `after:*` của `VUNG_BAM_SO`. */
 .ca-o { position: relative; }
-.ca-o :is(button, a).so-chinh { position: static; }
-.ca-o :is(button, a).so-chinh::after { content: ''; position: absolute; inset: 0; width: auto; height: auto; min-width: 0; transform: none; border-radius: inherit; }
+.ca-o.ca-o :is(button, a).so-chinh { position: static; }   /* `.ca-o.ca-o`: thắng `.o-so-hop .so-bam { position: relative }` (SO-TRON 24/11) — Tổng quan nằm trong `.o-so-hop`, lớp phủ cả ô bị co về 32 × 32 quanh số */
+.ca-o.ca-o :is(button, a).so-chinh::after { content: ''; position: absolute; inset: 0; width: auto; height: auto; min-width: 0; transform: none; border-radius: inherit; }
 .ca-o :is(button, a):not(.so-chinh) { position: relative; z-index: 1; }
+.ca-o:has(:is(button, a).so-chinh) { cursor: pointer; }
 .ca-o:has(:is(button, a).so-chinh:hover) { border-color: var(--accent); }
 .ca-o:has(:is(button, a).so-chinh:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -2190,6 +2191,20 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
     .dyc-kv > :nth-child(odd) { margin-top: 6px; }
     .dyc-tc .dyc-hang { display: grid; grid-template-columns: 1fr 1fr; }
     .dyc-hang .btn { min-height: 44px; justify-content: center; }
+  }
+  /* PANEL CHỜ DUYỆT Ở TỔNG QUAN (chủ SP 25/11, khung 720 → danh sách ~680 px: chưa đủ cho bộ cột 8 phần của tab, thừa cho dạng điện thoại): LƯỚI CỐ ĐỊNH cho MỌI dòng —
+     [ô tick 18, luôn giữ chỗ] [nội dung] [ngày 92 phải] [nút 176 phải]. Dòng ĐẦU cao 32 px (tick · tên em · ngày · nút CÙNG TÂM, ngày và nút cùng top);
+     lớp · việc và chip · người gửi là hai dòng dưới, cao cố định 22 / 24 px (dòng có chip và không chip cao bằng nhau). Chỉ trong `.dyc-panel` (HopChoDuyet `gon`). */
+  @container (min-width: 480px) and (max-width: 699px) {
+    .dyc-panel .dyc-dong { grid-template-columns: 18px minmax(0, 1fr) 176px; align-items: start; padding-top: 12px; padding-bottom: 12px; }
+    .dyc-panel .dyc-chon { height: 32px; align-items: center; }
+    .dyc-panel .dyc-mo { min-height: 0; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; row-gap: 2px; }
+    .dyc-panel .dyc-mo > .dyc-ai, .dyc-panel .dyc-mo > .dyc-hn { min-height: 32px; display: flex; align-items: center; }
+    .dyc-panel .dyc-mo > .dyc-hn { justify-content: flex-end; }
+    .dyc-panel .dyc-mo > .dyc-vd { min-height: 22px; line-height: 22px; }   /* không flex: giữ khoảng trắng sau "lớp ·" */
+    .dyc-panel .dyc-mo .dyc-duoi { min-height: 24px; margin-top: 0; align-items: center; }
+    .dyc-panel .dyc-nut { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; height: 32px; }   /* 176 = 2 nút 84 + 8: dòng một nút (Trả lời) vẫn thẳng cột */
+    .dyc-panel .dyc-nut .btn { height: 32px; }
   }
 }
 
