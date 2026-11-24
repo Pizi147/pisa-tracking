@@ -69,6 +69,23 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
     if (m.firstElementChild) ro.observe(m.firstElementChild);
     return () => { m.removeEventListener('scroll', f); ro.disconnect(); };
   }, [dauHoSo, noi]);
+  /* RA-ANH-CUOI (NH9, chủ SP 24/11): nút nổi 375 KHÔNG che hàng tab / hàng chip lọc ở bất kỳ vị trí cuộn nào — chạm `[role=tablist]` hoặc `[data-khong-che]` thì ẩn (vẫn giữ chỗ), hết chạm thì hiện lại. */
+  const [che, setChe] = useState(false);
+  useEffect(() => {
+    const m = document.getElementById('noi-dung');
+    if (noi !== 'noi' || !m) return undefined;
+    const f = () => {
+      const n = neo.current; if (!n) return;
+      const r = n.getBoundingClientRect();
+      setChe([...document.querySelectorAll('[role=tablist], [data-khong-che]')].some((e) => { const x = e.getBoundingClientRect(); return x.width > 0 && x.right > r.left && x.left < r.right && x.bottom > r.top && x.top < r.bottom; }));
+    };
+    f();
+    m.addEventListener('scroll', f, { passive: true });
+    window.addEventListener('resize', f);
+    const ro = new ResizeObserver(f);
+    if (m.firstElementChild) ro.observe(m.firstElementChild);
+    return () => { m.removeEventListener('scroll', f); window.removeEventListener('resize', f); ro.disconnect(); };
+  }, [noi]);
   const [em, setEm] = useState<Em[] | null>(null);
   const { homNay } = useNgayNghiepVu();
   const timEm = useTimEm(lopId, dsEm);
@@ -88,7 +105,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
     : <span className="grid h-[60px] w-[60px] min-w-fit place-items-center whitespace-nowrap px-2 text-sm font-bold">   {/* AU-GON A3-05: chữ dài (EN) nới nút, không cắt */}{t('+ Task')}</span>;
   return (
     <>
-      <span ref={neo} className={noi === 'noi' ? `fixed bottom-[80px] right-4 z-[35] sm:hidden${daCuon ? '' : ' !hidden'}` : 'max-sm:hidden'} data-fab-task={noi === 'noi' && daCuon ? '' : undefined}>
+      <span ref={neo} className={noi === 'noi' ? `fixed bottom-[80px] right-4 z-[35] sm:hidden${daCuon ? '' : ' !hidden'}${che ? ' pointer-events-none invisible' : ''}` : 'max-sm:hidden'} data-fab-task={noi === 'noi' && daCuon ? '' : undefined}>
         <MenuDong nhan={t('Task: {ds}', { ds: dsMuc.map(([, nhan]) => nhan).join(', ') })} mat={mat}   /* AUDIT-1611 A3-04: tên đọc màn = đúng các mục đang có */ tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? `btn ${phu ? '' : 'btn-primary '}!p-0` : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
           muc={dsMuc.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />

@@ -49,8 +49,8 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
         <NutLuat label={t('Cách tính')}>{goiY}</NutLuat>
       </div>
     <div className="table-scroll">
-      <table className={`w-full table-fixed text-sm ${ft ? 'min-w-[480px]' : 'min-w-[560px]'}`}>
-        <colgroup><col className="w-[140px] sm:w-[220px]" />{data.cot.map((c) => <col key={c.key} />)}</colgroup>
+      <table className={`w-full table-fixed text-sm ${ft ? 'sm:min-w-[480px]' : 'sm:min-w-[560px]'}`}>
+        <colgroup><col className="w-[104px] sm:w-[220px]" />{data.cot.map((c) => <col key={c.key} />)}</colgroup>
         <thead>
           <tr>
             <Th>{ft ? t('Kỹ năng') : t('Môn')}</Th>

@@ -265,7 +265,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
 
   return (
     <section className="card overflow-clip">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b px-4 py-2.5 max-sm:pr-[72px]" style={{ borderColor: 'var(--line)' }}>
+      <div data-khong-che="" className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
         {cachXem}
         {cachXem && <span aria-hidden className="h-6 w-px bg-[color:var(--line-strong)] max-sm:hidden" />}
         {(['tat-ca', 'sos', 'thieu'] as const).map((k) => (
@@ -514,7 +514,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
 /** Chip lọc của thẻ bảng hồ sơ lớp (FT · lớp thường): "Tất cả 18" — số đậm. */
 export function ChipLoc({ chon, so, onBam, children }: { chon: boolean; so: number; onBam: () => void; children: ReactNode }) {
   return (
-    <button type="button" aria-pressed={chon} onClick={onBam}
+    <button type="button" data-khong-che="" aria-pressed={chon} onClick={onBam}
       className={`relative h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-0.5 max-sm:after:content-[''] ${chon ? CHIP_CHON : CHIP_THUONG}`}>
       {children} <span className="font-bold tabular-nums">{so}</span>
     </button>

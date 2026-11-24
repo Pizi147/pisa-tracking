@@ -278,7 +278,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
     <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dich(dotHien!.nhan)}`}>
       {congCu}
       {/* BANG-3: bảng chung `Bang` (thẻ 375 riêng ở trên). Đầu cột hai dòng: mã phần + GV (`.bang-bc .bang-chu-thich` xuống dòng). */}
-      <div className="bang-bc">
+      <div className="bang-bc -mx-4 -mb-4 overflow-clip rounded-b-[inherit]">
         <Bang ten={`${t('Báo cáo PH')} · ${dich(dotHien!.nhan)}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
           cot={[
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },

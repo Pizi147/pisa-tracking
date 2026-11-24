@@ -76,7 +76,7 @@ export function CanLamEm({ x, homNay, onXem, hanDuoi = false, laQl = false }: {
 /** Chip lọc Lịch sử (mockup `.lua`): mỗi mục một nút viền riêng, có số; mục chọn viền nhấn + nền nhấn nhạt. */
 export function ChipLoc<K extends string>({ muc, value, onChange, ariaLabel }: { muc: { key: K; nhan: string; so: number }[]; value: K; onChange: (k: K) => void; ariaLabel: string }) {
   return (
-    <div role="group" aria-label={ariaLabel} className="flex flex-wrap gap-2">
+    <div role="group" data-khong-che="" aria-label={ariaLabel} className="flex flex-wrap gap-2">
       {muc.map((m) => {
         const chon = m.key === value;
         return (

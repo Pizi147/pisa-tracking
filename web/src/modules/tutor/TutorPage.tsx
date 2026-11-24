@@ -121,12 +121,12 @@ export default function TutorPage() {
 
   const NHOM = t('Có / có trả lời');
   const cot: CotBang[] = [
-    { key: 'ten', nhan: t('Người dạy'), kieu: 'ten', rong: 240 },
+    { key: 'ten', nhan: t('Người dạy'), kieu: 'ten', rong: 220 },
     { key: 'noi', nhan: t('Nơi dạy'), kieu: 'chu', rong: 110 },
-    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 90 },
-    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 80, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
-    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 104 })),
-    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 90 },
+    { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu', rong: 110 },
+    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 110, goiY: t('Tổng số buổi đã ghi trong khoảng (một dòng gộp 2 buổi đếm 2).') },
+    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'diem-ti-le', nhom: NHOM, rong: 110 })),
+    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 110 },
     { key: 'kl', nhan: t('Kết luận / lý do'), kieu: 'chu', linhHoat: true, rong: 220 },
   ];
   const oCua = (d: DongTutor, c: CotBang): ReactNode => {
