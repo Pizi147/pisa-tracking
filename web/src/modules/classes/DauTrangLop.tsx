@@ -286,7 +286,9 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
         </>} />
       {data.status === 'finished' && (
         /* HL-10 (Q4): Quản lý của lớp vẫn sửa điểm (máy chủ `kiemLopKetThuc`) — "chỉ xem" chỉ cho người khác. */
-        <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? '' : ` — ${t('chỉ xem')}`}</DaiChiXem>
+        /* N71 (chủ SP 25/11): người xem còn việc ở lớp → nói rõ việc đó vẫn làm được (thanh Việc cần làm ngay dưới), phần khác chỉ xem. */
+        <DaiChiXem>{t('Lớp đã kết thúc')}{data.finishedAt ? ` ${tuanLich(data.finishedAt, homNay)}` : ''}{data.viewer.coTheMoLaiLop ? ''
+          : (viec.data?.dongToi ?? viec.data?.cuaToi ?? []).length ? ` — ${t('chỉ xem; việc còn của bạn vẫn làm được')}` : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
 
       {/* ② GV theo kỹ năng MỘT dòng (bấm mở bản đủ — tên GV ở bản đủ là link hồ sơ GV). */}

@@ -30,7 +30,7 @@ function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
   const c = loadCase(goc.case_id);
   const chuaChay = goc.preset === 1 && !goc.confirmed_at && goc.status === 'planned';
   if (chuaChay) caseAccess(goc.case_id).requireEdit(p, 'Bạn chỉ đề xuất đổi PA của kỹ năng mình được phân công (hoặc là Head trong phạm vi).');
-  else kiemQuyenPa(p, goc, c, 'Bạn không có quyền đề xuất đổi PA này.');
+  else kiemQuyenPa(p, goc, c, 'Bạn không có quyền đề xuất đổi PA này.', false);
   if (c.status === 'done') throw badRequest('Case đã đóng — không đề xuất đổi PA được.');
   if (!laPaMacDinh(goc)) throw badRequest('Chỉ PA mặc định (quy chế, Bổ trợ) mới đề xuất đổi qua Head — PA khác Điều chỉnh / Thay trực tiếp.');
   if (goc.status !== 'planned' && goc.status !== 'started') throw badRequest('PA này đã kết thúc — không đổi được.');

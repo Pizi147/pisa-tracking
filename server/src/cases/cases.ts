@@ -3,7 +3,7 @@ import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
-import { mucPaCua, maNhomHopLe, cauHinh,
+import { mucPaCua, maNhomHopLe, cauHinh, mondayOfDate,
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
   INTERVENTION_STATUS_LABEL, shortDate,
   FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
@@ -82,7 +82,8 @@ const NAP_CASE = {
       AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`],
   nhom: ['case-nhom:', `SELECT case_id, taxonomy_code, taxonomy_version, role, observation FROM case_issues WHERE case_id IN (${DS_JSON}) AND role IN ('primary', 'secondary')
                ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`],
-  paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
+  paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name,
+         ${COT_GV_CU_NGAY('iv', '(SELECT x.student_id FROM sos_cases x WHERE x.id = iv.case_id)')} AS gv_cu_ngay FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
         WHERE iv.case_id IN (${DS_JSON}) AND iv.status != 'cancelled'
         ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`],
@@ -203,10 +204,10 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   decision?: string | null;
   /** Ghi chi tiết theo thành phần của kỹ năng Case (mục 9.3). TUỲ CHỌN. */
   metrics?: unknown;
-}) {
+}, /** N71: đóng kèm lần ghi kết quả cuối của GV cũ (`updateResult`, quyền đã kiểm ở đó) — PA khác còn mở khép luôn, không hỏi. */ o: { gvCu?: true } = {}) {
   const conn = db();
   const c = loadCase(caseId);
-  if (!canCloseCase(p, c)) {
+  if (!o.gvCu && !canCloseCase(p, c)) {
     throw forbidden('Chỉ Head, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
@@ -257,7 +258,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * của chúng tự đóng. Chụp ghi đảo để Mở lại Case trả các PA + thẻ về như cũ.
    */
   const paMo = conn.prepare(`SELECT id, preset FROM case_interventions WHERE case_id = ? AND status NOT IN ('cancelled', 'completed')`).all(caseId) as any[];
-  if (paMo.length) {
+  if (paMo.length && !o.gvCu) {
     if (paMo.some((r) => r.preset === 1)) canXacNhan('Còn {n} PA chưa khép, có PA theo quy chế — kết thúc sớm các PA đó rồi hoàn thành Case?', { n: paMo.length }, 'Kết thúc PA và hoàn thành');
     else canXacNhan('Còn {n} PA chưa khép — kết thúc các PA đó rồi hoàn thành Case?', { n: paMo.length }, 'Kết thúc PA và hoàn thành');
   }
@@ -2439,7 +2440,7 @@ export function caseDetail(p: Principal, caseId: number) {
   const interventions = (conn
     .prepare(
       `SELECT iv.*, u.full_name AS performer_account, r.full_name AS recorder_name,
-              ap.full_name AS approver_name
+              ap.full_name AS approver_name, ${COT_GV_CU_NGAY('iv', '(SELECT x.student_id FROM sos_cases x WHERE x.id = iv.case_id)')} AS gv_cu_ngay
          FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id
          LEFT JOIN users r ON r.id = iv.recorded_by
@@ -2447,7 +2448,8 @@ export function caseDetail(p: Principal, caseId: number) {
         WHERE iv.case_id = ? ORDER BY
           COALESCE(iv.completed_date, iv.started_date, iv.planned_date, iv.created_at), iv.id`,
     )
-    .all(caseId) as any[]).map((iv, _i, _a, ghi = giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c)) => ({
+    .all(caseId) as any[]).map((iv, _i, ds, vai = giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c),
+      gvCuCuoi = !vai && !!hanGvCuGhiPa(p, iv), ghi = vai || gvCuCuoi) => ({   // N71: GV cũ ghi nốt = lần cuối (PA khép; Case hoàn thành khi `gvCuDongCase`)
       id: iv.id, kind: iv.kind, description: iv.description, status: iv.status,
       /** PR-PA (§8): Số buổi của PA (null = không đếm) và Đã dạy (tổng Số buổi tuần này). */
       soBuoi: (iv.so_buoi ?? null) as number | null,
@@ -2522,7 +2524,12 @@ export function caseDetail(p: Principal, caseId: number) {
       mocChu: iv.preset === 1
         ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKeCua(iv), daXacNhan: !!iv.confirmed_at, mtCuoi: iv.moc_quy_che === 'until_exam' ? mtCuoiNho(c.cycle_id) : null }, demoToday())
         : null,
-      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, demoToday()),
+      lanCuoi: (iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, demoToday()))
+        || gvCuCuoi,
+      /** N71: lần ghi tới của GV cũ (PA tự tạo, em vừa chuyển lớp) là lần cuối — PA kết thúc. */
+      gvCuCuoi,
+      /** N71: … và Case hoàn thành theo (Case GV báo, PA cuối còn mở) — cùng điều kiện `gvCuDongCase` lúc lưu (trừ "Chưa đủ dữ liệu": form tự xét). */
+      gvCuDongCase: gvCuCuoi && c.origin_kind === 'teacher_report' && !ds.some((x: any) => x.id !== iv.id && x.status !== 'cancelled' && x.status !== 'completed'),
       approvalState: iv.approval_state as string | null,
       approvalDue: iv.approval_due as string | null,
       approvalNote: iv.approval_note as string | null,
@@ -3718,7 +3725,8 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
       choXacNhan: iv.kind !== 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && !choDoiPa(iv),
       chuaChay: iv.kind === 'bo_tro' && iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned',
       mocChu: iv.preset === 1 ? mocChuPa({ span: iv.moc_quy_che ?? null, followupDue: iv.followup_due ?? null, mtKe: mtKe(iv), daXacNhan: !!iv.confirmed_at, mtCuoi: iv.moc_quy_che === 'until_exam' ? mtCuoiNho(c.cycle_id) : null }, today) : null,
-      lanCuoi: iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today),
+      lanCuoi: (iv.status === 'started' && laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today))
+        || (giuKq.get(iv.id)?.id !== p.userId && !quyenPaTheoVaiTro(p, iv, c) && !!hanGvCuGhiPa(p, iv)),   // N71: GV cũ ghi = lần cuối
       performer: iv.performer_user_name ?? iv.performer_name ?? null,
       /** PR-PA (§8): Số buổi + Đã dạy (tổng Số buổi tuần này, từ `follows` đã nạp) — dòng phụ "3/10 buổi" ở bảng kỹ năng. */
       soBuoi: (iv.so_buoi ?? null) as number | null,
@@ -3727,7 +3735,10 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
       nguoiId: giuKq.get(iv.id)?.id ?? null,
       nguoiTen: giuKq.get(iv.id)?.ten ?? null,
       /** PR-PA: người xem ghi được Kết quả PA này không — cùng luật `kiemQuyenPa` (người giữ việc hoặc quyền theo vai trò). */
-      ghiDuoc: giuKq.get(iv.id)?.id === p.userId || quyenPaTheoVaiTro(p, iv, c),
+      ghiDuoc: giuKq.get(iv.id)?.id === p.userId || quyenPaTheoVaiTro(p, iv, c) || !!hanGvCuGhiPa(p, iv),   // N71: GV cũ ghi nốt tới T3 tuần sau
+      /** N71: PA tự tạo, em vừa chuyển lớp — Người dạy (GV cũ) giữ việc Kết quả tới `han` (thứ Ba tuần sau ngày chuyển). Chỉ hỏi DB khi Người dạy ≠ người giữ việc. */
+      gvCu: iv.performer_user_id && giuKq.get(iv.id)?.id !== iv.performer_user_id && hanGvCuCuaPa(iv)
+        ? { nguoiId: iv.performer_user_id as number, han: hanGvCuCuaPa(iv)! } : null,
       nhom: (iv.nhom_bo_tro ?? null) as string | null,
       status: iv.status as string,
       statusLabel: INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status,
@@ -4050,7 +4061,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  kiemQuyenPa(p, iv, c);
+  const duong = kiemQuyenPa(p, iv, c);
   /* RKC-2b ③ (chủ SP 11/11): PA quy chế chờ xác nhận — ghi Kết quả lần đầu = Xác nhận PA (nguyên văn nội dung PA, bắt đầu từ ngày quan sát), cùng giao
      dịch: lần ghi lỗi thì PA vẫn chờ. Quyền, luật, nhật ký của Xác nhận PA (`nguon: 'ghi_ket_qua'`). */
   if (iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && iv.approval_state !== 'pending' && !choDoiPa(iv)) {   // PA chờ QL duyệt đổi PA: giữ chặn
@@ -4095,7 +4106,10 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * quả cuối": bỏ qua quyết định, PA khép `het_moc` — không tự đóng im lặng. OV-13a (C): kết thúc sớm là việc của GVCN / QL (`ketThucPaQuyChe`, có lý do).
    */
   const batBuoc = iv.preset === 1;
-  const lanCuoi = laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, observedOn);
+  /* N71 (chủ SP 25/11: "case tự tạo ghi kết quả kia là lần cuối luôn, không thêm gì nữa kết thúc case luôn"): GV cũ ghi trong hạn (thứ Ba tuần sau ngày em chuyển)
+     = lần ghi CUỐI — PA khép, Case hoàn thành ngay trong cùng giao dịch (`closeCaseOutcome`, Mở lại Case như mọi Case đã hoàn thành). */
+  const gvCuCuoi = duong === 'gv-cu';   // ghi được CHỈ nhờ hạn GV cũ (`kiemQuyenPa`) — 0 câu thêm
+  const lanCuoi = gvCuCuoi || laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, observedOn);
   /* RKC-2c (PTA 07/11, luật chung: GV theo luật, QL / Admin vượt kèm xác nhận nêu luật + lịch sử): Quản lý trong phạm vi Case vượt được. */
   const qlVuot = can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id });
   if (batBuoc && !lanCuoi) {
@@ -4224,7 +4238,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
                   updated_at = ?
             WHERE id = ?`,
         )
-        .run(completedOn, lanCuoi ? 'het_moc' : 'done', completedOn, performerUserId ?? null, performerNameToSave ?? null,
+        .run(completedOn, lanCuoi && !gvCuCuoi ? 'het_moc' : 'done', completedOn, performerUserId ?? null, performerNameToSave ?? null,
              nowIso(), interventionId);
     } else if (nextStep === 'monitor' || nextStep === 'continue' || nextStep === 'adjust' || nextStep === 'ask_manager') {
       /*
@@ -4320,6 +4334,18 @@ export function updateResult(p: Principal, interventionId: number, input: {
     });
     /* NHAP-KQ-PA: chốt kết quả kỳ này → bỏ nháp (Sửa lần ghi cũ — `khongTraCase` — không đụng nháp của kỳ đang chạy). */
     if (!opts.khongTraCase) conn.prepare('UPDATE case_interventions SET nhap_ket_qua = NULL WHERE id = ? AND nhap_ket_qua IS NOT NULL').run(interventionId);
+    /*
+     * N71: lần ghi cuối của GV cũ — PA khép (ở trên). Case hoàn thành CHỈ khi Case GV báo (`teacher_report`, không SOS / quy chế) VÀ PA này là PA cuối còn mở VÀ kết quả
+     * có mức Case mặc định (`mucCaseTuKetQuaPa`, như form Hoàn thành Case); còn lại Case + PA khác để chủ Case. Đóng thì báo chủ Case mới.
+     */
+    const mucDong = gvCuCuoi ? gvCuDongCase(c, iv.case_id, interventionId, input.outcome) as CaseOutcome | null : null;
+    if (mucDong) {
+      closeCaseOutcome(p, iv.case_id, { outcome: mucDong, note, closedOn: observedOn }, { gvCu: true });
+      if (c.owner_user_id && c.owner_user_id !== p.userId) {
+        notify({ userId: c.owner_user_id, kind: 'case_dong_gv', title: `${p.fullName} ghi kết quả cuối, Case ${caseTitleOf(c)} đã hoàn thành`,
+          entityType: 'sos_case', entityId: iv.case_id, dedupKey: `case_dong_gv_cu:${iv.case_id}` });
+      }
+    }
     return opts.khongTraCase ? null : caseDetail(p, iv.case_id);
   });
 }
@@ -4979,6 +5005,49 @@ const giuCuaCase = (c: any, ivs: readonly any[]) => nguoiGiuKetQua(ivs.map((iv) 
   id: iv.id, topic: c.topic ?? null, nhomBoTro: iv.nhom_bo_tro ?? null, classId: c.class_id ?? null, ownerUserId: c.owner_user_id ?? null,
 })), demoToday());
 const laBoTro = (iv: any) => iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi';
+/**
+ * N71 (chủ SP 25/11: "case tự tạo thì cho thêm sang đến t3 tuần sau ghi nốt kết quả cuối"): PA GV TỰ TẠO (không theo quy chế, không bổ trợ) đang chạy mà em vừa
+ * chuyển lớp — Người dạy (GV cũ) giữ việc "Ghi kết quả PA" + quyền ghi tới THỨ BA TUẦN SAU ngày chuyển (`hanGvCuGhiPa`), ghi một lần là xong; sau đó việc về chủ Case
+ * mới như cũ (M-04). PA theo quy chế / bổ trợ đi luật riêng (`quyenBoTro`, GV-CU-BO-TRO). Ngày chuyển = ngày bắt đầu ghi danh đang học, khi có ghi danh khác rời
+ * đúng ngày đó. Một câu nhỏ, chỉ khi người xem là Người dạy của PA tự tạo đang chạy.
+ */
+export const hanGvCuTuNgayChuyen = (ngayChuyen: string): string => addDays(mondayOfDate(ngayChuyen), 8);
+/**
+ * Ngày chuyển (null = không thuộc luật): em đang học lớp mới từ ngày đó, ghi danh lớp CŨ rời đúng ngày đó (`transferred` / `completed`) và lớp cũ là lớp Người dạy
+ * có phân công; Người dạy chưa ghi kết quả từ ngày đó. Cùng câu cho quyền (`hanGvCuCuaPa`), Công việc 2b', bảng kỹ năng, Ngăn Case, chỉ số. `sid` = biểu thức id em.
+ * M-04 (chuyển lớp) chỉ đổi chủ Case, không đổi `performer_user_id` — Người dạy giữ nguyên (phép kiểm N71).
+ */
+export function SQL_GV_CU_GHI_PA(iv: string, sid: string): string { return `SELECT substr(cur.started_at, 1, 10) AS ngay FROM enrollments cur
+   WHERE cur.student_id = ${sid} AND cur.status = 'active'
+     AND EXISTS (SELECT 1 FROM enrollments x WHERE x.student_id = cur.student_id AND x.id != cur.id AND x.status IN ('transferred', 'completed')
+                   AND substr(x.ended_at, 1, 10) = substr(cur.started_at, 1, 10)
+                   AND EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = x.class_id AND ta.user_id = ${iv}.performer_user_id AND ta.status = 'active'))
+     AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = ${iv}.id AND substr(f.created_at, 1, 10) >= substr(cur.started_at, 1, 10))
+   ORDER BY cur.id DESC LIMIT 1`; }
+/** Cột `gv_cu_ngay` cho câu đọc PA sẵn có (0 câu thêm) — chỉ tính ở PA tự tạo đang chạy có Người dạy. */
+export function COT_GV_CU_NGAY(iv: string, sid: string): string { return `CASE WHEN ${iv}.status IN ('planned', 'started') AND COALESCE(${iv}.preset, 0) != 1
+  AND ${iv}.kind NOT IN ('bo_tro', 'bo_tro_mien_phi') AND ${iv}.performer_user_id IS NOT NULL THEN (${SQL_GV_CU_GHI_PA(iv, sid)}) END` }
+/** Hạn GV cũ (Người dạy) của MỘT PA, không theo người xem — null = không trong hạn / không thuộc luật. Dòng có cột `gv_cu_ngay` thì không hỏi DB. */
+export function hanGvCuCuaPa(iv: any, homNay = demoToday()): string | null {
+  if (!iv.performer_user_id || iv.preset === 1 || laBoTro(iv) || (iv.status !== 'planned' && iv.status !== 'started')) return null;
+  const ngay = ('gv_cu_ngay' in iv ? iv.gv_cu_ngay : nho(`gv-cu-pa:${iv.id}`, () => (db().prepare(`SELECT (${SQL_GV_CU_GHI_PA('iv', 'sc.student_id')}) AS ngay FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`)
+    .get(iv.id) as any)?.ngay ?? null)) as string | null;
+  if (!ngay) return null;
+  const han = hanGvCuTuNgayChuyen(ngay);
+  return homNay <= han ? han : null;
+}
+export const hanGvCuGhiPa = (p: Principal, iv: any, homNay = demoToday()): string | null => (iv.performer_user_id === p.userId ? hanGvCuCuaPa(iv, homNay) : null);
+/** Mức Case mặc định từ kết quả PA — cùng luật form Hoàn thành Case (nhãn trùng nhau; "Chưa đủ dữ liệu" không có mức → null). */
+export const mucCaseTuKetQuaPa = (outcome: string): CaseOutcome | null =>
+  CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === FOLLOWUP_OUTCOME_LABEL[outcome as keyof typeof FOLLOWUP_OUTCOME_LABEL]) ?? null;
+/** N71: lần ghi cuối của GV cũ có hoàn thành Case không (`outcome` undefined = chưa chọn: chỉ xét Case + PA). Một câu đếm PA còn mở khác. */
+export function gvCuDongCase(c: any, caseId: number, paId: number, outcome?: string): CaseOutcome | null | true {
+  if (c.origin_kind !== 'teacher_report' || c.status === 'done') return null;
+  if (outcome !== undefined && !mucCaseTuKetQuaPa(outcome)) return null;
+  const khac = db().prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND id != ? AND status NOT IN ('cancelled', 'completed') LIMIT 1`).get(caseId, paId);
+  if (khac) return null;
+  return outcome === undefined ? true : mucCaseTuKetQuaPa(outcome);
+}
 /** PR-LT2a (Q9): PA Bổ trợ do người dạy (mặc định GVCN cho FOU) ghi — `quyenBoTro`; PA khác theo kỹ năng (C02). */
 const quyenPaTheoVaiTro = (p: Principal, iv: any, c: any) => laBoTro(iv)
   ? quyenBoTro(p, { ...iv, ctx: { classId: c.class_id ?? null, studentId: c.eff_student_id ?? null, topic: c.topic ?? null } }) || laNguoiGiuMiniTestCuaPa(p, iv)
@@ -5009,12 +5078,13 @@ export function ghiDuocPaMany(p: Principal, rows: readonly {
   const giuChay = nguoiGiuKetQua(dangChay, ngay);
   const giuCase = new Set(dangChay.filter((d) => giuChay.get(d.id) === p.userId).map((d) => d.caseId));
   const xem = (r: typeof rows[number]) => giuCase.has(r.case_id) || can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.class_id, studentId: r.eff_student_id });
-  return new Map(rows.map((r) => [r.id, xem(r) && (giu.get(r.id) === p.userId || quyenPaTheoVaiTro(p, r, r))]));
+  return new Map(rows.map((r) => [r.id, xem(r) && (giu.get(r.id) === p.userId || quyenPaTheoVaiTro(p, r, r) || !!hanGvCuGhiPa(p, r))]));   // N71
 }
 
 /** PR-PA: quyền ghi Kết quả / Sửa PA của MỘT PA — một chỗ. Người giữ việc (§8) luôn ghi được, dù không qua quyền theo vai trò. */
-export function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.') {
-  if (quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId) return;
+export function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không có quyền cập nhật kết quả của Case này.', /** N71: chỉ đường GHI KẾT QUẢ (không Sửa / Đổi PA). */ ketQua = true) {
+  if (quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId) return 'thuong' as const;
+  if (ketQua && hanGvCuGhiPa(p, iv)) return 'gv-cu' as const;   // N71: GV cũ ghi nốt kết quả tới T3 tuần sau ngày em chuyển
   if (laBoTro(iv)) throw forbidden(msg);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), msg);   // ném kèm gợi ý quyền
 }
@@ -5041,7 +5111,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
-  kiemQuyenPa(p, iv, loadCase(iv.case_id), 'Bạn không có quyền sửa PA này.');
+  kiemQuyenPa(p, iv, loadCase(iv.case_id), 'Bạn không có quyền sửa PA này.', false);
   /* RKC-2b: PA đã kết thúc vẫn sửa được nội dung / số buổi / người (ghi `sua_pa` + nhật ký) — chỉ PA chưa chạy (chờ xác nhận / chờ duyệt, N3) và PA đã huỷ còn chặn. */
   if (iv.status !== 'completed') chanPaChuaChay(iv, 'PA theo quy chế chưa xác nhận — sửa ngay trong Xác nhận PA.');
   if (input.kind !== undefined && input.kind !== iv.kind) throw badRequest('Không đổi được Loại PA — đổi loại thì chọn Thay PA.');

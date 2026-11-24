@@ -180,7 +180,7 @@ export default function ClassOverviewPage() {
     /* TD-QUET (đề xuất 2): các đường này đi MỘT lời gọi `/classes/:id/ho-so` (cùng điều kiện, cùng URL lẻ cho khối con). */
     taiTruocGop(`/classes/${data.id}/ho-so`, {
       ...(xemXl ? { xetLai: duongXetLai(data.id) } : {}),
-      ...(trangChinh && !daKetThuc && !laGvThuan(session?.roles) ? { viecCuaToi: duongViecLop(data.id) } : {}),   // AUDIT-1611 gói 13: GV thuần dựng từ /my-work đã nạp
+      ...(trangChinh && !laGvThuan(session?.roles) ? { viecCuaToi: duongViecLop(data.id) } : {}),   // N71: cả lớp đã kết thúc   // AUDIT-1611 gói 13: GV thuần dựng từ /my-work đã nạp
       ...(trangChinh && (data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop) ? { xoaKetThuc: `/classes/${data.id}/xoa-ket-thuc` } : {}),
       ...(trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem' ? { cases: `/cases?classId=${data.id}` } : {}),
     });
@@ -219,7 +219,7 @@ export default function ClassOverviewPage() {
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3 max-sm:pb-[100px]">
-      <DauTrangLop data={data} onViec={moViec} onDoiGv={(k) => { setOPc(k); moViec('phan-cong'); }} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
+      <DauTrangLop data={data} onViec={moViec} onDoiGv={(k) => { setOPc(k); moViec('phan-cong'); }} thanhViec={/* N71: lớp đã kết thúc vẫn hiện việc còn của người xem */ <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
