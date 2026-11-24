@@ -3432,6 +3432,7 @@ api.post('/admin/accounts/:id/decline', requireAuth, wrap((req) => accountSvc.de
 api.put('/admin/accounts/:id/roles', requireAuth, wrap((req) => accountSvc.setRoles(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.roles) ? req.body.roles : [],
 )));
+api.post('/admin/accounts/:id/roles/hoan-tac', requireAuth, wrap((req) => accountSvc.hoanTacDoiVai(principalOf(req), Number(req.params.id), req.body?.nhatKyId)));   // E-4
 api.put('/admin/accounts/:id/skills', requireAuth, wrap((req) => accountSvc.setUserSkills(
   principalOf(req), Number(req.params.id), Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [],
 )));

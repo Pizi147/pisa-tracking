@@ -55,6 +55,7 @@ export const EN_TUB = {
   'Xoá nhận xét?': 'Delete the comment?',
   'Đã lưu danh sách: {a} mới · {b} cập nhật': (b) => `List saved: ${b.a} new · ${b.b} updated`,
   'Đã hoàn tác: xoá {a} · khôi phục {b}': (b) => `Undone: ${b.a} removed · ${b.b} restored`,
+  'Không trả lại được (SĐT cũ đã thuộc tutor khác): {ds}': (b) => `Could not restore (old phone now belongs to another tutor): ${b.ds}`,
   'giữ {c} (đã có buổi hoặc đã sửa tiếp)': (b) => `${b.c} kept (already used or edited since)`,
   'Không đọc được dữ liệu — thử lại.': 'Could not read the data — try again.',
   'trang tính "{ten}"': (b) => `sheet "${b.ten}"`,

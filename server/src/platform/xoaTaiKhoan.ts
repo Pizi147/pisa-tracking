@@ -288,6 +288,8 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
   try { truoc = JSON.parse(nk?.before_json ?? '{}'); } catch { truoc = {}; }
   const canhBao: string[] = [];
   return tx(() => {
+    /* Kiểm lại TRONG giao dịch: hai Quản trị bấm Khôi phục cùng lúc → người sau 400, không trả việc hai lần. */
+    if ((conn.prepare('SELECT status FROM users WHERE id = ?').get(userId) as any)?.status !== 'deleted') throw badRequest('Tài khoản này chưa bị xoá.');
     let email: string = u.email;
     if (truoc.email) {
       const trung = conn.prepare(`SELECT 1 FROM users WHERE lower(email) = lower(?) AND id != ? LIMIT 1`).get(truoc.email, userId);

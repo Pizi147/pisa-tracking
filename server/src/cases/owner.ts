@@ -452,22 +452,22 @@ export function chuyenViecKhiDoi(o: {
   }
   return kq;
 }
+export type MucChuyen = { k: 'c' | 'p' | 't' | 'x'; id: number; moi: number; luc: string; caseId: number | null };
+export type KqChuyen = { soCase: number; soPa: number; soTinHieu: number; soXuLy: number; ds: MucChuyen[] };
 /**
  * N69 (chủ SP 24/11): người NGHỈ (xoá tài khoản · gỡ hết vai) còn đứng tên → TRONG tx của lần xoá / gỡ vai, việc còn mở người đó đứng tên tự chuyển về người theo luật:
  *  · Case chưa đóng (chủ) và PA `planned | started` (người thực hiện) → GV đúng kỹ năng của Case ở lớp em ĐANG HỌC → GVCN lớp đó (`chonChuCase`, luật tạo Case).
  *  · Tín hiệu chờ xác minh (`case_signals` pending) → cùng luật theo hạng mục gợi ý · lần xử lý `preparing` (cũ) / `nhap` (đề xuất đang soạn, v4) → GVCN lớp em đang học.
  * Không ai hợp lệ (em không đang học, lớp chưa ai) → để nguyên = "chưa có người" (`KHONG_CHU_SQL` — Head nhận việc chọn người, như R1). Lịch sử: Case / PA
- * `sos_case_history` (owner_user_id · pa_performer), tín hiệu / lần xử lý nhật ký thao tác. Mỗi người nhận MỘT thông báo. Khôi phục tài khoản KHÔNG tự trả lại.
+ * `sos_case_history` (owner_user_id · pa_performer), tín hiệu / lần xử lý nhật ký thao tác. Mỗi người nhận MỘT thông báo.
+ * E-4 (25/11): `chiNhanhIds` = chỉ việc của em thuộc các chi nhánh người đó vừa mất vai. E-7 (25/11): Khôi phục tài khoản / Hoàn tác đổi vai ≤ 15 phút trả lại việc chưa ai sửa tiếp (`traLaiViecNguoiNghi`).
  * ponytail: một câu lớp đang học mỗi em (đường Quản trị hiếm, ít dòng) — gom lô nếu người nghỉ đứng tên hàng trăm việc.
  */
-export type MucChuyen = { k: 'c' | 'p' | 't' | 'x'; id: number; moi: number; luc: string; caseId: number | null };
-export type KqChuyen = { soCase: number; soPa: number; soTinHieu: number; soXuLy: number; ds: MucChuyen[] };
 export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIso(), o: { chiNhanhIds?: readonly number[] } = {}): KqChuyen {
   const conn = db();
   /* E-4 (N69): mất vai ở MỘT chi nhánh (còn vai nơi khác) → chỉ việc của em thuộc chi nhánh vừa mất; không truyền = mọi chi nhánh (gỡ hết vai / xoá tài khoản). */
   const cn = o.chiNhanhIds ? new Set(o.chiNhanhIds) : null;
-  const chiNhanhEm = (sid: number | null): number | null => (sid ? (conn.prepare(`SELECT COALESCE(c.branch_id, s.branch_id) AS b FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-    LEFT JOIN classes c ON c.id = e.class_id WHERE s.id = ? LIMIT 1`).get(sid) as any)?.b ?? null : null);
+  const chiNhanhCuaEm = new Map<number, number | null>();   // nạp MỘT câu sau khi đọc `rows` (không N+1)
   const pc = new Map<number, PhanCong[]>();
   const theoLuat = (sid: number | null, category: string | null): number | null => {
     const lop = sid ? activeClassOf(sid) : null;
@@ -491,9 +491,13 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
      UNION ALL SELECT 'x', id, NULL, NULL, student_id FROM discipline_measures WHERE owner_user_id = ?1 AND status IN ('preparing', 'nhap')
      ORDER BY 1, 2`,
   ).all(userId) as { k: 'c' | 'p' | 't' | 'x'; id: number; case_id: number | null; category: string | null; sid: number | null }[];
+  if (cn && rows.length) {
+    for (const x of conn.prepare(`SELECT s.id, COALESCE(c.branch_id, s.branch_id) AS b FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      LEFT JOIN classes c ON c.id = e.class_id WHERE s.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(rows.map((r) => r.sid).filter((x): x is number => x !== null))])) as { id: number; b: number | null }[]) chiNhanhCuaEm.set(x.id, x.b);
+  }
   const ls = rows.length ? conn.prepare('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)') : null;
   for (const r of rows) {
-    if (cn && !cn.has(chiNhanhEm(r.sid) as number)) continue;   // E-4: em không thuộc chi nhánh vừa mất vai
+    if (cn && !cn.has(chiNhanhCuaEm.get(r.sid ?? 0) as number)) continue;   // E-4: em không thuộc chi nhánh vừa mất vai
     if (r.k === 'x') {
       const g = r.sid ? gvcnCuaEm(r.sid, demoToday()).gvcn : null;
       const moi = g !== userId ? g : null;
@@ -527,25 +531,59 @@ export function chuyenViecNguoiNghi(userId: number, actorId: number, luc = nowIs
 }
 
 /**
- * E-7 (N69, chủ SP 25/11): Khôi phục tài khoản TRONG `HOAN_TAC_PHUT_NGUOI_NGHI` phút sau khi xoá trả lại các việc đã chuyển mà CHƯA AI sửa tiếp (Case / PA: `updated_at` còn đúng
- * mốc chuyển và người giữ còn là người nhận; tín hiệu / lần xử lý: người giữ còn là người nhận, còn đang chờ). Việc đã bị sửa tiếp giữ nguyên. Trả { traLai, giu } để báo.
+ * E-7 (N69, chủ SP 25/11): Khôi phục tài khoản / Hoàn tác đổi vai TRONG `HOAN_TAC_PHUT_NGUOI_NGHI` phút trả lại các việc đã chuyển mà CHƯA AI sửa tiếp:
+ * Case / PA — `updated_at` còn đúng mốc chuyển và người giữ còn là người nhận; tín hiệu / lần xử lý (không có `updated_at`) — dòng nhật ký MỚI NHẤT của chính nó còn
+ * là lần chuyển (`signal.owner_assign` / `measure.owner_assign`), nghĩa là chưa ai thao tác thêm. Việc đã bị sửa tiếp giữ nguyên người mới. Lịch sử PA ghi TÊN (như lúc chuyển);
+ * mỗi người bị lấy lại việc nhận MỘT thông báo. Trả { traLai, giu }.
  */
 export const HOAN_TAC_PHUT_NGUOI_NGHI = 15;
+const NK_CHUYEN: Record<'t' | 'x', { loai: string; hanhDong: string }> = {
+  t: { loai: 'case_signal', hanhDong: 'signal.owner_assign' },
+  x: { loai: 'discipline_measure', hanhDong: 'measure.owner_assign' },
+};
 export function traLaiViecNguoiNghi(userId: number, actorId: number, ds: readonly MucChuyen[], luc = nowIso()): { traLai: number; giu: number } {
   const conn = db();
+  const ten = (id: number) => (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? '—';
+  const tenCache = new Map<number, string>();
+  const tenCua = (id: number) => tenCache.get(id) ?? (tenCache.set(id, ten(id)), tenCache.get(id)!);
   let traLai = 0;
+  const lay = new Map<number, number>();   // người đang giữ → số việc lấy lại
   for (const m of ds) {
     let doi = 0;
     if (m.k === 'c') doi = conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id = ? AND updated_at = ?').run(userId, luc, m.id, m.moi, m.luc).changes as number;
     else if (m.k === 'p') doi = conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, updated_at = ? WHERE id = ? AND performer_user_id = ? AND updated_at = ? AND status IN ('planned', 'started')`).run(userId, luc, m.id, m.moi, m.luc).changes as number;
-    else if (m.k === 't') doi = conn.prepare("UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'").run(userId, m.id, m.moi).changes as number;
-    else doi = conn.prepare("UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')").run(userId, m.id, m.moi).changes as number;
+    else {
+      const nk = NK_CHUYEN[m.k];
+      const cuoi = conn.prepare('SELECT action FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1').get(nk.loai, m.id) as { action: string } | undefined;
+      if (cuoi?.action !== nk.hanhDong) continue;   // đã có thao tác sau lần chuyển → giữ nguyên người mới
+      doi = m.k === 't'
+        ? conn.prepare("UPDATE case_signals SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status = 'pending'").run(userId, m.id, m.moi).changes as number
+        : conn.prepare("UPDATE discipline_measures SET owner_user_id = ? WHERE id = ? AND owner_user_id = ? AND status IN ('preparing', 'nhap')").run(userId, m.id, m.moi).changes as number;
+      if (doi) writeAudit({ actorUserId: actorId, action: nk.hanhDong, entityType: nk.loai, entityId: m.id, before: { ownerUserId: m.moi }, after: { ownerUserId: userId, _nguon: 'khôi phục / hoàn tác' } });
+    }
     if (!doi) continue;
     traLai += 1;
+    lay.set(m.moi, (lay.get(m.moi) ?? 0) + 1);
     if (m.caseId) conn.prepare('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
-      .run(m.caseId, m.k === 'c' ? 'owner_user_id' : 'pa_performer', String(m.moi), String(userId), actorId, luc);
+      .run(m.caseId, m.k === 'c' ? 'owner_user_id' : 'pa_performer', m.k === 'c' ? String(m.moi) : tenCua(m.moi), m.k === 'c' ? String(userId) : `${tenCua(m.moi)} → ${tenCua(userId)} (khôi phục / hoàn tác)`, actorId, luc);
+  }
+  for (const [u, n] of lay) {
+    if (u === actorId) continue;
+    notify({ userId: u, kind: 'case_giao', title: `${tenCua(userId).replace(/ \(đã xoá\)$/, '')} được trả lại ${n} việc đã chuyển cho bạn (Khôi phục / Hoàn tác trong 15 phút)`, duong: '/cong-viec', dedupKey: `tra_lai_nguoi_nghi:${userId}:${u}:${luc}` });
   }
   return { traLai, giu: ds.length - traLai };
+}
+
+/**
+ * E-4: XEM TRƯỚC số việc sẽ chuyển (cùng hàm, cùng luật) — chạy THẬT trong một giao dịch rồi cuộn lại; không để lại gì (nhật ký, thông báo, lịch sử).
+ */
+const KET_XEM_TRUOC = Symbol('xem-truoc-chuyen');
+export function xemTruocChuyen(userId: number, actorId: number, chiNhanhIds?: readonly number[]): Omit<KqChuyen, 'ds'> {
+  let kq: KqChuyen | null = null;
+  try { tx(() => { kq = chuyenViecNguoiNghi(userId, actorId, undefined, chiNhanhIds ? { chiNhanhIds } : {}); throw KET_XEM_TRUOC; }); }
+  catch (e) { if (e !== KET_XEM_TRUOC) throw e; }
+  const { ds: _ds, ...dem } = kq as unknown as KqChuyen;
+  return dem;
 }
 
 const inHang = (ds: readonly unknown[]) => ds.map(() => '?').join(',');

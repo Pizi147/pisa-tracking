@@ -107,7 +107,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   /* CAU-HINH-CASE-SOS */ 'cau_hinh_case_sos.sua': 'Sửa cấu hình Case & SOS', 'cau_hinh_case_sos.khoi_phuc': 'Khôi phục cấu hình Case & SOS',
   /* QTV2-BAND */ 'cau_hinh.ky_vong_ft.sua': 'Sửa kỳ vọng MT FT', 'cau_hinh.ky_vong_ft.khoi_phuc': 'Khôi phục kỳ vọng MT FT',
   'cau_hinh.nguong_thuong.sua': 'Sửa ngưỡng lớp thường', 'cau_hinh.nguong_thuong.khoi_phuc': 'Khôi phục ngưỡng lớp thường',
-  'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
+  'user_roles_set': 'Đổi vai tài khoản', 'user_roles_hoan_tac': 'Hoàn tác đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'violation.khong_xu_ly': 'Không xử lý vi phạm', 'violation.khong_xu_ly.hoan_tac': 'Hoàn tác Không xử lý',   // LG-12
   'work.remind': 'Nhắc việc',

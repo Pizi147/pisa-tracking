@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_CN_TUY_CHON, VAI_DANG_KY } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
 import { VAI_THEO_DOI, donGiaoHetHieuLuc, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
-import { chuyenViecNguoiNghi } from '../cases/owner.ts';
+import { HOAN_TAC_PHUT_NGUOI_NGHI, chuyenViecNguoiNghi, traLaiViecNguoiNghi, xemTruocChuyen, type MucChuyen } from '../cases/owner.ts';
 import { duocSuaKyNang } from '../giaoVien/phamVi.ts';
 
 /**
@@ -413,24 +413,58 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
    * KHÔNG XOÁ DÒNG CŨ, chỉ đóng lại. Điểm đã nhập và mọi bản ghi khác đều trỏ tới `user_id`;
    * xoá grant là xoá căn cứ để đọc lại "lúc đó ai được phép làm việc này".
    */
+  /* N69 · E-4: gỡ HẾT vai = người nghỉ → việc về người theo luật; mất vai ở MỘT chi nhánh (không còn vai nào ở đó) → chỉ việc của em thuộc chi nhánh đó. Mất vai TOÀN HỆ THỐNG
+     (vai không gắn chi nhánh) = mất mọi chi nhánh mà không còn vai nào. Cấp lại vai không tự trả (Hoàn tác trong 15 phút: `hoanTacDoiVai`). */
+  const conVaiToanHeThong = roles.some((r) => r.role === 'system_admin' || !r.branches.length);
+  const conMa = new Set(roles.flatMap((r) => r.branches));
+  const daCoToanHeThong = cu.some((g) => !g.code);
+  const mat = roles.length === 0 || conVaiToanHeThong ? []
+    : [...new Set(daCoToanHeThong ? (conn.prepare('SELECT code FROM branches').all() as { code: string }[]).map((b) => b.code).filter((c) => !conMa.has(c))
+      : cu.map((g) => g.code).filter((c): c is string => !!c && !conMa.has(c)))];
+  const chiNhanhMat = mat.length ? (conn.prepare(`SELECT id, name FROM branches WHERE code IN (${mat.map(() => '?').join(',')})`).all(...mat) as { id: number; name: string }[]) : [];
+  if (!roles.length || chiNhanhMat.length) {
+    const xt = xemTruocChuyen(userId, p.userId, roles.length ? chiNhanhMat.map((b) => b.id) : undefined);
+    const n = xt.soCase + xt.soPa + xt.soTinHieu + xt.soXuLy;
+    if (n > 0) canXacNhan('Đổi vai sẽ chuyển {n} Case / PA của em chi nhánh {cn} cho người khác — vẫn lưu?', { n, cn: roles.length ? chiNhanhMat.map((b) => b.name).join(', ') : 'tất cả' }, 'Vẫn lưu');
+  }
+  const vaiTruoc = [...cu.reduce((m, g) => m.set(g.key, [...(m.get(g.key) ?? []), ...(g.code ? [g.code] : [])]), new Map<string, string[]>())].map(([role, branches]) => ({ role, branches }));
   return tx(() => {
     conn.prepare("UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'").run(userId);
     for (const r of roles) grantRole(conn, userId, r.role, r.branches ?? []);
     if ([...cu.map((g) => g.key), ...roles.map((r) => r.role)].some((k) => VAI_THEO_DOI.has(k))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: thôi / thành Head · CX → dòng theo dõi chuyển theo; không có vai này cả trước lẫn sau → bỏ qua
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): hết vai ở chi nhánh của việc được giao → việc về người theo luật (có lịch sử)
-    /* N69: gỡ HẾT vai = người nghỉ → Case / PA / tín hiệu / lần xử lý về người theo luật; cấp lại vai không tự trả.
-       E-4: mất vai ở MỘT chi nhánh (không còn vai nào ở đó, còn vai nơi khác) → chuyển riêng việc của em thuộc chi nhánh đó. */
-    const conVaiToanHeThong = roles.some((r) => r.role === 'system_admin' || !r.branches.length);
-    const conMa = new Set(roles.flatMap((r) => r.branches));
-    const mat = conVaiToanHeThong ? [] : [...new Set(cu.map((g) => g.code).filter((c): c is string => !!c && !conMa.has(c)))];
-    const chiNhanhMat = mat.length ? (conn.prepare(`SELECT id FROM branches WHERE code IN (${mat.map(() => '?').join(',')})`).all(...mat) as { id: number }[]).map((b) => b.id) : [];
-    const chuyen = roles.length ? (chiNhanhMat.length ? chuyenViecNguoiNghi(userId, p.userId, undefined, { chiNhanhIds: chiNhanhMat }) : null) : chuyenViecNguoiNghi(userId, p.userId);
-    writeAudit({
+    const chuyen = roles.length ? (chiNhanhMat.length ? chuyenViecNguoiNghi(userId, p.userId, undefined, { chiNhanhIds: chiNhanhMat.map((b) => b.id) }) : null) : chuyenViecNguoiNghi(userId, p.userId);
+    const nhatKyId = writeAudit({
       actorUserId: p.userId, action: 'user_roles_set', entityType: 'users', entityId: userId,
       entityLabel: user.full_name,
+      before: { roles: vaiTruoc },
       after: { note: roles.map((r) => `${r.role}:${(r.branches ?? []).join('/') || 'toàn hệ thống'}`).join(' · ') || 'gỡ hết vai', ...(chuyen ? { chuyen } : {}) },
     });
-    return { ok: true, ...(chuyen ? { chuyen } : {}) };   // E-5: web báo số đã chuyển
+    return { ok: true, nhatKyId, ...(chuyen ? { chuyen } : {}) };   // E-5: web báo số đã chuyển · E-4: `nhatKyId` cho Hoàn tác
+  });
+}
+
+/**
+ * E-4 (rà sâu): HOÀN TÁC đổi vai — chỉ CHÍNH người đổi, trong `HOAN_TAC_PHUT_NGUOI_NGHI` phút, một lần. Đọc ĐÚNG nhật ký `user_roles_set` (vai trước + việc đã chuyển — không tin web gửi):
+ * cấp lại vai cũ rồi trả các việc đã chuyển mà chưa ai sửa tiếp (cùng `traLaiViecNguoiNghi` của Khôi phục tài khoản, E-7).
+ */
+export function hoanTacDoiVai(p: Principal, userId: number, nhatKyId: unknown): { ok: true; traLai: number; giu: number } {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống đổi được vai trò.');
+  const id = Number(nhatKyId);
+  if (!Number.isInteger(id) || id <= 0) throw badRequest('Không tìm thấy lần đổi vai để hoàn tác.');
+  const conn = db();
+  const nk = conn.prepare("SELECT actor_user_id, before_json, after_json, created_at FROM audit_logs WHERE id = ? AND action = 'user_roles_set' AND entity_id = ?").get(id, userId) as any;
+  if (!nk) throw notFound('Không tìm thấy lần đổi vai để hoàn tác.');
+  if (nk.actor_user_id !== p.userId) throw forbidden('Chỉ người đổi vai hoàn tác được lần đổi này.');
+  if (Date.now() - Date.parse(nk.created_at) > HOAN_TAC_PHUT_NGUOI_NGHI * 60_000) throw conflict(`Đã quá ${HOAN_TAC_PHUT_NGUOI_NGHI} phút — cấp lại vai ở Sửa tài khoản, việc đã chuyển đổi lại ở từng Case.`);
+  const truoc = (JSON.parse(nk.before_json ?? '{}').roles ?? []) as { role: string; branches: string[] }[];
+  const ds = (JSON.parse(nk.after_json ?? '{}').chuyen?.ds ?? []) as MucChuyen[];
+  return tx(() => {
+    if (conn.prepare("SELECT 1 AS x FROM audit_logs WHERE action = 'user_roles_hoan_tac' AND entity_id = ? AND json_extract(after_json, '$.nhatKyId') = ? LIMIT 1").get(userId, id)) throw badRequest('Lần đổi vai này đã hoàn tác rồi.');
+    setRoles(p, userId, truoc);
+    const r = traLaiViecNguoiNghi(userId, p.userId, ds);
+    writeAudit({ actorUserId: p.userId, action: 'user_roles_hoan_tac', entityType: 'users', entityId: userId, after: { nhatKyId: id, ...r } });
+    return { ok: true as const, ...r };
   });
 }
 

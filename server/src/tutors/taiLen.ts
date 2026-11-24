@@ -182,7 +182,7 @@ export const HOAN_TAC_PHUT_TAI_LEN = 15;
  * E-8 (rà 25/11): Hoàn tác "Tải danh sách tutor" — chỉ CHÍNH người tải, trong 15 phút, đọc ĐÚNG nhật ký `tutor.tai_len` (không tin danh sách web gửi): xoá tutor MỚI còn trống
  * (chưa có buổi / nhận xét — có rồi thì giữ, đếm `giu`) và trả dòng Cập nhật về bản trước nếu chưa ai sửa tiếp. Mỗi lần tải hoàn tác MỘT lần.
  */
-export function hoanTacTaiLen(p: Principal, v: { nhatKyId?: unknown }): { xoa: number; khoiPhuc: number; giu: number } {
+export function hoanTacTaiLen(p: Principal, v: { nhatKyId?: unknown }): { xoa: number; khoiPhuc: number; giu: number; boQua: string[] } {
   kiemQuyenDanhBa(p);
   const id = Number(v?.nhatKyId);
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Không tìm thấy lần tải để hoàn tác.');
@@ -195,16 +195,19 @@ export function hoanTacTaiLen(p: Principal, v: { nhatKyId?: unknown }): { xoa: n
   return tx(() => {
     if (conn.prepare(`SELECT 1 AS x FROM audit_logs WHERE action = 'tutor.tai_len_hoan_tac' AND entity_id = ? LIMIT 1`).get(id)) throw badRequest('Lần tải này đã hoàn tác rồi.');
     let xoa = 0, khoiPhuc = 0, giu = 0;
+    const boQua: string[] = [];   // dòng Cập nhật không trả được (SĐT cũ đã thuộc tutor khác) — báo, không 500
     for (const tid of h.moiIds ?? []) {
-      const r = conn.prepare(`DELETE FROM tutors WHERE id = ? AND user_id IS NULL AND NOT EXISTS (SELECT 1 FROM case_followup_buoi WHERE tutor_id = ?) AND NOT EXISTS (SELECT 1 FROM tutor_nhan_xet WHERE tutor_id = ?)`).run(tid, tid, tid);
+      /* `updated_at IS NULL`: tutor mới mà SAU lần tải đã có người sửa thì giữ (đếm `giu`). */
+      const r = conn.prepare(`DELETE FROM tutors WHERE id = ? AND user_id IS NULL AND updated_at IS NULL AND NOT EXISTS (SELECT 1 FROM case_followup_buoi WHERE tutor_id = ?) AND NOT EXISTS (SELECT 1 FROM tutor_nhan_xet WHERE tutor_id = ?)`).run(tid, tid, tid);
       if (r.changes) xoa += 1; else giu += 1;
     }
     for (const c of h.cu ?? []) {
+      if (c.sdt && conn.prepare('SELECT 1 AS x FROM tutors WHERE sdt = ? AND id != ? LIMIT 1').get(c.sdt, c.id)) { boQua.push(c.ten); continue; }
       const r = conn.prepare(`UPDATE tutors SET ten = ?, sdt = ?, noi_day_branch_id = ?, chi_online = ?, ky_nang = ?, updated_by = ?, updated_at = ? WHERE id = ? AND updated_at = ?`)
         .run(c.ten, c.sdt, c.noi, c.online, c.kn, c.ub, c.ua, c.id, h.luc ?? '');
       if (r.changes) khoiPhuc += 1; else giu += 1;
     }
-    writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len_hoan_tac', entityType: 'tutor', entityId: id, after: { xoa, khoiPhuc, giu } });
-    return { xoa, khoiPhuc, giu };
+    writeAudit({ actorUserId: p.userId, action: 'tutor.tai_len_hoan_tac', entityType: 'tutor', entityId: id, after: { xoa, khoiPhuc, giu, boQua } });
+    return { xoa, khoiPhuc, giu, boQua };
   });
 }

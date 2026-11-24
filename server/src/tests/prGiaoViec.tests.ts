@@ -32,7 +32,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
   const students: any = await import('../students/students.ts');
   const { nguoiVaiCuaChiNhanh } = await import('../platform/audit.ts');
   const { myWork, NHOM_VIEC_TVV } = await import('../worklist/mywork.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const { LUOT_SAU_THI_SQL } = await import('../students/tamDung.ts');
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const mot = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -755,11 +755,15 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     xoaTK.khoiPhucTaiKhoan(P.admin, a.userId);
     /* E-7 (N69, chủ SP 25/11): Khôi phục TRONG 15 phút trả lại việc chưa ai sửa tiếp (Case, PA, tín hiệu, lần xử lý). */
     assert(chu(ia).every((x) => x === a.userId), `E-7: Khôi phục ≤ 15 phút phải trả lại: ${JSON.stringify(chu(ia))}`);
-    assert(hang('SELECT old_value, new_value FROM sos_case_history WHERE case_id = ? ORDER BY id DESC LIMIT 1', ia.caseId)[0]?.new_value === String(a.userId), 'E-7: lịch sử ghi lần trả lại');
+    assert(hang("SELECT new_value FROM sos_case_history WHERE case_id = ? AND field = 'owner_user_id' ORDER BY id DESC LIMIT 1", ia.caseId)[0]?.new_value === String(a.userId), 'E-7: lịch sử ghi lần trả lại');
+    const ph = hang("SELECT old_value, new_value FROM sos_case_history WHERE case_id = ? AND field = 'pa_performer' ORDER BY id DESC LIMIT 1", ia.caseId)[0];
+    assert(ph && Number.isNaN(Number(ph.old_value)) && /GIAOVIEC/i.test(ph.new_value), `E-7: lịch sử PA phải ghi TÊN, không id: ${JSON.stringify(ph)}`);
+    assert(hang("SELECT 1 FROM notifications WHERE dedup_key LIKE ?", `tra_lai_nguoi_nghi:${a.userId}:%`).length >= 1, 'E-7: người bị lấy lại việc nhận thông báo');
+    assert((() => { try { xoaTK.khoiPhucTaiKhoan(P.admin, a.userId); return 200; } catch (e: any) { return e?.status; } })() === 400, 'E-7: Khôi phục lần hai (đã active) → 400 trong giao dịch');
     /* Gỡ hết vai. */
     const b = taiKhoan('nghi2', 'teacher');
     const ib = tao(b.userId, moiEm());
-    const kqVai: any = accounts.setRoles(P.admin, b.userId, []);
+    const kqVai: any = voiXacNhan(() => accounts.setRoles(P.admin, b.userId, []));
     assert(kqVai.chuyen?.soCase === 1, `E-5: gỡ hết vai phải trả số đã chuyển: ${JSON.stringify(kqVai)}`);
     dung(ib, b.userId, 'gỡ hết vai');
     /* E-7: quá 15 phút → giữ nguyên + câu nói giữ cho ai; việc đã bị sửa tiếp (≤ 15 phút) cũng giữ nguyên. */
@@ -768,8 +772,12 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const iff2 = tao(f.userId, moiEm());
     xoaTK.xoaTaiKhoan(P.admin, f.userId);
     conn.prepare('UPDATE sos_cases SET updated_at = ? WHERE id = ?').run('2099-01-01T00:00:00.000Z', iff2.caseId);   // có người sửa tiếp sau khi chuyển
+    /* Tín hiệu / lần xử lý đã có thao tác SAU lần chuyển (nhật ký mới nhất không còn là lần chuyển) → giữ người mới. */
+    for (const [loai, id, hd] of [['case_signal', iff.tinId, 'signal.verify'], ['discipline_measure', iff.xlId, 'measure.update']] as const) {
+      conn.prepare("INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, created_at) VALUES (?, ?, ?, ?, ?)").run(P.admin.userId, hd, loai, id, new Date().toISOString());
+    }
     const trongHan: any = xoaTK.khoiPhucTaiKhoan(P.admin, f.userId);
-    assert(chu(iff)[0] === f.userId && chu(iff2)[0] === luat, `E-7: việc chưa sửa trả lại, việc đã sửa giữ: ${JSON.stringify([chu(iff), chu(iff2)])}`);
+    assert(chu(iff)[0] === f.userId && chu(iff)[1] === f.userId && chu(iff)[2] === luat && chu(iff)[3] === cn && chu(iff2)[0] === luat, `E-7: việc chưa sửa trả lại, việc đã sửa giữ: ${JSON.stringify([chu(iff), chu(iff2)])}`);
     assert(trongHan.canhBao.some((c: string) => /đã được sửa tiếp/.test(c)), `E-7: báo việc giữ nguyên: ${trongHan.canhBao.join(' | ')}`);
     const g = taiKhoan('nghi8', 'teacher');
     const ig = tao(g.userId, moiEm());
@@ -783,8 +791,23 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const emCp = mot("SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE c.branch_id = (SELECT id FROM branches WHERE code = 'CP') AND e.status = 'active' LIMIT 1").id as number;
     const ihMb = tao(h.userId, moiEm());
     const ihCp = tao(h.userId, emCp);
-    accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    /* E-4: có việc phải chuyển thì HỎI trước ("Đổi vai sẽ chuyển n Case / PA của em chi nhánh X…"), chưa đồng ý → 409, chưa ghi gì. */
+    const hoi: any = (() => { try { accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]); return null; } catch (e: any) { return e; } })();
+    assert(hoi?.status === 409 && hoi.details?.canXacNhan && hoi.message.includes('Đổi vai sẽ chuyển') && hoi.message.includes('Case / PA') && chu(ihMb).every((x) => x === h.userId), `E-4: phải hỏi trước: ${hoi?.status} ${hoi?.message}`);
+    const kqH: any = voiXacNhan(() => accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]));
     dung(ihMb, h.userId, 'E-4 · bỏ vai chi nhánh MB, còn CP');
+    /* E-4: Hoàn tác đổi vai (≤ 15 phút) cấp lại vai cũ VÀ trả việc đã chuyển mà chưa ai sửa tiếp. */
+    const hoanTac: any = accounts.hoanTacDoiVai(P.admin, h.userId, kqH.nhatKyId);
+    assert(hoanTac.traLai >= 4 && chu(ihMb).every((x) => x === h.userId), `E-4: Hoàn tác phải trả việc: ${JSON.stringify([hoanTac, chu(ihMb)])}`);
+    assert(mot("SELECT COUNT(*) n FROM user_roles ur JOIN branches b ON b.id = ur.branch_id WHERE ur.user_id = ? AND ur.status = 'active' AND b.code IN ('MB', 'CP')", h.userId).n === 2, 'E-4: vai cũ được cấp lại');
+    assert((await ma(() => accounts.hoanTacDoiVai(P.admin, h.userId, kqH.nhatKyId))) === 400, 'E-4: Hoàn tác lần hai → 400');
+    voiXacNhan(() => accounts.setRoles(P.admin, h.userId, [{ role: 'teacher', branches: ['CP'] }]));
+    /* E-4: mất vai TOÀN HỆ THỐNG (không gắn chi nhánh) = mất mọi chi nhánh không còn vai. */
+    const gl = taiKhoan('nghi10', 'cx');
+    accounts.setRoles(P.admin, gl.userId, [{ role: 'cx', branches: [] }]);
+    const igl = tao(gl.userId, moiEm());
+    voiXacNhan(() => accounts.setRoles(P.admin, gl.userId, [{ role: 'cx', branches: ['CP'] }]));
+    dung(igl, gl.userId, 'E-4 · mất vai toàn hệ thống, chỉ còn CP');
     assert(chu(ihCp).every((x) => x === h.userId), `E-4: em chi nhánh còn vai phải giữ nguyên: ${JSON.stringify(chu(ihCp))}`);
     /* Đổi vai, vẫn còn vai → không chuyển. */
     const c = taiKhoan('nghi3', 'teacher');

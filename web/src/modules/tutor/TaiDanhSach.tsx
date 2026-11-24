@@ -43,9 +43,10 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
         if (x.nhatKyId) {
           toast.hoanTac(daLuu, async () => {
             try {
-              const h = await api.post<{ xoa: number; khoiPhuc: number; giu: number }>('/tutors/tai-len/hoan-tac', { nhatKyId: x.nhatKyId });
+              const h = await api.post<{ xoa: number; khoiPhuc: number; giu: number; boQua: string[] }>('/tutors/tai-len/hoan-tac', { nhatKyId: x.nhatKyId });
               invalidate('/tutors');
               toast.push('ok', `${t('Đã hoàn tác: xoá {a} · khôi phục {b}', { a: h.xoa, b: h.khoiPhuc })}${h.giu ? ` · ${t('giữ {c} (đã có buổi hoặc đã sửa tiếp)', { c: h.giu })}` : ''}`);
+              if (h.boQua?.length) toast.push('info', t('Không trả lại được (SĐT cũ đã thuộc tutor khác): {ds}', { ds: h.boQua.join(', ') }));
             } catch (e) { toast.push('error', e instanceof ApiError ? e.message : t('Không hoàn tác được')); }
           }, { key: `tai-ds:${x.nhatKyId}` });
         } else toast.push('ok', daLuu);

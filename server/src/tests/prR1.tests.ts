@@ -8,7 +8,7 @@ export async function runPrR1Tests(t: any) {
   console.log('\nGÓI R1 · hổng logic máy chủ');
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); } };
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const owner: any = await import('../cases/owner.ts');
   const cases: any = await import('../cases/cases.ts');
   const accounts: any = await import('../platform/accounts.ts');
@@ -32,7 +32,14 @@ export async function runPrR1Tests(t: any) {
     /* PTA rà #2024: chủ chỉ còn vai Giáo viên ở chi nhánh KHÁC chi nhánh lớp (dạy chéo / em chuyển chi nhánh) = vẫn còn làm — giữ Case, không gán đè. */
     const khac = one(`SELECT b.code FROM branches b WHERE b.id != (SELECT branch_id FROM classes WHERE id = ?) ORDER BY b.id LIMIT 1`, c.lop);
     assert(khac, 'seed thiếu chi nhánh thứ hai');
-    accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]);
+    const cnLop = one('SELECT b.code FROM branches b JOIN classes c ON c.branch_id = b.id WHERE c.id = ?', c.lop).code as string;
+    /* E-4 (thích nghi phép kiểm PTA rà #2024): chủ còn vai Ở CẢ chi nhánh của lớp lẫn chi nhánh khác = vẫn còn làm — giữ Case, `ganChuCaseThieu` không gán đè. */
+    accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [cnLop, khac.code] }]);
+    xoaNho();
+    assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh lớp + chi nhánh khác bị coi là đã nghỉ');
+    assert(owner.ganChuCaseThieu({ classId: c.lop, actorId: P.admin.userId, luc: '2026-11-24T03:00:00.000Z' }) === 0
+      && one('SELECT owner_user_id AS o FROM sos_cases WHERE id = ?', c.id).o === c.chu, 'ganChuCaseThieu gán đè chủ còn làm ở chi nhánh khác');
+    voiXacNhan(() => accounts.setRoles(P.admin, c.chu, [{ role: 'teacher', branches: [khac.code] }]));
     xoaNho();
     assert(!coTrong() && !viec(), 'GV còn vai ở chi nhánh khác bị coi là đã nghỉ');
     /* E-4 (N69, chủ SP 25/11): mất vai ở chi nhánh CỦA EM (còn vai chi nhánh khác) → Case của em chi nhánh đó đã tự chuyển cho GV môn / GVCN lớp (không còn đứng tên người đó). */
@@ -138,7 +145,6 @@ export async function runPrR1Tests(t: any) {
   }));
 
   const ab: any = await import('../fasttrack/absence.ts');
-  const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   check('L5 · Báo vắng trên lượt đã huỷ mà kiểm lỗi (kỹ năng không có) → lượt vẫn huỷ, không mở lại nửa chừng', () => thu(() => {
     const a = one(`SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE a.kind = 'mock' AND a.status = 'planned' AND a.class_id IS NOT NULL ORDER BY a.id LIMIT 1`);
     assert(a, 'seed thiếu lượt Mock');
