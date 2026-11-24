@@ -91,7 +91,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100, prHead: 100, prN70: 300,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100, prHead: 100, prN70: 300, prMatChu: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9880,6 +9880,8 @@ await runPrSuaNhoUiTests({ check, assert } as any);
 // ==================================================================== TAB-A11Y (tab ← → Home End + aria-controls; đóng ô Từ chối trả focus)
 const { runPrTabA11yTests } = bocTep('prTabA11y', await import('./prTabA11y.tests.ts'));
 await runPrTabA11yTests({ check, assert } as any);
+const { runPrMatChuTests } = bocTep('prMatChu', await import('./prMatChu.tests.ts'));
+await runPrMatChuTests({ check, assert } as any);
 // ==================================================================== TL-NEN (bảng tham chiếu theo phiên bản DB + quét theo mốc DB — TRANG-LON S3)
 const { runPrTlNenTests } = bocTep('prTlNen', await import('./prTlNen.tests.ts'));
 await runPrTlNenTests({ check, checkAsync, assert, conn, P, TODAY } as any);

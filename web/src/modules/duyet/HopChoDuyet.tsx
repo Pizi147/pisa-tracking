@@ -12,6 +12,7 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { HopBoChu } from '../../ui/Drawer.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
@@ -69,20 +70,23 @@ export function HopChoDuyet({ branchId, khuLoc }: {
   const lopId = Number(params.get('lop')) || null;
   /* PR-VAI-a (Q17): `?qua-han=1` — từ số "k quá hạn" của dải Chờ duyệt ở Tổng quan. */
   const quaHan = params.get('qua-han') === '1' && xem !== 'da-xu-ly';
-  const setParam = (k: string, v: string | null) => {
+  /* C-2 (bảng kê 25/11): đổi bộ lọc làm `url` đổi → gập mọi dòng, bỏ chọn, xoá lý do Từ chối nhiều. Còn ô lý do đang mở thì HỎI trước ("Bỏ chữ đang gõ?"), không mất chữ âm thầm. */
+  const [choDoi, setChoDoi] = useState<{ chay: () => void } | null>(null);
+  const hoiTruocKhiDoi = (chay: () => void) => { if (dangO.size > 0 || !!lyDoTc?.trim()) setChoDoi({ chay }); else chay(); };
+  const setParam = (k: string, v: string | null) => hoiTruocKhiDoi(() => {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
     next.delete('the');
     setParams(next, { replace: true });
-  };
+  });
   /* Một chip đổi `xem` (+ `phan`): Báo QL không chia loại. */
-  const chonLoc = (x: typeof xem, p: KhoaChip | null) => {
+  const chonLoc = (x: typeof xem, p: KhoaChip | null) => hoiTruocKhiDoi(() => {
     const next = new URLSearchParams(params);
     if (x === 'cho') next.delete('xem'); else next.set('xem', x);
     if (p && p !== 'tat-ca' && x !== 'de-biet') next.set('phan', p); else next.delete('phan');
     next.delete('the');
     setParams(next, { replace: true });
-  };
+  });
   /* PR-GVb (J5b): link cũ `?phan=bao-len` (thông báo, Tổng quan cũ) → lọc Báo QL, không gãy. */
   useEffect(() => {
     if (params.get('phan') !== 'bao-len') return;
@@ -346,6 +350,7 @@ export function HopChoDuyet({ branchId, khuLoc }: {
       )}
 
       {ngan && <NganCase caseId={ngan} viec="them-pa" onClose={() => setNgan(null)} onChanged={xong} />}
+      {choDoi && <HopBoChu viec={t('Lý do')} nut={t('Bỏ chữ, đổi bộ lọc')} onO={() => setChoDoi(null)} onBo={() => { const f = choDoi.chay; setChoDoi(null); f(); }} />}
     </div>
   );
 }

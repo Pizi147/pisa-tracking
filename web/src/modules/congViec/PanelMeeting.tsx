@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { BoiCanh } from '../../ui/KhuonViec.tsx';
 import { dauTuViec } from './dauPanelViec.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -114,6 +114,8 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
   }, [vuaXong]);
   const xong = m.trangThai === 'xong';
   const mo = m.coTheLam && (m.trangThai === 'mo' || sua);
+  /* C-1 (bảng kê 25/11): Kết quả / ngày giờ họp gõ chưa lưu → Đóng panel / đổi việc hỏi "Bỏ chữ đang gõ?" (cùng cách `KhoiGiaoViec`, B3-05). */
+  useBaoDangSua(!!mo && (kq.trim() !== (m.ketQua ?? '').trim() || ngay !== (m.ngayGio?.slice(0, 10) ?? '') || gio !== (m.ngayGio?.slice(11, 16) ?? '')));
   const laPt = g.phuTrach.some((x) => x.id === session?.user?.id);
   const tenPt = g.phuTrach.map((x) => x.ten).filter(Boolean).join(', ') || t('Head chi nhánh');
   const hoanThanh = async () => {

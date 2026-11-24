@@ -103,7 +103,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   /* OV-7a: người gửi Sửa / Rút thẻ còn chờ; Quản lý sửa câu trả lời đã gửi. Máy chủ kiểm lại quyền. */
   const nguoiGuiSua = cho && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id && LOAI_NGUOI_XIN_SUA.includes(yc.loai);
   /* N37: thẻ xin xoá Case / PA — người gửi chỉ Rút (lý do tuỳ chọn, không có gì để sửa). */
-  const chiRut = cho && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id && yc.loai === 'xin_xoa';
+  const chiRut = cho && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id && (yc.loai === 'xin_xoa' || yc.loai === 'sua_khai_bac');   // C-3 (bảng kê 25/11): thẻ Sửa cấp bậc (N70) — người gửi Rút ngay trên thẻ (máy chủ khiRut đã cho); không vào LOAI_NGUOI_XIN_SUA vì không có khiSua
   const suaTraLoiDuoc = yc.trangThai === 'da_tra_loi' && !laNguoiXin && laVaiQuanLy(session?.roles);
   const [moPanelSua, setMoPanelSua] = useState(false);
   const [lyDoKtd, setLyDoKtd] = useState<string>('');
