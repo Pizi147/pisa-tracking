@@ -18,10 +18,10 @@ Thông tin = `{tuần} - {loại test} · {chi tiết} · {GV}` — có tuần t
 | Chấm Speaking — dòng lẻ | `Mock W1 SEP · S` | `W1 SEP - 4 bài` |
 | Mô tả Case (cha · con) | `MT2 · W3 AUG` · `Listening · MT2` | `W3 AUG - MT2 · Listening, Reading` · `W3 AUG - MT2 · Listening` |
 | Xác nhận Case | `Listening · Progress Test` | `W2 SEP - Progress · Listening` |
-| Thêm PA | `Reading · Progress Test` · `Reading · Case` | `Progress · Reading` · `Case · Reading` |
+| Thêm PA | `Reading · Progress Test` · `Reading · Case` | `W3 AUG - Progress · Reading` · `W4 SEP - MT3 · Listening` (Case GV tự tạo, không bài thi → không tuần: `Case · Reading`) |
 | Xác nhận PA | `Listening · MT1` | `W4 AUG - MT1 · Listening` |
 | Ghi Mini Test | `Bổ trợ miễn phí· Lê Minh Khoa` | `Bổ trợ miễn phí · Lê Minh Khoa` |
-| Ghi kết quả PA | `Reading · MT2` | `MT2 · Reading` |
+| Ghi kết quả PA | `Reading · MT2` | `W2 SEP - MT2 · Reading` |
 | Xử lý vi phạm — cha | `· Trần Ngọc Hà` (dấu treo) | `8 vi phạm · Trần Ngọc Hà` |
 | Xử lý vi phạm — lẻ | `Ý thức· Cao Khánh Linh` | `3 vi phạm · bậc kế tiếp: Report 1 · Cao Khánh Linh` |
 | Phối hợp SOS · Bàn giao · Chốt lộ trình · Xét lại · Thiếu dữ liệu | (giữ) | (giữ — chỉ sửa khoảng trắng trước tên GV) |
@@ -34,10 +34,12 @@ Thông tin = `{tuần} - {loại test} · {chi tiết} · {GV}` — có tuần t
 
 ## Quyết định cần chủ SP biết
 - Dòng cha **nhiều tuần** (Chấm Speaking của một lớp) không ghi tuần: `13 bài · 8 quá hạn` — các dòng con ngay dưới ghi từng tuần.
-- Việc **Thêm PA · Ghi kết quả PA** máy chủ không trả tuần thi → ô thông tin bắt đầu bằng loại (`MT2 · Reading`), các nhóm Case khác có tuần thì tuần đứng đầu. Muốn mọi dòng Case có tuần: PR máy chủ riêng.
 - **Hai tầng (1280 mở danh sách 520 · 375)**: giữ khung mockup v24 (tầng 1 lớp + hạn · tầng 2 tên · thông tin; dòng con tên + hạn · thông tin). Trường vẫn đúng thứ tự, chỉ khác tầng.
 - **PA đang chạy** (PTA Plan yêu cầu thêm): chuyển sang khuôn A, vẽ trong CÙNG lưới cột. [XM] hai chỗ đổi thao tác: (1) nút "n PA ▾" mở khay em bỏ — bấm dòng lớp mở thẳng lưới Ghi kết quả PA, như nhóm Kết quả PA ngay trên (GD-20c); (2) nút "Ghi nháp" bỏ — bấm dòng đã mở đúng form (có "Lưu nháp"); nhãn nháp `nháp 2 / 6 · 12/09` còn, nằm cuối ô thông tin.
-- **Tuần cho Thêm PA / Ghi kết quả PA**: dữ liệu đang trả về KHÔNG có tuần thi cho hai loại này (`tuanThi` chỉ có ở Mô tả Case · Xác nhận Case · Xác nhận PA, lấy từ `report_period.week_start` ở SQL máy chủ) → không tự dựng được ở web. [XM] PR máy chủ nhỏ: thêm `tuan_thi` vào hai truy vấn việc `support:` / `action:`; khi đó dòng tự có tuần đứng đầu (web đã đọc `tuanThi`).
+- **Tuần cho Thêm PA / Ghi kết quả PA** (PTA Plan: làm luôn): máy chủ thêm `tuanThi` (cột `rp.week_start` như Mô tả Case, join `report_periods` sẵn trong câu) vào việc `support:` và `action:`. **0 câu thêm**: `/my-work?nguoi=tat-ca` Head 67 → 67 câu (trần 68), GVCN 38 → 38, GVBM 35 → 35. Ảnh chụp JSON TD4-a: bỏ `tuanThi` khỏi hai loại việc → cả 11 băm cũ trùng; 8 băm chụp lại có ghi chú trong `tocDo.run.ts`.
+
+## Lưới Ghi kết quả PA (khung 720) — cột Nhận xét
+`luoi-ghi-ket-qua-pa-1440.png` · `…-1280.png` (TRƯỚC | SAU). TRƯỚC: ba cột Buổi 150 + Tutor 196 + Nhận xét chia ~300 px của cột giữa → Nhận xét còn **21 px**, chữ xếp dọc từng ký tự. SAU: Buổi + Tutor một hàng, **Nhận xét một hàng riêng hết bề ngang cột giữa: 331 px (1440) · 311 px (1280)**; tiêu đề cột đổi theo.
 
 ## Thao tác TRƯỚC → SAU
 Không đổi thao tác nào: bấm dòng / tên vẫn mở panel hoặc mở "n em"; nút, hạn, chip SOS, ✓ Đã lưu giữ nguyên.
