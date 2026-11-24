@@ -268,7 +268,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                   ) : (
                   <div className="table-scroll">
                     <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 640 }}>
-                      <colgroup><col style={{ width: '27%' }} /><col style={{ width: 80 }} /><col style={{ width: 90 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: '23%' }} /></colgroup>
+                      <colgroup><col style={{ width: '27%' }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: '23%' }} /></colgroup>
                       <thead>
                         <tr>
                           <Th className="sticky-col">{t('Lớp / nhóm vi phạm')}</Th><Th align="center">{t('Vi phạm')}</Th><Th align="center">{t('Chưa xử lý')}</Th>

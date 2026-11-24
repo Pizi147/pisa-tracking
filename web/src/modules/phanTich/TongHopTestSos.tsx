@@ -153,7 +153,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   /** Bề rộng cột (px, bảng cố định bề ngang). FT theo mockup V8: Kết quả 84 · kỹ năng 62 · Xử lý 117. Lớp thường giữ 68 / 96 (22 cột ≤ 1398 px). */
   /* V2 ("cân đối cột hàng"): cột cùng nhóm cùng rộng — Kết quả 84 · Dưới kỳ vọng 72 · Xử lý 116; lớp thường mọi cột số 120. */
   /* PT-b (mockup v19): Xử lý 4 cột (HV có Case · Case tách). NH9 24/11: tổng cột FT ≤ 1238 px (khung 1280 không cuộn ngang) — Xử lý 100 · Kết quả 82 · kỹ năng 48 · cột đầu 184. */
-  const rongCot = (c: CotTongHop) => (laThuong ? 120 : c.nhom === 'xu-ly' ? 100 : c.nhom === 'ket-qua' ? 82 : 48);
+  const rongCot = (c: CotTongHop) => (laThuong ? 120 : 76);   // NH9: MỌI cột số FT rộng BẰNG NHAU (14 cột × 76 + cột đầu 170 ≤ 1238)
   /* PT-b (XM-7): chip SOS ở tiêu đề cột (ô dưới là hộp số trung tính). */
   const nhanCot = (c: CotTongHop) => (!laThuong && (c.khoa === 'sos1' || c.khoa === 'sos2' || c.khoa === 'sos3')
     ? <span className={`${CHIP_VUONG} px-1.5 ${MAU_O[c.khoa]}`}>{dich(c.nhan(ct))}</span> : dich(c.nhan(ct)));
@@ -399,13 +399,13 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   return (
     <>
     <VaoHangLoc o="giua">
-      <OChon className="max-sm:w-[calc(50%-4px)]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label={t('Xếp theo')}>
+      <OChon className="shrink-0 max-sm:w-[calc(50%-4px)]" value={theo} onChange={(e) => setTheo(e.target.value as TheoDong)} aria-label={t('Xếp theo')}>
         {THEO_DONG.filter((k) => k !== 'cn' || !anCotChiNhanh).map((k) => <option key={k} value={k}>{NHAN_XEP[k]}</option>)}
       </OChon>
     </VaoHangLoc>
     <VaoHangLoc o="phai">
       {/* GD-12a (⑨ L1): ⋯ trước, Xuất Excel luôn cuối hàng (như các tab khác). */}
-      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11 max-sm:w-11" />
+      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} mat="⋯" lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11 max-sm:w-11" />
       {!dienThoai && <NutXuat nhan={t('Xuất Excel')} onClick={xuatExcel} tat={khongXuat} title={lyDoKhongXuat} />}
     </VaoHangLoc>
 
@@ -445,7 +445,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
                 <table className="w-full text-[14px]" style={{ tableLayout: 'fixed' }}>
                   <colgroup>
                     {/* PR-HK2 / OV-14b: lớp thường 22 cột — cột đầu 158 px để cả bảng ≤ 1398 px. FT theo mockup V8: 190 px. */}
-                    <col className={ct === 'thuong' ? 'w-[158px]' : 'w-[184px]'} />
+                    <col className={ct === 'thuong' ? 'w-[158px]' : 'w-[170px]'} />
                     {cols.map((c) => <col key={c.khoa} style={{ width: rongCot(c) }} />)}
                   </colgroup>
                   <thead>
@@ -458,7 +458,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
                     </tr>
                     <tr>
                       {cols.filter((c) => !donCot(khoaNhom(c))).map((c) => (
-                        <Th key={c.khoa} align="center" className={`h-9 ${laThuong ? 'px-2.5' : 'px-1.5'} py-0 ${laThuong ? 'whitespace-normal align-bottom leading-tight' : 'whitespace-nowrap'} ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>
+                        <Th key={c.khoa} align="center" className={`h-11 ${laThuong ? 'px-2.5' : 'px-1.5'} py-0 whitespace-normal align-middle leading-tight text-balance ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>
                           {nhanCot(c)}
                         </Th>
                       ))}

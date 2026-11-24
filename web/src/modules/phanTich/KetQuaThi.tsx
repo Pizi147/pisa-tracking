@@ -136,7 +136,7 @@ export function KetQuaThi(pv: PhamViPhanTich) {
                 {rows.length ? <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} /> : (
                   <section className="flex min-w-0 flex-col gap-2 rounded-xl border px-4 pb-4 pt-3" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
                     <span className="text-[13px] font-medium text-[color:var(--text-dim)]">{t('Kết quả thi thật')}<i className="font-normal not-italic text-[color:var(--text-faint)]"> · {t('trong kỳ')}</i></span>
-                    <p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })}</p>
+                    <p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh.replace(/ /g, ' ') })}</p>
                     <span><NutXemToanBo /></span>
                   </section>
                 )}

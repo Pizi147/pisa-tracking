@@ -469,7 +469,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
       return nutDiem(e, `${dat ? '✓' : '✗'} ${Math.round(s.tyLe! * 100)}`, dat, nhan(`${Math.round(s.tyLe! * 100)} %`), gon);
     }
     if (s.dangCham || s.theoProgress) return nutDiem(e, <span className="font-medium text-faint">{s.dangCham ? t('đang chấm') : t('chưa thi')}</span>, null, nhan(s.dangCham ? t('đang chấm') : t('chưa thi')), gon);
-    return <span className="text-[13px] text-faint">{t('chưa thi')}</span>;
+    return <span className="text-sm font-medium text-faint">{t('chưa thi')}</span>;   // NH9: cùng cỡ / độ đậm với "chưa thi" dạng nút
   };
   /** Ô MT0 (band): Overall đạt mốc chương trình (`goiYKyVong`, NGUONG_KY_VONG) → ✓ xanh, dưới → ✗ đỏ; không có MT0 → "—". */
   const oMt0 = (e: Em, gon = false) => {

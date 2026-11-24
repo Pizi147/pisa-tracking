@@ -374,17 +374,17 @@ function DongBang({ r, chon, tatCa, homNay, toi, onMo }: { r: Row; chon: boolean
         <PhuViec r={r} tatCa={tatCa} />
       </td>
       <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0 text-slate-200`} style={{ borderColor: 'var(--line)' }}>
-        <span className="block max-w-[240px] truncate">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
+        <span className="block max-w-[240px] break-words">{r.assigneeName ?? <span className="text-faint">{t('chưa giao')}</span>}</span>
         {r.assigneeNgoai && <span className="block text-xs text-faint">{t('ngoài hệ thống')}</span>}
         {n > 0 && <span className="mt-0.5 block text-xs text-faint">{t('+{n} theo dõi', { n })}</span>}
       </td>
       <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-0`} style={{ borderColor: 'var(--line)' }}>
         {r.due ? <HanO han={r.due} xong={dong(r.progress)} /> : <span className="text-xs text-faint">{t('Chưa có hạn')}</span>}
-        {r.hanGoc && <div className="mt-0.5 max-w-[240px] truncate text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
+        {r.hanGoc && <div className="mt-0.5 max-w-[240px] break-words text-xs text-faint" title={dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: r.lyDoDoiHan }, homNay) ?? undefined}>{dongHanDaDoi({ hanGoc: r.hanGoc, lyDo: null }, homNay)}</div>}
       </td>
       <td className={`${td} w-[1%] whitespace-nowrap pl-8 pr-4`} style={{ borderColor: 'var(--line)' }}>
         <NhanViec progress={r.progress} label={r.progressLabel} />
-        {phuTrangThai && <div className="mt-0.5 max-w-[440px] truncate text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
+        {phuTrangThai && <div className="mt-0.5 max-w-[440px] break-words text-xs text-faint" title={r.progress === 'paused' ? dongTam : r.stopReason ?? ''}>{phuTrangThai}</div>}
       </td>
     </tr>
   );
