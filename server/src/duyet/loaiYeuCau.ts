@@ -234,7 +234,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* RKC-3c (PTA 07/11): Huỷ quyết định dời lịch — đường đảo riêng (`huyQuyetDinhDoi`): kỹ năng về vắng chờ dời ở tuần cũ. */
     khiHuy: (p, yc) => huyQuyetDinhDoi(p, yc.doi_tuong_id),
     /* C-8: hết hạn chưa duyệt = tự huỷ (cùng đường `sweepExpiredMoves` của Công việc) — Tổng quan / badge / chuông không đếm thẻ "quá hạn" sắp tự huỷ. */
-    quet: () => sweepExpiredMoves(),
+    quet: (_conn, homNay) => sweepExpiredMoves(homNay),
     /* Đề nghị đã được trả lời ở trang lượt thi (modal cũ) hoặc hết hạn qua đường khác → thẻ tự đóng.
      * PR-MT: lượt đã huỷ hoặc MT lịch sử (không vào luồng vắng) cũng không còn thẻ chờ. */
     chet: {

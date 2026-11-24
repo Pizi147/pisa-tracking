@@ -10,6 +10,8 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 /** Trần câu SQL (Turso) của đường mới, QL MB trên bộ demo — max(đo + 10, ⌈đo × 1,3⌉); số đo ghi trong log. */
+/** D-03: trần riêng của panel `/phan-tich/bao-cao/o?o=hv-da-thi` (đường web còn gọi) — đo 25 câu → max(đo + 10, ⌈đo × 1,3⌉). */
+export const TRAN_BAO_CAO_O = 35;
 export const TRAN_BAO_CAO = 116;   // đo 63 trên bộ demo vừa dựng, 89 sau các phép kiểm khác ghi thêm dữ liệu → ⌈89 × 1,3⌉
 export const TRAN_KET_QUA_THI = 34;   // đo 24
 
@@ -221,8 +223,10 @@ export async function runPrOv15eTests(t: YThucTestKit) {
       console.log(`      (đo: QL /phan-tich/bao-cao/o ${cauBc} câu SQL · /phan-tich/ket-qua-thi ${cauKq} câu, ${mk.json?.rows?.length} lượt)`);
       assert(bc.status === 200 && bc.json.n > 0, `Báo cáo QL: ${bc.status}`);
       assert(mk.status === 200 && mk.json.rows.length === mk.json.tong.luot, `Kết quả thi QL: ${mk.status}`);
-      assert(cauBc <= TRAN_BAO_CAO && cauKq <= TRAN_KET_QUA_THI, `trần câu SQL: ${cauBc}/${TRAN_BAO_CAO}, ${cauKq}/${TRAN_KET_QUA_THI}`);
+      assert(cauBc <= TRAN_BAO_CAO_O && cauKq <= TRAN_KET_QUA_THI, `trần câu SQL: ${cauBc}/${TRAN_BAO_CAO_O}, ${cauKq}/${TRAN_KET_QUA_THI}`);
       assert(bc.json.rows.length === bc.json.n, 'panel HV đã thi: số = dòng');
+      /* Đối chiếu số ô (hàm `baoCao()`, nguồn của ô) với panel HTTP — như phép kiểm trước D-03. */
+      assert(bc.json.n === baoCao.baoCao(QL, { branchId: MB, ct: 'ft', tu: RONG.tu, den: RONG.den }).test.hvDaThi, 'panel HTTP HV đã thi ≠ ô Báo cáo');
       const md = await goi(QL.userId, `/phan-tich/bao-cao/ket-qua-mt?branchId=${MB}&ct=ft`);
       assert(md.status === 200 && md.json.tu === d.khoangMacDinh(TODAY).tu, 'vắng khoảng = 2 tuần vừa qua');
       const tt = await goi(QL.userId, `/phan-tich/ket-qua-thi?branchId=${MB}&loai=thi-that&${k}`);

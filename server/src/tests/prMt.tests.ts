@@ -605,6 +605,16 @@ export async function runPrMtTests(t: YThucTestKit) {
     const r = conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(id) as any;
     assert(r.status === 'expired', `quetYeuCau không tự huỷ thẻ dời quá hạn: ${r.status}`);
   });
+  check('C-8b · sweepExpiredMoves(homNay) theo NGÀY được truyền (không chỉ ngày demo): hạn 27/09 + ngày quét 28/09 → hết hạn; ngày quét 26/09 → không đụng', () => {
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?, 'listening', 4, ?, ?, 'Xin dời (C-8b)', '2026-09-21', '2026-09-27', 'pending', ?)`)
+      .run(a8.id, week.ensurePeriod('2026-09-14').id, week.ensurePeriod('2026-09-28').id, new Date().toISOString());
+    const id = (conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id as number;
+    absence.sweepExpiredMoves('2026-09-26');
+    assert((conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(id) as any).status === 'pending', 'ngày quét 26/09 không được hết hạn');
+    absence.sweepExpiredMoves('2026-09-28');
+    assert((conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(id) as any).status === 'expired', 'ngày quét 28/09 phải hết hạn');
+  });
   /* N38 L5 thay K4-12 "QL đổi tuần bài vắng = +1": chọn tuần = xếp lại từ đầu — bộ đếm 0; vắng lần sau là lần 1 (dời), không huỷ. */
   check('PR-MT (8) · QL chọn tuần cho kỹ năng đang vắng = xếp lại từ đầu (bộ đếm 0, N38 L5); vắng sau đó là lần 1 → dời tuần sau tuần thi', () => {
     skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em vắng buổi Speaking');

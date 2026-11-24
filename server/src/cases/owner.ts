@@ -44,10 +44,10 @@ export function suggestCaseOwner(input: {
 
 type PhanCong = { user_id: number; skill: string | null; is_core: number; ten: string | null };
 /** Phân công đang chạy của lớp, theo thứ tự id (một câu đọc — CASE-NHIEU đọc một lần cho mọi kỹ năng). */
-const phanCongLop = (classId: number) => nhoTheoBang(['teacher_assignments', 'users', 'user_roles'], `pc-lop:${classId}`, () => db().prepare(   // TD-GHI: tạo Case hỏi ×9
-  `SELECT ta.user_id, ta.skill, ta.is_core, u.full_name AS ten FROM teacher_assignments ta LEFT JOIN users u ON u.id = ta.user_id
+const phanCongLop = (classId: number) => nhoTheoBang(['teacher_assignments', 'users', 'user_roles', 'classes'], `pc-lop:${classId}`, () => db().prepare(   // TD-GHI: tạo Case hỏi ×9
+  `SELECT ta.user_id, ta.skill, ta.is_core, u.full_name AS ten FROM teacher_assignments ta LEFT JOIN users u ON u.id = ta.user_id JOIN classes c ON c.id = ta.class_id
     WHERE ta.class_id = ? AND ta.status = 'active'
-      AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = ta.user_id AND ur.status = 'active')   /* E-3 (N69): người đã gỡ hết vai không còn được chọn làm chủ Case dù phân công chưa đóng */
+      AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = ta.user_id AND ur.status = 'active' AND (ur.branch_id IS NULL OR ur.branch_id = c.branch_id))   /* E-3 (N69): chỉ người có vai CÒN HIỆU LỰC ở chi nhánh của lớp (hoặc vai toàn hệ thống) mới được chọn làm chủ Case — phân công chưa đóng không đủ */
     ORDER BY ta.id`,
 ).all(classId) as PhanCong[]);
 

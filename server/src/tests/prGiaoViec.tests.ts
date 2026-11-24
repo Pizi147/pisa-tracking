@@ -784,6 +784,13 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     accounts.setRoles(P.admin, e.userId, []);
     xoaNho();
     assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === null, 'đã gỡ hết vai mà vẫn được chọn làm chủ Case');
+    /* Branch-aware: chỉ còn vai ở chi nhánh KHÁC chi nhánh của lớp → cũng không được chọn; có lại vai ở chi nhánh lớp → chọn được. */
+    accounts.setRoles(P.admin, e.userId, [{ role: 'teacher', branches: ['CP'] }]);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === null, 'chỉ có vai ở CP mà vẫn được chọn làm chủ Case của lớp MB');
+    accounts.setRoles(P.admin, e.userId, [{ role: 'teacher', branches: ['MB', 'CP'] }]);
+    xoaNho();
+    assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'có vai ở chi nhánh của lớp thì chọn được');
   }));
 
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
