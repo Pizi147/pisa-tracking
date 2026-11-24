@@ -1591,6 +1591,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 .cap-so > :last-child { justify-self: start; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 639px) { .cap-so { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; width: auto; }
   .bang td:is([data-kieu="so"], [data-kieu="phan-tram"]) .cap-so { justify-content: center; } }   /* LECH-BANG: bảng giữ dạng bảng ở 375 (Tiến bộ theo kỹ năng) — số + % giữa cột như tiêu đề */
+/* Tiến bộ theo kỹ năng: cặp "số + %" CĂN GIỮA cột (mực chữ cả cặp thẳng tâm với tiêu đề; trước: số nằm giữa hộp 28 px, % kề phải → cặp lệch ~6 px). */
+.cap-so.cap-so-giua { display: flex; flex-wrap: nowrap; justify-content: center; gap: 6px; width: 100%; }
+.cap-so.cap-so-giua > .contents > .so-bam { min-width: 0; padding-inline: 0; }
 
 /* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
@@ -2173,12 +2176,13 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .dyc-hang { display: flex; flex-wrap: wrap; gap: 8px; }
   .dyc-lo { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 14px; }
   .dyc-lo .dyc-phai { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; }
-  @container (max-width: 699px) {
+  @container (max-width: 759px) {
     .dyc-ds { grid-template-columns: minmax(0, 1fr); }
     .dyc-nhom, .dyc-yc { display: block; }
     .dyc-lo { padding: 6px 12px; gap: 10px; white-space: nowrap; }
     .dyc-lo .btn { min-height: 36px; padding: 0 10px; }
     .dyc-dong { grid-template-columns: 18px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; padding: 10px 12px; }
+    .dyc-chon { align-self: start; height: 19px; align-items: center; }   /* ô tick thẳng tâm với DÒNG TÊN (không trôi giữa cả khối nhiều dòng) */
     .dyc-mo { grid-column: 2; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ai hn' 'vd vd' 'duoi duoi'; column-gap: 10px; row-gap: 2px; }
     .dyc-mo .dyc-duoi { grid-area: duoi; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: 2px; }
     .dyc-mo > .dyc-ai { grid-area: ai; white-space: nowrap; }
@@ -2198,7 +2202,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   /* PANEL CHỜ DUYỆT Ở TỔNG QUAN (chủ SP 25/11, khung 720 → danh sách ~680 px: chưa đủ cho bộ cột 8 phần của tab, thừa cho dạng điện thoại): LƯỚI CỐ ĐỊNH cho MỌI dòng —
      [ô tick 18, luôn giữ chỗ] [nội dung] [ngày 92 phải] [nút 176 phải]. Dòng ĐẦU cao 32 px (tick · tên em · ngày · nút CÙNG TÂM, ngày và nút cùng top);
      lớp · việc và chip · người gửi là hai dòng dưới, cao cố định 22 / 24 px (dòng có chip và không chip cao bằng nhau). Chỉ trong `.dyc-panel` (HopChoDuyet `gon`). */
-  @container (min-width: 480px) and (max-width: 699px) {
+  @container (min-width: 480px) and (max-width: 759px) {
     .dyc-panel .dyc-dong { grid-template-columns: 18px minmax(0, 1fr) 176px; align-items: start; padding-top: 12px; padding-bottom: 12px; }
     .dyc-panel .dyc-chon { height: 32px; align-items: center; }
     .dyc-panel .dyc-mo { min-height: 0; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; row-gap: 2px; }

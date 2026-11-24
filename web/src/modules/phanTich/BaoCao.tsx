@@ -297,7 +297,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; 
     if (c.key === 'kn') return dienThoai ? <b className="text-slate-100">{tenMonNgan(null, h.skill)}</b>
       : <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className={`text-[13px] font-normal ${MO}`}>{t('{n} lượt', { n: h.tong })}</span></span>;
     const n = so(h, c.key);
-    return <span className={h.tong ? 'cap-so' : 'whitespace-nowrap'}><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
+    return <span className={h.tong ? 'cap-so cap-so-giua' : 'whitespace-nowrap'}><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
       className={!n ? '' : c.key === 'tang' ? 'text-kq-vuot' : c.key === 'giam' ? 'text-kq-duoi' : ''} />{h.tong ? <span>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
   };
   return (

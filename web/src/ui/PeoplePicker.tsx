@@ -184,7 +184,7 @@ const IcXuong = () => (
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false, chiNhanh = null,
   khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them,
-  tim, nhieu, xBo, gon, tinh, tieuDe, dau, onGo, nhan,
+  tim, nhieu, xBo, gon, tinh, tieuDe, dau, onGo, chuGo, nhan,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
@@ -228,6 +228,8 @@ export function ChonNguoi({
   tieuDe?: string;
   /** GD-12a: chữ đang gõ — ô "Tìm GV" của Phân tích lọc bảng theo chữ trong lúc gõ (chọn một người vẫn là `onChange`). */
   onGo?: (go: string) => void;
+  /** Chiều ngược của `onGo`: trang đặt chữ gõ (vd "Xoá lọc" của Phân tích › Tìm GV trả ô về trống). Vắng → ô tự giữ chữ. */
+  chuGo?: string;
   /** GD-13a (mockup ⑥ K2 `.oc .nh`): ô LUÔN có giá trị (ô "Xem") — nhãn mờ trước giá trị, ▾ thay ✕, không nền "đang lọc". */
   nhan?: string;
 }) {
@@ -241,6 +243,7 @@ export function ChonNguoi({
   const editing = !!nhieu || suaState;   // chọn nhiều: luôn là ô gõ (chip nằm trong ô)
   const [term, setTerm] = useState('');
   useEffect(() => { onGo?.(term); }, [term]); // eslint-disable-line react-hooks/exhaustive-deps -- chỉ báo khi chữ đổi
+  useEffect(() => { if (chuGo !== undefined) setTerm(chuGo); }, [chuGo]);
   const [open, setOpen] = useState(!!tuMo);
   const [activeIndex, setActiveIndex] = useState(-1);
   /** Backspace lần một ở ô trống (chọn nhiều): chip cuối được chọn (viền nhấn) — lần hai mới bỏ. */
@@ -585,15 +588,15 @@ ChonNguoi.tuNhan = true;
  * GD-5: ô LỌC có tìm trong hàng lọc (thay `<select>` "Mọi TVV" / "Người: Tất cả"): giữ giá trị chuỗi như select cũ ('' = tất cả), danh sách có sẵn
  * của trang (không gọi máy chủ). Đóng: "Mọi …" + ▾; đã lọc: tên đậm + ✕ bỏ lọc (viền nhấn như `OChon dangLoc`).
  */
-export function ChonLoc({ ds, value, onChange, ariaLabel, tatCa, placeholder, className = '', onGo, disabled }: {
+export function ChonLoc({ ds, value, onChange, ariaLabel, tatCa, placeholder, className = '', onGo, chuGo, disabled }: {
   ds: { gt: string; ten: string; phu?: string; nhom?: string }[]; value: string; onChange: (v: string) => void;
-  ariaLabel: string; tatCa: string; placeholder?: string; className?: string; onGo?: (go: string) => void; disabled?: boolean;
+  ariaLabel: string; tatCa: string; placeholder?: string; className?: string; onGo?: (go: string) => void; chuGo?: string; disabled?: boolean;
 }) {
   const i = ds.findIndex((x) => x.gt === value);
   return (
     <div className={className}>
       <ChonNguoi value={i >= 0 ? { kieu: 'tai_khoan', id: i + 1, ten: ds[i].ten, phu: ds[i].phu } : null} nhom="nhan_vien" choToi={false} choNgoai={false} gon xBo
-        ds={ds.map((x, k) => ({ id: k + 1, ten: x.ten, phu: x.phu, nhom: x.nhom }))} macDinhTrong={tatCa} ariaLabel={ariaLabel} placeholder={placeholder} onGo={onGo} disabled={disabled}
+        ds={ds.map((x, k) => ({ id: k + 1, ten: x.ten, phu: x.phu, nhom: x.nhom }))} macDinhTrong={tatCa} ariaLabel={ariaLabel} placeholder={placeholder} onGo={onGo} chuGo={chuGo} disabled={disabled}
         onChange={(v) => onChange(v?.kieu === 'tai_khoan' ? ds[v.id - 1]?.gt ?? '' : '')} />
     </div>
   );
