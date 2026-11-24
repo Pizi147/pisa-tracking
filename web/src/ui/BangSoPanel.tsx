@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 /**
  * BẢNG TRONG PANEL SỐ 720 (SO-720, mockup v24 `phan-tich-panel-so.html` B0–B8; DESIGN NH9). Một bảng sát mép panel: cột 1 (Học viên) vừa chữ, mọi cột còn lại rộng
- * BẰNG NHAU và căn GIỮA; cột chữ / ngày căn trái; hạn ở cột cuối căn phải sát mép. Cột lý do (`nen`) nền nhấn nhạt. Dòng 48 px, không đường kẻ dọc.
+ * BẰNG NHAU và căn GIỮA; cột chữ / ngày căn trái; cột cuối căn phải sát mép. Cột lý do (`nen`) nền nhấn nhạt. Dòng 48 px, không đường kẻ dọc.
  * Cố định bố cục (`table-layout: fixed`): chữ dài xuống dòng trong ô, không đè sang ô bên.
  */
 export type CotSo = {
@@ -17,7 +17,8 @@ const CAN = { trai: 'text-left', giua: 'text-center', phai: 'text-right' } as co
 export function BangSoPanel<T>({ ten, cot, hang, khoa, o }: {
   ten: string; cot: readonly CotSo[]; hang: readonly T[]; khoa: (h: T) => string | number; o: (h: T, c: CotSo) => ReactNode;
 }) {
-  const canCua = (c: CotSo, i: number) => c.can ?? (i === 0 ? 'trai' : 'giua');
+  /* NH9: cột cuối SÁT MÉP PHẢI (không để khoảng trống giữa số cuối và mép panel). */
+  const canCua = (c: CotSo, i: number) => c.can ?? (i === 0 ? 'trai' : i === cot.length - 1 ? 'phai' : 'giua');
   return (
     <div className="table-scroll">
       <table className="w-full" style={{ tableLayout: 'fixed' }} aria-label={ten}>
