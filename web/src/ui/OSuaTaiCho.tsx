@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -21,6 +21,10 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
   /* Esc / Đóng khi đã gõ khác → hỏi MỘT lần "Bỏ thay đổi · Ở lại" (cùng phản hồi với `SuaTaiDong`), không mất chữ đang gõ. */
   const [hoiBo, setHoiBo] = useState(false);
   const o = useRef<HTMLInputElement>(null);
+  const nutSua = useRef<HTMLButtonElement>(null);
+  /* Đóng ô (lưu xong / huỷ / Esc) → input gỡ khỏi DOM, focus rơi về <body>: trả về nút "Sửa" đã mở nó (người dùng bàn phím không mất chỗ). */
+  const daSua = useRef(false);
+  useEffect(() => { if (daSua.current && !sua) nutSua.current?.focus({ preventScroll: true }); daSua.current = sua; }, [sua]);
   const idLoi = useId();
   const goc = giaTri ?? '';
   if (chiXem) return <span className={goc ? 'text-slate-100' : 'text-slate-500'}>{goc || t('Chưa có')}</span>;
@@ -34,7 +38,7 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
   };
   if (!sua) {
     return (
-      <button type="button" aria-label={`${t('Sửa')} ${nhan}`} title={t('Sửa')} onClick={() => { setV(goc); setGocMo(goc); setSua(true); }}
+      <button ref={nutSua} type="button" aria-label={`${t('Sửa')} ${nhan}`} title={t('Sửa')} onClick={() => { setV(goc); setGocMo(goc); setSua(true); }}
         className={`group -ml-1 inline-flex max-w-[calc(100%+0.25rem)] items-center gap-1.5 rounded-md border px-2 py-1 text-left text-sm hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${goc ? 'text-slate-100' : 'border-dashed text-accent'}`}
         style={{ borderColor: 'var(--line-strong)' }}>
         <span className="min-w-0 break-words">{goc || trong || t('Chưa có')}</span>
@@ -44,8 +48,8 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
   }
   return (
     <span className="grid gap-1.5">
-      <input ref={o} autoFocus className={`field ${rong}`} aria-label={nhan} value={v} maxLength={toiDa} disabled={busy}
-        aria-invalid={!!loi} aria-describedby={loi ? idLoi : undefined}
+      <input ref={o} autoFocus className={`field ${rong}`} aria-label={nhan} value={v} maxLength={toiDa} readOnly={busy}
+        aria-busy={busy || undefined} aria-invalid={!!loi} aria-describedby={loi ? idLoi : undefined}
         onChange={(e) => setV(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); void luu(); }
