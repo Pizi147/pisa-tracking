@@ -164,9 +164,12 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     /* Hoàn tác: a về chưa khai, b về bậc 1 (tháng / ghi chú cũ); GVBM không có quyền lô. */
     const lai = (x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc });
     assert(maLoi(() => lo.loHoanTacCapBac(gvbm, cid, { em: [lai(kq(r, a))] })) === 403, 'GVBM 403');
-    /* Rà Hoàn tác 25/11: `truoc` gửi GIẢ (bậc 5 / bậc 4) → máy chủ bỏ qua, về đúng bản nó đã ghi (b: bậc 1 · 2026-08; a: xoá dòng vừa khai). */
+    /* Rà Hoàn tác 25/11: `truoc` gửi GIẢ → máy chủ không dùng số đó: b (có lần sửa của Head) về đúng bản máy chủ ghi (bậc 1 · 2026-08);
+       a (lần lưu là khai mới) mà web báo "về bậc 4" → từ chối, dòng giữ nguyên; a gửi đúng (`truoc: null`) → xoá dòng vừa khai. */
+    const giaA = lo.loHoanTacCapBac(head, cid, { em: [{ ...lai(kq(r, a)), truoc: { bac: 4, thang: '2026-01', ghiChu: 'giả' } }] });
+    assert(!kq(giaA, a).ok && bacDb(a).bac === 3, `truoc giả cho dòng khai mới → từ chối: ${JSON.stringify(giaA)}`);
     const c0 = demCau();
-    const h = lo.loHoanTacCapBac(head, cid, { em: [{ ...lai(kq(r, a)), truoc: { bac: 4, thang: '2026-01', ghiChu: 'giả' } }, { ...lai(kq(r, b)), truoc: { bac: 5, thang: '2026-01', ghiChu: 'giả' } }] });
+    const h = lo.loHoanTacCapBac(head, cid, { em: [lai(kq(r, a)), { ...lai(kq(r, b)), truoc: { bac: 5, thang: '2026-01', ghiChu: 'giả' } }] });
     const cauHt = demCau() - c0;
     console.log(`      đo: hoàn tác cấp bậc 2 em ${cauHt} câu`);
     assert(cauHt <= TRAN_GHI_LO.loHoanTacCapBac2Em, `hoàn tác cấp bậc ${cauHt} câu > ${TRAN_GHI_LO.loHoanTacCapBac2Em}`);

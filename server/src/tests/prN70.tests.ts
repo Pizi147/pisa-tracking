@@ -210,15 +210,15 @@ export async function runPrN70Tests(t: YThucTestKit) {
     const ht = lo.loHoanTacCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 1, truoc: null }, { studentId: cu, ycId: kq(cu).ycId }] });
     assert(ht.em.every((x: any) => x.ok) && !khai(moi) && khai(cu).bac === 2 && the(cu)[0].trang_thai === 'tu_dong', JSON.stringify(ht));
 
+    const khaiTruocHead = khai(cu).thang;
     const rh = lo.loCapBac(head, cid, { em: [{ studentId: cu, bac: 4 }, { studentId: moi, bac: 2 }] });
     assert(rh.em.every((x: any) => x.ok && !x.guiDuyet) && khai(cu).bac === 4 && khai(moi).bac === 2 && the(cu).length === 1, JSON.stringify(rh));
-    /* SUA-GOP-2511 (Việc để sau 25/11): `truoc` do web gửi — Hoàn tác KHÔNG được đặt ngày / tháng xử lý ở tương lai (như khai thường; bản lưu thật luôn ≤ hôm nay). */
+    /* SUA-GOP-2511 → rà Hoàn tác 25/11: `truoc` do web gửi (bậc / ngày tương lai giả) bị BỎ QUA — máy chủ về đúng bản nó ghi lúc sửa (bậc 2, ngày cũ). */
     const sau = addDays(TODAY, 40) as string;
-    for (const thang of [sau, sau.slice(0, 7)]) {
-      const tl = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: cu, bac: 4, truoc: { bac: 2, thang, ghiChu: 'giả tương lai' } }] });
-      assert(tl.em[0].ok === false && /tương lai/.test(tl.em[0].loi.chu) && khai(cu).bac === 4, `Hoàn tác nhận ${thang}: ${JSON.stringify(tl)}`);
-    }
-    const hh = lo.loHoanTacCapBac(head, cid, { em: rh.em.map((x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc ?? null })) });
+    const thangCu = khaiTruocHead;
+    const tl = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: cu, bac: 4, truoc: { bac: 6, thang: sau, ghiChu: 'giả tương lai' } }] });
+    assert(tl.em[0].ok && khai(cu).bac === 2 && khai(cu).thang === thangCu && khai(cu).thang !== sau, `Hoàn tác theo bản máy chủ: ${JSON.stringify([tl, khai(cu)])}`);
+    const hh = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: moi, bac: 2, truoc: null }] });
     assert(hh.em.every((x: any) => x.ok) && khai(cu).bac === 2 && !khai(moi), JSON.stringify(hh));
   }));
 

@@ -307,6 +307,8 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
         return b;
       });
       if (tr) return { nhan: tr.bac > 0 ? nhanLoaiXuLy(kindCuaBac(tr.bac)) : BAC_0_NHAN };
+      /* Web báo "về bậc trước" mà máy chủ không có lần sửa nào của người bấm để về → không đoán, không xoá thay (lần lưu web nói tới không khớp). */
+      if (x.truoc) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
       tx(() => {
         const lai = trangThaiYThuc([sid], c.homNay).get(sid)!;
         if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');

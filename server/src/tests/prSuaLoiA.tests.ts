@@ -49,7 +49,7 @@ export async function runPrSuaLoiATests(t: any) {
     assert(!src.includes("void goi((g) => (g.coTheSuaTheoDoi && g.mo ? thaoTac.themTheoDoi(g, [n.id]) : null))"), 'Hoàn tác còn thêm vào mọi phần mở');
     assert(src.includes('const kq = await Promise.allSettled(chon.map(f));') && src.includes("if (loi) { toast.push('error', loi?.message ?? t('Không lưu được')); reload(); }"),
       'mỗi phần phải lưu riêng; lỗi một phần thì tải lại trạng thái');
-    assert(src.includes('daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo') && src.includes('dsMoi.current = ds;'), 'Hoàn tác phải lọc đúng tập đã bỏ, đọc danh sách mới nhất');
+    assert(src.includes('daBo.includes(khoaPhan(g)) && (g.coTheSuaTheoDoi || n.id === toi) && g.mo') && src.includes('dsMoi.current = ds;'), 'Hoàn tác phải lọc đúng tập đã bỏ, đọc danh sách mới nhất');
     /* PTA rà #2162: không phần nào thêm lại được → không hiện Hoàn tác; hai lượt về sát nhau không đè nhau. */
     assert(src.includes("if (!themLai().length) { toast.push('ok', chu); return; }"), 'Hoàn tác hiện cả khi không còn phần nào thêm lại được');
     assert(src.includes('dsMoi.current = dsMoi.current.map((g) => moi.get(khoaPhan(g)) ?? g); dat(dsMoi.current);'), 'lượt lưu sau đè lượt trước khi chưa vẽ lại');
