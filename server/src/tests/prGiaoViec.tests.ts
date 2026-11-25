@@ -414,13 +414,19 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const cau = soCauSql() - c0;
     console.log(`      đo: tự thêm lại theo dõi ${cau} câu`);
     assert(cau <= TRAN_GHI_LO.tuThemLaiTheoDoi, `tự thêm lại ${cau} câu > ${TRAN_GHI_LO.tuThemLaiTheoDoi}`);
-    assert(co(id), 'Hoàn tác: GVBM theo dõi lại');
+    assert(theoDoi('bao_ph', id).some((r) => r.user_id === gvbm.userId && r.nguon === 'gv_ghi'), 'Hoàn tác: GVBM theo dõi lại, ĐÚNG nguồn cũ (gv_ghi, không thành tay)');
     /* Quá cửa sổ Hoàn tác / người khác bỏ mình → không tự thêm lại được. */
     gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);
     conn.prepare(`UPDATE viec_giao_lan SET luc = ? WHERE loai = 'bao_ph' AND ref_id = ? AND truong = 'theo_doi'`).run(new Date(Date.now() - 3_600_000).toISOString(), id);
     assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === 403 && !co(id), 'quá cửa sổ Hoàn tác → 403');
+    /* PTA rà #2166 P1: tự bỏ → tự thêm → Head bỏ → tự thêm phải 403 (xét dòng lịch sử MỚI NHẤT, không "có lần tự bỏ nào"). */
+    gv.boTheoDoi(gvbm, 'bao_ph', id2, gvbm.userId);
+    gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] });
     gv.boTheoDoi(ql, 'bao_ph', id2, gvbm.userId);
-    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] })) === 403 && !co(id2), 'Head bỏ mình → không tự thêm lại (403)');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] })) === 403 && !co(id2), 'tự bỏ → tự thêm → Head bỏ → tự thêm: 403');
+    /* Head Hoàn tác lần bỏ của mình → GVBM về đúng nguồn gv_ghi. */
+    gv.themTheoDoi(ql, 'bao_ph', id2, { userIds: [gvbm.userId] });
+    assert(theoDoi('bao_ph', id2).some((r) => r.user_id === gvbm.userId && r.nguon === 'gv_ghi'), 'Head hoàn tác: đúng nguồn cũ');
   }));
 
   await checkAsync('GV1-16 · (F) người theo dõi đã rời chi nhánh của việc: không thấy ở tab, không nhận tin, không đọc panel', () => thu(async () => {

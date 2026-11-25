@@ -354,6 +354,12 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     const { id: id2 } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'khac', moi: 'Sửa ngày sinh', lyDo: 'Nhập sai' });
     yc.tuChoiYeuCau(P.mbManager, id2, 'Cần giấy tờ');
     assert(maLoi(() => yc.rutYeuCau(gvcn, id2)) === 400, 'QL đã trả lời → 400');
+    /* PTA rà #2166: đối tượng hết ý nghĩa sau lúc rút (em Thôi học — luật `chet` của loại) → 409 có lý do, thẻ KHÔNG về chờ. */
+    const { id: id3 } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'khac', moi: 'Sửa địa chỉ', lyDo: 'PH chuyển nhà' });
+    yc.rutYeuCau(gvcn, id3);
+    conn.prepare("UPDATE students SET status = 'finished' WHERE id = ?").run(sid);
+    let loi3: any = null; try { yc.boRutYeuCau(gvcn, id3); } catch (e) { loi3 = e; }
+    assert(loi3?.status === 409 && /không hoàn tác rút/.test(loi3.message) && theCua(id3).trang_thai === 'tu_dong', `em thôi học → 409: ${loi3?.message}`);
   }));
 
   await checkAsync('OV7a-5b · Đề xuất chuyển lớp: Sửa lớp / tuần / lý do (lớp sai → 400) và Rút', () => thu(() => {
@@ -398,6 +404,11 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     yc.boRutYeuCau(nguoi, the.id);
     assert(JSON.stringify(theCua(the.id)) === JSON.stringify(theTruoc) && sosState.sosCaseState(the.doi_tuong_id).choDuyetKhongTheoDoi, 'thẻ về chờ, Case lại chờ Head');
     assert(JSON.stringify(get('SELECT * FROM case_milestones WHERE id = ?', mocTruoc.id)) === JSON.stringify(mocTruoc), 'mốc xin chèn lại y như cũ');
+    /* PTA rà #2166: sau lúc rút Case có mốc / PA mới → không hoàn tác (chặn đi vòng RKC-2b huỷ PA người khác). */
+    yc.rutYeuCau(nguoi, the.id);
+    conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ghi_chu_thu', ?, 'Mốc mới sau rút', ?, ?)`)
+      .run(the.doi_tuong_id, TODAY, nguoi.userId, new Date(Date.now() + 1000).toISOString());
+    assert(maLoi(() => yc.boRutYeuCau(nguoi, the.id)) === 409 && theCua(the.id).trang_thai === 'tu_dong', 'Case có mốc mới sau rút → 409');
   }));
 
   const { dinhNghiaCua } = await import('../duyet/loaiYeuCau.ts');

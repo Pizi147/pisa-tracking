@@ -271,7 +271,8 @@ function banTruocCuaMinh(p: Principal, sid: number, sau: number): { bac: number;
     AND action IN ('discipline.declare_level', 'discipline.declare_level_edit', 'discipline.declare_level_undo') ORDER BY id DESC LIMIT 1`).get(sid) as any;
   if (a?.action !== 'discipline.declare_level_edit' || a.actor_user_id !== p.userId) return null;
   const b = JSON.parse(a.before_json ?? 'null'), s = JSON.parse(a.after_json ?? 'null');
-  if (s?.bac !== sau || typeof b?.bac !== 'number' || typeof b.ghiChu !== 'string' || typeof b.cycleId !== 'number') return null;
+  /* PTA rà #2166: lần sửa áp từ thẻ `sua_khai_bac` (Head duyệt) không phải lần lưu lô — không hoàn tác ở lô (thẻ có Huỷ quyết định riêng). */
+  if (s?.bac !== sau || s?.yeuCauId != null || typeof b?.bac !== 'number' || typeof b.ghiChu !== 'string' || typeof b.cycleId !== 'number') return null;
   return { bac: b.bac, thang: b.thang ?? null, ghiChu: b.ghiChu, cycleId: b.cycleId };
 }
 

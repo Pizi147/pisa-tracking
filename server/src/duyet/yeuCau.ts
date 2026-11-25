@@ -8,7 +8,7 @@
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
 import { can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
@@ -647,7 +647,15 @@ export function boRutYeuCau(p: Principal, id: number) {
     if (yc.nguoi_xin !== p.userId || (g && g.nguoi !== p.userId)) throw forbidden('Chỉ người vừa rút mới hoàn tác được yêu cầu này.');
     if (!g) throw conflict('Yêu cầu này không có lần rút nào để hoàn tác.');
     if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict('Đã quá lâu sau khi rút — gửi lại yêu cầu nếu vẫn cần.');
-    dinhNghiaCua(yc.loai)?.hoanTacRut?.kiem?.(p, yc);
+    const def = dinhNghiaCua(yc.loai);
+    def?.hoanTacRut?.kiem?.(p, yc);
+    /* PTA rà #2166: đối tượng đã không còn ý nghĩa (luật `chet` của loại — Case đóng, em thôi học / chuyển lớp…) hoặc có việc mới sau lúc rút → 409 có
+       lý do, KHÔNG đưa thẻ về chờ rồi để lượt quét đóng lại. */
+    if (def?.chet && conn.prepare(`SELECT 1 FROM yeu_cau_duyet y WHERE y.id = ? AND (${def.chet.sql})`).get(id)) {
+      throw loi(409, '{lyDo} — không hoàn tác rút được; gửi yêu cầu mới nếu vẫn cần.', { lyDo: def.chet.lyDo });
+    }
+    const chan = def?.hoanTacRut?.chan?.(conn, yc, g.luc);
+    if (chan) throw conflict(chan);
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_loai = ? AND doi_tuong_id = ? AND trang_thai = 'cho' AND id != ?`)
       .get(yc.loai, yc.doi_tuong_loai, yc.doi_tuong_id, id)) {
       throw conflict('Đã có yêu cầu mới đang chờ cho cùng việc này — không hoàn tác lần rút cũ được.');

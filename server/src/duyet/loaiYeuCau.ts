@@ -113,9 +113,11 @@ export type DinhNghiaLoai = {
   khiRut?: (p: Principal, yc: YeuCauRow, khoaTep: string[]) => void;
   /**
    * Rà Hoàn tác 25/11 (chủ SP "không khoá cứng"): có trường này thì Rút có Hoàn tác ngắn (`boRutYeuCau`) — hộp chụp thẻ + các dòng `khiRut` XOÁ (`xoa`);
-   * `kiem` = kiểm quyền lại lúc hoàn tác (như `khiRut`). Loại không có (Ý thức: rút xoá hẳn lần xử lý + tệp; Đề xuất PA / Giữ PA GV: rút đổi PA) → không Hoàn tác.
+   * `kiem` = kiểm quyền lại lúc hoàn tác (như `khiRut`); `chan` = câu chặn của loại (việc làm SAU lúc rút `luc` ở dòng ngoài ảnh chụp) — null = không chặn.
+   * Loại không có (Ý thức: rút xoá hẳn lần xử lý + tệp; Đề xuất PA / Giữ PA GV: rút đổi PA) → không Hoàn tác.
    */
-  hoanTacRut?: { xoa?: (yc: YeuCauRow) => { bang: string; dk: string; args: unknown[] }[]; kiem?: (p: Principal, yc: YeuCauRow) => void };
+  hoanTacRut?: { xoa?: (yc: YeuCauRow) => { bang: string; dk: string; args: unknown[] }[]; kiem?: (p: Principal, yc: YeuCauRow) => void;
+    chan?: (conn: any, yc: YeuCauRow, luc: string) => string | null };
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
   chet?: { sql: string; lyDo: string;
     /** OV-13b: sau khi thẻ tự đóng — đảo bảng nguồn (thẻ đổi PA trả PA gốc). Trong giao dịch của `quetYeuCau`. */
@@ -472,7 +474,13 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
     khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
-    hoanTacRut: { xoa: (yc) => [{ bang: 'case_milestones', dk: `id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`, args: [yc.doi_tuong_id] }] },
+    hoanTacRut: {
+      xoa: (yc) => [{ bang: 'case_milestones', dk: `id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`, args: [yc.doi_tuong_id] }],
+      /* PTA rà #2166: Case đã có PA / mốc mới sau lúc rút → không đưa thẻ về chờ (Head duyệt sẽ huỷ PA người khác vừa thêm — đi vòng RKC-2b). */
+      chan: (conn, yc, luc) => (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND created_at > ? UNION ALL
+          SELECT 1 FROM case_milestones WHERE case_id = ? AND created_at > ? LIMIT 1`).get(yc.doi_tuong_id, luc, yc.doi_tuong_id, luc)
+        ? 'Case đã có PA hoặc mốc mới sau lúc rút — không hoàn tác được; gửi lại "Không cần theo dõi" nếu vẫn cần.' : null),
+    },
     /* RKC-3c: Case đã đổi sau quyết định → đi thẳng: Mở lại Case (nếu đang đóng) + trả các PA đã dừng vì "Không cần theo dõi" về trạng thái lúc duyệt
        (bản ghi đảo nếu có, không thì "Chưa bắt đầu"). Từ chối: chỉ thẻ về chờ (hạn xác nhận giữ như hiện tại). */
     huyThang: {

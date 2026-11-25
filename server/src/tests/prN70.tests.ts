@@ -220,6 +220,12 @@ export async function runPrN70Tests(t: YThucTestKit) {
     assert(tl.em[0].ok && khai(cu).bac === 2 && khai(cu).thang === thangCu && khai(cu).thang !== sau, `Hoàn tác theo bản máy chủ: ${JSON.stringify([tl, khai(cu)])}`);
     const hh = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: moi, bac: 2, truoc: null }] });
     assert(hh.em.every((x: any) => x.ok) && khai(cu).bac === 2 && !khai(moi), JSON.stringify(hh));
+    /* PTA rà #2166: lần sửa áp từ thẻ (Head duyệt `sua_khai_bac`) không phải lần lưu lô → Hoàn tác lô của Head không về bậc trước. */
+    const g5 = lo.loCapBac(gvcn, cid, { em: [{ studentId: cu, bac: 5 }], ghiChu: 'Rà lại lần hai' });
+    yc.duyetYeuCau(head, g5.em[0].ycId);
+    assert(khai(cu).bac === 5, 'Head duyệt thẻ → bậc 5');
+    const hd = lo.loHoanTacCapBac(head, cid, { em: [{ studentId: cu, bac: 5, truoc: { bac: 2, thang: null, ghiChu: '' } }] });
+    assert(!hd.em[0].ok && khai(cu).bac === 5, `lần áp từ thẻ không hoàn tác ở lô: ${JSON.stringify(hd)}`);
   }));
 
   /* Tốc độ (CLAUDE.md "Tốc độ + compute"): thẻ chờ đọc KÈM câu khai sẵn có → mở hồ sơ / bảng lô không thêm câu; lô gửi duyệt nặng hơn lô áp ngay (thẻ + chuông
