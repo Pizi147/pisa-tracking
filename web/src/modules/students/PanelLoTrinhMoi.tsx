@@ -5,7 +5,7 @@ import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { TrangThaiLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import { NutChon } from '../../ui/ui.tsx';
+import { LoiTaiNho, NutChon } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -91,7 +91,9 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled, nen = 
             <NutChon chon={!v.lopKhac} onClick={() => onChange({ ...v, lopKhac: false })}>{t('Giữ {lop}', { lop: bt.lopNay?.code ?? '' })}</NutChon>
             <NutChon chon={v.lopKhac} onClick={() => onChange({ ...v, lopKhac: true })}>{t('Lớp khác')}</NutChon>
           </div>
-          {v.lopKhac && (
+          {/* Rà ngoài 01 B4: lỗi tải ≠ "Đang tải…" / rỗng — báo tại ô + Thử lại, lựa chọn khác giữ nguyên. */}
+          {v.lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
+            : v.lopKhac && (
             <ChonLop ariaLabel={t('Lớp khác')} value={v.lopMoiId} onChange={(id) => onChange({ ...v, lopMoiId: id })} invalid={bamLuu && !v.lopMoiId} tat={disabled}
               khongKhop={dsLop.data ? t('Không có lớp Fast Track khác đang chạy') : t('Đang tải…')} ds={ds} />
           )}
@@ -232,7 +234,8 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
               <NutChon chon={!lopKhac} onClick={() => setLopKhac(false)}>{t('Giữ {lop}', { lop: xem.data?.lopGiu?.code ?? bt.lopNay?.code ?? lop ?? '' })}</NutChon>
               <NutChon chon={lopKhac} onClick={() => setLopKhac(true)}>{t('Lớp khác')}</NutChon>
             </div>
-            {lopKhac && (
+            {lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
+              : lopKhac && (
               <ChonLop ariaLabel={t('Lớp khác')} value={lopMoiId} onChange={setLopMoiId} invalid={bamLuu && !lopMoiId}
                 khongKhop={dsLop.data ? t('Không có lớp {lt} đang chạy', { lt: r === 'RF' ? 'RF' : khac ? 'FT' : 'LT' }) : t('Đang tải…')}
                 ds={r ? lopChonLoTrinhMoi(r, dsLop.data?.lop ?? []) : []} />

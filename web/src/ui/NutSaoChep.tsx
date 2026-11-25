@@ -5,22 +5,22 @@ import { NoiTren } from './NoiTren.tsx';
 /**
  * GD-21 (mockup ⑬ H9, lời 51 / 15/11): "Sao chép" = MỘT biểu tượng hai tờ giấy — không chữ, không khung nút (vuông trong suốt 36 px, 375: 44 px, như ✕ / ⓘ).
  * Chép `chu` (chữ thuần, không tên học viên) vào bộ nhớ tạm; xong đổi ✓ xanh 2 giây + vùng `aria-live` báo "Đã chép". Trình duyệt chặn chép (XM-8) →
- * hộp nhỏ ⚠ có chữ bôi đen sẵn để người dùng tự Ctrl + C. `ten` = tên người / nhóm cho `aria-label` và `title`.
+ * hộp nhỏ ⚠ có chữ bôi đen sẵn để người dùng tự Ctrl + C. `ten` = tên người / nhóm cho `aria-label` và `title`; `nhan` thay cả nhãn đó (vd "Chép mật khẩu ban đầu" — rà ngoài 01 B6).
  */
-export function NutSaoChep({ chu, ten }: { chu: string; ten: string }) {
+export function NutSaoChep({ chu, ten, nhan: nhanRieng }: { chu: string; ten?: string; nhan?: string }) {
   const [xong, setXong] = useState(false);
   const [chan, setChan] = useState(false);
   const hop = useRef<HTMLTextAreaElement>(null);
   const nut = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (!xong) return undefined; const h = setTimeout(() => setXong(false), 2000); return () => clearTimeout(h); }, [xong]);
   useEffect(() => { if (chan) hop.current?.select(); }, [chan]);
-  const nhan = xong ? t('Đã chép') : t('Sao chép việc quá hạn của {gv} để nhắn', { gv: ten });
+  const nhan = xong ? t('Đã chép') : nhanRieng ?? t('Sao chép việc quá hạn của {gv} để nhắn', { gv: ten ?? '' });
   const chep = async () => {
     try { await navigator.clipboard.writeText(chu); setChan(false); setXong(true); } catch { setChan(true); }
   };
   return (
     <span className="relative inline-flex shrink-0 font-normal">
-      <button ref={nut} type="button" onClick={chep} aria-label={nhan} title={nhan}
+      <button ref={nut} type="button" onClick={chep} disabled={!chu} aria-label={nhan} title={nhan}
         className={`inline-flex h-9 w-9 appearance-none items-center justify-center rounded-md border-0 bg-transparent p-0 hover:bg-[color:var(--accent-soft)] max-sm:h-11 max-sm:w-11 ${xong ? 'text-ok' : 'text-[color:var(--text-dim)]'}`}>
         {xong
           ? <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 8.5l3.2 3.2L13 5" /></svg>

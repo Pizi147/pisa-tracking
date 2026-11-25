@@ -9718,6 +9718,9 @@ await runPrSvLoTrinhTests({ check, assert, conn, P, TODAY, classId, addDays } as
 // ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
 const { runPrCuoiKhoaTests } = bocTep('prCuoiKhoa', await import('./prCuoiKhoa.tests.ts'));
 await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
+// ==================================================================== SUA-LOI-01 (rà ngoài 25/11 B2–B7: lưu chậm, gập Case, lỗi tải danh mục phụ)
+const { runPrSuaLoi01Tests } = bocTep('prSuaLoi01', await import('./prSuaLoi01.tests.ts'));
+await runPrSuaLoi01Tests({ check, assert } as any);
 // ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
 const { runPrKetPetTests } = bocTep('prKetPet', await import('./prKetPet.tests.ts'));
 await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);

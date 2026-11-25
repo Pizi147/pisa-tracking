@@ -7,7 +7,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { Field, Outcome, Th } from '../../ui/ui.tsx';
+import { Field, LoiTaiNho, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonLop, phuLop, tuanHoc } from '../../ui/ChonLop.tsx';
 import {
@@ -215,10 +215,12 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         {/* LỚP VÀ TUẦN BẮT ĐẦU — hai quyết định của CẢ LÔ, đặt ở trên cùng: lớp quyết định lưới có những cột nào. */}
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
           <Field label={t('Thêm vào lớp')} required loi={lf.loiCua(loiLo, 'lop')}>
+            {/* Rà ngoài 01 B4: lỗi tải ≠ "Đang tải…" — báo tại ô + Thử lại; dòng đã gõ / ô dán giữ nguyên. */}
+            {classes.error && !classes.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={classes.reload} className="" /> :
             <ChonLop ariaLabel={t('Thêm vào lớp')} {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : t('Đang tải…')}
               onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
               ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code,
-                phu: phuLop({ ct: c.programme_name, cn: motCn ? null : c.branch_code, siSo: c.student_count, tuan: tuanHoc(c.start_date, homNay) }) }))} />
+                phu: phuLop({ ct: c.programme_name, cn: motCn ? null : c.branch_code, siSo: c.student_count, tuan: tuanHoc(c.start_date, homNay) }) }))} />}
           </Field>
           <Field label={t('Tuần bắt đầu học')} luat={t('Mặc định cho mọi dòng; cột tuần dán từ Excel vẫn thắng.')} hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />

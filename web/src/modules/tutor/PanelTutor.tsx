@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
@@ -74,14 +74,21 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
     ...(noiDung.trim().length >= NX_TOI_THIEU ? [] : [{ khoa: 'tutor-nx', nhan: t('Nhận xét'), lyDo: t('Nhận xét cần ít nhất {n} ký tự.', { n: NX_TOI_THIEU }) }]),
   ];
   const boForm = () => { setKl(null); setNoiDung(''); setDangSua(null); setLoiChung(null); lf.datLai(); };
+  /* Rà ngoài 01 B2: form lúc trả về (ô vẫn nhận gõ / bấm Sửa dòng khác khi đang lưu) — chỉ dọn khi form còn đúng bản đã gửi. */
+  const formNay = useRef({ kl, noiDung, dangSua });
+  formNay.current = { kl, noiDung, dangSua };
   async function luu() {
     lf.bam();
     if (loi.length) { document.getElementById(lf.oId(loi[0].khoa))?.focus(); return; }
     setGui(true);
     try {
+      const gui0 = { kl, noiDung, dangSua };
       const than = { ketLuan: kl, noiDung: noiDung.trim() };
-      if (dangSua) await api.patch(`/tutors/nhan-xet/${dangSua}`, than); else await api.post(`/tutors/${id}/nhan-xet`, than);
-      boForm();
+      const moi = dangSua ? (await api.patch(`/tutors/nhan-xet/${dangSua}`, than), null) : await api.post<{ id: number }>(`/tutors/${id}/nhan-xet`, than);
+      const f = formNay.current;
+      if (f.kl === gui0.kl && f.noiDung === gui0.noiDung && f.dangSua === gui0.dangSua) boForm();
+      /* Gõ tiếp vào nhận xét vừa TẠO → giữ chữ, lần Lưu sau sửa đúng nhận xét đó (không tạo bản trùng). Đã chuyển sang sửa nhận xét khác → để nguyên. */
+      else if (f.dangSua === gui0.dangSua && !gui0.dangSua && moi?.id) setDangSua(moi.id);
       invalidate('/tutors');
       setDaLuu(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
     } catch (e) {

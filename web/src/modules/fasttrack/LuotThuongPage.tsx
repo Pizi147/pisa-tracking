@@ -14,7 +14,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { ErrorState, Info as Tag, Skeleton, Status } from '../../ui/ui.tsx';
+import { ErrorState, Info as Tag, LoiTaiNho, Skeleton, Status } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { guiHuyDiem } from '../cham/huyDiem.ts';
@@ -70,7 +70,8 @@ export default function LuotThuongPage() {
   const bang = useApi<{ rows: SkillBoardRow[] }>(data?.dong.cases.length
     ? `/students/${data.dong.studentId}/skill-board${data.cycleId ? `?cycleId=${data.cycleId}` : ''}` : null);
   /* Sau mọi thao tác: trang lượt + bảng Case cùng tải lại — Còn lại, cột Case, hai lịch sử đổi cùng lúc. */
-  const reload = () => { taiLai(); if (bang.data) bang.reload(); };
+  /* Rà ngoài 01 B7: như hồ sơ Mock — danh sách đợt lỗi thì tải lại chung gọi lại nó. */
+  const reload = () => { taiLai(); if (bang.data) bang.reload(); if (dsDot.error) dsDot.reload(); };
   const ct = data?.programme.code ?? null;
   const luu = useLuuThuong(Number(id), reload, ct, data?.dong.studentName);
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.dong.studentId}` : null);
@@ -180,6 +181,7 @@ export default function LuotThuongPage() {
               {(dsDot.data?.rows.length ?? 0) > 1 ? (
                 <ChonDot hienTai={r.attemptId} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(x) => navigate(attemptHref({ ...x, studentId: r.studentId }), { replace: true })} />
               ) : <span className="text-[14px] font-semibold text-slate-200">{r.kindLabel}</span>}
+              {dsDot.error && !dsDot.data && <LoiTaiNho chu={t('Không tải được các đợt khác.')} onRetry={dsDot.reload} className="" />}
               <NutLuat label={t('Thông tin lượt Test')}>
                 <dl className="m-0 grid gap-2">
                   <Info label={t('Chương trình')}>{d.programme.name}</Info>
