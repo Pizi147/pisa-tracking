@@ -123,8 +123,7 @@ const EN_B_WEB = {
   /* Yêu cầu của tôi, thẻ yêu cầu, Đề xuất sửa */
   'Bạn chưa gửi yêu cầu nào cho Head': 'You have not sent any requests to a Head',
   'Đề xuất PA cần duyệt, Xin hỗ trợ Head ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.': 'PA proposals, Ask Head in weekly results, or Change requests from ⋯ on a student profile — every request shows here.',
-  '{cho} đang chờ Head ·': '{cho} waiting for a Head ·',
-  'đã xử lý (60 ngày)': 'handled (60 days)',
+  '60 ngày': '60 days',
   'Đã rút — Head không còn thấy yêu cầu này': 'Withdrawn — Heads no longer see this request',
   'Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại — chữ bạn gõ vẫn còn.': 'Connection lost, nothing saved. Check your network and try again — your text is kept.',
   'Đã duyệt: {tieuDe}': 'Approved: {tieuDe}',

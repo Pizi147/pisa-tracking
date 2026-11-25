@@ -71,9 +71,8 @@ figcaption { font:700 13px 'Be Vietnam Pro'; color:#4a3a06; background:#fffbea; 
 @container (max-width:599px) {
   .lg { grid-template-columns:minmax(0,1fr); }
   .yds, .y { display:block; }
-  .v { align-items:start; display:grid; grid-template-columns:auto minmax(0,1fr) auto; grid-template-areas:'lop lop hn' 'ai ct ct'; row-gap:3px; padding:10px 22px 10px 16px; width:100%; box-sizing:border-box; }
+  .v { align-items:start; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:'lop hn' 'ai ai' 'ct ct'; align-items:start; row-gap:3px; padding:10px 22px 10px 16px; width:100%; box-sizing:border-box; }
   .v .lop { grid-area:lop; } .v .ai { grid-area:ai; } .v .ct { grid-area:ct; font-size:var(--c13); } .v .hn { grid-area:hn; }
-  .v .ai + .ct::before { content:'·'; margin:0 6px; color:var(--text-faint); }
   .xo { right:2px; top:11px; margin-top:0; }
   .ph { display:block; padding:0 16px 12px; margin-top:0; }
   .ct-mo { padding:10px 16px 14px; } .yk { grid-template-columns:1fr; gap:2px; } .yk > :nth-child(odd) { margin-top:6px; }
