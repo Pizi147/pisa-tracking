@@ -329,8 +329,9 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 128 },
     { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 128 },
     { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 128 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 128 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 128 },
+    /* Rà 25/11 PR 2 (V13): hai cột đếm BÀI — tên cột ghi đơn vị (trước "Chưa nhập / Quá hạn" đọc như số việc của badge, 12 vs 8). */
+    { key: 'chua', nhan: t('Bài chưa nhập điểm'), kieu: 'diem', rong: 128 },
+    { key: 'qh', nhan: t('Bài quá hạn'), kieu: 'diem', rong: 128 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {

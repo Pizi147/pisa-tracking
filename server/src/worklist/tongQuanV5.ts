@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { dauNgayVnUtc, hanBaoPhHieuLuc, khoangMacDinh, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import type { Principal } from '../permissions.ts';
+import { bangLop, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
@@ -54,10 +54,9 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
   /* Có kỳ (Báo cáo HV) → "Thi trong kỳ" = ngày thi trong kỳ; không kỳ (Tổng quan) → tháng hiện tại. */
   const thi = tapThiThangNayLop(p, loc, f.ky);
 
-  /* lớp → chi nhánh (chế độ chi nhánh) — từ chính hàng của bảng. */
-  const cnCua = new Map<number, number>();
-  const cnTheoMa = new Map<string, number>();
-  for (const h of bang.hang) for (const l of h.loai === 'lop' ? [h] : h.lop ?? []) { cnCua.set(l.id, h.loai === 'lop' ? 0 : h.id); cnTheoMa.set(l.nhan, h.loai === 'lop' ? 0 : h.id); }
+  /* lớp → chi nhánh (chế độ chi nhánh): bảng lớp ĐỦ (`bangLop`, nhớ tiến trình, 0 câu) theo ID — rà 25/11 PR 2: trước lấy từ hàng của bảng (chỉ lớp đang
+     chạy) và chia "Đạt Target thi thật" theo MÃ lớp, nên em của lớp đã kết thúc rơi khỏi hàng chi nhánh → tổng các hàng < ô tổng. */
+  const cnCua = (lop: number | null | undefined) => (lop == null ? undefined : bangLop().get(lop)?.branchId ?? undefined);
   const theo = (khoa: (lop: number) => number | undefined) => {
     const mau = new Map<number, number>(), dat = new Map<number, number>(), th = new Map<number, number>();
     for (const s of dm?.mau ?? []) { const k = khoa(dm!.luot.get(s)!.classId); tang(mau, k); if (dm!.dat.has(s)) tang(dat, k); }
@@ -78,11 +77,11 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
       datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id), sos23Ids: h.sos23 ?? [],
     }));
   } else {
-    const s = theo((l) => cnCua.get(l));
+    const s = theo(cnCua);
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();
     for (const e of tt?.values() ?? []) {
       if (e.cot === 'chua-du') continue;
-      const k = cnTheoMa.get(e.lop);
+      const k = cnCua(e.lopId);
       tang(ttMau, k); if (e.cot === 'dat') tang(ttDat, k);
     }
     chiNhanh = bang.hang.map((h) => ({
@@ -114,7 +113,7 @@ function baoPhTrongKy(p: Principal, ky: { tu: string; den: string }): DongBaoPh[
     `SELECT v.id, v.student_id AS hv, s.full_name AS ten, v.nhan, v.han, v.han_chon, v.trang_thai AS trangThai,
             (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngayBao
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
-      WHERE s.consultant_user_id = ? AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học
+      WHERE COALESCE(v.phu_trach_id, s.consultant_user_id) = ? AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học · rà 25/11 PR 2: người giữ như sổ đúng hạn (viecDaXong)
         AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL AND v.tao_luc >= ? AND v.tao_luc < ? ORDER BY v.han, v.id`,   // R1-L6: ngày tạo theo giờ VN   // PHOI-HOP-V2: việc Meeting CX tách khỏi Báo PH vi phạm
   ).all(p.userId, dauNgayVnUtc(ky.tu), dauNgayVnUtc(addDays(ky.den, 1))) as (DongBaoPh & { han_chon: string | null })[]);
   /* HAN-BAO-PH (chủ SP 03/11, 17.3): "đúng hạn" so với HẠN HIỆU LỰC (hạn đã chọn, Quay lại học) — cùng hàm với Công việc / hồ sơ; một câu Tạm dừng. */

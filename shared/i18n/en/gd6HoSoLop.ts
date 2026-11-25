@@ -12,13 +12,12 @@ export const EN_GD6_HO_SO_LOP = {
   // Chip việc của lớp "loại · số" (lời 35)
   'Cần xếp lớp tiếp · {n}': 'Need next class · {n}',
   'Chưa chốt lộ trình · {n}': 'Pathway not set · {n}',
-  'Chờ chấm · {n}': 'To grade · {n}',
+  'Chờ chấm · {n} bài': 'To grade · {n} tests',
   'Chờ chấm · {n} việc': 'To grade · {n} tasks',   // AUDIT-2111 B2-08
-  '{b} bài · {v} việc': '{b} papers · {v} tasks',   // AUDIT-2111 B2-03
   'Thiếu thông tin · {n}': 'Missing info · {n}',
   'Chờ duyệt · {n}': 'Awaiting approval · {n}',
-  'Quá hạn · {n}': 'Overdue · {n}',
-  'Quá hạn của lớp · {n}': 'Class overdue · {n}',
+  'Quá hạn · {n} việc': 'Overdue · {n} tasks',
+  'Quá hạn của lớp · {n} việc': 'Class overdue · {n} tasks',
   // Hướng dẫn "?" (GD-6)
   'có nút + Task › Case ở đầu trang.': 'has the + Task › Case button at the top of the page.',
   'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ lớp).': 'Press <b>+ Case for …</b> in the <b>Case & action plan</b> block (or <b>+ Task › Case</b> at the top of the class profile).',

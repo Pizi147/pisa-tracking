@@ -380,7 +380,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
   const baoPh = new Map<number, { lan: string; xong: boolean; ngay: string | null }>();
   theoLoJson(hv.map((h) => h.id as number).filter((id) => vl.yThucHop.has(id)), (json) => {
     for (const r of db().prepare(`SELECT v.student_id, v.nhan, v.trang_thai,
-        (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay
+        (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay
         FROM viec_bao_ph v WHERE v.student_id IN (${DS_JSON}) AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL ORDER BY v.id`).all(json) as any[]) {
       baoPh.set(r.student_id, { lan: r.nhan, xong: r.trang_thai === 'xong', ngay: r.ngay ?? null });
     }

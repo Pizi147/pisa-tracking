@@ -1,6 +1,6 @@
-import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, laTrungKhoa, theoKhoaGui, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState } from '../../../shared/domain/index.ts';
+import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState, type TaskProgress } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
@@ -392,7 +392,8 @@ export function unlinkReportTask(p: Principal, reportId: number, taskId: number)
 // ---------------------------------------------------------------- công việc
 
 export function dueState(t: { progress: string; due_date: string | null }, today = demoToday()): DueState {
-  if (t.progress === 'done') return 'closed';
+  /* Rà 25/11 PR 2: "Dừng hẳn" cũng đã khép (`TASK_PROGRESS_CLOSED`, như Công việc) — trước chỉ `done`, việc dừng hẳn vẫn Quá hạn ở Họp tuần. */
+  if (TASK_PROGRESS_CLOSED.includes(t.progress as TaskProgress)) return 'closed';
   if (!t.due_date) return 'no_due';
   const d = diffDays(t.due_date, today);
   if (d < 0) return 'overdue';
@@ -462,9 +463,10 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
 
   /* Việc giao giáo viên toả ra bao nhiêu em — để danh sách nói rõ nó chạm tới ai. */
   const studentCounts = new Map<number, number>();
-  for (const r of conn
-    .prepare('SELECT task_id, COUNT(*) n FROM task_students GROUP BY task_id')
-    .all() as any[]) studentCounts.set(r.task_id, r.n);
+  /* Rà 25/11 PR 2: chỉ việc của danh sách (trước GROUP BY cả bảng `task_students`). */
+  theoLoJson(rows.map((t) => t.id as number), (json) => {
+    for (const r of conn.prepare(`SELECT task_id, COUNT(*) n FROM task_students WHERE task_id IN (${DS_JSON}) GROUP BY task_id`).all(json) as any[]) studentCounts.set(r.task_id, r.n);
+  });
 
   let mapped = rows.map((t) => ({
     id: t.id, code: t.code, title: t.title, taskType: t.task_type,
@@ -499,8 +501,8 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
   switch (f.view) {
     case 'mine': mapped = mapped.filter((t) => t.assigneeId === p.userId); break;
     case 'overdue': mapped = mapped.filter((t) => t.dueState === 'overdue'); break;
-    case 'open': mapped = mapped.filter((t) => t.progress !== 'done'); break;
-    case 'done': mapped = mapped.filter((t) => t.progress === 'done'); break;
+    case 'open': mapped = mapped.filter((t) => t.dueState !== 'closed'); break;
+    case 'done': mapped = mapped.filter((t) => t.dueState === 'closed'); break;
   }
   return { rows: mapped, scopeEmpty: false };
 }

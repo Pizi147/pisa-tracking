@@ -12,14 +12,14 @@
 import { DS_JSON, db, docNho, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
+  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
@@ -495,8 +495,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const giu = giuViecQl(p);
   const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.tra_lai_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan, ${HOP_MEETING_SQL('v')} AS hop,
-            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
-               AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
+            ${SU_KIEN_TAM_DUNG_SQL('s.id')} AS dung,   -- rà 25/11 PR 2 (N34 ③): ĐỦ khoảng Tạm dừng như panel / bảng lớp (khoangTuSuKien), không ghép một khoảng
             CASE WHEN v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL THEN (SELECT ta.user_id FROM teacher_assignments ta
               WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1)
               ORDER BY ta.id LIMIT 1) END AS gvcn_id
@@ -535,7 +534,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     else if (!tvv) { if (giu(r.branch_id)) ownerId = p.userId; else if (o.tatCa) ownerId = null; else continue; }
     else if (o.tatCa) ownerId = tvv;
     else continue;
-    const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : [], r.han_chon);
+    const han = hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon);
     /* TL-1 (N61): "Chờ GV sửa" — hạn tạm dừng (không quá hạn, không "hôm nay"), cờ cho web. */
     const urgency = r.tra_lai_id ? 'normal' : quaHanBaoPh(han, o.today) ? 'overdue' : han === o.today ? 'today' : 'normal';
     const cho = r.tra_lai_id ? { choGvSua: true as const } : {};

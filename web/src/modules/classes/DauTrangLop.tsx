@@ -222,7 +222,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const nutBadge = (x: BadgeLop) => {
     const bam = bamBadge(x);
     /* MOCKUP-1111 màn 1: "n việc quá hạn của lớp" — phạm vi lớp, khỏi lẫn với "Việc của tôi · n" ngay dưới. */
-    return <ChipBadgeLop key={x.key} x={x} nhan={x.key === 'qua-han' ? t('Quá hạn của lớp · {n}', { n: x.so ?? 0 }) : undefined} onClick={bam ?? undefined} />;
+    return <ChipBadgeLop key={x.key} x={x} nhan={x.key === 'qua-han' ? t('Quá hạn của lớp · {n} việc', { n: x.so ?? 0 }) : undefined} onClick={bam ?? undefined} />;
   };
 
   /* GD-6 (mockup v21 ② K1, lời 25): GV một dòng gộp theo người — GVCN dạy luôn kỹ năng thì một nhãn "GVCN, L, R"; KHÔNG ô TVV (TVV ở phần mở rộng em). */
