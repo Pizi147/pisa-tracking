@@ -43,6 +43,9 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   const [cot, setCot] = useState<KhoaCotXuatDs[]>(() => macDinh ?? (mauMacDinh ? [...COT_THEO_MAU[mauMacDinh]] : nho.cot ?? [...COT_THEO_MAU[nho.mau]]));
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  /* SUA-LOI-A1 (rà ngoài 25/11): "Thử lại" lặp ĐÚNG bước đã lỗi — đếm trước (Báo cáo PH) · xuất Báo cáo PH · xuất danh sách; tháng / phạm vi / cột giữ trong state. */
+  const [buocLoi, setBuocLoi] = useState<'dem' | 'bc' | 'ds'>('ds');
+  const [demLai, setDemLai] = useState(0);
   const [xong, setXong] = useState<string | null>(null);
   const dsId = pham === 'ca' && ca ? ca.ids : ids;
   /* BAO-CAO-PH b (mockup f1, ghi chú L1): khối Mẫu — "Danh sách" giữ nguyên ngăn cũ; "Báo cáo PH" thay khối Cột bằng ô Tháng + bảng đếm. */
@@ -55,9 +58,9 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
     if (loai !== 'bc' || !dsId.length) { setDem(null); return undefined; }
     let con = true;
     setDem(null); setLoi(null);   // RA-LOI-0611: đổi tháng / phạm vi đếm lại được thì bỏ câu lỗi lần trước
-    api.post<DemBc>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang, xemTruoc: true }).then((r) => { if (con) setDem(r); }, (e) => { if (con) setLoi(e.message); });
+    api.post<DemBc>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang, xemTruoc: true }).then((r) => { if (con) setDem(r); }, (e) => { if (con) { setBuocLoi('dem'); setLoi(e.message); } });
     return () => { con = false; };
-  }, [loai, thang, pham]);   // eslint-disable-line react-hooks/exhaustive-deps -- dsId theo pham
+  }, [loai, thang, pham, demLai]);   // eslint-disable-line react-hooks/exhaustive-deps -- dsId theo pham
   const taiBc = async () => {
     if (busy || !dsId.length) return;
     setBusy(true); setLoi(null); setXong(null);
@@ -68,7 +71,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
       setXong(t('Đã tạo {tep} · {n} HV · {gio}', { tep: r.tenTep, n: r.dem.hocVien, gio }));
       toast.push('ok', t('Đã xuất {n} học viên — tệp {tep}', { n: r.dem.hocVien, tep: r.tenTep }));
     } catch (e: any) {
-      setLoi(e.message ?? t('Chưa tạo được file.'));
+      setBuocLoi('bc'); setLoi(e.message ?? t('Chưa tạo được file.'));
     } finally {
       setBusy(false);
     }
@@ -89,11 +92,12 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
       setXong(t('Đã tạo {tep} · {n} HV · {gio}', { tep: r.tenTep, n: r.dem.hocVien, gio }));
       toast.push('ok', t('Đã xuất {n} học viên — tệp {tep}', { n: r.dem.hocVien, tep: r.tenTep }));
     } catch (e: any) {
-      setLoi(e.message ?? t('Chưa tạo được file.'));
+      setBuocLoi('ds'); setLoi(e.message ?? t('Chưa tạo được file.'));
     } finally {
       setBusy(false);
     }
   };
+  const thuLai = () => { if (buocLoi === 'dem') setDemLai((x) => x + 1); else void (buocLoi === 'bc' ? taiBc() : tai()); };
 
   return (
     <KhungPanel hd="xuat-ds" tieuDe={t('Xuất Excel')} loai={t('Xuất')} onDong={onDong}
@@ -157,7 +161,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
         {xong && <p className="m-0 text-slate-100">{xong}</p>}
         {loi && (
           <p role="alert" className="m-0 text-bad">
-            {t('Chưa tạo được file.')} {loi} {t('Bộ lọc vẫn giữ.')} <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => void tai()}>{t('Thử lại')}</button>
+            {buocLoi === 'dem' ? t('Chưa đếm được.') : t('Chưa tạo được file.')} {loi} {t('Bộ lọc vẫn giữ.')} <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={thuLai}>{t('Thử lại')}</button>
           </p>
         )}
         {!dsId.length && <p className="m-0 text-slate-400">{t('Không có học viên phù hợp để xuất. Bỏ bớt bộ lọc để thấy HV.')}</p>}

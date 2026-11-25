@@ -413,13 +413,26 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
     const moi = await Promise.all(ds.map(async (g) => (await f(g)) ?? g));
     dat(moi); lamMoiGiaoViec(ds.length === 1 ? ds[0].studentId : null);
   };
+  /* SUA-LOI-B1 (rà ngoài 25/11): Hoàn tác chỉ thêm lại vào ĐÚNG các phần vừa bỏ thành công (trước: mọi phần mở, kể cả phần người đó chưa từng theo dõi).
+     Mỗi phần lưu riêng: phần lưu được vào danh sách ngay; một phần lỗi → báo + tải lại trạng thái thật trước khi thử lại. Hoàn tác đọc danh sách mới nhất (`dsMoi`). */
+  const dsMoi = useRef(ds);
+  dsMoi.current = ds;
+  const khoaPhan = (g: KhoiGv) => `${g.loai}:${g.id}`;
+  const chayTung = async (chon: KhoiGv[], f: (g: KhoiGv) => Promise<KhoiGv>) => {
+    const kq = await Promise.allSettled(chon.map(f));
+    const moi = new Map<string, KhoiGv>();
+    let loi: any = null;
+    kq.forEach((r, i) => { if (r.status === 'fulfilled') moi.set(khoaPhan(chon[i]), r.value); else loi ??= r.reason; });
+    if (moi.size) { dat(dsMoi.current.map((g) => moi.get(khoaPhan(g)) ?? g)); lamMoiGiaoViec(ds.length === 1 ? ds[0].studentId : null); }
+    if (loi) { toast.push('error', loi?.message ?? t('Không lưu được')); reload(); }
+    return chon.filter((g) => moi.has(khoaPhan(g))).map(khoaPhan);
+  };
   const bo = async (n: Nguoi) => {
-    try {
-      await goi((g) => (g.theoDoi.some((x) => x.id === n.id) ? thaoTac.boTheoDoi(g, n.id) : null));
-      toast.hoanTac(n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' }), () => {
-        void goi((g) => (g.coTheSuaTheoDoi && g.mo ? thaoTac.themTheoDoi(g, [n.id]) : null)).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
-      }, { key: `bo-theo-doi:${n.id}` });
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); if (loiCua(e).xungDot) reload(); }
+    const daBo = await chayTung(dsMoi.current.filter((g) => g.theoDoi.some((x) => x.id === n.id)), (g) => thaoTac.boTheoDoi(g, n.id));
+    if (!daBo.length) return;
+    toast.hoanTac(n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' }), () => {
+      void chayTung(dsMoi.current.filter((g) => daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo), (g) => thaoTac.themTheoDoi(g, [n.id]));
+    }, { key: `bo-theo-doi:${n.id}` });
   };
   const chip = (n: Nguoi & { nguon: string; vai: string | null }) => {
     const xBo = suaDuoc || n.id === toi;

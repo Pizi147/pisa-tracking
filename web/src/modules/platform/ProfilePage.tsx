@@ -81,6 +81,8 @@ export default function ProfilePage() {
 
   const save = async () => {
     setBusy(true);
+    /* SUA-LOI-A3 (rà ngoài 25/11): mỗi lần gõ thay `draft` bằng object mới → lưu xong chỉ dọn khi ô vẫn là ĐÚNG bản đã gửi; gõ thêm trong lúc chờ thì giữ, Lưu tiếp được. */
+    const daGui = draft;
     try {
       await api.patch('/me/profile', {
         fullName: d.fullName,
@@ -89,7 +91,7 @@ export default function ProfilePage() {
         extraEmails: d.extraEmails.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean),
       });
       toast.push('ok', t('Đã lưu hồ sơ'));
-      setDraft(null); reload(); reloadSession();
+      setDraft((x) => (x === daGui ? null : x)); reload(); reloadSession();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
