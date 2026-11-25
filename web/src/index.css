@@ -2278,10 +2278,6 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .ck-bar-loc { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 }
 
-/* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
-   `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
-.ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
-
 /* SUA-UI 25/11 (rà toàn web) ----------------------------------------------------------------------------------------------------------- */
 /* Vùng bấm ≥ 44 ở 375 cho tên / "n em" trong dòng việc và link tên: hình không đổi, vùng chạm mở rộng bằng ::after. */
 @media (max-width: 639px) {
@@ -2294,3 +2290,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 /* #12 (rà 25/11): ô chọn lớp đã chọn — dòng phụ ("FT LT1 · Monbay · 33 em · tuần 16") xuống dòng, không cắt "…" (min-height 40, cao theo chữ). */
 .oc:not(.gon) .da { flex-wrap: wrap; white-space: normal; align-items: baseline; row-gap: 0; }
 .oc:not(.gon) .da small { overflow: visible; text-overflow: clip; white-space: normal; }
+
+/* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
+   `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
+.ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }

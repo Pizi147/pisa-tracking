@@ -629,6 +629,11 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, onReload,
               <div className="whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem=""
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
+            {/* SUA-UI #19 (chủ SP 25/11): Lịch Test theo tuần — ô ĐÃ CÓ ĐIỂM của môn thi tuần KHÁC tuần đang xem: dòng nhỏ ghi tuần thi của môn (đã / sẽ làm vào tuần nào). */}
+            {tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem !== null && !s.noShow && (
+              <div className="whitespace-nowrap text-xs leading-4 tabular-nums text-slate-400" data-phu-odiem=""
+                title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>{tuanLich(s.weekStart, homNay)}</div>
+            )}
             {/* NHAP-DIEM-b: môn vắng / "Đã huỷ" vẫn nhập được tại ô (máy chủ đổi về đã làm bài) — trạng thái là dòng chữ mờ dưới ô (V22, không ⚠). */}
             {dung && !huy && <div id={`tt-${row.attemptId}-${k}`} className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
           </OBang>
