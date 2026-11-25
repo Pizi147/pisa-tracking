@@ -9,6 +9,7 @@
  *  R6  Chữ ≤ 500 ký tự (#2167) xuống dòng, không tràn / cắt "…": body ngắt từ dài; ghi chú lịch thi đủ chữ + ô sửa nhiều dòng; ghi chú phối hợp TVV mở đủ
  *  R7b Rút đề xuất Ý thức: hộp xác nhận nêu đúng đối tượng mất (lần xử lý ngày … + n tệp), nút Rút nguy hiểm / Huỷ — thẻ Chờ duyệt và panel xử lý
  *  R5d2 thẻ việc của lớp cũ (Mini Test, Final dời, Kế hoạch bổ trợ) giữ lớp + chi nhánh lúc tạo; QL đã xử lý vẫn thấy ở Đã xử lý
+ *  R8  (PTA rà #2190) Phân tích › Chi nhánh: lớp đã kết thúc vẫn có hàng — Σ hàng = ô tổng (Đạt MT, Tiến bộ, Thi thật), chế độ lớp + chi nhánh
  *  R2  Chuyển lớp FT → FT, lượt lẫn ô cũ (trước tuần chuyển) + ô tuần sau: ở lại lớp cũ tới khi ô cũ chấm xong, rồi về lớp mới (ô tuần sau là việc lớp mới, có nhật ký)
  *  R2b/c (PTA P1) lượt chỉ có ô cũ chấm xong / ô cũ vắng → vẫn ở lớp lúc thi
  */
@@ -19,6 +20,8 @@ export async function runPrRa2511SuaTests(t: any) {
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const tq: any = await import('../worklist/tongQuanV5.ts');
+  const cnV2: any = await import('../phanTich/chiNhanh.ts');
+  const { khoangMacDinh } = await import('../../../shared/domain/index.ts');
   const await_: any = {
     students: await import('../students/students.ts'), conOCho: await import('../fasttrack/conOCho.ts'),
     scoreDebt: await import('../worklist/scoreDebt.ts'), keHoach: await import('../keHoach/keHoachTest.ts'),
@@ -225,4 +228,25 @@ export async function runPrRa2511SuaTests(t: any) {
     const pn = doc('web/src/modules/yThuc/XemXuLyPanel.tsx');
     assert(/<ConfirmDialog open=\{hoiXoa\}[\s\S]{0,200}?\sdanger\s/.test(pn) && /mất lần xử lý \{nhan\} ngày \{ngay\} và \{soTep\} tệp bằng chứng/.test(pn), 'panel: hộp xác nhận nguy hiểm nêu ngày + số tệp');
   });
+
+  check('R8 · Phân tích › Chi nhánh: lớp đã kết thúc vẫn có hàng — Σ hàng = ô tổng (Đạt MT, Tiến bộ, Thi thật) ở chế độ lớp và chi nhánh', () => thu(() => {
+    const ky = khoangMacDinh(TODAY);
+    /* Lớp FT có mẫu Đạt MT trong kỳ → kết thúc (rời danh sách lớp đang chạy). */
+    const lopMau = one(`SELECT c.id, c.branch_id FROM classes c WHERE c.is_fast_track = 1 AND c.status = 'active'
+        AND EXISTS (SELECT 1 FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.class_id = c.id AND a.kind = 'mock'
+          AND rp.week_start BETWEEN ? AND ? AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL)) ORDER BY c.id LIMIT 1`, ky.tu, ky.den);
+    assert(lopMau, 'seed: cần lớp FT có MT chấm trong kỳ');
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(lopMau.id);
+    for (const branchId of [lopMau.branch_id, null]) {
+      xoaNho();
+      const r = cnV2.chiNhanhV2(P.admin, { branchId, ct: 'ft', tu: ky.tu, den: ky.den });
+      const cong = (f: (h: any) => number) => r.hang.reduce((n: number, h: any) => n + f(h), 0);
+      const che = branchId ? 'lớp' : 'chi nhánh';
+      assert(r.datMt && cong((h) => h.datMt?.mau ?? 0) === r.datMt.mau && cong((h) => h.datMt?.dat ?? 0) === r.datMt.dat, `${che} Đạt MT: Σ hàng ≠ ô ${JSON.stringify(r.datMt)}`);
+      if (r.tienBo) assert(cong((h) => h.tienBo?.mau ?? 0) === r.tienBo.mau && cong((h) => h.tienBo?.dat ?? 0) === r.tienBo.dat, `${che} Tiến bộ: Σ hàng ${cong((h) => h.tienBo?.mau ?? 0)} ≠ ô ${JSON.stringify(r.tienBo)}`);
+      if (r.thiThat) { const t3 = (h: any) => (h.thi ? h.thi.vuot + h.thi.dat + h.thi.chuaDat : 0); const tt = r.thiThat.vuot + r.thiThat.dat + r.thiThat.chuaDat;
+        assert(cong(t3) === tt, `${che} Thi thật: Σ hàng ${cong(t3)} ≠ ô ${tt}`); }
+      if (branchId) assert(r.hang.some((h: any) => h.id === lopMau.id && h.khoa === `lop:${lopMau.id}`), 'chế độ lớp: phải có hàng lớp đã kết thúc');
+    }
+  }));
 }

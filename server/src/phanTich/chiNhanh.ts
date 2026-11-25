@@ -6,10 +6,10 @@
  * Số mới: "vào · kết thúc" (em, 1 câu mỗi số) và "Chưa có KQ" (hiện tại, `sauThiTheoEm` → `da_thi_cho_kq`).
  */
 import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
-import { DS_JSON, db, theoLo } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { PERMISSIONS, coMucThi, mucThi, soSanhLop, trangThaiSauThi, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import type { ChiNhanhV2Kq, DongChiNhanhV2, TyLeCn } from '../../../shared/domain/index.ts';
-import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, classScopeSql, lopDayDu, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { studentsInScope } from '../worklist/danhGia.ts';
@@ -107,7 +107,9 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
   const ft = f.ct === 'ft';
   const { lop, hv } = lopVaHv(p, f, branchId);
   const cheDo: ChiNhanhV2Kq['cheDo'] = branchId ? 'lop' : 'chi-nhanh';
-  const cnCua = new Map<number, number>(lop.map((c) => [c.id, c.branch_id]));
+  /* PTA rà #2190 (cùng lỗi việc 1): lớp → chi nhánh qua bảng lớp ĐỦ nhớ tiến trình (`bangLop`, 0 câu) — lớp đã kết thúc vẫn có chi nhánh (trước: chỉ lớp
+     đang chạy + một câu đọc lớp ngoài cho Thi thật). */
+  const cnCua = { get: (id: number) => bangLop().get(id)?.branchId ?? undefined };
   /* Hàng: lớp (một chi nhánh) hoặc chi nhánh (Tất cả) — chi nhánh theo thứ tự xuất hiện của lớp đã sắp. */
   const hang = new Map<number, DongChiNhanhV2>();
   const moi = (id: number, ten: string, khoa: string): DongChiNhanhV2 => ({ id, khoa, ten, hv: 0, datMt: null, tienBo: null, datTest: null, cuoiKhoa: null, thi: null });
@@ -116,6 +118,9 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
     else if (!hang.has(c.branch_id)) hang.set(c.branch_id, moi(c.branch_id, c.branch_name, `cn:${c.branch_id}`));
   }
   const khoaHang = (classId: number | null | undefined): number | undefined => (classId == null ? undefined : cheDo === 'lop' ? classId : cnCua.get(classId));
+  /* Lớp đã kết thúc (chế độ lớp) / chi nhánh hết lớp đang chạy còn em trong ô Đạt MT · Tiến bộ · Thi thật → vẫn một hàng (HV = 0): Σ hàng = ô tổng. */
+  const hangCua = (k: number) => hang.get(k) ?? hang.set(k, cheDo === 'lop' ? moi(k, lopDayDu().get(k)?.code ?? `#${k}`, `lop:${k}`)
+    : moi(k, tenChiNhanhNho(k) ?? `#${k}`, `cn:${k}`)).get(k)!;
   const tong = moi(0, '', 'tong');
 
   /* Học viên đang học: hàng = em ghi danh active của lớp (chi nhánh = hợp các lớp); tổng = dân số chỉ số (`studentsInScope` + khung) — như Tổng quan. */
@@ -137,6 +142,7 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
     const dm = tapDatMt(p, loc);
     const mau = new Map<number, number>(), dat = new Map<number, number>();
     for (const s of dm.mau) { const k = khoaHang(dm.luot.get(s)?.classId); if (k === undefined) continue; mau.set(k, (mau.get(k) ?? 0) + 1); if (dm.dat.has(s)) dat.set(k, (dat.get(k) ?? 0) + 1); }
+    for (const k of mau.keys()) hangCua(k);
     for (const [k, h] of hang) h.datMt = tyLe(dat.get(k) ?? 0, mau.get(k) ?? 0);
     datMt = { dat: dm.dat.size, mau: dm.mau.size, chuaDu: dm.chuaDu.size };
     tong.datMt = tyLe(dm.dat.size, dm.mau.size);
@@ -157,6 +163,7 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
         }
       }
     }
+    for (const k of tbM.keys()) hangCua(k).datMt ??= tyLe(0, 0);
     for (const [k, h] of hang) h.tienBo = tyLe(tbT.get(k) ?? 0, tbM.get(k) ?? 0);
     tienBoKn = [...kn].map(([skill, x]) => ({ skill, ...x })).sort((a, b) => THU_TU_KN.indexOf(a.skill) - THU_TU_KN.indexOf(b.skill));
     tienBo = tyLe(tienBoKn.reduce((a, x) => a + x.tang, 0), tienBoKn.reduce((a, x) => a + x.tong, 0));
@@ -164,8 +171,6 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
 
     /* Thi thật (12): Vượt · Đạt · Chưa đạt trừ KCK, em theo lớp lúc thi; ô trái thêm Em thi (em có KQ, gồm KCK — = panel `tong:thi`) và Chưa có KQ (hiện tại). */
     const ds = thiThatTrongKhoang(p, { branchId, tu: f.tu, den: f.den }, { boQuyen: true });
-    const lopNgoai = [...new Set(ds.map((x) => x.dong.classId).filter((id): id is number => id != null && !cnCua.has(id)))];
-    theoLo(lopNgoai, (lo, ph) => { for (const r of db().prepare(`SELECT id, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) cnCua.set(r.id, r.branch_id); });
     const dem = (h: DongChiNhanhV2) => (h.thi ??= { vuot: 0, dat: 0, chuaDat: 0 });
     for (const x of ds) {
       if (!coMucThi(x.kq) || x.kq.ovr === null) continue;
@@ -173,7 +178,9 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
       const key = m === 'exceed' ? 'vuot' : m === 'dat' ? 'dat' : 'chuaDat';
       dem(tong)[key]++;
       const k = khoaHang(x.dong.classId);
-      if (k !== undefined && hang.has(k)) dem(hang.get(k)!)[key]++;
+      if (k === undefined) continue;
+      const h = hang.has(k) ? hang.get(k)! : Object.assign(hangCua(k), { datMt: tyLe(0, 0), tienBo: tyLe(0, 0) });
+      dem(h)[key]++;
     }
     thiThat = { ...(tong.thi ?? { vuot: 0, dat: 0, chuaDat: 0 }), emThi: ds.filter((x) => !x.kq.khongThi).length, chuaCoKq: tapChuaCoKq(p, f).length };
   } else {
