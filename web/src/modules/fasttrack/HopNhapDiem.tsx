@@ -205,7 +205,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   const kq = dauKq && cell.band !== null && !h.kieu ? dauKq : null;
   /* BANG-0 (`ODiem`): chỗ ký hiệu giữ khi ô có số mà không ký hiệu (số thẳng cột). */
   const kyHieu = cell.band !== null && !h.kieu ? <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kq ? <DauKetQua kq={kq} /> : ' '}</span> : null;   /* LECH-BANG: chỗ trống giữ một khoảng trắng — span rỗng làm đường cơ sở ô (nút flex) tụt về giữa nút, lệch số 4,7 px */
-  const soCau = !h.kieu && cell.rawScore !== null && cell.band !== null ? <span className="ml-1 text-[13px] font-medium text-[color:var(--text)]">· {cell.rawScore}/40</span> : null;
+  const soCau = !h.kieu && cell.rawScore !== null && cell.band !== null ? <span className={`ml-1 font-medium text-[color:var(--text)] ${trongPanel ? 'text-xs' : 'text-[13px]'}`}>· {cell.rawScore}/40</span> : null;
   const so = <span className="whitespace-nowrap"><span className={`${h.kieu ? '' : `text-[14px] font-bold ${lopKq(kq)}`}`}>{h.chu}</span>{soCau}</span>;
   /* MỘT dòng phụ (04 mục 7): vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu (thiếu nhận xét = viền vàng, không chữ). */
   const thiBu = !!cell.daChot?.doiSang && !vangGoc;
@@ -231,11 +231,11 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   const nhanO = `${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`;
   const tieuDeO = h.kieu === 'huy' ? h.doc : cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
   if (trongPanel) {
-    /* GD-3 (mockup v21 K2 `.od`): ô 96 × 44 viền liền (trống cũng viền liền), số 15 / 600 + dòng phụ 12 ("27 câu", "→ W4 SEP") NẰM TRONG ô. */
+    /* GD-3 (mockup v21 K2 `.od`) · chủ SP 25/11 "cân đối lại ô điểm": ô ≤ 92 × 44 (vừa "✗ 6.5 · 29/40" — số câu 12 px trong panel; cột chừa khe 12, không tràn sang ô kề) viền liền (trống cũng viền liền), số 15 / 600 + dòng phụ 12 ("27 câu", "→ W4 SEP") NẰM TRONG ô. */
     return (
       <span className="inline-flex max-w-full">
         <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={nhanO} title={tieuDeO} onClick={() => onMo(!mo)}
-          className={`o-sua grid h-11 min-w-24 max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
+          className={`o-sua grid h-11 w-[92px] max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
           {/* Chủ SP 14/11: số CĂN GIỮA ô — không chừa chỗ ký hiệu khi ô không có ✓ / ✗. */}
           <span className="inline-flex items-baseline">{kq && kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}</span>
           {h.kieu === 'trong' ? null : phu}

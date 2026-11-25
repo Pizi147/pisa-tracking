@@ -288,7 +288,8 @@
      đang cuộn thì có viền + bóng nhẹ; còn cột bên phải thì mép phải mờ dần (chỉ báo cuộn). Ô không bị cắt cụt. */
   .luoi-trong-panel .table-scroll > table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
   .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface); }   /* GD-3: đầu cột nền trong như mockup v21 */
-  .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px var(--line-strong); }
+  /* Chủ SP 25/11 ("màu phân biệt 2 khu vực kì quặc"): cột tên dính chỉ một viền mảnh khi đang cuộn (mockup v24 `.lc` 375) — không bóng đổ tối. */
+  .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong); }
   .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, var(--surface) calc(100% - 48px), transparent); }   /* mask chỉ dùng độ đục — màu nào đặc cũng được */
   /* GD-3 (mockup v21 K2 `.luoi`): lưới trong panel việc — cột tên lấy phần còn lại, cột ô 112 / Kết quả 132 (LuoiFT). */
   .luoi-trong-panel .bang > colgroup > col:first-child { width: auto !important; }
@@ -296,6 +297,7 @@
   /* Đo DevTools so mockup (`v21.css` .luoi th / td): đầu cột 12 / 600 màu mờ nhất, đệm 8, nền trong; ô đệm 6 × 8, kẻ dưới mảnh; Kết quả không lùi 20. */
   .luoi-trong-panel .bang > thead > tr > th { padding: 8px; font-size: 12px; line-height: 15px; color: var(--text-faint); background: var(--surface); }
   .luoi-trong-panel .bang > tbody > tr > td { padding: 6px 8px; font-size: 14px; }
+  .luoi-trong-panel .bang > tbody > tr > td[data-kieu="diem"] { padding-left: 6px; padding-right: 6px; }   /* chủ SP 25/11: ô điểm 92 (hoặc vừa cột) cách nhau 12, không dính nhau */
   .luoi-trong-panel .bang > tbody > tr > td { vertical-align: middle; }
   .luoi-trong-panel .bang > tbody > tr:last-child > td { border-bottom: 0; }
   .luoi-trong-panel .table-scroll:not([data-con-trai]) .bang > tbody > tr:last-child > td { box-shadow: none; }
@@ -816,6 +818,9 @@
   @media (min-width: 640px) {
     [data-pn] .pn-than table.bang[data-deu] col { width: auto !important; }
     [data-pn] .pn-than table.bang[data-deu] col[data-kieu="ten"] { width: var(--ten-pt) !important; }
+    /* Chủ SP 25/11 (ảnh 4 "ưa có điểm" bị cắt): cột Kết quả (chip, cuối) giữ bề rộng của nó — "Chưa có điểm" một dòng không tràn sang ô bên trái;
+       các cột ô điểm chia đều phần còn lại. Lưới lớp thường gọn (Kết quả dưới tên) vẫn cột cuối 0. */
+    [data-pn] .pn-than .luoi-trong-panel table.bang[data-deu] col[data-kieu="chip"]:last-child:not(.luoi-thuong-gon col) { width: 124px !important; }
   }
   [data-pn] .pn-than table.bang[data-deu] > * > tr > :last-child:not(:first-child) { text-align: right; padding-right: 14px; }
   [data-pn] .pn-than table.bang[data-deu] > tbody > tr > :last-child:not(:first-child) > :is(div, span) { width: fit-content; max-width: 100%; margin-left: auto; align-items: flex-end; justify-content: flex-end; }

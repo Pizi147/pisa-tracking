@@ -426,16 +426,28 @@ function DongKyVong({ luot, kv }: { luot: string; kv: number | null }) {
   return <div className="mt-1.5 text-xs tabular-nums text-slate-500">{t('Kỳ vọng {dot}', { dot: luot })}{' '}{fmtBand(kv)}</div>;
 }
 
-/** LUAT-NX-MT: dòng NHẮC (vàng) ngay trước nút — nút vẫn bấm được (375: dòng riêng phía trên). Chỗ trống đẩy nút sang phải khi đủ. */
+/** LUAT-NX-MT: dòng NHẮC (vàng) — nút vẫn bấm được. Chủ SP 25/11 (chữ bị bóp thành cột hẹp giữa các nút): có nhắc thì MỘT dòng riêng phía trên
+ *  hàng nút ở mọi cỡ (`order-first`); chỗ trống `flex-1` của nơi gọi vẫn đẩy nút chính sang phải. */
 function LyDoThieu({ thieu }: { thieu: ReturnType<typeof thieuNhanXetMt> }) {
   return (
-    <>
-      <span role="status" className={`min-w-0 flex-1 text-right text-xs text-soon ${thieu ? 'max-sm:basis-full' : ''}`}>
-        {thieu ? CAU_THIEU_NHAN_XET[thieu] : ''}
-      </span>
-      {thieu && <span aria-hidden className="flex-1 sm:hidden" />}
-    </>
+    <span role="status" className={`min-w-0 text-right text-xs text-soon ${thieu ? 'order-first basis-full' : 'flex-1'}`}>
+      {thieu ? CAU_THIEU_NHAN_XET[thieu] : ''}
+    </span>
   );
+}
+
+/**
+ * Khung cuộn gần nhất mà cuộn nó THẬT làm ô `o` di chuyển. Dừng ở phần tử `position: fixed` (panel việc): khung cuộn phía trên nó
+ * (vd `<main>` của danh sách Công việc) không dời ô — cuộn nó thì `dat()` không bao giờ đủ chỗ, sự kiện cuộn gọi lại `dat()` →
+ * danh sách bên trái cuộn qua lại không ngừng (chủ SP 25/11).
+ */
+export function khungCuonCuaO(o: HTMLElement): HTMLElement | null {
+  for (let m = o.parentElement; m; m = m.parentElement) {
+    const s = getComputedStyle(m);
+    if (m.scrollHeight > m.clientHeight && /auto|scroll/.test(s.overflowY)) return m;
+    if (s.position === 'fixed') return null;
+  }
+  return null;
 }
 
 /**
@@ -486,8 +498,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
     const tren = Math.max(8, (document.getElementById('noi-dung')?.getBoundingClientRect().top ?? 0) + 4), day = window.innerHeight - 8;
     let r = anchor.getBoundingClientRect();
     if (cao > day - (r.bottom + 4) && cao > r.top - 4 - tren) {
-      let m = anchor.parentElement;
-      while (m && !(m.scrollHeight > m.clientHeight && /auto|scroll/.test(getComputedStyle(m).overflowY))) m = m.parentElement;
+      const m = khungCuonCuaO(anchor);
       const xuong = r.bottom + 4 + cao - day, len = tren - (r.top - 4 - cao);
       if (m && xuong <= m.scrollHeight - m.clientHeight - m.scrollTop) m.scrollTop += xuong;
       else if (m && len <= m.scrollTop) m.scrollTop -= len;
