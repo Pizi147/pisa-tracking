@@ -48,7 +48,7 @@ export type HangFT = {
   ghiChu?: Record<string, GhiChuLich>;
   sEx?: DongSEx[];
 };
-export type LuoiFTData = { classId: number; classCode: string; chiXem?: boolean; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
+export type LuoiFTData = { classId: number; classCode: string; chiXem?: boolean; /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — không Vắng / Huỷ điểm / thi lại / xoá MT có điểm (cờ theo lớp, không theo vai). */ diem: boolean; cot: number[]; hang: HangFT[]; ghiChuLop?: GhiChuLich | null };
 
 export type DotThuong = { attemptId: number | null; kn: KnO };
 /** `progress` | `final`; OV-6b2 lớp liên tục: `cp{n}` = Checkpoint n. */
@@ -61,7 +61,7 @@ export type HangThuong = {
   ghiChu?: Record<string, GhiChuLich>;
 };
 export type LuoiThuongData = {
-  classId: number; classCode: string; chiXem?: boolean; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
+  classId: number; classCode: string; chiXem?: boolean; /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — không Vắng / Huỷ điểm / thi lại / xoá MT có điểm (cờ theo lớp, không theo vai). */ diem: boolean; chuongTrinh: string | null; khaiGiang: string | null; tongTuan: number | null;
   tuanHienTai: string | null; hvChuaCoLich: number; cot: CotThuong[]; hang: HangThuong[];
   /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
   boMon: KyNangKH[];

@@ -130,7 +130,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
 
   // -------------------------------------------------------------- (4) Case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
   /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
-  const caseRows = !can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId }) ? [] as any[] : conn
+  const xemCase = can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId });   // cũng là cờ nút "Đọc bàn giao" (phiếu có Case / PA)
+  const caseRows = !xemCase ? [] as any[] : conn
     .prepare(
       `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,
               (SELECT u.full_name FROM users u WHERE u.id = sc.owner_user_id) AS owner_name,
@@ -388,7 +389,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     pa: (ivByCase.get(c.id) ?? []).map((iv) => ({ id: iv.id, ten: (iv.description ?? '').trim() || caseInterventionLabel(iv.kind), tu: iv.started_date ?? iv.planned_date ?? null, tone: toneCua(iv) })),
   }));
   /* Chương chỉ kể đợt ĐÃ có điểm (kết quả), không kể lượt còn chờ. */
-  const chuong = chiaChuong({ lop, ghim: ghimMoi.filter((g) => g.soCoDiem > 0), cases: casesChuong, tamDung: dung, homNay });
+  const chuong = chiaChuong({ lop, ghim: ghimMoi.filter((g) => g.soCoDiem > 0), cases: casesChuong, tamDung: dung, homNay, docBanGiao: xemCase });
 
   // -------------------------------------------------------------- hàng Lớp · Tuần học / Tuần học của trục (giai đoạn đang xem)
   const chuongGd = chuong.filter((c) => (giaiDoan === 'ft' ? c.ft : !c.ft));

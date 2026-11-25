@@ -2324,9 +2324,9 @@ export const TRAN_GHI_LO = {
    *  với 4 em đã khai (web chia lô 4 khi có em gửi duyệt); đo trong prN70 N70-9. */
   /** Rà Hoàn tác 25/11: POST /yeu-cau/:id/rut/hoan-tac (đo trong prOv7a OV7a-5a) · POST /giao-viec/:loai/:id/theo-doi tự thêm lại chính mình (prGiaoViec GV1-HT) ·
    *  POST /classes/:id/y-thuc/lo/cap-bac/hoan-tac Head 2 em (1 về bậc trước đọc nhật ký máy chủ, 1 xoá dòng vừa khai; prOv13d KHAI-BAC-LO). */
-  boRutYeuCau: 18, tuThemLaiTheoDoi: 38, loHoanTacCapBac2Em: 33,
+  boRutYeuCau: 18, tuThemLaiTheoDoi: 38, loHoanTacCapBac2Em: 33,   // đo 25/11 (seed, ngoài request, sau rà PTA #2166 lần 2): 8 · 28 · 23 câu → max(đo + 10, ⌈đo × 1,3⌉)
   /** RA-2511 (N66): POST /students/:id/y-thuc/khai-bac/hoan-tac — GVCN hoàn tác khai mới một em (cùng lõi lô + một câu tìm lớp em); đo trong prSuaQuyen SQ-5. */
-  hoanTacCapBacEm: 22,   // đo 25/11 (seed, ngoài request): 12 câu → max(đo + 10, ⌈đo × 1,3⌉)   // đo 25/11 (seed, ngoài request, sau rà PTA #2166 lần 2): 8 · 28 · 23 câu → max(đo + 10, ⌈đo × 1,3⌉)
+  hoanTacCapBacEm: 22,   // đo 25/11 (seed, ngoài request): 12 câu → max(đo + 10, ⌈đo × 1,3⌉)
   /** PTA rà #2166: POST …/theo-doi Head thêm 20 người một lần (thêm mới 97 câu · thêm lại 20 người vừa bỏ 99 câu): đọc lịch sử + bản chụp theo LÔ (2 câu);
    *  còn lại là câu GHI + kiểm người nhận từng người như trước PR. ponytail: ghi theo lô nếu hay thêm nhiều người. */
   themTheoDoi20: 129,

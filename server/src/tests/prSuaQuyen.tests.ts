@@ -35,6 +35,8 @@ export async function runPrSuaQuyenTests(t: any) {
   const ms: any = await import('../worklist/metrics.ts');
   const ph: any = await import('../yThuc/phoiHop.ts');
   const rg: any = await import('../normal/regular.ts');
+  const baoPh: any = await import('../yThuc/baoPhTvv.ts');
+  const giaoViec: any = await import('../worklist/giaoViec.ts');
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -90,6 +92,40 @@ export async function runPrSuaQuyenTests(t: any) {
       const d = rg.regularAttemptDetail(bp, lt);
       assert(d.dong.cases.length === 0 && d.lichSuCase.length === 0, 'lượt lớp thường: BPXL thấy Case');
     }
+  }));
+
+  check('SQ-1c · PTA rà #2176 vòng 2 (N63 ⑤): BPXL không đọc việc Báo PH / khối giao việc của người khác (tên vi phạm, ghi chú) — 403; Hành trình không có nút "Đọc bàn giao"; phiếu bàn giao GV bỏ vai BPXL', () => thu(() => {
+    const bp = loadPrincipal(taoBpxl());
+    const bao = one(`SELECT v.id FROM viec_bao_ph v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active' JOIN classes cl ON cl.id = e.class_id
+        JOIN branches b ON b.id = cl.branch_id WHERE b.code = 'MB' ORDER BY v.id LIMIT 1`)?.id;
+    assert(bao, 'seed thiếu việc Báo PH ở MB');
+    const bpx: any = baoPh;
+    assert(ma(() => bpx.xemViecBaoPh(P.mbManager, bao)) === null, 'Head MB phải đọc được việc Báo PH');
+    assert(ma(() => bpx.xemViecBaoPh(bp, bao)) === 403, 'BPXL đọc được việc Báo PH (Ý thức)');
+    assert(ma(() => giaoViec.xemGiaoViec(bp, 'bao_ph', bao)) === 403, 'BPXL đọc được khối giao việc Báo PH');
+    assert(/phieuBanGiaoGv[\s\S]*?can\(boVaiBpxl\(p\), PERMISSIONS\.STUDENT_VIEW, \{ classId: b\.class_id \}\)/.test(nguon('server/src/classes/banGiaoGv.ts')), 'phiếu bàn giao GV còn đọc theo vai BPXL');
+    const em = emFt();
+    const coNut = (x: any) => (x.chuong ?? []).some((c: any) => c.ra?.docBanGiao);
+    const lenh = one(`SELECT e.student_id AS sid FROM enrollments e WHERE e.status != 'active' AND EXISTS (SELECT 1 FROM enrollments e2 WHERE e2.student_id = e.student_id AND e2.status = 'active')
+        ORDER BY e.id LIMIT 1`)?.sid ?? em.id;
+    assert(!coNut(ht.hanhTrinhHocVien(bp, lenh, null)), 'BPXL có nút "Đọc bàn giao" (bấm sẽ 403)');
+  }));
+
+  check('SQ-1d · vai kép: GV được phân công lớp kiêm BPXL chi nhánh vẫn thấy Case ở bảng kỹ năng, hồ sơ HV, Hành trình (boVaiBpxl chỉ bỏ grant BPXL)', () => thu(() => {
+    const c = one(`SELECT sc.title, sc.student_id AS sid FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+       WHERE e.class_id = ? AND sc.status != 'done' AND sc.topic = 'listening' AND length(sc.title) >= 8 ORDER BY sc.id LIMIT 1`, MB_FT);
+    assert(c, 'seed thiếu Case Listening mở ở MB FT 101');
+    const gv = P.lrTeacher.userId;
+    const vai = one(`SELECT id FROM roles WHERE key = 'scheduler'`).id;
+    const mb = one(`SELECT id FROM branches WHERE code = 'MB'`).id;
+    conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, ?, ?, 'active', ?)`).run(gv, vai, mb, new Date().toISOString());
+    xoaNho();
+    const kep = loadPrincipal(gv);
+    assert(kep.roleKeys.includes('scheduler') && kep.roleKeys.includes('teacher'), `vai: ${kep.roleKeys.join()}`);
+    const co = (x: unknown) => JSON.stringify(x).includes(c.title);
+    assert(co(cases.skillSupportBoard(kep, c.sid, null)), 'vai kép: bảng kỹ năng mất Case');
+    assert(co(prof.studentProfile(kep, c.sid)), 'vai kép: hồ sơ HV mất Case');
+    assert(co(ht.hanhTrinhHocVien(kep, c.sid, null)), 'vai kép: Hành trình mất Case');
   }));
 
   /* ---------------------------------------------------------------- HTTP (chỉ đọc / 403 / 404) */

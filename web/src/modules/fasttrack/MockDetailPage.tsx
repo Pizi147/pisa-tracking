@@ -463,7 +463,7 @@ export default function MockDetailPage() {
           onClose={() => { setNgan(null); reload(); }} onChanged={reload} />
       )}
       {hopLich && d.classId !== null && (
-        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id}
+        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id} diem={d.viewer.diem}
           dot={{ loai: 'ft', attemptNo: d.attemptNo }} attemptId={d.id} kn={knHop(d)} kyNangDau={hopLich.k} doiTuanDau={hopLich.k !== null} lichSu={d.lichSu}
           {...(hopLich.ghiChu !== undefined ? { ghiChu: hopLich.ghiChu } : {})}
           onClose={() => setHopLich(null)} onSaved={reload} onHienDien={() => {}} />
