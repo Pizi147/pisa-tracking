@@ -198,11 +198,11 @@ export async function runPrTkTests(t: YThucTestKit) {
     transitionSvc.applyTransition(P.admin, { fromClassId: cls2, effectiveDate: NGAY, dongs: [{ studentId: x.sid, huong: 'dung_hoc', lyDo: 'Gia đình chuyển nhà' }] });
     assert(banChup(x.cy).length === 1 && banChup(x.cy)[0].ly_do === 'ket_thuc', 'dừng học');
   }));
-  await checkAsync('TK-3 · PATCH /cycles/:id {status:"completed"} → sua_tay; Học lại mở lại rồi Hoàn tác → bản chụp MỚI (lan 2), bản cũ giữ nguyên', () => thu(() => {
+  await checkAsync('TK-3 · PATCH /cycles/:id {status} bị bỏ qua (RA-2511, N6: không bản chụp sửa tay); Học lại mở lại rồi Hoàn tác → bản chụp MỚI (lan 2), bản cũ giữ nguyên', () => thu(() => {
     const cls = taoLop('FOU', false);
     const a = taoHV(cls, 'FOU', false);
     cyclesSvc.updateCycle(P.admin, a.cy, { status: 'completed' });
-    assert(banChup(a.cy).map((r) => r.ly_do).join() === 'sua_tay', 'sua_tay');
+    assert(banChup(a.cy).length === 0 && trangThai(a.cy) === 'active', 'PATCH status không đóng lộ trình');
     const b = taoHV(cls, 'FOU', false);
     studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
     const cu = JSON.stringify(banChup(b.cy)[0]);

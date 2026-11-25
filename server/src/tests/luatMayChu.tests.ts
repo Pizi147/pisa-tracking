@@ -578,13 +578,16 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   };
   const auditSys = (caseId: number) => auditN('case.system_close', caseId);
 
-  check('S16 · Hoàn tất lộ trình KHÔNG kèm cờ dongCaseKhiKetThuc (đường "Lên lớp thường tiếp" của PR-LT) → Case vẫn MỞ, đi theo em', () => {
+  check('S16 · RA-2511 (N6): PATCH /cycles/:id {status, dongCaseKhiKetThuc} bị bỏ qua — lộ trình vẫn chạy, Case vẫn MỞ (đóng chỉ qua Bước tiếp / Kết thúc học)', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const x = caseCoViec(hv);
-    cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed' });
+    cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'abandoned', dongCaseKhiKetThuc: true });
+    cycles.updateCycle(P.normalCoreTeacher, hv.cycleId, { status: 'completed', dongCaseKhiKetThuc: true });   // GVCN MB FOU 12
     const c = conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(x.caseId) as any;
-    assert(c.status !== 'done' && c.r === null, `Hoàn tất lộ trình không cờ đã đóng Case: ${JSON.stringify(c)}`);
+    assert(c.status !== 'done' && c.r === null, `PATCH lộ trình đã đóng Case: ${JSON.stringify(c)}`);
     assert(auditSys(x.caseId) === 0, 'Không được có audit đóng bởi hệ thống');
+    const cy = conn.prepare('SELECT status, ended_at FROM learning_cycles WHERE id = ?').get(hv.cycleId) as any;
+    assert(cy.status === 'active' && cy.ended_at === null, `PATCH đổi trạng thái lộ trình: ${JSON.stringify(cy)}`);
   });
 
   check('S16 · Kết thúc học (cờ dongCaseKhiKetThuc) còn Case mở → Case đóng "Học viên kết thúc khoá": không có kết quả, PA chưa làm huỷ và KHÔNG tính, PA đã xong giữ và VẪN tính hiệu quả, audit + mốc + hành trình, tín hiệu chờ thu hồi', () => {
@@ -592,7 +595,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     const x = caseCoViec(hv);
     diem(hv.attemptId, 'reading', 10, 40);                              // Reading trượt: Case tự tạo thứ hai
     assert(effectiveness.planOutcomes({ studentIds: [hv.sid] }).some((r: any) => r.id === x.done), 'Tiền đề: PA đã xong phải vào thống kê trước');
-    cycles.updateCycle(P.mbManager, hv.cycleId, { status: 'completed', dongCaseKhiKetThuc: true });
+    /* RA-2511: PATCH lộ trình không còn đóng — gọi thẳng lõi đóng của hệ thống (đường Kết thúc học / Bước tiếp dùng chung). */
+    systemClose.closeCasesBySystem({ actorUserId: P.mbManager.userId, studentId: hv.sid, reason: 'course_ended', on: TODAY, cycleIds: [hv.cycleId] });
     const c = conn.prepare('SELECT * FROM sos_cases WHERE id = ?').get(x.caseId) as any;
     assert(c.status === 'done' && c.system_close_reason === 'course_ended' && c.outcome === null && c.closed_at,
       `Case: ${JSON.stringify({ status: c.status, reason: c.system_close_reason, outcome: c.outcome, closedAt: c.closed_at })}`);

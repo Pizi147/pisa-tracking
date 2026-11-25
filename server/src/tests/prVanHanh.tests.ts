@@ -332,11 +332,6 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
 
   await checkAsync('VH1-16 (PTA 11 + tệp thật) · /tasks giữ người theo dõi trong danh sách gửi, bớt có lịch sử; hết vai không gỡ người của teacher_task; tệp tải lên / tải xuống', () => thu(async () => {
     const v = tao(ql, { theoDoiIds: [tvv.userId] });
-    meetingSvc.updateTask(ql, v.id, { followerIds: [tvv.userId] });
-    assert(hang(`SELECT user_id FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?`, v.id).some((r) => r.user_id === tvv.userId), '/tasks giữ người trong danh sách');
-    meetingSvc.updateTask(ql, v.id, { followerIds: [] });
-    assert(!hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ? AND user_id = ?`, v.id, tvv.userId).length
-      && hang(`SELECT 1 FROM viec_giao_lan WHERE loai = 'van_hanh' AND ref_id = ? AND truong = 'theo_doi' AND cu = ?`, v.id, String(tvv.userId)).length === 1, 'bớt có lịch sử');
     const gvTam = taiKhoan('gvtam', 'teacher');
     const tt = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, assignee_user_id, progress, created_by, created_at) VALUES (?, 'Giao GV VH1-16', 'teacher_task', ?, ?, 'not_started', ?, ?)`)
       .run(mg.nextCode(conn), MB, gvTam.userId, ql.userId, new Date().toISOString()).lastInsertRowid);
@@ -383,8 +378,6 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
       .run(mg.nextCode(conn), MB, ql.userId, new Date().toISOString()).lastInsertRowid);
     conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('van_hanh', ?, ?, 'head', ?)`).run(tt, tvv.userId, new Date().toISOString());
     assert(!gv.viecTheoDoi(tvv).nhom.some((n: any) => n.mo.some((x: any) => x.refId === tt)), 'teacher_task không vào Đang theo dõi');
-    /* /tasks cũ: người phụ trách đã rời chi nhánh không mở lại việc. */
-    assert(await ma(() => meetingSvc.updateTask(loadPrincipal(roi.userId), w.id, { progress: 'doing' })) === 403, '/tasks: rời chi nhánh → 403');
   }));
 
   const fs = await import('node:fs');

@@ -8,7 +8,7 @@
  * TU2-2: nhận cả PA chưa tới kỳ (khối "PA đang chạy" — không lọc theo hạn) · phần Tutor: "b" điền sẵn (`buoiKy`), tutor kỳ trước (`tutorTruoc`), nháp a / b + dòng Tutor.
  */
 import { db } from '../db.ts';
-import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, loi } from '../util.ts';
 import { MOC_QUY_CHE_SOS, PERMISSIONS, coSoBuoiKy, hanKe, laLanGhiCuoi, type BuoiTutor } from '../../../shared/domain/index.ts';
@@ -71,7 +71,8 @@ export function luoiKetQua(p: Principal, ids: readonly number[]): { ds: DongLuoi
   ).all(...ids) as any[];
   /* Người giữ việc không có quyền xem lượt (vd chủ Case, lớp mới chưa phân công môn) — chỉ tính cho dòng trượt quyền xem (hiếm), như `kiemXemCase`. */
   napTruocPhamVi(rows.map((r) => r.hv));   // phạm vi em của cả lưới MỘT câu — `can` dưới không hỏi DB theo từng em
-  const truot = rows.filter((r) => !can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop, studentId: r.hv }));
+  /* N57 / N63 ⑤: BPXL không xem Case / PA — như `kiemXemCase`. */
+  const truot = rows.filter((r) => !can(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop, studentId: r.hv }));
   const giu = truot.length ? nguoiGiuKetQua(truot.filter((r) => r.status === 'planned' || r.status === 'started')
     .map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.lop ?? null, ownerUserId: r.owner_user_id ?? null })), homNay) : new Map();
   const ngoai = new Set(truot.filter((r) => giu.get(r.id) !== p.userId).map((r) => r.id));

@@ -8,8 +8,8 @@ import {
   CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop, programmeOf, tachSoLop,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, canXacNhan, notFound, loi } from '../util.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { badRequest, canXacNhan, forbidden, notFound, loi } from '../util.ts';
+import { duocDoiChuongTrinhLop, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ghiPhanCong } from './classes.ts';
 import { mocChupVaoLop, programmeByCode } from '../normal/regular.ts';
@@ -55,6 +55,8 @@ export function capNhatThongTinLop(
 
   const doiCt = chuongTrinh !== cu;
   const doiLt = !doiCt && loTrinh !== undefined && route !== c.route;
+  /* RA-2511 Q3 (N52): chương trình / lịch MT mặc định của lớp là học thuật (MT / Test) — CX (`class.edit` để sửa lớp) không đổi; số lớp, ghi chú vẫn sửa được. */
+  if ((doiCt || doiLt) && !duocDoiChuongTrinhLop(p, classId)) throw forbidden('CX không đổi chương trình / lịch MT của lớp — nhờ Head.');
   if (doiCt || doiLt) {
     /* RKC-4b (PTA 07/11; trước Q6 K2-18 chặn): lớp đã có học viên / bài Test → HỎI nêu đúng hệ quả rồi đổi. Lộ trình của các em giữ nguyên, bài cũ giữ
        chương trình lúc làm, bài mới theo chương trình mới. Hoàn tác = đổi lại (web gửi lại chương trình / lộ trình cũ). */

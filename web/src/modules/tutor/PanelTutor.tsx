@@ -7,7 +7,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { BoLocDoan, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import { ConfirmDialog, HopBoChu } from '../../ui/Drawer.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { maTuan, ngay, type KhoangNgay, type LoiTruong } from '@shared/domain/index.ts';
@@ -66,6 +66,8 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
   const [xoa, setXoa] = useState<NhanXet | null>(null);
   const [suaTutor, setSuaTutor] = useState(false);
   const [daLuu, setDaLuu] = useState<string | null>(null);
+  /** RA-2511: bấm "Sửa" nhận xét khác khi form còn chữ chưa lưu → hỏi trước, không đè chữ đang gõ. */
+  const [hoiSua, setHoiSua] = useState<NhanXet | null>(null);
 
   const daGo = !!noiDung.trim() || !!kl;
   /* Luật lỗi form chung (PR-N1): lý do dưới ô sau khi rời ô / bấm Lưu; chân panel "n ô cần sửa ↑". */
@@ -109,6 +111,13 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
       toast.push('error', e instanceof ApiError ? e.message : t('Không xoá được — thử lại.'));
     } finally { setGui(false); }
   }
+
+  /* RA-2511: form hiện cho người viết nhận xét mới (`coSua` = tutor.manage) HOẶC đang sửa nhận xét được phép sửa (R2 C9: Head chi nhánh nơi dạy — `n.coSua`). */
+  const coForm = !!data?.coSua || !!dangSua;
+  const goc = dangSua ? data?.nhanXet.find((x) => x.id === dangSua) : null;
+  const chuaLuu = goc ? kl !== goc.kl || noiDung !== goc.noiDung : daGo;
+  const apSua = (n: NhanXet) => { setDangSua(n.id); setKl(n.kl); setNoiDung(n.noiDung); setLoiChung(null); setDaLuu(null); lf.datLai(); };
+  const moSua = (n: NhanXet) => (n.id !== dangSua && chuaLuu ? setHoiSua(n) : apSua(n));
 
   const tu = data?.tutor;
   const so = data?.so;
@@ -158,7 +167,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
 
   /* Nút chính ở chân: đang viết → Lưu nhận xét; vừa lưu (form trống) → Người cần chú ý tiếp › (nếu còn). */
   const sauLuu = !!daLuu && !daGo && !dangSua;
-  const nutChinh = !data?.coSua ? undefined
+  const nutChinh = !coForm ? undefined
     : sauLuu && tiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onTiep(tiep.id)}>{t('Người cần chú ý tiếp ›')}</button>
     : sauLuu ? undefined
     : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={gui} onClick={luu}>{gui ? t('Đang lưu…') : dangSua ? t('Lưu sửa') : t('Lưu nhận xét')}</button>;
@@ -173,7 +182,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
           : suaDuoc ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaTutor(true)}>{t('Sửa')}</button> : undefined,
         dong2: [tu.sdt ? <span key="sdt" className="tabular-nums">{nhanSdt(tu.sdt)}</span> : null, nhanNoiDay(tu.noiDay), nhanKyNang(tu.kyNang), idsCy ? t('Lần ghi cần chú ý') : khoangChu].filter(Boolean),
       } : undefined}
-      chan={{ huy: { onClick: onDong }, daSua: daGo, conThieu: data?.coSua ? lf.conThieu(loi) : undefined, chinh: nutChinh,
+      chan={{ huy: { onClick: onDong }, daSua: daGo, conThieu: coForm ? lf.conThieu(loi) : undefined, chinh: nutChinh,
         trai: daLuu && !daGo ? <span className="text-[13px] font-semibold text-ok" role="status">✓ {t('Đã lưu nhận xét')} · {daLuu}</span> : undefined }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data || !tu || !so ? <Skeleton rows={8} /> : (
@@ -193,7 +202,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
                 {tu.chuYNgay && <span className="whitespace-nowrap tabular-nums"> · {ngay(tu.chuYNgay, homNay)}</span>}
                 <span className="font-normal text-faint"> · {tu.ketLuan ? t('sau nhận xét {ngay}', { ngay: ngay(tu.ketLuan.luc, homNay) }) : t('chưa có nhận xét')}</span></p>
             )}
-            {data.coSua ? (
+            {coForm ? (
               <div className="grid gap-3 rounded-[10px] border p-3.5" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }} data-hd="tutor-nhan-xet">
                 <Truong nhan={t('Kết luận')} batBuoc as="div" loi={lf.loiCua(loi, 'tutor-kl')}>
                   <span {...lf.o(loi, 'tutor-kl')} tabIndex={-1} className="inline-flex max-w-full max-sm:w-full max-sm:[&_button]:!flex-auto">
@@ -222,7 +231,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
                     </span>
                     {n.coSua ? (
                       <span className="flex shrink-0 gap-1">
-                        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => { setDangSua(n.id); setKl(n.kl); setNoiDung(n.noiDung); setLoiChung(null); setDaLuu(null); lf.datLai(); }}>{t('Sửa')}</button>
+                        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => moSua(n)}>{t('Sửa')}</button>
                         {n.coXoa && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setXoa(n)}>{t('Xoá')}</button>}
                       </span>
                     ) : <span />}
@@ -260,6 +269,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
         )}
       <ConfirmDialog open={!!xoa} onClose={() => setXoa(null)} onConfirm={() => xoa && xoaNx(xoa)} busy={gui} danger z="z-[60]"
         title={t('Xoá nhận xét?')} body={xoa ? `${NHAN_KET_LUAN[xoa.kl]} · ${xoa.noiDung}` : ''} confirmLabel={t('Xoá')} />
+      {hoiSua && <HopBoChu viec={t('Nhận xét')} nut={t('Bỏ chữ, sửa nhận xét này')} onO={() => setHoiSua(null)} onBo={() => { apSua(hoiSua); setHoiSua(null); }} />}
       {suaTutor && tu && <HopTutor dsChiNhanh={dsChiNhanh} chiNhanhDanhBa={chiNhanhDanhBa} ds={ds} tutor={tu} coBuoi={data?.coBuoi ?? true}
         onDong={() => setSuaTutor(false)} onXong={() => setSuaTutor(false)} onXoa={() => { setSuaTutor(false); onDong(); }} />}
     </KhungPanel>

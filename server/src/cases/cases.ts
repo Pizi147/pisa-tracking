@@ -2053,7 +2053,10 @@ export function backfillCase(p: Principal, input: {
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
-    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, 2000) ?? '').length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
+    /* RA-2511 (N50 ⑥, N35): Nội dung PA nhập bù cùng ngưỡng ≥ 8 / trần 200 với Thêm / Sửa PA. */
+    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, TRAN_CHU.noiDungPa) ?? '').length < CHU_TOI_THIEU_CASE) {
+      throw loi(400, 'Dòng PA {x}: nội dung ít nhất {n} ký tự.', { x: i + 1, n: CHU_TOI_THIEU_CASE });
+    }
     chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false });   // PR-PA (§8): Người dạy không bắt buộc
   }
   const note = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)

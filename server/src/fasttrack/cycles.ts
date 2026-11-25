@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import {
-  BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, CYCLE_STATUSES, PERMISSIONS, soMtKeTiep, tuanLich,
+  BASELINE_SOURCES, CO_DIEM_SQL, CYCLE_OUTCOMES, CYCLE_OUTCOME_LABEL, PERMISSIONS, soMtKeTiep, tuanLich,
   canNamGan, docNgayNhap, hienTargetKck, mondayOfDate, tachKck, ngay, type ExamPlan, type LuotSo, type Route,
   CHI_SUA_THONG_TIN, CAU_LIEN_TUC, duocDoiKck, laBandLenh, nhanThang, docTargetKyThi, kyThiCuaChuongTrinh,
 } from '../../../shared/domain/index.ts';
@@ -290,18 +290,12 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   if (doiTarget) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   if (doiLoTrinh && !duocDoiLoTrinh(p, { studentId: c.student_id })) throw forbidden(CHI_QL_SUA);
   if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi Target.');
-  if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
-    throw badRequest('Trạng thái lộ trình không hợp lệ.');
-  }
   /*
-   * S16 CHỈ khi nơi gọi nói rõ "em thôi học" (`dongCaseKhiKetThuc: true`). Luồng "Lên lớp thường tiếp" (PR-LT) hoàn tất khoá cũ mà
-   * KHÔNG truyền cờ — Case bàn giao sang khoá mới (§3.9). Không cờ = không đóng gì. Cờ đọc riêng, không phải cột: `map` bỏ qua
-   * khoá lạ nên nó không lọt vào câu UPDATE.
+   * RA-2511 (N6): PATCH lộ trình KHÔNG đổi trạng thái — `status` / `dongCaseKhiKetThuc` gửi lên bị bỏ qua (`map` không có khoá). Đóng lộ trình + Case
+   * chỉ qua đường có luật riêng: Bước tiếp sau thi (`loTrinh/buocTiep.ts`), Tạm dừng / Kết thúc học, chuyển lớp — không để GVCN đóng mọi Case một bấm.
    */
-  const closeOnEnd = patch.dongCaseKhiKetThuc === true
-    && c.status === 'active' && patch.status !== undefined && patch.status !== 'active';
   const map: Record<string, string> = {
-    note: 'note', status: 'status',
+    note: 'note',
     /*
      * Hai trường của vòng 4. Quyền sửa: Admin CN · Quản lý · GVCN của lớp (mục 7.5) —
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
@@ -337,13 +331,6 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     if (sets.length) db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
     if (doiLoTrinh) apDoiLoTrinh(p.userId, cycleId, patch.route, { lyDo: typeof patch.lyDo === 'string' ? patch.lyDo : null, nhatKy: false });
     if (doiTarget) reviseTarget(p, cycleId, { newTarget: targetGui, reason: patch.lyDo });
-    if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
-      db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);
-      ghiBanChup(db(), [cycleId], { lyDo: 'sua_tay', ngay: demoToday() });   // PR-TK: sửa tay trạng thái = đường đóng thứ 5
-    }
-    if (closeOnEnd) {
-      closeCasesBySystem({ actorUserId: p.userId, studentId: c.student_id, reason: 'course_ended', on: demoToday(), cycleIds: [cycleId] });
-    }
   });
   const after = cycleById(cycleId);
   // Đổi dự kiến thi là sự kiện đáng ghi vào hành trình học.

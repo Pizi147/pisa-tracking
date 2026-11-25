@@ -89,25 +89,36 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
   return { ok: true, loai: m.loai, doiTuongId: moiId };
 }
 
+const TRAN_DS_RAC = 300;
+const mocRac = () => new Date(Date.now() - (GIU_NGAY + 1) * 86_400_000).toISOString();
+
 /** Quản trị › Đã xoá: mục trong `GIU_NGAY` ngày (cả đã khôi phục — lịch sử), mới trước; Quản trị thấy mọi mục, người khác chỉ mục mình khôi phục được. */
 export function danhSachRac(p: Principal, loai?: MucRac['loai'] | null) {
-  const moc = new Date(Date.now() - (GIU_NGAY + 1) * 86_400_000).toISOString();
   const quanTri = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
-  /* GD-16 (Lưu trữ › Đã xoá): `loai` lọc trong SQL (chỉ đọc mục học viên); chi nhánh của học viên để chia dải (mockup ⑩ L4). */
+  /* GD-16 (Lưu trữ › Đã xoá): `loai` lọc trong SQL (chỉ đọc mục học viên); chi nhánh của học viên để chia dải (mockup ⑩ L4).
+     RA-2511: Quản trị thấy mọi mục → cắt 300 TRONG câu (không xét quyền mục ngoài 300). */
   const ds = db().prepare(`SELECT t.*, u1.full_name AS ten_xoa, u2.full_name AS ten_khoi_phuc, b.id AS cn_id, b.name AS cn_ten, c.code AS lop_ma FROM thung_rac t
       LEFT JOIN users u1 ON u1.id = t.xoa_boi LEFT JOIN users u2 ON u2.id = t.khoi_phuc_boi
       LEFT JOIN branches b ON b.id = t.branch_id LEFT JOIN classes c ON c.id = t.class_id
-      WHERE t.xoa_luc >= ?${loai ? ' AND t.loai = ?' : ''} ORDER BY t.id DESC`).all(...(loai ? [moc, loai] : [moc])) as (MucRac & { ten_xoa: string | null; ten_khoi_phuc: string | null; cn_id: number | null; cn_ten: string | null; lop_ma: string | null })[];
-  /* Lọc quyền TRƯỚC, giới hạn 300 SAU — mục của người xem không bị mục ngoài phạm vi đẩy khỏi danh sách. */
-  return ds.flatMap((m) => {
+      WHERE t.xoa_luc >= ?${loai ? ' AND t.loai = ?' : ''} ORDER BY t.id DESC${quanTri ? ` LIMIT ${TRAN_DS_RAC}` : ''}`).all(...(loai ? [mocRac(), loai] : [mocRac()])) as (MucRac & { ten_xoa: string | null; ten_khoi_phuc: string | null; cn_id: number | null; cn_ten: string | null; lop_ma: string | null })[];
+  /* Người khác: lọc quyền TRƯỚC, giới hạn 300 SAU — mục của người xem không bị mục ngoài phạm vi đẩy khỏi danh sách; đủ 300 thì dừng xét quyền.
+     ponytail: xét quyền từng mục (≤ 2 câu / mục) — gộp theo loại nếu Thùng rác của Head hay quá vài trăm mục. */
+  const out = [];
+  for (const m of ds) {
+    if (out.length >= TRAN_DS_RAC) break;
     const duoc = !m.khoi_phuc_luc && !m.het_han_luc && coQuyen(p, m);
-    if (!duoc && !quanTri) return [];
-    return [{ id: m.id, loai: m.loai, nhan: m.nhan, hocVienId: m.hoc_vien_id, xoaBoi: m.ten_xoa, xoaLuc: m.xoa_luc,
+    if (!duoc && !quanTri) continue;
+    out.push({ id: m.id, loai: m.loai, nhan: m.nhan, hocVienId: m.hoc_vien_id, xoaBoi: m.ten_xoa, xoaLuc: m.xoa_luc,
       khoiPhucBoi: m.ten_khoi_phuc, khoiPhucLuc: m.khoi_phuc_luc, hetHanLuc: m.het_han_luc,
       xoaHanLuc: new Date(Date.parse(m.xoa_luc) + GIU_NGAY * 86_400_000).toISOString(), khoiPhucDuoc: duoc,
-      chiNhanh: m.cn_id != null ? { id: m.cn_id, ten: m.cn_ten ?? '' } : null, lop: m.lop_ma ?? null }];
-  }).slice(0, 300);
+      chiNhanh: m.cn_id != null ? { id: m.cn_id, ten: m.cn_ten ?? '' } : null, lop: m.lop_ma ?? null });
+  }
+  return out;
 }
 
-/** GD-16: số trên tab "Đã xoá" của Lưu trữ — CÙNG tập `danhSachRac` (một câu, chỉ mục loại đó) → số tab = số dòng tab. */
-export const demRac = (p: Principal, loai: MucRac['loai']) => ({ n: danhSachRac(p, loai).length });
+/** GD-16: số trên tab "Đã xoá" của Lưu trữ — CÙNG tập `danhSachRac` → số tab = số dòng tab. RA-2511: Quản trị (thấy mọi mục) đếm bằng MỘT câu, không xét quyền từng mục. */
+export function demRac(p: Principal, loai: MucRac['loai']): { n: number } {
+  if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) return { n: danhSachRac(p, loai).length };
+  const n = (db().prepare('SELECT COUNT(*) AS n FROM thung_rac WHERE xoa_luc >= ? AND loai = ?').get(mocRac(), loai) as { n: number }).n;
+  return { n: Math.min(n, TRAN_DS_RAC) };
+}

@@ -87,7 +87,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     if (!o || !ngayNghiepVu) return 'khong-yeu-cau';
     return trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu, huyVang: o.huyVang });
   };
-  const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), quyen, moi);
+  /* RA-2511 Q5 (N63 ②): BPXL Xoá / Khôi phục kỹ năng CHƯA có điểm (máy chủ `setSkillScope` chặn cả điểm đang cất). */
+  const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), chiXepLich && ttCua(k) !== 'co-diem' ? { ...quyen, huy: true } : quyen, moi);
   /** Dòng đổi tuần thường (không đã huỷ / vắng / chờ duyệt / bỏ khỏi đợt) — theo "Tuần chung", kể cả có điểm (điểm giữ, luật 1). */
   const theoChungDau = (k: KyNangKH) => theoTuanChung(ttCua(k), quyen, moi);
   /** N38 L5: dòng có gì để xếp lại (vắng, huỷ, chờ thẻ cũ, đã dời do vắng, Không dự thi) — Dời chọn đúng tuần cũ vẫn là một lần lưu. */

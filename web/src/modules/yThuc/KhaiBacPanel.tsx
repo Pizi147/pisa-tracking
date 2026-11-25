@@ -105,14 +105,18 @@ export function KhaiBacPanel({ studentId, sua, lop, dau: dauTai, onClose, onDone
     setBusy(true); setLoiLuu(null);
     try {
       const body = { bac, thang: thang || undefined, ghiChu: ghiChu.trim() };
-      const kq = laSua ? await api.put<{ guiDuyet?: boolean }>(`/students/${studentId}/y-thuc/khai-bac`, { ...body, bacCu: d.khai?.bac })
-        : await api.post<{ guiDuyet?: boolean }>(`/students/${studentId}/y-thuc/khai-bac`, body);
+      const kq = laSua ? await api.put<{ guiDuyet?: boolean; yeuCauId?: number }>(`/students/${studentId}/y-thuc/khai-bac`, { ...body, bacCu: d.khai?.bac })
+        : await api.post<{ guiDuyet?: boolean; yeuCauId?: number }>(`/students/${studentId}/y-thuc/khai-bac`, body);
       lamMoi();
       /* N70: máy chủ quyết áp ngay hay gửi duyệt (`guiDuyet`) — chữ báo theo đúng điều đã xảy ra. */
       const chu = kq?.guiDuyet
         ? t('Đã gửi Head duyệt: {ten} · {cu} → {moi}. Bậc hiện tại giữ tới khi Head duyệt.', { ten: d.ten, cu: bacDu(tenBac(d.khai?.bac ?? 0)), moi: bacDu(tenBac(bac)) })
         : t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: bacDu(tenBac(bac)), ten: d.ten, nhanLoaiXuLy2: bacDu(nhanLoaiXuLy(kindCuaBac(bac + 1))) });
-      toast.push('ok', chu);
+      /* RA-2511 (N66): Hoàn tác ngay ở toast — máy chủ đọc bản trước từ nhật ký (như Hoàn tác lô), vừa gửi duyệt thì rút / khôi phục thẻ. */
+      const daGui = kq?.guiDuyet ? { ycId: kq.yeuCauId } : { bac };
+      toast.hoanTac(chu, () => void api.post(`/students/${studentId}/y-thuc/khai-bac/hoan-tac`, daGui)
+        .then(() => { lamMoi(); reload(); toast.push('ok', t('Đã hoàn tác')); }, (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'))),
+      { key: `khai-bac-${studentId}` });
       if (taiCho || onTiep) setDaLuu(chu); else onClose();   // V12 ①: có việc kế → "Lưu" ở lại, "✓ Đã lưu" + Việc tiếp ›
       return true;
     } catch (e: any) {

@@ -208,7 +208,9 @@ export function thiThatCua(cy: LoTrinhD, homNay: string): ThiThatD | 'khong' | n
   if (tt?.khongThi) return 'khong';
   if (tt?.ngay) {
     const diem = { l: tt.l, r: tt.r, w: tt.w, s: tt.s, ovr: tt.ovr };
-    return { loai: Object.values(diem).some((v) => v != null) ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target, layLai: tt.layLai ?? null };
+    /* RA-2511: "có KQ" cùng luật máy chủ `CO_KET_QUA_THI_SQL` — đủ 4 kỹ năng (hoặc Overall cũ / Không thi ở trên); nhập dở 1–3 kỹ năng = còn chờ. */
+    const du = [tt.l, tt.r, tt.w, tt.s].every((v) => v != null) || tt.ovr != null;
+    return { loai: du ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target, layLai: tt.layLai ?? null };
   }
   if (ke?.confidence === 'week' && ke.weekStart) return { loai: ke.weekStart <= mondayOfDate(homNay) ? 'cho' : 'du-kien', tuan: ke.weekStart, thang: null, nhan: ke.label, diem: trong, target };
   if (ke?.confidence === 'month' && ke.month) return { loai: 'du-kien', tuan: null, thang: ke.month, nhan: ke.label, diem: trong, target };

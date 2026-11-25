@@ -132,6 +132,19 @@ export async function runPrBpxlTests(t: any) {
     assert(ma(() => svc.huyLuot(mb, m1, {})) === 403, 'BPXL huỷ lượt phải 403');
   }));
 
+  check('BX-3b · RA-2511 Q5 (N63 ②): BPXL Xoá / Khôi phục MỘT kỹ năng chưa có điểm được; kỹ năng có điểm / điểm đang cất → 403; chi nhánh khác 403', () => thu(() => {
+    const mb = loadPrincipal(idMb);
+    const a = em(MB_FT); const m = a.luot(1, '2026-10-05');
+    const sk = (id: number, k: string) => one('SELECT required FROM attempt_skills WHERE attempt_id = ? AND skill = ?', id, k)?.required;
+    assert(loi(() => svc.setSkillSkip(mb, m, 'reading', true, 'BPXL xoá')) === null && sk(m, 'reading') === 0, 'BPXL xoá kỹ năng chưa điểm');
+    assert(loi(() => svc.setSkillSkip(mb, m, 'reading', false, null)) === null && sk(m, 'reading') === 1, 'BPXL khôi phục kỹ năng chưa điểm');
+    svc.saveScore(P.admin, m, 'listening', { rawScore: 30, rawTotal: 40 });
+    assert(ma(() => svc.setSkillSkip(mb, m, 'listening', true, 'BPXL xoá')) === 403 && sk(m, 'listening') === 1, 'kỹ năng có điểm: 403, không đổi');
+    assert(ma(() => svc.setSkillSkip(mb, m, 'listening', true, 'BPXL xoá', { xoaDiem: true })) === 403, 'Xoá kèm điểm: 403');
+    const b = em(CP_FT); const n = b.luot(1, '2026-10-05');
+    assert(ma(() => svc.setSkillSkip(mb, n, 'reading', true, 'BPXL xoá')) === 403, 'BPXL MB xoá kỹ năng lớp CP: 403');
+  }));
+
   check('BX-5 · khoá cuối tuần N15 như Admin: T6 dời MT tuần này → hỏi "Vẫn đổi lịch"; tuần +3 → được', () => thu((doiNgay) => {
     const mb = loadPrincipal(idMb);
     const a = em(MB_FT); const m1 = a.luot(1, '2026-09-14');
@@ -296,7 +309,6 @@ export async function runPrBpxlTests(t: any) {
         ['PUT', '/cham/gv-cham-cot', { classId: MB_FT, dot: 'mt1', gv: P.admin.userId }],
         ['POST', `/attempts/${luotMb}/skills/listening/deadline`, { deadline: '2026-10-30', reason: 'BPXL thử' }],
         ['POST', `/attempts/${luotMb}/deadline`, { deadline: '2026-10-30', reason: 'BPXL thử' }],
-        ['POST', `/attempts/${luotMb}/skills/speaking/skip`, { skipped: true, reason: 'BPXL thử' }],
         ['POST', `/students/${emMb}/status`, { status: 'inactive', reason: 'BPXL thử' }],
         ['POST', `/students/${emMb}/xoa`, {}],
         ['PATCH', `/cycles/${cy}`, { targetScore: 7 }],

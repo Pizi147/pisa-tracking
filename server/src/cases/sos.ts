@@ -398,7 +398,10 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * MT-LS-DAT-CASE (Việc để sau #860): MT lịch sử NGOÀI cửa sổ vẫn ghi mốc "đã đạt" vào Case đang mở của MT CŨ HƠN (như MT thường — Mock FT chỉ khi
    * lượt đã chốt), nhưng KHÔNG gì khác: không tín hiệu / Case / PA / Phối hợp / chuông mới (UA-19).
    */
-  if (ngoaiCuaSo) {
+  /* RA-2511: em đã Kết thúc học — sửa điểm MT cũ thành trượt không sinh Case / PA quy chế / Phối hợp / hạn / chuông mới (như tín hiệu đã thu hồi
+     không mở lại, `raiseSignal`); chỉ ghi mốc "đã đạt" như MT lịch sử ngoài cửa sổ. */
+  const daKetThuc = !ngoaiCuaSo && (conn.prepare('SELECT status FROM students WHERE id = ?').get(attempt.student_id) as any)?.status === 'finished';
+  if (ngoaiCuaSo || daKetThuc) {
     if (result.chot || !isFastTrackMock(attempt, scoringModeOf(attempt))) ghiMocDaDat(p, attempt, result, failing, entry, demoToday(), true);
     return null;
   }

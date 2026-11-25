@@ -322,3 +322,19 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
     }),
   };
 }
+
+/**
+ * RA-2511 (N66): Hoàn tác khai / sửa cấp bậc của MỘT em (panel một em) — CÙNG lõi `loHoanTacCapBac` (bậc trước đọc nhật ký máy chủ, không tin client;
+ * vừa gửi Head duyệt → rút / khôi phục thẻ), lớp = lớp em đang học. `bac` = bậc vừa lưu; `ycId` = thẻ vừa gửi.
+ */
+export function hoanTacCapBacEm(p: Principal, studentId: number, v: { bac?: unknown; ycId?: unknown }): KqEm {
+  const lop = trangThaiYThuc([studentId], demoToday()).get(studentId)?.lopId;
+  if (!lop) throw badRequest('Em không còn học lớp nào — không hoàn tác được.');
+  const kq = loHoanTacCapBac(p, lop, { em: [v.ycId != null ? { studentId, ycId: v.ycId } : { studentId, bac: v.bac }] }).em[0];
+  if (!kq.ok) {
+    const e = new HttpError(400, kq.loi?.chu ?? 'Không hoàn tác được — thử lại.');
+    e.khoa = kq.loi?.khoa as HttpError["khoa"]; e.bien = kq.loi?.bien;
+    throw e;
+  }
+  return kq;
+}

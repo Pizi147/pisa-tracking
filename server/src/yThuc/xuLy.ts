@@ -1019,8 +1019,8 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
   const m = loadXuLy(measureId);
   const hv = hocVien(m.student_id);
   requireSuaXuLy(p, m);
-  const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000);
-  if (!lyDo) throw badRequest('Ghi lý do thu hồi.');
+  const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000) ?? '';
+  if (lyDo.length < CHU_TOI_THIEU) throw badRequest(`Ghi lý do thu hồi (ít nhất ${CHU_TOI_THIEU} ký tự).`);   // RA-2511 (N50 ⑥): một ngưỡng cho mọi ô lý do
   if (!THU_HOI_DUOC.has(m.status)) {
     throw badRequest(m.status === 'cho_duyet' ? 'Đề xuất đang chờ Head — dùng Rút đề xuất.' : 'Lần xử lý bị Head từ chối không tính bậc — không cần thu hồi.');
   }
