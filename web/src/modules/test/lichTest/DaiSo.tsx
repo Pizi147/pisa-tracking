@@ -10,12 +10,14 @@ export type OSo = 'da-cham' | 'no';
  * Ô "còn chấm" bỏ (= tổng − đã chấm): số còn ở `title` ô đã chấm; bấm ô đã chấm mở nhóm Test tuần này và các hàng còn bài (thao tác cũ của ô bỏ).
  * Ô hai = Tổng quan "Bài quá hạn" của khung đang xem (UX-2, OV-14b) → mở DANH SÁCH các ô đó. Số đã cộng sẵn ở máy chủ.
  */
-export function DaiSo({ tq, onBam, dangTaiNo = false, nhom }: {
+export function DaiSo({ tq, onBam, dangTaiNo = false, thuLaiNo, nhom }: {
   tq: TongQuanLich; onBam: (o: OSo) => void;
   /** B13 (U06 #1): MỘT nhãn nhóm đứng đầu dải — "Của bạn:" / "Cả chi nhánh:" (chữ "Bạn" không lặp trong ô). */
   nhom?: string;
   /** UX-2 (1): số "Quá hạn chấm" đến từ đường riêng — đang tải thì "…", không hiện tạm một số khác. */
   dangTaiNo?: boolean;
+  /** SUA-LOI-A4 (rà ngoài 25/11): đường số quá hạn lỗi → "—" + "Thử lại" ngay ô (không treo "…", không hiện 0 giả). */
+  thuLaiNo?: () => void;
 }) {
   return (
     /* GD-4 e (mockup v21 `test.html` `.dai-cs.tst`, H3): dải mỏng một hàng — nhãn nhóm đậm · "Đã chấm n / N" · "Quá hạn n" (đỏ khi > 0). Số 0 không bấm. */
@@ -25,7 +27,10 @@ export function DaiSo({ tq, onBam, dangTaiNo = false, nhom }: {
         <SoBam n={tq.tong} onClick={() => onBam('da-cham')} nhan={`${tq.daCham} / ${tq.tong}`} />
       </ODai>
       <ODai nhan={t('Quá hạn')}>
-        {dangTaiNo ? <SoTinh n="…" /> : <SoBam n={tq.no.bai} onClick={() => onBam('no')} xau />}
+        {thuLaiNo
+          ? <span role="alert" className="inline-flex items-center gap-1.5"><SoTinh n="—" />
+            <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" aria-label={t('Chưa tải được số quá hạn. Thử lại')} onClick={thuLaiNo}>{t('Thử lại')}</button></span>
+          : dangTaiNo ? <SoTinh n="…" /> : <SoBam n={tq.no.bai} onClick={() => onBam('no')} xau />}
       </ODai>
     </DaiChiSo>
   );

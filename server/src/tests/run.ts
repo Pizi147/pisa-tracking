@@ -10102,6 +10102,9 @@ await runPrR1Tests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== N71 (chủ SP 25/11: kết thúc lớp thường không ẩn vội, không chặn cứng)
 const { runPrN71Tests } = bocTep('prN71', await import('./prN71.tests.ts'));
 await runPrN71Tests({ check, checkAsync, assert, conn, P } as any);
+// ==================================================================== SUA-LOI-A (rà ngoài 25/11: Xuất Excel · tìm nhanh · Hồ sơ · Quá hạn · Hoàn tác theo dõi)
+const { runPrSuaLoiATests } = bocTep('prSuaLoiA', await import('./prSuaLoiA.tests.ts'));
+await runPrSuaLoiATests({ check, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
