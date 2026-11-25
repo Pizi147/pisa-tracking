@@ -613,9 +613,9 @@ function HopCase({ mo, homNay, hep, onDong, onOpenCase }: { mo: HopMo; homNay: s
   const hoSo = d?.attemptId ? duongDotTest({ id: d.attemptId, kind: d.kind ?? null, classId: d.classId ?? null }, hop.kyNang) : null;
   return createPortal(
     <div ref={ref} role="dialog" aria-label={tieu}
-      className={hep ? 'fixed inset-x-0 bottom-0 z-50 grid gap-2 rounded-t-[14px] border-t px-4 pb-[18px] pt-3.5 text-[14px] shadow-xl'
+      className={hep ? 'fixed inset-x-0 z-50 grid gap-2 rounded-t-[14px] border-t px-4 pb-[18px] pt-3.5 text-[14px] shadow-xl'
         : 'fixed z-50 grid w-[300px] gap-1 rounded-[10px] border px-3 py-2.5 text-[14px] shadow-xl'}
-      style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)', ...(hep ? {} : { left: cho?.left ?? 0, top: cho?.top ?? 0, visibility: cho ? undefined : 'hidden' }) }}>
+      style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)', ...(hep ? { bottom: 'var(--ban-phim, 0px)' } /* rà 25/11 (việc 8): trên bàn phím ảo */ : { left: cho?.left ?? 0, top: cho?.top ?? 0, visibility: cho ? undefined : 'hidden' }) }}>
       <b className="text-[14px] text-slate-100">{tieu}</b>
       <span className="text-slate-100">{giuaCase(v)}{d && d.kyVong != null && <> · <DiemKq diem={d.gt} kyVong={d.kyVong} /> / {t('kỳ vọng {kv}', { kv: fmtBand(d.kyVong) })}</>}</span>
       <span className="text-[13px] text-dim">{phu}</span>

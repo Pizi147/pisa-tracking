@@ -9,7 +9,7 @@ import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { kem, t, type Khoa } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
-import { can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
+import { branchesOfStudent, can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
@@ -47,8 +47,17 @@ function metaCua(loai: string): LoaiYcMeta {
   if (!m) throw new Error(`Loại yêu cầu chưa khai báo: ${loai}`);
   return m;
 }
-const ctxThe = (y: { lop_id: number | null; hoc_vien_id: number | null; chi_nhanh_id: number | null }) =>
-  ({ classId: y.lop_id, studentId: y.hoc_vien_id, branchId: y.chi_nhanh_id });
+/*
+ * Rà 25/11 (5d): thẻ của MỘT em theo chi nhánh HIỆN TẠI của em (`branchesOfStudent` — lớp đang học + hồ sơ). Trước: lớp + chi nhánh LÚC TẠO + chi nhánh em,
+ * `grantCovers` đòi đủ cả → em đổi chi nhánh thì QL cả hai bên 403 (không luật `chet` nào đóng thẻ khi đổi chi nhánh). Nay QL chi nhánh em đang học duyệt,
+ * thẻ hiện ở hộp chi nhánh đó. Thẻ không gắn em (lớp, bàn giao…) giữ lớp + chi nhánh lúc tạo.
+ */
+type DongThe = { lop_id: number | null; hoc_vien_id: number | null; chi_nhanh_id: number | null };
+const ctxThe = (y: DongThe) => (y.hoc_vien_id != null ? { studentId: y.hoc_vien_id } : { classId: y.lop_id, branchId: y.chi_nhanh_id });
+/** Thẻ thuộc chi nhánh `cn` (lọc hộp / dải đếm) — cùng luật `ctxThe`. Chi nhánh em nhớ theo request (`napTruocPhamVi` của `trongPhamVi`). */
+const theOChiNhanh = (y: DongThe, cn: number) => (y.hoc_vien_id != null ? branchesOfStudent(y.hoc_vien_id).includes(cn) : y.chi_nhanh_id === cn);
+/** SQL: chi nhánh người nhận của thẻ `y` (em: hồ sơ em hiện tại, `students s` nối sẵn) — cùng luật. */
+const CN_THE_SQL = `CASE WHEN y.hoc_vien_id IS NOT NULL THEN COALESCE(s.branch_id, y.chi_nhanh_id) ELSE y.chi_nhanh_id END`;
 const tenHocVien = (conn: any, id: number | null) =>
   id == null ? null : ((conn.prepare('SELECT full_name FROM students WHERE id = ?').get(id) as any)?.full_name ?? null) as string | null;
 
@@ -132,7 +141,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
 export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLoai: string; doiTuongId: number },
   v: { lyDo: string | null; duLieu?: Record<string, unknown>; ngay: string }): number | null {
   const r = conn.prepare(
-    `SELECT y.id, y.ly_do, y.du_lieu, y.chi_nhanh_id, y.nguoi_xin, s.full_name AS hv FROM yeu_cau_duyet y
+    `SELECT y.id, y.ly_do, y.du_lieu, ${CN_THE_SQL} AS chi_nhanh_id, y.nguoi_xin, s.full_name AS hv FROM yeu_cau_duyet y
        LEFT JOIN students s ON s.id = y.hoc_vien_id
       WHERE y.trang_thai = 'cho' AND y.loai = ? AND y.doi_tuong_loai = ? AND y.doi_tuong_id = ?`,
   ).get(doiTuong.loai, doiTuong.doiTuongLoai, doiTuong.doiTuongId) as any;
@@ -246,7 +255,7 @@ function quetThat(homNay: string) {
 
   const coHan = Object.entries(LOAI_YC_META as Record<string, LoaiYcMeta>).filter(([, m]) => m.kieuNut !== 'nhac').map(([k]) => k);
   const qua = conn.prepare(
-    `SELECT y.id, y.loai, y.chi_nhanh_id, y.han_duyet, s.full_name AS hv FROM yeu_cau_duyet y LEFT JOIN students s ON s.id = y.hoc_vien_id
+    `SELECT y.id, y.loai, ${CN_THE_SQL} AS chi_nhanh_id, y.han_duyet, s.full_name AS hv FROM yeu_cau_duyet y LEFT JOIN students s ON s.id = y.hoc_vien_id
       WHERE y.trang_thai = 'cho' AND y.han_duyet IS NOT NULL AND y.han_duyet < ? AND y.loai IN (${coHan.map(() => '?').join(',')})
         AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.dedup_key = 'qua_han_duyet:' || y.id)`,
   ).all(homNay, ...coHan) as any[];
@@ -382,8 +391,9 @@ export function hopChoDuyet(p: Principal, f: {
   let khacChiNhanh = 0;
   if (f.branchId) {
     /* SL2: đang lọc một lớp → thẻ chi nhánh khác không thuộc lớp đó, không có gì để "Xem". */
-    if (xem === 'cho' && !f.classId) khacChiNhanh = rows.filter((r) => r.chi_nhanh_id !== f.branchId && nhomCuaLoai(r.loai) === 'can-quyet').length;
-    rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+    const cn = f.branchId;
+    if (xem === 'cho' && !f.classId) khacChiNhanh = rows.filter((r) => !theOChiNhanh(r, cn) && nhomCuaLoai(r.loai) === 'can-quyet').length;
+    rows = rows.filter((r) => theOChiNhanh(r, cn));
   }
   /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */
   let lopDangLoc: { id: number; code: string } | null = null;
@@ -484,7 +494,7 @@ export function demYeuCau(p: Principal, f: { branchId?: number | null } = {}): D
     if (f.branchId && !can(p, P_DUYET, { branchId: f.branchId })) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được duyệt.');
     let rows = trongPhamVi(p, conn.prepare(
       `SELECT loai, han_duyet, hoc_vien_id, lop_id, chi_nhanh_id FROM yeu_cau_duyet WHERE trang_thai = 'cho'`).all() as any[]);
-    if (f.branchId) rows = rows.filter((r) => r.chi_nhanh_id === f.branchId);
+    if (f.branchId) { const cn = f.branchId; rows = rows.filter((r) => theOChiNhanh(r, cn)); }
     /* CÙNG hàm đếm với chip của hộp — badge, dải Tổng quan và chip "Tất cả" luôn một số. */
     const d = demHop(rows.map((r) => ({ loai: r.loai, phanLoai: metaCua(r.loai).phanLoai, hanDuyet: r.han_duyet })), homNay);
     kq.cho = d.tong; kq.quaHan = d.quaHan; kq.baoLen = d.baoLen; kq.deBiet = d.deBiet; kq.deBietQuaHan = d.deBietQuaHan;

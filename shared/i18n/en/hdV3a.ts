@@ -187,7 +187,7 @@ export const EN_HD_V3A = {
   'Lý do bắt buộc, từ <b>8</b> ký tự; nhật ký PA ghi lại.': 'A reason of at least <b>8</b> characters is required; the PA log keeps it.',
   'GV bộ môn và GVCN cùng một hạn: Cấu hình hệ thống › <b>Hạn mặc định</b> (gốc <b>7 ngày</b>), tính cả ngày ra quyết định; quá hạn Head được báo, em vẫn chuyển đúng tuần.': 'Subject teachers and the core teacher share one deadline: System settings › <b>Default deadlines</b> (default <b>7 days</b>), counting the decision day; overdue alerts the Head, the student still moves on time.',
   'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.': 'A skill still taught by the same teacher in the new class → no handover needed.',
-  'Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 500 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).': 'A scored cell should have a comment of at least <b>10</b> characters, at most 300 — only the student’s latest MT (a reminder, never a block).',
+  'Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 500 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).': 'A scored cell should have a comment of at least <b>10</b> characters, at most 500 — only the student’s latest MT (a reminder, never a block).',
   'Ô dưới kỳ vọng thêm nhóm nguyên nhân.': 'Cells below expectation also get a cause group.',
   'Nhận xét + nhóm thành mô tả Case khi Case chưa có mô tả.': 'Comment + group become the Case description while the Case has none.',
   'Pre FOU, FOU, BE, ELE — làm Progress Test và Final Test, đếm theo môn; “tuần 5/8” = tuần đang học / số tuần của khoá.': 'Pre FOU, FOU, BE, ELE — take a Progress test and a Final test, counted by subject; “week 5/8” = current week / weeks in the course.',

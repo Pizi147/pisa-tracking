@@ -56,9 +56,23 @@ export const O_CHO_TU_SQL = `(CASE
          WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')}))
   END)`;
 
+/**
+ * Rà 25/11 (việc 2, N71): chuyển lớp GIỮ khoá (`luatLoTrinh` — FT → FT, lớp thường cùng mã) để lượt còn ô chờ từ tuần thi TRƯỚC tuần chuyển ở lại lớp lúc thi.
+ * Khi phần đó hết chờ (cờ mới không còn tuần trước tuần vào lớp hiện tại), lượt VỀ lớp em đang học: ô tuần sau là việc + quyền của lớp mới, không tách lượt.
+ * Đổi ngay trong câu ghi cờ (cờ đổi đúng lúc ô cũ được chấm / huỷ / dời) — 0 câu thêm. Cùng khoá (cùng chương trình) nên cờ không phải tính lại.
+ * ponytail: chừng nào ô cũ còn chờ, ô tuần sau vẫn theo lớp cũ (lượt chỉ có một lớp); cần đúng từng ô ngay cả lúc đó thì phải ghi lớp theo ô.
+ */
+const LOP_VE = `(SELECT e.class_id FROM enrollments e WHERE e.student_id = a.student_id AND e.status = 'active' AND e.class_id IS NOT a.class_id
+    AND NOT COALESCE(${O_CHO_TU_SQL} < date(substr(e.started_at, 1, 10), '-6 days', 'weekday 1'), 0) ORDER BY e.id DESC LIMIT 1)`;
+const LUOT_O_LAI = `a.status = 'planned' AND a.kind != 'mt0'
+  AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.status = 'active')
+  AND EXISTS (SELECT 1 FROM enrollments eo WHERE eo.student_id = a.student_id AND eo.class_id = a.class_id AND eo.status = 'transferred')`;
+
 /** MỘT chỗ ghi cờ. `dieuKien` chọn lượt (alias `a`); chỉ ghi dòng thật sự đổi — không viết lại dòng đã đúng. */
 function capNhat(conn: any, dieuKien: string, args: readonly unknown[]): void {
-  conn.prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL} WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
+  conn.prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL},
+      class_id = CASE WHEN ${LUOT_O_LAI} THEN COALESCE(${LOP_VE}, a.class_id) ELSE a.class_id END
+    WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
 }
 
 /** Tính lại cờ của các lượt này. Gọi ở CUỐI giao dịch ghi điểm / lịch của lượt (trong `tx` của nơi gọi). */

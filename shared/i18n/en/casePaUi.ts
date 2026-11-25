@@ -19,6 +19,8 @@ export const EN_CASE_PA_UI = {
   'Cần ít nhất {n} ký tự để lưu': 'At least {n} characters to save',
   'Dài quá {toiDa} — rút bớt {n} ký tự để lưu': 'Over {toiDa} — remove {n} characters to save',
   'Dùng nhận xét này': 'Use this comment',
+  'Xác nhận với mô tả này': 'Confirm with this description',
+  'Nháp — bấm Xác nhận với mô tả này để lưu': 'Draft — press Confirm with this description to save',
   'Em vướng gì ở {kn}? Gõ ở đây': 'What is the student stuck on in {kn}? Type here',
   'Esc: bỏ thay đổi': 'Esc: discard changes',
   'Ghi rõ ít nhất {n} ký tự để lưu': 'Describe in at least {n} characters to save',

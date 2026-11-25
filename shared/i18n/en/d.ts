@@ -509,7 +509,7 @@ const EN_D_WEB = {
   'Tệp hoặc liên kết': 'File or link',
   'Rút đề xuất này?': 'Withdraw this proposal?',
   'Xoá lần xử lý này?': 'Delete this action?',
-  '{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá': (b) => `${b.nhan} · ${so(b.length, 'incident', 'incidents')} back to open · ${so(b.soTep, 'evidence file', 'evidence files')} deleted`,
+  'Rút đề xuất · mất lần xử lý {nhan} ngày {ngay} và {soTep} tệp bằng chứng · {length} vi phạm về chưa xử lý': (b) => `Withdraw proposal · removes ${b.nhan} of ${b.ngay} and ${so(b.soTep, 'evidence file', 'evidence files')} · ${so(b.length, 'incident', 'incidents')} back to open`,
   '{nhan} · {length} vi phạm · bậc về {bacVe}': (b) => `${b.nhan} · ${so(b.length, 'incident', 'incidents')} · level back to ${b.bacVe}`,
 } satisfies Record<string, Dich>;
 

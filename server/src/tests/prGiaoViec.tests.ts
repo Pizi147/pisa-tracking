@@ -112,6 +112,11 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const sid = moiEm(); const id = baoPhViPham(sid);
     assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', id, { userId: admin.userId })) === 400, 'thiếu phuTrachCu → 400');
     assert(await ma(() => giao(tvv, 'bao_ph', id, ngoai.userId)) === 400, 'người chỉ có vai ở CP → 400');
+    /* Rà 25/11 (việc 4): kiểm người theo dõi theo LÔ — một người ngoài chi nhánh / id hỏng trong danh sách → 400, không ai được thêm. */
+    const soTd = () => mot(`SELECT COUNT(*) AS n FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ?`, id).n;
+    const td0 = soTd();
+    assert(await ma(() => gv.themTheoDoi(ql, 'bao_ph', id, { userIds: [tvv2.userId, ngoai.userId] })) === 400 && soTd() === td0, 'lô có người ngoài chi nhánh → 400, không thêm ai');
+    assert(await ma(() => gv.themTheoDoi(ql, 'bao_ph', id, { userIds: [tvv2.userId, 'x'] })) === 400 && soTd() === td0, 'lô có id hỏng → 400');
     assert(await ma(() => giao(gvbm, 'bao_ph', id, admin.userId)) === 403, 'GVBM (người theo dõi, không phụ trách) đổi → 403');
     giao(tvv, 'bao_ph', id, admin.userId);
     assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', id, { userId: tvv2.userId, phuTrachCu: admin.userId })) === 403, 'TVV hết là người phụ trách → 403');

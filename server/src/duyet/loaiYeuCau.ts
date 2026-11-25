@@ -607,7 +607,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         ],
         neuDuyet: `GVCN ghi "Đã thực hiện" trong 5 ngày · TVV nhận việc báo PH${d.kind === 'meeting_cx' ? ' · CX chi nhánh được báo có họp' : ''}.`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
-        duLieu: { cach },
+        duLieu: { cach, soTep: d.soTep ?? 0 },   // rà 25/11 (7b): hộp Rút nêu đúng số tệp sẽ mất (số đếm sống ở `nap`)
       };
     },
   },

@@ -254,7 +254,11 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
               <span className="grid justify-items-start gap-0.5">
                 <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ok">✓ {a.performedOn ? ngayHien(a.performedOn) : ''}{vua && !tvv ? ` · ${t('Bạn')}` : ''}</span>
                 {ngoiLam && <span className="text-[13px] text-dim">{ngoiLam}</span>}
-                {tvv && a.note && <span className="line-clamp-2 text-[13px] text-dim">{a.note}</span>}
+                {/* Rà 25/11 (việc 6): ghi chú ≤ 500 — 2 dòng, mở đủ theo "Xem đủ" của dòng; Meeting CX (ô kết quả hiện phần TVV, không hiện ghi chú này) có nút riêng. */}
+                {tvv && a.note && <span className={`${du ? '' : 'line-clamp-2'} text-[13px] text-dim`}>{a.note}</span>}
+                {tvv && a.note && a.note.length > 90 && laMeetingCx(a.kind) && a.tvv && (
+                  <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" aria-expanded={du} onClick={() => setDu((x) => !x)}>{du ? t('Thu gọn') : t('Xem đủ')}</button>
+                )}
                 {!tvv && lam && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
               </span>
             ) : lam ? (

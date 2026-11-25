@@ -2836,7 +2836,7 @@ api.post('/cases/:id/outcome', requireAuth, wrap((req) => {
 /** PR-LUI-a2: Quản lý / Quản trị mở lại Case đã hoàn thành — một bấm. OV-7b: cả người đã hoàn thành Case (GV). */
 api.post('/cases/:id/mo-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.moLaiCase(principalOf(req), pInt(req, 'id'));
+  return caseSvc.moLaiCase(principalOf(req), pInt(req, 'id'), { hoanTac: req.body?.hoanTac === true });   // rà 25/11 (5c): toast Hoàn tác của Hoàn thành Case
 }));
 /** PR-LUI-a2: Sửa Case (tên, mô tả, mức, kỹ năng khi chưa có PA, nhóm nguyên nhân) · Xoá Case báo tay tạo nhầm · Xoá PA (QL / QT). */
 api.patch('/cases/:id', requireAuth, wrap((req) => {

@@ -175,8 +175,10 @@ export function CotGhi({ r, khoa, sua, onSua, onLuu, hienNhan }: {
     if (luu && chu.trim() !== gc.trim()) onLuu(chu.trim());
   };
   if (sua) {
-    return <input autoFocus className="field lt-ghi-o" maxLength={500} aria-label={t('Ghi chú {ten}', { ten: r.ten })} value={chu} onChange={(e) => setChu(e.target.value)}
-      onBlur={() => dong(true)} onKeyDown={(e) => { if (e.key === 'Enter') dong(true); else if (e.key === 'Escape') { e.stopPropagation(); dong(false); } }} />;
+    /* Rà 25/11 (việc 6): ghi chú ≤ 500 — ô sửa nhiều dòng (thấy đủ chữ); Enter vẫn lưu, Esc bỏ. */
+    return <textarea autoFocus className="field lt-ghi-o" rows={Math.min(5, Math.max(1, Math.ceil(chu.length / 60)))} maxLength={500} aria-label={t('Ghi chú {ten}', { ten: r.ten })} value={chu}
+      onChange={(e) => setChu(e.target.value)} onBlur={() => dong(true)}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); dong(true); } else if (e.key === 'Escape') { e.stopPropagation(); dong(false); } }} />;
   }
   if (!gc) return hienNhan ? null : <span className="text-faint">—</span>;
   const tip = [r.luu?.ai, r.luu?.luc ? shortDate(r.luu.luc, homNay) : null].filter(Boolean).join(' · ');

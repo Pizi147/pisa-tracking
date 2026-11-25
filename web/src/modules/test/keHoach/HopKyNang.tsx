@@ -349,7 +349,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     };
     document.addEventListener('keydown', esc);
     window.addEventListener('resize', dat);
-    return () => { document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); };
+    window.addEventListener('scroll', dat, true);   // rà 25/11 (việc 8): máy tính — hộp đi theo ô neo khi cuộn (như `KhungHop`)
+    return () => { document.removeEventListener('keydown', esc); window.removeEventListener('resize', dat); window.removeEventListener('scroll', dat, true); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}".
@@ -374,9 +375,11 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const coDongDuoi = !!cauChan || !!cauCanhBao || quaTuan || !!khoaDotNay;
   return createPortal(
     <div ref={box} role="dialog" aria-label={t('Lịch {ten}', { ten: tieuDe })} tabIndex={-1}
-      className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 bottom-0 rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
-      style={{ borderColor: 'var(--line-strong)' }}>
-      <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+      className={`surface-2 z-[60] border shadow-2xl outline-none ${dienThoai ? 'fixed inset-x-0 flex flex-col rounded-t-xl' : 'fixed w-[min(520px,calc(100vw-32px))] rounded-lg'}`}
+      /* Rà 25/11 (việc 8): điện thoại — tấm bám trên bàn phím ảo (`--ban-phim`), đầu + chân cố định, chỉ thân cuộn (như `KhungHop` hộp điểm). */
+      style={{ borderColor: 'var(--line-strong)',
+        ...(dienThoai ? { bottom: 'var(--ban-phim, 0px)', maxHeight: 'min(85dvh, calc(100dvh - var(--ban-phim, 0px) - 8px))' } : {}) }}>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
         <div className="min-w-0 flex-1 text-[16px] font-bold text-slate-100" title={tieuDe}>
           {attemptId !== null
@@ -392,7 +395,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
         ) : mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={() => dongHop.current()} aria-label={t('Đóng')}>✕</button>
       </div>
-      <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
+      <div className={`space-y-2 overflow-y-auto px-3 py-2.5 ${dienThoai ? 'min-h-0 flex-1 overscroll-contain' : 'max-h-[70vh]'}`}>
         {/* U05 (mockup khu C, nghiệm thu): thao tác CẢ LƯỢT tách khỏi thao tác TỪNG MÔN — không nhầm dời / huỷ cả lượt với một môn. */}
         {nhomChung.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -441,7 +444,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
           </div>
         )}
       </div>
-      <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+      <div className="shrink-0 border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         {/* GD-11b (mockup ⑦ B2): MỘT chân "Đóng · Lưu" — "Nhật ký" thành khối Lịch sử trong thân hộp, "Mở hồ sơ MT ›" gộp vào tên lượt ở đầu hộp. */}
         <div className="flex items-center gap-2">
           <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
