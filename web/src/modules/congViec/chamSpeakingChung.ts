@@ -37,9 +37,12 @@ export const locQ = (rows: Dong[], q: string) => {
   const k = chuan(q);
   return k ? rows.filter((r) => chuan(r.studentName).includes(k) || chuan(r.studentEmail ?? '').includes(k)) : rows;
 };
-/** Mã tuần của các bài còn chờ, cũ → mới, không trùng: "W4 AUG, W1 SEP" (chủ SP 25/11: chỉ mã tuần, không ghi Mock / MT). */
-export const tuanCuaLop = (rows: readonly Dong[], chiCho = true) =>
-  [...new Set(rows.filter((r) => (!chiCho || r.cho) && r.weekStart).map((r) => r.weekStart!))].sort().map((w) => tuanLich(w)).join(', ');
+/** Mã tuần của các bài còn chờ, cũ → mới, không trùng (chủ SP 25/11: chỉ mã tuần, không ghi Mock / MT). */
+export const dsTuanCuaLop = (rows: readonly Dong[], chiCho = true) =>
+  [...new Set(rows.filter((r) => (!chiCho || r.cho) && r.weekStart).map((r) => r.weekStart!))].sort().map((w) => tuanLich(w));
+/** Chủ SP 26/11: từ 2 tuần trở lên chỉ ghi tuần xa nhất + "+" ("W1 JUL+"), không liệt kê — đủ danh sách ở `title` (`dsTuanCuaLop`). */
+export const tuanGon = (ds: readonly string[]) => (ds.length > 1 ? `${ds[0]}+` : ds[0] ?? '');
+export const tuanCuaLop = (rows: readonly Dong[], chiCho = true) => tuanGon(dsTuanCuaLop(rows, chiCho));
 
 /**
  * Gom theo lớp (S-CHEO-CN 16/11); KHUÔN A (chủ SP 25/11): lớp còn bài xếp theo hạn sớm nhất (quá hạn lên đầu), không hạn sau cùng; lớp hết bài cuối, theo mã.
