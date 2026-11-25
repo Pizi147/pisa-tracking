@@ -906,7 +906,7 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const enr = conn
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status='active' ORDER BY id DESC LIMIT 1`)
     .get(studentId) as any;
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },
+  require_(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: enr?.class_id ?? null, studentId },   // RA-2511 (N57): BPXL không xem Case — form "+ Case"
     'Bạn không có quyền xem học viên này.');
   const cycle = cycleId
     ? (conn.prepare('SELECT * FROM learning_cycles WHERE id = ? AND student_id = ?').get(cycleId, studentId) as any)
@@ -2053,7 +2053,10 @@ export function backfillCase(p: Principal, input: {
     if (!isIsoDate(a.fromDate) || !isIsoDate(a.toDate)) throw badRequest('Một dòng "đã làm gì" có ngày không hợp lệ.');
     if (a.fromDate > a.toDate) throw badRequest('Một dòng "đã làm gì" có ngày bắt đầu sau ngày kết thúc.');
     if (a.toDate > today) throw badRequest('Không ghi được một việc đã xong ở ngày tương lai.');
-    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, 2000) ?? '').length < 3) throw badRequest('Mỗi dòng "đã làm gì" phải nói rõ đã làm gì.');
+    /* RA-2511 (N50 ⑥, N35): Nội dung PA nhập bù cùng ngưỡng ≥ 8 / trần 200 với Thêm / Sửa PA. */
+    if ((chuTuDo(a.description, `Dòng PA ${i + 1}`, TRAN_CHU.noiDungPa) ?? '').length < CHU_TOI_THIEU_CASE) {
+      throw loi(400, 'Dòng PA {x}: nội dung ít nhất {n} ký tự.', { x: i + 1, n: CHU_TOI_THIEU_CASE });
+    }
     chuanHoaNguoiThucHien(p, a, { nhom: 'giao_vien', batBuoc: false });   // PR-PA (§8): Người dạy không bắt buộc
   }
   const note = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
@@ -3276,6 +3279,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const lopDangHoc = activeClassOf(studentId);
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: lopDangHoc, studentId },
     'Bạn không có quyền xem học viên này.');
+  /* RA-2511 (N57 / N63 ⑤): BPXL xem điểm kỹ năng trên bảng nhưng KHÔNG xem Case / PA — như `kiemXemCase`. */
+  const xemCase = can(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: lopDangHoc, studentId });
   dienMocQuyChe({ studentId });   // PR-SOS K3-14
 
   /*
@@ -3361,7 +3366,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * Xếp sau Case của lộ trình đang chọn, nên nó chỉ được chọn làm đại diện khi lộ trình này
    * chưa có Case nào ở hạng mục đó.
    */
-  const caseRows = conn
+  const caseRows = !xemCase ? [] as any[] : conn
     .prepare(
       `SELECT *, (COALESCE(cycle_id, 0) != ?) AS carried_over, (SELECT cy.started_at FROM learning_cycles cy WHERE cy.id = sos_cases.cycle_id) AS lo_trinh_bat_dau,
               goc_programme_code AS ct_attempt,

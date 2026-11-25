@@ -10108,6 +10108,9 @@ await runPrN71Tests({ check, checkAsync, assert, conn, P } as any);
 // ==================================================================== SUA-LOI-A (rà ngoài 25/11: Xuất Excel · tìm nhanh · Hồ sơ · Quá hạn · Hoàn tác theo dõi)
 const { runPrSuaLoiATests } = bocTep('prSuaLoiA', await import('./prSuaLoiA.tests.ts'));
 await runPrSuaLoiATests({ check, assert } as any);
+// ==================================================================== RA-2511 PR 1 (sua-quyen): quyền máy chủ + Case / PA / Tutor
+const { runPrSuaQuyenTests } = bocTep('prSuaQuyen', await import('./prSuaQuyen.tests.ts'));
+await runPrSuaQuyenTests({ check, checkAsync, assert, conn, P, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

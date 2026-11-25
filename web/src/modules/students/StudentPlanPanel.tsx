@@ -114,7 +114,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                 </div>
               )}
               {themMt && bang && bang.classId !== null && (
-                <HopKyNang anchor={themMt} tieuDe={`${studentName} · MT${bang.soKeTiep}`} loai="ft" classId={bang.classId} studentId={bang.studentId}
+                <HopKyNang anchor={themMt} tieuDe={`${studentName} · MT${bang.soKeTiep}`} loai="ft" classId={bang.classId} studentId={bang.studentId} diem={bang.diem}
                   dot={{ loai: 'ft', attemptNo: bang.soKeTiep }} attemptId={null} kn={{}} kyNangDau={null}
                   onClose={() => setThemMt(null)} onSaved={doiLich} onHienDien={setHopMo} />
               )}

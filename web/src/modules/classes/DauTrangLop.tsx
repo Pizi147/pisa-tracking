@@ -63,6 +63,7 @@ export type HoSoLop = {
   status?: string; finishedAt?: string | null;
   viewer: {
     canPlanWeek: boolean; canAddStudents: boolean; canAssign: boolean; canAssignSubject?: boolean; canEditProgress: boolean;
+    /** RA-2511 Q3 (N52): đổi chương trình / lịch MT mặc định — CX không. */ canDoiChuongTrinh?: boolean;
     /** SUA-LICH-LOP: sửa khai giảng / tuần Progress / Final (GVCN lớp, Admin chi nhánh, QL) — máy chủ `duocSuaLichLop`. */
     canEditSchedule?: boolean;
     /** OV-13p: `student.edit` ở lớp — `canAddStudents` chỉ là thêm học viên (`student.add`). */

@@ -7,7 +7,7 @@ import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
-  can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, defaultWorkScope, duocDoiChuongTrinhLop, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -926,6 +926,8 @@ function classOverviewThat(p: Principal, classId: number) {
       canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
       canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
       canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      /** RA-2511 Q3 (N52): ô Chương trình / Lịch MT mặc định ở Thông tin lớp — CX không đổi (`duocDoiChuongTrinhLop`). */
+      canDoiChuongTrinh: duocDoiChuongTrinhLop(p, classId),
       coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canEditSchedule: duocSuaLichLop(p, classId),
@@ -949,6 +951,8 @@ function classOverviewThat(p: Principal, classId: number) {
       canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
       /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */
       canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      /** RA-2511 Q3 (N52): ô Chương trình / Lịch MT mặc định ở Thông tin lớp — CX không đổi (`duocDoiChuongTrinhLop`). */
+      canDoiChuongTrinh: duocDoiChuongTrinhLop(p, classId),
       /** SUA-LICH-LOP (chủ SP 06/11): sửa tuần khai giảng + Progress + Final — thêm GVCN lớp và Admin chi nhánh (`duocSuaLichLop`, hẹp hơn `class.edit`). */
       canEditSchedule: duocSuaLichLop(p, classId),
       editableSkills: editableSkills(p, classId, classSkills),

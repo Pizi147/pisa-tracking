@@ -599,6 +599,8 @@ function chuLenK(sau: { ft: boolean; ct: string | null } | null, bo: BoTroMienPh
 export function chiaChuong<G extends { classId: number | null; tuan: string | null; nhanNgan: string; kind?: string; goiY?: unknown }>(i: {
   lop: readonly LopChuong[]; ghim: readonly G[]; cases: readonly CaseChuongVao[];
   tamDung: readonly { tu: string; den: string | null }[]; homNay: string;
+  /** RA-2511: false = người xem không đọc được phiếu bàn giao (BPXL) — không vẽ nút "Đọc bàn giao". Bỏ trống = đọc được. */
+  docBanGiao?: boolean;
 }): Chuong<G>[] {
   const lop = [...i.lop].sort((a, b) => a.tu.localeCompare(b.tu) || a.enrollmentId - b.enrollmentId);
   if (!lop.length) return [];
@@ -638,7 +640,7 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
         : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp' }),
       how: l.lenh ? 'Head quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,
-      docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
+      docBanGiao: l.lenh?.xacNhan && i.docBanGiao !== false ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
     };
     const { endKind: _e, status: _s, endReason: _r, lenh: _l, ...goc } = l;
     const den = l.den ?? i.homNay;

@@ -11,7 +11,7 @@ import {
   CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
-import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, laBpxlXepLich, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
@@ -1329,6 +1329,8 @@ export function attemptDetail(p: Principal, attemptId: number) {
       canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
       canOverrideDeadline: can(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id }),
+      /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL — web không vẽ Vắng / Huỷ điểm / Khôi phục điểm (`QuyenTT.diem`). */
+      diem: !laBpxlXepLich(p, { classId: a.class_id }),
       /* Không có kỹ năng cụ thể ở mức cả đợt — dùng SOS_REPORT (rộng), đúng nghĩa "báo được". */
       canEditSos: can(p, PERMISSIONS.SOS_REPORT, { classId: a.class_id, studentId: a.student_id }),
       editableSkills: a.class_id ? editableSkills(p, a.class_id, ENTRY_SKILLS, luotQuyen(a)) : [],
@@ -2113,7 +2115,8 @@ function luuNhanXet(
 export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) {
   const conn = db();
   lamMoiDiemBanChup(conn, [attemptId]);   // PR-TK (TK-5): lộ trình đã đóng → bản chụp theo điểm mới
-  const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  /* RA-2511: trạng thái em đọc CÙNG câu nạp lượt — `raiseSignalsForResult` bỏ sinh Case cho em đã Kết thúc học, không thêm câu. */
+  const fresh = conn.prepare('SELECT a.*, (SELECT s.status FROM students s WHERE s.id = a.student_id) AS em_status FROM assessment_attempts a WHERE a.id = ?').get(attemptId) as any;
   if (!fresh || fresh.status === 'cancelled') return;
   const rows = scoresOf(attemptId);
   const skips = skipsOf(attemptId);

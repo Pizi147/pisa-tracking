@@ -332,7 +332,7 @@ export function QuickReport({
     const errors: Record<number, string> = {};
     bfActions.forEach((a, i) => {
       if (!a.description.trim()) return;
-      if (a.description.trim().length < 3) { errors[i] = t('Phải nói rõ đã làm gì.'); return; }
+      if (a.description.trim().length < CHU_TOI_THIEU_CASE) { errors[i] = t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU_CASE }); return; }   // RA-2511 (N50 ⑥): như máy chủ
       const thieuNguoi = nguoiThieu(a.nguoi, true);
       if (thieuNguoi) { errors[i] = thieuNguoi; return; }
       if (!a.ketQua) { errors[i] = t('Dòng PA {x}: chọn Kết quả PA.', { x: i + 1 }); return; }

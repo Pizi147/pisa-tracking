@@ -34,7 +34,7 @@ export type HangMt = {
   /** PR-OV4a: số MT này chỉ có lượt đã huỷ — hàng "Đã huỷ", Quản lý Khôi phục. */
   huy?: { attemptId: number } | null;
 };
-export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean };
+export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean; /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — không Vắng / Huỷ điểm / thi lại / xoá MT có điểm (cờ theo lớp, không theo vai). */ diem: boolean };
 
 /** Tuần thật của lượt: một tuần, hoặc "W2 OCT – W3 OCT" khi R/L/W và Speaking tách tuần. */
 function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null {
@@ -142,7 +142,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
         </tr>
       )}
       {hop && l && bang.classId !== null && (
-        <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} tenHv={hocVien} loai="ft" classId={bang.classId} studentId={bang.studentId}
+        <HopKyNang anchor={hop} tieuDe={`${hocVien} · MT${h.attemptNo}`} tenHv={hocVien} loai="ft" classId={bang.classId} studentId={bang.studentId} diem={bang.diem}
           dot={{ loai: 'ft', attemptNo: h.attemptNo }} attemptId={l.attemptId} kn={l.kn} kyNangDau={null} lichSu={l.lichSu}
           onClose={() => setHop(null)} onSaved={onDoi} onHienDien={onHienDien} />
       )}

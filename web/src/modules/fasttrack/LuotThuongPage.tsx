@@ -310,7 +310,7 @@ function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => b
   const coDiem = (d.dong.result.skills.find((x) => x.skill === k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s.weekStart ?? null, coDiem, sit: s.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich, quaTuan: tuanDaQua(s.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy, diem: d.diem });   // RA-2511 (N57): cờ máy chủ theo lớp
   const chinh = tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? tat.chinh : null;
   return { chinh, menu: tat.menu };
 }

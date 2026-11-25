@@ -104,6 +104,8 @@ type Detail = {
     /** PR-XLMT: GVCN của lớp — Vắng / Dời lịch (`thaoTacKyNang`). */
     laGvcn: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
+    /** RA-2511 (N57): false = BPXL (chỉ xếp lịch) — không Vắng / Huỷ điểm / Khôi phục điểm. */
+    diem: boolean;
     canEditSos: boolean; editableSkills: string[];
   };
 };
@@ -461,7 +463,7 @@ export default function MockDetailPage() {
           onClose={() => { setNgan(null); reload(); }} onChanged={reload} />
       )}
       {hopLich && d.classId !== null && (
-        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id}
+        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id} diem={d.viewer.diem}
           dot={{ loai: 'ft', attemptNo: d.attemptNo }} attemptId={d.id} kn={knHop(d)} kyNangDau={hopLich.k} doiTuanDau={hopLich.k !== null} lichSu={d.lichSu}
           {...(hopLich.ghiChu !== undefined ? { ghiChu: hopLich.ghiChu } : {})}
           onClose={() => setHopLich(null)} onSaved={reload} onHienDien={() => {}} />
@@ -756,7 +758,7 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
       : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa, quaTuan: tuanDaQua(r.weekStart, homNay),
-          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
+          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy, diem: d.viewer.diem });
     /* Môn em không học (môn đăng ký) — không có "Khôi phục" (đổi ở Sửa thông tin). */
     const chinh0 = c.khongHoc && tat.chinh === 'khoi-phuc-kn' ? null : ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */

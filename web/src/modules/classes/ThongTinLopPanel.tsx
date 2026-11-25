@@ -38,9 +38,9 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
   const thuong = lop.programme?.scoringMode === 'ratio';
   return (
     <>
-      <PhanLop suaDuoc={!chiDoc && lop.viewer.canEditProgress} onDone={onDone}
+      <PhanLop suaDuoc={!chiDoc && lop.viewer.canEditProgress} doiDuoc={!!lop.viewer.canDoiChuongTrinh} onDone={onDone}
         lop={{ id: lop.id, code: lop.code, branchCode: lop.branchCode, route: lop.route, programmeCode: lop.programme?.code ?? null,
-          programmeName: lop.programme?.name ?? null, soHocVien: lop.summary?.studentCount ?? 0 }} />
+          programmeName: lop.programme?.name ?? null }} />
       <PhanPhanCong lop={lop} suaDuoc={!chiDoc && (lop.viewer.canAssign || !!lop.viewer.canAssignSubject)} moSua={phan === 'phan-cong'} onDone={onDone} oMo={oMo} />
       <PhanLichTest classId={lop.id} tieuDe={thuong ? t('Lịch Test của lớp') : t('Tuần khai giảng')} suaDuoc={!!lop.viewer.canEditSchedule}
         onDone={onDone} onChuyenTiep={chiDoc ? undefined : onChuyenTiep} />
@@ -99,9 +99,10 @@ export function DongXem({ dong }: { dong: [string, ReactNode][] }) {
  * `{CN} {ký hiệu} {số}` — chỉ sửa phần SỐ. Chương trình / lộ trình chỉ đổi khi lớp chưa có học viên (Q6). PR-OV3a: bỏ ô Ghi chú (cột DB giữ,
  * không gửi `note` thì máy chủ giữ nguyên). Máy chủ kiểm lại mọi luật.
  */
-function PhanLop({ lop, suaDuoc, onDone }: {
-  lop: { id: number; code: string; branchCode: string; route: string | null; programmeCode: string | null; programmeName: string | null; soHocVien: number };
-  suaDuoc: boolean; onDone: () => void;
+function PhanLop({ lop, suaDuoc, doiDuoc, onDone }: {
+  lop: { id: number; code: string; branchCode: string; route: string | null; programmeCode: string | null; programmeName: string | null };
+  /** RA-2511 Q3 (N52): false (CX) → ẩn ô Chương trình / Lịch MT mặc định; số lớp + ghi chú vẫn sửa. */
+  suaDuoc: boolean; doiDuoc: boolean; onDone: () => void;
 }) {
   const toast = useToast();
   const [dangSua, setDangSua] = useState(false);
@@ -115,7 +116,7 @@ function PhanLop({ lop, suaDuoc, onDone }: {
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
-  const doiDuoc = true;   // RKC-4b: lớp đã có HV / bài vẫn đổi được — máy chủ hỏi nêu hệ quả; Hoàn tác = đổi lại
+  /* RKC-4b: lớp đã có HV / bài vẫn đổi được — máy chủ hỏi nêu hệ quả; Hoàn tác = đổi lại. RA-2511 Q3: `doiDuoc` theo quyền (CX không). */
   const ft = chuongTrinh === 'FT';
 
   const loiSo = soCu === null ? null : kiemSoLop(so);
@@ -185,24 +186,19 @@ function PhanLop({ lop, suaDuoc, onDone }: {
               </p>
             </div>
           )}
-          <Truong nhan={t('Chương trình')} phu={doiDuoc ? undefined : t('🔒 Đổi chương trình khi lớp chưa có học viên / bài Test')}>
-            <select className="field w-full" value={chuongTrinh} disabled={!doiDuoc} onChange={(e) => setChuongTrinh(e.target.value)}>
+          {doiDuoc && <Truong nhan={t('Chương trình')}>
+            <select className="field w-full" value={chuongTrinh} onChange={(e) => setChuongTrinh(e.target.value)}>
               {(programmes.data ?? (lop.programmeCode ? [{ code: lop.programmeCode, name: lop.programmeName ?? lop.programmeCode }] : [])).map((p) => (
                 <option key={p.code} value={p.code} disabled={p.code === 'PREFOU' && !CHO_TAO_PRE_FOU && p.code !== lop.programmeCode}>
                   {p.name}
                 </option>
               ))}
             </select>
-          </Truong>
-          {ft && (
+          </Truong>}
+          {ft && doiDuoc && (
             <Truong nhan={t('Lịch MT mặc định')} as="div">
               <PhanDoan nhan={t('Lịch MT mặc định')} giaTri={loTrinh} onChon={setLoTrinh}
-                muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name, tat: !doiDuoc && r.code !== loTrinh }))} />
-              {!doiDuoc && (
-                <span className="mt-1 block text-xs text-slate-400">
-                  {t('Lớp đã có {n} học viên — muốn đổi lộ trình thì chuyển các em sang lớp {kh} khác', { n: lop.soHocVien, kh: kyHieuLop('FT', lop.route === 'RF' ? 'LT1' : 'RF') })}
-                </span>
-              )}
+                muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
             </Truong>
           )}
         </div>

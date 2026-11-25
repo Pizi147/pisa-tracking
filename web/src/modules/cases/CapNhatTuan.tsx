@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { KetQuaTutorChon } from '../../ui/PeoplePicker.tsx';
-import { DongTutorO } from './BuoiTutorO.tsx';
+import { DongTutorO, TRAN_NOI_DUNG_TUTOR } from './BuoiTutorO.tsx';
 import { api, invalidate, lamMoiHoSoEm } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -290,7 +290,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
     /* S2 (từ rà #1875, cùng luật máy chủ `chuCu`): SỬA lần ghi cũ — Nội dung cũ giữ nguyên (trước luật ≥ 8 ký tự) không bị chặn; dòng mới / chữ đã sửa vẫn kiểm. */
     const chuCu = new Set(sua ? (g?.buoi ?? []).map((x) => x.nhanXet.trim()).filter(Boolean) : []);
     loi.push(...dsLoi(buoi.flatMap((x, i) => (chuCu.has(x.nhanXet.trim()) ? []
-      : [{ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE }])),
+      : [{ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE, toiDa: TRAN_NOI_DUNG_TUTOR }])),   // RA-2511 (N35): dán dài báo tại ô, không cắt lặng
       Object.fromEntries(buoi.map((x, i) => [`buoi-${i}-nx`, x.nhanXet]))));
     if (nhieuDong && soA != null && tongDong !== soA) {
       loi.push({ khoa: 'buoi-tong', nhan: t('Số buổi các dòng'), lyDo: t('Tổng {tong}, đã học {a}', { tong: tongDong, a: soA }) });

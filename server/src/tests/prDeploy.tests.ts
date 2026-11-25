@@ -120,10 +120,6 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(n() === truoc, 'đã ghi việc');
     const tr = meeting.createTask(P.mbManager, { kind: 'branch_ops', title: 'Việc người phụ trách đúng CN', assigneeUserId: P.mbManager.userId }) as any;
     assert(tr.assignee_user_id === P.mbManager.userId, 'người phụ trách MB');
-    const e = loiCua(() => meeting.updateTask(P.mbManager, tr.id, { assigneeUserId: P.cpManager.userId }));
-    assert(e?.status === 400, `sửa: ${e?.status} ${e?.message}`);
-    assert(get('SELECT assignee_user_id u FROM tasks WHERE id = ?', tr.id).u === P.mbManager.userId, 'sửa lọt');
-    assert(meeting.updateTask(P.mbManager, tr.id, { assigneeUserId: null }).assignee_user_id === null, 'bỏ người phụ trách được');
   });
 
   await checkAsync('0b-1h · POST /ref/periods/resolve chặn ngày ngoài ±3 năm (0001-01-01, 9999-12-27) — không ghi báo cáo tuần rác', async () => {

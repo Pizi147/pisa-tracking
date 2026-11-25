@@ -703,6 +703,9 @@ function canGoc(p: Principal, permission: string, ctx: Ctx): boolean {
   return false;
 }
 
+/** RA-2511 Q3 (N52): ai đổi được chương trình / lịch MT mặc định của lớp (Thông tin lớp) — `class.edit` KHÔNG tính grant CX. Cờ web `viewer.canDoiChuongTrinh` cùng hàm. */
+export const duocDoiChuongTrinhLop = (p: Principal, classId: number): boolean => can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId });
+
 /**
  * SUA-LICH-LOP (chủ SP 06/11): ai sửa được LỊCH lớp thường (tuần khai giảng, tuần Progress, tuần Final) — QL / Quản trị (`class.edit`), Admin chi nhánh
  * của lớp, và GVCN lớp đó (phân công `is_core` còn hiệu lực). Quyền HẸP, suy từ vai + phân công (như `class.assign_subject`): KHÔNG mở `class.edit`

@@ -5,7 +5,7 @@ import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
+import { boVaiBpxl, boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import type { DiemHv, PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
@@ -39,7 +39,7 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number }, mon?: st
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,
     xacNhan: pc.gvcn || qlThay, xacNhanThay: !pc.gvcn && qlThay,
-    doNguon: pc.gvcn || pc.kyNang.size > 0 || can(p, PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),
+    doNguon: pc.gvcn || pc.kyNang.size > 0 || can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),   // RA-2511 (N57): BPXL không đọc phiếu bàn giao (Case / PA / Ý thức)
     laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay,
   };
 }
@@ -235,7 +235,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
       theoLo(dich, (lo, ph) => {
         for (const r of conn.prepare(`SELECT DISTINCT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active' AND class_id IN (${ph})`).all(p.userId, ...lo) as any[]) laGvDich.add(r.class_id);
       });
-      for (const id of dich) if (!laGvDich.has(id) && can(p, PERMISSIONS.STUDENT_VIEW, { classId: id })) laGvDich.add(id);
+      for (const id of dich) if (!laGvDich.has(id) && can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: id })) laGvDich.add(id);   // RA-2511 (N57)
     }
     thay = rows.filter((r) => r.lop_dich_id && laGvDich.has(r.lop_dich_id) && (r.xac_nhan_luc || r.trang_thai === 'da_chuyen'));
     if (!thay.length) throw forbidden('Bạn không có quyền đọc bàn giao của lớp này.');

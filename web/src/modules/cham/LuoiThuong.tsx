@@ -94,6 +94,8 @@ export type ThuongSheet = {
   monNgan?: Record<string, string>;
   editableSkills: string[];
   canPlan: boolean;
+  /** RA-2511 (N57): false = BPXL ở lớp này — không Vắng / Huỷ điểm / Khôi phục điểm. */
+  diem: boolean;
   /** PR-XLMT: người xem là GVCN của lớp (menu ⋯ ô: Vắng, Dời lịch). */
   laGvcn?: boolean;
   passThreshold: number;
@@ -437,7 +439,7 @@ function thaoTacO(row: Row, k: string, sheet: ThuongSheet, can: (q: string) => b
   const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy, diem: sheet.diem });
   return [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
 }
 

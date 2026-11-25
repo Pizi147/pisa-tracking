@@ -230,9 +230,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     const v = mgmt.createMgmtTask(P.mbManager, { title: 'Việc thử 403 Dọn-a', group: 'teacher', branchId: MB });
     ma.mgmtTaskDetail = maLoi(() => mgmt.mgmtTaskDetail(P.w1Teacher, v.id));
     ma.updateMgmtTask = maLoi(() => mgmt.updateMgmtTask(P.w1Teacher, v.id, { progress: 'doing' }));
-    const tk = get(`SELECT t.id, t.assignee_user_id FROM tasks t WHERE t.assignee_user_id IS NOT NULL AND t.kind != 'branch_ops'
-                     AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = t.assignee_user_id AND ur.status = 'active' AND r.key != 'teacher') LIMIT 1`);
-    if (tk) ma.updateTask = maLoi(() => meeting.updateTask(loadPrincipal(tk.assignee_user_id), tk.id, { followerIds: [] }));
     const sai = Object.entries(ma).filter(([, m]) => m !== 403);
     assert(sai.length === 0 && Object.keys(ma).length >= 7, `không phải 403: ${JSON.stringify(ma)}`);
   });
@@ -245,17 +242,6 @@ export async function runPrDonATests(t: YThucTestKit) {
     const a = get(`SELECT id FROM assessment_attempts WHERE student_id = ? ORDER BY id LIMIT 1`, sid).id;
     const e2 = loiCua(() => svc.saveScore(P.admin, a, 'listening', { rawScore: 30, resultDate: t.addDays(TODAY, 1) }));
     assert(e2?.status === 400 && /tương lai/.test(e2.message), `resultDate: ${e2?.status} ${e2?.message}`);
-  });
-
-  /* RA-LOI-MAY: sửa công việc lỗi ở bước người theo dõi (sau khi đã ghi lịch sử từng trường) → không được để lại dòng lịch sử nào (một giao dịch). */
-  check('RA-LOI-MAY · updateTask lỗi 400 (quá trần người theo dõi) → không ghi task_history, việc không đổi', () => {
-    const tk = meeting.createTask(P.mbManager, { title: 'Việc thử ghi nửa chừng', kind: 'branch_ops', branchId: MB });
-    const dem = () => get(`SELECT COUNT(*) AS n FROM task_history WHERE task_id = ?`, tk.id).n;
-    const truoc = dem();
-    const e = loiCua(() => meeting.updateTask(P.mbManager, tk.id, { title: 'Tên mới', followerIds: Array.from({ length: 51 }, (_, i) => i + 1) }));
-    assert(e?.status === 400, `${e?.status} ${e?.message}`);
-    assert(dem() === truoc, `task_history ${truoc} → ${dem()}`);
-    assert(get(`SELECT title FROM tasks WHERE id = ?`, tk.id).title === 'Việc thử ghi nửa chừng', 'tên đổi');
   });
 
   check('Dọn-a (2h) · #20 createCycle route "XX" → 400; route có trong danh mục → được', () => {
@@ -666,6 +652,7 @@ export async function runPrDonATests(t: YThucTestKit) {
       "get('/classes/:id/suggested-weeks'", "get('/weekly-rollup'", "get('/weekly-rollup/ids'", "get('/attempts/no-plan'", "get('/classes/:id/score-sheet'",
       "get('/mgmt-tasks/mine'", "put('/cases/:id/issues'", "post('/interventions/:id/respond'", "post('/interventions/:id/complete'",
       "post('/attempts/:id/skills/:skill/sit'", "get('/ref/issue-taxonomy'",
+      "patch('/tasks/:id'",   // RA-2511 (N59): PATCH việc cũ — web dùng `/mgmt-tasks/:id`
     ];
     const con = routes.filter((r) => idx.includes(`api.${r}`));
     assert(!con.length, `còn route: ${con.join(', ')}`);
@@ -676,7 +663,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     const conTep = tep.filter((f) => fs.existsSync(path.join(REPO, f)));
     const ten = ['branchSummary', 'summaryColumns', 'SUMMARY_PRESETS', 'branchPulse', 'peopleOf', 'openMoveRequests', 'moTaDoiLan2', 'bulkPlan', 'noPlanQueue',
       'taskHistory', 'setCaseOwner', 'allPrefs', 'setPref', 'getPref', 'weeklyRollup', 'weeklyDrill', 'issueSkillRows', 'issueBoardCases', 'classAlerts',
-      'demCanQuanLyTheoLop', 'WorkQueue', 'suggestMockWeeks', 'setIssues'];
+      'demCanQuanLyTheoLop', 'WorkQueue', 'suggestMockWeeks', 'setIssues', 'updateTask'];
     const re = new RegExp(`\\b(${ten.join('|')})\\b`);
     const con: string[] = [];
     const duyet = (thuMuc: string) => {

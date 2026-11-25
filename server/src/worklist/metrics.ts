@@ -7,7 +7,7 @@ import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, mondayOfDate, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
-import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
+import { bangLop, boVaiBpxl, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, loi } from '../util.ts';
 import { COT_GV_CU_NGAY, ghiDuocPaMany, hanGvCuCuaPa, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
@@ -746,7 +746,7 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
  * cùng chi nhánh. Không có phạm vi nào → danh sách rỗng → kết quả rỗng.
  */
 function effectivenessScopes(p: Principal, branchId: number | null): Array<{ branchIds?: number[] | null; classId?: number | null }> {
-  const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const sc = scopeFor(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW);   /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
   const out: Array<{ branchIds?: number[] | null; classId?: number | null }> = [];
   if (sc.all) {
     out.push({ branchIds: branchId ? [branchId] : null });

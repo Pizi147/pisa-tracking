@@ -5,7 +5,7 @@ import { mocThuong, cauHinh, maViecCoHan, tenViec, toiThieuGhiChu,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, buocTvvViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU,
 } from '../../../shared/domain/index.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { can, lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -459,7 +459,9 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   }
   const bundle = loadBundle(ids);
   /* PR-LT2a (N3): nguyên nhân (Mô tả Xác nhận Case) của các em lớp thường — MỘT câu cho cả tập, khớp (học viên, môn). */
-  const emThuong = [...new Set([...luot.values()].filter((a) => (a.kind ?? 'mock') !== 'mock').map((a) => a.student_id as number))];
+  /* RA-2511 (PTA rà #2176, N63 ⑤): BPXL xem Phối hợp của em nhưng KHÔNG xem nội dung Case — bỏ nguyên nhân (Mô tả Case) khi người xem chỉ có vai BPXL ở em đó. */
+  const emThuong = [...new Set([...luot.values()].filter((a) => (a.kind ?? 'mock') !== 'mock').map((a) => a.student_id as number))]
+    .filter((sid) => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId: sid }));
   const nguyenNhan = new Map<string, string>();
   for (let i = 0; i < emThuong.length; i += 400) {
     const lo = emThuong.slice(i, i + 400);
