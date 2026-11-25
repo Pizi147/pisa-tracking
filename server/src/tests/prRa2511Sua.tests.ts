@@ -8,6 +8,7 @@
  *  R5d Thẻ chờ duyệt của em đã đổi chi nhánh: QL chi nhánh HIỆN TẠI của em duyệt + thấy trong hộp chi nhánh mình (trước: QL cả hai bên 403)
  *  R6  Chữ ≤ 500 ký tự (#2167) xuống dòng, không tràn / cắt "…": body ngắt từ dài; ghi chú lịch thi đủ chữ + ô sửa nhiều dòng; ghi chú phối hợp TVV mở đủ
  *  R7b Rút đề xuất Ý thức: hộp xác nhận nêu đúng đối tượng mất (lần xử lý ngày … + n tệp), nút Rút nguy hiểm / Huỷ — thẻ Chờ duyệt và panel xử lý
+ *  R5d2 thẻ việc của lớp cũ (Mini Test, Final dời, Kế hoạch bổ trợ) giữ lớp + chi nhánh lúc tạo; QL đã xử lý vẫn thấy ở Đã xử lý
  *  R2  Chuyển lớp FT → FT, lượt lẫn ô cũ (trước tuần chuyển) + ô tuần sau: ở lại lớp cũ tới khi ô cũ chấm xong, rồi về lớp mới (ô tuần sau là việc lớp mới, có nhật ký)
  *  R2b/c (PTA P1) lượt chỉ có ô cũ chấm xong / ô cũ vắng → vẫn ở lớp lúc thi
  */
@@ -177,6 +178,28 @@ export async function runPrRa2511SuaTests(t: any) {
     xoaNho();
     const hop = await_.yc.hopChoDuyet(P.cpManager, { branchId: cnCp, xem: 'cho' }) as any;
     assert(hop.the.some((x: any) => x.id === y.id), 'hộp Chờ duyệt chi nhánh CP phải có thẻ');
+  }));
+
+  check('R5d2 · (PTA rà #2190) thẻ VIỆC CỦA LỚP CŨ (Final dời quá tuần) giữ lớp + chi nhánh lúc tạo: em sang CP vẫn QL MB duyệt; QL MB vẫn thấy thẻ đã xử lý ở Đã xử lý', () => thu(() => {
+    const em = one(`SELECT s.id AS sid, e.class_id AS lop, c.branch_id AS cn FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+        JOIN classes c ON c.id = e.class_id AND c.is_fast_track = 1 JOIN branches b ON b.id = c.branch_id AND b.code = 'MB'
+       WHERE s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id LIMIT 1`);
+    const luot = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status = 'planned' ORDER BY id LIMIT 1`, em.sid);
+    assert(em && luot, 'seed: cần em FT MB có lượt chờ');
+    const lopCp = one(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id AND b.code = 'CP' WHERE c.status = 'active' AND c.is_fast_track = 1 ORDER BY c.id LIMIT 1`);
+    const viecLop = await_.yc.taoYeuCau(conn, { loai: 'bao_len_cuoi_khoa', doiTuongLoai: 'attempt', doiTuongId: luot.id, hocVienId: em.sid, lopId: em.lop, chiNhanhId: em.cn, nguoiXin: null });
+    await_.students.transferStudent(P.admin, em.sid, lopCp.id, TODAY, 'Đổi chi nhánh', { note: 'Chuyển CP' });
+    xoaNho();
+    const thay = (q: any, id: number) => await_.yc.trongPhamVi(q, [one('SELECT * FROM yeu_cau_duyet WHERE id = ?', id)]).length === 1;
+    assert(viecLop && thay(P.mbManager, viecLop) && !thay(P.cpManager, viecLop), 'thẻ việc lớp cũ: QL MB (nguồn) duyệt, QL CP không');
+    const cnMb = one(`SELECT id FROM branches WHERE code = 'MB'`).id;
+    assert((await_.yc.hopChoDuyet(P.mbManager, { branchId: cnMb, xem: 'de-biet' }) as any).the.some((x: any) => x.id === viecLop)
+      || (await_.yc.hopChoDuyet(P.mbManager, { branchId: cnMb, xem: 'cho' }) as any).the.some((x: any) => x.id === viecLop), 'hộp MB phải có thẻ việc lớp cũ');
+    /* QL MB đã xử lý một thẻ của em trước khi em đi → vẫn thấy ở Đã xử lý */
+    const daXl = await_.yc.taoYeuCau(conn, { loai: 'sua_thong_tin', doiTuongLoai: 'student', doiTuongId: em.sid, hocVienId: em.sid, lopId: em.lop, chiNhanhId: em.cn, nguoiXin: P.coreTeacher.userId, lyDo: 'thử' });
+    conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'tu_choi', nguoi_duyet = ?, xu_ly_luc = ? WHERE id = ?`).run(P.mbManager.userId, new Date().toISOString(), daXl);
+    xoaNho();
+    assert(daXl && (await_.yc.hopChoDuyet(P.mbManager, { branchId: cnMb, xem: 'da-xu-ly' }) as any).the.some((x: any) => x.id === daXl), 'QL MB phải còn thấy thẻ mình đã xử lý');
   }));
 
   check('R6 · chữ ≤ 500 (#2167): body ngắt từ dài (`overflow-wrap: break-word`); ghi chú lịch thi không nowrap / "…", ô sửa textarea; ghi chú TVV phối hợp mở theo "Xem đủ"', () => {

@@ -48,16 +48,19 @@ function metaCua(loai: string): LoaiYcMeta {
   return m;
 }
 /*
- * Rà 25/11 (5d): thẻ của MỘT em theo chi nhánh HIỆN TẠI của em (`branchesOfStudent` — lớp đang học + hồ sơ). Trước: lớp + chi nhánh LÚC TẠO + chi nhánh em,
- * `grantCovers` đòi đủ cả → em đổi chi nhánh thì QL cả hai bên 403 (không luật `chet` nào đóng thẻ khi đổi chi nhánh). Nay QL chi nhánh em đang học duyệt,
- * thẻ hiện ở hộp chi nhánh đó. Thẻ không gắn em (lớp, bàn giao…) giữ lớp + chi nhánh lúc tạo.
+ * Rà 25/11 (5d) + PTA rà #2190: thẻ của MỘT em theo chi nhánh HIỆN TẠI của em (`branchesOfStudent` — lớp đang học + hồ sơ; CÙNG hàm `grantCovers` dùng cho
+ * ngữ cảnh em). Trước: lớp + chi nhánh LÚC TẠO + chi nhánh em, `grantCovers` đòi đủ cả → em đổi chi nhánh thì QL cả hai bên 403 (không luật `chet` nào
+ * đóng thẻ khi đổi chi nhánh). Thẻ là việc của lớp lúc tạo (`theoLopTao`: Mini Test, Final dời, Kế hoạch bổ trợ) và thẻ không gắn em giữ lớp + chi nhánh
+ * lúc tạo — QL chi nhánh nguồn duyệt. MỘT hàm cho quyền, hộp / dải đếm, người nhận tin.
  */
-type DongThe = { lop_id: number | null; hoc_vien_id: number | null; chi_nhanh_id: number | null };
-const ctxThe = (y: DongThe) => (y.hoc_vien_id != null ? { studentId: y.hoc_vien_id } : { classId: y.lop_id, branchId: y.chi_nhanh_id });
-/** Thẻ thuộc chi nhánh `cn` (lọc hộp / dải đếm) — cùng luật `ctxThe`. Chi nhánh em nhớ theo request (`napTruocPhamVi` của `trongPhamVi`). */
-const theOChiNhanh = (y: DongThe, cn: number) => (y.hoc_vien_id != null ? branchesOfStudent(y.hoc_vien_id).includes(cn) : y.chi_nhanh_id === cn);
-/** SQL: chi nhánh người nhận của thẻ `y` (em: hồ sơ em hiện tại, `students s` nối sẵn) — cùng luật. */
-const CN_THE_SQL = `CASE WHEN y.hoc_vien_id IS NOT NULL THEN COALESCE(s.branch_id, y.chi_nhanh_id) ELSE y.chi_nhanh_id END`;
+type DongThe = { loai: string; lop_id: number | null; hoc_vien_id: number | null; chi_nhanh_id: number | null };
+const theoEm = (y: DongThe) => y.hoc_vien_id != null && !dinhNghiaCua(y.loai)?.theoLopTao;
+const ctxThe = (y: DongThe) => (theoEm(y) ? { studentId: y.hoc_vien_id } : { classId: y.lop_id, branchId: y.chi_nhanh_id });
+/** Chi nhánh của thẻ (lọc hộp, dải đếm, người nhận tin) — cùng luật `ctxThe`. Chi nhánh em nhớ theo request. */
+const cnCuaThe = (y: DongThe): (number | null)[] => (theoEm(y) ? branchesOfStudent(y.hoc_vien_id!) : [y.chi_nhanh_id]);
+const theOChiNhanh = (y: DongThe, cn: number) => cnCuaThe(y).includes(cn);
+/** Người nhận tin của hộp cho thẻ — QL mọi chi nhánh của thẻ (thường một). */
+const nguoiNhanThe = (conn: any, y: DongThe, chiQuanLy = false) => [...new Set(cnCuaThe(y).flatMap((cn) => nguoiNhanHop(conn, cn, chiQuanLy)))];
 const tenHocVien = (conn: any, id: number | null) =>
   id == null ? null : ((conn.prepare('SELECT full_name FROM students WHERE id = ?').get(id) as any)?.full_name ?? null) as string | null;
 
@@ -141,7 +144,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
 export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLoai: string; doiTuongId: number },
   v: { lyDo: string | null; duLieu?: Record<string, unknown>; ngay: string }): number | null {
   const r = conn.prepare(
-    `SELECT y.id, y.ly_do, y.du_lieu, ${CN_THE_SQL} AS chi_nhanh_id, y.nguoi_xin, s.full_name AS hv FROM yeu_cau_duyet y
+    `SELECT y.id, y.loai, y.lop_id, y.hoc_vien_id, y.ly_do, y.du_lieu, y.chi_nhanh_id, y.nguoi_xin, s.full_name AS hv FROM yeu_cau_duyet y
        LEFT JOIN students s ON s.id = y.hoc_vien_id
       WHERE y.trang_thai = 'cho' AND y.loai = ? AND y.doi_tuong_loai = ? AND y.doi_tuong_id = ?`,
   ).get(doiTuong.loai, doiTuong.doiTuongLoai, doiTuong.doiTuongId) as any;
@@ -152,7 +155,7 @@ export function boSungYeuCau(conn: any, doiTuong: { loai: LoaiYeuCau; doiTuongLo
   const lyDo = them ? (r.ly_do ? `${r.ly_do}\nBổ sung ${v.ngay.slice(8, 10)}/${v.ngay.slice(5, 7)}: ${them}` : them) : r.ly_do;
   conn.prepare('UPDATE yeu_cau_duyet SET ly_do = ?, du_lieu = ? WHERE id = ?').run(lyDo, JSON.stringify({ ...cu, ...(v.duLieu ?? {}) }), r.id);
   const meta = metaCua(doiTuong.loai);
-  for (const uid of nguoiNhanHop(conn, r.chi_nhanh_id, meta.kieuNut === 'nhac')) {
+  for (const uid of nguoiNhanThe(conn, r, meta.kieuNut === 'nhac')) {
     if (uid === r.nguoi_xin) continue;
     notify({
       userId: uid, kind: 'duyet_moi', title: `Bổ sung · ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''}`, body: them?.slice(0, 120) ?? null,
@@ -255,14 +258,14 @@ function quetThat(homNay: string) {
 
   const coHan = Object.entries(LOAI_YC_META as Record<string, LoaiYcMeta>).filter(([, m]) => m.kieuNut !== 'nhac').map(([k]) => k);
   const qua = conn.prepare(
-    `SELECT y.id, y.loai, ${CN_THE_SQL} AS chi_nhanh_id, y.han_duyet, s.full_name AS hv FROM yeu_cau_duyet y LEFT JOIN students s ON s.id = y.hoc_vien_id
+    `SELECT y.id, y.loai, y.lop_id, y.hoc_vien_id, y.chi_nhanh_id, y.han_duyet, s.full_name AS hv FROM yeu_cau_duyet y LEFT JOIN students s ON s.id = y.hoc_vien_id
       WHERE y.trang_thai = 'cho' AND y.han_duyet IS NOT NULL AND y.han_duyet < ? AND y.loai IN (${coHan.map(() => '?').join(',')})
         AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.dedup_key = 'qua_han_duyet:' || y.id)`,
   ).all(homNay, ...coHan) as any[];
   if (!qua.length) return;
   tx(() => {
     for (const r of qua) {
-      for (const uid of nguoiNhanHop(conn, r.chi_nhanh_id)) {
+      for (const uid of nguoiNhanThe(conn, r)) {
         notify({
           userId: uid, kind: 'duyet_qua_han',
           title: `Quá hạn duyệt · ${metaCua(r.loai).nhan}${r.hv ? ` · ${r.hv}` : ''} · hạn ${r.han_duyet.slice(8, 10)}/${r.han_duyet.slice(5, 7)}`,
@@ -357,7 +360,8 @@ export function theCuaDoiTuong(doiTuongLoai: string, ids: readonly number[]): (T
 /** Thẻ trong phạm vi duyệt của người xem (quyền theo TỪNG thẻ, không anyScope). */
 export function trongPhamVi(p: Principal, rows: any[]): any[] {
   napTruocPhamVi(rows.map((r) => r.hoc_vien_id));
-  return rows.filter((r) => duyetDuocThe(p, r));
+  /* PTA rà #2190 (5d): thẻ ĐÃ xử lý — người đã quyết vẫn xem (Đã xử lý, `/lich-su`) dù em đã sang chi nhánh khác. Chỉ XEM: thao tác vẫn qua `kiemDuyetThe`. */
+  return rows.filter((r) => duyetDuocThe(p, r) || (r.trang_thai !== 'cho' && r.nguoi_duyet != null && r.nguoi_duyet === p.userId));
 }
 /** Duyệt được thẻ này: `request.approve` theo phạm vi thẻ; N52 — thẻ Ý thức thêm CX (`duyetYThuc`), loại khác vẫn chỉ Head.
  *  N70: thẻ sửa cấp bậc cùng luật — người duyệt = đúng tập người sửa thẳng bậc đã khai (`suaKhaiBac`). */
@@ -393,7 +397,7 @@ export function hopChoDuyet(p: Principal, f: {
     /* SL2: đang lọc một lớp → thẻ chi nhánh khác không thuộc lớp đó, không có gì để "Xem". */
     const cn = f.branchId;
     if (xem === 'cho' && !f.classId) khacChiNhanh = rows.filter((r) => !theOChiNhanh(r, cn) && nhomCuaLoai(r.loai) === 'can-quyet').length;
-    rows = rows.filter((r) => theOChiNhanh(r, cn));
+    rows = rows.filter((r) => theOChiNhanh(r, cn) || (xem === 'da-xu-ly' && r.chi_nhanh_id === cn));   // Đã xử lý: cả chi nhánh lúc tạo
   }
   /* PR-S4F #5: badge "n chờ duyệt" của một lớp mở hộp lọc ĐÚNG lớp đó — cùng luật đếm `viecHocVienTheoLop` (thẻ theo lớp, thẻ không lớp thì lớp em đang học). */
   let lopDangLoc: { id: number; code: string } | null = null;
