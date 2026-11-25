@@ -1,0 +1,79 @@
+/* v26 · Hồ sơ HV › Học thuật — cân hai khối Tiến độ trên lớp / Case & phương án (chủ SP 25/11, plan.md mục 4 "Rà cân cột 25/11" [XM] a).
+   Token + thành phần lấy nguyên v21.css / ho-so-hv.css (CHỈ ĐỌC). Tệp này chỉ thêm: xếp dọc hai thẻ, hàng ô Tiến độ chia đều, danh sách dòng Tiến độ,
+   dòng Case lưới 7 cột (khớp web: kỹ năng │ tên │ trạng thái │ PA │ người │ hạn │ ›), thẻ rỗng, và khối B (loại) để so sánh.
+   LUẬT CỘT (NH9 / NH10): cột chữ co giãn · cột số / ô bằng nhau, căn giữa dọc · cột cuối sát mép phải · không dồn trái rồi thừa phải. */
+
+.xep { display:grid; gap:16px; align-content:start; min-width:0; }
+.dt .xep { gap:12px; }
+.dem-chu { font-size:13px; color:var(--text-dim); }
+.dt .the-dau .dem-chu { display:none; }
+
+/* ---------- Tiến độ · Overall: MỘT hàng ô, mỗi kỹ năng một ô, chia đều ---------- */
+.td-luoi { display:grid; grid-template-columns:repeat(var(--n,5),minmax(0,1fr)); }
+.td-o { padding:12px 16px 14px; border-left:1px solid var(--line); display:grid; gap:6px; align-content:start; min-width:0; }
+.td-o:first-child { border-left:0; }
+.td-o .d1 { display:flex; align-items:center; gap:8px; min-height:24px; }
+.td-o p { color:var(--text); margin:0; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.td-o .chua-co { color:var(--text-faint); }
+.chip-kq { display:inline-block; margin-right:6px; padding:0 7px; border-radius:6px; background:var(--accent-soft); font-weight:700; font-variant-numeric:tabular-nums; }
+/* 375: một cột, mỗi kỹ năng một dòng (như dòng Tiến độ hiện có) */
+.dt .td-luoi { grid-template-columns:minmax(0,1fr); }
+.dt .td-o { border-left:0; border-top:1px solid var(--line); grid-template-columns:34px minmax(0,1fr); gap:4px 12px; padding:12px; }
+.dt .td-o:first-child { border-top:0; }
+.dt .td-o .d1 { display:contents; }
+.dt .td-o .d1 .ky { grid-row:1 / span 2; }
+.dt .td-o .d1 .tag { grid-column:2; justify-self:start; }
+.dt .td-o p { grid-column:2; }
+
+/* ---------- Tiến độ · một kỹ năng: danh sách dòng tuần │ kết quả + nhận xét │ người ghi ---------- */
+.td-ds { display:grid; }
+.td-ds-d { display:grid; grid-template-columns:96px minmax(0,1fr) 220px; gap:4px 16px; align-items:center; padding:10px 16px; border-top:1px solid var(--line); font-size:14px; min-height:48px; }
+.td-ds-d:first-child { border-top:0; }
+.td-ds-d .tuan { font:600 14px var(--phong-so); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.td-ds-d .nd { min-width:0; line-height:1.5; overflow-wrap:anywhere; }
+.td-ds-d .ai { text-align:right; font-size:13px; color:var(--text-dim); min-width:0; }
+.td-ds-d .lop-cu { color:var(--soon); font-weight:600; }
+.khoa-gy { display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 6px; margin-right:6px; border:1px solid var(--line-strong); border-radius:4px; font:600 12px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.dt .td-ds-d { grid-template-columns:minmax(0,1fr) auto; }
+.dt .td-ds-d .nd { grid-column:1 / -1; grid-row:2; }
+
+/* ---------- thẻ rỗng gọn: tên ⓘ │ chữ │ nút phải, MỘT hàng ---------- */
+.rong-1 { flex-wrap:nowrap; min-height:52px; padding:8px 16px; }
+.rong-1 .chu { flex:1 1 auto; min-width:0; }
+.rong-1 .nut { margin-left:0; }
+.dt .rong-1 { flex-wrap:wrap; }
+.rong-c { margin:0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; min-height:52px; padding:8px 16px; font-size:14px; color:var(--text-dim); }
+
+/* ---------- Case: lưới 7 cột cố định, khung rộng (khớp web ≥ 740) ---------- */
+.cs.v26 { grid-template-columns:34px 168px 120px minmax(0,1fr) 140px 96px 24px; gap:0 12px; min-height:52px; padding:8px 16px; align-items:center; }
+.cs.v26 .ten { font:600 14px var(--phong); flex-wrap:wrap; gap:6px 8px; }
+.cs.v26 .l2 { display:contents; }
+.cs.v26 .pa-t { font-size:13px; line-height:1.4; color:var(--text-dim); min-width:0; }
+.cs.v26 .duoi { display:contents; }
+.cs.v26 .ng { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); min-width:0; }
+.cs.v26 .hn { font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap; justify-self:start; }
+.h-qua { color:var(--bad); font-weight:600; } .h-nay { color:var(--soon); font-weight:600; } .h-xa { color:var(--text-dim); }
+.han-ngay { font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap; }   /* hạn = chỉ ngày tô màu (chủ SP 24/11), thay viên 'quá hạn n ngày' của v21 */
+.cs.v26 .chev { justify-self:end; }
+.dong-dc { display:flex; align-items:center; gap:8px; width:100%; min-height:44px; padding:10px 16px; border:0; border-top:1px solid var(--line-strong); background:transparent; color:var(--text-dim); font:600 14px var(--phong); text-align:left; }
+.dong-dc .chev { transform:none; }
+/* 375 */
+.dt .cs.v26 { grid-template-columns:30px minmax(0,1fr) 16px; gap:4px 10px; padding:12px; }
+.dt .cs.v26 .ky { grid-row:1 / span 3; align-self:start; }
+.dt .cs.v26 .ten { grid-column:2; }
+.dt .cs.v26 .chev { grid-column:3; grid-row:1; }
+.dt .cs.v26 .l2 { grid-column:2; display:flex; align-items:center; gap:8px; min-width:0; }
+.dt .cs.v26 .duoi, .cs.v26.nho .duoi { grid-column:2; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.dt .cs.v26 .l2, .cs.v26.nho .l2 { flex-wrap:wrap; }
+.dt .cs.v26 .pa-t, .cs.v26.nho .pa-t { flex:1 1 100%; }
+
+/* ---------- phương án B (loại): hai cột 5 : 7, thẻ trái kéo cao bằng ---------- */
+.hai-cot.b { align-items:stretch; padding:0; }
+.hai-cot.b .b-trai { display:flex; flex-direction:column; }
+.b-trong { flex:1; min-height:120px; background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(255,255,255,.03) 10px 20px); }
+.cs.v26.nho { grid-template-columns:30px minmax(0,1fr) 16px; gap:4px 10px; padding:12px; }
+.cs.v26.nho .ky { grid-row:1 / span 3; align-self:start; }
+.cs.v26.nho .ten { grid-column:2; }
+.cs.v26.nho .chev { grid-column:3; grid-row:1; }
+.cs.v26.nho .l2 { grid-column:2; display:flex; align-items:center; gap:8px; }
+
