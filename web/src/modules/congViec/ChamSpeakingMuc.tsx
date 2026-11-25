@@ -78,7 +78,7 @@ export function ChamSpeakingMuc({ nguoi, moSan, lopChon, onMo, veDai, han, onTie
             : !data ? <div id="muc-cham-cheo" className="px-4 py-3"><Skeleton rows={4} /></div>
               : hetBai ? (
                 <div id="muc-cham-cheo" className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-                  <p className="m-0 text-[15px] font-semibold text-[color:var(--text)]">{t('Bạn hết bài Speaking chờ chấm')}</p>
+                  <p className="m-0 text-[16px] font-semibold text-[color:var(--text)]">{t('Bạn hết bài Speaking chờ chấm')}</p>
                   {onTiep && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>}
                 </div>
               ) : !loc.length ? <p id="muc-cham-cheo" className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p>
