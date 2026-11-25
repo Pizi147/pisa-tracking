@@ -376,7 +376,8 @@ export function luuSuaKhai(p: { userId: number }, hv: { student_code: string }, 
       .run(bac, thang, ghiChu, p.userId, nowIso(), studentId, em.khai.cycleId);
     writeAudit({ actorUserId: o.tuChot ? null : p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
       entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : o.tuChot ? 'tự chốt vì hết hạn duyệt · sửa cấp bậc' : 'sửa cấp bậc'}`,
-      before: { bac: em.khai.bac }, after: { bac, thang, ghiChu, ...(o.yeuCauId ? { yeuCauId: o.yeuCauId } : {}) } });
+      /* Rà Hoàn tác 25/11: `before` đủ bậc · tháng · ghi chú · lộ trình — Hoàn tác lô đọc lại bản máy chủ ghi này (`banTruocCuaMinh`), không tin `truoc` web gửi. */
+      before: { bac: em.khai.bac, thang: em.khai.thang, ghiChu: em.khai.ghiChu, cycleId: em.khai.cycleId }, after: { bac, thang, ghiChu, ...(o.yeuCauId ? { yeuCauId: o.yeuCauId } : {}) } });
     return { ok: true as const, bac };
   });
 }

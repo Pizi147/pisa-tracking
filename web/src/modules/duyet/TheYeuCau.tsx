@@ -150,12 +150,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      const kq = put ? await api.put<{ coTheHuy?: boolean; soLichSu?: number }>(duongDan, than) : await api.post<{ coTheHuy?: boolean; soLichSu?: number }>(duongDan, than);
+      type Kq = { coTheHuy?: boolean; coTheHoanTac?: boolean; soLichSu?: number };
+      const kq = put ? await api.put<Kq>(duongDan, than) : await api.post<Kq>(duongDan, than);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
       /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày).
          Q-RL2c: theo cờ `coTheHuy` máy chủ trả về sau Duyệt / Từ chối (không danh sách loại cứng ở web). Sau 5 s: "Huỷ quyết định" ở Đã xử lý. */
       const huyDuoc = !!kq?.coTheHuy && /\/(duyet|tu-choi)$/.test(duongDan);
+      /* Rà Hoàn tác 25/11: Rút → Hoàn tác ngắn theo cờ `coTheHoanTac` của máy chủ (thẻ về Chờ duyệt như trước). */
       if (huyDuoc) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
+      else if (kq?.coTheHoanTac && /\/rut$/.test(duongDan)) toast.hoanTac(xongChu, () => { void boRut(); }, { key: `yc-rut-${yc.id}` });
       else toast.push('ok', xongChu);
       setO(null);
       if (o) traFocus();
@@ -227,6 +230,17 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       const loi = e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.');
       setLoiMay(loi); toast.push('error', loi);
     } finally { setBusy(false); }
+  }
+
+  /* Rà Hoàn tác 25/11: gọi từ toast sau Rút (thẻ đã rời danh sách) — lỗi báo qua toast. */
+  async function boRut() {
+    try {
+      await api.post(`/yeu-cau/${yc.id}/rut/hoan-tac`);
+      invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
+      toast.push('ok', t('Đã hoàn tác · yêu cầu về Chờ duyệt'));
+    } catch (e: any) {
+      toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối, chưa hoàn tác được. Kiểm tra mạng rồi bấm lại.'));
+    }
   }
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;

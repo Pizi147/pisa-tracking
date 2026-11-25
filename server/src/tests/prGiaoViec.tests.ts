@@ -397,6 +397,53 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(theoDoi('bao_ph', id).some((x) => x.user_id === gvcn.userId && x.nguon === 'gvcn') && !theoDoi('bao_ph', id).some((x) => x.user_id === P.w2Teacher.userId), 'gvcn về GVCN cũ');
   }));
 
+  await checkAsync('GV1-HT · (rà Hoàn tác 25/11) tự bỏ theo dõi khi KHÔNG có quyền sửa theo dõi → Hoàn tác = tự thêm lại CHÍNH MÌNH, đúng việc vừa bỏ, trong cửa sổ Hoàn tác; không mở rộng quyền', () => thu(async () => {
+    const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+    const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+    const id = baoPhViPham(moiEm()); const id2 = baoPhViPham(moiEm());
+    const co = (vid: number) => theoDoi('bao_ph', vid).some((r) => r.user_id === gvbm.userId);
+    assert(co(id) && co(id2) && gv.xemGiaoViec(gvbm, 'bao_ph', id).coTheSuaTheoDoi === false, 'GVBM theo dõi (gv_ghi), không có quyền sửa theo dõi');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === null && co(id), 'đang theo dõi mà "thêm lại mình" → xong, không đổi gì');
+    gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);
+    assert(!co(id), 'tự bỏ được');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvcn.userId] })) === 403, 'thêm người khác → 403');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId, tvv.userId] })) === 403, 'thêm mình kèm người khác → 403');
+    const id3 = baoPhViPham(moiEm());
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`).run(id3, gvbm.userId);   // không theo dõi, không có lần tự bỏ
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id3, { userIds: [gvbm.userId] })) === 403, 'việc khác (không vừa bỏ) → 403');
+    const c0 = soCauSql();
+    gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] });
+    const cau = soCauSql() - c0;
+    console.log(`      đo: tự thêm lại theo dõi ${cau} câu`);
+    assert(cau <= TRAN_GHI_LO.tuThemLaiTheoDoi, `tự thêm lại ${cau} câu > ${TRAN_GHI_LO.tuThemLaiTheoDoi}`);
+    assert(theoDoi('bao_ph', id).some((r) => r.user_id === gvbm.userId && r.nguon === 'gv_ghi'), 'Hoàn tác: GVBM theo dõi lại, ĐÚNG nguồn cũ (gv_ghi, không thành tay)');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === null && co(id), 'bấm Hoàn tác lần hai: đang theo dõi rồi → xong, không 403');
+    /* Quá cửa sổ Hoàn tác / người khác bỏ mình → không tự thêm lại được. */
+    gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);
+    conn.prepare(`UPDATE viec_giao_lan SET luc = ? WHERE loai = 'bao_ph' AND ref_id = ? AND truong = 'theo_doi'`).run(new Date(Date.now() - 3_600_000).toISOString(), id);
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === 403 && !co(id), 'quá cửa sổ Hoàn tác → 403');
+    /* PTA rà #2166 P1: tự bỏ → tự thêm → Head bỏ → tự thêm phải 403 (xét dòng lịch sử MỚI NHẤT, không "có lần tự bỏ nào"). */
+    gv.boTheoDoi(gvbm, 'bao_ph', id2, gvbm.userId);
+    gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] });
+    gv.boTheoDoi(ql, 'bao_ph', id2, gvbm.userId);
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] })) === 403 && !co(id2), 'tự bỏ → tự thêm → Head bỏ → tự thêm: 403');
+    /* Head Hoàn tác lần bỏ của mình → GVBM về đúng nguồn gv_ghi. */
+    gv.themTheoDoi(ql, 'bao_ph', id2, { userIds: [gvbm.userId] });
+    assert(theoDoi('bao_ph', id2).some((r) => r.user_id === gvbm.userId && r.nguon === 'gv_ghi'), 'Head hoàn tác: đúng nguồn cũ');
+    /* PTA rà #2166: Head thêm 20 người một lần — đọc lịch sử + bản chụp theo LÔ (không một câu mỗi người); Hoàn tác bỏ 20 người cũng vậy. */
+    const nhieu = Array.from({ length: 20 }, (_, i) => taiKhoan(`td${i}`, 'consultant').userId as number);
+    const c1 = soCauSql();
+    gv.themTheoDoi(ql, 'bao_ph', id2, { userIds: nhieu });
+    const cauThem20 = soCauSql() - c1;
+    for (const u of nhieu) gv.boTheoDoi(ql, 'bao_ph', id2, u);
+    const c2 = soCauSql();
+    gv.themTheoDoi(ql, 'bao_ph', id2, { userIds: nhieu });
+    const cauLai20 = soCauSql() - c2;
+    console.log(`      đo: thêm 20 người theo dõi ${cauThem20} câu · Hoàn tác bỏ 20 người ${cauLai20} câu`);
+    assert(nhieu.every((u) => theoDoi('bao_ph', id2).some((r) => r.user_id === u && r.nguon === 'tay')), 'thêm lại 20 người đủ');
+    assert(cauThem20 <= TRAN_GHI_LO.themTheoDoi20 && cauLai20 <= TRAN_GHI_LO.themTheoDoi20, `thêm 20 người: ${cauThem20} / ${cauLai20} câu > ${TRAN_GHI_LO.themTheoDoi20}`);
+  }));
+
   await checkAsync('GV1-16 · (F) người theo dõi đã rời chi nhánh của việc: không thấy ở tab, không nhận tin, không đọc panel', () => thu(async () => {
     const sid = moiEm(); const id = baoPhViPham(sid);
     const roi = taiKhoan('roi', 'consultant');

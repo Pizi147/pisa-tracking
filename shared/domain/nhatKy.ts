@@ -70,7 +70,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'mt.xuat_excel': 'Xuất Excel kết quả Test', 'ke_hoach.xuat_excel': 'Xuất Excel Kế hoạch Test', 'lich_thi.luu': 'Lưu kết luận lịch thi', 'hoc_vien.xuat_excel': 'Xuất Excel danh sách học viên', 'ke_hoach.xuat_diem': 'Xuất điểm Test',
   'regular.no_show': 'Báo vắng', 'regular.no_show_cleared': 'Bỏ báo vắng', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
-  'request.create': 'Gửi yêu cầu duyệt', 'request.edit': 'Người gửi sửa yêu cầu', 'request.withdraw': 'Người gửi rút yêu cầu', 'request.answer_edit': 'Sửa câu trả lời Xin ý kiến',
+  'request.create': 'Gửi yêu cầu duyệt', 'request.edit': 'Người gửi sửa yêu cầu', 'request.withdraw': 'Người gửi rút yêu cầu', 'request.withdraw_undo': 'Hoàn tác rút yêu cầu', 'request.answer_edit': 'Sửa câu trả lời Xin ý kiến',
   'cuoi_khoa.quyet': 'Head quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test', 'cuoi_khoa.bo_tro_huy': 'Huỷ bổ trợ miễn phí (đổi quyết định)', 'cuoi_khoa.mini_test_dong': 'Đóng Mini Test (em chuyển Fast Track)',
   'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Chốt Kết quả đầu ra lên FT', 'cuoi_khoa.ky_vong_lop': 'Kết quả đầu ra cả lớp', 'cuoi_khoa.de_xuat_kq': 'GVCN đề xuất Kết quả đầu ra', 'lo_trinh.nhap': 'Lưu nháp lộ trình', 'ban_giao.lam_lai': 'Bàn giao cần làm lại',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',

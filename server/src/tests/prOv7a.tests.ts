@@ -10,6 +10,8 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   const { checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   console.log('\nPR-OV7a · Sửa sau khi lưu (1/2)');
 
   const thu = async (fn: () => void | Promise<void>) => { conn.exec('BEGIN IMMEDIATE'); try { await fn(); } finally { conn.exec('ROLLBACK'); } };
@@ -205,7 +207,8 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(demChuong(P.mbManager.userId) === chuongQl, 'sửa không chuông QL');
     assert(maLoi(() => yc.suaYeuCau(P.mbManager, g.the.id, { note: 'Head sửa thẻ người khác gửi' })) === 403 && maLoi(() => yc.rutYeuCau(gvbm, g.the.id)) === 403, 'không phải người gửi → 403');
     const chuongGv = demChuong(gvcn.userId);
-    yc.rutYeuCau(gvcn, g.the.id);
+    /* Rà Hoàn tác 25/11 [XM]: rút đề xuất Ý thức xoá hẳn lần xử lý + tệp bằng chứng (web hỏi trước) — chưa có Hoàn tác. */
+    assert(yc.rutYeuCau(gvcn, g.the.id).coTheHoanTac === false, 'rút đề xuất Ý thức: không cờ Hoàn tác');
     const sau = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', g.the.id);
     assert(sau.trang_thai === 'tu_dong' && sau.ly_do_dong === 'Người gửi đã rút', JSON.stringify(sau));
     assert(demChuong(gvcn.userId) === chuongGv && demChuong(P.mbManager.userId) === chuongQl, 'rút không chuông');
@@ -327,13 +330,36 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(nk.length === 1 && JSON.parse(nk[0].before_json).lyDo === 'PH đổi email' && JSON.parse(nk[0].after_json).lyDo === 'PH đổi email tuần này', 'nhật ký trước → sau');
     assert(demChuong(P.mbManager.userId) === chuongQl, 'không chuông trùng');
     assert(maLoi(() => yc.suaYeuCau(gvbm, id, { moi: 'GVBM sửa', lyDo: 'x' })) === 403 && maLoi(() => yc.rutYeuCau(P.mbManager, id)) === 403, 'người khác 403');
-    yc.rutYeuCau(gvcn, id);
+    const truocRut = theCua(id);
+    assert(yc.rutYeuCau(gvcn, id).coTheHoanTac === true, 'Rút trả cờ Hoàn tác');
     assert(theCua(id).trang_thai === 'tu_dong' && theCua(id).ly_do_dong === 'Người gửi đã rút', 'rút');
     assert(yc.yeuCauCuaToi(gvcn).the.find((x: any) => x.id === id)?.trangThai === 'tu_dong', 'Yêu cầu của tôi: đã đóng');
     assert(!yc.hopChoDuyet(P.mbManager, {}).the.some((x: any) => x.id === id), 'hộp Chờ duyệt: hết thẻ');
+    /* Rà Hoàn tác 25/11: Hoàn tác Rút — chỉ người vừa rút; thẻ về Chờ duyệt Y NHƯ trước (hạn, người duyệt, lý do); lần hai / thẻ mới chen vào / thẻ đổi → 409. */
+    assert(maLoi(() => yc.boRutYeuCau(P.mbManager, id)) === 403 && maLoi(() => yc.boRutYeuCau(gvbm, id)) === 403, 'người khác hoàn tác rút → 403');
+    const c0 = soCauSql();
+    yc.boRutYeuCau(gvcn, id);
+    const cauBoRut = soCauSql() - c0;
+    console.log(`      đo: hoàn tác rút ${cauBoRut} câu`);
+    assert(cauBoRut <= TRAN_GHI_LO.boRutYeuCau, `hoàn tác rút ${cauBoRut} câu > ${TRAN_GHI_LO.boRutYeuCau}`);
+    assert(JSON.stringify(theCua(id)) === JSON.stringify(truocRut), `thẻ y như trước khi rút: ${JSON.stringify([theCua(id), truocRut])}`);
+    assert(yc.hopChoDuyet(P.mbManager, {}).the.some((x: any) => x.id === id) && nhatKy('request.withdraw_undo', id).length === 1, 'hộp Chờ duyệt có lại thẻ + nhật ký');
+    assert(maLoi(() => yc.boRutYeuCau(gvcn, id)) === 409, 'hoàn tác lần hai → 409');
+    yc.rutYeuCau(gvcn, id);
+    const { id: chen } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'khac', moi: 'Gửi lại sau khi rút', lyDo: 'Gửi lại bản mới' });
+    assert(maLoi(() => yc.boRutYeuCau(gvcn, id)) === 409 && theCua(id).trang_thai === 'tu_dong', 'đã có thẻ mới đang chờ cùng việc → 409, thẻ cũ giữ đóng');
+    yc.rutYeuCau(gvcn, chen);
+    conn.prepare("UPDATE yeu_cau_duyet SET ly_do_dong = 'Đổi sau khi rút' WHERE id = ?").run(chen);
+    assert(maLoi(() => yc.boRutYeuCau(gvcn, chen)) === 409 && theCua(chen).trang_thai === 'tu_dong', 'thẻ đổi sau khi rút → 409, không ghi gì');
     const { id: id2 } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'khac', moi: 'Sửa ngày sinh', lyDo: 'Nhập sai' });
     yc.tuChoiYeuCau(P.mbManager, id2, 'Cần giấy tờ');
     assert(maLoi(() => yc.rutYeuCau(gvcn, id2)) === 400, 'QL đã trả lời → 400');
+    /* PTA rà #2166: đối tượng hết ý nghĩa sau lúc rút (em Thôi học — luật `chet` của loại) → 409 có lý do, thẻ KHÔNG về chờ. */
+    const { id: id3 } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'khac', moi: 'Sửa địa chỉ', lyDo: 'PH chuyển nhà' });
+    yc.rutYeuCau(gvcn, id3);
+    conn.prepare("UPDATE students SET status = 'finished' WHERE id = ?").run(sid);
+    let loi3: any = null; try { yc.boRutYeuCau(gvcn, id3); } catch (e) { loi3 = e; }
+    assert(loi3?.status === 409 && /không hoàn tác rút/.test(loi3.message) && theCua(id3).trang_thai === 'tu_dong', `em thôi học → 409: ${loi3?.message}`);
   }));
 
   await checkAsync('OV7a-5b · Đề xuất chuyển lớp: Sửa lớp / tuần / lý do (lớp sai → 400) và Rút', () => thu(() => {
@@ -368,10 +394,28 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(sau.ly_do === 'Khác — Em ốm cả tuần thi' && JSON.parse(sau.du_lieu).reasonCode === 'other', sau.ly_do);
     assert(maLoi(() => yc.suaYeuCau(nguoi, the.id, { reasonCode: 'bay-ba' })) === 400, 'lý do lạ → 400');
     assert(get(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi' ORDER BY id DESC LIMIT 1`, the.doi_tuong_id).note === sau.ly_do, 'mốc Case đổi theo');
+    const mocTruoc = get(`SELECT * FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi' ORDER BY id DESC LIMIT 1`, the.doi_tuong_id);
+    const theTruoc = theCua(the.id);
     yc.rutYeuCau(nguoi, the.id);
     assert(theCua(the.id).trang_thai === 'tu_dong' && !sosState.sosCaseState(the.doi_tuong_id).choDuyetKhongTheoDoi, 'Case thôi chờ QL');
     assert(!get(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi'`, the.doi_tuong_id), 'mốc xin gỡ');
     assert(get('SELECT han_xac_nhan FROM sos_cases WHERE id = ?', the.doi_tuong_id).han_xac_nhan === han, 'hạn xác nhận giữ nguyên');
+    /* Rà Hoàn tác 25/11: Hoàn tác Rút → thẻ + mốc xin (đúng id, ghi chú) về như trước, Case lại chờ Head. */
+    yc.boRutYeuCau(nguoi, the.id);
+    assert(JSON.stringify(theCua(the.id)) === JSON.stringify(theTruoc) && sosState.sosCaseState(the.doi_tuong_id).choDuyetKhongTheoDoi, 'thẻ về chờ, Case lại chờ Head');
+    assert(JSON.stringify(get('SELECT * FROM case_milestones WHERE id = ?', mocTruoc.id)) === JSON.stringify(mocTruoc), 'mốc xin chèn lại y như cũ');
+    /* PTA rà #2166: sau lúc rút Case có mốc / PA mới → không hoàn tác (chặn đi vòng RKC-2b huỷ PA người khác). */
+    yc.rutYeuCau(nguoi, the.id);
+    conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ghi_chu_thu', ?, 'Mốc mới sau rút', ?, ?)`)
+      .run(the.doi_tuong_id, TODAY, nguoi.userId, new Date(Date.now() + 1000).toISOString());
+    assert(maLoi(() => yc.boRutYeuCau(nguoi, the.id)) === 409 && theCua(the.id).trang_thai === 'tu_dong', 'Case có mốc mới sau rút → 409');
+    /* PTA rà #2166: PA cũ đổi trạng thái sau lúc rút (`updated_at`) cũng chặn. */
+    conn.prepare(`DELETE FROM case_milestones WHERE case_id = ? AND kind = 'ghi_chu_thu'`).run(the.doi_tuong_id);
+    yc.boRutYeuCau(nguoi, the.id);   // mốc mới đã gỡ → hoàn tác được
+    yc.rutYeuCau(nguoi, the.id);
+    const doiPa = conn.prepare('UPDATE case_interventions SET updated_at = ? WHERE id = (SELECT MIN(id) FROM case_interventions WHERE case_id = ?)')
+      .run(new Date(Date.now() + 1000).toISOString(), the.doi_tuong_id).changes;
+    assert(doiPa === 1 && maLoi(() => yc.boRutYeuCau(nguoi, the.id)) === 409 && theCua(the.id).trang_thai === 'tu_dong', `PA đổi sau rút → 409 (đổi ${doiPa} PA)`);
   }));
 
   const { dinhNghiaCua } = await import('../duyet/loaiYeuCau.ts');

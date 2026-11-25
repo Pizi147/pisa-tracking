@@ -6,14 +6,14 @@
  * nằm ở `loaiYeuCau.ts` (giao kèo). Thẻ "chết" đóng bằng QUÉT KHI ĐỌC (Q2), không có tiến trình nền.
  */
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
-import { t } from '../../../shared/i18n/index.ts';
+import { kem, t, type Khoa } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
 import { can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
-import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
+import { GhiDao, HOAN_TAC_PHUT, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
   nhanHanhDongNhatKy, nhomCuaLoai, sapThe,
@@ -614,15 +614,58 @@ function theCuaNguoiGui(p: Principal, id: number, rut = false): YeuCauRow {
 export function rutYeuCau(p: Principal, id: number) {
   theCuaNguoiGui(p, id, true);
   const khoaTep: string[] = [];
-  tx(() => {
+  const coTheHoanTac = tx(() => {
     const yc = theCuaNguoiGui(p, id, true);
+    const def = dinhNghiaCua(yc.loai);
+    /* Rà Hoàn tác 25/11: loại có `hoanTacRut` → chụp thẻ (+ dòng `khiRut` xoá) cùng giao dịch để `boRutYeuCau` trả về đúng như trước (hạn, người duyệt). */
+    const g = def?.hoanTacRut ? new GhiDao(db()) : null;
+    if (g) {
+      g.sua('yeu_cau_duyet', 'id = ?', id);
+      for (const d of def!.hoanTacRut!.xoa?.(yc) ?? []) g.xoa(d.bang, d.dk, ...d.args);
+    }
     chotYeuCau(db(), doiTuongCua(yc), 'tu_dong', { nguoiDuyet: p.userId, lyDo: LY_DO_RUT });
-    dinhNghiaCua(yc.loai)?.khiRut?.(p, yc, khoaTep);
+    def?.khiRut?.(p, yc, khoaTep);
     writeAudit({ actorUserId: p.userId, action: 'request.withdraw', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: metaCua(yc.loai).nhan,
       before: { trangThai: 'cho', lyDo: yc.ly_do, duLieu: yc.du_lieu }, after: { trangThai: 'tu_dong', lyDoDong: LY_DO_RUT } });
+    if (g) luuGhiDao(db(), { ...GD_RUT, id, nguoi: p.userId, ghi: g });
+    return !!g;
   });
   xoaTepSauGiaoDich(khoaTep);
-  return { ok: true, id, trangThai: 'tu_dong' as const };
+  return { ok: true, id, trangThai: 'tu_dong' as const, coTheHoanTac };
+}
+
+const GD_RUT = { loai: 'rut', bang: 'yeu_cau_duyet' } as const;
+/**
+ * Hoàn tác Rút (rà Hoàn tác 25/11): CHỈ người đã rút, trong `HOAN_TAC_PHUT` phút, khi thẻ (và dòng đã xoá) còn y như lúc rút và chưa có thẻ mới đang chờ
+ * cho cùng việc → thẻ về `cho` đúng như trước (hạn, người duyệt, lý do); quyền kiểm lại như lúc rút (`hoanTacRut.kiem`). Nhật ký `request.withdraw_undo`.
+ */
+export function boRutYeuCau(p: Principal, id: number) {
+  return tx(() => {
+    const conn = db();
+    const yc = docThe(id);
+    const g = timGhiDao(conn, GD_RUT.loai, GD_RUT.bang, id);
+    if (yc.nguoi_xin !== p.userId || (g && g.nguoi !== p.userId)) throw forbidden('Chỉ người vừa rút mới hoàn tác được yêu cầu này.');
+    if (!g) throw conflict('Yêu cầu này không có lần rút nào để hoàn tác.');
+    if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict('Đã quá lâu sau khi rút — gửi lại yêu cầu nếu vẫn cần.');
+    const def = dinhNghiaCua(yc.loai);
+    def?.hoanTacRut?.kiem?.(p, yc);
+    /* PTA rà #2166: đối tượng đã không còn ý nghĩa (luật `chet` của loại — Case đóng, em thôi học / chuyển lớp…) hoặc có việc mới sau lúc rút → 409 có
+       lý do, KHÔNG đưa thẻ về chờ rồi để lượt quét đóng lại. */
+    if (def?.chet && conn.prepare(`SELECT 1 FROM yeu_cau_duyet y WHERE y.id = ? AND (${def.chet.sql})`).get(id)) {
+      throw loi(409, '{lyDo} — không hoàn tác rút được; gửi yêu cầu mới nếu vẫn cần.', { lyDo: kem(def.chet.lyDo as Khoa) });   // lý do dịch theo khoá ở web
+    }
+    const chan = def?.hoanTacRut?.chan?.(conn, yc, g.luc);
+    if (chan) throw conflict(chan);
+    if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_loai = ? AND doi_tuong_id = ? AND trang_thai = 'cho' AND id != ?`)
+      .get(yc.loai, yc.doi_tuong_loai, yc.doi_tuong_id, id)) {
+      throw conflict('Đã có yêu cầu mới đang chờ cho cùng việc này — không hoàn tác lần rút cũ được.');
+    }
+    daoLai(conn, g, p.userId);   // thẻ đã đổi sau khi rút (người khác xử lý / đã hoàn tác) → 409, không ghi gì
+    writeAudit({ actorUserId: p.userId, action: 'request.withdraw_undo', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: metaCua(yc.loai).nhan,
+      before: { trangThai: yc.trang_thai, lyDoDong: (yc as YeuCauRow & { ly_do_dong?: string | null }).ly_do_dong ?? null }, after: { trangThai: 'cho' } });
+    xoaNho();
+    return { ok: true, id, trangThai: 'cho' as const };
+  });
 }
 
 /** NGƯỜI GỬI SỬA nội dung thẻ còn chờ — kiểm như lúc gửi (`khiSua` của loại), nhật ký trước → sau. Người nhận không đổi nên không chuông. */
