@@ -127,7 +127,7 @@ export function AccountsAdmin() {
   const loiCn = branches.error && !branches.data ? <LoiTaiNho chu={t('Không tải được danh mục chi nhánh.')} onRetry={branches.reload} className="" /> : null;
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
   /* QTV2-TK: sửa vai / kỹ năng tại dòng — dữ liệu chung cho mọi hàng. */
-  const taiDong: TaiDong = { branches: branches.data ?? [], toiId: session?.user?.id ?? null, onDaLuu: reload };
+  const taiDong: TaiDong = { branches: branches.data ?? [], loiCn, toiId: session?.user?.id ?? null, onDaLuu: reload };
   /* RKC-6: Khôi phục tài khoản xoá mềm — một bấm; máy chủ trả câu nhắc (email trùng, đặt lại mật khẩu, phân công lại). Lỡ tay thì Xoá lại. */
   const khoiPhuc = async (u: Account) => {
     try {
@@ -324,13 +324,13 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-type TaiDong = { branches: Branch[]; toiId: number | null; onDaLuu: () => void };
+type TaiDong = { branches: Branch[]; loiCn: ReactNode; toiId: number | null; onDaLuu: () => void };
 
 /** QTV2-TK: tài khoản đang dùng, đã duyệt → ô vai / kỹ năng sửa tại dòng; còn lại chỉ hiện. */
 const suaDuocTaiDong = (u: Account) => u.status !== 'deleted' && u.approvalState === 'approved';
 function OVai({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
   if (!suaDuocTaiDong(u)) return <>{children}</>;
-  return <OVaiTaiDong u={u} branches={tai.branches} laMinh={u.id === tai.toiId} mat={children} onDaLuu={tai.onDaLuu} />;
+  return <OVaiTaiDong u={u} branches={tai.branches} loiCn={tai.loiCn} laMinh={u.id === tai.toiId} mat={children} onDaLuu={tai.onDaLuu} />;
 }
 function OKyNang({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
   if (!suaDuocTaiDong(u)) return <>{children}</>;

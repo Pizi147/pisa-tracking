@@ -34,6 +34,9 @@ export async function runPrSuaLoi01Tests(t: { check: any; assert: any }) {
     const s = doc('web/src/modules/platform/AccountsAdmin.tsx');
     assert(s.includes("const loiCn = branches.error && !branches.data ? <LoiTaiNho chu={t('Không tải được danh mục chi nhánh.')} onRetry={branches.reload}"), 'thiếu báo lỗi');
     assert((s.match(/<PendingRow [^>]*loiCn=\{loiCn\}/g) ?? []).length === 2 && (s.match(/<AccountDialog [^>]*loiCn=\{loiCn\}/g) ?? []).length === 2, 'form chưa nhận loiCn');
+    /* PTA Plan 25/11: ô sửa vai tại dòng cùng lỗi B5. */
+    assert(s.includes('branches: branches.data ?? [], loiCn,') && s.includes('loiCn={tai.loiCn}')
+      && /\{loiCn\}\s*<SuaVaiChiNhanh value=\{ds\}/.test(doc('web/src/modules/platform/SuaTaiDong.tsx')), 'ô sửa vai tại dòng chưa báo lỗi danh mục');
     assert(s.includes('disabled={busy || !!loiCn ||') && s.includes('{loiCn ?? <span className="inline-flex flex-wrap gap-1 align-middle">'), 'duyệt khi chưa thấy chi nhánh');
   });
   check('B6 · Chép mật khẩu ban đầu dùng NutSaoChep (trình duyệt chặn → hộp bôi đen sẵn), không còn nút nuốt lỗi', () => {
