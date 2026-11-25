@@ -36,7 +36,8 @@ export type TinhHinhView = {
   nguoiGuiId: number; nguoiGui: string | null; taoLuc: string; suaLuc: string | null;
   /** `tvv_gvcn`: hạn GVCN trả lời. `gv_tvv`: hạn hiệu lực việc TVV. */
   han: string | null; quaHan: boolean;
-  trangThai: 'mo' | 'xong' | 'rut';
+  /** `bo` (gv_tvv): TVV "Bỏ việc" — đã khép (không quá hạn, không nút), KHÔNG phải xong (rà 25/11 PR 2). */
+  trangThai: 'mo' | 'xong' | 'rut' | 'bo';
   /** `tvv_gvcn`: kết quả GVCN ghi. */
   traLoi: string | null; traLoiBoi: string | null; traLoiLuc: string | null;
   /** `gv_tvv`: việc Báo PH của TVV — id + lần ghi mới nhất. */
@@ -232,7 +233,7 @@ export function tinhHinhCuaEm(p: Principal, ids: readonly number[], homNay = dem
   if (!ids.length) return [];
   const rows = db().prepare(
     `SELECT t.*, s.consultant_user_id, gu.full_name AS nguoi_gui_ten, tu.full_name AS tra_loi_ten, tv.full_name AS tvv_ten,
-            b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon,
+            b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, b.phu_trach_id AS bp_pt,
             (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
        FROM tinh_hinh_hoc_tap t JOIN students s ON s.id = t.student_id LEFT JOIN users gu ON gu.id = t.nguoi_gui LEFT JOIN users tu ON tu.id = t.tra_loi_boi
        LEFT JOIN users tv ON tv.id = s.consultant_user_id LEFT JOIN viec_bao_ph b ON b.tinh_hinh_id = t.id
@@ -245,13 +246,14 @@ export function tinhHinhCuaEm(p: Principal, ids: readonly number[], homNay = dem
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
     const han = r.chieu === 'tvv_gvcn' ? r.han : r.bp_id ? (r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han)) : null;
     const choKq = r.chieu === 'gv_tvv' ? !lan : r.tra_loi == null;
-    const trangThai: TinhHinhView['trangThai'] = r.trang_thai === 'rut' ? 'rut' : r.chieu === 'gv_tvv' ? (r.bp_tt === 'xong' ? 'xong' : 'mo') : r.trang_thai;
+    /* Rà 25/11 PR 2: TVV "Bỏ việc" (`bo`) = khép như Công việc (chỉ `mo` là việc), trạng thái riêng — trước vẫn mở + quá hạn ở tab Ý thức. */
+    const trangThai: TinhHinhView['trangThai'] = r.trang_thai === 'rut' ? 'rut' : r.chieu === 'gv_tvv' ? (r.bp_tt === 'xong' ? 'xong' : r.bp_tt === 'bo' ? 'bo' : 'mo') : r.trang_thai;
     return {
       id: r.id, studentId: r.student_id, chieu: r.chieu, noiDung: r.noi_dung, nguoiGuiId: r.nguoi_gui, nguoiGui: r.nguoi_gui_ten ?? null,
       taoLuc: r.tao_luc, suaLuc: r.sua_luc ?? null, han, quaHan: trangThai === 'mo' && !!han && han < homNay, trangThai,
       traLoi: r.tra_loi ?? null, traLoiBoi: r.tra_loi_ten ?? null, traLoiLuc: r.tra_loi_luc ?? null,
       baoPh: r.bp_id ? { id: r.bp_id, trangThai: r.bp_tt, tvv: r.tvv_ten ?? null, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
-        coTheGhi: r.bp_tt !== 'xong' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }) } : null,
+        coTheGhi: r.bp_tt === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id, phu_trach_id: r.bp_pt }) } : null,
       coTheSua: r.trang_thai === 'mo' && choKq && (r.nguoi_gui === p.userId || ql(r.student_id)),
       coTheTraLoi: r.chieu === 'tvv_gvcn' && r.trang_thai !== 'rut' && ((r.phu_trach_id === p.userId && conHieuLuc(p.userId, r.student_id)) || canManageDiscipline(p, r.student_id)),
       hoanTacDuoc: r.chieu === 'tvv_gvcn' && r.trang_thai === 'xong' && r.tra_loi_boi === p.userId && trongHoanTac(r.tra_loi_luc),

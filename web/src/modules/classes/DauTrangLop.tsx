@@ -222,7 +222,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const nutBadge = (x: BadgeLop) => {
     const bam = bamBadge(x);
     /* MOCKUP-1111 màn 1: "n việc quá hạn của lớp" — phạm vi lớp, khỏi lẫn với "Việc của tôi · n" ngay dưới. */
-    return <ChipBadgeLop key={x.key} x={x} nhan={x.key === 'qua-han' ? t('Quá hạn của lớp · {n}', { n: x.so ?? 0 }) : undefined} onClick={bam ?? undefined} />;
+    return <ChipBadgeLop key={x.key} x={x} nhan={x.key === 'qua-han' ? t('Quá hạn của lớp · {n} việc', { n: x.so ?? 0 }) : undefined} onClick={bam ?? undefined} />;
   };
 
   /* GD-6 (mockup v21 ② K1, lời 25): GV một dòng gộp theo người — GVCN dạy luôn kỹ năng thì một nhãn "GVCN, L, R"; KHÔNG ô TVV (TVV ở phần mở rộng em). */
@@ -359,7 +359,8 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const moi = moiEm.map(([, k]) => k);
   const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
   const dat = moi.length ? {
-    nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
+    /* Rà 25/11 PR 2 (điểm 10): phạm vi = lượt gần nhất từng em (Phân tích: trong khoảng tuần; Tổng quan: 2 tuần vừa qua) — nhãn nói rõ. */
+    nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT gần nhất') : t('Đạt Test gần nhất'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
     dong: moiEm.map(([r, k]) => dong(r, r.diemHv ? '' : dich(k.attemptLabel!), ketQuaGanNhat(k).dat ? 'dat' : 'chua')),
   } : null;
   const homNayTuan = homNay ?? '9999';

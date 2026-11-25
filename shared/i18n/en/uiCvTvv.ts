@@ -13,6 +13,7 @@ export const EN_UI_CV_TVV = {
   'Bấm dòng để làm việc.': 'Click a row to work on it.',
   'Bỏ việc · chọn lý do': 'Drop task · choose a reason',
   'Bỏ việc': 'Drop task',
+  'TVV bỏ việc': 'Consultant dropped the task',   // rà 25/11 PR 2
   'Bỏ việc…': 'Drop task…',
   'Bổ sung hồ sơ': 'Complete profile',
   'Bỏ qua ›': 'Skip ›',

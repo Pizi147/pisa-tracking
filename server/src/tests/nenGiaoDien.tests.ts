@@ -128,7 +128,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.length === 7, `Bộ đủ phải có 7 badge, đang ${tatCa.length}`);
     const cham = tatCa.find((x: any) => x.key === 'cham')!;
-    assert(cham.nhan === 'Chờ chấm · 9' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
+    assert(cham.nhan === 'Chờ chấm · 9 bài' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
     // Miễn: `chang` (tên chặng thi, chữ chốt ở PR-LT/PR-Qa), `xep-lop` ("n HV cần xếp lớp tiếp") và `qua-han` ("n HV quá hạn việc") — chữ chốt ở PR-HVL (B4), "HV" là viết tắt.
     for (const x of tatCa) {
       if (x.key === 'chang' || x.key === 'xep-lop' || x.key === 'qua-han') continue;

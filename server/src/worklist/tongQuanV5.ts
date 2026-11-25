@@ -2,10 +2,11 @@ import { db } from '../db.ts';
 import { dauNgayVnUtc, hanBaoPhHieuLuc, khoangMacDinh, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import type { Principal } from '../permissions.ts';
+import { bangLop, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
+import { tenChiNhanhNho } from '../platform/mocHeThong.ts';
 import { tapDatMt, tapKqMt, tapThiThangNayLop, tapThiThangNayTvv } from '../phanTich/baoCao.ts';
 import type { MetricRow } from './metrics.ts';
 
@@ -54,10 +55,9 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
   /* Có kỳ (Báo cáo HV) → "Thi trong kỳ" = ngày thi trong kỳ; không kỳ (Tổng quan) → tháng hiện tại. */
   const thi = tapThiThangNayLop(p, loc, f.ky);
 
-  /* lớp → chi nhánh (chế độ chi nhánh) — từ chính hàng của bảng. */
-  const cnCua = new Map<number, number>();
-  const cnTheoMa = new Map<string, number>();
-  for (const h of bang.hang) for (const l of h.loai === 'lop' ? [h] : h.lop ?? []) { cnCua.set(l.id, h.loai === 'lop' ? 0 : h.id); cnTheoMa.set(l.nhan, h.loai === 'lop' ? 0 : h.id); }
+  /* lớp → chi nhánh (chế độ chi nhánh): bảng lớp ĐỦ (`bangLop`, nhớ tiến trình, 0 câu) theo ID — rà 25/11 PR 2: trước lấy từ hàng của bảng (chỉ lớp đang
+     chạy) và chia "Đạt Target thi thật" theo MÃ lớp, nên em của lớp đã kết thúc rơi khỏi hàng chi nhánh → tổng các hàng < ô tổng. */
+  const cnCua = (lop: number | null | undefined) => (lop == null ? undefined : bangLop().get(lop)?.branchId ?? undefined);
   const theo = (khoa: (lop: number) => number | undefined) => {
     const mau = new Map<number, number>(), dat = new Map<number, number>(), th = new Map<number, number>();
     for (const s of dm?.mau ?? []) { const k = khoa(dm!.luot.get(s)!.classId); tang(mau, k); if (dm!.dat.has(s)) tang(dat, k); }
@@ -78,19 +78,30 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
       datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id), sos23Ids: h.sos23 ?? [],
     }));
   } else {
-    const s = theo((l) => cnCua.get(l));
+    const s = theo(cnCua);
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();
     for (const e of tt?.values() ?? []) {
       if (e.cot === 'chua-du') continue;
-      const k = cnTheoMa.get(e.lop);
+      const k = cnCua(e.lopId);
       tang(ttMau, k); if (e.cot === 'dat') tang(ttDat, k);
     }
-    chiNhanh = bang.hang.map((h) => ({
-      id: h.id, khoa: h.khoa, ten: h.nhan, datMt: s.datMt(h.id),
-      casePa: { coPa: Math.max(0, h.o.caseMo.n - h.o.caseChuaChot.n), mo: h.o.caseMo.n },
-      thiThat: tt ? { dat: ttDat.get(h.id) ?? 0, mau: ttMau.get(h.id) ?? 0 } : null,
-      thiThangNay: s.thi(h.id), sos23: h.o.sos2.n + h.o.sos3.n, sos23Ids: h.sos23 ?? [], caseChuaPa: h.o.caseChuaChot.n,
-    }));
+    /* Rà 25/11 PR 2: chi nhánh KHÔNG còn lớp đang chạy (lớp cuối vừa kết thúc) nhưng còn em trong ô Đạt MT / Thi tháng này / thi thật → vẫn một hàng
+       (Case / SOS = 0), để Σ hàng = ô tổng. Tên từ bảng chi nhánh nhớ sẵn (0 câu). */
+    const coSo = new Set<number>([...(dm?.mau ?? [])].map((sid) => cnCua(dm!.luot.get(sid)!.classId))
+      .concat([...thi.values()].map((x) => cnCua(x.lop)), [...ttMau.keys()]).filter((k): k is number => k !== undefined));
+    const them = [...coSo].filter((id) => !bang.hang.some((h) => h.id === id)).sort((a, b) => a - b);
+    chiNhanh = [
+      ...bang.hang.map((h) => ({
+        id: h.id, khoa: h.khoa, ten: h.nhan, datMt: s.datMt(h.id),
+        casePa: { coPa: Math.max(0, h.o.caseMo.n - h.o.caseChuaChot.n), mo: h.o.caseMo.n },
+        thiThat: tt ? { dat: ttDat.get(h.id) ?? 0, mau: ttMau.get(h.id) ?? 0 } : null,
+        thiThangNay: s.thi(h.id), sos23: h.o.sos2.n + h.o.sos3.n, sos23Ids: h.sos23 ?? [], caseChuaPa: h.o.caseChuaChot.n,
+      })),
+      ...them.map((id) => ({
+        id, khoa: `cn:${id}`, ten: tenChiNhanhNho(id) ?? `#${id}`, datMt: s.datMt(id), casePa: { coPa: 0, mo: 0 },
+        thiThat: tt ? { dat: ttDat.get(id) ?? 0, mau: ttMau.get(id) ?? 0 } : null, thiThangNay: s.thi(id), sos23: 0, sos23Ids: [], caseChuaPa: 0,
+      })),
+    ];
     lopCn = bang.hang.flatMap((h) => (h.lop ?? []).map((l) => ({ id: l.id, ma: l.nhan, cn: h.nhan, sos: [l.o.sos1.n, l.o.sos2.n, l.o.sos3.n] as [number, number, number], sos23Ids: l.sos23 ?? [] })));
   }
   const mo = bang.tong.caseMo.n, chuaPa = bang.tong.caseChuaChot.n;
@@ -114,9 +125,9 @@ function baoPhTrongKy(p: Principal, ky: { tu: string; den: string }): DongBaoPh[
     `SELECT v.id, v.student_id AS hv, s.full_name AS ten, v.nhan, v.han, v.han_chon, v.trang_thai AS trangThai,
             (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngayBao
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
-      WHERE s.consultant_user_id = ? AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học
+      WHERE (v.phu_trach_id = ? OR (v.phu_trach_id IS NULL AND s.consultant_user_id = ?)) AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học · rà 25/11 PR 2: người giữ như sổ đúng hạn (viecDaXong)
         AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL AND v.tao_luc >= ? AND v.tao_luc < ? ORDER BY v.han, v.id`,   // R1-L6: ngày tạo theo giờ VN   // PHOI-HOP-V2: việc Meeting CX tách khỏi Báo PH vi phạm
-  ).all(p.userId, dauNgayVnUtc(ky.tu), dauNgayVnUtc(addDays(ky.den, 1))) as (DongBaoPh & { han_chon: string | null })[]);
+  ).all(p.userId, p.userId, dauNgayVnUtc(ky.tu), dauNgayVnUtc(addDays(ky.den, 1))) as (DongBaoPh & { han_chon: string | null })[]);
   /* HAN-BAO-PH (chủ SP 03/11, 17.3): "đúng hạn" so với HẠN HIỆU LỰC (hạn đã chọn, Quay lại học) — cùng hàm với Công việc / hồ sơ; một câu Tạm dừng. */
   const khoang = khoangTamDung([...new Set(ds.map((d) => d.hv))]);
   return ds.map(({ han_chon, ...d }) => ({ ...d, han: hanBaoPhHieuLuc(d.han, khoang[d.hv], han_chon) }));

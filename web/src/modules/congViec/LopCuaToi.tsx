@@ -22,7 +22,8 @@ const xepHan = (a: WorkItem, b: WorkItem) => nang(a.urgency) - nang(b.urgency) |
 
 /** `so` = chỉ số trên nút (chủ SP 15/11: "Nhập điểm · 6" như "Case · 2", không chữ "bài"); `doc` = nghĩa đủ cho tooltip / trình đọc màn hình. */
 /** `ds` = mọi việc (lá) của loại đó ở lớp, quá hạn trước — panel mở từ chip đi hết `ds` bằng "Việc tiếp ›" (hồ sơ lớp, GD-6). */
-export type ChipViec = { tab: string; nhan: string; so: number; doc: string; quaHan: boolean; dau: WorkItem; ds: WorkItem[] };
+/** `viec` = số DÒNG việc của chip (rà 25/11 PR 2: cột Việc cộng `viec`, không cộng `so` — chip Nhập điểm `so` là bài). */
+export type ChipViec = { tab: string; nhan: string; so: number; viec: number; doc: string; quaHan: boolean; dau: WorkItem; ds: WorkItem[] };
 type Chip = ChipViec;
 type Dong = { classId: number; code: string; mon: string[]; chuNhiem: boolean; test: { chu: string; han: WorkItem | null } | null; chip: Chip[];
   /** N71: lớp đã kết thúc (ngày) — dòng mờ "Đã kết thúc", đứng sau lớp đang chạy. */ ketThuc?: string };
@@ -87,7 +88,7 @@ export function chipViecLop(viec: readonly WorkItem[], classId: number, caDong: 
     const soViec = dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
     const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0) : soViec;
     const doc = bai ? t('{n} bài · {m} việc', { n: so, m: soViec }) : t('{n} việc', { n: so });   // D-04: chip Nhập điểm đếm BÀI — title nói cả số việc (cùng đơn vị badge tab)
-    return [{ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab }];
+    return [{ tab, nhan, so, viec: soViec, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab }];
   });
 }
 
@@ -101,7 +102,7 @@ export function chipViecEm(viec: readonly WorkItem[], tvv = false): ChipViec[] {
   const thu = (k: string) => { const i = LOAI_CHIP.findIndex(([tab]) => tab === k); return i < 0 ? LOAI_CHIP.length : i; };
   return [...m].sort(([a], [b]) => thu(a) - thu(b)).map(([tab, ds]) => {
     const laTab = [...ds].sort(xepHan);
-    return { tab, nhan: LOAI_CHIP.find(([k]) => k === tab)?.[1] ?? nhanTabCv(tab, tvv), so: laTab.length, doc: t('{n} việc', { n: laTab.length }),
+    return { tab, nhan: LOAI_CHIP.find(([k]) => k === tab)?.[1] ?? nhanTabCv(tab, tvv), so: laTab.length, viec: laTab.length, doc: t('{n} việc', { n: laTab.length }),
       quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab };
   });
 }
@@ -180,13 +181,13 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
   );
 }
 
-/** Cột Việc: MỘT số (tổng các loại, cùng đơn vị chip cũ); quá hạn = số trong ô NỀN ĐẶC đỏ nhạt (cùng chip "quá hạn n ngày", `lopBadgeHan('qua')` — V22 không biểu tượng); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
+/** Cột Việc: MỘT số = tổng DÒNG việc các loại (`viec` — rà 25/11 PR 2: trước cộng bài của chip Nhập điểm, MB FOU 12 ghi 5 khi có 2 dòng); quá hạn = số trong ô NỀN ĐẶC đỏ nhạt (cùng chip "quá hạn n ngày", `lopBadgeHan('qua')` — V22 không biểu tượng); chia loại ở `title` / trình đọc màn. Bấm = mở việc gấp nhất (giữ thao tác chip). */
 function SoViecLop({ d, onMo }: { d: Dong; onMo: (x: WorkItem) => void }) {
   if (!d.chip.length) return <span className="text-center text-faint [@container(max-width:639px)]:hidden" aria-hidden>—</span>;
-  const so = d.chip.reduce((n, c) => n + c.so, 0);
+  const so = d.chip.reduce((n, c) => n + c.viec, 0);
   const qua = d.chip.some((c) => c.quaHan);
   const dau = d.chip.map((c) => c.dau).sort(xepHan)[0];
-  const chu = d.chip.map((c) => `${c.nhan} · ${c.so}`).join(', ');
+  const chu = d.chip.map((c) => `${c.nhan} · ${c.doc}`).join(', ');
   return (
     <span className="flex justify-center [@container(max-width:639px)]:order-2 [@container(max-width:639px)]:justify-end">
       <button type="button" onClick={() => onMo(dau)} title={chu} aria-label={`${qua ? `${t('Quá hạn')}: ` : ''}${chu} · ${d.code}`}
