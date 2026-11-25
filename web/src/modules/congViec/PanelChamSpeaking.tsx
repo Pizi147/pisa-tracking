@@ -59,8 +59,8 @@ export function PanelChamSpeaking({ onDong, onDaLam, lop: lopUrl = null, onLop =
     dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [tuan] : []), t('{n} bài', { n: soCho(hien.rows) })] : [],
     han: hien ? <ChipHan loai="nhap-diem" han={hanSom(hien.rows)} /> : null,
   };
-  const chinh = ke ? <button type="button" className={hetLop ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onHet()!.onClick}>{t('Lớp tiếp: {lop} ›', { lop: ke.classCode })}</button>
-    : onTiep ? <button type="button" className={hetLop || !hien ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> : null;
+  const tiep = onHet();
+  const chinh = tiep ? <button type="button" className={hetLop || !hien ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={tiep.onClick}>{tiep.nhan}</button> : null;
   const phu = soLuu > 0 ? <span role="status" className={`text-[13px] font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {n} bài', { n: soLuu })}</span> : undefined;
   return (
     <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} loai={dau.loai} onDong={onDong}

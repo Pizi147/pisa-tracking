@@ -16,8 +16,12 @@ const soEm = (l: Lop) => new Set(l.rows.filter((r) => r.cho).map((r) => r.studen
  * Dữ liệu `/my-work/cham-speaking` dùng chung với panel (`chiNghe`): lưu ở panel xong, dòng lớp đổi theo (lớp hết bài rời danh sách).
  * Đầu mục / hạn vẽ bằng `veDai` / `han` do `DanhSachViec` đưa vào (cùng dáng mọi mục).
  */
-export function ChamSpeakingMuc({ nguoi, moSan, lopChon, onMo, veDai, han, onTiep }: {
+export function ChamSpeakingMuc({ nguoi, gv, stt, moSan, lopChon, onMo, veDai, han, onTiep, con }: {
   nguoi: number | null;
+  /** QL xem nhiều GV S: tên GV ghi ở đầu mục; `stt` = thứ tự (khoá id). */
+  gv: string | null; stt: number;
+  /** Rỗng: "Còn: {tab} · n việc". */
+  con: string | null;
   /** Panel Chấm Speaking đang mở (có `lopChon` hoặc lớp đầu mặc định của panel). */
   moSan: boolean; lopChon: number | null;
   onMo: (classId: number) => void;
@@ -28,6 +32,8 @@ export function ChamSpeakingMuc({ nguoi, moSan, lopChon, onMo, veDai, han, onTie
 }) {
   const { data, error, reload } = useApi<DuLieu>(duongChamSpeaking(nguoi, false), [nguoi], { chiNghe: true });
   const [moKhac, setMoKhac] = useState(false);
+  const id = `muc-cham-cheo-${stt}`;
+  const ten = gv ? `${t('Chấm Speaking')} · ${gv}` : t('Chấm Speaking');
   const [gapChinh, setGapChinh] = useState(false);
   const khac = useApi<DuLieu>(moKhac ? duongChamSpeaking(nguoi, true) : null, [nguoi, moKhac], { chiNghe: true });
   const [q, setQ] = useState('');
@@ -71,25 +77,26 @@ export function ChamSpeakingMuc({ nguoi, moSan, lopChon, onMo, veDai, han, onTie
         <input className="field w-full pl-9 max-sm:min-h-[44px] max-sm:text-base" type="search" autoComplete="off" spellCheck={false} value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={t('Tìm học viên (tên, email)')} aria-label={t('Tìm học viên (tên, email)')} />
       </div>
-      <section data-muc="cham-cheo" className="card cvA-sub overflow-clip p-0" aria-label={t('Chấm Speaking')}>
-        {veDai({ nhan: t('Chấm Speaking'), chip: `${d.bai} ${t('bài')}`, phu: d.qua > 0 ? <span className="font-bold tabular-nums text-late">{d.qua} {t('quá hạn')}</span> : null, mo: !gapChinh, onMo: () => setGapChinh((x) => !x), dk: 'muc-cham-cheo' })}
+      <section data-muc="cham-cheo" className="card cvA-sub overflow-clip p-0" aria-label={ten}>
+        {veDai({ nhan: ten, chip: `${d.bai} ${t('bài')}`, phu: d.qua > 0 ? <span className="font-bold tabular-nums text-late">{d.qua} {t('quá hạn')}</span> : null, mo: !gapChinh, onMo: () => setGapChinh((x) => !x), dk: `${id}` })}
         {!gapChinh && (
-          error ? <div id="muc-cham-cheo" className="cvA-sub"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
-            : !data ? <div id="muc-cham-cheo" className="px-4 py-3"><Skeleton rows={4} /></div>
+          error ? <div id={id} className="cvA-sub"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
+            : !data ? <div id={id} className="px-4 py-3"><Skeleton rows={4} /></div>
               : hetBai ? (
-                <div id="muc-cham-cheo" className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                <div id={id} className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                   <p className="m-0 text-[16px] font-semibold text-[color:var(--text)]">{t('Bạn hết bài Speaking chờ chấm')}</p>
+                  {con && <p className="m-0 text-sm text-dim">{t('Còn: {x}', { x: con })}</p>}
                   {onTiep && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>}
                 </div>
-              ) : !loc.length ? <p id="muc-cham-cheo" className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p>
-                : <div id="muc-cham-cheo" className="cvA-sub"><ul className="cvA-sub">{loc.map((l) => dong(l, false))}</ul></div>
+              ) : !loc.length ? <p id={id} className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p>
+                : <div id={id} className="cvA-sub"><ul className="cvA-sub">{loc.map((l) => dong(l, false))}</ul></div>
         )}
       </section>
       <section data-muc="cham-cheo-khac" className="card cvA-sub overflow-clip p-0" aria-label={t('Chi nhánh khác')}>
         {veDai({ nhan: t('Chi nhánh khác'), chip: khac.data ? `${dk.bai} ${t('bài')}` : undefined, phu: khac.data && dk.qua > 0 ? <span className="font-bold tabular-nums text-late">{dk.qua} {t('quá hạn')}</span> : null,
-          mo: moKhac, onMo: () => setMoKhac((x) => !x), dk: 'muc-cham-cheo-khac' })}
+          mo: moKhac, onMo: () => setMoKhac((x) => !x), dk: `${id}-khac` })}
         {moKhac && (
-          <div id="muc-cham-cheo-khac" className="cvA-sub">
+          <div id={`${id}-khac`} className="cvA-sub">
             {khac.error ? <ErrorState message={khac.error.message} hint={khac.error.hint} status={khac.error.status} onRetry={khac.reload} />
               : !khac.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
                 : !khac.data.rows.some((r) => r.cho) ? <Empty title={t('Không có bài Speaking chờ chấm')} />

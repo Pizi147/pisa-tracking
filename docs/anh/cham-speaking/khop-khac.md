@@ -2,7 +2,7 @@
 
 Ảnh cặp CẢ MÀN (trái mockup | phải web, vai GVBM Phạm Thu Trang — dữ liệu demo khác dữ liệu bịa của mockup nên tên lớp / số bài khác, bố cục là thứ so):
 `cap-A1-1440-toi` · `cap-A2-1440-toi-panel` · `cap-A9-1440-toi-tim-hoc-vien` · `cap-A10-1280-toi-panel` · `cap-A6-375-sang` · `cap-A7-375-sang-panel` (tạo bằng `scripts/anh-cap.mjs`).
-Chưa chụp cặp: A3 (hết bài lớp), A4 (một lớp), A5 / A8 (rỗng) — cần dữ liệu riêng; trạng thái đó đã kiểm tay (xem "Chưa kiểm").
+Thêm `cap-A4-1440-toi-mot-lop` (GV một lớp + Chi nhánh khác mở, vai Vũ Gia Hân). A3 / A5 / A8: xem mục 3.
 
 ## 1. Truy vết khung → thành phần → ảnh
 | Khung mockup | Thành phần web | Ảnh |
@@ -39,9 +39,9 @@ Badge tab vẫn đếm bài; chấm chéo không vào số đầu trang (T18). K
 - Lưới trong panel là `LuoiFT` có sẵn (cột Kết quả "Chờ S" cả ở 375, ô nhập mở hộp tại ô) — mockup vẽ ô nhập sẵn tại chỗ; giữ thao tác cũ.
 - Nhiều tuần trong một lớp: lưới giữ thứ tự cũ (tuần mới trước, rồi tên); mockup xếp theo tên.
 - Rỗng: chưa có dòng "Còn: Chấm điểm · 1 việc" (danh sách không biết việc còn lại ở tab khác); tab có thể biến mất khi hết bài (luật tab cũ) — "Chi nhánh khác" khi đó chỉ vào được lúc còn bài.
-- QL "Tất cả" (nhiều GV S, nhiều việc Chấm Speaking) giữ dòng gộp cũ; một người (Của tôi / Của GV) dùng khuôn mới.
 - Nút Lọc thêm / + Task, tab "Thêm ▾" khi panel mở: hành vi chung có sẵn, không đổi.
 - Thứ tự dòng thay `soSanhLopCham` (lớp thường lên đầu) bằng hạn sớm nhất (điểm 1 trong ghi chú mockup); `soSanhLopCham` vẫn dùng ở Chấm Test.
 
-## 4. Chưa kiểm
-Soi cân cột / ✕ ⋯ ≤ 1 px bằng số đo; ảnh A3 / A4 / A5 / A8; thử lưu một ô S thật và "Lớp tiếp ›" cuối danh sách (đã thấy nút, chưa bấm lưu).
+## 4. Đo
+Playwright (1440 / 1280 / 375): ⓘ và ✕ đầu panel cùng tâm dọc (lệch 0 px), cùng cỡ 36 × 36 (375: 44 × 44); các dòng lớp thẳng cột trái / em / thông tin (0 px), cột hạn lệch ≤ 0,2 px. Mockup có ⋯ ở đầu panel; web không vẽ ⋯ vì panel không có thao tác phụ để đặt vào.
+Chưa kiểm: lưu một ô S thật + "Lớp tiếp ›" cuối danh sách. `impeccable audit` / `web-design-guidelines` chưa chạy bằng lệnh — chỉ soát tay (nhãn ô tìm, vùng chạm 44 px ở 375, trạng thái không chỉ bằng màu).

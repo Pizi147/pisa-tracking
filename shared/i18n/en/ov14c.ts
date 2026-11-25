@@ -5,6 +5,7 @@ export const EN_OV14C = {
   'Chấm Speaking': 'Speaking marking',
   'Chấm Speaking · {soBai} bài': 'Speaking marking · {soBai} tests',
   'Không có bài Speaking chờ chấm': 'No Speaking tests to mark',
+  'Còn: {x}': 'Left: {x}',
   'Bạn hết bài Speaking chờ chấm': 'You have no Speaking tests left to mark',
   'Tìm học viên (tên, email)': 'Find student (name, email)',
   'Lọc lớp': 'Filter class',
