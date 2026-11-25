@@ -26,7 +26,7 @@ import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../n
 import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
-import { phanCongDangHieuLuc } from './scoreDebt.ts';
+import { nguoiGiuO, phanCongDangHieuLuc } from './scoreDebt.ts';
 import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { SQL_GV_CU_GHI_PA, ctxSuaCaseNhieu, hanGvCuTuNgayChuyen, laGvcnLopDangHoc } from '../cases/cases.ts';
@@ -1037,8 +1037,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa && co('score')) {
     const classIds = [...new Set(attempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
-    /* Người phụ trách môn — PR-Dọn (Q13): CÙNG luật với Nợ điểm và Lịch Test (`phanCongDangHieuLuc`). */
-    const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
+    /* Người phụ trách môn — PR-Dọn (Q13) → N71 · Q2: CÙNG luật với Nợ điểm và Lịch Test — người lúc thi (`nguoiGiuO`). */
+    const giu = nguoiGiuO(classIds, today);
     const khacDongs: BaiChuaCham[] = [];
     /*
      * Rà 11/11 #2 (G5-02 / G5-03; thay P12 Q12 25/10 bằng luật chủ SP 09/11): S chấm chéo quá hạn là "quá hạn" ở mọi vai (cả Admin), nhóm "Speaking chấm
@@ -1053,7 +1053,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (vaoChamS(a, c)) continue;
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const cheo = laChamCheo(a.kind, c.skill);
-        const ownerId = !a.classId || cheo ? null : (ownerOf.get(`${a.classId}|${c.skill}`) ?? null);
+        const ownerId = !a.classId || cheo ? null : (giu(a.classId, c.skill, c.weekStart)?.userId ?? null);
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,

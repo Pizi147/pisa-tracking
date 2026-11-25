@@ -1,12 +1,12 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_CON_NO_SQL, HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, lopDayDu, qlDiem, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, giuOCu, isCoreTeacherOf, lopDayDu, qlDiem, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -780,13 +780,16 @@ export function saveRegularScore(
     const coCu = (existing?.raw_score ?? null) !== null;
     if (coCu && (score ?? null) === null) catDiemO(conn, { attemptId, row: existing, actor: p.userId, lyDo: patch.lyDo ? String(patch.lyDo).trim() : null });
     else if (!coCu && (score ?? null) !== null) dongBanCat(conn, attemptId, skill, 'Đã nhập điểm mới');
+    /* MT-P09 (như Mock): NGƯỜI NHẬP chỉ có khi ô có điểm — gửi tổng câu / xoá điểm không thành "đã nhập" (ai làm gì vẫn ở nhật ký `score.edit`). */
+    const nguoiNhap = (score ?? null) !== null ? p.userId : null;
+    const nhapLuc = nguoiNhap ? nowIso() : null;
     if (existing) {
       conn
         .prepare(
           `UPDATE assessment_scores SET raw_score=?, raw_total=?, entered_by=?, entered_at=?, note=?, nhap_dau_ngay=?
             WHERE id=?`,
         )
-        .run(score ?? null, total ?? null, p.userId, nowIso(),
+        .run(score ?? null, total ?? null, nguoiNhap, nhapLuc,
              patch.note !== undefined ? patch.note : existing.note ?? null, nhapDau, existing.id);
     } else {
       conn
@@ -794,7 +797,7 @@ export function saveRegularScore(
           `INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total, entered_by, entered_at, note, nhap_dau_ngay)
            VALUES (?,?,?,?,?,?,?,?)`,
         )
-        .run(attemptId, skill, score ?? null, total ?? null, p.userId, nowIso(), patch.note ?? null, nhapDau);
+        .run(attemptId, skill, score ?? null, total ?? null, nguoiNhap, nhapLuc, patch.note ?? null, nhapDau);
     }
     const after = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill);
@@ -1187,7 +1190,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  if (!(xemQuaEm && chiLuot)) require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
+  /* N71 · Q2: GV cũ còn bài thi chưa chấm ở lớp (`giuOCu`) mở được bảng để nhập. */
+  if (!(xemQuaEm && chiLuot) && !giuOCu(p, classId)) require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
 
   const progLop = programmeOfClass(classId);
   if (!progLop || progLop.scoringMode !== 'ratio') {
@@ -1210,7 +1214,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive')` : ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
+        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive' OR ${HV_CON_NO_SQL('s', 'a.o_cho_tu')})` :` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
         ORDER BY a.kind DESC, s.full_name`,
     )
     .all(...params) as any[];

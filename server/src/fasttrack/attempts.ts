@@ -3,12 +3,12 @@ import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, dotGvCham, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangHuy, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { oCuaToi, phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  CHU_CHAN_NHAP_DIEM, bangLop, can, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -39,7 +39,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -593,7 +593,8 @@ export function skillCells(
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
        */
-      mine: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && mine.includes(skill),
+      /* N71 · Q2: ô đã thi là việc của người được phân công LÚC THI (`oCuaToi`) — GV cũ giữ, GV mới không nhận bài cũ. */
+      mine: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && oCuaToi(p, attempt.class_id, skill, view.weekStart, today, mine.includes(skill)),
       periodId: view.periodId,
       periodCode: view.periodCode,
       weekStart: view.weekStart,
@@ -787,7 +788,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
-  const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const scope = f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
   /* LOP-THUONG-QUYEN: đường chấm còn đọc lượt MT0 của lớp thường mà GV Speaking chấm S chéo — chỉ lượt `mt0`, không Progress / Final. */
   const lopMt0 = f.phamViCham && !scope.all ? lopMt0ChoGvSpeaking(p).filter((id) => !scope.classIds.includes(id)) : [];
   if (scope.none && !lopMt0.length) return { rows: [], scopeEmpty: true };
@@ -869,6 +870,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
+    /* N71: em ngừng học chỉ còn việc ở ô thi trước ngày dừng (cùng luật nợ điểm `scoreDebt.ts`). */
+    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan);
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
     /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
     const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
@@ -878,19 +881,20 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma), a.created_at, bundle.skillRows.get(a.id));
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
-      const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       /*
        * LỚP NORMAL CŨNG TÁCH LỊCH THEO MÔN (mục 10.1): bốn môn có thể trải hai ba tuần.
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
        * cả bài. Hạn của lớp thường là hết thứ Tư tuần sau tuần thi môn đó (T19, như Fast Track).
        */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
+      /* N71 · Q2: môn đã thi là việc của người được phân công LÚC THI (`oCuaToi`). */
+      const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills).filter((k) => oCuaToi(p, a.class_id, k, views.get(k)?.weekStart, today, true)) : [];
       const pendingOf = (k: string) => {
         const v = views.get(k);
         if (!v) return null;
         const row = scores.find((x) => x.skill === k);
         const scored = row?.raw_score !== null && row?.raw_score !== undefined;
-        return !scored && awaitingScore(v.progress) ? v : null;
+        return !scored && awaitingScore(v.progress) && conNo(v.weekStart) ? v : null;
       };
       const c = bundle.cases.get(a.id);
       /* Cùng hình dạng PendingCell mà luật đếm dùng chung cần — dựng thẳng, không qua bộ chuyển. */
@@ -899,7 +903,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         const row = scores.find((x) => x.skill === k);
         const scoredFlag = row?.raw_score !== null && row?.raw_score !== undefined;
         return {
-          skill: k, required: !!v, scored: scoredFlag,
+          skill: k, required: !!v && conNo(v.weekStart), scored: scoredFlag,
           progress: v?.progress ?? 'upcoming', mine: mineSkills.includes(k),
         };
       });
@@ -974,7 +978,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* TD-QUET: `chiDem` — dòng chỉ đọc band / noShow / mine / lịch / hạn; cờ nhắc nhận xét (`nenCoNhanXet`, `thieuNhanXet`) không vào dòng trả về. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const active = cells.filter((c) => c.required);
-    const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
+    /* N71: em ngừng học — ô thi từ ngày dừng không còn là việc (`oConNoKhiDung`); ô thi trước ngày dừng vẫn chờ chấm. */
+    const cellsNo = cells.map((c) => (!c.required || conNo(c.weekStart) ? c : { ...c, required: false, mine: false }));
+    const pending = pendingSkillsOf(pendingInputOf(cellsNo), workScope);
     return {
       id: a.id,
       /*
@@ -1019,11 +1025,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * ĐANG NỢ ĐIỂM = đã đến tuần thi CỦA CHÍNH MÔN ĐÓ mà chưa có điểm. Bao gồm cả môn
        * đã xác nhận đã thi nhưng chưa chấm. Môn thi tuần sau KHÔNG tính là nợ.
        */
-      myPendingSkills: cells
+      myPendingSkills: cellsNo
         .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => c.skill),
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
-      myPendingDetail: cells
+      myPendingDetail: cellsNo
         .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */

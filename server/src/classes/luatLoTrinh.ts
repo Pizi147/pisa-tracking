@@ -1,4 +1,4 @@
-import { capNhatConOCho } from '../fasttrack/conOCho.ts';
+import { O_CHO_TU_SQL, capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
@@ -471,9 +471,13 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
 
   /* Q12: bài chưa làm CHỈ đi theo em khi GIỮ khoá — đóng khoá thì lượt planned ở lại lớp cũ. MT0 không đi theo (PR-MT0): chưa điểm thì huỷ. */
   if (luat.khoa === 'giu' && curCycle && !sauThi) {
-    conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
+    /* N71 (rà 25/11): bài còn ô chờ điểm từ tuần thi TRƯỚC tuần chuyển (`O_CHO_TU_SQL`; `planned` ≠ chưa thi) ở lại lớp lúc thi — việc + quyền nhập của GV
+       lớp cũ tới khi chấm xong (`LOP_CON_VIEC_SQL`). Bài tuần này (đang dở, OV-13l chủ SP) và bài chưa tới tuần thi đi theo em như cũ. */
+    const diTheo = (conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.cycle_id = ? AND a.status = 'planned' AND a.kind != 'mt0'
+        AND NOT COALESCE(${O_CHO_TU_SQL} < ?, 0)`).all(curCycle.id, mondayOf(d.ngay)) as any[]).map((r) => r.id as number);
+    theoLo(diTheo, (lo, ph) => conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE id IN (${ph})`).run(d.toClassId, ...lo), THAM_SO_TOI_DA - 1);
     /* TD7b: lớp đích có thể chấm theo cách khác (bộ môn, band ↔ số câu đúng) → cờ "còn ô chờ" của các lượt vừa đổi lớp. */
-    capNhatConOCho((conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).all(curCycle.id) as any[]).map((r) => r.id));
+    capNhatConOCho(diTheo);
     /* LO-TRINH-THEO-HV (chủ SP 11/11, thay OV-13l "đổi mã theo lớp"): lộ trình theo EM — FT → FT sang lớp khác lộ trình vẫn giữ LT1 / LT2 / RF của em;
        đổi lộ trình ở Sửa thông tin (`apDoiLoTrinh`). */
     if (!tuLop.ft) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: null, ngay: d.ngay }], 'Chuyển lớp');

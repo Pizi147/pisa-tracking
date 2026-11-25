@@ -25,7 +25,7 @@ import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, 
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
 import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
-import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { nguoiGiuO, oCuaToi, phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { sExTuan, type DongSEx } from './sExpert.ts';
 
@@ -725,7 +725,8 @@ function hangLopTuan(
       }));
     const con = cacO.filter((o) => !o.xong);
     /* T18: Speaking Mock không là "bài của tôi" của ai (không "Chờ bạn chấm", không tự mở vì nó). */
-    const cuaToi = (nhap: string) => !laChamCheo(r.kind, nhap) && monCuaToi(r.class_id, nhap);
+    /* N71 · Q2: bài tuần này đã thi là việc của người được phân công lúc thi (`oCuaToi`). */
+    const cuaToi = (nhap: string) => !laChamCheo(r.kind, nhap) && oCuaToi(p, r.class_id, nhap, String(tuan.week_start), today, monCuaToi(r.class_id, nhap));
     /* OV-11e (CA3-12): ô NHẬP (W1 / W2 tách người) — gộp lại "W" khi cả hai cùng một phía (`gopW`). */
     for (const o of cacO) if (cuaToi(o.nhap)) { lop._toiKn.add(o.nhap); lop._tongToi += 1; }
     d.soHv += 1;
@@ -754,7 +755,7 @@ function hangLopTuan(
      `phan` (Quản lý / Quản trị — cột "Còn chờ"); GV không có cột này → 0 câu thêm. Đo: QL +2 câu, ~+20 dòng mỗi lần mở. */
   const xemCaLop = (classId: number) => !coPhanCong || can(p, PERMISSIONS.PLAN_WEEK, { classId });
   const lopCon = [...new Set([...byLop.values()].filter((l) => l._conKhac.length && xemCaLop(l.classId)).map((l) => l.classId))];
-  const pc = lopCon.length ? phanCongDangHieuLuc(lopCon, demoToday()) : new Map<string, { ten: string }>();
+  const giu = lopCon.length ? nguoiGiuO(lopCon, demoToday()) : null;   // N71 · Q2: người lúc thi (tuần đang xem)
   /* XEP-CHAM-TEST (thay PR-UXF-a U1): lớp thường có bài lên đầu → mã lớp số nhỏ trước (`xepLopCham`, không theo chữ). */
   return [...byLop.values()].sort(xepLopCham).map(({
     dong, _dot, _hv, _luot, _luotAid, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, _conKhac, ...l
@@ -781,7 +782,7 @@ function hangLopTuan(
       /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
       moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
       choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
-      gvMon: phanRieng ? {} : gomGvMon(_conKhac.map((o) => ({ kn: o.kn, ten: laChamCheo(o.kind, o.kn) ? CHAM_CHEO : pc.get(`${l.classId}|${o.kn}`)?.ten ?? 'chưa phân công' }))),
+      gvMon: phanRieng ? {} : gomGvMon(_conKhac.map((o) => ({ kn: o.kn, ten: laChamCheo(o.kind, o.kn) ? CHAM_CHEO : giu?.(l.classId, o.kn, String(tuan.week_start))?.ten ?? 'chưa phân công' }))),
       periodId, weekStart: String(tuan.week_start),
       dong: [...dong.values()].map(({ quaHan, ...d }) => ({
         ...d,

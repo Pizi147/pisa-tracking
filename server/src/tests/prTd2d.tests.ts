@@ -47,6 +47,12 @@ export async function runPrTd2dTests(t: YThucTestKit) {
           AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done' AND sc.student_id IS NOT NULL`).all(userId) as any[])
         .map((r) => ({ studentId: r.sid, classId: (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status IN ('active', 'paused')
           ORDER BY status = 'active' DESC, id DESC LIMIT 1`).get(r.sid) as any)?.class_id ?? null })),
+      /* N71 · Q2: phân công môn đã kết thúc còn bài thi trước ngày kết thúc chưa chấm. */
+      phanCongCu: (conn.prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.effective_from, ta.effective_to FROM teacher_assignments ta
+          WHERE ta.user_id = ? AND ta.status = 'ended' AND ta.is_core = 0 AND ta.skill IS NOT NULL AND ta.effective_to IS NOT NULL
+            AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.class_id = ta.class_id AND a.o_cho_tu IS NOT NULL AND a.status != 'cancelled'
+                          AND a.o_cho_tu >= substr(ta.effective_from, 1, 10) AND a.o_cho_tu < substr(ta.effective_to, 1, 10))`).all(userId) as any[])
+        .map((a) => ({ id: a.id, classId: a.class_id, skill: a.skill, isCore: false, effectiveFrom: a.effective_from, effectiveTo: a.effective_to })),
       grants,
       roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))], assignments,
     };

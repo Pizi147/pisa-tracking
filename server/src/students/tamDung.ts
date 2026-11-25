@@ -10,17 +10,29 @@ export const dongHocVien = (id: number): any => nho(`hv:${id}`, () => db().prepa
  * không sinh nợ, không vào badge "n bài chờ chấm", Lịch Test, bảng Phân tích GV (Chấm điểm, Xử lý vi phạm). `s` là bí danh `students`.
  */
 export const HV_DANG_HOC_SQL = (s: string) => `${s}.status = 'active' AND ${s}.archived_at IS NULL`;
+/**
+ * N71 (rà 25/11): em NGỪNG HỌC (Tạm dừng / Kết thúc học — cả hai vào Lưu trữ, `archived_at` = ngày dừng) vẫn nợ ô thi TRƯỚC ngày dừng tới khi chấm xong
+ * (việc của GV lớp lúc thi — như `LOP_CON_VIEC_SQL`). `tuan` = biểu thức tuần thi (lượt: `o_cho_tu` — sớm nhất của các ô chờ). Ô thi từ ngày dừng: không nợ.
+ * `kemTamDung`: thêm em Tạm dừng chưa lưu trữ (bảng điểm lớp — như `LUOT_HIEN_TAI_SQL`).
+ */
+export const HV_CON_NO_SQL = (s: string, tuan: string, kemTamDung = false) =>
+  `(${HV_DANG_HOC_SQL(s)}${kemTamDung ? ` OR (${s}.status = 'inactive' AND ${s}.archived_at IS NULL)` : ''} OR NULLIF(${tuan}, '') < substr(${s}.archived_at, 1, 10))`;
+/** Phần NGÀY DỪNG của `HV_CON_NO_SQL` cho MỘT ô có tuần thi `tuan` — lọc từng ô sau câu SQL (lượt còn ô chờ trước ngày dừng có thể còn ô thi sau ngày dừng).
+ *  Em chưa lưu trữ: không lọc (câu SQL của nơi gọi đã chọn em). */
+export const oConNoKhiDung = (archivedAt: string | null | undefined, tuan: string | null | undefined): boolean =>
+  !archivedAt || (!!tuan && tuan.slice(0, 10) < String(archivedAt).slice(0, 10));
 
 /**
  * Lỗi chủ SP 28/10: MỘT điều kiện SQL "LƯỢT HIỆN TẠI" cho mọi danh sách hiện tại (bảng điểm lớp, Lịch / Chấm / Kế hoạch Test, Công việc, Tổng quan…):
  *   · em đang học (`HV_DANG_HOC_SQL` — Kết thúc học, Lưu trữ ẩn hết; `kemTamDung`: bảng điểm lớp giữ em Tạm dừng CHƯA lưu trữ như cũ, PTA Plan 28/10);
+ *     N71: TRỪ lượt còn ô chờ điểm từ trước ngày em dừng (`HV_CON_NO_SQL`) — vẫn là việc tới khi chấm xong;
  *   · lượt thuộc lộ trình MỚI NHẤT của em CÙNG LOẠI (học lại = mọi thứ reset; FT `route` có giá trị và khoá lớp thường `route IS NULL` chạy song song được);
  *   · lượt còn là kế hoạch (`LUOT_CON_KE_HOACH_SQL`: MT chưa làm của lộ trình đã có kết quả thi thật không còn).
  * Lượt cũ, em ngừng học chỉ còn ở hồ sơ HV, Lưu trữ, Báo cáo — không xoá / huỷ gì; quay lại học là hiện lại.
  * `a` bí danh `assessment_attempts`, `s` bí danh `students` (cùng em).
  */
 export const LUOT_HIEN_TAI_SQL = (a: string, s: string, kemTamDung = false) =>
-  `${kemTamDung ? `(${HV_DANG_HOC_SQL(s)} OR (${s}.status = 'inactive' AND ${s}.archived_at IS NULL))` : HV_DANG_HOC_SQL(s)} AND ${LUOT_LO_TRINH_CUOI_SQL(a)} AND ${LUOT_CON_KE_HOACH_SQL(a)}`;
+  `${HV_CON_NO_SQL(s, `${a}.o_cho_tu`, kemTamDung)} AND ${LUOT_LO_TRINH_CUOI_SQL(a)} AND ${LUOT_CON_KE_HOACH_SQL(a)}`;
 /** Phần "lộ trình mới nhất" của `LUOT_HIEN_TAI_SQL` — cho câu đã lọc em đang học bằng ghi danh (LEFT JOIN lượt, không có `students`).
  *  Lượt bị thay khi em có lộ trình `seq` lớn hơn CÙNG LOẠI (FT / lớp thường — em học FT vẫn có thể có khoá lớp thường mở song song, `regular.ts`).
  *  LOP-CU (chủ SP 11/11): lượt khoá LỚP THƯỜNG cũ còn ô chờ điểm từ trước ngày khoá mới bắt đầu (`o_cho_tu` ≤ `started_at`) KHÔNG bị thay — Final /
