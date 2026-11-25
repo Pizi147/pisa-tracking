@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { TinLop } from './TinLop.tsx';
-import { type DuLieu, type Lop, duongChamSpeaking, gom, hanSom, locQ, soCho, soQua, tuanCuaLop } from './chamSpeakingChung.ts';
+import { type DuLieu, type Lop, duongChamSpeaking, dsTuanCuaLop, gom, hanSom, locQ, soCho, soQua, tuanGon } from './chamSpeakingChung.ts';
 
 type Dai = { nhan: string; chip?: string; phu?: ReactNode; mo: boolean; onMo: () => void; dk?: string };
 
@@ -48,7 +48,8 @@ export function ChamSpeakingMuc({ nguoi, gv, stt, moSan, lopChon, onMo, veDai, h
     const bai = soCho(l.rows), qua = soQua(l.rows);
     /* Tìm theo tên: cột "ai" ghi tên em khớp (A9); thông tin "n bài · tuần". Bình thường: "tuần · n bài · m quá hạn". */
     const ten = [...new Set(l.rows.filter((r) => r.cho).map((r) => r.studentName))].join(', ');
-    const tuan = tuanCuaLop(l.rows);
+    const dsTuan = dsTuanCuaLop(l.rows);
+    const tuan = tuanGon(dsTuan);
     const phan = (tim ? [t('{n} bài', { n: bai }), tuan] : [tuan, t('{n} bài', { n: bai }), qua ? `${qua} ${t('quá hạn')}` : '']).filter(Boolean);
     const tin = phan.join(' · ');
     const dangChon = chonId === l.classId;
@@ -61,7 +62,7 @@ export function ChamSpeakingMuc({ nguoi, gv, stt, moSan, lopChon, onMo, veDai, h
             <span className="cvA-ai">
               <button type="button" className="cvA-ten" aria-current={dangChon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); mo(); }}>{tim ? ten : t('{n} em', { n: soEm(l) })}</button>
             </span>
-            <span className="cvA-ct" title={tin}>
+            <span className="cvA-ct" title={dsTuan.length > 1 ? `${tin}\n${dsTuan.join(', ')}` : tin}>
               {cn && l.branchName && <span className="mr-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[1px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{l.branchName}</span>}
               <TinLop phan={phan} />
             </span>

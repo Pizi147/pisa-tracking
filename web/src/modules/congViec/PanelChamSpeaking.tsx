@@ -59,7 +59,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lop: lopUrl = null, onLop =
   const dau = {
     /* GD-1b (lời 24): không ghi "Việc chung" — cùng dạng đầu panel việc khác ("Việc · {tab}"). */
     loai: t('Việc · Chấm Speaking'),
-    /* Khuôn A: đầu panel ghi ĐỦ mã tuần như dòng danh sách ("W4 AUG, W1 SEP · 8 bài") + hạn sớm nhất. */
+    /* Khuôn A: đầu panel ghi mã tuần như dòng danh sách ("W4 AUG+ · 8 bài" — chủ SP 26/11: nhiều tuần = tuần xa nhất + "+") + hạn sớm nhất. */
     /* Hết bài của lớp: "đã chấm n bài" (mockup A3), không hạn. */
     dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [<TinLop key="w" phan={[tuan]} />] : []), <TinLop key="n" phan={[hetLop ? t('đã chấm {n} bài', { n: hien.rows.length }) : t('{n} bài', { n: soCho(hien.rows) })]} />] : [],
     han: hien && !hetLop ? <ChipHan loai="nhap-diem" han={hanSom(hien.rows)} /> : null,
