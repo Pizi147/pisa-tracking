@@ -55,7 +55,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   const [thang, setThang] = useState(() => homNay.slice(0, 7));
   const [dem, setDem] = useState<DemBc | null>(null);
   useEffect(() => {
-    if (loai !== 'bc' || !dsId.length) { setDem(null); return undefined; }
+    if (loai !== 'bc' || !dsId.length) { setDem(null); setLoi(null); return undefined; }   // PTA rà #2162: lỗi đếm cũ không treo khi đổi sang phạm vi 0 HV
     let con = true;
     setDem(null); setLoi(null);   // RA-LOI-0611: đổi tháng / phạm vi đếm lại được thì bỏ câu lỗi lần trước
     api.post<DemBc>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang, xemTruoc: true }).then((r) => { if (con) setDem(r); }, (e) => { if (con) { setBuocLoi('dem'); setLoi(e.message); } });

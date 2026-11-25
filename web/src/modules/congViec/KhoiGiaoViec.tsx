@@ -423,16 +423,19 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
     const moi = new Map<string, KhoiGv>();
     let loi: any = null;
     kq.forEach((r, i) => { if (r.status === 'fulfilled') moi.set(khoaPhan(chon[i]), r.value); else loi ??= r.reason; });
-    if (moi.size) { dat(dsMoi.current.map((g) => moi.get(khoaPhan(g)) ?? g)); lamMoiGiaoViec(ds.length === 1 ? ds[0].studentId : null); }
+    /* PTA rà #2162: ghi ngay vào `dsMoi` — hai lượt về trước khi React vẽ lại không đè nhau. */
+    if (moi.size) { dsMoi.current = dsMoi.current.map((g) => moi.get(khoaPhan(g)) ?? g); dat(dsMoi.current); lamMoiGiaoViec(ds.length === 1 ? ds[0].studentId : null); }
     if (loi) { toast.push('error', loi?.message ?? t('Không lưu được')); reload(); }
     return chon.filter((g) => moi.has(khoaPhan(g))).map(khoaPhan);
   };
   const bo = async (n: Nguoi) => {
     const daBo = await chayTung(dsMoi.current.filter((g) => g.theoDoi.some((x) => x.id === n.id)), (g) => thaoTac.boTheoDoi(g, n.id));
     if (!daBo.length) return;
-    toast.hoanTac(n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' }), () => {
-      void chayTung(dsMoi.current.filter((g) => daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo), (g) => thaoTac.themTheoDoi(g, [n.id]));
-    }, { key: `bo-theo-doi:${n.id}` });
+    const chu = n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' });
+    const themLai = () => dsMoi.current.filter((g) => daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo);
+    /* PTA rà #2162: không còn phần nào thêm lại được (tự bỏ khi không có quyền sửa theo dõi / phần đã đóng) → không hiện Hoàn tác. */
+    if (!themLai().length) { toast.push('ok', chu); return; }
+    toast.hoanTac(chu, () => { void chayTung(themLai(), (g) => thaoTac.themTheoDoi(g, [n.id])); }, { key: `bo-theo-doi:${n.id}` });
   };
   const chip = (n: Nguoi & { nguon: string; vai: string | null }) => {
     const xBo = suaDuoc || n.id === toi;

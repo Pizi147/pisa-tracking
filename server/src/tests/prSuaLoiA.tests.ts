@@ -19,6 +19,7 @@ export async function runPrSuaLoiATests(t: any) {
     assert(src.includes("setBuocLoi('dem')") && src.includes("setBuocLoi('bc')") && src.includes("setBuocLoi('ds')"), 'bước lỗi chưa ghi ở cả 3 nhánh');
     assert(src.includes("const thuLai = () => { if (buocLoi === 'dem') setDemLai((x) => x + 1); else void (buocLoi === 'bc' ? taiBc() : tai()); };")
       && src.includes('}, [loai, thang, pham, demLai]);') && src.includes('onClick={thuLai}'), 'Thử lại đếm trước phải chạy lại đúng effect đếm (giữ tháng / phạm vi)');
+    assert(src.includes("if (loai !== 'bc' || !dsId.length) { setDem(null); setLoi(null); return undefined; }"), 'lỗi đếm treo khi đổi sang phạm vi 0 HV (PTA rà #2162)');
   });
 
   check('SLA-2 · tìm nhanh: bỏ phản hồi (cả lỗi) của từ khoá cũ; danh sách chỉ của câu đang gõ', () => {
@@ -49,5 +50,8 @@ export async function runPrSuaLoiATests(t: any) {
     assert(src.includes('const kq = await Promise.allSettled(chon.map(f));') && src.includes("if (loi) { toast.push('error', loi?.message ?? t('Không lưu được')); reload(); }"),
       'mỗi phần phải lưu riêng; lỗi một phần thì tải lại trạng thái');
     assert(src.includes('daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo') && src.includes('dsMoi.current = ds;'), 'Hoàn tác phải lọc đúng tập đã bỏ, đọc danh sách mới nhất');
+    /* PTA rà #2162: không phần nào thêm lại được → không hiện Hoàn tác; hai lượt về sát nhau không đè nhau. */
+    assert(src.includes("if (!themLai().length) { toast.push('ok', chu); return; }"), 'Hoàn tác hiện cả khi không còn phần nào thêm lại được');
+    assert(src.includes('dsMoi.current = dsMoi.current.map((g) => moi.get(khoaPhan(g)) ?? g); dat(dsMoi.current);'), 'lượt lưu sau đè lượt trước khi chưa vẽ lại');
   });
 }
