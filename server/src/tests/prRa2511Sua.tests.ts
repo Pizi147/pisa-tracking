@@ -8,7 +8,8 @@
  *  R5d Thẻ chờ duyệt của em đã đổi chi nhánh: QL chi nhánh HIỆN TẠI của em duyệt + thấy trong hộp chi nhánh mình (trước: QL cả hai bên 403)
  *  R6  Chữ ≤ 500 ký tự (#2167) xuống dòng, không tràn / cắt "…": body ngắt từ dài; ghi chú lịch thi đủ chữ + ô sửa nhiều dòng; ghi chú phối hợp TVV mở đủ
  *  R7b Rút đề xuất Ý thức: hộp xác nhận nêu đúng đối tượng mất (lần xử lý ngày … + n tệp), nút Rút nguy hiểm / Huỷ — thẻ Chờ duyệt và panel xử lý
- *  R2  Chuyển lớp FT → FT, lượt lẫn ô cũ (trước tuần chuyển) + ô tuần sau: ở lại lớp cũ tới khi ô cũ chấm xong, rồi về lớp mới (ô tuần sau là việc lớp mới)
+ *  R2  Chuyển lớp FT → FT, lượt lẫn ô cũ (trước tuần chuyển) + ô tuần sau: ở lại lớp cũ tới khi ô cũ chấm xong, rồi về lớp mới (ô tuần sau là việc lớp mới, có nhật ký)
+ *  R2b/c (PTA P1) lượt chỉ có ô cũ chấm xong / ô cũ vắng → vẫn ở lớp lúc thi
  */
 export async function runPrRa2511SuaTests(t: any) {
   const { check, assert, conn, P, TODAY } = t;
@@ -42,8 +43,8 @@ export async function runPrRa2511SuaTests(t: any) {
     assert(h && h.khoa === `lop:${lopThi.id}` && h.ma && !h.ma.startsWith('#') && h.hv === 0, `hàng lớp đã kết thúc: ${JSON.stringify(h)}`);
   }));
 
-  check('R2 · FT → FT: lượt có ô cũ + ô tuần sau — ở lại lớp cũ, chấm xong ô cũ thì về lớp mới; ô tuần sau là việc GV lớp mới, vẫn ở Kế hoạch Test lớp mới', () => thu(() => {
-    const studentsSvc: any = await_.students;
+  /* R2 (PTA rà #2190 P1): `cach` = 'sau' — L dời sang tuần sau ngày chuyển, ô cũ chấm xong · 'chiCu' — chỉ ô cũ, chấm ô cuối · 'vang' — chỉ ô cũ, ô cũ vắng. */
+  const r2 = (cach: 'sau' | 'chiCu' | 'vang') => {
     const { capNhatConOCho } = await_.conOCho;
     const a = one(`SELECT a.id, a.student_id AS sid, a.class_id, a.cycle_id, c.branch_id FROM assessment_attempts a
         JOIN classes c ON c.id = a.class_id AND c.status = 'active' AND c.is_fast_track = 1
@@ -58,26 +59,41 @@ export async function runPrRa2511SuaTests(t: any) {
     const dich = one(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id != ? ORDER BY branch_id != ?, id LIMIT 1`, a.class_id, a.branch_id);
     const tuanSau = one(`SELECT id, week_start FROM report_periods WHERE week_start > ? ORDER BY week_start LIMIT 1`, TODAY);
     assert(dich && tuanSau, 'seed: cần lớp FT khác + tuần sau hôm nay');
-    /* L dời sang tuần sau hôm nay (ô tuần sau); các ô khác giữ tuần cũ (ô cũ). */
-    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'listening'`).run(tuanSau.id, a.id);
-    capNhatConOCho([a.id]);
-    studentsSvc.transferStudent(P.admin, a.sid, dich.id, TODAY, 'Đổi lịch học', { note: 'Bàn giao' });
+    if (cach === 'sau') { conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'listening'`).run(tuanSau.id, a.id); capNhatConOCho([a.id]); }
+    await_.students.transferStudent(P.admin, a.sid, dich.id, TODAY, 'Đổi lịch học', { note: 'Bàn giao' });
     xoaNho();
     const lopCua = () => one('SELECT class_id FROM assessment_attempts WHERE id = ?', a.id).class_id as number;
     assert(lopCua() === a.class_id, 'ô cũ còn chờ: lượt phải ở lại lớp lúc thi');
-    /* Chấm hết ô cũ (mọi ô trừ L). */
-    for (const sk of ['reading', 'writing1', 'writing2', 'speaking']) {
+    const cu = cach === 'sau' ? ['reading', 'writing1', 'writing2', 'speaking'] : ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
+    if (cach === 'vang') conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ?`).run(a.id);
+    else for (const sk of cu) {
       conn.prepare('DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = ?').run(a.id, sk);
       conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, ?, 6, ?)`).run(a.id, sk, `${TODAY}T03:00:00.000Z`);
     }
     capNhatConOCho([a.id]);
     xoaNho();
-    assert(lopCua() === dich.id, `ô cũ chấm xong: lượt phải về lớp mới (${lopCua()} ≠ ${dich.id})`);
+    return { a, dich, tuanSau, lop: lopCua(), nk: one(`SELECT before_json, after_json FROM audit_logs WHERE action = 'attempt.doi_lop_tu_dong' AND entity_id = ? ORDER BY id DESC LIMIT 1`, a.id) };
+  };
+
+  check('R2 · FT → FT: lượt có ô cũ + ô tuần sau — ở lại lớp cũ, chấm xong ô cũ thì về lớp mới (có nhật ký); ô tuần sau là việc GV lớp mới, vẫn ở Kế hoạch Test lớp mới', () => thu(() => {
+    const { a, dich, tuanSau, lop, nk } = r2('sau');
+    assert(lop === dich.id, `ô cũ chấm xong: lượt phải về lớp mới (${lop} ≠ ${dich.id})`);
+    assert(nk && JSON.parse(nk.before_json).classId === a.class_id && JSON.parse(nk.after_json).classId === dich.id, `nhật ký đổi lớp: ${JSON.stringify(nk)}`);
     const gvMoi = one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = 'listening' AND status = 'active' ORDER BY id DESC LIMIT 1`, dich.id)?.user_id ?? null;
     const giu = await_.scoreDebt.nguoiGiuO([dich.id], TODAY)(dich.id, 'listening', tuanSau.week_start);
     assert((giu?.userId ?? null) === gvMoi, `ô tuần sau: người giữ phải là GV L lớp mới (${giu?.userId} ≠ ${gvMoi})`);
     const luoi = await_.keHoach.luoiFT(P.admin, dich.id) as any;
     assert(JSON.stringify(luoi).includes(`"attemptId":${a.id}`) || JSON.stringify(luoi).includes(`"id":${a.id}`), 'Kế hoạch Test lớp mới phải có lượt');
+  }));
+
+  check('R2b · (PTA P1) lượt CHỈ có ô thi trước ngày chuyển: chấm ô cuối → vẫn ở lớp cũ, không nhật ký đổi lớp', () => thu(() => {
+    const { a, lop, nk } = r2('chiCu');
+    assert(lop === a.class_id && !nk, `bài thi xong ở lớp cũ bị kéo sang lớp ${lop}`);
+  }));
+
+  check('R2c · (PTA P1) ô cũ bị vắng / huỷ hết (cờ NULL) → vẫn ở lớp cũ', () => thu(() => {
+    const { a, lop, nk } = r2('vang');
+    assert(lop === a.class_id && !nk, `ô cũ vắng mà lượt sang lớp ${lop}`);
   }));
 
   check('R3 · Nhập KQ thi thật → sổ nghĩa vụ ghi ngay trong cùng giao dịch (MT chưa làm thành "khong-con-viec", N46); Hoàn tác ghi lại', () => thu(() => {

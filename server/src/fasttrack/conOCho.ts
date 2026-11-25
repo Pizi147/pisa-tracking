@@ -1,4 +1,5 @@
-import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
+import { writeAuditLo } from '../platform/audit.ts';
 import { O_FT_XONG_SQL } from '../../../shared/domain/index.ts';
 import { ghiSoLuot, ghiSoTheoLop } from '../phanTich/soNghiaVu.ts';
 
@@ -56,29 +57,39 @@ export const O_CHO_TU_SQL = `(CASE
          WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = e.o AND ${O_FT_XONG_SQL('sc', 'a')}))
   END)`;
 
-/**
- * Rà 25/11 (việc 2, N71): chuyển lớp GIỮ khoá (`luatLoTrinh` — FT → FT, lớp thường cùng mã) để lượt còn ô chờ từ tuần thi TRƯỚC tuần chuyển ở lại lớp lúc thi.
- * Khi phần đó hết chờ (cờ mới không còn tuần trước tuần vào lớp hiện tại), lượt VỀ lớp em đang học: ô tuần sau là việc + quyền của lớp mới, không tách lượt.
- * Đổi ngay trong câu ghi cờ (cờ đổi đúng lúc ô cũ được chấm / huỷ / dời) — 0 câu thêm. Cùng khoá (cùng chương trình) nên cờ không phải tính lại.
- * ponytail: chừng nào ô cũ còn chờ, ô tuần sau vẫn theo lớp cũ (lượt chỉ có một lớp); cần đúng từng ô ngay cả lúc đó thì phải ghi lớp theo ô.
- */
-const LOP_VE = `(SELECT e.class_id FROM enrollments e WHERE e.student_id = a.student_id AND e.status = 'active' AND e.class_id IS NOT a.class_id
-    AND NOT COALESCE(${O_CHO_TU_SQL} < date(substr(e.started_at, 1, 10), '-6 days', 'weekday 1'), 0) ORDER BY e.id DESC LIMIT 1)`;
-const LUOT_O_LAI = `a.status = 'planned' AND a.kind != 'mt0'
-  AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.status = 'active')
-  AND EXISTS (SELECT 1 FROM enrollments eo WHERE eo.student_id = a.student_id AND eo.class_id = a.class_id AND eo.status = 'transferred')`;
-
 /** MỘT chỗ ghi cờ. `dieuKien` chọn lượt (alias `a`); chỉ ghi dòng thật sự đổi — không viết lại dòng đã đúng. */
 function capNhat(conn: any, dieuKien: string, args: readonly unknown[]): void {
-  conn.prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL},
-      class_id = CASE WHEN ${LUOT_O_LAI} THEN COALESCE(${LOP_VE}, a.class_id) ELSE a.class_id END
-    WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
+  conn.prepare(`UPDATE assessment_attempts AS a SET o_cho_tu = ${O_CHO_TU_SQL} WHERE ${dieuKien} AND a.o_cho_tu IS NOT ${O_CHO_TU_SQL}`).run(...args);
+}
+
+/**
+ * Rà 25/11 (việc 2, N71 · Rulebook "việc theo người dạy lúc thi"): chuyển lớp GIỮ khoá (`luatLoTrinh` — FT → FT, lớp thường cùng mã) để lượt còn ô chờ từ tuần
+ * thi TRƯỚC tuần chuyển ở lại lớp lúc thi. Lượt VỀ lớp em đang học CHỈ khi cờ mới (đã tính) còn ô chờ VÀ ô chờ sớm nhất từ tuần vào lớp hiện tại trở đi —
+ * tức còn ô thi ở lớp mới, hết ô của lớp cũ. Cờ NULL (bài xong hẳn / ô cũ vắng, huỷ hết) hay MT lịch sử → giữ lớp lúc thi (PTA rà #2190 P1).
+ * Mỗi lần đổi ghi nhật ký `attempt.doi_lop_tu_dong`. Một câu đọc mỗi lô (đổi thật: thêm câu ghi + nhật ký).
+ * ponytail: chừng nào ô cũ còn chờ, ô tuần sau vẫn theo lớp cũ (lượt chỉ có một lớp); cần đúng từng ô ngay cả lúc đó thì phải ghi lớp theo ô.
+ */
+function veLopDangHoc(conn: any, ids: readonly number[]): void {
+  const ve = conn.prepare(`SELECT a.id, a.class_id AS cu, e.class_id AS moi FROM assessment_attempts a
+      JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' AND e.class_id IS NOT a.class_id
+     WHERE a.id IN (${DS_JSON}) AND a.status = 'planned' AND a.kind != 'mt0' AND a.lich_su = 0
+       AND a.o_cho_tu IS NOT NULL AND a.o_cho_tu != '' AND a.o_cho_tu >= date(substr(e.started_at, 1, 10), '-6 days', 'weekday 1')
+       AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.status = 'active')
+       AND EXISTS (SELECT 1 FROM enrollments eo WHERE eo.student_id = a.student_id AND eo.class_id = a.class_id AND eo.status = 'transferred')
+     ORDER BY a.id, e.id DESC`).all(JSON.stringify(ids)) as { id: number; cu: number; moi: number }[];
+  const mot = [...new Map(ve.map((r) => [r.id, r])).values()];
+  if (!mot.length) return;
+  conn.prepare(`UPDATE assessment_attempts SET class_id = json_extract(j.value, '$[1]') FROM json_each(?) j WHERE assessment_attempts.id = json_extract(j.value, '$[0]')`)
+    .run(JSON.stringify(mot.map((r) => [r.id, r.moi])));
+  writeAuditLo(mot.map((r) => ({ actorUserId: null, action: 'attempt.doi_lop_tu_dong', entityType: 'assessment_attempt', entityId: r.id,
+    before: { classId: r.cu }, after: { classId: r.moi, lyDo: 'Ô thi trước tuần chuyển lớp đã xong — ô từ tuần chuyển về lớp em đang học (N71)' } })));
 }
 
 /** Tính lại cờ của các lượt này. Gọi ở CUỐI giao dịch ghi điểm / lịch của lượt (trong `tx` của nơi gọi). */
 export function capNhatConOCho(attemptIds: readonly (number | null | undefined)[]): void {
   const ids = [...new Set(attemptIds.filter((x): x is number => typeof x === 'number'))];
   theoLo(ids, (lo, ph) => capNhat(db(), `a.id IN (${ph})`, lo), THAM_SO_TOI_DA);
+  if (ids.length) veLopDangHoc(db(), ids);
   /* SỔ NGHĨA VỤ: mọi đường ghi điểm / lịch / lượt đã bắt buộc gọi hàm này ở cuối giao dịch — ghi sổ cùng chỗ (spec 2.2). */
   ghiSoLuot(ids);
 }
