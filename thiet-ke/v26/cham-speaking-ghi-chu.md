@@ -11,6 +11,8 @@ Chỉ mockup, chưa code. Dữ liệu bịa; hôm nay 14/09/2026.
 ## Vì sao A
 Một dòng = một việc = một panel, giống mọi tab Công việc (NH10). Panel gọn: mở thẳng vào lưới của lớp, không phải gập / mở ngăn. Số thao tác để chấm một lớp: B bấm dòng + tìm / cuộn tới ngăn + chấm; A bấm dòng + chấm. Không có nhiều danh sách cho cùng một thứ. Chi phí code A: panel đã có prop `lopDau` + ngăn lớp (`NganLop`) → A tách `NganLop` ra làm thân panel.
 
+Lưới dòng (≥ 600 px): lớp · n em · thông tin (ăn phần dư, căn trái ngay sau cột em) · hạn (sát mép phải); số em CHỈ ở cột em, số bài / quá hạn CHỈ ở cột thông tin — không ghi hai chỗ. Cột lớp / em dùng chung giữa nhóm chính và "Chi nhánh khác" (subgrid) nên thẳng cột. < 600 px: hai tầng như khuôn A.
+
 ## Giữ nguyên (không đổi luật)
 - Badge tab = số **bài** cần làm ngay (lời 33); có quá hạn → đỏ. Số đầu trang "n việc · m quá hạn" **không** tính chấm chéo (T18).
 - Vạch trái xám ở đầu nhóm (bài chấm chéo, không phải việc riêng của bạn) · đầu nhóm "22 bài · 15 quá hạn" (đếm bài).
@@ -29,14 +31,15 @@ Một dòng = một việc = một panel, giống mọi tab Công việc (NH10).
 | "Đã có điểm · n bài" gập trong ngăn | Giữ, cuối lưới |
 | Hết bài lớp → "Lớp tiếp: {mã} ›" trong lưới | Giữ: nút chính ở chân panel; thân ghi "Đã xong phần của bạn" |
 | Chân panel "Việc tiếp ›" luôn có | Chân: **Lưu · lớp tiếp ›** còn bài; hết lớp cuối → **Việc tiếp ›** |
-| Ô "Tìm học viên (tên, email)" đầu panel | **Bỏ** ở panel (mỗi panel chỉ một lớp ≤ ~10 em, tên hiện hết); tìm em chéo lớp dùng thanh tìm trên (`/`, Ctrl K). [XM] nếu chủ SP muốn giữ |
-| "Chi nhánh khác" gập cuối panel | Mục gập dưới danh sách, dòng cùng dáng + chip chi nhánh; "n bài · m quá hạn" ở đầu mục CHỈ sau khi mở (máy chủ không tải trước, giữ như cũ) |
+| Ô "Tìm học viên (tên, email)" đầu panel (lọc em qua MỌI ngăn lớp) | **Giữ**, chuyển lên ĐẦU DANH SÁCH (cùng chỗ, cùng ô, lọc xuyên lớp — hàm `locQ` cũ). Gõ tên → còn các dòng lớp có em khớp, cột "ai" ghi tên em khớp, thông tin ghi số bài + tuần (ảnh A9); bấm dòng → panel của lớp đó. Không mất thao tác. Panel một lớp không cần ô tìm riêng |
+| "Chi nhánh khác" gập cuối panel | Mục gập dưới danh sách, dòng cùng dáng + chip chi nhánh (đầu cột thông tin); "n bài · m quá hạn" ở đầu mục CHỈ sau khi mở (máy chủ không tải trước, giữ như cũ) |
 | "m quá hạn" của lớp trong đầu ngăn | Giữ ở cột chi tiết của dòng ("8 bài · 6 quá hạn", chữ thường, chỉ khi m > 0); ngày hạn sớm nhất tô màu chữ |
-| Rỗng: "Không có bài Speaking chờ chấm" ở panel | Rỗng ở danh sách: "Hết bài Speaking chờ chấm · Còn: … · Việc tiếp ›" (mẫu hết việc như tab khác) |
+| Rỗng: "Không có bài Speaking chờ chấm" ở panel | Rỗng ở danh sách: "Bạn hết bài Speaking chờ chấm · Còn: … · Việc tiếp ›" ('Bạn' = hàng đợi của bạn; Chi nhánh khác vẫn gập bên dưới) (mẫu hết việc như tab khác) |
 
 ## Điểm cần PTA / chủ SP chốt
 1. **Thứ tự dòng**: quá hạn lên đầu rồi hạn gần (như mọi tab). Luật hiện hành của panel (`soSanhLopCham`: lớp thường có bài lên đầu, rồi mã lớp nhỏ trước) đổi theo → "Lớp tiếp ›" đi theo thứ tự danh sách. Giữ luật cũ được nếu chủ SP muốn (thay đổi 1 hàm).
-2. **Bỏ ô tìm** ở panel (xem bảng).
+2. **Ô "Tìm học viên" chuyển từ panel lên đầu danh sách** (giữ thao tác, lọc xuyên lớp); ô tìm này là ô MỚI trên tab khuôn A — các tab khác chưa có ô tìm trong danh sách.
+2b. **Chip chi nhánh** ("Cầu Giấy") chuyển từ ô lớp sang đầu cột thông tin: ô lớp có chip kéo rộng cột lớp của cả danh sách (lệch cột).
 3. Cột "Việc" của "Lớp của tôi" không tính bài chấm chéo S (T18) — giữ như hiện nay, nên MB FT 104 ghi 0 dù có bài Speaking chờ chấm.
 4. Trạng thái dựng ở A3: lớp chấm hết thì dòng rời danh sách và badge / đầu nhóm giảm theo (cùng hàm đếm); lưới trong panel vẫn đứng yên tới khi đóng (luật cũ chỉ áp cho lưới).
 5. Ở 375 không có cột Kết quả: ô Vắng ghi chữ "Vắng", ô nhập dở viền vàng + chữ "Chưa lưu" dưới tên em. Chân panel 375 có cả **Lưu** và **Lưu · lớp tiếp ›** (khác panel 375 v24 chỉ có nút chính — để lưu mà ở lại lớp).
@@ -44,6 +47,7 @@ Một dòng = một việc = một panel, giống mọi tab Công việc (NH10).
 
 ## Tự rà (critique, mục tiêu ≥ 35)
 Hai tác tử độc lập (A: thiết kế bằng ảnh, B: detector tĩnh). Detector: 15 mục, đều từ khung v23 / v24 đã duyệt (vạch trái dòng chọn, thang radius / màu khung mockup, phông Inter của chữ số) hoặc phần phụ trợ không lên web — không có mục nào thuộc phần thêm của tệp này.
+Vòng 3 **31/40** (0 P0, 2 P1: chip chi nhánh kéo rộng cột lớp ở A4; bỏ ô tìm mà thay thế không đạt) → sửa cả hai (chip vào cột thông tin; giữ ô tìm ở đầu danh sách + ảnh A9) + cột 1440 cân theo lưới khuôn A (PTA 25/11) + câu rỗng + "Mock W4 AUG + W1 SEP" khi lớp có hai tuần. **Chưa chấm lại vòng 4**: P0/P1 còn lại theo tự kiểm = không. (Các dòng dưới là lịch sử vòng 1–2.)
 Vòng 1 **26/40** (0 P0, 6 P1) → sửa (ghi "m quá hạn" ở dòng, danh sách đổi theo sau khi chấm hết, chữ trạng thái, 375 bỏ cột KQ, câu rỗng, vùng bấm "Đổi") → vòng 2 **30/40** (0 P0, 2 P1: "chưa lưu" chỉ bằng màu ở 375; thiếu nút Lưu ở 375) → sửa cả hai + vài P2 (dữ liệu hạn, đầu panel A3, chân "Chưa lưu · 1 bài"). **Chưa chấm lại sau vòng sửa cuối** (hết 2 vòng cho phép khi dưới 35; theo cổng chỉ cần không còn P0 / P1 — đã tự kiểm ảnh A2, A3, A7). Điểm là của tác tử chấm, không phải kết luận: PTA nên xem ảnh.
 
 P2 còn lại (không sửa): đầu trang "3 việc · 1 quá hạn" cạnh badge tab 15 (đúng luật T18, hai số quá hạn trên một màn) · ngưỡng "sắp hạn" vàng không ghi trên màn · "5 em" đậm ngang mã lớp ở 375 (như mọi tab khuôn A) · ⓘ ⋯ ✕ ở đầu panel 375 sát nhau (khung chung v24) · B1 không chọn.
