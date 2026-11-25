@@ -2300,6 +2300,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .mt-luoi:not(:has([role="cell"][data-cot="nx"]:not([data-trong]), [role="cell"][data-cot="case"]:not([data-trong]))) [data-cot="act"] { grid-column-start: 5; }
 }
 
+/* #8: cột Kết quả cuối bảng căn phải (thắng luật cột số căn giữa `th.th.text-right`) — đầu cột thẳng ô, sát mép phải. */
+th.th.th-phai { text-align: right; }
+
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
