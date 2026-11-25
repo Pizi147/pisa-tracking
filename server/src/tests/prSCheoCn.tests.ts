@@ -108,13 +108,16 @@ export async function runPrSCheoCnTests(t: YThucTestKit) {
   });
 
   check('SCN-5 · web: panel gom lớp → tuần; "Chi nhánh khác" chỉ tải khi mở (`?cn=khac`), lưu ở đó không gọi onDaLam (không vào số việc)', () => {
-    const f = docSach('web/src/modules/congViec/PanelChamSpeaking.tsx');
-    assert(/useApi<DuLieu>\(moKhac \? duong\(true\) : null/.test(f), 'Chi nhánh khác tải lúc mở panel');
-    assert(/cnKhac \? 'cn=khac'/.test(f), 'thiếu tham số cn=khac');
+    /* KHUÔN A (25/11): danh sách lớp ở `ChamSpeakingMuc` (mỗi lớp một dòng, xếp theo hạn sớm nhất — thay `soSanhLopCham`); panel một lớp; gom ở `chamSpeakingChung`. */
+    const f = docSach('web/src/modules/congViec/PanelChamSpeaking.tsx'), g = docSach('web/src/modules/congViec/chamSpeakingChung.ts'), m = docSach('web/src/modules/congViec/ChamSpeakingMuc.tsx');
+    assert(/useApi<DuLieu>\(laKhac \? duongChamSpeaking\(nguoi, true\) : null/.test(f), 'Chi nhánh khác (panel) tải khi cần');
+    assert(/useApi<DuLieu>\(moKhac \? duongChamSpeaking\(nguoi, true\) : null/.test(m), 'Chi nhánh khác (danh sách) tải lúc mở');
+    assert(/cnKhac \? 'cn=khac'/.test(g), 'thiếu tham số cn=khac');
     assert(/const daLuuKhac = \(\) => \{ setSoLuu\(\(n\) => n \+ 1\); khac\.reload\(\); \};/.test(f), 'lưu chi nhánh khác gọi onDaLam');
-    assert(/sort\(\(a, b\) => soSanhLopCham\(/.test(f), 'lớp không xếp bằng soSanhLopCham');
-    assert(/\(b\.weekStart \?\? ''\)\.localeCompare\(a\.weekStart \?\? ''\)/.test(f), 'trong lớp: tuần gần nhất chưa lên đầu');
+    assert(/hanSom\(a\.rows\)/.test(g) && !/soSanhLopCham/.test(g), 'lớp phải xếp theo hạn sớm nhất');
+    assert(/\(b\.weekStart \?\? ''\)\.localeCompare\(a\.weekStart \?\? ''\)/.test(g), 'trong lớp: tuần gần nhất chưa lên đầu');
     assert(!/Tuần cũ hơn/.test(f), 'còn "Tuần cũ hơn" (đã bỏ — tuần ghi dưới tên em)');
+    assert(/hienTuan=\{nhieuTuan\}/.test(f), 'tuần dưới tên em chỉ khi lớp nhiều tuần');
   });
 
   check('SCN-6 · thứ tự lớp (chủ SP 16/11): lớp thường CÓ bài lên đầu, rồi mã lớp số nhỏ trước; lớp thường hết bài về chỗ theo mã; hàng đợi có cờ laThuong', () => {

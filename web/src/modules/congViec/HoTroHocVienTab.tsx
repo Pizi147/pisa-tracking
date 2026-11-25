@@ -138,6 +138,8 @@ export function HoTroHocVienTab() {
   const viec = params.get('viec');
   /* AUDIT-1611 P1-07: `lop=` (từ ô "Quá hạn của lớp" / "Chờ chấm" ở hồ sơ lớp của QL) — chỉ việc của lớp đó (dòng gộp nhiều lớp giữ khi có lớp đó); chip ✕ bỏ. */
   const lopLoc = Number(params.get('lop')) || null;
+  /* KHUÔN A (25/11): Chấm Speaking — `lc=` lớp đang mở ở panel (mỗi lớp một dòng). */
+  const lopCham = Number(params.get('lc')) || null;
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -375,9 +377,9 @@ export function HoTroHocVienTab() {
   }, [mucTheoTab, thuTuTab, chon]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Địa chỉ (không `viec`) lúc mở panel bằng một bước lịch sử — đóng chỉ lùi khi bộ lọc chưa đổi, không thì mất lựa chọn lọc vừa bấm. */
   const daDay = useRef<string | null>(null);
-  const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); return x.toString(); };
+  const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); x.delete('lc'); return x.toString(); };
   const cuon = useRef(0);
-  const mo = (it: WorkItem) => {
+  const mo = (it: WorkItem, lc?: number) => {
     if (!lamTaiCho(it)) { navigate(it.group === 'bao_cao_ph' ? `${it.href}&viet=1` : it.href); return; }   /* AU-GON B3-10: "Viết ›" mở thẳng panel viết (`?viet=1`, TabBaoCaoPh) */
     if (it.key.startsWith('pdc-lop:') || data?.paDangChay?.some((x) => `action:${x.paId}` === it.key && !phang(dsGoc).some((y) => y.key === it.key))) pdcMo.current.set(it.key, it);
     const next = new URLSearchParams(params);
@@ -385,6 +387,7 @@ export function HoTroHocVienTab() {
     if (!trongTabK(it, tab) && !params.get('loai')) next.set('nhom', tabCua(it));   // CV-TAB: việc của tab khác (Việc tiếp) → danh sách sang tab đó
     next.delete('panel');   // việc mới mở ở form, không ở view Case của việc trước
     next.delete('the');     // V8-CV: một panel một lúc — panel việc thay panel duyệt
+    if (lc) next.set('lc', String(lc)); else next.delete('lc');
     /* Mở từ danh sách: một bước lịch sử (nút Lùi của điện thoại về danh sách); đổi việc khi panel đang mở: thay tại chỗ (giữ số mục view đã push để đóng lùi đủ). */
     if (viec) setParams(next, { replace: true, state: soMucPanel(stLs) ? { panelSau: soMucPanel(stLs) } : undefined });
     else {
@@ -395,6 +398,8 @@ export function HoTroHocVienTab() {
       setParams(next);
     }
   };
+  /* KHUÔN A: bấm dòng lớp — panel đang mở đúng việc Chấm Speaking thì chỉ đổi lớp, không thì mở việc kèm lớp. */
+  const moLopCham = (it: WorkItem, lc: number) => { if (it.key === viec) setParam('lc', String(lc)); else boChuRoi(() => mo(it, lc)); };
   const dong = () => {
     const lui = daDay.current !== null && daDay.current === khongViec(params);
     daDay.current = null;
@@ -719,7 +724,7 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* PANEL-GON (v24 `.cv`, chủ SP 24/11): panel MỘT khung 720 bám mép phải, danh sách trái min(680, 100vw − 760) không đè. Khuôn A: danh sách không co theo loại panel. */}
-      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel || coKhoiPhai ? 'lg:grid-cols-[minmax(260px,1fr)_min(720px,calc(100vw-584px))]' /* HAI-BEN (chủ SP 25/11): hai cột CỐ ĐỊNH — ô phải 720 (1280: 696), danh sách phần còn lại; mở / đóng panel KHÔNG đổi bề rộng danh sách */ : ''} lg:gap-6`}`}>
+      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel || coKhoiPhai ? (tab === 'cham-cheo' ? 'lg:grid-cols-[calc(50%-12px)_minmax(0,1fr)]' /* KHUÔN A Chấm Speaking (chủ SP 25/11): danh sách CỐ ĐỊNH một nửa bên trái */ : 'lg:grid-cols-[minmax(260px,1fr)_min(720px,calc(100vw-584px))]') /* HAI-BEN (chủ SP 25/11): hai cột CỐ ĐỊNH — ô phải 720 (1280: 696), danh sách phần còn lại; mở / đóng panel KHÔNG đổi bề rộng danh sách */ : ''} lg:gap-6`}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel || coKhoiPhai ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
@@ -743,7 +748,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && tab !== 'duyet' && (mucs.length > 0 || (tab === 'case-hoc-thuat' && !!data.paDangChay?.length)) && (
             <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
-              onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
+              onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} chamS={{ lop: lopCham, mo: moLopCham }} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
               /* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. Cùng lưới cột với các nhóm trên. */
               cuoi={tab === 'case-hoc-thuat' && !!data.paDangChay?.length ? <PaDangChayKhoi ds={data.paDangChay} uid={uid ?? null} chon={viec} onMo={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} /> : undefined}
@@ -801,7 +806,7 @@ export function HoTroHocVienTab() {
                   {/* Panel vẫn gắn khi thẻ "Hết việc" hiện: "Xem lại việc vừa lưu" mở lại đúng panel đã lưu (sửa / hoàn tác của chính panel). */}
                   <div hidden={!!het}>
                     <ViecVuaLuu.Provider value={viecVuaLuu}><BaoHoanTac.Provider value={(f) => ghiHoanTac(chon.key, f)}><BaoDaGiao.Provider value={() => giaoDi.current.set(chon.key, chon)}>
-                    <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} onDong={dong} onDaLam={() => daLam(chon)} onTaiLai={reload}
+                    <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} lopCham={lopCham} onLopCham={(id) => setParam('lc', String(id))} onDong={dong} onDaLam={() => daLam(chon)} onTaiLai={reload}
                       onTiep={keTiep ? () => mo(keTiep) : hienTai && !theoDoiChon ? () => setHet({ nhom: hienTai.nhom, ke: keNhomKhac }) : null}
                       tenTiep={keTiep?.studentId !== null ? keTiep?.studentName : null} onMo={(x) => boChuRoi(() => mo(x))} />
                     </BaoDaGiao.Provider></BaoHoanTac.Provider></ViecVuaLuu.Provider>
