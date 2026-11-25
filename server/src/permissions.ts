@@ -74,8 +74,7 @@ export type Ctx = {
   /** Kiểm tra ở mức màn hình: nội dung bên trong vẫn được lọc lại theo phạm vi. */
   anyScope?: boolean;
   date?: string;
-  /** N71 · Q2: ô đang ghi — `SCORE_EDIT` của GV cũ (`giuOCu`) chỉ mở khi họ là người giữ ô lúc thi (`tuanThi`, hoặc đọc từ `attemptId`). */
-  tuanThi?: string | null;
+  /** N71 · Q2: lượt của ô đang ghi — `SCORE_EDIT` của GV cũ (`giuOCu`) chỉ mở khi họ là người giữ ô lúc thi. */
   attemptId?: number;
 };
 
@@ -522,12 +521,12 @@ export function giuOCu(p: Principal, classId: number | null | undefined, skill?:
   return p.phanCongCu.some((a) => a.classId === classId && (skill === undefined || (!!skill && khopMon(a.skill, skill))));
 }
 /**
- * N71 · Q2 (P1-3): `SCORE_EDIT` của GV cũ CHỈ ở ô họ giữ lúc thi — ngữ cảnh phải nêu ô (`tuanThi` hoặc `attemptId`); không nêu (cờ cả lớp, danh sách) → không mở.
+ * N71 · Q2 (P1-3): `SCORE_EDIT` của GV cũ CHỈ ở ô họ giữ lúc thi — ngữ cảnh phải nêu ô (`attemptId`); không nêu (cờ cả lớp, danh sách) → không mở.
  * GV cũ Reading không nhập được ô Reading thi sau ngày đổi (của GV mới).
  */
 function giuODangGhi(p: Principal, ctx: Ctx): boolean {
   if (!ctx.classId || !ctx.skill || !giuOCu(p, ctx.classId, ctx.skill)) return false;
-  const tuan = ctx.tuanThi ?? (ctx.attemptId ? tuanThiCuaO(ctx.attemptId, ctx.skill) : null);
+  const tuan = ctx.attemptId ? tuanThiCuaO(ctx.attemptId, ctx.skill) : null;
   return !!tuan && laNguoiGiuO(p, ctx.classId, ctx.skill, tuan, ctx.date ?? demoToday());
 }
 

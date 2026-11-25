@@ -105,15 +105,16 @@ export function oCuaToi(p: Principal, classId: number | null | undefined, skill:
 }
 /** P2-4: người giữ ô nhớ theo request — cả request GHI (`nhoTheoBang`: quên khi ghi vào phân công / tài khoản / vai / lớp): lưới, đường ghi nhiều ô không đọc lại. */
 export function laNguoiGiuO(p: Principal, classId: number, skill: string, tuan: string, today: string): boolean {
-  return nhoTheoBang(['teacher_assignments', 'users', 'user_roles', 'classes'], `giu-o:${classId}|${skill}|${tuan.slice(0, 10)}|${today}`,
+  return nhoTheoBang(['teacher_assignments', 'users', 'user_roles', 'roles', 'classes'], `giu-o:${classId}|${skill}|${tuan.slice(0, 10)}|${today}`,
     () => nguoiGiuO([classId], today)(classId, skill, tuan)?.userId ?? null) === p.userId;
 }
 /** Tuần thi (thứ Hai) của ô nhập `skill` ở lượt — dòng lịch của kỹ năng (W1 / W2 → `writing`), thiếu thì tuần của lượt (như `TUAN_O` của cờ ô chờ). */
 export function tuanThiCuaO(attemptId: number, skill: string): string | null {
   const kn = /^writing[12]$/.test(skill) ? 'writing' : skill;
-  return (db().prepare(`SELECT COALESCE((SELECT MIN(kp.week_start) FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
+  /* `nho` (GET), không `nhoTheoBang`: `attempt_skills` có trigger ghi (nguCanhRequest) — request ghi đọc lại, chỉ khi người xem là GV cũ (`giuOCu`). */
+  return nho(`tuan-thi-o:${attemptId}:${kn}`, () => (db().prepare(`SELECT COALESCE((SELECT MIN(kp.week_start) FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
       WHERE k.attempt_id = a.id AND k.skill = ?), pr.week_start) AS t FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id WHERE a.id = ?`)
-    .get(kn, attemptId) as any)?.t ?? null;
+    .get(kn, attemptId) as any)?.t ?? null);
 }
 /** Dòng phân công môn ĐÃ KẾT THÚC (`ended`) của các lớp — khoá `lớp|môn`. Nhớ theo lớp trong request GET. P1-1 (N69): chỉ người CÒN dạy ở chi nhánh
  *  của lớp (`GV_CON_DAY_SQL`) — GV đã nghỉ / xoá tài khoản / hết vai ở chi nhánh không giữ bài: ô về người đang hiệu lực, không có thì "chưa có người". */

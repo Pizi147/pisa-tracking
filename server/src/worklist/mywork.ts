@@ -776,7 +776,7 @@ export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: num
  */
 export function viecNhapDiemCuaEm(p: Principal, studentId: number, today: string, lopId: number | null): WorkItem[] {
   /* Cùng cổng `nhapDiemTheoEm`: người xem không có phân công ở lớp em đang học (và không có SCORE_EDIT ở đó) thì không có việc Nhập điểm — khỏi đọc lượt. */
-  if (!lopId || !(p.assignments.some((a) => a.classId === lopId && activeAt(a, today)) || can(p, PERMISSIONS.SCORE_EDIT, { classId: lopId }))) return [];
+  if (!lopId || !(p.assignments.some((a) => a.classId === lopId && activeAt(a, today)) || giuOCu(p, lopId) || can(p, PERMISSIONS.SCORE_EDIT, { classId: lopId }))) return [];
   const dongs: BaiChuaCham[] = [];
   for (const a of listAttempts(p, { studentId, chiDangHoc: true, chiConO: true }).rows as any[]) {
     if (a.status === 'cancelled') continue;

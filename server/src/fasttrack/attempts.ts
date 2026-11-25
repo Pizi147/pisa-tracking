@@ -464,7 +464,8 @@ export function skillCells(
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
-  const nhacNx = !chiDem && editable.length > 0 && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
+  /* N71 · Q2: + GV cũ còn ô ở lớp (`giuOCu`) — ô của họ sửa được thì cũng được nhắc nhận xét. */
+  const nhacNx = !chiDem && (editable.length > 0 || (!!attempt.class_id && giuOCu(p, attempt.class_id))) && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -2764,7 +2765,7 @@ export function classScoreSheet(
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];
 
-  return {
+  const kq = {
     classId, classCode: cls.code, branchName: cls.branch_name,
     period: period ? { id: period.id, code: period.code, weekStart: period.week_start, weekEnd: period.week_end } : null,
     /* OV-13h: lớp đã kết thúc GV vẫn nhập ô trống — cờ từng ô (`canEdit`) quyết, không tắt cả môn. */
@@ -2809,6 +2810,12 @@ export function classScoreSheet(
     /* LG-5c: "GV chấm S" đầu cột đã chọn (người xem × lớp × đợt — `dotGvCham`), 1 câu theo khoá chính. */
     gvChamCot: docGvChamCot(p, classId, dotGvCham(period?.id ?? null, attempts.map((a) => a.attempt_no as number))),
   };
+  /* N71 · Q2: GV cũ — môn có ô họ giữ lúc thi (`canEdit` từng ô) vào `editableSkills`: nút "Nhập điểm" / "Lưu · bài tiếp" như GV đang dạy. */
+  if (p.phanCongCu?.length) {
+    const sua = new Set<string>([...kq.editableSkills, ...kq.rows.flatMap((r: any) => r.cells.filter((c: any) => c.canEdit).map((c: any) => c.skill as string))]);
+    kq.editableSkills = ENTRY_SKILLS.filter((k) => sua.has(k));
+  }
+  return kq;
 }
 
 /** OV-14c: tuần thi của ô S (lịch riêng của kỹ năng, không có thì tuần của lượt) — mảnh SQL dùng alias `a`, `pr` của `ATTEMPT_SELECT`. */

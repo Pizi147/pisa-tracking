@@ -398,7 +398,7 @@ export function noQuaHan(
       cuaToi: _toiKn.size > 0,   // N71 · Q2: theo từng ô (`cuaToi` trên) — không theo phân công hôm nay
       /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
       coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
-      duocCham: editableSkills(p, d.classId, kyNang).length > 0,
+      duocCham: _toiKn.size > 0 || editableSkills(p, d.classId, kyNang).length > 0,   // N71 · Q2: GV cũ chấm được ô mình giữ
       /* GD-11a (⑦ A4, R7.6): lưới theo tuần → thẳng Lịch Test đúng tuần + lớp (không qua đường cũ `/nhap-diem` chuyển hướng). */
       hrefDayDu: d.kind === 'mt0' ? (d.periodId ? lichTestHref(d.classId, d.periodId) : `/nhap-diem/${d.classId}?kind=mt0`)
         : d.mode === 'ielts_band'
@@ -417,12 +417,16 @@ export function noQuaHan(
  * mọi ô có cờ quá hạn (cả ô thi tuần trước đang nằm ở khối 2), cả hai khung, cùng phạm vi quyền. "Lớp tôi dạy" / lớp đang lọc chỉ khoanh lớp;
  * người có phân công xem "Lớp tôi dạy" đếm ô của mình, ô GV khác vào `khac` (OV-11e TE-7). Khác khối 1 (`noQuaHan`): khối chia theo tuần thi.
  */
+/** "Lớp tôi dạy" của Lịch Test / Quá hạn chấm: phân công đang hiệu lực + N71 · Q2 lớp GV cũ còn bài thi chưa chấm (`phanCongCu` — đã đọc cùng phiên, 0 câu). */
+const lopToiDay = (p: Principal, today: string): Set<number> =>
+  new Set([...p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId), ...(p.phanCongCu ?? []).map((a) => a.classId)]);
+
 export function oQuaHanCham(
   p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null; khung?: Khung | null }, today: string = demoToday(),
 ): { ids: number[]; khac: number[]; lop: number } {
   const coPhanCong = defaultWorkScope(p) === 'mine' && !laHeadHoacQt(p);
   const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
-  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
+  const lopCuaToi = lopToiDay(p, today);
   /*
    * TD-CHAM (Turso, log 24 h: 121 lần · ~1,8 K dòng): chỉ nạp nợ điểm của lớp vòng lặp dưới còn giữ — lớp đang lọc / "Lớp tôi dạy" / lớp FT khi xem khung FT
    * (ô FT chỉ ở lớp FT — `khungDong`; khung "Lớp thường" còn MT0 của lớp FT nên không thu hẹp). Tập trả về không đổi: vòng lặp vẫn lọc như cũ.
@@ -833,7 +837,7 @@ export function lichTest(
   const tuanNay = weekInfo(today).weekStart;
   const laTuanNay = String(tuan.week_start) === tuanNay;
 
-  const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
+  const lopCuaToi = lopToiDay(p, today);
   const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
   /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
   const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId) || lopMt0ChoGvSpeaking(p, today).includes(o.classId))

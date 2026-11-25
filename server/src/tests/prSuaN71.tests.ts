@@ -12,7 +12,8 @@ export async function runPrSuaN71Tests(t: any) {
   const canCham: any = await import('../cham/canCham.ts');
   const classesSvc: any = await import('../classes/classes.ts');
   const { mondayOf } = await import('../platform/week.ts');
-  const { loadPrincipal, scoreEditPath } = await import('../permissions.ts');
+  const { isCoreTeacherOf, loadPrincipal, scoreEditPath } = await import('../permissions.ts');
+  const { duocGoDau } = await import('../fasttrack/absence.ts');
   const { listAttempts } = await import('../fasttrack/attempts.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { O_CHO_TU_SQL, capNhatConOCho } = await import('../fasttrack/conOCho.ts');
@@ -100,6 +101,7 @@ export async function runPrSuaN71Tests(t: any) {
         JOIN classes c ON c.id = a.class_id AND c.status = 'active' AND c.is_fast_track = 1
         JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
         JOIN teacher_assignments ta ON ta.class_id = a.class_id AND ta.skill = 'listening' AND ta.status = 'active' AND ta.is_core = 0
+          AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ta.user_id AND ur.status = 'active' AND r.key != 'teacher')
         JOIN attempt_skills k ON k.attempt_id = a.id AND k.skill = 'listening' AND k.required = 1 AND k.sit_status = 'scheduled'
         JOIN report_periods rp ON rp.id = k.planned_period_id AND rp.week_start < ?
        WHERE a.status = 'planned' AND a.lich_su = 0 AND a.o_cho_tu <= ?
@@ -116,7 +118,8 @@ export async function runPrSuaN71Tests(t: any) {
          AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'listening' AND sc.band IS NOT NULL) ORDER BY a.id LIMIT 1`).get(o.class_id, o.id) as any;
     assert(sau, 'seed: cần lượt thứ hai có ô L chưa chấm');
     const doiGv = () => {
-      conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(TODAY, o.ta_id);
+      /* GV cũ RỜI HẲN lớp (mọi phân công ở lớp kết thúc — P1-B: "Lớp tôi dạy" không còn lớp này theo phân công đang hiệu lực). */
+      conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE class_id = ? AND user_id = ? AND status = 'active'`).run(TODAY, o.class_id, o.gv);
       conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, ?, 'active', ?)`)
         .run(moi.id, o.class_id, TODAY, new Date().toISOString());
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = (SELECT id FROM report_periods WHERE week_start = ?), sit_status = 'scheduled' WHERE attempt_id = ? AND skill = 'listening'`)
@@ -159,10 +162,18 @@ export async function runPrSuaN71Tests(t: any) {
         if (badge || pp === gvMoi) assert(badge?.needScores === no.length, `${ten}: badge lớp ${badge?.needScores} ≠ nợ điểm ${no.length}`);
         const tuanO = conn.prepare(`SELECT kp.id, kp.week_start FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'listening'`)
           .get(pp === cu ? o.id : sau.id) as any;
-        const lt = canCham.lichTest(pp, tuanO.id, null, TODAY, { phamVi: 'tat-ca' }).lop.find((l: any) => l.classId === o.class_id);
+        /* P1-B: phạm vi MẶC ĐỊNH ("Lớp tôi dạy") — GV cũ đã rời hẳn lớp vẫn thấy bài của mình. */
+        const lt = canCham.lichTest(pp, tuanO.id, null, TODAY, {}).lop.find((l: any) => l.classId === o.class_id);
         const noTuan = no.filter((c: any) => conn.prepare(`SELECT 1 FROM attempt_skills k WHERE k.attempt_id = ? AND k.skill = ? AND k.planned_period_id = ?`)
           .get(c.attemptId, /^writing/.test(c.skill) ? 'writing' : c.skill, tuanO.id)).length;
         assert((lt?.conBaiCuaToi ?? 0) === noTuan, `${ten}: Lịch Test tuần ${tuanO.week_start} của tôi ${lt?.conBaiCuaToi} ≠ nợ điểm tuần đó ${noTuan}`);
+        const qh = canCham.oQuaHanCham(pp, { classId: o.class_id }, TODAY);
+        assert(qh.ids.length === no.filter((c: any) => c.overdue).length, `${ten}: Quá hạn chấm ${qh.ids.length} ≠ nợ quá hạn ${no.filter((c: any) => c.overdue).length}`);
+      }
+      /* P1-A: gỡ "-" / nhập đè ô "-" — GV cũ ở ô mình giữ được, ô của GV mới không (trừ khi GV cũ là GVCN lớp). */
+      assert(duocGoDau(cu, { classId: o.class_id, skill: 'listening', today: TODAY, kind: 'mock', attemptId: o.id }) === null, 'GV cũ phải gỡ được "-" ở ô mình giữ');
+      if (!isCoreTeacherOf(cu, o.class_id, TODAY)) {
+        assert(duocGoDau(cu, { classId: o.class_id, skill: 'listening', today: TODAY, kind: 'mock', attemptId: sau.id }) !== null, 'GV cũ không gỡ được "-" ở ô của GV mới');
       }
     });
     /* P1-1 (N69): GV cũ bị xoá tài khoản / hết vai ở chi nhánh (đổi GV vì nghỉ) → không giữ bài: ô về GV đang hiệu lực. */

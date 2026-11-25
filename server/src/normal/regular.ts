@@ -869,7 +869,7 @@ export function reportRegularNoShow(
   let path = duongGhiLuot(p, a, skill);
   /* OV-11a: gỡ "Không dự thi" như FT (`no_show_cu`) — người nhập được môn đó, không theo khung gỡ vắng. LUAT-34: "Đủ điểm" không còn khoá. */
   if (dauCu && !dauCu.no_show_cu) {
-    const loi = duocGoDau(p, { classId: a.class_id, skill, today });
+    const loi = duocGoDau(p, { classId: a.class_id, skill, today, attemptId: a.id });
     if (loi) throw forbidden(loi);
   } else if (!path && !(lyDo !== undefined && bat && canRequest(p, a))) {   // K4-32: Báo vắng — thêm GVCN của lớp / Quản lý
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill, attemptId: a.id },

@@ -685,9 +685,11 @@ export function duocGoDau(p: Principal, o: {
   daHuyPhan?: boolean;
   /** LUAT-34 (T09): Hoàn tác — chính người vừa gõ "-", trong cửa sổ `duocHoanTacVang` — gỡ được cả khi "-" vừa huỷ phần thi (vắng 2 lần). */
   hoanTac?: boolean;
+  /** N71 · Q2: lượt của ô — GV cũ gỡ được "-" ở ô mình giữ lúc thi (`scoreEditPath` theo ô). */
+  attemptId?: number;
 }): string | null {
   if (qlDiem(p, { classId: o.classId })) return null;   // BPXL-1: gỡ "-" là việc điểm — BPXL không
-  if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
+  if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind, id: o.attemptId }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Head gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
   return null;
@@ -714,7 +716,7 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
   const assessed = assessedSkillOf(skill);
   const hien = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const hoanTac = dau.no_show_by === p.userId && duocHoanTacVang(dau.no_show_at, Date.now());
-  const loi = duocGoDau(p, { classId: a.class_id, skill, today, kind: a.kind, daHuyPhan: hien.sit_status === 'cancelled', hoanTac });
+  const loi = duocGoDau(p, { classId: a.class_id, skill, today, kind: a.kind, daHuyPhan: hien.sit_status === 'cancelled', hoanTac, attemptId });
   if (loi) throw forbidden(loi);
   const entry = entrySkillsOf(assessed);
   return tx(() => {
