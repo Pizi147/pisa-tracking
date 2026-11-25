@@ -44,7 +44,10 @@ export function PanelChamSpeaking({ onDong, onDaLam, lop: lopUrl = null, onLop =
   const hien = lopNoi !== null ? ds.find((l) => l.classId === lopNoi) ?? null : dsChinh.find((l) => soCho(l.rows)) ?? null;
   /* K3 chân: "✓ Đã lưu n bài" — số lần lưu trong lần mở panel này (cả chi nhánh khác). */
   const [soLuu, setSoLuu] = useState(0);
-  const daLuu = () => { setSoLuu((n) => n + 1); reload(); onDaLam(); };
+  /* KHUÔN A: việc chung còn bài ở lớp khác → KHÔNG báo "đã làm" (sẽ ẩn cả danh sách lớp sau lần lưu đầu); chỉ báo khi hàng đợi hết hẳn. */
+  const daLuu = () => { setSoLuu((n) => n + 1); reload(); };
+  const hetHet = soLuu > 0 && data?.soBai === 0;
+  useEffect(() => { if (hetHet) onDaLam(); }, [hetHet]);   // eslint-disable-line react-hooks/exhaustive-deps -- một lần khi hết
   /* Chi nhánh khác không vào số việc — chỉ tải lại phần đó. */
   const daLuuKhac = () => { setSoLuu((n) => n + 1); khac.reload(); };
   const doiLop = (l: Lop) => { setLopNoi(l.classId); onLop?.(l.classId); };
@@ -56,8 +59,9 @@ export function PanelChamSpeaking({ onDong, onDaLam, lop: lopUrl = null, onLop =
     /* GD-1b (lời 24): không ghi "Việc chung" — cùng dạng đầu panel việc khác ("Việc · {tab}"). */
     loai: t('Việc · Chấm Speaking'),
     /* Khuôn A: đầu panel ghi ĐỦ mã tuần như dòng danh sách ("W4 AUG, W1 SEP · 8 bài") + hạn sớm nhất. */
-    dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [tuan] : []), t('{n} bài', { n: soCho(hien.rows) })] : [],
-    han: hien ? <ChipHan loai="nhap-diem" han={hanSom(hien.rows)} /> : null,
+    /* Hết bài của lớp: "đã chấm n bài" (mockup A3), không hạn. */
+    dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [tuan] : []), hetLop ? t('đã chấm {n} bài', { n: hien.rows.length }) : t('{n} bài', { n: soCho(hien.rows) })] : [],
+    han: hien && !hetLop ? <ChipHan loai="nhap-diem" han={hanSom(hien.rows)} /> : null,
   };
   const tiep = onHet();
   const chinh = tiep ? <button type="button" className={hetLop || !hien ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={tiep.onClick}>{tiep.nhan}</button> : null;

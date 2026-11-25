@@ -2,7 +2,7 @@
 
 Ảnh cặp CẢ MÀN (trái mockup | phải web, vai GVBM Phạm Thu Trang — dữ liệu demo khác dữ liệu bịa của mockup nên tên lớp / số bài khác, bố cục là thứ so):
 `cap-A1-1440-toi` · `cap-A2-1440-toi-panel` · `cap-A9-1440-toi-tim-hoc-vien` · `cap-A10-1280-toi-panel` · `cap-A6-375-sang` · `cap-A7-375-sang-panel` (tạo bằng `scripts/anh-cap.mjs`).
-Thêm `cap-A4-1440-toi-mot-lop` (GV một lớp + Chi nhánh khác mở, vai Vũ Gia Hân). A3 / A5 / A8: xem mục 3.
+Thêm `cap-A4-1440-toi-mot-lop` (GV một lớp + Chi nhánh khác mở, vai Vũ Gia Hân), `cap-A3-1440-toi-het-bai-lop`, `cap-A3-375-sang-het-bai-lop`. A5 / A8: xem mục 3.
 
 ## 1. Truy vết khung → thành phần → ảnh
 | Khung mockup | Thành phần web | Ảnh |
@@ -35,13 +35,20 @@ Badge tab vẫn đếm bài; chấm chéo không vào số đầu trang (T18). K
 
 ## 3. KHÁC mockup (có lý do) / [XM]
 - **Đầu panel** ghi đủ mã tuần ("W4 AUG, W1 SEP · 8 bài") — chủ SP sửa khác mockup.
-- **[XM] Chân panel không có nút "Lưu" riêng** (mockup A2 / A7): web lưu từng ô qua hộp nhập ("Lưu · bài tiếp ›"), không có bản nháp cả lưới để một nút Lưu chung lưu. Chân giữ "Lớp tiếp ›" / "Việc tiếp ›". Nếu chủ SP muốn nút Lưu chung → PR riêng (đổi cách lưu).
+- **Chân panel không có nút "Lưu" riêng** (mockup A2 / A7) — PTA đồng ý 25/11: web lưu từng ô ngay qua hộp nhập ("Lưu · bài tiếp ›"), không có nháp cả lưới; nút Lưu không làm gì là sai. Chân giữ "Lớp tiếp ›" / "Việc tiếp ›"; trạng thái lưu (đang lưu / đã lưu / lỗi) hiện ở từng ô như cũ.
+- **QL nhiều GV S**: cũng mỗi lớp một dòng — mỗi GV một mục "Chấm Speaking · {tên GV}" (`?lc=` + `?ln=` GV). Chưa kiểm bằng dữ liệu demo (QL "Tất cả" demo không có việc S nào).
 - Lưới trong panel là `LuoiFT` có sẵn (cột Kết quả "Chờ S" cả ở 375, ô nhập mở hộp tại ô) — mockup vẽ ô nhập sẵn tại chỗ; giữ thao tác cũ.
 - Nhiều tuần trong một lớp: lưới giữ thứ tự cũ (tuần mới trước, rồi tên); mockup xếp theo tên.
-- Rỗng: chưa có dòng "Còn: Chấm điểm · 1 việc" (danh sách không biết việc còn lại ở tab khác); tab có thể biến mất khi hết bài (luật tab cũ) — "Chi nhánh khác" khi đó chỉ vào được lúc còn bài.
+- **Rỗng (A5 / A8) không chụp cặp** (PTA chốt 25/11): GV hết bài thì không còn việc Chấm Speaking → không có tab, đúng luật "không thêm thứ không ảnh hưởng đầu ra" (không đổi máy chủ). Mẫu rỗng ("Bạn hết bài Speaking chờ chấm" + "Còn: {tab} · n việc" + "Việc tiếp ›") đã code, chỉ hiện khi còn tab.
+- **A3 (hết bài một lớp)** đã chụp cặp: `cap-A3-1440-toi-het-bai-lop` (vai Bùi Hải Yến, chấm hết HD FT 302 bằng thao tác thật: dòng rời danh sách, đầu nhóm 9 → 6 bài, lưới đứng yên, đầu panel "đã chấm 3 bài", chân "✓ Đã lưu 3 bài · Lớp tiếp: HD FT 306 ›") và `cap-A3-375-sang-het-bai-lop` (mockup không có A3 ở 375 — bên trái là A7).
+- **Bỏ ⋯ ở đầu panel** (mockup có): panel không có thao tác phụ để đặt vào (PTA đồng ý).
 - Nút Lọc thêm / + Task, tab "Thêm ▾" khi panel mở: hành vi chung có sẵn, không đổi.
 - Thứ tự dòng thay `soSanhLopCham` (lớp thường lên đầu) bằng hạn sớm nhất (điểm 1 trong ghi chú mockup); `soSanhLopCham` vẫn dùng ở Chấm Test.
 
 ## 4. Đo
 Playwright (1440 / 1280 / 375): ⓘ và ✕ đầu panel cùng tâm dọc (lệch 0 px), cùng cỡ 36 × 36 (375: 44 × 44); các dòng lớp thẳng cột trái / em / thông tin (0 px), cột hạn lệch ≤ 0,2 px. Mockup có ⋯ ở đầu panel; web không vẽ ⋯ vì panel không có thao tác phụ để đặt vào.
-Chưa kiểm: lưu một ô S thật + "Lớp tiếp ›" cuối danh sách. `impeccable audit` / `web-design-guidelines` chưa chạy bằng lệnh — chỉ soát tay (nhãn ô tìm, vùng chạm 44 px ở 375, trạng thái không chỉ bằng màu).
+
+## 5. Audit
+- `impeccable audit` (detector `impeccable detect` trên `ChamSpeakingMuc.tsx` + `PanelChamSpeaking.tsx`): 0 anti-pattern; 1 ghi chú — cỡ chữ 16 px ngoài thang DESIGN.md (16 nằm trong thang K-CHU-1 12·13·14·16·20·26 của dự án, bỏ qua). Soát a11y / theme / responsive: không P0 / P1 (ô tìm có `aria-label` + `name`, kính lúp `aria-hidden`, dòng lớp có nút thật bên trong, màu theo token, vùng chạm 44 px ở 375, hạn có chữ).
+- `web-design-guidelines` (Vercel): không P0 / P1; đã sửa P2 ô tìm thiếu `name`. Dòng lớp là `div onClick` có `button` bên trong (mẫu khuôn A có sẵn — bàn phím dùng nút).
+- Đã thử lưu thật: chấm 3 ô S → PUT `/attempts/:id/scores/speaking`, dòng lớp rời danh sách, "Lớp tiếp ›" đúng.

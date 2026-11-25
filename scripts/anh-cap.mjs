@@ -58,6 +58,8 @@ if (process.env.KEO_TRUOC) await keo();
 // GD-4a: "gõ:chữ" gõ vào ô đang focus (hộp chọn em); mục menu (`menuitem`) cũng bấm được. GD-13a: "css:bộ chọn".
 for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
   if (ten.startsWith('gõ:')) { await pw.keyboard.type(ten.slice(3), { delay: 40 }); await pw.waitForTimeout(1200); continue; }
+  /* CHAM-SPEAKING: "phím:5 Tab 5 Enter" — gõ ký tự / bấm phím lần lượt (ô nhiều tiêu chí: Tab giữa các ô, Enter = Lưu · bài tiếp). */
+  if (ten.startsWith('phím:')) { for (const k of ten.slice(5).split(' ')) { if (k.length === 1) await pw.keyboard.type(k); else await pw.keyboard.press(k); } await pw.waitForTimeout(1200); continue; }
   /* GD-13a: "css:bộ chọn" bấm phần tử đầu khớp (ô MT mở dải, ⋯ dòng em). */
   if (ten.startsWith('css:')) { await pw.locator(ten.slice(4)).first().click(); await pw.waitForTimeout(900); continue; }
   const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
