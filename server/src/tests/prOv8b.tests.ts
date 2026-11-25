@@ -193,13 +193,13 @@ export async function runPrOv8bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV8b-6 · Kết quả thi thật: TVV / CX nhập được (L R W S, ngày thi, Không thi); TVV chi nhánh khác / Admin → 403', () => {
+  check('OV8b-6 · Kết quả thi thật: TVV / CX nhập được (L R W S, ngày thi, Không thi); TVV chi nhánh khác → 403; Admin chi nhánh em được (RA-2511 Q4)', () => {
     thu(() => {
       const v = V();
       const ngay = demoToday();
       assert(thiThat.coTheNhapThiThat(v.TVV, { id: em.cycleId, student_id: em.id }), 'coTheNhapThiThat phải nhận TVV');
       assert(loi(() => thiThat.datKetQuaThiThat(v.TVVKhac, em.cycleId, { ngayThi: ngay, l: 6, r: 6, w: 6, s: 6 }))?.status === 403, 'TVV chi nhánh khác phải 403');
-      assert(loi(() => thiThat.datKetQuaThiThat(v.Admin, em.cycleId, { ngayThi: ngay, l: 6, r: 6, w: 6, s: 6 }))?.status === 403, 'Admin phải 403');
+      assert(thiThat.coTheNhapThiThat(v.Admin, { id: em.cycleId, student_id: em.id }), 'RA-2511 Q4: Admin chi nhánh em nhập được');
       thiThat.datKetQuaThiThat(v.TVV, em.cycleId, { ngayThi: ngay, l: 6, r: 6.5, w: 5.5, s: 6 });
       const c = cycles.cycleById(em.cycleId);
       assert(c.thi_that_l === 6 && c.thi_that_r === 6.5 && c.thi_that_ngay === ngay, `thi thật: ${JSON.stringify([c.thi_that_l, c.thi_that_r, c.thi_that_ngay])}`);

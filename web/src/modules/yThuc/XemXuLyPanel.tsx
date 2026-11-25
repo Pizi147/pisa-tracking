@@ -113,7 +113,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
 
   const xoa = async () => {
     if (!d) return;
-    if (!rutDuoc && !lyDo.trim()) { setDaBam(true); return; }
+    if (!rutDuoc && lyDo.trim().length < CHU_TOI_THIEU) { setDaBam(true); return; }   // RA-2511 (N50 ⑥): như máy chủ
     setBusy(true); setLoiMay(null);
     try {
       if (rutDuoc) await api.post(`/yeu-cau/${the!.id}/rut`);
@@ -245,7 +245,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
             </p>
             {!rutDuoc && (
               <div className="pt-3">
-                <Truong nhan={t('Lý do')} batBuoc loi={daBam && !lyDo.trim() ? t('Chưa điền') : null}>
+                <Truong nhan={t('Lý do')} batBuoc loi={daBam && lyDo.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null}>
                   <textarea className="field w-full" rows={2} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
                 </Truong>
                 {ql && d.daBaoPh && (

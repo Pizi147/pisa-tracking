@@ -14,7 +14,7 @@ import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiT
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, scopeFor, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
-import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, laBpxlXepLich, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
@@ -484,7 +484,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   /* OV-15c (C21): ghi chú lịch thi — một câu cho cả lớp. */
   const gc = docGhiChu(classId, students.map((s) => ({ id: s.id as number, cycleId: (s.cycle_id ?? null) as number | null })), true);
   const sEx = sExCuaHv(p, studentIds, today);   // SV-S-EXPERT: lượt S Ex của em, tách khỏi ô MT
-  return { classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sEx.get(h.studentId) ?? [] })), ghiChuLop: gc.lop };
+  return { classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), diem: !laBpxlXepLich(p, { classId }), cot, hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sEx.get(h.studentId) ?? [] })), ghiChuLop: gc.lop };
 }
 
 // ---------------------------------------------------------------- PR-LM: bảng lịch MT ở panel Lộ trình
@@ -942,7 +942,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
   return {
-    classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), chuongTrinh: progress.programmeCode as string | null,
+    classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), diem: !laBpxlXepLich(p, { classId }), chuongTrinh: progress.programmeCode as string | null,
     /** B' 6b: người xem chỉ thấy ô MT0 (GV Speaking chấm chéo) — web vẽ "—" ở Giữa / Cuối khoá. */
     ...(chiMt0 ? { chiMt0: true } : {}),
     /** TAT-CHECKPOINT: ô Checkpoint em chưa có → nút "Xếp {tuần}" (QL xếp tay) thay "—". */

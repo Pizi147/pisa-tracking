@@ -109,7 +109,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     /* U03 (chủ SP 13/11): một nơi đo cho mọi trang (App) — panel con / panel đóng không gỡ `--ban-phim` của nơi khác. */
     assert(!/useBanPhim\(/.test(kp) && (docSach('web/src/App.tsx').match(/useBanPhim\(\)/g) ?? []).length === 1, 'useBanPhim phải đo đúng một nơi (App)');
-    assert(/max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
+    assert(/max-sm:fixed max-sm:inset-0 max-sm:z-\[60\] max-sm:!m-0 max-sm:rounded-none max-sm:border-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
   });
 
   await t.checkAsync('NEN-PANEL · "Lưu và tiếp": chỉ sang việc kế sau khi lưu xong; lưu lỗi / còn thiếu → ở lại', async () => {
@@ -148,6 +148,14 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     for (const c of ["t('Chưa lưu')", "t('Đang lưu…')", "t('Đã lưu')", "t('Không lưu được')", "t('Chữ đang gõ vẫn giữ.')"]) assert(kv.includes(c), `ChuLuu thiếu ${c}`);
     assert(/<ChuLuu tt=/.test(docSach('web/src/ui/SaveState.tsx')), 'SaveIndicator chưa dùng ChuLuu');
     assert(!/function TrangThaiLuu/.test(docSach('web/src/modules/yThuc/CaseSosControls.tsx')), 'CaseSosControls còn bản TrangThaiLuu riêng');
+  });
+
+  check('LT-TUAN (chủ SP 25/11) · Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT kỹ năng thi đúng tuần đang xem; ô đã chấm tuần khác ghi tuần thi (FT + lớp thường)', () => {
+    const ft = docSach('web/src/modules/cham/LuoiFT.tsx'), th = docSach('web/src/modules/cham/LuoiThuong.tsx');
+    assert(/!lich \|\| !tuanDangXem \|\| r\.cells\.some\(\(c\) => c\.required && \(c\.weekStart === tuanDangXem/.test(ft), 'LuoiFT: lọc em theo tuần đang xem');
+    assert(/daChamKhacTuan\(cell, tuanDangXem\) && <DongTuanDaCham/.test(ft), 'LuoiFT: dòng tuần ở ô đã chấm tuần khác');
+    assert(/const hienTuan = \(r: Row\) => !tuanDangXem \|\| /.test(th) && /dsHien = data\.rows\.filter\(hienTuan\)/.test(th), 'LuoiThuong: lọc em theo tuần đang xem');
+    assert(/s\.weekStart !== tuanDangXem && cell\.diem !== null/.test(th), 'LuoiThuong: dòng tuần ở ô đã chấm tuần khác');
   });
 
   check('NEN-PANEL T21 · 375 + bàn phím: visualViewport → --ban-phim; panel phủ co lên; chân dính trên bàn phím; thanh dưới ẩn', () => {

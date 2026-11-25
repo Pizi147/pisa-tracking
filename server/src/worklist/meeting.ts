@@ -1,14 +1,14 @@
 import { DS_JSON, db, laTrungKhoa, theoKhoaGui, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState, type TaskProgress } from '../../../shared/domain/index.ts';
+import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS_CLOSED, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState, type TaskProgress } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { badRequest, chuTuDo, diffDays, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
-import { laHieuLuc, nextCode } from './mgmttasks.ts';
+import { nextCode } from './mgmttasks.ts';
 import { ghiLan } from './giaoViec.ts';
 
 export const DUE_SOON_DAYS = 3;
@@ -768,61 +768,6 @@ function setFollowers(
         ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(taskId, source === 'auto' ? 'head' : 'tay', actorId, nowIso(), userId).changes) ghiLan('van_hanh', taskId, 'theo_doi', null, userId, actorId);
   }
 }
-
-const ASSIGNEE_EDITABLE = new Set(['progress', 'note']);
-
-export function updateTask(p: Principal, taskId: number, patch: any) {
-  const conn = db();
-  const t = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
-  if (!t) throw notFound('Không tìm thấy công việc');
-  const manage = can(p, PERMISSIONS.MEETING_EDIT, { branchId: t.branch_id, anyScope: t.branch_id === null });
-  if (!manage) {
-    /* VH-1 (PTA): người phụ trách đã rời chi nhánh của việc không còn quyền theo việc. */
-    if (t.assignee_user_id !== p.userId || !laHieuLuc(p.userId, t.branch_id ?? null)) {
-      require_(p, PERMISSIONS.MEETING_EDIT, { branchId: t.branch_id }, 'Bạn không có quyền cập nhật công việc này.');
-    }
-    const illegal = Object.keys(patch).filter((k) => !ASSIGNEE_EDITABLE.has(k));
-    if (illegal.length) throw badRequest('Bạn chỉ cập nhật được tiến độ và ghi chú của công việc được giao.');
-  }
-  if (patch.progress && !(TASK_PROGRESS as readonly string[]).includes(patch.progress)) {
-    throw badRequest('Tiến độ không hợp lệ.');
-  }
-  if (patch.dueDate && !isIsoDate(patch.dueDate)) throw badRequest('Hạn không hợp lệ.');
-  if (patch.assigneeUserId !== undefined) patch = { ...patch, assigneeUserId: kiemNguoiPhuTrach(conn, t.branch_id, patch.assigneeUserId) };
-
-  const map: Record<string, string> = {
-    title: 'title', progress: 'progress', dueDate: 'due_date', note: 'note',
-    assigneeUserId: 'assignee_user_id', taskType: 'task_type', unitId: 'reporting_unit_id',
-  };
-  /* RA-LOI-MAY: một giao dịch — lỗi ở bước sau (vd người theo dõi quá trần) không để lại lịch sử sửa / người theo dõi nửa chừng. */
-  return tx(() => {
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    for (const [k, v] of Object.entries(patch)) {
-      if (!map[k]) continue;
-      if (t[map[k]] === v) continue;
-      sets.push(`${map[k]} = ?`);
-      params.push(v);
-      conn.prepare('INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
-        .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
-    }
-    if (patch.followerIds !== undefined) {
-      if (!manage) throw forbidden('Chỉ người quản lý công việc mới đổi được người theo dõi.');
-      setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
-    }
-    if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }
-    if (patch.progress && patch.progress !== 'done' && t.progress === 'done') sets.push('completed_at = NULL');
-    if (!sets.length) return t;
-    sets.push('updated_at = ?');
-    params.push(nowIso(), taskId);
-    conn.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-    const after = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
-    writeAudit({ actorUserId: p.userId, action: 'task.update', entityType: 'task', entityId: taskId,
-      entityLabel: t.code, before: t, after });
-    return after;
-  });
-}
-
 
 /**
  * Danh sách người để chọn Người phụ trách / Người theo dõi.

@@ -88,7 +88,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   if (deXuatSua && !canEdit) sau.push('de-xuat-sua');   // RKC-3b: mọi trạng thái — máy chủ cờ `coTheDeXuatSua` theo GV lớp ghi danh gần nhất
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
   /* SUA-LUU-TRU: em đã lưu trữ vẫn sửa được kết quả thi thật (máy chủ đã cho từ OV-13h) — theo cờ quyền của máy chủ. */
-  if (cycle && (!ratio || !!cycle.kyThi) && (chiXem ? !!nhapThiThat : canEdit || suaThem)) sau.push('outcome');
+  if (cycle && (!ratio || !!cycle.kyThi) && (chiXem ? !!nhapThiThat : canEdit || suaThem || !!nhapThiThat)) sau.push('outcome');   // RA-2511 Q4: + Admin (`nhapThiThat`)
   /* P7: Quay lại học — em tạm dừng (`quayLai`) hoặc em đã kết thúc (`hocLai`, Quản lý). */
   if ((quyen?.quayLai && status === 'inactive') || (quyen?.hocLai && status === 'finished')) sau.push('quay-lai');
   /* OV-13j: ai sửa được thông tin em thì xem được lịch sử sửa (cả khi hồ sơ đã Lưu trữ — chỉ xem). */
@@ -115,8 +115,6 @@ export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: 
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
   'de-xuat-sua': t('Head duyệt rồi mới đổi'),
   'chuyen-lop': t('chọn lớp chuyển đến và tuần bắt đầu'),
-  'de-xuat-chuyen-lop': t('Head duyệt rồi quyết định'),
-  'tam-dung-ket-thuc': t('em vào Lưu trữ · tạm dừng giữ lớp'),
   'quay-lai': t('hạn tính lại từ ngày quay lại'),
   'xoa-hoc-vien': t('khôi phục được trong 30 ngày'),
 };

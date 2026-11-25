@@ -7,7 +7,7 @@ import {
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
-import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
+import { boKhoaCuoiTuan, chanBpxlCoDiem, choSuaLichTest, laBpxlXepLich, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, thamChieuDayDuKhiKiem, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
@@ -1176,8 +1176,12 @@ export function setSkillScope(
   _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean; daKiemQuyen?: boolean; giuHuy?: boolean } = {},
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
-  if (!_opts.monDangKy && !_opts.daKiemQuyen) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
-    'Chỉ Head mới đổi được phạm vi kỹ năng của một đợt.');
+  const ctx = { classId: attempt.class_id, studentId: attempt.student_id };
+  if (!_opts.monDangKy && !_opts.daKiemQuyen && !can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, ctx)) {
+    /* RA-2511 Q5 (N63 ②): BPXL Xoá / Khôi phục một kỹ năng ở Kế hoạch Test KHI CHƯA CÓ ĐIỂM (kể cả điểm đang cất) — cùng luật Xoá / Khôi phục cả MT. */
+    if (!laBpxlXepLich(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, ctx, 'Chỉ Head mới đổi được phạm vi kỹ năng của một đợt.');
+    chanBpxlCoDiem(p, attempt, entrySkillsOf(row.skill as AssessedSkill), `${tenMon(null, row.skill)} đã có điểm — nhờ Head.`);
+  }
   const giuHuy = required && !!_opts.giuHuy && row.sit_status === 'cancelled';
   const duaLaiHuy = required && row.sit_status === 'cancelled' && !giuHuy;
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };

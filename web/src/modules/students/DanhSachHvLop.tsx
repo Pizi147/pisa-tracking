@@ -8,7 +8,7 @@ import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { NoiTren } from '../../ui/NoiTren.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { ExamPlanText, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -251,9 +251,7 @@ function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undef
         <b className="block text-[14px]">{tieu}</b>
         <dl className="hop-dl">
           <dt>{t('Cần làm')}</dt>
-          <dd>{!cl ? '—' : cl.nhom === 'qua_han'
-            ? <span className="vh vh-qua">{cl.quaHanNgay ? t('Quá hạn {n} ngày', { n: cl.quaHanNgay }) : t('Quá hạn')}</span>
-            : <span className="vh vh-dang">{cl.han ? t('hạn {ngay}', { ngay: shortDate(cl.han, homNay) }) : t('Bắt buộc xử lý')}</span>}</dd>
+          <dd>{!cl ? '—' : (cl.han ?? null) ? <ChipHan loai="xu-ly-vi-pham" han={cl.han!} /> : t('Bắt buộc xử lý')}</dd>
           <dt>{t('Vi phạm chờ')}</dt><dd className="tabular-nums">{y.viPhamCho}</dd>
           <dt>{t('Mốc')}</dt><dd>{mocTuNhan(dich(g.yThuc))}</dd>
           <dt>{t('Lần này')}</dt><dd>{bacDu(dich(y.lanNay))}</dd>

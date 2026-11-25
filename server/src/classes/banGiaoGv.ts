@@ -10,7 +10,7 @@ import {
   type PhieuBanGiaoGvDto, type SlotPhanCong, type TuDien,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { boVaiCx, can, type Principal } from '../permissions.ts';
+import { boVaiBpxl, boVaiCx, can, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import type { GhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -211,7 +211,7 @@ export function phieuBanGiaoGv(p: Principal, id: number): PhieuBanGiaoGvDto {
   const b = docViec(id);
   const q = quyenViec(p, b);
   /* GV cũ chỉ đọc việc CÒN MỞ của mình — việc huỷ không có bản chụp, đọc sẽ lộ dữ liệu em hiện tại (rà sâu #731). */
-  const doc = q.viet || q.ql || (b.nguoi_cu === p.userId && b.trang_thai === 'mo') || (b.trang_thai === 'xong' && can(p, PERMISSIONS.STUDENT_VIEW, { classId: b.class_id }));
+  const doc = q.viet || q.ql || (b.nguoi_cu === p.userId && b.trang_thai === 'mo') || (b.trang_thai === 'xong' && can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: b.class_id }));   // RA-2511 (N57 / N63 ⑤): BPXL không đọc phiếu (Case / PA / Ý thức)
   if (!doc) throw forbidden('Bạn không có quyền đọc bàn giao này.');
   const conn = db();
   const ct = (b.ct ?? null) as string | null;

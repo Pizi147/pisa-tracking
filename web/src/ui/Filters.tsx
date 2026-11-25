@@ -260,7 +260,7 @@ export function OChiNhanh({ branches, branchId, onBranch, tatCa = true, hetHang 
   return (
     <label className={`inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--o-nhap-vien)] bg-[var(--o-nhap-nen)] text-[13px] font-semibold focus-within:border-[var(--accent)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] max-sm:min-h-[44px] ${hetHang ? 'relative max-sm:w-full' : ''}`}>
       <span className="whitespace-nowrap pl-2.5 pr-1.5 text-slate-400">{t('Chi nhánh')}</span>
-      <select className={`min-w-0 cursor-pointer self-stretch rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 font-semibold text-slate-100 outline-none ${hetHang ? 'flex-1 appearance-none pr-8' : 'pr-2'}`}
+      <select className={`min-w-0 cursor-pointer self-stretch max-sm:min-h-[44px] rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 font-semibold text-slate-100 outline-none ${hetHang ? 'flex-1 appearance-none pr-8' : 'pr-2'}`}
         value={branchId ?? ''} onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
         {tatCa && <option value="">{t('Tất cả')}</option>}
         {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}

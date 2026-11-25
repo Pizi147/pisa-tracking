@@ -174,7 +174,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
     return (
       <TheTieuChi dong={dongs.map((x) => ({ nhan: x.s === 'writing1' ? 'W1' : x.s === 'writing2' ? 'W2' : 'S', d: x.d!, band: x.band }))}>
         <button type="button" aria-expanded={chon} aria-label={t('{kn} của {ten} — mở tóm tắt', { kn: k.toUpperCase(), ten: r.fullName })}
-          className={`relative appearance-none rounded-md border-0 px-1.5 py-0.5 max-sm:p-0 after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] sm:after:hidden ${chon ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_2px_var(--accent)]' : 'bg-transparent hover:bg-[color:var(--accent-soft)]'}`}
+          className={`relative appearance-none rounded-md border-0 px-1.5 py-0.5 max-sm:p-0 after:absolute after:-inset-x-1.5 after:-inset-y-3 after:content-[''] sm:after:hidden ${chon ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_2px_var(--accent)]' : 'bg-transparent hover:bg-[color:var(--accent-soft)]'}`}
           onClick={() => moO(r, kn)}>{o}</button>
       </TheTieuChi>
     );

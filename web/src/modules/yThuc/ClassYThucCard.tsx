@@ -15,6 +15,7 @@ import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
 import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
 import { NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
@@ -304,7 +305,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
     /* GD-19 (mockup ⑪ K7a): bắt buộc CHỈ vì được yêu cầu → viên "{người} yêu cầu · hạn" + "Trong 2 tuần: n / 3" + nút "Xử lý" (panel hai lối). */
     const yc = vp.length > 0 && vp.every((v) => v.yeuCau != null) ? [...new Set(vp.map((v) => v.yeuCau).filter(Boolean))].join(', ') : null;
     const tiep = yc != null ? <>
-      {hanBuoc(<><BadgeViec tong={k === 'qua_han' ? 'qua' : 'cho'} xuong>{yc ? t('{x} yêu cầu', { x: yc }) : t('Yêu cầu xử lý')}{x.han ? ` · ${t('hạn {ngay}', { ngay: ngay(x.han, homNay) })}` : ''}</BadgeViec>
+      {hanBuoc(<><span className="text-[13px] text-slate-100">{yc ? t('{x} yêu cầu', { x: yc }) : t('Yêu cầu xử lý')}</span>{x.han && <ChipHan loai="xu-ly-vi-pham" han={x.han} />}
         <span className="text-xs text-slate-400">{t('Trong 2 tuần:')} <b className="font-semibold tabular-nums text-slate-100">{x.viPhamCho.length}</b> / 3</span></>)}
       {d.canManage && !x.deXuat ? nutChinh(t('Xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId })) : choAi('GVCN', d.gvcn)}
     </> : <>

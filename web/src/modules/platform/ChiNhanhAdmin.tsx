@@ -67,13 +67,13 @@ export function ChiNhanhAdmin() {
               /* AUDIT-UI C11: chi nhánh ngừng = chữ `text-faint` + nhãn "ngừng dùng", không opacity. */
               if (c.key === 'ma') return <b className={b.status === 'active' ? 'text-slate-100' : 'text-faint'}>{b.code}</b>;
               if (c.key === 'ten') return (
-                <span className="inline-flex flex-wrap items-center gap-1.5">
+                <span className="flex flex-wrap items-center gap-1.5">
                   <OSuaTaiCho giaTri={b.name} nhan={`${t('Tên')} ${b.code}`} toiDa={80} chiXem={!quanTri} onLuu={(v, cu) => gui(b, 'name', v, cu)} />
                   {b.status !== 'active' && <Info pending>{t('ngừng dùng')}</Info>}
                 </span>
               );
               if (c.key === 'dc') return <OSuaTaiCho giaTri={b.diaChi} nhan={`${t('Địa chỉ')} ${b.code}`} chiXem={!quanTri} trong={t('+ Địa chỉ')} onLuu={(v, cu) => gui(b, 'diaChi', v, cu)} />;
-              return <span className="tabular-nums"><OSuaTaiCho giaTri={b.soDienThoai} nhan={`${t('Số điện thoại')} ${b.code}`} toiDa={60} rong="w-40" chiXem={!quanTri} trong={t('+ SĐT')} onLuu={(v, cu) => gui(b, 'soDienThoai', v, cu)} /></span>;
+              return <span className="tabular-nums"><OSuaTaiCho giaTri={b.soDienThoai} nhan={`${t('Số điện thoại')} ${b.code}`} toiDa={60} chiXem={!quanTri} trong={t('+ SĐT')} onLuu={(v, cu) => gui(b, 'soDienThoai', v, cu)} /></span>;
             }} />
         )}
         {donVi.data && donVi.data.length > 0 && (

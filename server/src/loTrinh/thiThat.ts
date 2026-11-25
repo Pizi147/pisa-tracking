@@ -8,7 +8,7 @@ import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiC
 import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, laAdminCua, lopDayDu, type Principal } from '../permissions.ts';
 import { coTheGiuViecTvv, nguoiGiuTvv } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -53,6 +53,8 @@ export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: numb
   /* OV-13h (chủ SP 15/10): em đã Lưu trữ vẫn nhập kết quả thi thật (bỏ chặn OV-11d) — mọi thứ khác của hồ sơ Lưu trữ vẫn khoá. */
   /* OV-8b: TVV / CX (`student.edit_more`) nhập kết quả thi thật của HV chi nhánh mình (CX: mọi chi nhánh). */
   if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
+  /* RA-2511 Q4 (chủ SP 25/11): Admin chi nhánh của em cũng nhập (việc vẫn ở TVV theo N6 — `sauThiCuaEm` không đổi). */
+  if (laAdminCua(p, { studentId: c.student_id })) return true;
   return laGvcnLopCuoi(p, c.id);
 }
 function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
@@ -83,7 +85,7 @@ const docDiem = (v: unknown, nhan: string, kt: KyThi | null = null): number | nu
 export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiThat) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head hoặc TVV của chi nhánh nhập được kết quả thi thật.');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head, TVV, CX hoặc Admin của chi nhánh nhập được kết quả thi thật.');
   /* P13 KET-PET: lộ trình KET / PET có kết quả thi thật theo điểm Cambridge — chỉ 4 cột + Target lúc nhập; KHÔNG kết luận / Overall band (`outcome*`),
      không bản chụp, không Bước tiếp (luồng FT lọc `route IS NOT NULL`). Overall · Grade · CEFR tính khi hiện (`ketQuaKyThi`). */
   const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
@@ -181,7 +183,7 @@ const truongNk = (r: any) => ({ l: r.thi_that_l ?? null, r: r.thi_that_r ?? null
 export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?: unknown; hoanTac?: unknown }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head hoặc TVV của chi nhánh nhập được kết quả thi thật.');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head, TVV, CX hoặc Admin của chi nhánh nhập được kết quả thi thật.');
   const auditId = Number(input.auditId);
   if (!Number.isInteger(auditId) || auditId <= 0) throw badRequest('Bản trước không hợp lệ.');
   const conn = db();

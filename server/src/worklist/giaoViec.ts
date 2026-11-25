@@ -16,7 +16,7 @@
  */
 import { DS_JSON, db, docNho, tx } from '../db.ts';
 import { PERMISSIONS, TASK_PROGRESS_LABEL, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
-import { can, laTvvCuaEm, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, laTvvCuaEm, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -185,7 +185,8 @@ export const laNguoiTheoDoi = (loai: LoaiTheoDoi, id: number, uid: number, branc
 /** Người theo dõi / người giao / người phụ trách / người xem được hồ sơ em / Head-CX: đọc được khối giao việc. */
 function requireDoc(p: Principal, v: Viec): void {
   if (v.phuTrach.includes(p.userId) || vaiQuanLy(p, v.branchId) || laNguoiGiao(p, v.row)) return;
-  if (can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.studentId }) || laNguoiTheoDoi(v.loai, v.id, p.userId, v.branchId)) return;
+  /* RA-2511 (N63 ⑤): BPXL không đọc việc người khác (tên vi phạm, ghi chú xử lý) — việc giao / theo dõi của chính mình vẫn qua dòng trên / dưới. */
+  if (can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId: v.studentId }) || laNguoiTheoDoi(v.loai, v.id, p.userId, v.branchId)) return;
   throw forbidden('Việc này ngoài phạm vi của bạn — nhờ Head chi nhánh của em.');
 }
 

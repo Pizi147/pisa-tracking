@@ -29,12 +29,15 @@ export function HopTutor({ dsChiNhanh, chiNhanhDanhBa, ds, tutor, coBuoi = true,
   const head = !!chiNhanhDanhBa;
   const [ten, setTen] = useState(tutor?.ten ?? tenSan ?? '');
   const [sdt, setSdt] = useState(tutor?.sdt ?? '');
-  const [noi, setNoi] = useState(tutor?.noiDay === 'online' ? 'online' : tutor?.noiDay ? String(tutor.noiDay.id) : head ? String(chiNhanhDanhBa[0]?.id ?? 'online') : '');
+  const noi0 = tutor?.noiDay === 'online' ? 'online' : tutor?.noiDay ? String(tutor.noiDay.id) : head ? String(chiNhanhDanhBa[0]?.id ?? 'online') : '';
+  const [noi, setNoi] = useState(noi0);
   const [kn, setKn] = useState<string[]>(tutor?.kyNang ?? []);
   const [loi, setLoi] = useState<LoiO & { chung?: string }>({});
   const [gui, setGui] = useState(false);
   const [hoiXoa, setHoiXoa] = useState(false);
   const trung = ten.trim() ? ds.find((d) => d.id !== tutor?.id && boDau(d.ten) === boDau(ten)) : undefined;
+  /* RA-2511 (N35): đóng hộp khi đã gõ → hỏi trước (Modal `daSua`), không mất chữ. */
+  const daSua = ten !== (tutor?.ten ?? tenSan ?? '') || sdt !== (tutor?.sdt ?? '') || noi !== noi0 || kn.join() !== (tutor?.kyNang ?? []).join();
 
   async function luu() {
     const l: LoiO = { ten: ten.trim() ? undefined : t('Nhập tên tutor.'), kyNang: kn.length ? undefined : t('Chọn ít nhất một kỹ năng.') };
@@ -68,7 +71,7 @@ export function HopTutor({ dsChiNhanh, chiNhanhDanhBa, ds, tutor, coBuoi = true,
   }
 
   return (
-    <Modal open onClose={onDong} z="z-[60]" width="max-w-[330px]"
+    <Modal open onClose={onDong} z="z-[60]" width="max-w-[330px]" daSua={daSua && !gui}
       title={tutor ? t('Sửa tutor') : t('Thêm tutor')}
       footer={<>
         {tutor && !coBuoi && <button type="button" className="btn mr-auto min-h-[44px] text-late sm:min-h-0" onClick={() => setHoiXoa(true)}>{t('Xoá tutor')}</button>}
@@ -161,7 +164,7 @@ export function HopGop({ onDong, onThem }: { onDong: () => void; onThem: (ten: s
   }
 
   return (
-    <Modal open onClose={onDong} width="max-w-[620px]"
+    <Modal open onClose={onDong} width="max-w-[620px]" daSua={muc.length > 0 && !gui}
       title={t('Gộp tên gõ tay · {n} tên', { n: data?.length ?? 0 })}
       footer={<>
         <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>

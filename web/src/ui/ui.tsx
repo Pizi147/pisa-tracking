@@ -540,7 +540,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
   if (v8) {
     return (
       <div role="group" aria-label={ariaLabel} aria-disabled={tat ? true : undefined} title={tat}
-        className={`inline-flex h-9 max-w-full shrink-0 overflow-hidden rounded-lg border max-sm:h-11 max-sm:w-full ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+        className={`inline-flex h-9 max-w-full shrink-0 overflow-hidden rounded-lg border max-sm:h-[46px] max-sm:w-full ${tat ? 'opacity-40' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
         {muc.map((m, i) => {
           const chon = !tat && m.key === value;
           return (

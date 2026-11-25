@@ -186,6 +186,7 @@ export type LoTrinhD = {
   targetRevisions: { oldTarget: number | null; newTarget: number | null; effectiveFrom: string }[];
   examPlan?: { confidence: string; weekStart: string | null; month: string | null; label: string } | null;
   thiThat?: { ngay: string | null; l: number | null; r: number | null; w: number | null; s: number | null; ovr: number | null; target: number | null; khongThi: boolean;
+    /** RA-2511: máy chủ `coKetQuaThi` (cùng luật `CO_KET_QUA_THI_SQL`) — "đã có KQ thi thật". */ coKq?: boolean;
     /** THI-LAI-1-KN: kỹ năng lấy điểm KQ thi thật lần trước (em chỉ thi lại kỹ năng còn lại). */
     layLai?: LayLaiThi | null } | null;
 };
@@ -208,7 +209,8 @@ export function thiThatCua(cy: LoTrinhD, homNay: string): ThiThatD | 'khong' | n
   if (tt?.khongThi) return 'khong';
   if (tt?.ngay) {
     const diem = { l: tt.l, r: tt.r, w: tt.w, s: tt.s, ovr: tt.ovr };
-    return { loai: Object.values(diem).some((v) => v != null) ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target, layLai: tt.layLai ?? null };
+    /* RA-2511: "có KQ" = cờ máy chủ `coKq` (`coKetQuaThi` — cùng luật `CO_KET_QUA_THI_SQL`); nhập dở 1–3 kỹ năng = còn chờ. */
+    return { loai: tt.coKq ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target, layLai: tt.layLai ?? null };
   }
   if (ke?.confidence === 'week' && ke.weekStart) return { loai: ke.weekStart <= mondayOfDate(homNay) ? 'cho' : 'du-kien', tuan: ke.weekStart, thang: null, nhan: ke.label, diem: trong, target };
   if (ke?.confidence === 'month' && ke.month) return { loai: 'du-kien', tuan: null, thang: ke.month, nhan: ke.label, diem: trong, target };

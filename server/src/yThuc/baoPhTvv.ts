@@ -14,7 +14,7 @@ import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
   GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
-import { can, coQuyenBuocTiep, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, coQuyenBuocTiep, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -250,7 +250,8 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const v = loadViec(id);
   const ghi = coTheGhi(p, v);
   /* GV-1: người theo dõi đọc được panel (chỉ xem — không SĐT phụ huynh, không nút ghi). */
-  if (!ghi && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id }) && !laNguoiTheoDoi('bao_ph', id, p.userId, v.em_branch ?? null)) throw forbidden('Học viên ngoài phạm vi của bạn.');
+  /* RA-2511 (N63 ⑤): BPXL không xem Ý thức — chỉ đọc khi được giao / theo dõi đúng việc này. */
+  if (!ghi && !can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id }) && !laNguoiTheoDoi('bao_ph', id, p.userId, v.em_branch ?? null)) throw forbidden('Học viên ngoài phạm vi của bạn.');
   const homNay = demoToday();
   const khoang = khoangTamDung([v.student_id])[v.student_id];
   const hanMacDinh = hanBaoPhHieuLuc(v.han, khoang);

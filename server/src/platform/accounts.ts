@@ -472,8 +472,13 @@ export function hoanTacDoiVai(p: Principal, userId: number, nhatKyId: unknown): 
   });
 }
 
+/** RA-2511: đổi / đặt lại mật khẩu → mọi phiên đăng nhập khác của tài khoản hết hiệu lực (máy bị lộ mật khẩu cũ không còn vào được); giữ phiên đang bấm. */
+function huyPhienKhac(userId: number, giuPhien?: string) {
+  db().prepare('DELETE FROM demo_sessions WHERE user_id = ? AND token != ?').run(userId, giuPhien ?? '');
+}
+
 /** Đặt lại mật khẩu hộ — thay cho luồng "quên mật khẩu" mà bản demo không có. */
-export function resetPassword(p: Principal, userId: number, password: string) {
+export function resetPassword(p: Principal, userId: number, password: string, giuPhien?: string) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống đặt lại được mật khẩu.');
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
@@ -481,6 +486,7 @@ export function resetPassword(p: Principal, userId: number, password: string) {
   if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   const { hash, salt } = hashPassword(checkPassword(password));
   conn.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, userId);
+  huyPhienKhac(userId, giuPhien);
   writeAudit({
     actorUserId: p.userId, action: 'password_reset', entityType: 'users', entityId: userId, entityLabel: user.full_name,
   });
@@ -585,7 +591,7 @@ export function myProfile(p: Principal) {
 export function updateProfile(p: Principal, input: {
   fullName?: string; phone?: string | null; skills?: string[]; extraEmails?: string[];
   currentPassword?: string; newPassword?: string; ngonNgu?: unknown; daXemHuongDan?: unknown;
-}) {
+}, giuPhien?: string) {
   const conn = db();
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(p.userId) as any;
   return tx(() => {
@@ -623,6 +629,7 @@ export function updateProfile(p: Principal, input: {
       }
       const { hash, salt } = hashPassword(checkPassword(input.newPassword));
       conn.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, p.userId);
+      huyPhienKhac(p.userId, giuPhien);
     }
     return myProfile(p);
   });

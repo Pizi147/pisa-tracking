@@ -6,8 +6,8 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, giuOCu, isCoreTeacherOf, lopDayDu, qlDiem, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
-import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { CHU_CHAN_NHAP_DIEM, bangLop, boVaiBpxl, can, editableSkills, emChiXemBoTro, giuOCu, isCoreTeacherOf, lopDayDu, qlDiem, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { laBpxlXepLich, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
@@ -1248,7 +1248,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
    * sống suốt khoá và gắn với một HẠNG MỤC (môn), nên câu hỏi đúng là "môn này của em có Case nào đang mở không".
    */
   const studentIds = [...new Set(attempts.map((a) => a.student_id as number))];
-  const caseRows = studentIds.length
+  /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
+  const caseRows = studentIds.length && (xemQuaEm || can(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId }))
     ? (conn
         .prepare(`SELECT * FROM sos_cases WHERE student_id IN (${studentIds.map(() => '?').join(',')})`)
         .all(...studentIds) as any[])
@@ -1313,6 +1314,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     monNgan: Object.fromEntries(prog.skills.map((k) => [k, tenMonNgan(prog.code, k)])),
     editableSkills: editable,
     canPlan: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
+    /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — ô lưới / trang lượt không Vắng / Huỷ điểm / Khôi phục điểm (`QuyenTT.diem`). */
+    diem: !laBpxlXepLich(p, { classId }),
     /** PR-XLMT (K4-32): GVCN của lớp — menu ⋯ ô lưới (Báo vắng, Xếp lại bài vắng) theo `thaoTacKyNang`. Một lần cho cả bảng. */
     laGvcn: isCoreTeacherOf(p, classId, today),
     passThreshold: nguongDatLop(classId),

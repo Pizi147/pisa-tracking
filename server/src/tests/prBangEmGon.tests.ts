@@ -44,7 +44,7 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
     assert(dm.tvvChinhCuaLop([{ tvv: 'Lê Thu' }, { tvv: 'Phan Mai' }, { tvv: 'Phan Mai' }, { tvv: null }]) === 'Phan Mai', 'TVV chính = nhiều em nhất');
     assert(dm.tvvChinhCuaLop([]) === null && dm.tvvChinhCuaLop([{ tvv: 'B' }, { tvv: 'A' }]) === 'A', 'TVV chính: rỗng → null, hoà → theo chữ cái');
     assert(!doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'TVV'"), 'đầu hồ sơ lớp còn ô TVV (lời 25)');
-    assert(/\.tvv \{[^}]*font-size: 11px[^}]*color: var\(--text-faint\)/.test(css), 'CSS .tvv 11 px text-faint');
+    assert(/\.tvv \{[^}]*font-size: 12px[^}]*color: var\(--text-faint\)/.test(css), 'CSS .tvv 12 px text-faint');
     assert(!bang.includes('<MoiVao'), 'bảng em còn chip MoiVao');
     assert(doc('web/src/modules/students/ClassRoster.tsx').includes('tvv?: string | null'), 'RosterRow thiếu tvv');
   });

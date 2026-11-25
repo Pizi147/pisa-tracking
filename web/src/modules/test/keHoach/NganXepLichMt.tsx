@@ -13,7 +13,7 @@ import { BranchFilter } from '../../../ui/Filters.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
 import {
-  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, demSeXep, laChiXepLich, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
@@ -35,7 +35,7 @@ export function KhungXepLich({ value, onChange, coFt, coThuong }: {
   );
 }
 
-type Hang = HangFT & { classId: number; classCode: string };
+type Hang = HangFT & { classId: number; classCode: string; diem: boolean };
 const KY = KY_NANG_KE_HOACH;
 const DAU: Record<ToneSeXep, string> = { ok: '✓', soon: '!', bad: '✕' };
 const MAU_DAU: Record<ToneSeXep, string> = { ok: 'text-ok', soon: 'text-soon', bad: 'text-bad' };
@@ -105,7 +105,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   /* Một danh sách: thứ tự lớp rồi tên (không còn nhóm "đã chọn / chưa chọn"). */
   const hangs: Hang[] = useMemo(() => lopChon.flatMap((id) => {
     const l = luoi.get(id);
-    return l ? l.hang.map((h) => ({ ...h, classId: id, classCode: l.classCode })) : [];
+    return l ? l.hang.map((h) => ({ ...h, classId: id, classCode: l.classCode, diem: l.diem })) : [];
   }).sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi') || a.ten.localeCompare(b.ten, 'vi')), [luoi, lopChon]);
   const soCot = Math.max(0, ...[...luoi.values()].map((l) => l.cot.length)) + 1;   // RKC: không trần MT (N14)
   const cot = Array.from({ length: soCot }, (_, i) => i + 1);
@@ -450,7 +450,7 @@ function HopThiLai({ h, d, onThiLai, onKhong }: { h: Hang; d: DongHangLoat; onTh
   const ks = d.coDiem ?? [];
   const [chon, setChon] = useState<KyNangKH[]>(ks.length === 1 ? ks : []);
   /* BPXL-1 (N57): thi lại huỷ điểm đã có — BPXL không làm; nút mờ, lý do tại nút (máy chủ cũng chặn). */
-  const chiXepLich = laChiXepLich(useSession().session?.roles);
+  const chiXepLich = !h.diem;   // RA-2511 (N57): cờ máy chủ theo lớp
   const o = d.attemptNo ? h.dot[d.attemptNo] : undefined;
   const mon = (k: KyNangKH) => tenMonNgan(null, k);
   const tuan = ks.map((k) => o?.kn[k]?.tuan).find(Boolean);

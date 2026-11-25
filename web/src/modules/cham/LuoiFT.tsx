@@ -73,6 +73,13 @@ export const oTrongFt = (c: Cell) => c.required && c.canEdit && c.band === null 
  */
 export const khacTuanFt = (c: Cell, tuanDangXem: string | null | undefined) =>
   !!tuanDangXem && !!c.weekStart && c.weekStart !== tuanDangXem && c.band === null && !c.noShow && c.progress !== 'cancelled';
+/** SUA-UI #19 (chủ SP 25/11): ô ĐÃ CÓ ĐIỂM của kỹ năng thi tuần KHÁC tuần đang xem → dòng nhỏ nghiêng ghi tuần đã thi (căn giữa ô). */
+const daChamKhacTuan = (c: Cell, tuanDangXem: string | null | undefined) =>
+  !!tuanDangXem && !!c.weekStart && c.weekStart !== tuanDangXem && c.band !== null && !c.noShow;
+const DongTuanDaCham = ({ c }: { c: Cell }) => (
+  <div className="mt-px whitespace-nowrap text-center text-xs italic leading-4 tabular-nums text-faint" data-phu-odiem=""
+    title={t('Làm bài {tuan}', { tuan: tuanLich(c.weekStart!) })}>{tuanLich(c.weekStart!)}</div>
+);
 
 /** OV-1d: ô thi tuần khác mà vẫn là nút — bài đã dời vì vắng, người xem gỡ được (lưới tuần gốc: "Vắng → W3 OCT"). */
 export const nutTuanGoc = (c: Cell) => !!c.daChot?.doiSang && suaDuoc(c);
@@ -204,7 +211,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
         hint={t('Đổi tuần ở trên, hoặc quay lại Test để chọn lớp khác.')} />
     );
   }
-  const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem));
+  /* SUA-UI #19 (chủ SP 25/11): Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT kỹ năng thi đúng tuần đang xem — em thi cả bộ ở tuần khác không hiện. */
+  const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem))
+    .filter((r) => !lich || !tuanDangXem || r.cells.some((c) => c.required && (c.weekStart === tuanDangXem || nutTuanGoc(c))));
   /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
   const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
   const rowsHien = gonHv ? rows.slice(0, 10) : rows;
@@ -497,6 +506,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}
+            {daChamKhacTuan(cell, tuanDangXem) && <DongTuanDaCham c={cell} />}
           </OBang>
         );
       })}
@@ -521,6 +531,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             data-luu={o[s]}>
             <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} />
             {oDiem(s, cell)}
+            {daChamKhacTuan(cell, tuanDangXem) && <DongTuanDaCham c={cell} />}
           </OBang>
         );
       })}
@@ -673,6 +684,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
                       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos, mtCu: !!row.lichSu,
                         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
                     <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} lon />
+                    {daChamKhacTuan(cell, tuanDangXem) && <DongTuanDaCham c={cell} />}
                   </>
                 )}
             </div>

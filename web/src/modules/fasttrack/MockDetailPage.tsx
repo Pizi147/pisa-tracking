@@ -104,6 +104,8 @@ type Detail = {
     /** PR-XLMT: GVCN của lớp — Vắng / Dời lịch (`thaoTacKyNang`). */
     laGvcn: boolean;
     canSkipSkill: boolean; canOverrideDeadline: boolean;
+    /** RA-2511 (N57): false = BPXL (chỉ xếp lịch) — không Vắng / Huỷ điểm / Khôi phục điểm. */
+    diem: boolean;
     canEditSos: boolean; editableSkills: string[];
   };
 };
@@ -423,7 +425,6 @@ export default function MockDetailPage() {
             )}
           </span>
         </div>
-        <ConLaiLuot ds={conLai} />
       </section>
 
       {/* ④ BẢNG KỸ NĂNG — một dòng một kỹ năng; bấm dòng mở vùng Nhận xét | Case & phương án + Lịch sử kỹ năng ngay dưới. */}
@@ -461,7 +462,7 @@ export default function MockDetailPage() {
           onClose={() => { setNgan(null); reload(); }} onChanged={reload} />
       )}
       {hopLich && d.classId !== null && (
-        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id}
+        <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id} diem={d.viewer.diem}
           dot={{ loai: 'ft', attemptNo: d.attemptNo }} attemptId={d.id} kn={knHop(d)} kyNangDau={hopLich.k} doiTuanDau={hopLich.k !== null} lichSu={d.lichSu}
           {...(hopLich.ghiChu !== undefined ? { ghiChu: hopLich.ghiChu } : {})}
           onClose={() => setHopLich(null)} onSaved={reload} onHienDien={() => {}} />
@@ -756,7 +757,7 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
     });
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
       : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa, quaTuan: tuanDaQua(r.weekStart, homNay),
-          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
+          huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy, diem: d.viewer.diem });
     /* Môn em không học (môn đăng ký) — không có "Khôi phục" (đổi ở Sửa thông tin). */
     const chinh0 = c.khongHoc && tat.chinh === 'khoi-phuc-kn' ? null : ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
@@ -928,12 +929,12 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
             </div>
           </div>
           <div className="col-span-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm md:contents">
-            <div role="cell" className="min-w-0 md:col-start-5 md:row-start-1">
+            <div role="cell" data-cot="nx" data-trong={!r.required || !coDiemCells.length || !(coDiemCells.every((c) => c.nhanXet) || cells.some((c) => c.thieuNhanXet)) ? '1' : undefined} className="min-w-0 md:col-start-5 md:row-start-1">
               {!r.required || !coDiemCells.length ? <span className="text-slate-500 max-md:hidden">—</span>
                 : coDiemCells.every((c) => c.nhanXet) ? <span className="text-slate-300">{[t('Có'), ...nguoiNx].join(' · ')}</span>
                 : cells.some((c) => c.thieuNhanXet) ? <span className="font-semibold text-soon">{t('Chưa nhận xét')}</span> : <span className="text-slate-500 max-md:hidden">—</span>}
             </div>
-            <div role="cell" className="min-w-0 md:col-start-6 md:row-start-1">
+            <div role="cell" data-cot="case" data-trong={!cs.length ? '1' : undefined} className="min-w-0 md:col-start-6 md:row-start-1">
               {!cs.length ? <span className="text-slate-500 max-md:hidden">—</span> : (
                 <span className="flex min-w-0 flex-col">
                   <b className="text-slate-100">Case {skillShort(k)}{cs.length > 1 && <span className="font-normal text-slate-400"> +{cs.length - 1}</span>}</b>
@@ -943,7 +944,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
             </div>
           </div>
           {/* GD-11c (PTA rà 375): hàng nút cuối thẻ — ⋯ luôn sát phải (thẻ chỉ có "Chỉ xem" + ⋯ cũng thẳng ⋯ của thẻ khác). */}
-          <div role="cell" className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1">
+          <div role="cell" data-cot="act" className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1">
             {chinh && (
               <button type="button" data-chinh className={`btn btn-sm min-h-[44px] max-md:flex-1 max-md:justify-center sm:min-h-0 ${nhanChinh === CHU_THAO_TAC['sua-diem'] ? '' : 'btn-primary'}`} onClick={() => chay(chinh, chinhO)}>{nhanChinh}</button>
             )}
@@ -975,14 +976,14 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
       {d.cells.length === 0 ? (
         <Empty title={t('Lớp này chưa cấu hình kỹ năng nào')} />
       ) : (
-        <div role="table" aria-label={t('Kết quả theo kỹ năng')}>
+        <div role="table" className="mt-luoi" aria-label={t('Kết quả theo kỹ năng')}>
           <div role="row" className={`${ROW_GRID} hidden px-3 py-2 text-[12px] font-semibold text-slate-500 md:grid`}>
             <div role="columnheader">{t('Kỹ năng')}</div>
             <div role="columnheader">{t('Lịch')}</div>
             <div role="columnheader">{t('Điểm')}</div>
             <div role="columnheader">{t('Trạng thái')}</div>
-            <div role="columnheader">{t('Nhận xét')}</div>
-            <div role="columnheader">Case</div>
+            <div role="columnheader" data-cot="nx" data-trong="1">{t('Nhận xét')}</div>
+            <div role="columnheader" data-cot="case" data-trong="1">Case</div>
             <div role="columnheader"><span className="sr-only">{t('Thao tác')}</span></div>
           </div>
           {KY_NANG_LON.map(dongKn)}

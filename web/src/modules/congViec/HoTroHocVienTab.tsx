@@ -701,7 +701,7 @@ export function HoTroHocVienTab() {
         {/* CV-TAB: hàng tab hạng mục — dưới hàng lọc, kẻ dưới hết bề ngang (mockup `.tabs`). */}
         {/* GD-1 (mockup v21 K8a/b): < 1024 px — công tắc hai đoạn "Việc · Lớp của tôi" thay khung phải. */}
         {(laGv || laTvv) && data && !data.scopeEmpty && (
-          <div role="group" aria-label={t('Xem')} className="flex h-11 overflow-hidden rounded-lg border lg:hidden" style={{ borderColor: 'var(--line-strong)' }}>
+          <div role="group" aria-label={t('Xem')} className="flex h-[46px] overflow-hidden rounded-lg border lg:hidden" style={{ borderColor: 'var(--line-strong)' }}>
             {[[false, t('Việc')], [true, laTvv ? t('HV của tôi') : t('Lớp của tôi')]].map(([k, nhan], i) => (
               /* HD-CHI: < 1024 px khung "Lớp của tôi" ẩn sau nút này — "Chỉ cho tôi" khoanh nút (cùng `data-hd` với khung). */
               <button key={String(k)} type="button" aria-pressed={xemLop === k} onClick={() => setXemLop(k as boolean)} data-hd={k && !laTvv ? 'cv-lop-cua-toi' : undefined}

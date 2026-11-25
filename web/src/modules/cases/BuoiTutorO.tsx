@@ -74,7 +74,7 @@ export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
         </div>
       ) : oTutor}
       <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('nx'))} dem={{ co: nd, can: CHU_TOI_THIEU_CASE, toiDa: TRAN_NOI_DUNG_TUTOR }}>
-        <textarea className="field w-full" rows={2} maxLength={Math.max(TRAN_NOI_DUNG_TUTOR, b.nhanXet.length)} {...lf.o(loi, k('nx'))} value={b.nhanXet}
+        <textarea className="field w-full" rows={2} {...lf.o(loi, k('nx'))} value={b.nhanXet}
           onChange={(e) => dat({ nhanXet: e.target.value })} placeholder={t('Em học được gì, còn yếu gì')} />
       </Truong>
       {ten && <BaNut i={i} b={b} ten={ten} dat={dat} />}

@@ -5,7 +5,7 @@ import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKIL
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
-import { can, chiXemLopCu, require_, vaiVoiEm, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, chiXemLopCu, laAdminCua, require_, vaiVoiEm, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
 import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
@@ -733,7 +733,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   });
 
   // --------------------------------------------------------- vấn đề đang theo dõi
-  const caseRows = conn
+  /* RA-2511 (N57 / N63 ⑤): BPXL mở hồ sơ được nhưng KHÔNG có Case / PA (như `kiemXemCase`) — `cases`, PA trong `progress`, Mini Test rỗng. */
+  const xemCase = can(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: activeClassOf(studentId) ?? null, studentId });
+  const caseRows = !xemCase ? [] as any[] : conn
     .prepare(
       `SELECT sc.*, cy.seq AS cycle_seq, cy.route, cy.programme_code AS cy_ct, u.full_name AS reporter_name,
               (SELECT COUNT(*) FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') AS iv_count,
@@ -800,7 +802,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     ? (() => { const t = tuanTheoId([selected.start_period_id]).get(selected.start_period_id); return t ? { week_start: t.week_start, code: t.code } : null; })()   // TOC-DO-2511
     : null;
   const miniTest = (() => {
-    const mt = miniTestCuaHocVien([studentId]).get(studentId);
+    const mt = xemCase ? miniTestCuaHocVien([studentId]).get(studentId) : undefined;
     if (!mt) return null;
     /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test).
        GV-CU-BO-TRO: người xem là Người dạy một PA của nhóm (FOU hai môn hai GV cũ) → mở PA của chính họ (ghi một lần cho cả nhóm). */
@@ -1005,6 +1007,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           ? {
             ngay: selected.thi_that_ngay ?? null, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null, s: selected.thi_that_s ?? null,
             khongThi: !!selected.thi_that_khong_thi, target: selected.thi_that_target ?? target,
+            coKq: coKetQuaThi(selected),   // RA-2511: một luật "đã có KQ thi thật" cho web (`CO_KET_QUA_THI_SQL`)
             layLai: docLayLai(selected.thi_that_lay_lai),   // THI-LAI-1-KN: kỹ năng lấy điểm lần trước (+ ngày thi lần đó)
             ovr: thiThatCuaCycle({ laFt: true, target, khongCamKet: !!selected.khong_cam_ket, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null,
               s: selected.thi_that_s ?? null, khongThi: !!selected.thi_that_khong_thi, outcome: selected.outcome ?? null, outcomeScore: selected.outcome_score ?? null }).ovr,
@@ -1084,7 +1087,9 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         /** PR-OV2b: Admin / TVV / CX (`student.edit_info`) — ⋯ Sửa thông tin, chỉ các ô thông tin. */
         coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
         /** SUA-LUU-TRU (chủ SP 07/11): ⋯ "Kết quả thi thật" của em đã lưu trữ — cùng hàm máy chủ (`coTheNhapThiThat`: cả GVCN lớp cuối). Em đang học: luật cũ (không thêm câu). */
-        coTheNhapThiThat: !!s.archived_at && !!selected && (!!selected.route || !!kyThiCuaChuongTrinh(selected.programme_code)) && coTheNhapThiThat(p, selected),
+        /** RA-2511 Q4: em đang học — thêm Admin chi nhánh em (GVCN / TVV / CX / Head đã có mục qua `canEdit` / `coTheSuaThem`; không thêm câu). */
+        coTheNhapThiThat: !!selected && (!!selected.route || !!kyThiCuaChuongTrinh(selected.programme_code))
+          && (s.archived_at ? coTheNhapThiThat(p, selected) : laAdminCua(p, { studentId })),
         /** OV-10b: ô nhập Liên hệ ở Sửa thông tin — QL, Quản trị, TVV, CX, Admin; GV không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
         nhapLienHe: coONhapLienHe(vaiVoiEm(p, studentId)) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */

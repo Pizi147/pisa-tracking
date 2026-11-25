@@ -164,7 +164,7 @@ export function boTroCuaCase(caseIds: number[]): Map<number, BoTroDto> {
   const conn = db();
   const ph = caseIds.map(() => '?').join(',');
   const dong = conn.prepare(
-    `SELECT iv.case_id, iv.nhom_bo_tro, sc.topic, cy.programme_code AS ct
+    `SELECT iv.case_id, iv.nhom_bo_tro, iv.description, sc.topic, cy.programme_code AS ct
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
       WHERE iv.kind = 'bo_tro' AND iv.status != 'cancelled'
         AND iv.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph}) AND kind = 'bo_tro' AND nhom_bo_tro IS NOT NULL)

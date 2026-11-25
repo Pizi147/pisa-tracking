@@ -7,7 +7,7 @@ import { addDaysStr } from '../../../lib/format.ts';
 import { useToast } from '../../../ui/Toast.tsx';
 import { useSession } from '../../../lib/session.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_MUC_HOP, NUT_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, laChiXepLich, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
+  CAU_TUAN_DA_QUA, CHU_MUC_HOP, NUT_HOP, PERMISSIONS, chipDongKyNang, duongDotTest, kiemTuanXep, lyDoKhongXoa, menuHopKyNang, mondayOfDate,
   nhanTuanKhoa, tenMon, tenMonNgan, theoTuanChung, trangThaiTT, tuanDaSo, tuanMacDinhDotMoi, tuanNamChu,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type MucHop, type OKyNang, type ThaoTac, type TrangThaiTT,
 } from '@shared/domain/index.ts';
@@ -50,10 +50,12 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *   Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
-export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maLop = null, ghiChu, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
+export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maLop = null, ghiChu, loai, classId, studentId, diem, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
   /** U05 (mockup khu C): mã lớp ở góc phải đầu hộp. */
   maLop?: string | null;
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
+  /** RA-2511 (N57): cờ máy chủ theo lớp — false = chỉ xếp lịch (BPXL): không Vắng / Huỷ điểm / thi lại / xoá MT có điểm. */
+  diem: boolean;
   /** OV-15c: tên em cho câu hỏi Xoá ("Xoá lịch MT4 của Đỗ Trọng Tiến?") và ghi chú lịch thi hiện tại của em × đợt (C21). */
   tenHv?: string;
   /** Không truyền (hồ sơ MT, Lộ trình) = không có ô ghi chú — ô trống không được đè ghi chú đang có mà nơi đó không tải. */
@@ -75,8 +77,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const ngayNghiepVu = nghiepVu || null;
   const [thaoTac, setThaoTac] = useState<{ t: ThaoTac; k: KyNangKH } | null>(null);
   /** `ca-luot` = nhật ký cả lượt (⋯ đầu hộp). */
-  const { can, session } = useSession();
-  const chiXepLich = laChiXepLich(session?.roles);   // BPXL-1 (N57): không Vắng / Huỷ điểm / thi lại / xoá MT có điểm
+  const { can } = useSession();
+  const chiXepLich = !diem;   // BPXL-1 (N57) · RA-2511: cờ máy chủ theo lớp (vai kép GV + BPXL không bị tắt nhầm)
 
   /* Menu ⋯ từng dòng theo `thaoTacKyNang` qua `menuHopKyNang` (T38; mockup phần 2). Hộp là màn của Quản lý. */
   const quyen = { nhapDiem: !chiXepLich, quanLy: true, gvcn: false, laFt: loai === 'ft', dotHoanTat: false,
@@ -87,7 +89,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     if (!o || !ngayNghiepVu) return 'khong-yeu-cau';
     return trangThaiTT({ batBuoc: o.batBuoc, tuanBatDau: o.tuan, coDiem: o.khoa === 'đã có điểm', sit: o.sit, choDuyet: o.choDuyet, lichSu, homNay: ngayNghiepVu, huyVang: o.huyVang });
   };
-  const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), quyen, moi);
+  /* RA-2511 Q5 (N63 ②): BPXL Xoá / Khôi phục kỹ năng CHƯA có điểm (máy chủ `setSkillScope` chặn cả điểm đang cất). */
+  const menuCua = (k: KyNangKH) => menuHopKyNang(ttCua(k), chiXepLich && ttCua(k) !== 'co-diem' ? { ...quyen, huy: true } : quyen, moi);
   /** Dòng đổi tuần thường (không đã huỷ / vắng / chờ duyệt / bỏ khỏi đợt) — theo "Tuần chung", kể cả có điểm (điểm giữ, luật 1). */
   const theoChungDau = (k: KyNangKH) => theoTuanChung(ttCua(k), quyen, moi);
   /** N38 L5: dòng có gì để xếp lại (vắng, huỷ, chờ thẻ cũ, đã dời do vắng, Không dự thi) — Dời chọn đúng tuần cũ vẫn là một lần lưu. */

@@ -285,7 +285,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
         const dot = o(hop.hang, hop.cot);
         return (
           <HopKyNang key={`${hop.hang.studentId}-${hop.cot.key}`} anchor={hop.anchor}
-            tieuDe={`${nhanDot(hop.cot.dot)} · ${hop.hang.ten}`} tenHv={hop.hang.ten} maLop={data.classCode} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
+            tieuDe={`${nhanDot(hop.cot.dot)} · ${hop.hang.ten}`} tenHv={hop.hang.ten} maLop={data.classCode} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId} diem={data.diem}
             dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau} lichSu={!!dot.lichSu}
             deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
             {...(loai === 'thuong' ? { ky: (data as LuoiThuongData).boMon, ct: (data as LuoiThuongData).chuongTrinh } : {})}
