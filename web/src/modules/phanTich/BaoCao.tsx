@@ -91,7 +91,7 @@ export function BaoCao(pv: PhamViPhanTich) {
     <>
       {soHv}
       {/* GD-12a (⑨ A1, R9.4): nhãn có đơn vị như cột bảng. */}
-      <SoTo ten={`${t('Đạt MT')} · ${t('HV')}`} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
+      <SoTo ten={`${t('Đạt MT')} · ${t('HV')}`} ky={nhanKhoang(pv.khoang).chinh}   /* rà 25/11 PR 2 (điểm 10): ghi rõ khoảng như Thi thật — ba nơi Đạt MT khác phạm vi */ luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
         gt={phanTram(d.datMt, nBc(tong, 'dat-mt'), t('Đạt MT'))} phu={d.datMt?.mau ? <><Dam>{d.datMt.dat}/{d.datMt.mau}</Dam> {t('HV có MT chốt')}</> : t('Chưa có dữ liệu')} />
       <SoTo ten={t('Tiến bộ')} ky={t('trong kỳ')} luat={t('Lượt kỹ năng có band tăng so mốc MT trước của chính HV.')}
         gt={phanTram(d.tienBo, nBc(tong, 'tien-bo:tat-ca'), t('Tiến bộ'))} phu={d.tienBo?.mau ? <><Dam>{d.tienBo.dat}/{d.tienBo.mau}</Dam> {t('lượt kỹ năng tăng band')}</> : t('Chưa có dữ liệu')} />

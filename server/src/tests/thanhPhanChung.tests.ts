@@ -429,7 +429,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('GD-6 rà PTA · chip lớp "loại · số" MỘT thành phần (hồ sơ lớp + Học viên & Lớp); badge tab là số; tab Báo cáo PH chỉ nhãn; ⋯ thẻ em chung; TVV không dưới tên em tab Ý thức', () => {
     const b = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 7, missingSkills: [], soBaiChoCham: 21, needScoresTitle: null, phase: 'running', missingCount: 3, soChoDuyet: 8, soViecQuaHan: 2 });
     const nhan = Object.fromEntries([...b.hien, ...b.an].map((x: any) => [x.key, x.nhan]));
-    assert(nhan.cham === 'Chờ chấm · 21' && nhan['cho-duyet'] === 'Chờ duyệt · 8' && nhan['qua-han'] === 'Quá hạn · 2' && nhan['xep-lop'] === 'Chưa chốt lộ trình · 7' && nhan['thieu-tt'] === 'Thiếu thông tin · 3', JSON.stringify(nhan));
+    assert(nhan.cham === 'Chờ chấm · 21 bài' && nhan['cho-duyet'] === 'Chờ duyệt · 8' && nhan['qua-han'] === 'Quá hạn · 2 việc' && nhan['xep-lop'] === 'Chưa chốt lộ trình · 7' && nhan['thieu-tt'] === 'Thiếu thông tin · 3', JSON.stringify(nhan));
     const dau = doc('web/src/modules/classes/DauTrangLop.tsx'), sp = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/<ChipBadgeLop key=\{x\.key\} x=\{x\}/.test(dau) && /<ChipBadgeLop key=\{x\.key\} x=\{x\}/.test(sp) && !/toneBadgeLop\(x\)/.test(dau + sp), 'chip lớp chưa dùng một thành phần');
     const pg = doc('web/src/modules/classes/ClassOverviewPage.tsx');

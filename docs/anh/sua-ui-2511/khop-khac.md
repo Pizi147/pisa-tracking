@@ -25,7 +25,7 @@ Chỉ sửa hiển thị; không đụng logic của PR 1–3. Mockup không đ�
 | 16 | Chữ 11 px TVV | `index.css` `.tvv` 12 px | `d03-hv-lop` | XONG |
 | 17 | Cảnh báo key trùng `/huong-dan` | `shared/huongDan/index.ts` `THU_TAB_HD` bỏ trùng `van-hanh` | — (console sạch, kiểm bằng Playwright) | XONG |
 | 18 | Chữ "Hoàn thành Case" | `cases/ThaoTacCase.tsx` + bản EN: "Head hoặc người đóng mở lại được" | — | XONG |
-| 19 | Lịch Test tuần: ô đã chấm của môn thi tuần KHÁC tuần đang xem ghi tuần thi dưới ô | `cham/LuoiThuong.tsx` (dòng 12 px nhạt, dùng `s.weekStart` có sẵn trong lượt — không request mới, không đổi máy chủ). Ô chưa chấm của môn thi tuần khác đã có mã tuần trong ô từ trước ("sẽ làm sau"); ô thi đúng tuần đang xem không thêm gì | `d19-lich-test-tuan-sau` (xem W4 SEP: Nguyễn Thảo Vy L / R / G+V / P ghi "W3 SEP" = đã làm trước; các em còn lại ô "W3 SEP" / "W4 SEP" / "W1 OCT" là ô chưa chấm như cũ) | XONG cho lớp thường (lưới đúng / tổng). Lượt FT không có lưới điểm từng kỹ năng ở Lịch Test nên không có ô để ghi |
+| 19 | Lịch Test tuần: (a) chỉ hiện em có ÍT NHẤT MỘT kỹ năng thi đúng tuần đang xem; (b) kỹ năng khác của em đó: đã chấm → điểm + dòng tuần đã thi (12 px, nghiêng, nhạt, căn giữa ô), chưa chấm → mã tuần sẽ thi (như cũ); (c) áp cho FT + lớp thường; ô L / R FT một dòng "29/40 - 6.5" (bỏ dòng "29 câu") | `cham/LuoiThuong.tsx`, `cham/LuoiFT.tsx` (lọc em + `DongTuanDaCham`), `fasttrack/HopNhapDiem.tsx` (ô L / R); dữ liệu có sẵn (`weekStart` từng ô) — không request mới; phép kiểm `prNenPanel` LT-TUAN | `d19-lich-test-tuan-sau` (lớp thường W4 SEP: Thảo Vy thi cả bộ W3 SEP không còn hiện), `d19-ft-tuan-sau` (FT W4 SEP: Phạm Bảo Ngọc L / R đã chấm ghi "W3 SEP"), `d19-ft-tuan-nay` (FT W3 SEP), `d19-zoom-tam-diem.png` | XONG |
 
 ## 2. Thao tác TRƯỚC → SAU
 

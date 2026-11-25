@@ -168,6 +168,8 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
   const nhom = useMemo(() => nhomTheoGv(quaHan), [quaHan]);
   const tenGv = (g: { owner: string | null; ownerId: number | null }) => g.owner ?? (g.ownerId === null ? t('Chưa có người phụ trách') : `#${g.ownerId}`);
   const hien = hetGv ? nhom : nhom.slice(0, 6);
+  const an = nhom.slice(hien.length);
+  const anGv = an.filter((g) => g.ownerId !== null).length;
   const lopCua = (ds: Dong[]) => [...new Set(ds.map((x) => x.classCode).filter(Boolean))].slice(0, 3).join(' · ');
   const tenGvO = (g: (typeof nhom)[number]) => (g.ownerId ? <Link to={`/giao-vien/${g.ownerId}`} className="ten-ho-so font-semibold">{tenGv(g)}</Link> : <span className="font-semibold italic text-dim">{tenGv(g)}</span>);
   const soGvO = (g: (typeof nhom)[number]) => (
@@ -198,7 +200,8 @@ function KhoiGiaoVien({ quaHan, tenCn, onMo }: { quaHan: Dong[]; tenCn: ((id: nu
             )} />
           {nhom.length > hien.length && (
             <button type="button" onClick={() => setHetGv(true)} className="link w-full border-0 border-t bg-transparent px-4 py-2.5 text-left text-[13px] max-sm:min-h-[44px]" style={{ borderColor: 'var(--line)' }}>
-              {t('+ {n} GV', { n: nhom.length - hien.length })}</button>
+              {/* Rà 25/11 PR 2: "+ n GV" chỉ đếm người thật — nhóm "Chưa có người phụ trách" (ownerId null) không phải GV, ghi riêng. */}
+              {[anGv ? t('+ {n} GV', { n: anGv }) : null, an.some((g) => g.ownerId === null) ? `+ ${t('Chưa có người phụ trách')}` : null].filter(Boolean).join(' · ')}</button>
           )}
         </div>
       )}

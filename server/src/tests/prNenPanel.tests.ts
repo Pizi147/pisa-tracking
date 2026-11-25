@@ -150,6 +150,14 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(!/function TrangThaiLuu/.test(docSach('web/src/modules/yThuc/CaseSosControls.tsx')), 'CaseSosControls còn bản TrangThaiLuu riêng');
   });
 
+  check('LT-TUAN (chủ SP 25/11) · Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT kỹ năng thi đúng tuần đang xem; ô đã chấm tuần khác ghi tuần thi (FT + lớp thường)', () => {
+    const ft = docSach('web/src/modules/cham/LuoiFT.tsx'), th = docSach('web/src/modules/cham/LuoiThuong.tsx');
+    assert(/!lich \|\| !tuanDangXem \|\| r\.cells\.some\(\(c\) => c\.required && \(c\.weekStart === tuanDangXem/.test(ft), 'LuoiFT: lọc em theo tuần đang xem');
+    assert(/daChamKhacTuan\(cell, tuanDangXem\) && <DongTuanDaCham/.test(ft), 'LuoiFT: dòng tuần ở ô đã chấm tuần khác');
+    assert(/const hienTuan = \(r: Row\) => !tuanDangXem \|\| /.test(th) && /dsHien = data\.rows\.filter\(hienTuan\)/.test(th), 'LuoiThuong: lọc em theo tuần đang xem');
+    assert(/s\.weekStart !== tuanDangXem && cell\.diem !== null/.test(th), 'LuoiThuong: dòng tuần ở ô đã chấm tuần khác');
+  });
+
   check('NEN-PANEL T21 · 375 + bàn phím: visualViewport → --ban-phim; panel phủ co lên; chân dính trên bàn phím; thanh dưới ẩn', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     const bp = docSach('web/src/ui/banPhim.ts');   // U03: đo một nơi (App) cho mọi trang, không chỉ khi panel mở

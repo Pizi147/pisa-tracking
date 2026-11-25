@@ -148,7 +148,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(ql.hien.map((x: any) => x.nhan), ['Chờ duyệt · 2', 'Cần xếp lớp tiếp · 4'], 'B4: Head — chờ duyệt, cần xếp lớp trước');
     eq(ql.an.map((x: any) => x.key), ['cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'], 'Phần gom (Head)');
     const gv = d.badgeLop({ ...goc, vai: 'gv' });
-    eq(gv.hien.map((x: any) => x.nhan), ['Chờ chấm · 3', 'Quá hạn · 1'], 'B4: GV — việc của mình trước');
+    eq(gv.hien.map((x: any) => x.nhan), ['Chờ chấm · 3 bài', 'Quá hạn · 1 việc'], 'B4: GV — việc của mình trước');
     eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'qua-han').tone, 'danger', 'qua-han tone danger');
     eq([...ql.hien, ...ql.an].find((x: any) => x.key === 'cho-duyet').tone, 'muted', 'cho-duyet tone muted (OV-15a bỏ tím)');
