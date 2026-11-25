@@ -2322,6 +2322,9 @@ export const TRAN_GHI_LO = {
   xacNhanXuLy: 123, xacNhanXuLyDong: 103,   // đo 21/11 (seed, ngoài request): 94 câu, 79 dòng — TRƯỚC = SAU (Head / CX nằm trong câu INSERT sẵn có) → max(94 + 10, ⌈94 × 1,3⌉), ⌈79 × 1,3⌉
   /** N70: PUT /students/:id/y-thuc/khai-bac của GVCN (gửi Head duyệt: trạng thái Ý thức em + thẻ + chuông Head / Quản trị + nhật ký) · POST /classes/:id/y-thuc/lo/cap-bac
    *  với 4 em đã khai (web chia lô 4 khi có em gửi duyệt); đo trong prN70 N70-9. */
+  /** Rà Hoàn tác 25/11: POST /yeu-cau/:id/rut/hoan-tac (đo trong prOv7a OV7a-5a) · POST /giao-viec/:loai/:id/theo-doi tự thêm lại chính mình (prGiaoViec GV1-HT) ·
+   *  POST /classes/:id/y-thuc/lo/cap-bac/hoan-tac Head 2 em (1 về bậc trước đọc nhật ký máy chủ, 1 xoá dòng vừa khai; prOv13d KHAI-BAC-LO). */
+  boRutYeuCau: 17, tuThemLaiTheoDoi: 37, loHoanTacCapBac2Em: 33,   // đo 25/11 (seed, ngoài request): 7 · 27 · 23 câu → max(đo + 10, ⌈đo × 1,3⌉)
   guiSuaKhai: 30, loGuiSuaKhai4Em: 71,   // đo 24/11 (seed, ngoài request): 20 câu · 61 câu / 4 em (15,3 / em) → đo + 10
   /** LG-12: POST /violations/:id/khong-xu-ly — đọc vi phạm + trạng thái Ý thức em (trước + sau, trong giao dịch) + ghi cột, phản hồi, hạn, lịch sử, nhật ký, tin; đo trong prYt4 LG-12 (3). */
   khongXuLy: 37,   // đo 15/11 (seed, ngoài request — không bộ nhớ request): 27 câu → max(27 + 10, ⌈27 × 1,3⌉)

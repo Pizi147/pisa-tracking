@@ -20,7 +20,7 @@ import { can, laTvvCuaEm, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
+import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
@@ -270,17 +270,30 @@ const tinRieng = (uids: readonly number[], boi: number, v: Viec, title: string, 
   }
 };
 
-/** Thêm người theo dõi (chọn nhiều) — người phụ trách, người giao, Head / Quản trị / CX. */
-export function themTheoDoi(p: Principal, loai: LoaiGiao, id: number, body: { userIds?: unknown }): KhoiGiaoViec {
+/**
+ * Rà Hoàn tác 25/11: chính `p` vừa TỰ bỏ theo dõi việc này (lịch sử `theo_doi` cu = p, moi = null, boi = p) trong `HOAN_TAC_PHUT` phút — điều kiện
+ * DUY NHẤT để người không có quyền sửa theo dõi thêm lại chính mình (Hoàn tác "Đã bỏ theo dõi"): không thêm ai khác, không vào việc khác.
+ */
+const vuaTuBo = (p: Principal, loai: LoaiGiao, id: number) => !!db().prepare(`SELECT 1 FROM viec_giao_lan WHERE loai = ? AND ref_id = ? AND truong = 'theo_doi'
+    AND cu = ? AND moi IS NULL AND boi = ? AND luc >= ? LIMIT 1`).get(loai, id, String(p.userId), p.userId, new Date(Date.now() - HOAN_TAC_PHUT * 60_000).toISOString());
+
+/** Thêm người theo dõi (chọn nhiều) — người phụ trách, người giao, Head / Quản trị / CX; hoặc chính mình ngay sau khi tự bỏ (`vuaTuBo`). */
+export function themTheoDoi(p: Principal, loai: LoaiGiao, id: number, body: { userIds?: unknown }): KhoiGiaoViec | { ok: true } {
   const v = docViec(loai, id);
   if (!v.mo) throw badRequest('Việc đã kết thúc — không thêm người theo dõi.');
-  if (!coTheSuaTheoDoi(p, v)) throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
-  const ds = (Array.isArray(body.userIds) ? body.userIds : [body.userIds]).slice(0, 20).map((u) => kiemNguoiNhan(u, v.branchId));
+  const tho = (Array.isArray(body.userIds) ? body.userIds : [body.userIds]).slice(0, 20);
+  const tuThemLai = !coTheSuaTheoDoi(p, v);
+  if (tuThemLai && !(tho.length === 1 && Number(tho[0]) === p.userId && vuaTuBo(p, loai, id))) {
+    throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
+  }
+  const ds = tho.map((u) => kiemNguoiNhan(u, v.branchId));
   if (!ds.length) throw badRequest('Chọn người theo dõi.');
   tx(() => {
     for (const uid of ds) if (themTheoDoiDong(loai, id, [uid], 'tay', p.userId, v.branchId)) ghiLan(loai, id, 'theo_doi', null, uid, p.userId);
   });
-  return xemGiaoViec(p, loai, id);
+  if (!tuThemLai) return xemGiaoViec(p, loai, id);
+  /* Tự thêm lại mà quyền xem việc không đi theo việc theo dõi → không trả khối (như `boTheoDoi`), không báo lỗi sau khi đã lưu. */
+  try { return xemGiaoViec(p, loai, id); } catch { return { ok: true }; }
 }
 
 /** Bỏ một người theo dõi — tự bỏ (ai cũng được), người khác: như thêm. */

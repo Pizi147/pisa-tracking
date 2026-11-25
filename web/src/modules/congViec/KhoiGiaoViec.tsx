@@ -55,7 +55,7 @@ const thaoTacChung: ThaoTacKhoi = {
   doiNguoi: (g, userId) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/phu-trach`, { userId, phuTrachCu: g.duocGiao ? g.phuTrach[0]?.id ?? null : null }),
   hoanTacNguoi: async (g) => { const r = await api.post<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/phu-trach/hoan-tac`); return r && 'loai' in r ? r : g; },   // AU-2111: đã đảo, không còn quyền xem
   suaHan: (g, han) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/han`, { han, hanCu: g.loai === 'tinh_hinh' ? g.han : g.hanChon }),
-  themTheoDoi: (g, ids) => api.post<KhoiGv>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }),
+  themTheoDoi: async (g, ids) => { const r = await api.post<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi`, { userIds: ids }); return r && 'loai' in r ? r : g; },   // tự thêm lại, không còn quyền xem
   boTheoDoi: async (g, userId) => { const r = await api.del<KhoiGv | { ok: true }>(`${duongGiaoViec(g.loai, g.id)}/theo-doi/${userId}`); return r && 'loai' in r ? r : g; },
 };
 /**
@@ -432,8 +432,9 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
     const daBo = await chayTung(dsMoi.current.filter((g) => g.theoDoi.some((x) => x.id === n.id)), (g) => thaoTac.boTheoDoi(g, n.id));
     if (!daBo.length) return;
     const chu = n.id === toi ? t('Đã bỏ theo dõi') : t('Đã bỏ {ten} khỏi theo dõi', { ten: n.ten ?? '' });
-    const themLai = () => dsMoi.current.filter((g) => daBo.includes(khoaPhan(g)) && g.coTheSuaTheoDoi && g.mo);
-    /* PTA rà #2162: không còn phần nào thêm lại được (tự bỏ khi không có quyền sửa theo dõi / phần đã đóng) → không hiện Hoàn tác. */
+    /* Rà Hoàn tác 25/11: TỰ bỏ thì luôn thêm lại được chính mình vào đúng phần vừa bỏ (máy chủ cho trong cửa sổ Hoàn tác, kể cả không có quyền sửa theo dõi). */
+    const themLai = () => dsMoi.current.filter((g) => daBo.includes(khoaPhan(g)) && (g.coTheSuaTheoDoi || n.id === toi) && g.mo);
+    /* PTA rà #2162: không còn phần nào thêm lại được (bỏ người khác ở phần đã đóng / mất quyền) → không hiện Hoàn tác. */
     if (!themLai().length) { toast.push('ok', chu); return; }
     toast.hoanTac(chu, () => { void chayTung(themLai(), (g) => thaoTac.themTheoDoi(g, [n.id])); }, { key: `bo-theo-doi:${n.id}` });
   };

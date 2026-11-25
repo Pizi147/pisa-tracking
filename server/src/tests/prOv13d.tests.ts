@@ -141,6 +141,8 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] })) === 400 || !kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] }), moi).ok, 'bậc ngoài 0–6 bị từ chối');
   }));
 
+  const { soCauSql: demCau } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   await checkAsync('KHAI-BAC-LO · lô cấp bậc: tháng + ghi chú chung (rỗng hợp lệ), N66 em đã xử lý trên web vẫn lưu, Hoàn tác cả lô (về chưa khai / bậc cũ), bậc đã đổi thì không đè; khai từng em ghi chú rỗng hợp lệ', () => thu(() => {
     const a = moiEm(), b = moiEm(), khoa = moiEm(), c = moiEm();
     const bacDb = (sid: number) => get('SELECT bac, thang, ghi_chu FROM y_thuc_khai_bac WHERE student_id = ?', sid);
@@ -162,7 +164,12 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     /* Hoàn tác: a về chưa khai, b về bậc 1 (tháng / ghi chú cũ); GVBM không có quyền lô. */
     const lai = (x: any) => ({ studentId: x.studentId, bac: x.bac, truoc: x.truoc });
     assert(maLoi(() => lo.loHoanTacCapBac(gvbm, cid, { em: [lai(kq(r, a))] })) === 403, 'GVBM 403');
-    const h = lo.loHoanTacCapBac(head, cid, { em: [lai(kq(r, a)), lai(kq(r, b))] });
+    /* Rà Hoàn tác 25/11: `truoc` gửi GIẢ (bậc 5 / bậc 4) → máy chủ bỏ qua, về đúng bản nó đã ghi (b: bậc 1 · 2026-08; a: xoá dòng vừa khai). */
+    const c0 = demCau();
+    const h = lo.loHoanTacCapBac(head, cid, { em: [{ ...lai(kq(r, a)), truoc: { bac: 4, thang: '2026-01', ghiChu: 'giả' } }, { ...lai(kq(r, b)), truoc: { bac: 5, thang: '2026-01', ghiChu: 'giả' } }] });
+    const cauHt = demCau() - c0;
+    console.log(`      đo: hoàn tác cấp bậc 2 em ${cauHt} câu`);
+    assert(cauHt <= TRAN_GHI_LO.loHoanTacCapBac2Em, `hoàn tác cấp bậc ${cauHt} câu > ${TRAN_GHI_LO.loHoanTacCapBac2Em}`);
     assert(kq(h, a).ok && kq(h, b).ok, JSON.stringify(h));
     assert(!bacDb(a) && bacDb(b).bac === 1 && bacDb(b).thang === '2026-08', `hoàn tác: ${JSON.stringify([bacDb(a), bacDb(b)])}`);
     /* Bậc đã đổi sau lần lưu (QL sửa) → không đè. */

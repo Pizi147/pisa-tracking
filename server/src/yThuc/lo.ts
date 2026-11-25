@@ -263,7 +263,20 @@ function chiLanCuaMinh(p: Principal, sid: number, em: EmYThuc, homNay: string, x
 }
 
 /**
- * KHAI-BAC-LO · Hoàn tác cả lô: trả mỗi em về `truoc` (null = xoá dòng khai vừa tạo) — CHỈ khi bậc khai hiện tại vẫn là `bac` vừa lưu (người khác đổi
+ * Bản TRƯỚC lần sửa bậc gần nhất, do máy chủ ghi (`discipline.declare_level_edit`.before) — chỉ khi lần ghi dòng khai cuối của em là lần sửa của
+ * CHÍNH `p` và đã ra đúng bậc `sau`; null = không có lần sửa nào của `p` để hoàn tác. Nhật ký cũ (trước 25/11, chỉ có bậc) → null: không đoán tháng / ghi chú.
+ */
+function banTruocCuaMinh(p: Principal, sid: number, sau: number): { bac: number; thang: string | null; ghiChu: string; cycleId: number } | null {
+  const a = db().prepare(`SELECT actor_user_id, action, before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ?
+    AND action IN ('discipline.declare_level', 'discipline.declare_level_edit', 'discipline.declare_level_undo') ORDER BY id DESC LIMIT 1`).get(sid) as any;
+  if (a?.action !== 'discipline.declare_level_edit' || a.actor_user_id !== p.userId) return null;
+  const b = JSON.parse(a.before_json ?? 'null'), s = JSON.parse(a.after_json ?? 'null');
+  if (s?.bac !== sau || typeof b?.bac !== 'number' || typeof b.ghiChu !== 'string' || typeof b.cycleId !== 'number') return null;
+  return { bac: b.bac, thang: b.thang ?? null, ghiChu: b.ghiChu, cycleId: b.cycleId };
+}
+
+/**
+ * KHAI-BAC-LO · Hoàn tác cả lô: trả mỗi em về bậc trước máy chủ đã ghi (`banTruocCuaMinh`; không có = xoá dòng khai vừa tạo) — CHỈ khi bậc khai hiện tại vẫn là `bac` vừa lưu (người khác đổi
  * sau đó thì em đó báo riêng, không đè). Quyền như khai / sửa: lớp một lần (`chuanBi`); xoá dòng khai (về "chưa khai") khi chuỗi chưa có lần xử lý
  * trên web, trừ QL. Nhật ký từng em (`discipline.declare_level_undo`).
  */
@@ -283,14 +296,17 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
       }
       const sau = Number(x.bac);
       if (!em.khai || em.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
-      const tr = x.truoc && typeof x.truoc === 'object' ? x.truoc as Record<string, unknown> : null;
-      if (tr) {
+      /* Rà Hoàn tác 25/11: bậc trước lấy từ nhật ký MÁY CHỦ ghi lúc sửa (`truoc` web gửi bỏ qua) — lần ghi cuối là lần sửa của chính người bấm
+         thì về bản trước đó; không thì chỉ còn đường xoá dòng vừa khai (dưới), `chiLanCuaMinh` chặn mọi trường hợp khác. Đọc + ghi cùng giao dịch. */
+      const tr = tx(() => {
+        const b = banTruocCuaMinh(p, sid, sau);
+        if (!b) return null;
         /* N70: "về bậc trước" là SỬA bậc đã khai — chỉ người áp thẳng được (Head / Quản trị); GVCN không có lần sửa thẳng nào để hoàn tác. */
         if (!c.laQl) throw forbidden('Sửa bậc đã khai cần Head duyệt — không hoàn tác em này.');
-        /* SUA-GOP-2511: `truoc` do web gửi → kiểm như khai thường (chặn ngày / tháng tương lai); bản lưu thật trước đó luôn ≤ hôm nay nên Hoàn tác thật không bị chặn. */
-        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
-        return { nhan: Number(tr.bac) > 0 ? nhanLoaiXuLy(kindCuaBac(Number(tr.bac))) : BAC_0_NHAN };
-      }
+        luuSuaKhai(p, hv, sid, kiemKhai(b, true), c.homNay, { bacCu: sau, cycleId: b.cycleId, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
+        return b;
+      });
+      if (tr) return { nhan: tr.bac > 0 ? nhanLoaiXuLy(kindCuaBac(tr.bac)) : BAC_0_NHAN };
       tx(() => {
         const lai = trangThaiYThuc([sid], c.homNay).get(sid)!;
         if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');

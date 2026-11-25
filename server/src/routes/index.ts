@@ -2750,6 +2750,11 @@ api.post('/yeu-cau/:id/rut', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.rutYeuCau(principalOf(req), pInt(req, 'id'));
 }));
+/** Rà Hoàn tác 25/11: Hoàn tác ngay sau Rút (`coTheHoanTac`) — chỉ người vừa rút, thẻ chưa bị xử lý khác (`boRutYeuCau`). */
+api.post('/yeu-cau/:id/rut/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return yeuCauSvc.boRutYeuCau(principalOf(req), pInt(req, 'id'));
+}));
 
 /**
  * CẬP NHẬT KẾT QUẢ — một thao tác duy nhất khép lại một chu kỳ xử lý (mục 7.7 [3], 7.9).

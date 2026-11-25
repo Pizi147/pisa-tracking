@@ -9,7 +9,9 @@ import { LOAI_CUA_BANG, donViec } from '../worklist/giaoViec.ts';
  * Quyền kiểm ở nơi gọi, theo bản ghi HIỆN TẠI (như thao tác gốc).
  */
 type Dong = Record<string, unknown>;
-type Muc = { k: 'sua' | 'tao'; bang: string; truoc: Dong[]; sau: Dong[] };
+/** `xoa` (Hoàn tác Rút yêu cầu 25/11): dòng thao tác XOÁ — đảo chèn lại nguyên dòng (cả `id`), chỉ khi rowid còn trống. ponytail: bảng không có cột
+ *  INTEGER PRIMARY KEY thì rowid chèn lại có thể khác — mới dùng cho `case_milestones` (có `id`). */
+type Muc = { k: 'sua' | 'tao' | 'xoa'; bang: string; truoc: Dong[]; sau: Dong[] };
 
 /** PC-GV-A: đọc nguyên dòng theo rowid, một câu mỗi 500 dòng (thay một câu mỗi dòng) — lưu / Hoàn tác phân công nhiều lớp chụp hàng chục dòng. */
 function docTheoRowid(conn: any, bang: string, rowids: readonly unknown[]): Map<unknown, Dong> {
@@ -36,6 +38,11 @@ export class GhiDao {
     if (!cu) { this.muc.push({ k: 'sua', bang, truoc, sau: [] }); return; }
     const co = new Set(cu.truoc.map((d) => d.__r));
     cu.truoc.push(...truoc.filter((d) => !co.has(d.__r)));
+  }
+  /** Chụp NGUYÊN dòng sắp bị XOÁ (gọi TRƯỚC thao tác) — đảo chèn lại. */
+  xoa(bang: string, dieuKien: string, ...args: unknown[]): void {
+    const truoc = this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE ${dieuKien}`).all(...args) as Dong[];
+    if (truoc.length) this.muc.push({ k: 'xoa', bang, truoc, sau: [] });
   }
   /** Chạy `fn`; dòng MỚI xuất hiện trong `bang WHERE dieuKien` ghi là "thêm" (đảo xoá đi). */
   theoDoi<T>(bang: string, dieuKien: string, args: unknown[], fn: () => T): T {
@@ -116,6 +123,7 @@ export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
   for (const m of muc) {
     const co = docTheoRowid(conn, m.bang, m.sau.map((s) => s.__r));
     for (const s of m.sau) {
+      if (m.k === 'xoa') { if (co.has(s.__r)) throw conflict(KHAC(m.bang)); continue; }   // dòng đã xoá: rowid phải còn trống
       if (s.__mat) throw conflict(KHAC(m.bang));   // dòng đã mất ngay lúc chốt (không đảo được)
       if (!giongNhau(boQua(m.bang, co.get(s.__r)), boQua(m.bang, s)!)) throw conflict(KHAC(m.bang));
     }
@@ -128,6 +136,13 @@ export function daoLai(conn: any, g: BanGhiDao, nguoi: number): void {
         /* GV-1 (rà PTA A): dòng VIỆC vừa xoá (Hoàn tác duyệt…) → dọn người theo dõi / lịch sử giao / hạn — id được dùng lại. */
         const loai = LOAI_CUA_BANG[m.bang];
         if (loai) donViec(loai, lo.map(Number));
+      }
+      continue;
+    }
+    if (m.k === 'xoa') {
+      for (const d of m.truoc) {
+        const cot = Object.keys(d).filter((c) => c !== '__r');
+        conn.prepare(`INSERT INTO ${m.bang} (${cot.join(', ')}) VALUES (${cot.map(() => '?').join(', ')})`).run(...cot.map((c) => d[c]));
       }
       continue;
     }
@@ -149,7 +164,7 @@ export function daoDuoc(g: BanGhiDao | null): boolean {
   const conn = db();
   return (JSON.parse(g.du_lieu) as Muc[]).every((m) => {
     const co = docTheoRowid(conn, m.bang, m.sau.map((s) => s.__r));
-    return m.sau.every((s) => !s.__mat && giongNhau(boQua(m.bang, co.get(s.__r)), boQua(m.bang, s)!));
+    return m.sau.every((s) => m.k === 'xoa' ? !co.has(s.__r) : !s.__mat && giongNhau(boQua(m.bang, co.get(s.__r)), boQua(m.bang, s)!));
   });
 }
 

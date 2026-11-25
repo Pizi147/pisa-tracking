@@ -397,6 +397,32 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(theoDoi('bao_ph', id).some((x) => x.user_id === gvcn.userId && x.nguon === 'gvcn') && !theoDoi('bao_ph', id).some((x) => x.user_id === P.w2Teacher.userId), 'gvcn về GVCN cũ');
   }));
 
+  await checkAsync('GV1-HT · (rà Hoàn tác 25/11) tự bỏ theo dõi khi KHÔNG có quyền sửa theo dõi → Hoàn tác = tự thêm lại CHÍNH MÌNH, đúng việc vừa bỏ, trong cửa sổ Hoàn tác; không mở rộng quyền', () => thu(async () => {
+    const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+    const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+    const id = baoPhViPham(moiEm()); const id2 = baoPhViPham(moiEm());
+    const co = (vid: number) => theoDoi('bao_ph', vid).some((r) => r.user_id === gvbm.userId);
+    assert(co(id) && co(id2) && gv.xemGiaoViec(gvbm, 'bao_ph', id).coTheSuaTheoDoi === false, 'GVBM theo dõi (gv_ghi), không có quyền sửa theo dõi');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === 403, 'chưa tự bỏ → không tự thêm được (403)');
+    gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);
+    assert(!co(id), 'tự bỏ được');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvcn.userId] })) === 403, 'thêm người khác → 403');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId, tvv.userId] })) === 403, 'thêm mình kèm người khác → 403');
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] })) === 403, 'việc khác (không vừa bỏ) → 403');
+    const c0 = soCauSql();
+    gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] });
+    const cau = soCauSql() - c0;
+    console.log(`      đo: tự thêm lại theo dõi ${cau} câu`);
+    assert(cau <= TRAN_GHI_LO.tuThemLaiTheoDoi, `tự thêm lại ${cau} câu > ${TRAN_GHI_LO.tuThemLaiTheoDoi}`);
+    assert(co(id), 'Hoàn tác: GVBM theo dõi lại');
+    /* Quá cửa sổ Hoàn tác / người khác bỏ mình → không tự thêm lại được. */
+    gv.boTheoDoi(gvbm, 'bao_ph', id, gvbm.userId);
+    conn.prepare(`UPDATE viec_giao_lan SET luc = ? WHERE loai = 'bao_ph' AND ref_id = ? AND truong = 'theo_doi'`).run(new Date(Date.now() - 3_600_000).toISOString(), id);
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id, { userIds: [gvbm.userId] })) === 403 && !co(id), 'quá cửa sổ Hoàn tác → 403');
+    gv.boTheoDoi(ql, 'bao_ph', id2, gvbm.userId);
+    assert(await ma(() => gv.themTheoDoi(gvbm, 'bao_ph', id2, { userIds: [gvbm.userId] })) === 403 && !co(id2), 'Head bỏ mình → không tự thêm lại (403)');
+  }));
+
   await checkAsync('GV1-16 · (F) người theo dõi đã rời chi nhánh của việc: không thấy ở tab, không nhận tin, không đọc panel', () => thu(async () => {
     const sid = moiEm(); const id = baoPhViPham(sid);
     const roi = taiKhoan('roi', 'consultant');

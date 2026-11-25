@@ -111,6 +111,11 @@ export type DinhNghiaLoai = {
    */
   khiSua?: (p: Principal, yc: YeuCauRow, vao: Record<string, unknown>) => { lyDo: string; duLieu: Record<string, unknown>; bangChung?: number[] };
   khiRut?: (p: Principal, yc: YeuCauRow, khoaTep: string[]) => void;
+  /**
+   * Rà Hoàn tác 25/11 (chủ SP "không khoá cứng"): có trường này thì Rút có Hoàn tác ngắn (`boRutYeuCau`) — hộp chụp thẻ + các dòng `khiRut` XOÁ (`xoa`);
+   * `kiem` = kiểm quyền lại lúc hoàn tác (như `khiRut`). Loại không có (Ý thức: rút xoá hẳn lần xử lý + tệp; Đề xuất PA / Giữ PA GV: rút đổi PA) → không Hoàn tác.
+   */
+  hoanTacRut?: { xoa?: (yc: YeuCauRow) => { bang: string; dk: string; args: unknown[] }[]; kiem?: (p: Principal, yc: YeuCauRow) => void };
   /** Điều kiện SQL "đối tượng không còn ý nghĩa" trên bí danh `y` (một biểu thức, không tham số) + lý do hiện trên thẻ. */
   chet?: { sql: string; lyDo: string;
     /** OV-13b: sau khi thẻ tự đóng — đảo bảng nguồn (thẻ đổi PA trả PA gốc). Trong giao dịch của `quetYeuCau`. */
@@ -381,6 +386,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo, duLieu: { truong: d.truong, ...kiemGiaTriDeXuat(db(), yc.hoc_vien_id!, d.truong, v.moi) } };
     },
     khiRut: () => {},
+    hoanTacRut: {},
     /* Em thôi học / lưu trữ, hoặc giá trị hiện tại đã bằng giá trị đề xuất (ai đó đã sửa rồi). */
     chet: {
       /* OV-11c (HV-16): Tạm dừng (`inactive`) giữ lớp và lộ trình — đề xuất vẫn chờ; chỉ Thôi học (`finished`) / Lưu trữ mới đóng. */
@@ -466,6 +472,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
     khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
+    hoanTacRut: { xoa: (yc) => [{ bang: 'case_milestones', dk: `id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`, args: [yc.doi_tuong_id] }] },
     /* RKC-3c: Case đã đổi sau quyết định → đi thẳng: Mở lại Case (nếu đang đóng) + trả các PA đã dừng vì "Không cần theo dõi" về trạng thái lúc duyệt
        (bản ghi đảo nếu có, không thì "Chưa bắt đầu"). Từ chối: chỉ thẻ về chờ (hạn xác nhận giữ như hiện tại). */
     huyThang: {
@@ -656,6 +663,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan, resetBac: k.resetBac } };
     },
     khiRut: () => {},
+    hoanTacRut: {},
     /* Q-RL2c: Từ chối chỉ đổi thẻ. #8 (G4-14, bản rà 11/11): Duyệt = ra lệnh (kể cả "Ngay hôm nay" — thi hành luôn) → chụp mọi dòng của em như
        chuyển ngay một em (`dongDaoChuyenNgay`) — "Huỷ quyết định" / Hoàn tác ở panel trả em + thẻ về y như trước. */
     dao: {
@@ -869,6 +877,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo, duLieu: JSON.parse(yc.du_lieu ?? '{}') };
     },
     khiRut: (p, yc) => kiemNguoiGuiYThuc(p, yc.doi_tuong_id),
+    hoanTacRut: { kiem: (p, yc) => kiemNguoiGuiYThuc(p, yc.doi_tuong_id) },
     khiHuy: (p, yc) => { if (yc.trang_thai === 'duyet') huyThuHoiYThuc(p, yc.doi_tuong_id); },
     huyDuoc: (conn, ds) => {
       const st = napTheoDoiTuong(conn, ds, `SELECT m.id, m.status FROM discipline_measures m WHERE m.id IN (?)`);
@@ -922,6 +931,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* Duyệt = xoá vào Thùng rác (`apDungXinXoa` chốt thẻ trước, ghi id Thùng rác vào thẻ). Từ chối / Rút: chưa đổi gì ở bảng nguồn. */
     khiDuyet: (p, yc) => apDungXinXoa(p, yc),
     khiRut: () => {},
+    hoanTacRut: {},
     /* Huỷ quyết định Duyệt = Khôi phục mục Thùng rác (cùng quyền / chặn của Khôi phục); Từ chối: thẻ về chờ, không gì để đảo. */
     khiHuy: (p, yc) => { if (yc.trang_thai === 'duyet') khoiPhucRac(p, Number(JSON.parse(yc.du_lieu ?? '{}').thungRacId)); },
     huyDuoc: (conn, ds) => {
@@ -1020,6 +1030,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     /* Duyệt = áp qua `luuSuaKhai` (so-và-đổi: bậc khai đã khác lúc gửi → 409). Từ chối: dòng khai giữ nguyên, lý do + chuông ở thẻ. Rút: chưa đổi gì ở nguồn. */
     khiDuyet: (p, yc) => apDungSuaKhai(p.userId, yc),
     khiRut: (p, yc) => kiemRutSuaKhai(p, yc.doi_tuong_id),
+    hoanTacRut: { kiem: (p, yc) => kiemRutSuaKhai(p, yc.doi_tuong_id) },
     /* Hết hạn như thẻ Ý thức: `quetYThucHetHan` (ở loại `y_thuc`) chốt theo GVCN — không khai `quet` lần hai. */
     /* Hoàn tác / Huỷ quyết định trong ngày: chụp đúng dòng khai của thẻ — bậc đã đổi tiếp sau đó thì bản ghi đảo tự chặn (409). */
     dao: {
