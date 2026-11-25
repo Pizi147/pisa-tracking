@@ -2291,6 +2291,15 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 .oc:not(.gon) .da { flex-wrap: wrap; white-space: normal; align-items: baseline; row-gap: 0; }
 .oc:not(.gon) .da small { overflow: visible; text-overflow: clip; white-space: normal; }
 
+/* #8 (rà 25/11) /mock-test: cột Nhận xét + Case chỉ hiện khi có dòng nào có dữ liệu — toàn "–" thì ẩn, các cột còn lại chia hết bề ngang, nút sát phải. Ô trống đánh dấu `data-trong`; tiêu đề luôn có `data-trong`
+   (không tính) nên chỉ ô thân quyết định. */
+@media (min-width: 768px) {
+  .mt-luoi:not(:has([role="cell"][data-cot="nx"]:not([data-trong]), [role="cell"][data-cot="case"]:not([data-trong]))) [role="row"] { grid-template-columns: 9rem 8.5rem 13rem minmax(150px, 1fr) 12rem; }
+  .mt-luoi:not(:has([role="cell"][data-cot="nx"]:not([data-trong]), [role="cell"][data-cot="case"]:not([data-trong]))) [data-cot="nx"],
+  .mt-luoi:not(:has([role="cell"][data-cot="nx"]:not([data-trong]), [role="cell"][data-cot="case"]:not([data-trong]))) [data-cot="case"] { display: none; }
+  .mt-luoi:not(:has([role="cell"][data-cot="nx"]:not([data-trong]), [role="cell"][data-cot="case"]:not([data-trong]))) [data-cot="act"] { grid-column-start: 5; }
+}
+
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }

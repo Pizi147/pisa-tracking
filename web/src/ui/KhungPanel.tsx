@@ -490,7 +490,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         /* NHẸ HƠN (v23 P1) + PANEL-GON (v24): ≥ 1024 panel tại chỗ BÁM MÉP PHẢI từ ngay dưới thanh menu tới đáy, 720 px — danh sách trái (nơi gọi)
            vẫn thấy, bấm dòng khác = đổi việc. < 1024 giữ thẻ trong luồng trang (375 toàn màn). */
         style={{ '--pn-top': `${top}px` } as CSSProperties} data-pn={laBang ? 'bang' : 'viec'}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:!mt-0 lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl lg:w-[720px] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:fixed max-sm:inset-0 max-sm:z-[60] max-sm:!m-0 max-sm:rounded-none max-sm:border-0 sm:max-lg:max-h-[calc(100dvh-8rem)] lg:fixed lg:!mt-0 lg:bottom-0 lg:right-0 lg:top-[var(--pn-top)] lg:z-30 lg:rounded-none lg:border-y-0 lg:border-r-0 lg:shadow-2xl lg:w-[720px] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );

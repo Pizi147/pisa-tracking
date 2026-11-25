@@ -454,8 +454,8 @@ export function xepTin(mau: readonly string[], loaiDaNoi: boolean, tuan: string 
     }
   }
   const phan = duyNhat([loaiDaNoi ? null : loai, ...rest]);
-  /* Có tuần: tuần đứng đầu rồi MỘT kiểu ngăn " · " như mọi phần sau (SUA-UI #6, PTA rà 25/11: không lẫn "-" với "·"). */
-  return tuanTin ? (phan.length ? [`${tuanTin} · ${phan[0]}`, ...phan.slice(1)] : [tuanTin]) : phan;
+  /* Có tuần: MỘT dấu " - " ngay sau tuần, các phần sau cách nhau " · " (chủ SP 25/11: "W3 AUG - Progress · R", "W3 SEP - 3 bài"). */
+  return tuanTin ? (phan.length ? [`${tuanTin} - ${phan[0]}`, ...phan.slice(1)] : [tuanTin]) : phan;
 }
 const LA_MA_TUAN = /^W[1-5] [A-Z]{3}$/;
 /** Ghép các phần thông tin (đã có "tuần - …" ở phần đầu): `·` giữa các phần; chỉ có mỗi tuần mà còn phần sau (GV…) thì vẫn " - " sau tuần. */
@@ -464,7 +464,7 @@ export const ghepChu = (parts: readonly (string | null | undefined | false)[]): 
   return LA_MA_TUAN.test(p[0] ?? '') && p.length > 1 ? `${p[0]} - ${p.slice(1).join(' · ')}` : p.join(' · ');
 };
 /** Dấu đứng trước tên GV (phần cuối) cho ô thông tin `chu`. */
-const dauGv = (chu: string) => (!chu ? '' : ' · ');
+const dauGv = (chu: string) => (!chu ? '' : LA_MA_TUAN.test(chu) ? ' - ' : ' · ');
 
 /** Việc TVV theo từng em (Báo PH · Sau thi · Chốt ngày thi). */
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
