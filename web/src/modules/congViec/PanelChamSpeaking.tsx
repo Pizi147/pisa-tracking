@@ -12,6 +12,7 @@ import { NutGvCham, useGvChamCot } from '../cham/GvCham.tsx';
 import type { NguoiChon } from '@shared/domain/index.ts';
 import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { TinLop } from './TinLop.tsx';
 import { type Dong, type DuLieu, type Lop, duongChamSpeaking, gom, hanSom, lopKe, soCho, tuanCuaLop } from './chamSpeakingChung.ts';
 
 /**
@@ -60,7 +61,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lop: lopUrl = null, onLop =
     loai: t('Việc · Chấm Speaking'),
     /* Khuôn A: đầu panel ghi ĐỦ mã tuần như dòng danh sách ("W4 AUG, W1 SEP · 8 bài") + hạn sớm nhất. */
     /* Hết bài của lớp: "đã chấm n bài" (mockup A3), không hạn. */
-    dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [tuan] : []), hetLop ? t('đã chấm {n} bài', { n: hien.rows.length }) : t('{n} bài', { n: soCho(hien.rows) })] : [],
+    dong2: hien ? [<b key="l" className="font-semibold text-slate-100">{hien.classCode}</b>, ...(tuan ? [<TinLop key="w" phan={[tuan]} />] : []), <TinLop key="n" phan={[hetLop ? t('đã chấm {n} bài', { n: hien.rows.length }) : t('{n} bài', { n: soCho(hien.rows) })]} />] : [],
     han: hien && !hetLop ? <ChipHan loai="nhap-diem" han={hanSom(hien.rows)} /> : null,
   };
   const tiep = onHet();

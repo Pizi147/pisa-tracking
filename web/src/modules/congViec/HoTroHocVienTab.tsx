@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, theHe } from '../../lib/api.ts';
@@ -732,7 +732,7 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* PANEL-GON (v24 `.cv`, chủ SP 24/11): panel MỘT khung 720 bám mép phải, danh sách trái min(680, 100vw − 760) không đè. Khuôn A: danh sách không co theo loại panel. */}
-      <div className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel || coKhoiPhai ? (tab === 'cham-cheo' ? 'lg:grid-cols-[calc(50%-12px)_minmax(0,1fr)]' /* KHUÔN A Chấm Speaking (chủ SP 25/11): danh sách CỐ ĐỊNH một nửa bên trái */ : 'lg:grid-cols-[minmax(260px,1fr)_min(720px,calc(100vw-584px))]') /* HAI-BEN (chủ SP 25/11): hai cột CỐ ĐỊNH — ô phải 720 (1280: 696), danh sách phần còn lại; mở / đóng panel KHÔNG đổi bề rộng danh sách */ : ''} lg:gap-6`}`}>
+      <div style={tab === 'cham-cheo' ? ({ '--pn-w': '50vw' } as CSSProperties) : undefined} className={`lg:grid lg:items-start ${tab === 'duyet' ? 'lg:grid-cols-[minmax(0,1fr)]' /* CHO-DUYET-TAI-CHO (v24 H1): duyệt mở tại dòng — danh sách rộng hết khung, không cột panel */ : `${coPanel || coKhoiPhai ? (tab === 'cham-cheo' ? 'lg:grid-cols-[calc(50%-12px)_minmax(0,1fr)]' /* KHUÔN A Chấm Speaking (chủ SP 25/11): danh sách CỐ ĐỊNH một nửa bên trái */ : 'lg:grid-cols-[minmax(260px,1fr)_min(720px,calc(100vw-584px))]') /* HAI-BEN (chủ SP 25/11): hai cột CỐ ĐỊNH — ô phải 720 (1280: 696), danh sách phần còn lại; mở / đóng panel KHÔNG đổi bề rộng danh sách */ : ''} lg:gap-6`}`}>
         <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`lg:isolate ${coPanel || coKhoiPhai ? 'lg:[container:cv-ds/inline-size]' : ''} ${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
