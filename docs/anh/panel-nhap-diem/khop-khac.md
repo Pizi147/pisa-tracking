@@ -27,12 +27,12 @@ Ca thử: Quản trị (làm thay) · Công việc › Của GV › Chấm đi�
 ## 2. Ô điểm và cột Kết quả
 
 - **Trước:** ô `min-w-24` (96) trong cột chỉ còn ~80 → ô tràn, dính nhau, đè lên cột Kết quả; cột Kết quả bị chia đều (97) nên "Chưa có điểm" (95 + đệm 22) tràn trái, bị ô W2 che còn "ưa có điểm".
-- **Sau:**
-  - Ô rộng tối đa 92, cao 44 (vùng bấm giữ), co theo cột (`max-w-full`) — không bao giờ tràn sang ô kề; đệm ngang ô điểm trong panel 6 → khe giữa hai ô 12.
-  - Giữ định dạng chủ SP chốt 25/11 (#2173) "5.0 · 16/40" một dòng; trong panel phần "· 16/40" cỡ 12 (ngoài panel giữ 13) để vừa ô.
-  - Cột Kết quả giữ 124 px (đủ "Chưa đủ điểm" một dòng, cả bản EN); các cột ô điểm chia đều phần còn lại (luật cột v24: tên 2 phần, cột số bằng nhau).
-  - "Cả lớp": sàn bề rộng Kỳ vọng / Overall trong panel 120 → mọi cột ô 109, ô "✗ 5.0 · 16/40" đủ 92, không tràn (đo: 0 ô có `scrollWidth > clientWidth`).
-  - Đo 1440 / 1280 (panel 720): cột của việc 194 · 90 · 90 · 90 · 90 · 124; Cả lớp 222 · 109 × 7 · 124, cuộn ngang trong lưới.
+- **Sau (chủ SP 26/11, ảnh mẫu = mockup v24 P2):**
+  - Ô trong panel **68 × 44 hai tầng**: band 14 / 700 trên (✓ / ✗ tô màu khi lưới có cột Kỳ vọng), "16 câu" 12 dưới (vắng / "→ W4 SEP" thay chỗ này nếu có).
+    Dạng ngang "6.5 · 29/40" (#2173) chỉ còn ở Lịch Test tuần — nhánh ngoài panel của `ODiemMt` không đổi.
+  - Ô co theo cột (`max-w-full`), đệm ngang ô điểm trong panel 6 → không bao giờ tràn sang ô kề.
+  - Cột Kết quả giữ 124 px, căn phải (đủ "Chưa đủ điểm" một dòng, cả bản EN); các cột ô điểm chia đều phần còn lại (luật cột v24: tên 2 phần, cột số bằng nhau).
+  - Đo 1440 / 1280 (panel 720): cột của việc 194 · 90 × 4 · 124; Cả lớp cuộn ngang trong lưới, L · R · W1 · W2 · S · Kỳ vọng · Overall bằng nhau.
 
 ## 1. Màu hai khu vực
 

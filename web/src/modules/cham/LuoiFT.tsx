@@ -177,7 +177,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. GD-3 → NHẸ HƠN (v23 C1, panel 75 %): trong panel việc cột ô 88, Kết quả 168,
      cột tên lấy phần còn lại (index.css `.luoi-trong-panel`). */
   const trongPanel = useContext(OTrongPanel);
-  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 104 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
+  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 80 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: chiCot ? 140 : 230,   /* V6 K8c: lưới vài cột vừa 375 (phần dư 1440 vẫn chia theo `deu`) */ goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
@@ -186,8 +186,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...rawCot.map(oKn), ...wCot.map(oKn),
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),
-    ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich || trongPanel ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : trongPanel ? 120 /* "Cả lớp": sàn lưới đủ rộng cho ô "✗ 5.0 · 16/40" (cột chia đều) */ : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
-    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich || trongPanel ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : trongPanel ? 120 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
+    ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich || trongPanel ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : trongPanel ? 80 : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
+    ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich || trongPanel ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : trongPanel ? 80 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
     ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 120 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
