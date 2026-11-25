@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yêu cầu của tôi · v26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../v23/v23.css">
+<style>
+/* v26 · YÊU CẦU CỦA TÔI theo khuôn A (chủ SP 25/11: cột cố định Lớp · Tên HV · Thông tin · Hạn, không chữ lặp đề mục, không "·" treo).
+   Token + khung lấy từ v23.css. Hạn = ngày dd/mm/yyyy chỉ tô màu chữ. Dòng sinh từ dữ liệu ở script cuối tệp.
+   PHƯƠNG ÁN A (khuyến nghị): đề mục nhóm = trạng thái (Bị từ chối · Đang chờ · Đã xử lý) → dòng KHÔNG có chip trạng thái.
+     Phản hồi của người duyệt (lý do từ chối / câu trả lời) = DÒNG PHỤ ngay dưới dòng, luôn hiện, xuống dòng đủ chữ (không "…").
+     Nội dung đã gửi + việc (Sửa… / Rút / Mở ›) mở TẠI DÒNG khi bấm, cùng mẫu "mở tại dòng" của tab Chờ bạn duyệt.
+   PHƯƠNG ÁN B: đoạn trích nội dung đã gửi cũng luôn hiện ở dòng phụ cho MỌI dòng — thấy hết không cần bấm nhưng dòng nào cũng cao hai tầng, dày chữ. */
+body { margin:0; padding:24px; background:#e9ecf3; font-family:'Be Vietnam Pro',system-ui,sans-serif; }
+.mk { display:grid; gap:28px; justify-items:start; }
+figure { margin:0; display:grid; gap:8px; }
+figcaption { font:700 13px 'Be Vietnam Pro'; color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; max-width:1100px; }
+.ghi { max-width:1100px; background:#fff; border:1px solid #b0b8cd; border-radius:8px; padding:12px 16px; font-size:13px; line-height:1.5; color:#141a2b; }
+.ghi h2 { margin:0 0 6px; font-size:15px; } .ghi li { margin:2px 0; }
+.kh { background:var(--bg); border-radius:6px; padding:20px 28px 32px; color:var(--text); }
+.kh.w1440 { width:1384px; } .kh.w1280 { width:1224px; } .kh.w375 { width:351px; padding:16px 12px 24px; }
+.kh h1 { font:700 var(--c20) var(--phong); margin:0 0 4px; }
+.tabs-mk { display:flex; gap:4px; border-bottom:1px solid var(--line); margin:0 0 20px; overflow:hidden; }
+.tabs-mk span { padding:10px 12px 11px; font:600 var(--c14) var(--phong); color:var(--text-dim); border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+.tabs-mk span.on { color:var(--text); border-bottom-color:var(--accent); }
+.kA { container-type:inline-size; }
+.lg { display:grid; grid-template-columns:max-content max-content minmax(0,1fr) max-content; column-gap:20px; row-gap:12px; }
+.lg > * { grid-column:1 / -1; }
+.yds { display:grid; grid-template-columns:subgrid; background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.yds > * { grid-column:1 / -1; }
+.yds-dau { display:flex; align-items:center; gap:10px; min-height:44px; padding:0 20px 0 17px; background:var(--surface-2); border-left:3px solid var(--accent); }
+.yds-dau h2 { font:700 var(--c16) var(--phong); color:var(--text); margin:0; }
+.yds-dau .n { font:600 var(--c13) var(--phong-so); color:var(--text-dim); }
+.yds-dau .qua { color:var(--bad); font-weight:600; }
+.y { display:grid; grid-template-columns:subgrid; border-top:1px solid var(--line); }
+.yds-dau + .y { border-top:0; }
+.y > * { grid-column:1 / -1; }
+.v { position:relative; display:grid; grid-template-columns:subgrid; align-items:center; min-height:48px; margin:0; padding:0 24px 0 20px; border:0; background:none; text-align:left; font:400 var(--c14)/1.35 var(--phong); color:var(--text); cursor:pointer; }
+.v > * { min-width:0; }
+.y:hover > .v, .y.dm > .v { background:var(--accent-soft); }
+.y.dm > .v { box-shadow:inset 3px 0 0 var(--accent); }
+.lop { font-weight:700; white-space:nowrap; }
+.ai { font-weight:500; white-space:nowrap; }
+.ct { color:var(--text-dim); }
+.hn { justify-self:end; font:500 var(--c13)/1 var(--phong-so); color:var(--text-dim); white-space:nowrap; }
+.hn.gan { color:var(--soon); font-weight:600; } .hn.qua { color:var(--bad); font-weight:600; }
+.hn.ok { color:var(--ok); font-weight:600; }
+.xo { position:absolute; right:4px; top:50%; margin-top:-8px; width:16px; height:16px; fill:none; stroke:var(--text-faint); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; transform:rotate(-90deg); }
+.y.dm .xo { transform:none; }
+/* dòng phụ: phản hồi của người duyệt — cùng cột Thông tin, luôn hiện, xuống dòng */
+.ph { display:grid; grid-template-columns:subgrid; padding:0 24px 12px 20px; margin-top:-4px; }
+.ph > div { grid-column:3 / 5; font-size:var(--c13); line-height:1.45; color:var(--text); }
+.ph b { font-weight:600; color:var(--text-dim); margin-right:4px; }
+.ph.tc > div { border-left:2px solid var(--bad-vien); padding-left:10px; }
+.ph a { margin-left:8px; font-weight:600; white-space:nowrap; }
+.ph.trich > div { color:var(--text-dim); }
+/* phần mở tại dòng */
+.ct-mo { padding:10px 20px 16px; display:grid; gap:10px; border-top:1px solid var(--line); background:color-mix(in srgb, var(--accent-soft) 38%, var(--surface)); }
+.yk { display:grid; grid-template-columns:120px minmax(0,72ch); gap:8px 12px; font-size:var(--c14); }
+.yk > :nth-child(odd) { font-size:var(--c13); color:var(--text-dim); padding-top:1px; }
+.hang { display:flex; flex-wrap:wrap; gap:8px; }
+.btn { height:30px; padding:0 12px; border-radius:8px; border:1px solid var(--line-strong); background:transparent; font:600 var(--c13) var(--phong); color:var(--text); }
+.rong { display:grid; justify-items:center; gap:8px; padding:40px 16px; text-align:center; color:var(--text-dim); background:var(--surface); border:1px solid var(--line); border-radius:10px; }
+.rong b { color:var(--text); font-size:var(--c16); } .rong p { max-width:52ch; font-size:var(--c14); }
+
+/* < 600 px: mỗi việc hai tầng — lớp + hạn · tên + chi tiết (như khuôn A mọi tab) */
+@container (max-width:599px) {
+  .lg { grid-template-columns:minmax(0,1fr); }
+  .yds, .y { display:block; }
+  .v { align-items:start; display:grid; grid-template-columns:auto minmax(0,1fr) auto; grid-template-areas:'lop lop hn' 'ai ct ct'; row-gap:3px; padding:10px 22px 10px 16px; width:100%; box-sizing:border-box; }
+  .v .lop { grid-area:lop; } .v .ai { grid-area:ai; } .v .ct { grid-area:ct; font-size:var(--c13); } .v .hn { grid-area:hn; }
+  .v .ai + .ct::before { content:'·'; margin:0 6px; color:var(--text-faint); }
+  .xo { right:2px; top:11px; margin-top:0; }
+  .ph { display:block; padding:0 16px 12px; margin-top:0; }
+  .ct-mo { padding:10px 16px 14px; } .yk { grid-template-columns:1fr; gap:2px; } .yk > :nth-child(odd) { margin-top:6px; }
+}
+@container (min-width:600px) and (max-width:1099px) { .v .ct { overflow-wrap:anywhere; padding-block:6px; } }
+</style>
+</head>
+<body>
+<div class="mk">
+  <div class="ghi">
+    <h2>Yêu cầu của tôi · khuôn A — 2 phương án, khuyến nghị A</h2>
+    <ul>
+      <li><b>A (khuyến nghị)</b>: đề mục = trạng thái; dòng 4 ô Lớp · Tên HV · Thông tin · Ngày. Lý do từ chối / câu trả lời = dòng phụ luôn hiện, xuống dòng đủ chữ. Nội dung đã gửi + Sửa… · Rút · Mở › mở tại dòng khi bấm.</li>
+      <li><b>B</b>: A + đoạn trích nội dung đã gửi luôn hiện dưới mọi dòng.</li>
+      <li><b>Vì sao A</b>: việc cần làm (bị từ chối) thấy ngay lý do, không bấm; các dòng còn lại gọn như mọi tab Công việc (chủ SP 25/11 "đừng dày chữ"). Người gửi vốn biết mình đã gửi gì; muốn xem lại thì bấm mở tại dòng, không đổi trang. B dày chữ, dòng cao gấp đôi.</li>
+      <li><b>Thao tác giữ nguyên</b>: Mở › · Sửa… · Rút (khi đang chờ, loại cho phép) · đọc lý do / câu trả lời · chuông mở đúng dòng. Bỏ: đoạn trích cắt + "Xem thêm" (đủ chữ ở phần mở), chip loại và chip trạng thái từng dòng (đã nằm ở đề mục / cột Thông tin).</li>
+      <li>Cột cuối: Đang chờ = hạn Head duyệt; Bị từ chối / Đã xử lý = ngày xử lý. Màu chữ: đỏ quá hạn · vàng còn ≤ 2 ngày · xanh Đã duyệt; kết quả luôn có chữ, không chỉ màu.</li>
+    </ul>
+  </div>
+
+  <figure><figcaption>A1 · 1440 · tối · phương án A, một dòng đang mở</figcaption>
+    <div class="kh toi w1440"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span>Chờ bạn duyệt</span><span class="on">Yêu cầu của tôi</span><span>Case</span></div><div class="kA" data-mo="3"></div></div></figure>
+
+  <figure><figcaption>A2 · 1280 · tối · phương án A (cột Thông tin xuống dòng, không "…")</figcaption>
+    <div class="kh toi w1280"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span>Chờ bạn duyệt</span><span class="on">Yêu cầu của tôi</span><span>Case</span></div><div class="kA" data-mo="0"></div></div></figure>
+
+  <figure><figcaption>A3 · 375 · sáng · phương án A, một dòng đang mở</figcaption>
+    <div class="kh sang w375"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span class="on">Yêu cầu của tôi</span></div><div class="kA" data-mo="4"></div></div></figure>
+
+  <figure><figcaption>A4 · 375 · tối · phương án A, không mở</figcaption>
+    <div class="kh toi w375"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span class="on">Yêu cầu của tôi</span></div><div class="kA" data-mo="0"></div></div></figure>
+
+  <figure><figcaption>B1 · 1440 · tối · phương án B (đoạn trích luôn hiện) — không chọn: dày chữ</figcaption>
+    <div class="kh toi w1440" data-b="1"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span>Chờ bạn duyệt</span><span class="on">Yêu cầu của tôi</span><span>Case</span></div><div class="kA" data-mo="0"></div></div></figure>
+
+  <figure><figcaption>R1 · 1440 · tối · danh sách rỗng</figcaption>
+    <div class="kh toi w1440"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span>Chờ bạn duyệt</span><span class="on">Yêu cầu của tôi</span><span>Case</span></div>
+      <div class="rong"><b>Bạn chưa gửi yêu cầu nào cho Head</b><p>Đề xuất PA cần duyệt, Xin hỗ trợ Head ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.</p></div></div></figure>
+
+  <figure><figcaption>R2 · 375 · sáng · danh sách rỗng</figcaption>
+    <div class="kh sang w375"><h1>Công việc</h1><div class="tabs-mk"><span>Việc của tôi</span><span class="on">Yêu cầu của tôi</span></div>
+      <div class="rong"><b>Bạn chưa gửi yêu cầu nào cho Head</b><p>Đề xuất PA cần duyệt, Xin hỗ trợ Head ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.</p></div></div></figure>
+</div>
+<script>
+const XO = '<svg class="xo" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+/* ph = [người, chữ]; gui = nội dung đã gửi (phần mở); viec = nút ở phần mở (Sửa… / Rút chỉ khi đang chờ) */
+const D = [
+ {g:'tc',id:1,lop:'MB FT 102',ai:'Phạm Gia Huy',ct:'Sửa thông tin · Kỳ thi 04/2027',hn:'24/11/2026',ph:['Lê Hà','Em đã nghỉ khoá từ tháng 10, chưa có biên bản bảo lưu. Chờ giáo vụ xác nhận kỳ thi rồi gửi lại, kèm ảnh chụp phiếu đăng ký.'],gui:'Kỳ thi 09/2026 → 04/2027. “Phụ huynh xin dời kỳ thi vì trùng lịch thi chuyển cấp.”',viec:[]},
+ {g:'tc',id:2,lop:'MB BE 04',ai:'Vũ Khánh Linh',ct:'Đề xuất chuyển lớp · MB FT 103',hn:'22/11/2026',ph:['Lê Hà','Lớp MB FT 103 đã đủ chỗ, chọn lớp khác cùng ca.'],gui:'MB BE 04 → MB FT 103 từ W1 DEC. “Em đổi ca học vì lịch làm thêm.”',viec:[]},
+ {g:'cho',id:3,lop:'MB FT 102',ai:'Nguyễn Minh Anh',ct:'Đề xuất PA · Speaking · Bổ trợ',hn:'23/11/2026',han:'qua',gui:'PA Bổ trợ Speaking, 4 buổi từ W4 NOV. “Speaking hai lượt liền dưới 3, ngại nói trước lớp.”',viec:['Sửa…','Rút']},
+ {g:'cho',id:4,lop:'MB BE 04',ai:'Trần Quốc Bảo',ct:'Dời lịch test · W3 NOV → W1 DEC',hn:'27/11/2026',han:'gan',gui:'Dời Progress từ W3 NOV sang W1 DEC. “Em đi thi học sinh giỏi cấp thành phố đúng tuần đó.”',viec:['Sửa…','Rút']},
+ {g:'cho',id:5,lop:'MB FT 101',ai:'Lê Thu Hà',ct:'Sửa cấp bậc · A2 → B1',hn:'30/11/2026',gui:'Cấp bậc A2 → B1. “Em đã đạt B1 ở kỳ thi bên ngoài.”',viec:['Rút']},
+ {g:'xl',id:6,lop:'MB FT 101',ai:'Đỗ An',ct:'Đề xuất PA · Writing · Bổ trợ',hn:'Đã duyệt 20/11/2026',han:'ok',gui:'PA Bổ trợ Writing, 3 buổi.',viec:[]},
+ {g:'xl',id:7,lop:'MB BE 04',ai:'Ngô Hải',ct:'Xin hỗ trợ Head · Case SOS',hn:'Đã trả lời 19/11/2026',ph:['Lê Hà','Gọi phụ huynh trước thứ sáu, báo lại kết quả cho Head ngay sau cuộc gọi.'],gui:'“Em vắng 3 buổi liên tiếp, phụ huynh không nghe máy.”',viec:[]},
+ {g:'xl',id:8,lop:'MB FT 102',ai:'Bùi Lan Chi',ct:'Thông tin HV · Số điện thoại phụ huynh',hn:'Tự đóng 12/11/2026',gui:'Số điện thoại phụ huynh. Tự đóng: em đã chuyển lớp.',viec:[]},
+];
+const NH = {tc:'Bị từ chối', cho:'Đang chờ', xl:'Đã xử lý'};
+function dong(y, mo, b) {
+  const ph = y.ph ? `<div class="ph ${y.g === 'tc' ? 'tc' : ''}"><div><b>${y.ph[0]}:</b>“${y.ph[1]}”${y.g === 'tc' ? '<a href="#">Mở ›</a>' : ''}</div></div>`
+    : b ? `<div class="ph trich"><div>${y.gui}</div></div>` : '';
+  const chiTiet = mo ? `<div class="ct-mo"><div class="yk"><span>Đã gửi</span><span>${y.gui}</span><span aria-hidden="true"></span><span><a href="#">Mở ›</a></span></div>`
+    + (y.viec.length ? `<div class="hang">${y.viec.map((v) => `<button class="btn" type="button">${v}</button>`).join('')}</div>` : '') + '</div>' : '';
+  return `<div class="y${mo ? ' dm' : ''}"><button class="v" type="button" aria-expanded="${mo}"><span class="lop">${y.lop}</span><span class="ai">${y.ai}</span><span class="ct">${y.ct}</span><span class="hn ${y.han || ''}">${y.hn}</span>${XO}</button>${ph}${chiTiet}</div>`;
+}
+function ve(k) {
+  const mo = +k.dataset.mo, b = !!k.closest('[data-b]');
+  k.innerHTML = '<div class="lg">' + ['tc', 'cho', 'xl'].map((g) => {
+    const ds = D.filter((y) => y.g === g);
+    const qua = ds.filter((y) => y.han === 'qua').length;
+    return `<section class="yds" aria-label="${NH[g]}"><div class="yds-dau"><h2>${NH[g]}</h2><span class="n">${ds.length}${qua ? ` · <span class="qua">${qua} quá hạn</span>` : ''}${g === 'xl' ? ' · 60 ngày' : ''}</span></div>${ds.map((y) => dong(y, y.id === mo, b)).join('')}</section>`;
+  }).join('') + '</div>';
+}
+document.querySelectorAll('.kA').forEach((k) => {
+  ve(k);
+  k.addEventListener('click', (e) => {
+    const v = e.target.closest('.v'); if (!v) return;
+    const id = D[[...k.querySelectorAll('.y')].indexOf(v.parentElement)].id;
+    k.dataset.mo = +k.dataset.mo === id ? 0 : id; ve(k);
+  });
+});
+</script>
+</body>
+</html>
