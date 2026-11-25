@@ -20,7 +20,7 @@ import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { Level } from '../../ui/ui.tsx';
 import {
-  ChoNutDau, ODiemThuong, apDiemVuaLuu, datPhanTram, useSaveScore, type Cell,
+  ChoNutDau, ODiemThuong, apDiemVuaLuu, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -353,7 +353,6 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    * → kết quả của ô đã có điểm ("Đạt · 82,5%" — trên lưới câu này nằm dưới hai số; ở đây nằm dưới tên để mọi dòng cao
    * bằng nhau) → trống (OV-13f: không hiện mã HV).
    */
-  const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
   /* SUA-2211-B (chủ SP 22/11 ý 11): môn đã huỷ chưa điểm = chip "Đã huỷ" thay ô nhập (như lưới) — Khôi phục ở ⋯. */
   const huy = dung && s!.progress === 'cancelled';
   const lyHuy = huy ? lyDoHuy({ huyTay: s!.huyTay, huyVang: s!.noShow, sit: 'cancelled' }) : null;
@@ -362,11 +361,10 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? t('Làm bài {tuan}', { tuan: cell.tuanHienTai }) : null)
-    ?? ketQua
-    ?? '';
+    ?? '';   // SUA-UI #4: kết quả đã nằm dưới ô điểm (`lon`), không lặp ở dòng phụ dưới tên
   return (
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)} nhanLuot={nhanBai(row.kind)} thuong
-      phu={phu} phuTitle={tenMonO} phuDo={phu === ketQua && cell.ketQua === 'fail'}
+      phu={phu} phuTitle={tenMonO}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')
         .map((x) => ({ nhan: tenMonNgan(sheet.programme.code, x.skill), weekStart: x.weekStart }))}>

@@ -276,7 +276,7 @@ export function LichTestTab() {
   const nhomPhamVi = data.coPhamViRong && (
     /* U06 (mockup V11 `.doan`): đoạn chọn liền như Fast Track / Lớp thường — mục chọn nền + vạch đáy + đậm. */
     <span className="doan" role="group" aria-label={t('Lớp')}>
-      {([['cua-toi', t('Lớp tôi dạy')], ['tat-ca', t('Tất cả')]] as const).map(([k, nhan]) => (
+      {([['cua-toi', t('Lớp tôi dạy')], ['tat-ca', t('Mọi lớp')]] as const).map(([k, nhan]) => (
         <button key={k} type="button" aria-pressed={data.phamVi === k} onClick={() => datThamSo({ phamVi: k })}>{nhan}</button>
       ))}
     </span>

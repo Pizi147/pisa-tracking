@@ -397,7 +397,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     }
     const qt = d.mucQuanLyHocVien(vai[0]) as any[];
     const m = (k: string) => qt.find((x) => x.key === k);
-    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung-ket-thuc').phu === 'em vào Lưu trữ · tạm dừng giữ lớp'
+    assert(m('chuyen-lop').phu === 'chọn lớp chuyển đến và tuần bắt đầu' && m('tam-dung-ket-thuc').phu === undefined   // SUA-UI #15: bỏ dòng phụ tĩnh
       && m('xoa-hoc-vien').phu === 'khôi phục được trong 30 ngày' && m('lo-trinh').phu === undefined, JSON.stringify(qt));
     assert(m('lo-trinh').keTruoc === 'dam' && qt.filter((x) => x.keTruoc === 'dam').length === 1 && m('xoa-hoc-vien').keTruoc === 'do' && m('xoa-hoc-vien').nguyHiem, 'vạch đậm / đỏ');
     assert(!/▾/.test(fs.readFileSync(path.join(REPO, 'web/src/ui/MenuDong.tsx'), 'utf8')), 'MenuDong còn ký tự ▾ (phải SVG)');   // GD-4c: Menu gộp vào MenuDong

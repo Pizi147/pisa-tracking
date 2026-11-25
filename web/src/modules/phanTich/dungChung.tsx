@@ -42,7 +42,7 @@ export const MAU_SO_VOI_TRUOC = { bad: 'text-bad', ok: 'text-ok', muted: 'text-f
 /* ------------------------------------------------------------------ V8-PT (mockup `thiet-ke/v8/phan-tich.html`, chủ SP duyệt 29/10) */
 
 /** Ô đoạn của hàng lọc (`.doan`): cao 36 (375: 44, hết bề rộng), chữ 14, viền ô nhập; mục đang chọn nền nhấn nhạt + chữ đậm + vạch đáy nhấn. */
-export const DOAN = 'inline-flex h-9 shrink-0 overflow-hidden rounded-lg border border-[color:var(--o-nhap-vien)] max-sm:h-11 max-sm:w-full';
+export const DOAN = 'inline-flex h-9 shrink-0 overflow-hidden rounded-lg border border-[color:var(--o-nhap-vien)] max-sm:h-[46px] max-sm:w-full';
 export const doanNut = (bat: boolean) => `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-0 px-3 text-sm [&+button]:border-l [&+button]:border-[color:var(--o-nhap-vien)] max-sm:flex-1 max-sm:px-1.5 max-sm:text-[14px] ${
   bat ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-[color:var(--o-nhap-nen)] font-medium text-[color:var(--text-dim)] hover:text-[color:var(--text)]'}`;
 

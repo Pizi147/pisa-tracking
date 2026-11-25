@@ -688,7 +688,7 @@
   .o-so { appearance: none; border: 0; background: none; padding: 0 2px; border-radius: 4px; color: var(--accent); font-weight: 700; font-size: 14px;
     font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: underline 1px var(--accent-line); text-underline-offset: 3px; }
   /* AU-GON A2-06: số bấm được `.o-so` (SOS 1 / 2 / 3 ở hàng lớp…) — vùng chạm 44 × 44 ở 375 bằng ::after, không đổi hình. */
-  @media (max-width: 639.98px) { .o-so { position: relative; } .o-so::after { content: ''; position: absolute; left: 50%; top: 50%; width: 40px; height: 44px; transform: translate(-50%, -50%); } }
+  @media (max-width: 639.98px) { .o-so { position: relative; } .o-so::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); } }
   .dong2 { display: block; margin-top: 2px; font-size: 13px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .o-ovr { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 6px; margin-left: -6px; border: 1px solid var(--line); border-radius: 4px;
     background: none; color: inherit; cursor: pointer; }
@@ -705,7 +705,7 @@
   .vh-dang::before { background: rgb(var(--doing-rgb)); }
   .vh-cho::before { background: rgb(var(--muted-line-rgb)); }
   .vh-xong { color: rgb(var(--ok-rgb)); } .vh-xong::before { background: rgb(var(--ok-rgb)); }
-  .vh-qua { background: rgb(var(--bad-bg-rgb)); color: rgb(var(--bad-rgb)); }
+  .vh-qua { background: none; padding: 0; font-weight: 600; color: rgb(var(--bad-rgb)); }   /* NH4: quá hạn chỉ tô màu chữ, không nền */
   .vh-qua::before { content: none; }   /* V22 (PTA rà #1649): quá hạn chỉ bằng màu — không chấm */
   tr.hang-dai > td { padding: 10px 12px 12px 24px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
   tr.hang-khop > td { background: color-mix(in srgb, var(--hong) 7%, var(--surface)); }
@@ -1481,8 +1481,8 @@
   .xh.ct { color: rgb(var(--doing-rgb)); border-color: rgb(var(--doing-line-rgb)); }
   .doi { white-space: nowrap; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-dim); }
   .doi b { font-weight: 600; color: rgb(var(--chu-1-rgb)); }
-  /* BANG-EM-GON (v10 `#be` `.tvv`): tên TVV dưới tên HV — chữ phụ mờ 11 px / 400 (chủ SP 30/10 "nhỏ hơn mockup một nấc", ngoại lệ G13 riêng dòng này). */
-  .tvv { white-space: nowrap; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
+  /* BANG-EM-GON (v10 `#be` `.tvv`): tên TVV dưới tên HV — chữ phụ mờ 12 px / 400 (chủ SP 30/10 "nhỏ hơn mockup một nấc", ngoại lệ G13 riêng dòng này). */
+  .tvv { white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
 }
 
 /* SO-GON (DESIGN G6, luật mật độ M1 + M10 — chủ SP 05/11, toàn web): số bấm được (`LOP_OSO` → `OSo`, `SoDen`, ô chỉ số; ô `.o-so.so-bam`) mang lớp
@@ -2281,3 +2281,13 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
+
+/* SUA-UI 25/11 (rà toàn web) ----------------------------------------------------------------------------------------------------------- */
+/* Vùng bấm ≥ 44 ở 375 cho tên / "n em" trong dòng việc và link tên: hình không đổi, vùng chạm mở rộng bằng ::after. */
+@media (max-width: 639px) {
+  .cvA-ten, .lk-t.ten-ho-so { position: relative; }
+  .cvA-ten::after, .lk-t.ten-ho-so::after { content: ''; position: absolute; inset: -13px -6px; }
+  .doan { height: 46px; }   /* khung viền 1 px + nút trong 44 */
+  a.ten-hv.ten-ho-so { position: relative; }
+  a.ten-hv.ten-ho-so::after { content: ''; position: absolute; inset: -12px -4px; }
+}
