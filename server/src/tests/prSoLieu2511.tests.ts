@@ -110,7 +110,7 @@ export async function runPrSoLieu2511Tests(t: any) {
     conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo' WHERE id = ?`).run(vth);
     xoaNho();
     const sau = xem();
-    assert(sau?.trangThai !== 'mo' && !sau?.quaHan && !sau?.baoPh?.coTheGhi, `TVV bỏ việc vẫn mở / quá hạn: ${JSON.stringify({ tt: sau?.trangThai, qh: sau?.quaHan })}`);
+    assert(sau?.trangThai === 'bo' && !sau?.quaHan && !sau?.baoPh?.coTheGhi, `TVV bỏ việc vẫn mở / quá hạn: ${JSON.stringify({ tt: sau?.trangThai, qh: sau?.quaHan })}`);
     xoaNho();
     assert(!baoPh.viecBaoPhCuaToi(loadPrincipal(em.tvv), { today: '2026-11-25', tatCa: false, branchId: null }).some((x: any) => x.key === `bao-ph:${vth}`), 'Công việc còn việc đã bỏ');
   }));
@@ -137,7 +137,14 @@ export async function runPrSoLieu2511Tests(t: any) {
     assert(meeting.dueState({ progress: 'paused', due_date: '2020-01-01' }, TODAY) === 'overdue', 'Tạm ngưng vẫn là việc còn mở');
   });
 
-  check('S6 · Tổng quan chế độ chi nhánh: Σ hàng chi nhánh = ô tổng (Đạt MT, Thi tháng này, Đạt Target thi thật) — chia theo id lớp, gồm lớp đã kết thúc', () => {
+  check('S6 · Tổng quan chế độ chi nhánh: Σ hàng chi nhánh = ô tổng (Đạt MT, Thi tháng này, Đạt Target thi thật) — chia theo id lớp, gồm lớp đã kết thúc', () => thu(() => {
+    /* Lớp FT có em thi tháng này → "kết thúc" (rời hàng bảng chi nhánh): em vẫn ở ô tổng, nên phải vẫn ở hàng chi nhánh của lớp. */
+    const thang = TODAY.slice(0, 7);
+    const lopThi = one(`SELECT c.id FROM learning_cycles cy JOIN students s ON s.id = cy.student_id AND s.archived_at IS NULL
+        JOIN enrollments e ON e.student_id = cy.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+       WHERE c.is_fast_track = 1 AND cy.status != 'abandoned' AND cy.exam_date BETWEEN ? AND ? ORDER BY c.id LIMIT 1`, `${thang}-01`, `${thang}-31`);
+    assert(lopThi, 'seed thiếu lớp FT có em thi tháng này');
+    conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(lopThi.id);
     for (const ct of ['ft', 'thuong']) {
       xoaNho();
       const r = tq.tongQuanV5(P.admin, { ct });
@@ -146,8 +153,9 @@ export async function runPrSoLieu2511Tests(t: any) {
       assert(cong((h) => h.thiThangNay) === r.thiThangNay, `${ct} Thi tháng này: Σ hàng ${cong((h) => h.thiThangNay)} ≠ ô ${r.thiThangNay}`);
       if (r.datMt) assert(cong((h) => h.datMt?.mau ?? 0) === r.datMt.mau && cong((h) => h.datMt?.dat ?? 0) === r.datMt.dat, `${ct} Đạt MT: Σ hàng ≠ ô ${JSON.stringify(r.datMt)}`);
       if (r.thiThat) assert(cong((h) => h.thiThat?.mau ?? 0) === r.thiThat.mau && cong((h) => h.thiThat?.dat ?? 0) === r.thiThat.dat, `${ct} Đạt Target thi thật: Σ hàng ≠ ô ${JSON.stringify(r.thiThat)}`);
+      if (ct === 'ft') assert(r.thiThangNay > 0, 'ô Thi tháng này phải còn em của lớp đã kết thúc');
     }
-  });
+  }));
 
   check('S7 · "Chọn bước tiếp" hạn hôm nay → today (vào badge như mọi việc)', () => {
     xoaNho();

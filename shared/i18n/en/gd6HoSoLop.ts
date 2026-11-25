@@ -18,6 +18,8 @@ export const EN_GD6_HO_SO_LOP = {
   'Chờ duyệt · {n}': 'Awaiting approval · {n}',
   'Quá hạn · {n} việc': 'Overdue · {n} tasks',
   'Quá hạn của lớp · {n} việc': 'Class overdue · {n} tasks',
+  'Đạt MT gần nhất': 'Met target · latest MT',   // rà 25/11 PR 2
+  'Đạt Test gần nhất': 'Met target · latest test',
   // Hướng dẫn "?" (GD-6)
   'có nút + Task › Case ở đầu trang.': 'has the + Task › Case button at the top of the page.',
   'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ lớp).': 'Press <b>+ Case for …</b> in the <b>Case & action plan</b> block (or <b>+ Task › Case</b> at the top of the class profile).',

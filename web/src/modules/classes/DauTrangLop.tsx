@@ -359,7 +359,8 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const moi = moiEm.map(([, k]) => k);
   const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
   const dat = moi.length ? {
-    nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
+    /* Rà 25/11 PR 2 (điểm 10): phạm vi = lượt gần nhất từng em (Phân tích: trong khoảng tuần; Tổng quan: 2 tuần vừa qua) — nhãn nói rõ. */
+    nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT gần nhất') : t('Đạt Test gần nhất'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
     dong: moiEm.map(([r, k]) => dong(r, r.diemHv ? '' : dich(k.attemptLabel!), ketQuaGanNhat(k).dat ? 'dat' : 'chua')),
   } : null;
   const homNayTuan = homNay ?? '9999';

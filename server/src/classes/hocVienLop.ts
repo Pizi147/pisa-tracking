@@ -381,8 +381,10 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
   theoLoJson(hv.map((h) => h.id as number).filter((id) => vl.yThucHop.has(id)), (json) => {
     for (const r of db().prepare(`SELECT v.student_id, v.nhan, v.trang_thai,
         (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay
-        FROM viec_bao_ph v WHERE v.student_id IN (${DS_JSON}) AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL ORDER BY v.id`).all(json) as any[]) {
-      baoPh.set(r.student_id, { lan: r.nhan, xong: r.trang_thai === 'xong', ngay: r.ngay ?? null });
+        FROM viec_bao_ph v WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN x.trang_thai = 'mo' THEN x.id END), MAX(x.id)) FROM viec_bao_ph x
+          WHERE x.student_id IN (${DS_JSON}) AND x.phoi_hop_id IS NULL AND x.tinh_hinh_id IS NULL GROUP BY x.student_id)`).all(json) as any[]) {
+      /* Rà 25/11 PR 2: CÙNG việc với hàng em tab Ý thức (`baoPhMoiNhat`, board.ts) — việc mở cũ nhất, hết việc mở thì mới nhất; việc bị bỏ không có chip. */
+      if (r.trang_thai !== 'bo') baoPh.set(r.student_id, { lan: r.nhan, xong: r.trang_thai === 'xong', ngay: r.ngay ?? null });
     }
   });
   const soCase = new Map<number, number>();

@@ -254,7 +254,8 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     }
   }
   const nhom = Object.fromEntries(NHOM_EM.map((k) => [k, [] as DongEm[]])) as Record<NhomEm, DongEm[]>;
-  const baoPh = baoPhMoiNhat(p, ids, homNay);
+  const giaoCho = new Map<number, number>();   // em → người được giao việc Báo PH đang mở (N58)
+  const baoPh = baoPhMoiNhat(p, ids, homNay, giaoCho);
   const choBaoPh: DongEm[] = [];
   const choThuHoi: DongEm[] = [];
   const dongCuaEm = new Map<number, DongEm>();
@@ -262,7 +263,8 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   /* G3-14: người GIỮ việc Báo PH của em (như Công việc): TVV của em; em chưa có TVV → QL trong phạm vi. */
   const coTheDuyet = duyetYThuc(p, { classId });   // N52: CX duyệt Ý thức như Head
   const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null,
-    giuBaoPh: info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
+    /* Rà 25/11 PR 2 (N58): việc đã giao → người được giao giữ (TVV đã giao đi không còn "của tôi"), như Công việc. */
+    giuBaoPh: giaoCho.has(id) ? giaoCho.get(id) === p.userId : info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
   danhDauDangXinThuHoi(tatCa);
   for (const dong of tatCa) {
     const em = trang.get(dong.studentId)!;
@@ -337,7 +339,7 @@ export function hangCuaEm(p: Principal, em: EmYThuc, ten: string, maHv: string, 
 
 /** Việc Báo PH của mỗi em (một câu cho cả lớp): việc còn MỞ cũ nhất (gấp nhất), không còn việc mở thì việc mới nhất — rà 25/11 PR 2: trước lấy MAX(id), việc cũ còn mở bị giấu.
  *  Hạn hiệu lực trừ ngày tạm dừng như panel TVV. */
-function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map<number, NonNullable<DongEm['baoPh']>> {
+function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string, giaoCho?: Map<number, number>): Map<number, NonNullable<DongEm['baoPh']>> {
   const out = new Map<number, NonNullable<DongEm['baoPh']>>();
   const khoang = khoangTamDung(ids);
   theoLo(ids, (lo, ph) => {
@@ -349,6 +351,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
         WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
+      if (r.trang_thai === 'mo' && r.phu_trach_id != null) giaoCho?.set(r.student_id, r.phu_trach_id);
       out.set(r.student_id, {
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
         nhanTrangThai: r.trang_thai === 'mo' && r.tra_lai_id ? CHO_GV_SUA : nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && quaHanBaoPh(han, homNay, r.tra_lai_id), ngayXong: r.ngay_xong ?? null,

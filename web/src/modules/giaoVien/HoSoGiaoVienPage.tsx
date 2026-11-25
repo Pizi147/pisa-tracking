@@ -358,10 +358,11 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
       {(phu?.get(l.id) || (!l.laGvcn && l.gvcn)) && (
         <span className="text-[13px] text-dim">{[phu?.get(l.id), !l.laGvcn && l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</span>
       )}
-      <span className="mt-1 grid grid-cols-3 gap-x-2">
+      {/* Rà 25/11 PR 2: nhãn có đơn vị dài hơn ("Bài chưa nhập điểm") — một dòng, cột theo nội dung, số thẳng hàng (375). */}
+      <span className="mt-1 grid grid-cols-[repeat(3,auto)] justify-between gap-x-3">
         {(['hv', 'chua', 'qh'] as const).map((k) => (
           <span key={k} className="grid content-start justify-items-start gap-1">
-            <span className="text-xs text-dim">{COT.find((c) => c.key === k)!.nhan}</span>
+            <span className="whitespace-nowrap text-xs text-dim">{COT.find((c) => c.key === k)!.nhan}</span>
             <span className="inline-flex min-h-9 items-center text-[14px] font-semibold">{oCua(l, COT.find((c) => c.key === k)!)}</span>
           </span>
         ))}

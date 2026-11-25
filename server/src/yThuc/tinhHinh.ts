@@ -36,7 +36,8 @@ export type TinhHinhView = {
   nguoiGuiId: number; nguoiGui: string | null; taoLuc: string; suaLuc: string | null;
   /** `tvv_gvcn`: hạn GVCN trả lời. `gv_tvv`: hạn hiệu lực việc TVV. */
   han: string | null; quaHan: boolean;
-  trangThai: 'mo' | 'xong' | 'rut';
+  /** `bo` (gv_tvv): TVV "Bỏ việc" — đã khép (không quá hạn, không nút), KHÔNG phải xong (rà 25/11 PR 2). */
+  trangThai: 'mo' | 'xong' | 'rut' | 'bo';
   /** `tvv_gvcn`: kết quả GVCN ghi. */
   traLoi: string | null; traLoiBoi: string | null; traLoiLuc: string | null;
   /** `gv_tvv`: việc Báo PH của TVV — id + lần ghi mới nhất. */
@@ -245,8 +246,8 @@ export function tinhHinhCuaEm(p: Principal, ids: readonly number[], homNay = dem
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
     const han = r.chieu === 'tvv_gvcn' ? r.han : r.bp_id ? (r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han)) : null;
     const choKq = r.chieu === 'gv_tvv' ? !lan : r.tra_loi == null;
-    /* Rà 25/11 PR 2: TVV "Bỏ việc" (`bo`) = khép như Công việc (chỉ `mo` là việc) — trước vẫn mở + quá hạn ở tab Ý thức. */
-    const trangThai: TinhHinhView['trangThai'] = r.trang_thai === 'rut' ? 'rut' : r.chieu === 'gv_tvv' ? (r.bp_tt === 'xong' || r.bp_tt === 'bo' ? 'xong' : 'mo') : r.trang_thai;
+    /* Rà 25/11 PR 2: TVV "Bỏ việc" (`bo`) = khép như Công việc (chỉ `mo` là việc), trạng thái riêng — trước vẫn mở + quá hạn ở tab Ý thức. */
+    const trangThai: TinhHinhView['trangThai'] = r.trang_thai === 'rut' ? 'rut' : r.chieu === 'gv_tvv' ? (r.bp_tt === 'xong' ? 'xong' : r.bp_tt === 'bo' ? 'bo' : 'mo') : r.trang_thai;
     return {
       id: r.id, studentId: r.student_id, chieu: r.chieu, noiDung: r.noi_dung, nguoiGuiId: r.nguoi_gui, nguoiGui: r.nguoi_gui_ten ?? null,
       taoLuc: r.tao_luc, suaLuc: r.sua_luc ?? null, han, quaHan: trangThai === 'mo' && !!han && han < homNay, trangThai,

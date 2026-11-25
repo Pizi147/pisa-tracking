@@ -57,6 +57,7 @@ export function daXuLyTinhHinh(x: TinhHinhView, homNay: string): { gv?: ReactNod
   if (x.chieu === 'gv_tvv') {
     const l = x.baoPh?.lan;
     if (x.trangThai === 'rut') return { tvv: <BadgeViec tong="xam">{t('Đã rút')}</BadgeViec> };
+    if (x.trangThai === 'bo') return { tvv: <BadgeViec tong="xam">{t('TVV bỏ việc')}</BadgeViec> };
     if (!l) return {};
     return {
       tvv: (
@@ -120,6 +121,7 @@ export function BuocTinhHinh({ x, homNay, tvv, gvcn, f }: { x: TinhHinhView; hom
       : cho('GVCN', gvcn)}{sua}</>;
   }
   if (x.trangThai === 'rut') return <span className="text-[13px] text-slate-500">—</span>;
+  if (x.trangThai === 'bo') return <span className="text-[13px] text-slate-500">{t('TVV bỏ việc')}</span>;   // rà 25/11 PR 2: khép nhưng không báo "✓ Xong"
   return (
     <span className="flex flex-col items-start gap-1.5">
       <span className="text-sm font-semibold text-ok">✓ {t('Xong')}</span>
