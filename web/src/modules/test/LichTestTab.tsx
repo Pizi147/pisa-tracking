@@ -371,7 +371,7 @@ export function LichTestTab() {
           <>
             {/* UX-2 (1): ô "bài quá hạn" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
             <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
-              onBam={bamSo} dangTaiNo={!quaHan} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
+              onBam={bamSo} dangTaiNo={!quaHan && !oQuaHan.error} thuLaiNo={!quaHan && oQuaHan.error ? oQuaHan.reload : undefined} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
             <KhoiNo no={noTab} gvLop={data.gvLop} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
