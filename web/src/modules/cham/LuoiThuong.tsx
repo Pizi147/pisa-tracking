@@ -405,10 +405,13 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     </div>
   );
 
-  const dsThieu = data.rows.filter((r) => !xongLucMo.has(r.attemptId));
-  const dsXong = data.rows.filter((r) => xongLucMo.has(r.attemptId));
+  /* SUA-UI #19 (chủ SP 25/11): Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT môn thi đúng tuần đang xem (hoặc dấu "-" dời từ tuần này); em thi cả bộ ở tuần khác không hiện. */
+  const hienTuan = (r: Row) => !tuanDangXem || data.programme.skills.some((k) => { const w = oThuong(r, k, data.today).s; return w?.weekStart === tuanDangXem || w?.movedFromStart === tuanDangXem; });
+  const dsHien = data.rows.filter(hienTuan);
+  const dsThieu = dsHien.filter((r) => !xongLucMo.has(r.attemptId));
+  const dsXong = dsHien.filter((r) => xongLucMo.has(r.attemptId));
   const TACH = { attemptId: -1 } as Row;
-  const hangLuoi = trongPanel && dsThieu.length > 0 && dsXong.length > 0 ? [...dsThieu, TACH, ...(moXong ? dsXong : [])] : data.rows;
+  const hangLuoi = trongPanel && dsThieu.length > 0 && dsXong.length > 0 ? [...dsThieu, TACH, ...(moXong ? dsXong : [])] : dsHien;
   return (
     <div className={`luoi-thuong${gon ? ' luoi-thuong-gon' : ''}`}>
       <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={hangLuoi} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
@@ -631,7 +634,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, onReload,
             )}
             {/* SUA-UI #19 (chủ SP 25/11): Lịch Test theo tuần — ô ĐÃ CÓ ĐIỂM của môn thi tuần KHÁC tuần đang xem: dòng nhỏ ghi tuần thi của môn (đã / sẽ làm vào tuần nào). */}
             {tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem !== null && !s.noShow && (
-              <div className="whitespace-nowrap text-xs leading-4 tabular-nums text-slate-400" data-phu-odiem=""
+              <div className={`mt-px whitespace-nowrap text-center text-xs italic leading-4 tabular-nums text-faint ${gon ? '' : 'pr-8'}`} data-phu-odiem=""
                 title={t('{tenMon}: làm bài tuần {tuanLich}', { tenMon: tenMon(sheet.programme.code, k), tuanLich: tuanLich(s.weekStart, homNay) })}>{tuanLich(s.weekStart, homNay)}</div>
             )}
             {/* NHAP-DIEM-b: môn vắng / "Đã huỷ" vẫn nhập được tại ô (máy chủ đổi về đã làm bài) — trạng thái là dòng chữ mờ dưới ô (V22, không ⚠). */}
