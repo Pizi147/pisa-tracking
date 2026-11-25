@@ -109,7 +109,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     /* U03 (chủ SP 13/11): một nơi đo cho mọi trang (App) — panel con / panel đóng không gỡ `--ban-phim` của nơi khác. */
     assert(!/useBanPhim\(/.test(kp) && (docSach('web/src/App.tsx').match(/useBanPhim\(\)/g) ?? []).length === 1, 'useBanPhim phải đo đúng một nơi (App)');
-    assert(/max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
+    assert(/max-sm:fixed max-sm:inset-0 max-sm:z-\[60\] max-sm:!m-0 max-sm:rounded-none max-sm:border-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
   });
 
   await t.checkAsync('NEN-PANEL · "Lưu và tiếp": chỉ sang việc kế sau khi lưu xong; lưu lỗi / còn thiếu → ở lại', async () => {

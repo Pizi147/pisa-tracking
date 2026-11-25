@@ -9,14 +9,14 @@ Chỉ sửa hiển thị; không đụng logic của PR 1–3. Mockup không đ�
 |---|---|---|---|---|
 | 1 | Hạn chỉ tô màu chữ (NH4) | `yThuc/khoiYThuc.tsx` `CanLamEm` (bỏ badge "Quá hạn n ngày" / "Phải xử lý" / "còn n ngày", dùng `ChipHan`); `yThuc/ClassYThucCard.tsx` (viên "Yêu cầu xử lý · hạn"); `students/DanhSachHvLop.tsx` (hộp Ý thức) + `.vh-qua` bỏ nền; `classes/CanhBaoYThuc.tsx` ("Ý thức · ngày") | `d01-yt-lop` | XONG |
 | 2 | Quản trị › Tài khoản 375 | `platform/SuaTaiDong.tsx` (không xuống dòng lẻ ✎, bỏ margin âm ở 375), `AccountsAdmin.tsx` (⋯ cao 44 bằng "Sửa") | `d02-qt-tai-khoan` | XONG |
-| 3 | Vùng bấm ≥ 44 ở 375 | `ui/ui.tsx` `BoLocDoan`, `phanTich/dungChung.tsx` `DOAN`, `HoTroHocVienTab.tsx` (công tắc Việc / Lớp của tôi), `.doan`, `ui/Filters.tsx`, `BangHoSoLop.tsx` (ô L R W S), `.cvA-ten` + `.ten-ho-so` (vùng chạm `::after`), `.o-so` 44 × 44 | `d03-*` | XONG (còn ô tick chọn 16 × 16 ở Yêu cầu của tôi — ghi dưới) |
-| 4 | Ô Final lặp kết quả 375 | `cham/MotKyNang.tsx` (bỏ dòng phụ dưới tên khi ô điểm đã có "Chưa đạt · %") | (cần dữ liệu Final của lớp thường — kiểm bằng mã, không có ảnh) | XONG nửa: phần 375. Phần "1440 ghi `→ Head cân nhắc`" **chưa đổi**: [XM] xem mục 3 |
-| 5 | Panel việc 720 | `ui/KhungPanel.tsx` `lg:w-[720px]` (trước 740 ở 1440) | `d05-panel-viec` | XONG 1440. Phần 375 "panel không phủ màn, bắt đầu dưới ‹ Công việc" **chưa làm**: [XM] mục 3 |
-| 6 | Dấu ngăn "-" / "·" | `congViec/DanhSachViec.tsx` (`W1 SEP · L R`, `dauGv`) | `d03-cong-viec-*` | XONG |
-| 7 | Chữ xuống dòng lạ | `test/lichTest/HangLop.tsx` ("Monbay" cạnh mã lớp, không dòng 3); `platform/CatalogAdmin.tsx` (Mốc Test không xuống dòng) | `d14-lich-test-gvbm`, `d10-qt-chuong-trinh` | XONG hai ý; "W3 AUG - MT2 · Listening, / Reading" và panel Nhập điểm lớp "MT1 › / vắng…" **chưa tái hiện được** (mục 3) |
-| 8 | Cột không cân / cột trống | `worklist/TongQuanVai.tsx` (CX: bỏ cột Còn treo + Hạn khi trống, SOS sát phải) | `d08-tong-quan-cx` | XONG ý CX. "Hồ sơ HV bảng Mock Test", "`/mock-test/7` cột Nhận xét + Case", "Dự kiến 01/2027 sát ⋯" **chưa làm**: mục 3 |
+| 3 | Vùng bấm ≥ 44 ở 375 | `ui/ui.tsx` `BoLocDoan`, `phanTich/dungChung.tsx` `DOAN`, `HoTroHocVienTab.tsx` (công tắc Việc / Lớp của tôi), `.doan`, `ui/Filters.tsx`, `BangHoSoLop.tsx` (ô L R W S), `.cvA-ten` + `.ten-ho-so` (vùng chạm `::after`), `.o-so` 44 × 44 | `d03-*` | XONG. Ô tick 16 × 16: đã có vùng chạm 44 × 44 bằng `label::after` (phép đo chỉ đo ô input nên báo nhầm) — không đổi |
+| 4 | Ô Final lặp kết quả 375 | `cham/MotKyNang.tsx` (bỏ dòng phụ dưới tên khi ô điểm đã có "Chưa đạt · %"). 1440 **giữ** "→ Head cân nhắc" (plan.md / DESIGN.md không có tên riêng cho Final dưới ngưỡng — PTA: giữ chữ hiện có) | (cần dữ liệu Final lớp thường — kiểm bằng mã) | XONG |
+| 5 | Panel việc 720 + 375 toàn màn | `ui/KhungPanel.tsx`: 1440 `lg:w-[720px]`; 375 `max-sm:fixed inset-0` (phủ toàn màn, top 0, bỏ dải "‹ Công việc" nằm dưới) | `d05-panel-viec` | XONG |
+| 6 | Dấu ngăn | PTA chốt: GIỮ mẫu chủ SP 25/11 — một dấu " - " sau tuần, phần sau "·" ("W1 SEP - L R W2 · GV"). Đã trả lại, không đổi so với main | `d03-cong-viec-*` | KHÔNG ĐỔI |
+| 7 | Chữ xuống dòng lạ | `test/lichTest/HangLop.tsx` ("Monbay" cạnh mã lớp); `platform/CatalogAdmin.tsx` (Mốc Test một dòng) | `d14-lich-test-gvbm`, `d10-qt-chuong-trinh` | XONG hai ý; "W3 AUG - MT2 · Listening, / Reading" và panel Nhập điểm lớp "MT1 › / vắng…" không tái hiện được trên dữ liệu demo |
+| 8 | Cột không cân / cột trống | CX `worklist/TongQuanVai.tsx` (bỏ Còn treo + Hạn khi trống); `/mock-test`: cột Nhận xét + Case ẩn khi mọi dòng "–" (`fasttrack/MockDetailPage.tsx` + `index.css` `.mt-luoi`, `:has`); hồ sơ HV bảng Mock Test: cột Kết quả căn phải (`StudentDetailPage.tsx`) | `d08-tong-quan-cx`, `d11-mock-test`, `d08-ho-so-hv-mock-test` | XONG. "Dự kiến 01/2027 sát ⋯" không tái hiện được |
 | 9 | Số trơn ở cột Việc "Lớp của tôi" | `congViec/LopCuaToi.tsx` (số đỏ trơn, bỏ badge) | `d03-cong-viec-gvcn` (1440) | XONG |
-| 10 | Bảng Quản trị | `CatalogAdmin.tsx` (colgroup chia hết bề ngang, Còn dùng sát mép phải), `ChiNhanhAdmin.tsx` + `ui/OSuaTaiCho.tsx` (ô sửa lấp đầy cột) | `d10-qt-chuong-trinh`, `d10-qt-chi-nhanh` | XONG hai bảng Quản trị. Phân tích › Ý thức / SOS / Thi thật: **chưa làm** (mục 3) |
+| 10 | Bảng Quản trị | `CatalogAdmin.tsx` (colgroup chia hết bề ngang, Còn dùng sát mép phải), `ChiNhanhAdmin.tsx` + `ui/OSuaTaiCho.tsx` (ô sửa lấp đầy cột) | `d10-qt-chuong-trinh`, `d10-qt-chi-nhanh` | XONG hai bảng Quản trị. Phân tích › Ý thức / SOS: đã soi ảnh 1440 — cột thẳng, số căn giữa, bảng đủ bề ngang; không tìm thấy chỗ "lệch 1 cột" để sửa (ghi lại) |
 | 11 | Trang lượt Test lặp thao tác | `fasttrack/MockDetailPage.tsx` bỏ dải "Còn lại" (nút nằm sẵn ở từng dòng kỹ năng) | `d11-mock-test` | XONG. Câu "GVCN xác minh em không tới buổi Speaking" là ghi chú trong dữ liệu seed, không phải chữ tĩnh của giao diện |
 | 12 | Chữ cắt "…" ô chọn lớp | `index.css` `.oc .da` xuống dòng | (ô chọn lớp ở bộ lọc) | XONG, chưa có ảnh riêng |
 | 13 | Tab cuộn ngang 375 | `ui/HangTab.tsx` đã có mờ mép (kiểm computed style: `mask-image` có) | — | KHÔNG ĐỔI: không tái hiện được cắt giữa chữ không mờ |
@@ -40,11 +40,8 @@ Chỉ sửa hiển thị; không đụng logic của PR 1–3. Mockup không đ�
 | Panel việc 1440 | 740 | 720 |
 | Lịch Test tuần, ô đã chấm tuần khác | không ghi tuần | dòng nhỏ ghi mã tuần thi; không mất thao tác |
 
-## 3. [XM] cần PTA Plan quyết (không tự làm)
+## 3. Ghi lại
 
-- **#4 (1440):** "52% → Head cân nhắc" (đề xuất cho Head) và "Chưa đạt · 52%" (kết quả) là hai khái niệm khác nhau hay một? Cần chốt tên chung rồi mới đổi chuỗi dùng chung `cuoiKhoa.ts` (có tệp Excel dùng chữ này).
-- **#5 (375):** panel việc phủ toàn màn bỏ dải "‹ Công việc" = đổi bố cục màn → cần mockup / duyệt.
-- **#7, #8, #10 phần còn lại** (panel Nhập điểm lớp wrap, bảng Mock Test hồ sơ HV, cột Nhận xét + Case `/mock-test/7` toàn "–" — phải ẩn cột khi trống = đổi lưới, Phân tích › Ý thức / SOS / Thi thật lệch cột): chưa tái hiện / cần đổi lưới; chưa làm.
-- **#15:** chân Công việc GVBM "Báo cáo PH · mở …" do chủ SP yêu cầu 24/11 (BAO-PH-SAP-MO) — giữ, chờ PTA xác nhận có bỏ không.
-- **#6:** chủ SP 25/11 từng chốt "W3 AUG - Progress · R" (một dấu "-" sau tuần); PTA rà 25/11 yêu cầu "·" — đã làm theo bản rà. Chuỗi server `mywork.ts` ("W3 AUG - MT2 · …" ở tiêu đề việc Case) giữ nguyên.
-- **#3:** ô tick chọn 16 × 16 (Yêu cầu của tôi) chưa nới 44.
+- #13 không tái hiện được (`HangTab` có mờ mép, kiểm computed `mask-image`).
+- #15 giữ chân Công việc "Báo cáo PH · mở…" (chủ SP 24/11).
+- Phân tích: không có chỗ lệch cột tái hiện được ở 1440.
