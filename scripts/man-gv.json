@@ -79,6 +79,7 @@
  "web/src/modules/congViec/PanelViecLuoi.tsx",
  "web/src/modules/congViec/SapToi.tsx",
  "web/src/modules/congViec/TabTheoDoi.tsx",
+ "web/src/modules/congViec/TinLop.tsx",
  "web/src/modules/congViec/XacNhanPaLo.tsx",
  "web/src/modules/congViec/chamSpeakingChung.ts",
  "web/src/modules/congViec/dauPanelViec.tsx",
