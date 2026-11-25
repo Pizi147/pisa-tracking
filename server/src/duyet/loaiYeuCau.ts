@@ -476,9 +476,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
     hoanTacRut: {
       xoa: (yc) => [{ bang: 'case_milestones', dk: `id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`, args: [yc.doi_tuong_id] }],
-      /* PTA rà #2166: Case đã có PA / mốc mới sau lúc rút → không đưa thẻ về chờ (Head duyệt sẽ huỷ PA người khác vừa thêm — đi vòng RKC-2b). */
-      chan: (conn, yc, luc) => (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND created_at > ? UNION ALL
-          SELECT 1 FROM case_milestones WHERE case_id = ? AND created_at > ? LIMIT 1`).get(yc.doi_tuong_id, luc, yc.doi_tuong_id, luc)
+      /* PTA rà #2166: Case đã có PA mới / PA đổi trạng thái (`updated_at`) / mốc mới sau lúc rút → không đưa thẻ về chờ (Head duyệt sẽ huỷ PA người khác vừa thêm — đi vòng RKC-2b). */
+      chan: (conn, yc, luc) => (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND (created_at > ? OR updated_at > ?) UNION ALL
+          SELECT 1 FROM case_milestones WHERE case_id = ? AND created_at > ? LIMIT 1`).get(yc.doi_tuong_id, luc, luc, yc.doi_tuong_id, luc)
         ? 'Case đã có PA hoặc mốc mới sau lúc rút — không hoàn tác được; gửi lại "Không cần theo dõi" nếu vẫn cần.' : null),
     },
     /* RKC-3c: Case đã đổi sau quyết định → đi thẳng: Mở lại Case (nếu đang đóng) + trả các PA đã dừng vì "Không cần theo dõi" về trạng thái lúc duyệt

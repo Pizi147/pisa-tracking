@@ -409,6 +409,13 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at) VALUES (?, 'ghi_chu_thu', ?, 'Mốc mới sau rút', ?, ?)`)
       .run(the.doi_tuong_id, TODAY, nguoi.userId, new Date(Date.now() + 1000).toISOString());
     assert(maLoi(() => yc.boRutYeuCau(nguoi, the.id)) === 409 && theCua(the.id).trang_thai === 'tu_dong', 'Case có mốc mới sau rút → 409');
+    /* PTA rà #2166: PA cũ đổi trạng thái sau lúc rút (`updated_at`) cũng chặn. */
+    conn.prepare(`DELETE FROM case_milestones WHERE case_id = ? AND kind = 'ghi_chu_thu'`).run(the.doi_tuong_id);
+    yc.boRutYeuCau(nguoi, the.id);   // mốc mới đã gỡ → hoàn tác được
+    yc.rutYeuCau(nguoi, the.id);
+    const doiPa = conn.prepare('UPDATE case_interventions SET updated_at = ? WHERE id = (SELECT MIN(id) FROM case_interventions WHERE case_id = ?)')
+      .run(new Date(Date.now() + 1000).toISOString(), the.doi_tuong_id).changes;
+    assert(doiPa === 1 && maLoi(() => yc.boRutYeuCau(nguoi, the.id)) === 409 && theCua(the.id).trang_thai === 'tu_dong', `PA đổi sau rút → 409 (đổi ${doiPa} PA)`);
   }));
 
   const { dinhNghiaCua } = await import('../duyet/loaiYeuCau.ts');

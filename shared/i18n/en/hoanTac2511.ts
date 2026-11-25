@@ -7,6 +7,8 @@ export const EN_HOAN_TAC_2511 = {
   'Đã quá lâu sau khi rút — gửi lại yêu cầu nếu vẫn cần.': 'Too long since the withdrawal — send the request again if still needed.',
   'Đã có yêu cầu mới đang chờ cho cùng việc này — không hoàn tác lần rút cũ được.': 'A newer request for the same item is pending — the old withdrawal cannot be undone.',
   'Hoàn tác rút yêu cầu': 'Undo request withdrawal',
+  'Lần xử lý không còn để thu hồi': 'The handling no longer exists to withdraw',
+  'PA quy chế hoặc PA của GV đã đổi': 'The rule plan or the teacher plan has changed',
   '{lyDo} — không hoàn tác rút được; gửi yêu cầu mới nếu vẫn cần.': '{lyDo} — the withdrawal cannot be undone; send a new request if still needed.',
   'Case đã có PA hoặc mốc mới sau lúc rút — không hoàn tác được; gửi lại "Không cần theo dõi" nếu vẫn cần.': 'The Case has a new plan or milestone since the withdrawal — cannot undo; send "No follow-up needed" again if still needed.',
 } as const;

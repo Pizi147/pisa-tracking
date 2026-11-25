@@ -6,7 +6,7 @@
  * nằm ở `loaiYeuCau.ts` (giao kèo). Thẻ "chết" đóng bằng QUÉT KHI ĐỌC (Q2), không có tiến trình nền.
  */
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
-import { t } from '../../../shared/i18n/index.ts';
+import { kem, t, type Khoa } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
 import { can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
@@ -652,7 +652,7 @@ export function boRutYeuCau(p: Principal, id: number) {
     /* PTA rà #2166: đối tượng đã không còn ý nghĩa (luật `chet` của loại — Case đóng, em thôi học / chuyển lớp…) hoặc có việc mới sau lúc rút → 409 có
        lý do, KHÔNG đưa thẻ về chờ rồi để lượt quét đóng lại. */
     if (def?.chet && conn.prepare(`SELECT 1 FROM yeu_cau_duyet y WHERE y.id = ? AND (${def.chet.sql})`).get(id)) {
-      throw loi(409, '{lyDo} — không hoàn tác rút được; gửi yêu cầu mới nếu vẫn cần.', { lyDo: def.chet.lyDo });
+      throw loi(409, '{lyDo} — không hoàn tác rút được; gửi yêu cầu mới nếu vẫn cần.', { lyDo: kem(def.chet.lyDo as Khoa) });   // lý do dịch theo khoá ở web
     }
     const chan = def?.hoanTacRut?.chan?.(conn, yc, g.luc);
     if (chan) throw conflict(chan);

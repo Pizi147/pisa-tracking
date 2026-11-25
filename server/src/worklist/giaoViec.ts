@@ -228,6 +228,7 @@ export function donViec(loai: LoaiTheoDoi, ids: readonly number[]): void {
   db().prepare(`DELETE FROM viec_han_lan WHERE loai = ? AND viec_id IN (${DS_JSON})`).run(loai, json);
   db().prepare(`DELETE FROM viec_mo_ta WHERE loai = ? AND ref_id IN (${DS_JSON})`).run(loai, json);   // VH-1b: mô tả của id cũ
   db().prepare(`DELETE FROM ghi_dao WHERE loai = ? AND bang = ? AND doi_tuong_id IN (${DS_JSON})`).run(LOAI_GHI_DAO, BANG[loai], json);
+  db().prepare(`DELETE FROM ghi_dao WHERE loai = 'bo_theo_doi' AND bang LIKE ? AND doi_tuong_id IN (${DS_JSON})`).run(`viec_theo_doi:${loai}:%`, json);   // PTA rà #2166: bản chụp bỏ theo dõi của id cũ
   if (loai === 'van_hanh') {
     /* VH-1: việc Vận hành — lịch sử / cập nhật / liên kết / tệp của id cũ + bản lặp trỏ việc gốc cũ (id dùng lại không thừa hưởng). ponytail: dòng tệp xoá, tệp trong kho để dọn kho. */
     for (const b of ['task_history', 'task_updates', 'task_case_links', 'task_followers']) db().prepare(`DELETE FROM ${b} WHERE task_id IN (${DS_JSON})`).run(json);
@@ -272,19 +273,31 @@ const tinRieng = (uids: readonly number[], boi: number, v: Viec, title: string, 
 
 /** Rà Hoàn tác 25/11: dòng theo dõi vừa bị bỏ chụp vào `ghi_dao` (khoá theo việc + người) — Hoàn tác thêm lại đúng NGUỒN / người thêm cũ (`gvcn`, `head`…). */
 const GD_BO_TD = (loai: LoaiGiao, uid: number) => ({ loai: 'bo_theo_doi', bang: `viec_theo_doi:${loai}:${uid}` });
+type DongBo = { nguon: string; them_boi: number | null; luc: string; gd: number | null };
 /**
- * Rà Hoàn tác 25/11 (+ PTA rà #2166 P1): dòng lịch sử theo dõi MỚI NHẤT của `uid` ở việc này là lần `boi` bỏ `uid`, trong `HOAN_TAC_PHUT` phút → dòng
- * theo dõi đã bỏ (để thêm lại y như cũ); không thì null. Với `uid = boi = p`: điều kiện DUY NHẤT để người không có quyền sửa theo dõi thêm lại chính mình —
- * không thêm ai khác, không vào việc khác; tự bỏ → tự thêm → Head bỏ thì dòng mới nhất là lần Head bỏ → null.
+ * Rà Hoàn tác 25/11 (+ PTA rà #2166 P1): với mỗi `uid`, dòng lịch sử theo dõi MỚI NHẤT của `uid` ở việc này là lần `boi` bỏ `uid`, trong `HOAN_TAC_PHUT`
+ * phút → dòng theo dõi đã bỏ (để thêm lại y như cũ); không có trong Map = không phải Hoàn tác. Với `uid = boi = p`: điều kiện DUY NHẤT để người không có
+ * quyền sửa theo dõi thêm lại chính mình; tự bỏ → tự thêm → Head bỏ thì dòng mới nhất là lần Head bỏ → không có.
+ * Hai câu cho cả danh sách (lịch sử mới nhất từng người · bản chụp `ghi_dao`), không theo số người.
  */
-function vuaBo(loai: LoaiGiao, id: number, uid: number, boi: number): { nguon: string; them_boi: number | null; luc: string; gd: number | null } | null {
-  const l = db().prepare(`SELECT cu, moi, boi, luc FROM viec_giao_lan WHERE loai = ? AND ref_id = ? AND truong = 'theo_doi' AND (cu = ? OR moi = ?)
-      ORDER BY id DESC LIMIT 1`).get(loai, id, String(uid), String(uid)) as { cu: string | null; moi: string | null; boi: number | null; luc: string } | undefined;
-  if (!l || l.moi !== null || l.boi !== boi || l.luc < new Date(Date.now() - HOAN_TAC_PHUT * 60_000).toISOString()) return null;
-  const g = timGhiDao(db(), GD_BO_TD(loai, uid).loai, GD_BO_TD(loai, uid).bang, id);
-  /* Bản chụp phải của CHÍNH lần bỏ này (ghi ngay sau dòng lịch sử) — lần bỏ đi đường khác (không chụp) → thêm `tay` như trước. */
-  const d = g && g.luc >= l.luc ? (JSON.parse(g.du_lieu) as { truoc: any[] }[])[0]?.truoc[0] : null;
-  return d ? { nguon: d.nguon, them_boi: d.them_boi ?? null, luc: d.luc, gd: g!.id } : { nguon: 'tay', them_boi: boi, luc: nowIso(), gd: null };
+function vuaBo(loai: LoaiGiao, id: number, uids: readonly number[], boi: number): Map<number, DongBo> {
+  const ra = new Map<number, DongBo>();
+  const moc = new Date(Date.now() - HOAN_TAC_PHUT * 60_000).toISOString();
+  const ls = (db().prepare(`SELECT CAST(j.value AS INTEGER) AS uid, l.moi, l.boi, l.luc FROM json_each(?) j JOIN viec_giao_lan l ON l.id = (SELECT MAX(x.id)
+      FROM viec_giao_lan x WHERE x.loai = ? AND x.ref_id = ? AND x.truong = 'theo_doi' AND (x.cu = CAST(j.value AS TEXT) OR x.moi = CAST(j.value AS TEXT)))`)
+    .all(JSON.stringify(uids), loai, id) as { uid: number; moi: string | null; boi: number | null; luc: string }[])
+    .filter((l) => l.moi === null && l.boi === boi && l.luc >= moc);
+  if (!ls.length) return ra;
+  const bang = new Map(ls.map((l) => [GD_BO_TD(loai, l.uid).bang, l]));
+  const gs = db().prepare(`SELECT id, bang, du_lieu, luc FROM ghi_dao WHERE loai = 'bo_theo_doi' AND doi_tuong_id = ? AND dao_luc IS NULL AND bang IN (${DS_JSON}) ORDER BY id DESC`)
+    .all(id, JSON.stringify([...bang.keys()])) as { id: number; bang: string; du_lieu: string; luc: string }[];
+  for (const l of ls) {
+    const g = gs.find((x) => x.bang === GD_BO_TD(loai, l.uid).bang);
+    /* Bản chụp phải của CHÍNH lần bỏ này (ghi ngay sau dòng lịch sử) — lần bỏ đi đường khác (không chụp) → thêm `tay` như trước. */
+    const d = g && g.luc >= l.luc ? (JSON.parse(g.du_lieu) as { truoc: any[] }[])[0]?.truoc[0] : null;
+    ra.set(l.uid, d ? { nguon: d.nguon, them_boi: d.them_boi ?? null, luc: d.luc, gd: g!.id } : { nguon: 'tay', them_boi: boi, luc: nowIso(), gd: null });
+  }
+  return ra;
 }
 
 /** Thêm người theo dõi (chọn nhiều) — người phụ trách, người giao, Head / Quản trị / CX; hoặc chính mình ngay sau khi tự bỏ (`vuaBo`). Người vừa bị bỏ → thêm lại đúng dòng cũ. */
@@ -293,23 +306,27 @@ export function themTheoDoi(p: Principal, loai: LoaiGiao, id: number, body: { us
   if (!v.mo) throw badRequest('Việc đã kết thúc — không thêm người theo dõi.');
   const tho = (Array.isArray(body.userIds) ? body.userIds : [body.userIds]).slice(0, 20);
   const tuThemLai = !coTheSuaTheoDoi(p, v);
-  if (tuThemLai && !(tho.length === 1 && Number(tho[0]) === p.userId && vuaBo(loai, id, p.userId, p.userId))) {
-    throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
-  }
-  const ds = tho.map((u) => kiemNguoiNhan(u, v.branchId));
+  const chinhMinh = tho.length === 1 && Number(tho[0]) === p.userId;
+  const traKhoi = () => { try { return xemGiaoViec(p, loai, id); } catch { return { ok: true as const }; } };
+  /* PTA rà #2166: bấm Hoàn tác hai lần — đang theo dõi rồi thì coi như xong, không 403. */
+  if (tuThemLai && chinhMinh && db().prepare('SELECT 1 FROM viec_theo_doi WHERE loai = ? AND ref_id = ? AND user_id = ?').get(loai, id, p.userId)) return traKhoi();
+  const ds = tuThemLai ? (chinhMinh ? [p.userId] : []) : tho.map((u) => kiemNguoiNhan(u, v.branchId));
+  const bo = ds.length ? vuaBo(loai, id, ds, p.userId) : new Map<number, DongBo>();
+  if (tuThemLai && !bo.has(p.userId)) throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
   if (!ds.length) throw badRequest('Chọn người theo dõi.');
   tx(() => {
     for (const uid of ds) {
-      const cu = vuaBo(loai, id, uid, p.userId);
+      const cu = bo.get(uid);
       if (!cu) { if (themTheoDoiDong(loai, id, [uid], 'tay', p.userId, v.branchId)) ghiLan(loai, id, 'theo_doi', null, uid, p.userId); continue; }
       if (db().prepare('INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) VALUES (?,?,?,?,?,?) ON CONFLICT(loai, ref_id, user_id) DO NOTHING')
         .run(loai, id, uid, cu.nguon, cu.them_boi, cu.luc).changes) ghiLan(loai, id, 'theo_doi', null, uid, p.userId);
-      if (cu.gd) db().prepare('UPDATE ghi_dao SET dao_luc = ?, dao_boi = ? WHERE id = ? AND dao_luc IS NULL').run(nowIso(), p.userId, cu.gd);
     }
+    const gds = [...bo.values()].map((x) => x.gd).filter((x): x is number => x != null);
+    if (gds.length) db().prepare(`UPDATE ghi_dao SET dao_luc = ?, dao_boi = ? WHERE dao_luc IS NULL AND id IN (${DS_JSON})`).run(nowIso(), p.userId, JSON.stringify(gds));
   });
   if (!tuThemLai) return xemGiaoViec(p, loai, id);
   /* Tự thêm lại mà quyền xem việc không đi theo việc theo dõi → không trả khối (như `boTheoDoi`), không báo lỗi sau khi đã lưu. */
-  try { return xemGiaoViec(p, loai, id); } catch { return { ok: true }; }
+  return traKhoi();
 }
 
 /** Bỏ một người theo dõi — tự bỏ (ai cũng được), người khác: như thêm. */
