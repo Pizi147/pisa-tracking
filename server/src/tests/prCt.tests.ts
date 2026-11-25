@@ -582,7 +582,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     dongCua(em5[3], 'dung_hoc', null, { lyDo: 'chuyển nhà' }),
   ]);
   const monL = 'listening', monR = 'reading';
-  check('CT (5a) · GVBM ghi đúng môn mình (UPSERT, sửa được); môn khác → 403; GVCN điền thay → dien_thay 1; rỗng / > 300 ký tự → 400', () => {
+  check('CT (5a) · GVBM ghi đúng môn mình (UPSERT, sửa được); môn khác → 403; GVCN điền thay → dien_thay 1; rỗng / > 500 ký tự → 400', () => {
     const l = lenhCua(em5[0]);
     bg.ghiMon(gvbmL, l.id, monL, 'Nghe ý chính tốt, còn yếu dạng điền bản đồ.');
     bg.ghiMon(gvbmL, l.id, monL, 'Nghe tốt, cần luyện dạng điền bản đồ.');
@@ -591,7 +591,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monR, 'Đọc chậm.')) === 403, 'GVBM môn khác phải 403');
     bg.ghiMon(gvcn5, l.id, monR, 'Đọc chậm với bài dài.');
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monR).dien_thay === 1, 'GVCN điền thay');
-    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(301))) === 400, 'rỗng / quá dài');
+    assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(501))) === 400, 'rỗng / quá dài');
     assert(maLoi(() => bg.ghiMon(gvcn5, l.id, 'khong_co_mon', 'x')) === 400, 'môn không có ở lớp nguồn');
     assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403, 'GV lớp chuyển đến 403');
     /* N64 (PTA 22/11): Head (GVCN còn hạn) ghi luôn, không hỏi — điền thay, người ghi = Head. */

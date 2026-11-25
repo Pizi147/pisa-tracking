@@ -2224,7 +2224,7 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   if (!quyenPhuTrachS(p, a.class_id)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Head ghi được nhận xét GV phụ trách.');
   const coNx = body.nhanXetPhuTrach !== undefined, coNhom = body.nhomNguyenNhan !== undefined;
   if (!coNx && !coNhom) throw badRequest('Không có gì để lưu.');
-  /* N35: nhận xét MT ≤ 300 (thành mô tả Case); chữ cũ dài gửi lại nguyên văn thì giữ — chỉ đọc chữ cũ khi chữ mới đã vượt. */
+  /* N35: nhận xét MT ≤ 500 (thành mô tả Case); chữ cũ dài gửi lại nguyên văn thì giữ — chỉ đọc chữ cũ khi chữ mới đã vượt. */
   const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach, TRAN_CHU.nhanXetMt,
     () => (conn.prepare(`SELECT nhan_xet_phu_trach AS c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as any)?.c) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);

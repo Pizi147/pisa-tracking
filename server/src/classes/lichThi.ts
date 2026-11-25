@@ -28,7 +28,7 @@ import { listCases, type MappedCase } from '../cases/cases.ts';
 import { LUOT_CON_KE_HOACH_SQL } from '../students/tamDung.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
-const GHI_CHU_TOI_DA = 300;
+const GHI_CHU_TOI_DA = 500;
 /** LICH-THI-NOI-THI: nơi thi là chữ NGẮN (IDP · BC · British Council Hà Nội…) — đủ cho tên trung tâm thi, không thành ô ghi chú thứ hai. */
 export const NOI_THI_TOI_DA = 40;
 

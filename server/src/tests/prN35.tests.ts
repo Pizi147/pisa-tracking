@@ -1,8 +1,10 @@
 /**
- * N35 (chủ SP 03/11) — TRẦN CHỮ GV NHẬP, máy chủ chặn ở mọi đường ghi: Mô tả Case ≤ 300 · Nội dung PA ≤ 200 · Nhận xét kết quả PA ≤ 200 ·
- * Nhận xét MT từng kỹ năng ≤ 300. Đúng trần lưu được, +1 → 400; chữ cũ đã dài GỬI LẠI NGUYÊN VĂN (sửa ô khác) vẫn lưu, đổi mà vẫn dài → 400;
+ * N35 (chủ SP 03/11) — TRẦN CHỮ GV NHẬP, máy chủ chặn ở mọi đường ghi: Mô tả Case ≤ 500 · Nội dung PA ≤ 200 · Nhận xét kết quả PA ≤ 200 ·
+ * Nhận xét MT từng kỹ năng ≤ 500. Đúng trần lưu được, +1 → 400; chữ cũ đã dài GỬI LẠI NGUYÊN VĂN (sửa ô khác) vẫn lưu, đổi mà vẫn dài → 400;
  * dán Excel (lô) báo lỗi ĐÚNG dòng, dòng khác vẫn lưu. Mọi ca chạy trong giao dịch rồi cuộn lại.
  */
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrN35Tests(t: any) {
@@ -12,7 +14,7 @@ export async function runPrN35Tests(t: any) {
   const intake: any = await import('../classes/intake.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  console.log('\nN35 · trần chữ GV nhập (mô tả Case 300 · PA 200 · kết quả PA 200 · nhận xét MT 300)');
+  console.log('\nN35 · trần chữ GV nhập (mô tả Case 500 · PA 200 · kết quả PA 200 · nhận xét MT 500)');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { xoaNho(); fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
@@ -33,10 +35,10 @@ export async function runPrN35Tests(t: any) {
     const dto = cases.recordIntervention(P.lrTeacher, c, { kind: 'teaching_adjust', description, performerSelf: true, status: 'started', startedDate: TODAY });
     return Math.max(...dto.interventions.map((x: any) => x.id)) as number;
   };
-  const tran = (r: { status: number | null; msg: string }) => r.status === 400 && /tối đa (200|300) ký tự/i.test(r.msg);
+  const tran = (r: { status: number | null; msg: string }) => r.status === 400 && /tối đa (200|500) ký tự/i.test(r.msg);
 
-  check('N35-0 · hằng một chỗ (shared/domain): 300 · 200 · 200 · 300; vuotTran giữ chữ cũ nguyên văn', () => {
-    assert(JSON.stringify(d.TRAN_CHU) === JSON.stringify({ moTaCase: 300, noiDungPa: 200, ketQuaPa: 200, nhanXetMt: 300 }), JSON.stringify(d.TRAN_CHU));
+  check('N35-0 · hằng một chỗ (shared/domain): 500 · 200 · 200 · 500; vuotTran giữ chữ cũ nguyên văn', () => {
+    assert(JSON.stringify(d.TRAN_CHU) === JSON.stringify({ moTaCase: 500, noiDungPa: 200, ketQuaPa: 200, nhanXetMt: 500 }), JSON.stringify(d.TRAN_CHU));
     assert(!d.vuotTran(chu(200), 200) && d.vuotTran(chu(201), 200), 'biên 200 / 201');
     const cu = chu(250);
     assert(!d.vuotTran(` ${cu} `, 200, cu) && d.vuotTran(cu + 'y', 200, cu), 'chữ cũ dài nguyên văn → giữ; đổi mà vẫn dài → chặn');
@@ -47,17 +49,17 @@ export async function runPrN35Tests(t: any) {
     assert(d.loiFormPa({ ...pa, description: cu + 'y' }, { goc: pa }).some((l: any) => l.khoa === 'noi-dung'), 'đổi nội dung mà vẫn dài → lỗi tại ô');
   });
 
-  check('N35-1 · Mô tả Case: tạo 300 lưu / 301 → 400; Sửa Case chỉ đổi tên giữ mô tả cũ 400 ký tự; đổi mô tả mà vẫn dài → 400', () => thu(() => {
-    caseThu(chu(300));
-    assert(tran(maLoi(() => caseThu(chu(301)))), 'tạo Case 301 ký tự phải 400');
+  check('N35-1 · Mô tả Case: tạo 500 lưu / 501 → 400; Sửa Case chỉ đổi tên giữ mô tả cũ 600 ký tự; đổi mô tả mà vẫn dài → 400', () => thu(() => {
+    caseThu(chu(500));
+    assert(tran(maLoi(() => caseThu(chu(501)))), 'tạo Case 501 ký tự phải 400');
     const c = caseThu();
-    conn.prepare('UPDATE sos_cases SET summary = ? WHERE id = ?').run(chu(400), c);
+    conn.prepare('UPDATE sos_cases SET summary = ? WHERE id = ?').run(chu(600), c);
     const doiTen = maLoi(() => cases.suaCase(P.lrTeacher, c, { title: 'N35 đổi tên' }));
     assert(!tran(doiTen), `chỉ đổi tên mà bị chặn vì mô tả cũ: ${doiTen.msg}`);
-    assert(get('SELECT summary FROM sos_cases WHERE id = ?', c).summary.length === 400, 'chữ cũ dài phải giữ nguyên, không cắt');
-    assert(tran(maLoi(() => cases.suaCase(P.lrTeacher, c, { summary: chu(400) + 'y' }))), 'đổi mô tả mà vẫn dài phải 400');
-    cases.suaCase(P.lrTeacher, c, { summary: chu(300) });
-    assert(get('SELECT summary FROM sos_cases WHERE id = ?', c).summary.length === 300, 'rút về 300 thì lưu');
+    assert(get('SELECT summary FROM sos_cases WHERE id = ?', c).summary.length === 600, 'chữ cũ dài phải giữ nguyên, không cắt');
+    assert(tran(maLoi(() => cases.suaCase(P.lrTeacher, c, { summary: chu(600) + 'y' }))), 'đổi mô tả mà vẫn dài phải 400');
+    cases.suaCase(P.lrTeacher, c, { summary: chu(500) });
+    assert(get('SELECT summary FROM sos_cases WHERE id = ?', c).summary.length === 500, 'rút về 500 thì lưu');
   }));
 
   check('N35-2 · Nội dung PA: thêm 200 lưu / 201 → 400; Sửa PA gửi lại nguyên văn PA cũ 250 ký tự không bị chặn; đổi mà vẫn dài → 400', () => thu(() => {
@@ -86,15 +88,30 @@ export async function runPrN35Tests(t: any) {
       JOIN report_periods pr ON pr.id = k.planned_period_id AND pr.week_start <= ?
       WHERE a.class_id = ? AND a.kind = 'mock' AND a.status <> 'cancelled' AND COALESCE(a.lich_su, 0) = 0 ORDER BY a.id LIMIT 2`).all(TODAY, LOP) as any[]).map((r) => r.id as number);
 
-  check('N35-4 · Nhận xét MT: 300 lưu / 301 → 400; nhận xét cũ 400 ký tự gửi lại nguyên văn vẫn lưu (vd sửa điểm)', () => thu(() => {
+  check('N35-4 · Nhận xét MT: 500 lưu / 501 → 400; nhận xét cũ 600 ký tự gửi lại nguyên văn vẫn lưu (vd sửa điểm)', () => thu(() => {
     const [a] = luotMt();
     assert(a, 'cần một lượt MT ở MB FT 101');
-    attempts.saveScore(P.lrTeacher, a, 'listening', { rawScore: 30, nhanXet: chu(300) }, TODAY);
-    assert(tran(maLoi(() => attempts.saveScore(P.lrTeacher, a, 'listening', { nhanXet: chu(301) }, TODAY))), 'nhận xét 301 phải 400');
-    conn.prepare(`UPDATE assessment_scores SET comment = ? WHERE attempt_id = ? AND skill = 'listening'`).run(chu(400), a);
-    const giu = maLoi(() => attempts.saveScore(P.lrTeacher, a, 'listening', { rawScore: 31, nhanXet: chu(400) }, TODAY));
+    attempts.saveScore(P.lrTeacher, a, 'listening', { rawScore: 30, nhanXet: chu(500) }, TODAY);
+    assert(tran(maLoi(() => attempts.saveScore(P.lrTeacher, a, 'listening', { nhanXet: chu(501) }, TODAY))), 'nhận xét 501 phải 400');
+    conn.prepare(`UPDATE assessment_scores SET comment = ? WHERE attempt_id = ? AND skill = 'listening'`).run(chu(600), a);
+    const giu = maLoi(() => attempts.saveScore(P.lrTeacher, a, 'listening', { rawScore: 31, nhanXet: chu(600) }, TODAY));
     assert(!tran(giu), `nhận xét cũ gửi lại bị chặn: ${giu.msg}`);
-    assert(get(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a).comment.length === 400, 'chữ cũ giữ nguyên');
+    assert(get(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a).comment.length === 600, 'chữ cũ giữ nguyên');
   }));
+
+  check('N35-6 · chủ SP 25/11: không còn giới hạn CHỮ 300 sót ở web / máy chủ / shared (đã nâng 500; ngoại lệ: slice(0, 300) cắt câu lỗi, tiêu đề thông báo, mô tả bộ lọc xuất — không phải ô gõ)', () => {
+    const mau = [/maxLength=\{300\}/, /length\s*>\s*300\b/, /TOI_DA\s*=\s*300\b/, /toiDa:\s*300\b/, /(moTaCase|nhanXetMt):\s*300\b/, /tối đa 300 ký tự/i, /≤ 300/, /\(300\)/, /, 300, 'Lý do'/];
+    const sot: string[] = [];
+    const quet = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const f = join(dir, e.name);
+        if (e.isDirectory()) { if (e.name !== 'tests' && e.name !== 'node_modules') quet(f); continue; }
+        if (!/\.(ts|tsx)$/.test(e.name)) continue;
+        readFileSync(f, 'utf8').split(/\r?\n/).forEach((dong, i) => { if (mau.some((m) => m.test(dong))) sot.push(`${f}:${i + 1}`); });
+      }
+    };
+    for (const d0 of ['web/src', 'server/src', 'shared']) quet(join(process.cwd(), d0));
+    assert(!sot.length, `còn giới hạn 300: ${sot.join(' · ')}`);
+  });
 
 }

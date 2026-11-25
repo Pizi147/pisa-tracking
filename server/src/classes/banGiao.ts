@@ -371,7 +371,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (!boMonBanGiaoCt(l.ct).includes(mon) && !coCu) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
   if (!text) throw badRequest('Viết một câu bàn giao.');
-  if (text.length > 300) throw badRequest('Câu bàn giao tối đa 300 ký tự.');
+  if (text.length > 500) throw badRequest('Câu bàn giao tối đa 500 ký tự.');
   tx(() => {
     const cu = db().prepare('SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?').get(lenhId, mon) as any;
     db().prepare(

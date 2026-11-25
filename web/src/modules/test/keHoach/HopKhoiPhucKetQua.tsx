@@ -39,7 +39,7 @@ export function HopKhoiPhucKetQua({ attemptId, nhan, ketQua, onDong, onXong }: {
         <div className="space-y-3">
           <p className="m-0">{nhan}: {t('{n} điểm đã huỷ', { n: ketQua.soDiem })}{ketQua.vuotBoi ? ` ${t('khi dời {dot}', { dot: ketQua.vuotBoi })}` : ''}.</p>
           <Truong nhan={t('Lý do')} tuyChon>
-            <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+            <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
           </Truong>
           {loiMay && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loiMay}</p>}
         </div>

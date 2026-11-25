@@ -326,7 +326,7 @@ export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unkno
   const vao = input.han === null || input.han === undefined || input.han === '' ? null : docNgayNhap(input.han, homNay, canNamGan(homNay));
   if (vao && !vao.iso) throw badRequest(`Hạn mới: ${vao.loi ?? 'không hợp lệ'}`);   // rà #436: ngày không có thật (31/09) → 400
   const han = vao?.iso ?? null;
-  const lyDo = han ? chuTuDo(input.lyDo, 'Lý do', 300) : null;
+  const lyDo = han ? chuTuDo(input.lyDo, 'Lý do', 500) : null;
   if (han) {
     if (han < homNay) throw badRequest('Hạn mới không được trước hôm nay.');
     const goc = trangThaiSauThi({ ...dong, han_sau_thi: null }, homNay).han;   // hạn khi không gia hạn (Bước tiếp: gồm ngày có kết quả)

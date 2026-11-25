@@ -511,7 +511,7 @@ export function listChiNhanh(p: Principal) {
  */
 const O_CN = [
   { k: 'name', cot: 'name', ten: 'Tên chi nhánh', toiDa: 80 },
-  { k: 'diaChi', cot: 'dia_chi', ten: 'Địa chỉ', toiDa: 300 },
+  { k: 'diaChi', cot: 'dia_chi', ten: 'Địa chỉ', toiDa: 500 },
   { k: 'soDienThoai', cot: 'so_dien_thoai', ten: 'Số điện thoại', toiDa: 60 },
 ] as const;
 type KhoaCn = (typeof O_CN)[number]['k'];

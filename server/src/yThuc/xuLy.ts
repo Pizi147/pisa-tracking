@@ -38,7 +38,7 @@ import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhV
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Head trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = CHU_TOI_THIEU;   // N50 (6)
-export const MO_TA_TOI_DA = 300;
+export const MO_TA_TOI_DA = 500;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
@@ -92,7 +92,7 @@ export function ngayThucHien(v: unknown): string {
 export function moTa(v: unknown, cu?: string | null): string {
   const s = String(v ?? '').trim();
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
-  /* TINH-HINH (mockup v20 D1 "/ 300", N35): trần 300 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
+  /* TINH-HINH (mockup v20 D1 "/ 500", N35): trần 500 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
   return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
 }
 /** N56 ③ (chủ SP 20/11): Xác nhận xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (`luuXuLy` tự ghi); có chữ thì kiểm như cũ. Đề xuất (khác mặc định) vẫn `moTa`. */

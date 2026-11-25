@@ -6,7 +6,7 @@ import { t } from '@shared/i18n/index.ts';
  * Bấm → ô nhập + Huỷ thay đổi / Đóng · Lưu; Enter lưu, Esc thôi. Lỗi máy chủ: giữ chữ đang gõ, báo dưới ô (`aria-describedby`), focus lại ô.
  * `chiXem`: chữ thường, không bấm được (Quản lý xem cấu hình).
  */
-export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem = false, trong, onLuu }: {
+export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 500, chiXem = false, trong, onLuu }: {
   giaTri: string | null; nhan: string; rong?: string; toiDa?: number; chiXem?: boolean;
   /** Chữ khi ô trống (vd "+ SĐT"). */
   trong?: string;

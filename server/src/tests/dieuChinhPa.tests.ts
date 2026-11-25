@@ -185,11 +185,11 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     assert(revRows(ivId).length === 0, 'Giữ nguyên không được sinh dòng lịch sử điều chỉnh');
   });
 
-  check('PR-S2 · S4: vấn đề còn tồn tối đa 300 ký tự; bỏ trống thì lưu NULL', () => {
+  check('PR-S2 · S4: vấn đề còn tồn tối đa 500 ký tự; bỏ trống thì lưu NULL', () => {
     const { ivId } = taoCase();
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
-      decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn nhiều', remainingIssue: 'x'.repeat(301),
-    }), /300 ký tự/, 'Vấn đề còn tồn dài hơn 300 ký tự');
+      decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn nhiều', remainingIssue: 'x'.repeat(501),
+    }), /500 ký tự/, 'Vấn đề còn tồn dài hơn 500 ký tự');
     cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'Nghe số đã khá hơn nhiều', remainingIssue: '   ' });
     assert(lastFollow(ivId).remaining_issue === null, 'Vấn đề còn tồn chỉ có khoảng trắng phải lưu NULL');
   });

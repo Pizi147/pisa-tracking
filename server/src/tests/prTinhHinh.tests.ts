@@ -251,13 +251,13 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
     assert(/const daSua = sua \? chupSua !== gocSua/.test(s), 'daSua của Sửa phải so với giá trị lúc mở');
   });
 
-  await checkAsync('TH-10 · Mô tả xử lý ≤ 300 (mockup v20 D1, N35): 301 → 400 không lưu; 300 lưu được', () => thu(() => {
+  await checkAsync('TH-10 · Mô tả xử lý ≤ 500 (mockup v20 D1, N35): 501 → 400 không lưu; 500 lưu được', () => thu(() => {
     const sid = moiEm();
     const v1 = ghi(sid, 1);
     let ma = 0;
-    try { xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(301) }); } catch (e: any) { ma = e.status; }
+    try { xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(501) }); } catch (e: any) { ma = e.status; }
     assert(ma === 400 && !hang('SELECT id FROM discipline_measures WHERE student_id = ?', sid).length, `ma=${ma}`);
-    xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(300) });
-    assert(hang('SELECT id FROM discipline_measures WHERE student_id = ?', sid).length === 1, 'lưu 300');
+    xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(500) });
+    assert(hang('SELECT id FROM discipline_measures WHERE student_id = ?', sid).length === 1, 'lưu 500');
   }));
 }

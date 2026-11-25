@@ -678,7 +678,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · (rà soát) Lượt Mock đã HUỶ: không thêm việc phối hợp; không hiện trong danh sách theo lớp / học viên (khớp chỉ số); chữ nhập vào quá dài bị từ chối', () => {
     const f = freshSos('CANCEL');
     assertThrows(() => phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY, note: 'x'.repeat(1001) }), /quá dài/, 'Ghi chú quá dài');
-    assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(301) }), /quá dài/, 'Lý do quá dài');
+    assertThrows(() => phoiHop.removeCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { reasonCode: 'other', reasonText: 'y'.repeat(501) }), /quá dài/, 'Lý do quá dài');
     assertThrows(() => phoiHop.addCoordination(gvcn, f.a.id, { kind: 'other', customName: 'z'.repeat(101) }), /quá dài/, 'Tên việc quá dài');
     /* PR-MT (M-12): lượt ĐÃ CÓ ĐIỂM nay không "Huỷ cả lượt" được — dựng đúng dữ liệu CŨ (huỷ trước PR-MT) để thử chỗ đọc. */
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = 'Huỷ lượt để thử phép kiểm' WHERE id = ?`).run(f.a.id);

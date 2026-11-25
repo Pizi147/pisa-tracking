@@ -224,7 +224,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const [cheDo, setCheDo] = useState<'xac-nhan' | 'doi' | 'ktd'>('xac-nhan');
   /* GD-3 (mockup v21 K4a / K4b): Chọn PA — hai ô chọn, mặc định Theo PA quy chế; dòng quy chế + nút chính đổi theo ô đang chọn. */
   const [chon, setChon] = useState<'quy-che' | 'giu'>('quy-che');
-  /* K4b: lý do "Giữ PA của tôi" — không bắt buộc (Q3), ≤ 300 ký tự (N35, máy chủ cũng chặn); nháp của việc như Nội dung PA. */
+  /* K4b: lý do "Giữ PA của tôi" — không bắt buộc (Q3), ≤ 500 ký tự (N35, máy chủ cũng chặn); nháp của việc như Nội dung PA. */
   const [lyDoGiu, setLyDoGiu] = useNhap(`giu-pa-ly-do:${pa.id}`, '');
   const doi = useDoiPa(pa.kind);
   const [busy, setBusy] = useState(false);
@@ -240,7 +240,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const paGv = pa.chonPa?.length ? pa.chonPa : null;
   const tenGv = paGv ? paGv.map((g) => dich(INTERVENTION_KIND_LABEL[g.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? g.kind)).join(', ') : '';
   const giu = async () => {
-    if (lyDoGiu.trim().length > 300) return;   // báo tại ô, chữ giữ
+    if (lyDoGiu.trim().length > 500) return;   // báo tại ô, chữ giữ
     setBusy(true); setLoiLuu(null);
     try {
       const ct = await api.post<any>(`/interventions/${pa.id}/giu-pa-gv`, { lyDo: lyDoGiu.trim() || undefined });
@@ -376,8 +376,8 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
                 </div>
               )}
               {giuPa && (
-                <Truong nhan={t('Lý do')} dem={{ co: lyDoGiu.trim().length, toiDa: 300 }}
-                  loi={lyDoGiu.trim().length > 300 ? t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: 300, n: lyDoGiu.trim().length }) : undefined}>
+                <Truong nhan={t('Lý do')} dem={{ co: lyDoGiu.trim().length, toiDa: 500 }}
+                  loi={lyDoGiu.trim().length > 500 ? t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: 500, n: lyDoGiu.trim().length }) : undefined}>
                   <textarea className="field w-full" rows={2} value={lyDoGiu} readOnly={busy} onChange={(e) => setLyDoGiu(e.target.value)} />
                 </Truong>
               )}
