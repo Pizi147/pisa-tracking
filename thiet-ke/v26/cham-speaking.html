@@ -194,6 +194,10 @@
 .lc .ten2 small.nhap-ch { color:var(--soon); font-weight:600; }
 /* Chấm Speaking: "ai" chỉ là "n em" (ngắn) → cột thông tin ăn phần dư, căn trái ngay sau cột em; hạn sát mép phải (PTA 25/11). Dưới 600 px giữ hai tầng của khuôn A. */
 @container (min-width:600px) { .lg.cs { grid-template-columns:max-content max-content minmax(0,1fr) max-content; column-gap:28px; } }
+/* 1440 / 1280: danh sách chiếm đúng MỘT NỬA ngay từ đầu; nửa phải = Lớp của tôi, bấm dòng thì panel vào đúng nửa đó — danh sách không co / giãn khi mở / đóng (chủ SP 25/11). */
+.cv.nua { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.man .pn { width:50%; }
+.lg.cs .ct { white-space:normal; overflow-wrap:anywhere; padding-block:6px; }
 .od.nhap { border-color:var(--soon); }
 .dt .pht1 .nut-ma { min-height:44px; min-width:44px; }
 .hoan { display:grid; justify-items:center; gap:8px; padding:28px 16px 24px; text-align:center; color:var(--text-dim); }
@@ -269,14 +273,14 @@ const GV = [
 ];
 /* CS: một dòng = một lớp. n = số em · bai = số bài · qua = số bài quá hạn · han = hạn sớm nhất còn chờ */
 const CS = [
-  { id: 'c2', lop: 'MB FT 101', n: 7, ct: 'Mock W4 AUG + W1 SEP · 8 bài · 6 quá hạn', bai: 8, qua: 6, han: ['25/08/2026', 'qua'] },
-  { id: 'c1', lop: 'MB FOU 12', n: 5, ct: 'MT1 W3 AUG · 5 bài · 5 quá hạn', bai: 5, qua: 5, han: ['26/08/2026', 'qua'] },
-  { id: 'c3', lop: 'MB FT 104', n: 5, ct: 'Mock W1 SEP · 6 bài · 4 quá hạn', bai: 6, qua: 4, han: ['09/09/2026', 'qua'] },
-  { id: 'c4', lop: 'MB BE 03', n: 3, ct: 'MT1 W2 SEP · 3 bài', bai: 3, qua: 0, han: ['16/09/2026', 'gan'] },
+  { id: 'c2', lop: 'MB FT 101', n: 7, ct: 'W4 AUG, W1 SEP · 8 bài · 6 quá hạn', bai: 8, qua: 6, han: ['25/08/2026', 'qua'] },
+  { id: 'c1', lop: 'MB FOU 12', n: 5, ct: 'W3 AUG · 5 bài · 5 quá hạn', bai: 5, qua: 5, han: ['26/08/2026', 'qua'] },
+  { id: 'c3', lop: 'MB FT 104', n: 5, ct: 'W1 SEP · 6 bài · 4 quá hạn', bai: 6, qua: 4, han: ['09/09/2026', 'qua'] },
+  { id: 'c4', lop: 'MB BE 03', n: 3, ct: 'W2 SEP · 3 bài', bai: 3, qua: 0, han: ['16/09/2026', 'gan'] },
 ];
 const CN = [
-  { id: 'k1', lop: 'BC FT 205', cn: 'Cầu Giấy', n: 3, ct: 'Mock W1 SEP · 4 bài · 4 quá hạn', bai: 4, qua: 4, han: ['09/09/2026', 'qua'] },
-  { id: 'k2', lop: 'BC FOU 21', cn: 'Cầu Giấy', n: 2, ct: 'MT1 W1 SEP · 2 bài', bai: 2, han: ['17/09/2026'] },
+  { id: 'k1', lop: 'BC FT 205', cn: 'Cầu Giấy', n: 3, ct: 'W1 SEP · 4 bài · 4 quá hạn', bai: 4, qua: 4, han: ['09/09/2026', 'qua'] },
+  { id: 'k2', lop: 'BC FOU 21', cn: 'Cầu Giấy', n: 2, ct: 'W1 SEP · 2 bài', bai: 2, han: ['17/09/2026'] },
 ];
 const TAB = (so, doo) => [['Chấm điểm', 1, 1], ['Chấm Speaking', so, doo], ['Case học thuật'], ['Vận hành'], ['Đang theo dõi']];
 const ttGv = thanhTren('Vũ Thu Lan', 'TL', MENU, 1);
@@ -304,12 +308,12 @@ const luoiS = (dt, hang, tach) => `<div class="lc" role="table" aria-label="Đi�
 const gvCham = `<div class="pht1"><span><span class="lb">GV chấm</span><b>Vũ Thu Lan</b><button class="nut nut-ma">Đổi</button></span></div>`;
 function pnCs(dt, k = {}) {
   const than = k.xong
-    ? `<div class="hoan">${ic('ok')}<b>Đã xong phần của bạn</b><span>MB FT 101 · Mock W1 SEP: đã lưu 8 bài</span></div>${luoiS(dt, [], 'Đã có điểm · 8 bài')}`
+    ? `<div class="hoan">${ic('ok')}<b>Đã xong phần của bạn</b><span>MB FT 101 · W1 SEP: đã lưu 8 bài</span></div>${luoiS(dt, [], 'Đã có điểm · 8 bài')}`
     : `${gvCham}${luoiS(dt, HV, 'Đã có điểm · 2 bài')}`;
   const luu = k.xong ? `<span class="luu da">${ic('dau')}Đã lưu 8 bài</span>` : `<span class="luu nhap">Chưa lưu · 1 bài</span>`;
   const nut = k.xong ? `<button class="nut nut-chinh">Lớp tiếp: MB FOU 12 ›</button>` : `<button class="nut">Lưu</button><button class="nut nut-chinh">Lưu · lớp tiếp ›</button>`;
   return `<section class="pn" aria-label="Chấm Speaking · MB FT 101">
-    ${dauPn('Chấm Speaking', '<a href="#">MB FT 101</a><span>Mock W1 SEP</span>' + (k.xong ? '<span>đã chấm 8 bài</span>' : '<span>' + (dt ? '8 bài' : '8 bài · 6 quá hạn') + '</span><span class="hn qua">25/08/2026</span>'), dt)}
+    ${dauPn('Chấm Speaking', '<a href="#">MB FT 101</a><span>W1 SEP</span>' + (k.xong ? '<span>đã chấm 8 bài</span>' : '<span>8 bài</span><span class="hn qua">25/08/2026</span>'), dt)}
     <div class="pn-than">${than}</div>${chanPn(luu, nut)}</section>`;
 }
 /* phương án B: panel nhiều lớp, ngăn gập, ô tìm, Chi nhánh khác */
@@ -320,12 +324,12 @@ const pnB = () => `<section class="pn" aria-label="Chấm Speaking (phương án
   ${chanPn('<span class="luu da">' + ic('dau') + 'Đã lưu 3 bài</span>', '<button class="nut">Lưu</button><button class="nut nut-chinh">Lưu · việc tiếp ›</button>')}</section>`;
 
 /* ---------- khung ---------- */
-const man = ({ so = 15, doo = 1, ds, panel = '' }) => `<div class="man toi cao" data-web>${ttGv}<div class="noi-dung">${dauTr}<div class="cv ${panel ? 'co-pn' : 'co-phai'}"><div class="trai kA">${hangTab(TAB(so, doo), 'Chấm Speaking')}${ds}</div>${panel ? '' : lopCuaToi()}</div></div>${panel}</div>`;
+const man = ({ so = 15, doo = 1, ds, panel = '', w = 0 }) => `<div class="man toi cao" data-web${w ? ` style="width:${w}px"` : ''}>${ttGv}<div class="noi-dung">${dauTr}<div class="cv nua"><div class="trai kA">${hangTab(TAB(so, doo), 'Chấm Speaking')}${ds}</div>${panel ? '' : lopCuaToi()}</div></div>${panel}</div>`;
 const dtKhung = (ds, so = 15, doo = 1) => `<div class="dt sang cao" data-web>${thanhTrenDt}<div class="noi-dung">${dauTr}<div class="kA">${hangTab(TAB(so, doo), 'Chấm Speaking')}${ds}</div></div></div>`;
 const manPn = (panel, o) => man({ ds: dsCs({ o }), panel });
 document.querySelector('[data-khu="A"]').innerHTML =
-  hinh('A1 · 1440 · tối · PA A · 4 lớp, 15 bài quá hạn (đỏ), dòng rê chuột, Chi nhánh khác gập', 'A1-1440-toi', man({ ds: dsCs({ o: { re: 'c3' } }) }))
-  + hinh('A2 · 1440 · tối · PA A · bấm dòng MB FT 101 → panel của lớp đó (danh sách 680 + panel 720)', 'A2-1440-toi-panel', manPn(pnCs(false), { chon: 'c2' }))
+  hinh('A1 · 1440 · tối · PA A · nửa trái danh sách + nửa phải Lớp của tôi · 4 lớp, 15 bài quá hạn (đỏ), dòng rê chuột, Chi nhánh khác gập', 'A1-1440-toi', man({ ds: dsCs({ o: { re: 'c3' } }) }))
+  + hinh('A2 · 1440 · tối · PA A · bấm dòng MB FT 101 → panel của lớp đó vào đúng nửa phải (danh sách giữ nguyên bề rộng)', 'A2-1440-toi-panel', manPn(pnCs(false), { chon: 'c2' }))
   + hinh('A3 · 1440 · tối · PA A · làm hết bài của lớp → dòng MB FT 101 rời danh sách, badge 15 → 9, nút "Lớp tiếp: MB FOU 12 ›"', 'A3-1440-toi-het-bai-lop', man({ so: 9, ds: dsCs({ ds: CS.filter((c) => c.id !== 'c2') }), panel: pnCs(false, { xong: true }) }))
   + hinh('A4 · 1440 · tối · PA A · chỉ MỘT lớp (không quá hạn) + Chi nhánh khác đã mở (chip chi nhánh)', 'A4-1440-toi-mot-lop', man({ so: 3, doo: 0, ds: dsCs({ ds: [{ ...CS[3] }], cnMo: true }) }))
   + hinh('A5 · 1440 · tối · PA A · rỗng (hết bài Speaking chờ chấm)', 'A5-1440-toi-rong', man({ so: 0, doo: 0, ds: dsCs({ rong: true }) }))
@@ -333,6 +337,7 @@ document.querySelector('[data-khu="A"]').innerHTML =
   + hinh('A7 · 375 · sáng · PA A · panel của lớp toàn màn', 'A7-375-sang-panel', `<div class="dt sang" data-web>${thanhTrenDt}${pnCs(true)}</div>`)
   + hinh('A8 · 375 · sáng · PA A · rỗng', 'A8-375-sang-rong', dtKhung(dsCs({ rong: true }), 0, 0))
   + hinh('A9 · 1440 · tối · PA A · gõ "huy" ở ô Tìm học viên (đầu danh sách, lọc xuyên lớp): dòng lớp ghi em khớp + số bài', 'A9-1440-toi-tim-hoc-vien', man({ ds: dsCs({ q: 'huy', ds: [{ id: 'c2', lop: 'MB FT 101', khop: 'Lê Quang Huy', ct: '2 bài · W4 AUG, W1 SEP', bai: 2, qua: 2, han: ['25/08/2026', 'qua'] }, { id: 'c3', lop: 'MB FT 104', khop: 'Đặng Gia Huy', ct: '1 bài · W1 SEP', bai: 1, qua: 1, han: ['09/09/2026', 'qua'] }] }) }))
+  + hinh('A10 · 1280 · tối · PA A · nửa trái danh sách (không đổi bề rộng khi mở panel) + nửa phải panel', 'A10-1280-toi-panel', man({ w: 1280, ds: dsCs({ o: { chon: 'c2' } }), panel: pnCs(false) }))
   + hinh('B1 · 1440 · tối · PA B (KHÔNG chọn) · bấm dòng vẫn mở panel nhiều lớp, mở sẵn ngăn MB FT 101', 'B1-1440-toi-phuong-an-B', manPn(pnB(), { chon: 'c2' }));
 document.addEventListener('click', (e) => { const b = e.target.closest('.ds-dau.gapds'); if (b) b.classList.toggle('mo'); });
 </script>

@@ -11,6 +11,8 @@ Chỉ mockup, chưa code. Dữ liệu bịa; hôm nay 14/09/2026.
 ## Vì sao A
 Một dòng = một việc = một panel, giống mọi tab Công việc (NH10). Panel gọn: mở thẳng vào lưới của lớp, không phải gập / mở ngăn. Số thao tác để chấm một lớp: B bấm dòng + tìm / cuộn tới ngăn + chấm; A bấm dòng + chấm. Không có nhiều danh sách cho cùng một thứ. Chi phí code A: panel đã có prop `lopDau` + ngăn lớp (`NganLop`) → A tách `NganLop` ra làm thân panel.
 
+Bố cục 1440 / 1280 (chủ SP 25/11): danh sách chiếm đúng MỘT NỬA ngay từ đầu; nửa phải = "Lớp của tôi" lúc chưa mở, bấm dòng thì panel vào đúng nửa phải — danh sách KHÔNG co / giãn khi mở / đóng (ảnh A1 ↔ A2, A10 = 1280). Thông tin dài thì xuống dòng, không cắt "…". 375 giữ như cũ. Thông tin dòng chỉ ghi mã tuần, không chữ "Mock" / "MT".
+
 Lưới dòng (≥ 600 px): lớp · n em · thông tin (ăn phần dư, căn trái ngay sau cột em) · hạn (sát mép phải); số em CHỈ ở cột em, số bài / quá hạn CHỈ ở cột thông tin — không ghi hai chỗ. Cột lớp / em dùng chung giữa nhóm chính và "Chi nhánh khác" (subgrid) nên thẳng cột. < 600 px: hai tầng như khuôn A.
 
 ## Giữ nguyên (không đổi luật)
@@ -47,7 +49,7 @@ Lưới dòng (≥ 600 px): lớp · n em · thông tin (ăn phần dư, căn tr
 
 ## Tự rà (critique, mục tiêu ≥ 35)
 Hai tác tử độc lập (A: thiết kế bằng ảnh, B: detector tĩnh). Detector: 15 mục, đều từ khung v23 / v24 đã duyệt (vạch trái dòng chọn, thang radius / màu khung mockup, phông Inter của chữ số) hoặc phần phụ trợ không lên web — không có mục nào thuộc phần thêm của tệp này.
-Vòng 3 **31/40** (0 P0, 2 P1: chip chi nhánh kéo rộng cột lớp ở A4; bỏ ô tìm mà thay thế không đạt) → sửa cả hai (chip vào cột thông tin; giữ ô tìm ở đầu danh sách + ảnh A9) + cột 1440 cân theo lưới khuôn A (PTA 25/11) + câu rỗng + "Mock W4 AUG + W1 SEP" khi lớp có hai tuần. **Chưa chấm lại vòng 4**: P0/P1 còn lại theo tự kiểm = không. (Các dòng dưới là lịch sử vòng 1–2.)
+Vòng 3 **31/40** (0 P0, 2 P1: chip chi nhánh kéo rộng cột lớp ở A4; bỏ ô tìm mà thay thế không đạt) → sửa cả hai (chip vào cột thông tin; giữ ô tìm ở đầu danh sách + ảnh A9) + cột 1440 cân theo lưới khuôn A (PTA 25/11) + câu rỗng + "W4 AUG, W1 SEP" khi lớp có hai tuần. **Chưa chấm lại vòng 4**: P0/P1 còn lại theo tự kiểm = không. (Các dòng dưới là lịch sử vòng 1–2.)
 Vòng 1 **26/40** (0 P0, 6 P1) → sửa (ghi "m quá hạn" ở dòng, danh sách đổi theo sau khi chấm hết, chữ trạng thái, 375 bỏ cột KQ, câu rỗng, vùng bấm "Đổi") → vòng 2 **30/40** (0 P0, 2 P1: "chưa lưu" chỉ bằng màu ở 375; thiếu nút Lưu ở 375) → sửa cả hai + vài P2 (dữ liệu hạn, đầu panel A3, chân "Chưa lưu · 1 bài"). **Chưa chấm lại sau vòng sửa cuối** (hết 2 vòng cho phép khi dưới 35; theo cổng chỉ cần không còn P0 / P1 — đã tự kiểm ảnh A2, A3, A7). Điểm là của tác tử chấm, không phải kết luận: PTA nên xem ảnh.
 
 P2 còn lại (không sửa): đầu trang "3 việc · 1 quá hạn" cạnh badge tab 15 (đúng luật T18, hai số quá hạn trên một màn) · ngưỡng "sắp hạn" vàng không ghi trên màn · "5 em" đậm ngang mã lớp ở 375 (như mọi tab khuôn A) · ⓘ ⋯ ✕ ở đầu panel 375 sát nhau (khung chung v24) · B1 không chọn.
