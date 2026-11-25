@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
-import { ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
-import { lopBadgeHan } from '../../ui/Nhan.tsx';
+import { ChipHan, lopBadgeHan } from '../../ui/Nhan.tsx';
 import type { YThucHocVien } from './kieu.ts';
 
 /**
@@ -41,34 +40,23 @@ export function BadgeViec({ tong, children, onClick, title, xuong = false, duong
 
 type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay'> & { deXuat: Pick<NonNullable<YThucHocVien['deXuat']>, 'id' | 'nhan' | 'status' | 'han'> | null };
 
-const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu}T00:00:00Z`)) / 86_400_000);
-
-/**
- * Ô "Cần làm" của một em: badge + hạn (cùng chữ ở hàng em tab lớp). null = không còn việc.
- * Mặc định hạn nằm TRONG badge ("Phải xử lý · hạn 05/11" — K2 / K3); `hanDuoi` (bảng lớp 1440, K1): badge rồi dòng hạn nhỏ bên dưới.
- */
-export function CanLamEm({ x, homNay, onXem, hanDuoi = false, laQl = false }: {
-  x: TomTatVao; homNay: string; onXem?: (id: number) => void; hanDuoi?: boolean;
+/** Ô "Cần làm" của một em: chỉ ngày hạn tô màu (+ badge đề xuất / chưa xem khi có). `homNay`, `hanDuoi` giữ cho chỗ gọi cũ. */
+export function CanLamEm({ x, onXem, laQl = false }: {
+  x: TomTatVao; homNay?: string; onXem?: (id: number) => void; hanDuoi?: boolean;
   /** K4: người duyệt thấy "Đề xuất" (việc của mình), người gửi thấy "Chờ QL duyệt". */
   laQl?: boolean;
 }) {
-  const o = (bv: ReactNode, h: string | null, duoi?: string | null) => hanDuoi
-    ? <span className="flex flex-col items-start gap-1.5">{bv}{(duoi ?? h) && <span className="text-xs tabular-nums text-slate-500">{duoi ?? t('hạn {ngay}', { ngay: ngay(h!, homNay) })}</span>}</span>
-    : bv;
-  const han = (h: string | null) => !hanDuoi && h ? ` · ${t('hạn {ngay}', { ngay: ngay(h, homNay) })}` : '';
+  /* NH4 (chủ SP 24/11): hạn chỉ là NGÀY dd/mm/yyyy tô màu chữ — không badge nền, không "Quá hạn n ngày" / "Phải xử lý" / "còn n ngày". */
+  const hanChu = (h: string | null) => h ? <ChipHan loai="xu-ly-vi-pham" han={h} /> : <span className="text-slate-500">—</span>;
+  const o = (bv: ReactNode) => <span className="flex flex-col items-start gap-1.5">{bv}</span>;
   if (x.deXuat) {
     const dx = x.deXuat;
-    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('Head đã duyệt') : laQl ? t('Đề xuất') : t('Chờ Head duyệt')}{han(dx.han)}</BadgeViec>,
-      dx.han, dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('duyệt trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null);
+    return o(<><BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('Head đã duyệt') : laQl ? t('Đề xuất') : t('Chờ Head duyệt')}</BadgeViec>{dx.han && <ChipHan loai="duyet" han={dx.han} />}</>);
   }
   switch (x.nhom) {
-    case 'qua_han': return o(<BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}{han(x.han ?? x.hanXem)}</BadgeViec>, x.han ?? x.hanXem);
-    case 'bat_buoc': {
-      const con = x.han ? ngayCach(homNay, x.han) : null;
-      return o(<BadgeViec tong="cho">{t('Phải xử lý')}{han(x.han)}</BadgeViec>, x.han,
-        x.han && con != null && con > 0 ? `${t('hạn {ngay}', { ngay: ngay(x.han, homNay) })} · ${t('còn {n} ngày', { n: con })}` : null);
-    }
-    case 'moi': return o(<BadgeViec tong="xem">{t('Chưa xem')}{han(x.hanXem)}</BadgeViec>, x.hanXem);
+    case 'qua_han': return o(hanChu(x.han ?? x.hanXem));
+    case 'bat_buoc': return o(hanChu(x.han));
+    case 'moi': return o(<><BadgeViec tong="xem">{t('Chưa xem')}</BadgeViec>{x.hanXem && <ChipHan loai="xu-ly-vi-pham" han={x.hanXem} />}</>);
     default: return <span className="text-slate-500">—</span>;
   }
 }

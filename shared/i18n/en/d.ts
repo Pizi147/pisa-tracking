@@ -218,7 +218,7 @@ const EN_D_WEB = {
   'Nhật ký PA': 'PA log',
   'Em tiến bộ đến đâu': 'How far the student improved',
   'Đã hoàn thành Case': 'Case closed',
-  'Đóng nhầm thì Head mở lại được. MT sau trượt lại thì có Case mới nối Case này.': 'Closed by mistake? A Head can reopen it. If the next MT fails, a new case links to this one.',
+  'Đóng nhầm thì Head hoặc người đóng mở lại được. MT sau trượt lại thì có Case mới nối Case này.': 'Closed by mistake? A Head or whoever closed it can reopen it. If the next MT fails, a new case links to this one.',
   'Sau cả đợt hỗ trợ, em tiến bộ đến đâu?': 'After all the support, how far did the student improve?',
   'PA gần nhất: {paGanNhat}': 'Latest PA: {paGanNhat}',
   'Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây': 'What was applied, how it went, why stop here',

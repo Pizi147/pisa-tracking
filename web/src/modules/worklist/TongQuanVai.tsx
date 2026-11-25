@@ -542,7 +542,7 @@ export function TongQuanCx({ d, congTac }: { d: TongQuanV5Data; congTac: ReactNo
           action={<Link to={`/hoc-vien?view=sos&muc=23${cnQ}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline sm:min-h-0">{t('Xem hết')} ›</Link>}>
           {em.error ? <ErrorState message={em.error.message} onRetry={em.reload} /> : !em.data ? <Skeleton rows={3} className="p-4" /> : (
             /* 375 (mockup T3b): `theRieng` — tên · chip SOS bên phải; lớp · việc còn treo · hạn ở dòng dưới. */
-            <Bang ten={t('Em cần chú ý')} khung={false} deu cot={COT_EM} hang={em.data.rows.slice(0, 8)} khoa={(r) => r.id}
+            <Bang ten={t('Em cần chú ý')} khung={false} deu cot={em.data.rows.slice(0, 8).some((r) => treoDau(r.id)) ? COT_EM : COT_EM.filter((c) => c.key !== 'treo' && c.key !== 'han').map((c) => (c.key === 'sos' ? { ...c, kieu: 'nut' as const } : c))} hang={em.data.rows.slice(0, 8)} khoa={(r) => r.id}
               oCua={(r, c) => {
                 const treo = treoDau(r.id);
                 if (c.key === 'hv') return <Link to={r.href} className="ten-ho-so font-semibold">{r.title}</Link>;

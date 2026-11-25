@@ -182,8 +182,8 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
         const maLop = (
           <span className="block min-w-0 flex-1">
             <Link to={`/hoc-vien/lop/${l.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>
+            {coChiNhanh && <small className="ml-2 whitespace-nowrap text-xs font-normal text-dim">{l.branchName}</small>}
             {!gon && <DongGv ds={gvLop[l.classId]} />}
-            {coChiNhanh && <small className="block truncate text-xs font-normal text-dim">{l.branchName}</small>}
           </span>
         );
         return (

@@ -222,7 +222,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{t('Hoàn thành Case')}</button>,
       }}>
       <Khoi tieuDe={t('Kết quả cuối')}
-        luat={t('Đóng nhầm thì Head mở lại được. MT sau trượt lại thì có Case mới nối Case này.')}>
+        luat={t('Đóng nhầm thì Head hoặc người đóng mở lại được. MT sau trượt lại thì có Case mới nối Case này.')}>
         <Truong nhan={t('Sau cả đợt hỗ trợ, em tiến bộ đến đâu?')} batBuoc as="div" loi={lf.loiCua(loi, 'muc')}
           phu={paGanNhat ? t('PA gần nhất: {paGanNhat}', { paGanNhat }) : undefined}>
           <div className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" id={lf.oId('muc')} tabIndex={-1}>

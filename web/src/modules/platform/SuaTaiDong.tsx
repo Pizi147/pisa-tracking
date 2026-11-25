@@ -65,10 +65,10 @@ export function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLu
       <button ref={o} type="button" aria-haspopup="dialog" aria-expanded={mo} aria-label={`${nhan} · ${ten}`} title={nhan}
         onClick={() => { if (!mo) { onMo(); setMo(true); } }}
         className={vien
-          ? 'inline-flex min-h-[34px] max-w-full flex-wrap items-center gap-1 rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-sm text-slate-100 hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] cursor-pointer'
-          : 'group -mx-1.5 inline-flex max-w-full flex-wrap items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-left hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] max-sm:border-[color:var(--line)] cursor-pointer'}
+          ? 'inline-flex min-h-[34px] max-w-full items-center gap-1 rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-sm text-slate-100 hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] cursor-pointer'
+          : 'group -mx-1.5 max-sm:mx-0 inline-flex max-w-full items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-left hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] max-sm:border-[color:var(--line)] cursor-pointer'}
         style={mo ? { borderColor: 'var(--accent)' } : undefined}>
-        {mat}
+        <span className="flex min-w-0 flex-wrap items-center gap-1">{mat}</span>
         {!vien && <span aria-hidden className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 max-sm:opacity-100">✎</span>}
       </button>
       {mo && (dienThoai ? (

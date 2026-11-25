@@ -135,11 +135,13 @@ export function CatalogAdmin() {
       <Card className="min-w-0" bodyClass="p-0">
         {routes.loading || programmes.loading ? <div className="p-4"><Skeleton rows={6} /></div> : (
           <>
-            <div className="table-scroll bang-dinh max-sm:hidden"><table className="w-full text-sm">
+            <div className="table-scroll bang-dinh max-sm:hidden"><table className="w-full table-fixed text-sm">
+              {/* NH9: cột chia hết bề ngang, cột cuối sát mép phải; ô sửa không xuống dòng ("MT3 / tuần 16"). */}
+              <colgroup>{(quanTri ? [20, 12, 8, 9, 31, 11, 9] : [22, 14, 9, 10, 35, 10]).map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
               <thead>
                 <tr>
                   <th className="th">{t('Chương trình · cách chấm')}</th><th className="th">{t('Môn')}</th><th className="th">{t('Đạt từ')}</th><th className="th">{t('Độ dài')}</th>
-                  <th className="th">{t('Mốc Test')}</th>{quanTri && <th className="th text-center">{t('Lớp đang chạy')}</th>}<th className="th">{t('Còn dùng')}</th>
+                  <th className="th">{t('Mốc Test')}</th>{quanTri && <th className="th text-center">{t('Lớp đang chạy')}</th>}<th className="th text-right">{t('Còn dùng')}</th>
                 </tr>
               </thead>
               {nhom.map((g) => (
@@ -151,9 +153,9 @@ export function CatalogAdmin() {
                     <td className="td whitespace-nowrap">{oMon(d)}</td>
                     <td className="td whitespace-nowrap">{oNguong(d)}</td>
                     <td className="td whitespace-nowrap">{oDoDai(d)}</td>
-                    <td className="td">{oMoc(d)}</td>
+                    <td className="td [&_button]:whitespace-nowrap">{oMoc(d)}</td>
                     {quanTri && <td className="td text-center tabular-nums text-slate-300">{soLop(d)}</td>}
-                    <td className="td">{quanTri ? <CongTacConDung d={d} onDaLuu={() => daLuu(d)} /> : <span className={conDung(d) ? 'text-slate-200' : 'text-slate-400'}>{conDung(d) ? t('Có') : t('Không')}</span>}</td>
+                    <td className="td text-right">{quanTri ? <CongTacConDung d={d} onDaLuu={() => daLuu(d)} /> : <span className={conDung(d) ? 'text-slate-200' : 'text-slate-400'}>{conDung(d) ? t('Có') : t('Không')}</span>}</td>
                   </tr>
                 ))}
               </tbody>

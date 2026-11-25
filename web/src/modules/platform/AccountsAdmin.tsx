@@ -405,7 +405,7 @@ function NutTaiKhoan({ u, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: ThaoT
           {khongDuyet
             ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onDuyetLai}>{t('Duyệt lại')}</button>
             : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>{t('Sửa')}</button>}
-          <MenuDong nhan={t('Thao tác khác')} muc={[
+          <MenuDong nhan={t('Thao tác khác')} lopNut="inline-grid place-items-center h-7 min-w-7 px-1 rounded-md border border-[color:var(--line)] bg-transparent text-[12px] font-semibold tabular-nums text-slate-400 hover:text-slate-100 bam cursor-pointer max-sm:h-11 max-sm:min-w-11" muc={[
             { key: 'sua-tt', nhan: t('Sửa thông tin'), onChon: onSuaTt },
             { key: 'xoa', nhan: t('Xoá tài khoản'), nguyHiem: true, keTruoc: true, onChon: onXoa },
           ]} />
