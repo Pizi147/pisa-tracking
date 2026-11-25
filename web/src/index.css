@@ -2131,6 +2131,16 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   }
 }
 
+/* YÊU CẦU CỦA TÔI (v26, PTA bấm thử 25/11): ô Thông tin luôn dài → dưới 600 px dòng có BA tầng: lớp + ngày · tên · thông tin (trải hết bề ngang, căn mép tên, không "·" treo).
+   Chỉ trong `.yc-A`; `.cvA` dùng chung của Công việc không đổi. */
+@layer components {
+  @container (max-width: 599px) {
+    .yc-A .cvA-v { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'lop hn' 'ai ai' 'ct ct'; align-items: start; }
+    .yc-A .cvA-v .cvA-ct { justify-self: stretch; }
+    .yc-A .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
+  }
+}
+
 /* CHO-DUYET-TAI-CHO (mockup v24 `cong-viec-gon.html` H1 · H2; chủ SP 24/11): Chờ bạn duyệt = MỖI YÊU CẦU MỘT DÒNG, mở tại dòng, không panel.
    LUẬT CỘT: mọi dòng dùng CHUNG một bộ cột (subgrid) — chọn · người · việc · nhãn · người gửi · hạn · mũi tên · nút; cột chữ chia theo phần,
    cột cuối sát lề 16 px. < 700 px (375): mỗi yêu cầu hai-ba tầng + hai nút ngang cả dòng (vùng bấm ≥ 44 px). */

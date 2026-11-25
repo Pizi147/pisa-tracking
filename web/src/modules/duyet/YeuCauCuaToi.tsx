@@ -79,7 +79,7 @@ function DanhSach({ ds, nhanId, reload }: { ds: TheYeuCauDto[]; nhanId: number |
   /* Chuông / `?the=`: mở sẵn đúng dòng. */
   useEffect(() => { if (nhanId != null) setMo(nhanId); }, [nhanId]);
   return (
-    <div className="cvA-cq"><div className="cvA">
+    <div className="cvA-cq"><div className="cvA yc-A">
       {NHOM.map((g) => {
         const the = ds.filter(g.co);
         if (!the.length) return null;
