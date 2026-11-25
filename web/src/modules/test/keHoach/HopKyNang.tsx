@@ -409,7 +409,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
         </div>
         {!moi && coDoi && (
           <Truong nhan={t('Lý do')} tuyChon>
-            <input className="field w-full" maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: trùng lịch phòng')} />
+            <input className="field w-full" maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: trùng lịch phòng')} />
           </Truong>
         )}
         {attemptId !== null && (

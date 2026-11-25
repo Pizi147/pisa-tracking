@@ -164,7 +164,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     if (haiKieu) { luoiRef.current?.querySelector<HTMLElement>('input')?.focus(); return; }
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
-    /* N35: nhận xét MT ≤ 300 khi đã sửa (thành mô tả Case) — báo tại hộp, không gửi, chữ giữ. */
+    /* N35: nhận xét MT ≤ 500 khi đã sửa (thành mô tả Case) — báo tại hộp, không gửi, chữ giữ. */
     if (doiNx && nx.trim().length > TRAN_CHU.nhanXetMt) { setLoi({ cau: `${t('Nhận xét')}: ${t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.nhanXetMt, n: nx.trim().length })}`, o: 0 }); return; }
     const them: SavePatch = {};
     if (doiNx) them.nhanXet = nx.trim() || null;

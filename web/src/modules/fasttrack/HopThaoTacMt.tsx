@@ -204,7 +204,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
           </Truong>
         )}
         <Truong nhan={t('Lý do')} batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
-          <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+          <textarea className="field w-full" rows={2} maxLength={500} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
             placeholder={tt === 'bao-vang' ? t('Ví dụ: em ốm, phụ huynh đã báo') : t('Ví dụ: trùng lịch phòng')} />
         </Truong>
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}

@@ -81,7 +81,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     const ten = mot('SELECT full_name FROM users WHERE id = ?', P.coreTeacher.userId).full_name;
     const ct = cases.caseDetail(QL, caseId);
     assert(ct.followups[0].nguoiDay === ten, JSON.stringify(ct.followups[0]));
-    assertThrows(() => ketQua(ivId, { remainingIssue: 'x'.repeat(301) }), /^Vấn đề còn tồn \/ Ghi chú tối đa 300 ký tự\.$/, '301 ký tự');
+    assertThrows(() => ketQua(ivId, { remainingIssue: 'x'.repeat(501) }), /^Vấn đề còn tồn \/ Ghi chú tối đa 500 ký tự\.$/, '501 ký tự');
     assert(d.GOI_Y_KET_QUA_PA === 'Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể', d.GOI_Y_KET_QUA_PA);
   }));
 

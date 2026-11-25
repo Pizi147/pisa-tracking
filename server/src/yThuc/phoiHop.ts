@@ -806,7 +806,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   if (!(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code)) {
     throw loi(400, 'Chọn một lý do: {ds}.', { ds: COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ') });
   }
-  const text = capText(input.reasonText, 300, 'Lý do');
+  const text = capText(input.reasonText, 500, 'Lý do');
   if (reasonNeedsText(code)) {
     const sai = kiemGhiRoKhac(text);
     if (sai) throw loi(400, 'Lý do "Khác": {loi}.', { loi: sai });

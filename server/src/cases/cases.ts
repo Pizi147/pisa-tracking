@@ -1461,7 +1461,7 @@ export function suaCase(p: Principal, caseId: number, input: {
     throw badRequest('Nhóm nguyên nhân không hợp lệ.');
   }
   const guiMoTa = (input.primaryCode != null && input.primaryCode !== '') || input.observation !== undefined || nhom !== null;
-  /* N35: mô tả Case MT (`observation`) ≤ 300 — chữ cũ dài gửi lại nguyên văn thì giữ. */
+  /* N35: mô tả Case MT (`observation`) ≤ 500 — chữ cũ dài gửi lại nguyên văn thì giữ. */
   if (typeof input.observation === 'string' && vuotTran(input.observation, TRAN_CHU.moTaCase, chinh?.observation)) {
     throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: input.observation.trim().length });
   }
@@ -4003,7 +4003,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   decision?: string;
   /** PR-LT2b (M-05): PA Bổ trợ miễn phí — lần ghi CUỐI bắt buộc kèm Mini Test (% · ngày làm). */
   miniTest?: { tyLe?: unknown; ngay?: unknown } | null;
-  /** PR-S2 (S4): vấn đề còn tồn. Tuỳ chọn, tối đa 300 ký tự. */
+  /** PR-S2 (S4): vấn đề còn tồn. Tuỳ chọn, tối đa 500 ký tự. */
   remainingIssue?: string | null;
   /** PR-S2: lý do (bắt buộc khi Điều chỉnh hoặc Thay) hoặc ghi chú (tuỳ chọn). */
   decisionNote?: string | null;
@@ -4470,7 +4470,7 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
   nguoiDay?: { performerUserId?: number | null; performerName?: string | null } | null;
 }, cu = false) {
   const remainingIssue = String(input.remainingIssue ?? '').trim() || null;
-  if (remainingIssue && remainingIssue.length > 300) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 300 ký tự.');
+  if (remainingIssue && remainingIssue.length > 500) throw badRequest('Vấn đề còn tồn / Ghi chú tối đa 500 ký tự.');
   /* PR-PA (§8): PA có Số buổi → Số buổi tuần này bắt buộc (0–60). PA không Số buổi: không lưu số.
      PR-CT2: Người dạy tuần này KHÔNG bắt buộc; có thì vẫn kiểm (tài khoản đang làm việc / tên ngoài). */
   const coDem = coSoBuoiKy({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, cu });   // OV-12h: mọi PA Tutor có ô này

@@ -27,7 +27,7 @@ export function viDuNhanXet(kyNang: string | null | undefined): string {
  * Lỗi mạng: giữ chữ đã gõ, hiện "Chưa lưu — thử lại" (bấm để gửi lại).
  */
 export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = null, toiDa = NHAN_XET_TOI_DA }: {
-  /** N35: trần ký tự — nhận xét MT (FT) `TRAN_CHU.nhanXetMt` (300); lớp thường giữ `NHAN_XET_TOI_DA`. Quá trần: không gửi, chữ giữ trong ô. */
+  /** N35: trần ký tự — nhận xét MT (FT) `TRAN_CHU.nhanXetMt` (500); lớp thường giữ `NHAN_XET_TOI_DA`. Quá trần: không gửi, chữ giữ trong ô. */
   toiDa?: number;
   nhan: string; phu?: string | null; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
   /** OV-14b: kỹ năng của ô — chữ gợi ý đúng kỹ năng (`viDuNhanXet`). */

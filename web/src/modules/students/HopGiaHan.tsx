@@ -57,7 +57,7 @@ export function HopGiaHan({ x, hocVien, lop, onClose, onDone }: { x: HanSauThi; 
           {x.han && <span className="mt-1 block text-xs text-slate-500">{t('Hạn đang áp dụng')}{' '}{ngay(x.han, homNay)}{x.daGiaHan ? ` · ${t('đã gia hạn')}` : ''}</span>}
         </Truong>
         <Truong nhan={t('Lý do')} tuyChon>
-          <textarea className="field w-full" rows={2} maxLength={300} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: em chờ phiếu điểm từ IDP')} />
+          <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: em chờ phiếu điểm từ IDP')} />
         </Truong>
         {loi && <p className="m-0 text-xs font-semibold text-bad" role="alert">{loi}</p>}
       </div>

@@ -25,8 +25,8 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
 const MO_TA_MIN = CHU_TOI_THIEU;
-/** Mockup v20 D1 (bộ đếm "78 / 300") + N35: Mô tả / Lý do ≤ 300 — máy chủ kiểm cùng trần (`moTa`, xuLy.ts). */
-const MO_TA_TOI_DA = 300;
+/** Mockup v20 D1 (bộ đếm "78 / 500") + N35: Mô tả / Lý do ≤ 500 — máy chủ kiểm cùng trần (`moTa`, xuLy.ts). */
+const MO_TA_TOI_DA = 500;
 /** LG-12: lý do "Không xử lý" — cùng ngưỡng máy chủ (`khongXuLy`). */
 const LY_DO_KHONG_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6), cùng máy chủ
 

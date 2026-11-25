@@ -130,7 +130,7 @@ export const EN_R1_EN_LOI = {
   'Chỉ người được giao hoặc Head mới cập nhật được công việc này.': 'Only the assignee or a Head can update this task.',
   'Chỉ nối được việc Vận hành.': 'Only Operations tasks can be linked.',
   'Chỉ số này chưa lọc theo lớp.': 'This metric is not filtered by class yet.',
-  'Câu bàn giao tối đa 300 ký tự.': 'A handover sentence can be at most 300 characters.',
+  'Câu bàn giao tối đa 500 ký tự.': 'A handover sentence can be at most 500 characters.',
   'Có học viên không thuộc lớp này.': 'Some students are not in this class.',
   'Có học viên không đang học lớp này.': 'Some students are not studying in this class.',
   'Có học viên nằm ngoài phạm vi bạn được xuất.': 'Some students are outside what you can export.',

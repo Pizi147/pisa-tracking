@@ -8,7 +8,7 @@ export const NHAN_XET_TOI_DA = 1000;
  * N35 (chủ SP 03/11): TRẦN CHỮ GV NHẬP — máy chủ chặn (400), web đếm tại ô. Nhận xét MT (FT) thành mô tả Case (N8) nên cùng trần mô tả.
  * Chữ cũ đã dài giữ nguyên: chỉ chặn khi chữ MỚI khác chữ cũ mà vẫn vượt (`vuotTran`). Không áp: lớp thường (`NHAN_XET_TOI_DA`), S Ex, Tutor (đang hoãn).
  */
-export const TRAN_CHU = { moTaCase: 300, noiDungPa: 200, ketQuaPa: 200, nhanXetMt: 300 } as const;
+export const TRAN_CHU = { moTaCase: 500, noiDungPa: 200, ketQuaPa: 200, nhanXetMt: 500 } as const;
 /** Chữ mới (đã cắt hai đầu) dài hơn `toiDa` VÀ khác chữ cũ → chặn. `cu` lấy lười: chỉ gọi khi chữ mới đã vượt. */
 export function vuotTran(moi: string | null | undefined, toiDa: number, cu?: string | null | (() => string | null | undefined)): boolean {
   const m = (moi ?? '').trim();

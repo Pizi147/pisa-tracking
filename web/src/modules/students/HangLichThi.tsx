@@ -175,7 +175,7 @@ export function CotGhi({ r, khoa, sua, onSua, onLuu, hienNhan }: {
     if (luu && chu.trim() !== gc.trim()) onLuu(chu.trim());
   };
   if (sua) {
-    return <input autoFocus className="field lt-ghi-o" maxLength={300} aria-label={t('Ghi chú {ten}', { ten: r.ten })} value={chu} onChange={(e) => setChu(e.target.value)}
+    return <input autoFocus className="field lt-ghi-o" maxLength={500} aria-label={t('Ghi chú {ten}', { ten: r.ten })} value={chu} onChange={(e) => setChu(e.target.value)}
       onBlur={() => dong(true)} onKeyDown={(e) => { if (e.key === 'Enter') dong(true); else if (e.key === 'Escape') { e.stopPropagation(); dong(false); } }} />;
   }
   if (!gc) return hienNhan ? null : <span className="text-faint">—</span>;
@@ -233,7 +233,7 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
       <input className="field w-full" maxLength={NOI_THI_TOI_DA} placeholder="IDP / BC" aria-label={t('Nơi thi')} value={noiThi} autoComplete="off"
         onChange={(e) => setNoiThi(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') gui(); }} /></span>
   );
-  const oGhi = <input className="field w-full" maxLength={300} placeholder={the ? t('Ghi chú (tuỳ chọn)') : t('Tuỳ chọn')} aria-label={t('Ghi chú')} value={ghiChu}
+  const oGhi = <input className="field w-full" maxLength={500} placeholder={the ? t('Ghi chú (tuỳ chọn)') : t('Tuỳ chọn')} aria-label={t('Ghi chú')} value={ghiChu}
     onChange={(e) => setGhiChu(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') gui(); }} />;
   const loi = r.tt?.kieu === 'loi' && (
     <span className="lt-hop-loi" role="alert">⚠ {r.tt.loi} {t('Chữ vẫn giữ.')} <button type="button" className={btnLink} onClick={r.tt.lai}>{t('Thử lại')}</button></span>

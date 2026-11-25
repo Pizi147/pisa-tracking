@@ -50,7 +50,7 @@ export async function runPrChiNhanhLienHeTests(t: { check: any; assert: any; ass
     assert(nk?.action === 'chi_nhanh.sua' && JSON.parse(nk.before_json).soDienThoai === '082.228.9288' && JSON.parse(nk.after_json).diaChi === 'Số 1 Tô Hiệu',
       `nhật ký: ${JSON.stringify(nk)}`);
     assertThrows(() => sc.luuChiNhanh(P.admin, cp().id, { name: '  ', diaChi: '', soDienThoai: '' }), /tên/i, 'tên trống vẫn lưu');
-    assertThrows(() => sc.luuChiNhanh(P.admin, cp().id, { name: 'CP', diaChi: 'x'.repeat(301), soDienThoai: '' }), /Tối đa/, 'địa chỉ quá dài vẫn lưu');
+    assertThrows(() => sc.luuChiNhanh(P.admin, cp().id, { name: 'CP', diaChi: 'x'.repeat(501), soDienThoai: '' }), /Tối đa/, 'địa chỉ quá dài vẫn lưu');
     assertThrows(() => sc.luuChiNhanh(P.admin, 99999, { name: 'CP', diaChi: '', soDienThoai: '' }), /Không tìm thấy/, 'chi nhánh không có vẫn lưu');
   }));
   /* N04 (SUA-RA-1311, đề bài 13/11): hai Quản trị sửa cùng lúc / Hoàn tác sau lần sửa mới hơn / gửi lại — không đè nhau, dữ liệu + nhật ký một giao dịch. */

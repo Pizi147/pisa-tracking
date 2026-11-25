@@ -275,7 +275,7 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
                       )}
                       {dienThay && dienThay.lenhId === em.lenhId && dienThay.mon === m.ma && (
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={300} aria-label={t('{viec} môn {mon}', { viec: m.noiDung ? t('Sửa') : chuGhi(m.ma), mon: m.ngan })} value={dienThay.chu}
+                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={500} aria-label={t('{viec} môn {mon}', { viec: m.noiDung ? t('Sửa') : chuGhi(m.ma), mon: m.ngan })} value={dienThay.chu}
                             placeholder={t('Viết một câu…')} onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>{t('Lưu')}</button>
@@ -539,7 +539,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
                     {!om ? oTrong(hai ? t('Không học {mon}', { mon: mDs[i].ngan }) : t('Không học {mon} · không cần bàn giao', { mon: mDs[i].ngan }))
                       : om.cungGv && !cu ? oTrong(t('Cùng GV · không cần bàn giao')) : <>
                       {/* GD-20b (chủ SP duyệt #1745): ô tự giãn theo chữ, xuống dòng — không cắt câu. Một câu: Enter không xuống dòng. */}
-                      <textarea id={idO(e.lenhId, m)} rows={1} className="field block w-full resize-none overflow-hidden leading-normal sm:text-[14px]" maxLength={300} readOnly={khoa} autoComplete="off"
+                      <textarea id={idO(e.lenhId, m)} rows={1} className="field block w-full resize-none overflow-hidden leading-normal sm:text-[14px]" maxLength={500} readOnly={khoa} autoComplete="off"
                         ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight + 2}px`; } }}
                         onKeyDown={(ev) => { if (ev.key === 'Enter') ev.preventDefault(); }}
                         aria-label={hai ? `${mDs[i].ngan} · ${e.ten}` : t('Bàn giao môn {mon} của {ten}', { mon: mDs[i].ngan, ten: e.ten })}
