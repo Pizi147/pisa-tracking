@@ -39,7 +39,7 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 500, chiXem 
   if (!sua) {
     return (
       <button ref={nutSua} type="button" aria-label={`${t('Sửa')} ${nhan}`} title={t('Sửa')} onClick={() => { setV(goc); setGocMo(goc); setSua(true); }}
-        className={`group -ml-1 inline-flex max-w-[calc(100%+0.25rem)] items-center gap-1.5 rounded-md border px-2 py-1 text-left text-sm hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${goc ? 'text-slate-100' : 'border-dashed text-accent'}`}
+        className={`group -ml-1 flex w-[calc(100%+0.25rem)] items-center gap-1.5 rounded-md border px-2 py-1 text-left text-sm hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${goc ? 'text-slate-100' : 'border-dashed text-accent'}`}
         style={{ borderColor: 'var(--line-strong)' }}>
         <span className="min-w-0 break-words">{goc || trong || t('Chưa có')}</span>
         <span aria-hidden className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">✎</span>
