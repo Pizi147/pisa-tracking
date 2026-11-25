@@ -445,11 +445,11 @@ export default function StudentDetailPage() {
             </section>
 
             {/*
-              HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): trái Tiến độ trên lớp (form ghi / sửa / xoá trong cột, Hoàn tác, góp ý tuần khoá đọc) · phải
-              Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
+              HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): Tiến độ trên lớp (form ghi / sửa / xoá tại thẻ, Hoàn tác, góp ý tuần khoá đọc) rồi
+              Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. XẾP DỌC cả bề ngang (v26, #2158: hết khoảng trống dưới thẻ Tiến độ, Case luôn ở bố cục rộng). Bỏ panel Ghi tiến độ cũ.
             */}
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:has-[>div:empty]:grid-cols-1">
-              {/* U02 dòng 16: 375 xếp dọc — Case trước (việc trước), Tiến độ sau; ≥ 1024 hai cột trái Tiến độ | phải Case. */}
+            <div className="grid items-start gap-4">
+              {/* U02 dòng 16: < 1024 Case trước (việc trước), Tiến độ sau; ≥ 1024 Tiến độ trên, Case dưới (v26). */}
               {homNay && <div className="order-2 min-w-0 empty:hidden lg:order-1"><TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan}
                 kns={rowsFt.map((r) => r.category)} tenKn={tenChon} anKhiRong={!!data.archivedAt} /></div>}
               <div className="order-1 min-w-0 lg:order-2">
