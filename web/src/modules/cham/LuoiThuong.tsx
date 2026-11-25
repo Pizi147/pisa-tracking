@@ -15,7 +15,7 @@ import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, DongTach, OBang } from '../../ui/Bang.tsx';
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
-import { laChiXepLich, lyDoHuy, nhanKetQuaLuoi, type DinhNghiaCot } from '@shared/domain/index.ts';
+import { lyDoHuy, nhanKetQuaLuoi, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
@@ -94,6 +94,8 @@ export type ThuongSheet = {
   monNgan?: Record<string, string>;
   editableSkills: string[];
   canPlan: boolean;
+  /** RA-2511 (N57): false = BPXL ở lớp này — không Vắng / Huỷ điểm / Khôi phục điểm. */
+  diem: boolean;
   /** PR-XLMT: người xem là GVCN của lớp (menu ⋯ ô: Vắng, Dời lịch). */
   laGvcn?: boolean;
   passThreshold: number;
@@ -431,13 +433,13 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
 }
 
 /** Thao tác của menu một ô (trước "Lịch sử"). Rỗng → `MenuDong` vẽ nút chữ "Lịch sử" bấm thẳng (S4-GD), rộng ~66 px thay ⋯ 28. */
-function thaoTacO(row: Row, k: string, sheet: ThuongSheet, can: (q: string) => boolean, diem: boolean): ThaoTac[] {
+function thaoTacO(row: Row, k: string, sheet: ThuongSheet, can: (q: string) => boolean): ThaoTac[] {
   const homNay = sheet.today;
   const s = lichCua(row, k);
   const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy, diem });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy, diem: sheet.diem });
   return [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
 }
 
@@ -448,8 +450,7 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
   const homNay = sheet.today;
   /* 6C-NHO (bảng kê lỗi 4): lưới nằm trong panel (Nhập điểm, Quá hạn chấm, panel việc) → hộp ⋯ / Lịch sử mở đè, không đóng panel cha. */
   const trongKhung = useTrongKhung();
-  const { can, session } = useSession();
-  const diem = !laChiXepLich(session?.roles);   // RA-2511 (N57): BPXL không Vắng / Huỷ điểm / Khôi phục điểm — như HopKyNang
+  const { can } = useSession();
   const ct = sheet.programme.code;
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSu, setLichSu] = useState<string | null>(null);
@@ -463,7 +464,7 @@ export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => voi
    */
   /** `nx`: mục "Nhận xét" đầu menu (chủ SP 20/11 — ô lưới không còn nút chữ "Nhận xét"; đã có nhận xét → ⋯ luôn hiện, có dấu •). */
   const menuO = (k: string, luon = false, nx?: { chu: string | null; mo: () => void }) => {
-    const ds = thaoTacO(row, k, sheet, can, diem);
+    const ds = thaoTacO(row, k, sheet, can);
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
        U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
        ẩn bằng `invisible` nên vẫn giữ chỗ (rê vào ô không làm chữ nhảy). */

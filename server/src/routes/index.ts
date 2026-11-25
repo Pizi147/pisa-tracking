@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -1310,7 +1310,7 @@ api.get('/classes/:id/issue-board', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');   /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để phân tích.');
   return effectiveness.classIssueBoard(id, category, { fromDate: qStr(req, 'from') ?? null });
@@ -1329,7 +1329,7 @@ api.get('/classes/:id/issue-board/needs-evaluation', requireAuth, wrap((req) => 
   maybeSimulateReadError();
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  require_(boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId: id }, 'Lớp này nằm ngoài phạm vi bạn được xem.');   /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
   const category = qStr(req, 'category');
   if (!category) throw badRequest('Chưa chọn kỹ năng để xem chi tiết.');
   const need = effectiveness.plansNeedingEvaluation({ classId: id, category, fromDate: qStr(req, 'from') ?? null });
@@ -3138,7 +3138,7 @@ api.put('/mini-test/:id', requireAuth, wrap((req) => {
 api.get('/students/:id/handover', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const id = pInt(req, 'id');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  require_(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId: id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');   /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
   return studentSvc.handoverBrief(id);
 }));
 

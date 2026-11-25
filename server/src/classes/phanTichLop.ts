@@ -14,7 +14,7 @@ import {
   caseCategoryLabel, khoaBai, nhanBai, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { boVaiBpxl, require_, type Principal } from '../permissions.ts';
 import { classIssueBoard } from '../cases/effectiveness.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
@@ -204,7 +204,8 @@ export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo |
  * V8-HSL-2: `cot=overall` + `kind=mt<n>` = ô dòng Overall bảng FT — chính tập `ds` của ô (Chưa đạt · Đạt), dòng điểm đúng đợt đó; `category` bỏ qua.
  */
 export function oPhanTichLop(p: Principal, classId: number, category: string, cot: string, kind: string | null): { n: number; tieuDe: string; unit?: 'hoc-vien'; rows: MetricRow[] } {
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  /* RA-2511 (N57 / N63 ⑤): ô Overall là điểm (BPXL xem được); ô Case / PA thì không. */
+  require_(cot === 'overall' ? p : boVaiBpxl(p), PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   if (cot === 'overall') {
     const mt = /^mt(\d+)$/.exec(kind ?? '')?.[1];
     if (!mt) throw loi(400, 'Cột "{cot}" không hợp lệ.', { cot: `overall ${kind ?? ''}` });

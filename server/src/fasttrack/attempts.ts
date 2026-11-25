@@ -2115,7 +2115,8 @@ function luuNhanXet(
 export function refreshOutcome(p: Principal, attemptId: number, thiLai = false) {
   const conn = db();
   lamMoiDiemBanChup(conn, [attemptId]);   // PR-TK (TK-5): lộ trình đã đóng → bản chụp theo điểm mới
-  const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  /* RA-2511: trạng thái em đọc CÙNG câu nạp lượt — `raiseSignalsForResult` bỏ sinh Case cho em đã Kết thúc học, không thêm câu. */
+  const fresh = conn.prepare('SELECT a.*, (SELECT s.status FROM students s WHERE s.id = a.student_id) AS em_status FROM assessment_attempts a WHERE a.id = ?').get(attemptId) as any;
   if (!fresh || fresh.status === 'cancelled') return;
   const rows = scoresOf(attemptId);
   const skips = skipsOf(attemptId);

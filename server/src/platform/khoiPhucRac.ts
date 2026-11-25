@@ -102,11 +102,12 @@ export function danhSachRac(p: Principal, loai?: MucRac['loai'] | null) {
       LEFT JOIN branches b ON b.id = t.branch_id LEFT JOIN classes c ON c.id = t.class_id
       WHERE t.xoa_luc >= ?${loai ? ' AND t.loai = ?' : ''} ORDER BY t.id DESC${quanTri ? ` LIMIT ${TRAN_DS_RAC}` : ''}`).all(...(loai ? [mocRac(), loai] : [mocRac()])) as (MucRac & { ten_xoa: string | null; ten_khoi_phuc: string | null; cn_id: number | null; cn_ten: string | null; lop_ma: string | null })[];
   /* Người khác: lọc quyền TRƯỚC, giới hạn 300 SAU — mục của người xem không bị mục ngoài phạm vi đẩy khỏi danh sách; đủ 300 thì dừng xét quyền.
-     ponytail: xét quyền từng mục (≤ 2 câu / mục) — gộp theo loại nếu Thùng rác của Head hay quá vài trăm mục. */
+     Quản trị (PTA rà #2176): KHÔNG xét quyền từng mục — mục còn hạn là "Khôi phục" được; lúc bấm máy chủ vẫn kiểm gốc + quyền (`khoiPhucRac`).
+     ponytail: người khác xét quyền từng mục (≤ 2 câu / mục) — gộp theo loại nếu Thùng rác của Head hay quá vài trăm mục. */
   const out = [];
   for (const m of ds) {
     if (out.length >= TRAN_DS_RAC) break;
-    const duoc = !m.khoi_phuc_luc && !m.het_han_luc && coQuyen(p, m);
+    const duoc = !m.khoi_phuc_luc && !m.het_han_luc && (quanTri || coQuyen(p, m));
     if (!duoc && !quanTri) continue;
     out.push({ id: m.id, loai: m.loai, nhan: m.nhan, hocVienId: m.hoc_vien_id, xoaBoi: m.ten_xoa, xoaLuc: m.xoa_luc,
       khoiPhucBoi: m.ten_khoi_phuc, khoiPhucLuc: m.khoi_phuc_luc, hetHanLuc: m.het_han_luc,

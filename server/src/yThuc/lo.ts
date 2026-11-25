@@ -45,7 +45,8 @@ export type BangLo = { classId: number; classCode: string; canManage: boolean; l
 export type BacKhai = { bac: number; thang: string | null; ghiChu: string };
 /** N70 `guiDuyet` + `ycId`: em đã khai, GVCN sửa → KHÔNG áp, đã gửi Head duyệt (Hoàn tác = rút thẻ `ycId`). */
 export type KqEm = { studentId: number; ten: string; ok: boolean; loi?: ChuKhoa; nhan?: string; ids?: number[]; truoc?: BacKhai | null; bac?: number; guiDuyet?: true; ycId?: number;
-  /** Lần gửi này GHI ĐÈ một thẻ đang chờ từ trước → Hoàn tác khôi phục nội dung thẻ cũ (máy chủ giữ), không rút. */ ghiDe?: true };
+  /** Lần gửi này GHI ĐÈ một thẻ đang chờ từ trước → Hoàn tác khôi phục nội dung thẻ cũ (máy chủ giữ), không rút. */ ghiDe?: true;
+  /** RA-2511: mã lỗi gốc của em lỗi (403 quyền / 400 dữ liệu) — đường một em ném lại đúng mã. */ ma?: number };
 
 function lopCua(classId: number): { id: number; code: string } {
   const cls = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(classId) as any;
@@ -147,7 +148,7 @@ function tungEm(c: Lo, fn: (sid: number, em: EmYThuc, hv: HvLo) => Omit<KqEm, 's
     try {
       return { studentId: sid, ten, ok: true, ...fn(sid, em, hv) };
     } catch (e: any) {
-      if (e instanceof HttpError) return { studentId: sid, ten, ok: false, loi: { chu: e.message, khoa: e.khoa, bien: e.bien } };
+      if (e instanceof HttpError) return { studentId: sid, ten, ok: false, loi: { chu: e.message, khoa: e.khoa, bien: e.bien }, ma: e.status };
       console.error('[y-thuc lô]', sid, e);
       return { studentId: sid, ten, ok: false, loi: kem('Lỗi máy chủ — chưa lưu em này, thử lại.') };
     }
@@ -332,7 +333,7 @@ export function hoanTacCapBacEm(p: Principal, studentId: number, v: { bac?: unkn
   if (!lop) throw badRequest('Em không còn học lớp nào — không hoàn tác được.');
   const kq = loHoanTacCapBac(p, lop, { em: [v.ycId != null ? { studentId, ycId: v.ycId } : { studentId, bac: v.bac }] }).em[0];
   if (!kq.ok) {
-    const e = new HttpError(400, kq.loi?.chu ?? 'Không hoàn tác được — thử lại.');
+    const e = new HttpError(kq.ma ?? 400, kq.loi?.chu ?? 'Không hoàn tác được — thử lại.');
     e.khoa = kq.loi?.khoa as HttpError["khoa"]; e.bien = kq.loi?.bien;
     throw e;
   }

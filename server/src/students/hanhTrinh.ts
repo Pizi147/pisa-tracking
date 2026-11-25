@@ -4,7 +4,7 @@ import {
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
   mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4, trangThaiHop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, require_, type Principal } from '../permissions.ts';
 import { allProgrammes, maCtCuaLuot, programmeByCode } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
@@ -129,7 +129,8 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   }
 
   // -------------------------------------------------------------- (4) Case · (5) PA · (6) lần ghi kết quả — của MỌI lộ trình
-  const caseRows = conn
+  /* RA-2511 (N57 / N63 ⑤): BPXL không xem Case / PA / Ý thức. */
+  const caseRows = !can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { studentId }) ? [] as any[] : conn
     .prepare(
       `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,
               (SELECT u.full_name FROM users u WHERE u.id = sc.owner_user_id) AS owner_name,

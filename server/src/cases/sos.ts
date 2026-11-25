@@ -400,7 +400,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    */
   /* RA-2511: em đã Kết thúc học — sửa điểm MT cũ thành trượt không sinh Case / PA quy chế / Phối hợp / hạn / chuông mới (như tín hiệu đã thu hồi
      không mở lại, `raiseSignal`); chỉ ghi mốc "đã đạt" như MT lịch sử ngoài cửa sổ. */
-  const daKetThuc = !ngoaiCuaSo && (conn.prepare('SELECT status FROM students WHERE id = ?').get(attempt.student_id) as any)?.status === 'finished';
+  const daKetThuc = attempt.em_status === 'finished';   // `refreshOutcome` nạp kèm lượt (một câu)
   if (ngoaiCuaSo || daKetThuc) {
     if (result.chot || !isFastTrackMock(attempt, scoringModeOf(attempt))) ghiMocDaDat(p, attempt, result, failing, entry, demoToday(), true);
     return null;

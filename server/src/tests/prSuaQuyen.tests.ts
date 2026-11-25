@@ -29,6 +29,18 @@ export async function runPrSuaQuyenTests(t: any) {
   const boTro: any = await import('../cases/boTro.ts');
   const rac: any = await import('../platform/khoiPhucRac.ts');
   const { createApp } = await import('../app.ts');
+  const prof: any = await import('../students/profile.ts');
+  const ht: any = await import('../students/hanhTrinh.ts');
+  const pt: any = await import('../classes/phanTichLop.ts');
+  const ms: any = await import('../worklist/metrics.ts');
+  const ph: any = await import('../yThuc/phoiHop.ts');
+  const rg: any = await import('../normal/regular.ts');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const toi = path.dirname(fileURLToPath(import.meta.url));
+  const REPO = ['../../..', '../../../..'].map((x) => path.resolve(toi, x)).find((x) => fs.existsSync(path.join(x, 'package.json')))!;
+  const nguon = (f: string) => fs.readFileSync(path.join(REPO, f), 'utf8');
 
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
   const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
@@ -52,6 +64,32 @@ export async function runPrSuaQuyenTests(t: any) {
     assert(luoi.luoiKetQua(P.mbManager, [pa]).ds.length === 1, 'Head MB phải đọc được PA');
     const bp = loadPrincipal(taoBpxl());
     assert(luoi.luoiKetQua(bp, [pa]).ds.length === 0, 'BPXL đọc được PA qua lưới Kết quả PA');
+  }));
+
+  check('SQ-1b · PTA rà #2176 (N57 / N63 ⑤): BPXL không đọc Case / PA ở bảng kỹ năng, "+ Case", hồ sơ HV, Hành trình, lượt lớp thường, bảng vấn đề lớp, chỉ số PA, Phối hợp SOS (Head đối chứng)', () => thu(() => {
+    const c = one(`SELECT sc.id, sc.student_id AS sid, sc.title, sc.summary, e.class_id AS lop FROM sos_cases sc JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active'
+        JOIN classes cl ON cl.id = e.class_id JOIN branches b ON b.id = cl.branch_id
+       WHERE b.code = 'MB' AND sc.status != 'done' AND length(sc.title) >= 8 AND EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id) ORDER BY sc.id LIMIT 1`);
+    assert(c && prof, 'seed thiếu Case MB có PA');
+    const bp = loadPrincipal(taoBpxl());
+    const co = (x: unknown) => JSON.stringify(x).includes(c.title);
+    /* Bảng kỹ năng + hồ sơ: BPXL vẫn mở (điểm), không có Case. */
+    assert(co(cases.skillSupportBoard(P.mbManager, c.sid, null)) && !co(cases.skillSupportBoard(bp, c.sid, null)), 'bảng kỹ năng: BPXL thấy Case');
+    const hs = prof.studentProfile(bp, c.sid);
+    assert(co(prof.studentProfile(P.mbManager, c.sid)) && hs.cases.length === 0 && !co(hs), 'hồ sơ HV: BPXL thấy Case / PA');
+    assert(ma(() => cases.caseTopicsOf(bp, c.sid)) === 403, '+ Case (case-topics): BPXL phải 403');
+    assert(co(ht.hanhTrinhHocVien(P.mbManager, c.sid, null)) && !co(ht.hanhTrinhHocVien(bp, c.sid, null)), 'Hành trình: BPXL thấy Case');
+    assert(ma(() => pt.oPhanTichLop(bp, c.lop, 'listening', 'case', null)) === 403, 'bảng vấn đề lớp (ô Case): BPXL phải 403');
+    assert(ms.metricSet(P.mbManager, 'pa-co-ket-qua').ids.length > 0 && ms.metricSet(bp, 'pa-co-ket-qua').ids.length === 0, 'chỉ số PA có kết quả: BPXL có PA');
+    /* N63 ⑤: BPXL vẫn xem Phối hợp của em — nhưng không có nội dung Case (nguyên nhân = Mô tả Case). */
+    const phBp = JSON.stringify(ph.coordinationOfStudent(bp, c.sid));
+    assert(!phBp.includes(c.title) && !(c.summary && phBp.includes(c.summary)), 'Phối hợp SOS của em: BPXL thấy nội dung Case');
+    const lt = one(`SELECT a.id FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id JOIN branches b ON b.id = cl.branch_id
+       WHERE b.code = 'MB' AND a.kind IN ('progress', 'final') AND EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.student_id = a.student_id) ORDER BY a.id LIMIT 1`)?.id;
+    if (lt) {
+      const d = rg.regularAttemptDetail(bp, lt);
+      assert(d.dong.cases.length === 0 && d.lichSuCase.length === 0, 'lượt lớp thường: BPXL thấy Case');
+    }
   }));
 
   /* ---------------------------------------------------------------- HTTP (chỉ đọc / 403 / 404) */
@@ -81,6 +119,13 @@ export async function runPrSuaQuyenTests(t: any) {
         const r = await goi('GET', u, ckTvv);
         if (r.status !== 403) sai.push(`TVV ${u}: ${r.status}`);
       }
+      /* PTA rà #2176: BPXL — bàn giao em (Case / PA còn dở) 403. */
+      const emMb = emFt()?.id;
+      const bpId = nguoi('scheduler', 'MB');
+      if (bpId && emMb) {
+        const h = await goi('GET', `/students/${emMb}/handover`, await vao(bpId));
+        if (h.status !== 403) sai.push(`BPXL /students/:id/handover: ${h.status}`);
+      }
       const q = await goi('GET', '/metrics/case-mo', ckQl);
       if (q.status !== 200) sai.push(`Head /metrics/case-mo: ${q.status}`);
       const w = await goi('GET', '/my-work', ckTvv);
@@ -100,6 +145,16 @@ export async function runPrSuaQuyenTests(t: any) {
     assert(ma(() => tutor.xoaTutor(head, id)) === 403, 'Head xoá tutor phải 403');
   }));
 
+  check('SQ-4w · web Tutor (điểm 4 + 17): form nhận xét hiện khi đang sửa (Head); bấm Sửa khi còn chữ → hỏi, không đè; hộp tutor / gộp có daSua; Nội dung buổi không cắt lặng', () => {
+    const pn = nguon('web/src/modules/tutor/PanelTutor.tsx');
+    assert(pn.includes('const coForm = !!data?.coSua || !!dangSua;') && pn.includes('{coForm ? (') && !pn.includes('{data.coSua ? ('), 'form nhận xét chưa theo coForm (Head bấm Sửa không có form)');
+    assert(pn.includes('onClick={() => moSua(n)}') && pn.includes('chuaLuu ? setHoiSua(n) : apSua(n)') && pn.includes('<HopBoChu '), 'Sửa nhận xét đè chữ đang gõ không hỏi');
+    const hp = nguon('web/src/modules/tutor/HopTutor.tsx');
+    assert((hp.match(/<Modal open onClose=\{onDong\}[^>]*daSua=\{/g) ?? []).length === 2, 'hộp Thêm / Sửa tutor hoặc Gộp tên chưa có daSua');
+    assert(!nguon('web/src/modules/cases/BuoiTutorO.tsx').includes('maxLength={Math.max(TRAN_NOI_DUNG_TUTOR')
+      && nguon('web/src/modules/cases/CapNhatTuan.tsx').includes('toiDa: TRAN_NOI_DUNG_TUTOR'), 'Nội dung buổi tutor còn cắt lặng / không báo trần tại ô');
+  });
+
   check(`SQ-5 · N66: Hoàn tác khai / sửa cấp bậc MỘT em — khai mới → về chưa khai; Head sửa → về bậc trước (nhật ký máy chủ); GVCN gửi duyệt → rút thẻ; bậc lệch → 400; trần ${TRAN_GHI_LO.hoanTacCapBacEm} câu`, () => thu(() => {
     const em = emFt('NOT EXISTS (SELECT 1 FROM y_thuc_khai_bac k WHERE k.student_id = s.id)');
     assert(em, 'seed thiếu em MB FT 101 chưa khai bậc');
@@ -118,7 +173,8 @@ export async function runPrSuaQuyenTests(t: any) {
     xoaNho();
     xuLy.suaKhaiBac(P.mbManager, em.id, { bac: 2, ghiChu: 'Head sửa thử RA-2511', bacCu: 1 });
     assert(bac() === 2, 'Head sửa → bậc 2');
-    assert(ma(() => lo.hoanTacCapBacEm(gvcn, em.id, { bac: 2 })) !== null && bac() === 2, 'GVCN không hoàn tác lần sửa của Head');
+    assert(ma(() => lo.hoanTacCapBacEm(gvcn, em.id, { bac: 2 })) === 400 && bac() === 2, 'GVCN không hoàn tác lần sửa của Head (không phải lần của mình → 400)');
+    assert(ma(() => lo.hoanTacCapBacEm(P.cpManager, em.id, { bac: 2 })) === 403, 'Head chi nhánh khác: giữ đúng 403 (không gộp thành 400)');
     xoaNho();
     lo.hoanTacCapBacEm(P.mbManager, em.id, { bac: 2 });
     assert(bac() === 1, 'Head Hoàn tác → về bậc 1 (bản máy chủ ghi)');
@@ -224,12 +280,19 @@ export async function runPrSuaQuyenTests(t: any) {
     }
   }));
 
-  check('SQ-18 · Thùng rác: Quản trị đếm tab "Đã xoá" MỘT câu, số = số dòng danh sách; người khác vẫn theo quyền từng mục', () => thu(() => {
+  check('SQ-18 · Thùng rác: Quản trị đếm tab "Đã xoá" MỘT câu và đọc danh sách số câu cố định (gieo 40 mục); số tab = số dòng; người khác vẫn theo quyền từng mục', () => thu(() => {
+    const luc = new Date().toISOString();
+    const them = conn.prepare(`INSERT INTO thung_rac (loai, doi_tuong_id, nhan, hoc_vien_id, class_id, branch_id, du_lieu, xoa_boi, xoa_luc) VALUES ('hoc_vien', ?, ?, NULL, ?, NULL, ?, ?, ?)`);
+    for (let i = 0; i < 40; i++) them.run(900000 + i, `Học viên rác ${i}`, MB_FT, JSON.stringify({ ban: [], goc: [{ bang: 'classes', id: MB_FT, dau: 'cu' }] }), P.admin.userId, luc);   // `kiemGoc` đọc DB — main xét từng mục
     xoaNho(); const c0 = soCauSql();
     const n = trongBoNho(() => rac.demRac(P.admin, 'hoc_vien')).n;
     const cau = soCauSql() - c0;
     assert(cau <= 1, `Quản trị đếm ${cau} câu`);
-    assert(n === rac.danhSachRac(P.admin, 'hoc_vien').length, 'số tab ≠ số dòng');
+    xoaNho(); const c1 = soCauSql();
+    const ds = trongBoNho(() => rac.danhSachRac(P.admin, 'hoc_vien'));
+    const cauDs = soCauSql() - c1;
+    assert(cauDs <= 2, `Quản trị đọc danh sách ${ds.length} mục ${cauDs} câu (xét quyền từng mục?)`);
+    assert(n >= 40 && n === ds.length && ds.filter((m: any) => m.nhan.startsWith('Học viên rác')).every((m: any) => m.khoiPhucDuoc), `số tab ${n} ≠ số dòng ${ds.length} / mục rác không Khôi phục được`);
     assert(rac.demRac(P.mbManager, 'hoc_vien').n === rac.danhSachRac(P.mbManager, 'hoc_vien').length, 'Head: số tab ≠ số dòng');
   }));
 }

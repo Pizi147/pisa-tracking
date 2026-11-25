@@ -38,7 +38,7 @@ import { ChonDot, ConLaiLuot, Info, LichSuGon, LopLucTest, MuiMoDong, NUT_BA_CHA
 import { attemptHref, fmtDate } from '../../lib/format.ts';
 import {
   CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanDaQua, tuanLich,
-  laChiXepLich, vaiXemHocVien, type ThaoTac,
+  vaiXemHocVien, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -114,7 +114,7 @@ export default function LuotThuongPage() {
       if (chon) document.querySelector<HTMLElement>(`#kn-${k} ${chon}, #vung-${k} ${chon}`)?.focus({ preventScroll: true });
     }));
   };
-  const thaoTac = (k: string) => thaoTacMon(d, k, homNay, can, !laChiXepLich(session?.roles));   // RA-2511 (N57): BPXL không Vắng / Huỷ điểm
+  const thaoTac = (k: string) => thaoTacMon(d, k, homNay, can);
   const conLai = huy ? [] : conLaiThuong(d, homNay, theCase, chiDoc, thaoTac, {
     moDong, themPa: (k, caseId) => { setFormPa(caseId); moDong(k); }, moCase: (caseId, viec, paId) => setNgan({ caseId, viec, paId }),
   });
@@ -304,13 +304,13 @@ function tuanLuot(r: Dong, ct: string | null, homNay: string): { tuan: string; m
 }
 
 /** Nút chính + menu ⋯ của một môn — cùng `thaoTacKyNang` (laFt = false) với menu ⋯ ô của bảng điểm lớp; nhập / sửa điểm làm ngay trong ô nên không lặp. */
-function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => boolean, diem: boolean): { chinh: ThaoTac | null; menu: ThaoTac[] } {
+function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => boolean): { chinh: ThaoTac | null; menu: ThaoTac[] } {
   const s = d.dong.skillSchedule.find((x) => x.skill === k);
   if (d.dong.status === 'cancelled' || !s) return { chinh: null, menu: [] };
   const coDiem = (d.dong.result.skills.find((x) => x.skill === k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s.weekStart ?? null, coDiem, sit: s.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich, quaTuan: tuanDaQua(s.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy, diem });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy, diem: d.diem });   // RA-2511 (N57): cờ máy chủ theo lớp
   const chinh = tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? tat.chinh : null;
   return { chinh, menu: tat.menu };
 }
