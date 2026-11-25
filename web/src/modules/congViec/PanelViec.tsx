@@ -73,6 +73,8 @@ type PropsViec = {
   tenTiep?: string | null;
   /** M6 6b-3 (V19): view Case ghi lên URL `?panel=case` — Back trình duyệt lùi một view, F5 giữ view (trang Công việc). */
   xemUrl?: boolean;
+  /** KHUÔN A (25/11): Chấm Speaking — lớp đang mở (`?lc=`) và báo lớp vừa chọn ("Lớp tiếp ›"). */
+  lopCham?: number | null; onLopCham?: (classId: number) => void;
 };
 /**
  * NEN-PANEL (K12): khoá nháp = khoá việc — chữ đang gõ trong panel của việc này giữ ở máy tới khi lưu / bỏ.
@@ -132,7 +134,7 @@ function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly
   );
 }
 
-function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep, onTaiLai }: PropsViec) {
+function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep, onTaiLai, lopCham, onLopCham }: PropsViec) {
   const lop = it.classCode;
   const hv = it.studentId !== null ? it.studentName : null;
   const doi = () => { invalidate('/my-work'); onDaLam(); };
@@ -155,7 +157,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'score':
       /* R1-LUU-TIEP: mọi việc chấm có "Việc tiếp ›" ở chân panel + trong hộp nhập điểm khi hết phần người xem. */
       /* CV-SUA-1011: dòng theo dõi (việc của GV khác) — hàng đợi của chính GV đó, không của người xem. */
-      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} nguoi={it.mine ? null : it.ownerId} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} nguoi={it.mine ? null : it.ownerId} lop={lopCham} onLop={onLopCham} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       /* N39 (chủ SP 05/11): việc chấm có tuần thi — kể cả Speaking chấm chéo — mở lưới TUẦN + LỚP, chỉ em có bài tuần đó; không mở bảng cả lớp theo đợt MT. */
       if (it.con || it.periodId) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;

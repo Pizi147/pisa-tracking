@@ -6,6 +6,7 @@ import { Level } from '../../ui/ui.tsx';
 import { DauQuaHan, NhanChoGv } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
+import { ChamSpeakingMuc } from './ChamSpeakingMuc.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CASE_CATEGORY_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, demBai, bacNgan, deadlineView, laViecChamCheo, mucHan, shortDate, tuanLich, type MucTab,
@@ -27,6 +28,9 @@ type ChungDong = {
   theCn?: (it: WorkItem) => string | null;
   /** VIEC-XONG-AN: dải "✓ Đã lưu · Hoàn tác" thay dòng vừa xong (`xong`) — danh sách việc cần làm; không có (vd "Xong hôm nay") thì dòng xong vẽ như cũ. */
   daiXong?: (it: WorkItem) => ReactNode;
+  /** KHUÔN A (25/11): tab Chấm Speaking — mỗi lớp một dòng; `lop` = lớp đang mở ở panel (`?lc=`), `mo` mở panel của một lớp. */
+  chamS?: { lop: number | null; /** QL nhiều GV S: GV (id) của lớp đang mở. */ nguoi: number | null; mo: (it: WorkItem, classId: number) => void;
+    /** Rỗng: "Còn: …" và "Việc tiếp ›". */ con: string | null; onTiep: (() => void) | null };
 };
 
 /**
@@ -227,6 +231,16 @@ export function DanhSachViec({ muc, dem, soHien, dauPhai, luat, nho, cuoi, ...do
         const chung = m.mk === 'cham-cheo';
         const dongGap = gap.has(m.key), maMuc = `muc-${m.key.replace(':', '-')}`;
         const d = m.d;
+        /* KHUÔN A (25/11): việc Chấm Speaking của MỘT người → mỗi lớp một dòng + ô tìm + Chi nhánh khác gập (`ChamSpeakingMuc`); nhiều người (QL "Tất cả") giữ dòng gộp cũ. */
+        if (chung && dong.chamS && items.length && items.every((x) => x.key === KHOA_CHAM_SPEAKING)) {
+          const cs = dong.chamS;
+          return <>{items.map((itCham, j) => (
+            <ChamSpeakingMuc key={`${m.key}|${itCham.ownerId ?? ''}`} nguoi={itCham.mine ? null : itCham.ownerId ?? null} gv={items.length > 1 ? itCham.owner ?? null : null} stt={j}
+              moSan={dong.chon === itCham.key && (!cs.nguoi || cs.nguoi === itCham.ownerId)} lopChon={cs.lop} onMo={(id) => cs.mo(itCham, id)} con={cs.con} onTiep={cs.onTiep}
+              veDai={(o) => <DaiNhom k="cham-cheo" nhan={o.nhan} chip={o.chip} mo={o.mo} onMo={o.onMo} trungTinh chevSauTen dieuKhien={o.mo ? o.dk : undefined} phu={o.phu} luat={i === 0 && j === 0 && o.dk === 'muc-cham-cheo-0' ? luat : undefined} />}
+              han={(due) => (due ? <HanA it={{ due, group: 'score', key: itCham.key } as unknown as WorkItem} daXong={false} /> : <span className="cvA-hn" />)} />
+          ))}</>;
+        }
         return (
           <section key={m.key} data-muc={m.key} className="card cvA-sub overflow-clip p-0" aria-label={m.label}>
             <DaiNhom k={ICON_MUC[m.mk] ?? 'van-hanh'} nhan={m.label} chip={`${d.n} ${chung ? t('bài') : t('việc')}`} mo={!dongGap} onMo={() => datGap(m.key, !dongGap)}
