@@ -67,7 +67,12 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
     const v = c.viecTiep;
     const han = !daThi && !dong(c) && v?.han && v.loaiHan && homNay ? deadlineView({ kind: v.loaiHan as DeadlineKind, due: v.han, today: homNay }) : null;
     const pa = c.plans.find((x) => x.status === 'started' || x.status === 'planned') ?? null;
-    const bat = () => (ngan ? onMoNgan!(c.id) : setTay((x) => ({ ...x, [c.id]: !moRa })));
+    /* Rà ngoài 01 B3: gập khi đang mở theo yêu cầu (ep) phải tiêu yêu cầu đó, không thì `!!ep` giữ Case mở. Yêu cầu mới (`mo.n` khác) vẫn mở đúng PA. */
+    const bat = () => {
+      if (ngan) return onMoNgan!(c.id);
+      if (ep && moRa) setDaDong((x) => ({ ...x, [c.id]: ep.n }));
+      setTay((x) => ({ ...x, [c.id]: !moRa }));
+    };
     /* B12 (mockup audit-ui 08/11, M10): tách trường — trạng thái = viên · PA = chữ mờ · người = chữ mờ + biểu tượng · hạn = cột phải. Bỏ tình trạng PA
        ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
@@ -101,7 +106,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
           <div className="cs-mo">
             <KhungTrongCot.Provider value>
               <NganCase key={`${c.id}:${ep?.n ?? 0}:${lai[c.id] ?? 0}`} caseId={c.id} paId={ep?.paId} viec={ep?.viec} hocVien={hocVien} lop={lop}
-                onClose={() => { if (ep) setDaDong((x) => ({ ...x, [c.id]: ep.n })); setLai((x) => ({ ...x, [c.id]: (x[c.id] ?? 0) + 1 })); }} onChanged={onChanged}
+                onClose={() => { if (ep) { setDaDong((x) => ({ ...x, [c.id]: ep.n })); setTay((x) => ({ ...x, [c.id]: true })); } setLai((x) => ({ ...x, [c.id]: (x[c.id] ?? 0) + 1 })); }} onChanged={onChanged}
                 onDoiChu={() => {}} /* S5: lưu chữ tại chỗ — `ThanCase.nhan` đã làm mới đúng hồ sơ + thẻ kỹ năng của em */
                 onDaXoa={(x) => setVuaXoa((ds) => [...ds, { id: c.id, i: Math.max(0, dangMo.findIndex((d) => d.c.id === c.id)), x }])} />
             </KhungTrongCot.Provider>

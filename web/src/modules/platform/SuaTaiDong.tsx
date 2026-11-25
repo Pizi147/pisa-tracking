@@ -87,8 +87,10 @@ export function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLu
 }
 
 /** Ô "Vai trò · chi nhánh" của một tài khoản — đổi tại dòng (`PUT /admin/accounts/:id/roles`, luật máy chủ cũ: không tự gỡ / gỡ Quản trị cuối). */
-export function OVaiTaiDong({ u, branches, laMinh, mat, onDaLuu }: {
+export function OVaiTaiDong({ u, branches, loiCn, laMinh, mat, onDaLuu }: {
   u: TaiKhoan; branches: Branch[]; laMinh: boolean; mat: ReactNode; onDaLuu: () => void;
+  /** Rà ngoài 01 B5: danh mục chi nhánh lỗi → lỗi + Thử lại ngay trên ô chọn chi nhánh (không hiện như "không có chi nhánh"). */
+  loiCn?: ReactNode;
 }) {
   const toast = useToast();
   const [ds, setDs] = useState<CapVai[]>([]);
@@ -122,6 +124,7 @@ export function OVaiTaiDong({ u, branches, laMinh, mat, onDaLuu }: {
             .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
         }, { key: `vai-${u.id}` });
       }}>
+      {loiCn}
       <SuaVaiChiNhanh value={ds} onChange={setDs} branches={branches} qtCuaMinh={laMinh}
         loiHang={(i) => loi.find((x) => x.i === i)?.lyDo} />
       <button type="button" className="btn btn-sm justify-self-start max-sm:min-h-[44px]"

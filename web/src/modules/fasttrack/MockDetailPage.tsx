@@ -6,7 +6,7 @@ import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, ErrorState, ExamPlanText, Info as Tag, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
+import { Empty, ErrorState, ExamPlanText, Info as Tag, LoiTaiNho, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
 import { BadgeHan, Nhan, NhanKq, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
@@ -153,7 +153,8 @@ export default function MockDetailPage() {
   /* HSL-FT: khối Case / PA trong vùng mở = thẻ của bảng kỹ năng hồ sơ HV (cùng nguồn, cùng lộ trình của lượt) — chỉ gọi khi lượt có Case. */
   const bang = useApi<{ rows: SkillBoardRow[] }>(data?.caseLuot?.length ? `/students/${data.student.id}/skill-board?cycleId=${data.cycle.id}` : null);
   /* Sau mọi thao tác: trang lượt + bảng Case cùng tải lại — Còn lại, cột Case, hai lịch sử đổi cùng lúc. */
-  const reload = () => { taiLai(); if (bang.data) bang.reload(); };
+  /* Rà ngoài 01 B7: danh sách đợt lỗi thì Thử lại / tải lại chung gọi lại nó (đợt đang xem giữ nguyên — đổi đợt chỉ qua ChonDot). */
+  const reload = () => { taiLai(); if (bang.data) bang.reload(); if (dsDot.error) dsDot.reload(); };
   const { save } = useSaveScore(Number(id), reload, data?.student.name);
   /* R1-LUU-TIEP: mở từ lưới (tên em) — danh sách lượt nguồn ở `location.state.ds` → "Lưu · em tiếp ›"; không có → "‹ Về {nguồn}". */
   const location = useLocation();
@@ -354,6 +355,7 @@ export default function MockDetailPage() {
               </Link>
             </h1>
             <span className="inline-flex items-center gap-2">
+              {dsDot.error && !dsDot.data && <LoiTaiNho chu={t('Không tải được các đợt khác.')} onRetry={dsDot.reload} className="" />}
               <ChonDot hienTai={d.id} ds={dsDot.data?.rows ?? []} homNay={homNay} onChon={(r) => navigate(attemptHref({ ...r, studentId: d.student.id }), { replace: true })} />
               <NutLuat label={t('Thông tin đợt Mock Test')}>
                 <dl className="m-0 grid gap-2">

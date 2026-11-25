@@ -1,15 +1,16 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, LoiTaiNho, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
 import { OChon as OChonThuong } from '../phanTich/dungChung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { NutSaoChep } from '../../ui/NutSaoChep.tsx';
 import { fmtDate, skillLabel, skillShort } from '../../lib/format.ts';
 import { BadgeMo, CHIP_VUONG, ChipKy } from '../../ui/Nhan.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
@@ -122,9 +123,11 @@ export function AccountsAdmin() {
       onDuyetLai={() => setDuyetLai(u)} />
   );
   const pending = accounts.data?.pending ?? [];
+  /* Rà ngoài 01 B5: danh mục chi nhánh lỗi ≠ "không có chi nhánh" — form duyệt / sửa báo lỗi + Thử lại tại chỗ chọn chi nhánh. */
+  const loiCn = branches.error && !branches.data ? <LoiTaiNho chu={t('Không tải được danh mục chi nhánh.')} onRetry={branches.reload} className="" /> : null;
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
   /* QTV2-TK: sửa vai / kỹ năng tại dòng — dữ liệu chung cho mọi hàng. */
-  const taiDong: TaiDong = { branches: branches.data ?? [], toiId: session?.user?.id ?? null, onDaLuu: reload };
+  const taiDong: TaiDong = { branches: branches.data ?? [], loiCn, toiId: session?.user?.id ?? null, onDaLuu: reload };
   /* RKC-6: Khôi phục tài khoản xoá mềm — một bấm; máy chủ trả câu nhắc (email trùng, đặt lại mật khẩu, phân công lại). Lỡ tay thì Xoá lại. */
   const khoiPhuc = async (u: Account) => {
     try {
@@ -191,7 +194,7 @@ export function AccountsAdmin() {
           bodyClass="p-0">
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (
-              <PendingRow key={u.id} user={u} branches={branches.data ?? []}
+              <PendingRow key={u.id} user={u} branches={branches.data ?? []} loiCn={loiCn}
                 onDone={(msg) => { reload(); toast.push('ok', msg); }} />
             ))}
           </ul>
@@ -288,11 +291,11 @@ export function AccountsAdmin() {
       </Card>
 
       {creating && (
-        <AccountDialog branches={branches.data ?? []} onClose={() => setCreating(false)}
+        <AccountDialog branches={branches.data ?? []} loiCn={loiCn} onClose={() => setCreating(false)}
           onDone={() => { setCreating(false); reload(); }} />
       )}
       {editing && (
-        <AccountDialog account={editing} branches={branches.data ?? []} onClose={() => setEditing(null)}
+        <AccountDialog account={editing} branches={branches.data ?? []} loiCn={loiCn} onClose={() => setEditing(null)}
           onDone={() => { setEditing(null); reload(); }} />
       )}
       {suaTt && (
@@ -301,7 +304,7 @@ export function AccountsAdmin() {
       {duyetLai && (
         <KhungPanel tieuDe={t('Duyệt lại')} hocVien={duyetLai.fullName} onDong={() => setDuyetLai(null)}>
           <ul className="m-0 list-none p-0 pt-1">
-            <PendingRow duyetLai branches={branches.data ?? []}
+            <PendingRow duyetLai branches={branches.data ?? []} loiCn={loiCn}
               user={{ id: duyetLai.id, code: duyetLai.code, fullName: duyetLai.fullName, email: duyetLai.email ?? '', phone: duyetLai.phone,
                 branches: duyetLai.requestedBranches, note: duyetLai.declineReason ? t('Không duyệt: {lyDo}', { lyDo: duyetLai.declineReason }) : null, createdAt: '', skills: duyetLai.skills,
                 requestedRole: duyetLai.requestedRole }}
@@ -321,13 +324,13 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-type TaiDong = { branches: Branch[]; toiId: number | null; onDaLuu: () => void };
+type TaiDong = { branches: Branch[]; loiCn: ReactNode; toiId: number | null; onDaLuu: () => void };
 
 /** QTV2-TK: tài khoản đang dùng, đã duyệt → ô vai / kỹ năng sửa tại dòng; còn lại chỉ hiện. */
 const suaDuocTaiDong = (u: Account) => u.status !== 'deleted' && u.approvalState === 'approved';
 function OVai({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
   if (!suaDuocTaiDong(u)) return <>{children}</>;
-  return <OVaiTaiDong u={u} branches={tai.branches} laMinh={u.id === tai.toiId} mat={children} onDaLuu={tai.onDaLuu} />;
+  return <OVaiTaiDong u={u} branches={tai.branches} loiCn={tai.loiCn} laMinh={u.id === tai.toiId} mat={children} onDaLuu={tai.onDaLuu} />;
 }
 function OKyNang({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
   if (!suaDuocTaiDong(u)) return <>{children}</>;
@@ -445,8 +448,8 @@ function TheTaiKhoan(p: ThaoTacTk & { tai: TaiDong }) {
  * Một đăng ký đang chờ. Người duyệt SỬA ĐƯỢC chi nhánh trước khi bấm duyệt (mục 7.1).
  * OV-11b: `duyetLai` = cùng hộp cho tài khoản đã "Không duyệt" (QT-4) — không có nút Không duyệt. CX duyệt được không chọn chi nhánh (= toàn hệ thống).
  */
-function PendingRow({ user, branches, onDone, duyetLai }: {
-  user: Pending; branches: Branch[]; onDone: (msg: string) => void; duyetLai?: boolean;
+function PendingRow({ user, branches, loiCn, onDone, duyetLai }: {
+  user: Pending; branches: Branch[]; loiCn: ReactNode; onDone: (msg: string) => void; duyetLai?: boolean;
 }) {
   const toast = useToast();
   const [picked, setPicked] = useState<Set<string>>(new Set(user.branches));
@@ -482,7 +485,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
               <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>
             ))}
           </OChonThuong>
-          <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && !VAI_CN_TUY_CHON.includes(role) && role !== 'head_tutor')}
+          <button className="btn btn-sm btn-primary" disabled={busy || !!loiCn || (picked.size === 0 && !VAI_CN_TUY_CHON.includes(role) && role !== 'head_tutor')}
             onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }),
               t('Đã duyệt {ten} · {vai} · {cn}', { ten: user.fullName, vai: roleLabel(role), cn: cnChon }))}>
             {t('Duyệt')}
@@ -493,7 +496,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
 
       <div className="mt-2">
         <span className="text-xs text-slate-500 mr-2">{t('Chi nhánh (người đăng ký tự khai, sửa được):')}</span>
-        <span className="inline-flex flex-wrap gap-1 align-middle">
+        {loiCn ?? <span className="inline-flex flex-wrap gap-1 align-middle">
           {branches.map((b) => (
             <NutChon key={b.code} nho chon={picked.has(b.code)}
               onClick={() => setPicked((s) => {
@@ -504,7 +507,7 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
               {b.code}
             </NutChon>
           ))}
-        </span>
+        </span>}
       </div>
 
       {declining && (
@@ -527,19 +530,9 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
 const KY_TU_MAT_KHAU = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
 const taoMatKhau = (): string => Array.from(crypto.getRandomValues(new Uint32Array(12)), (x) => KY_TU_MAT_KHAU[x % KY_TU_MAT_KHAU.length]).join('');
 
-/** Nút "Chép" cạnh ô mật khẩu ban đầu: chép vào bộ nhớ tạm, 2 giây hiện "Đã chép". Trình duyệt chặn chép → ô vẫn đọc / bôi đen được (không thêm hộp). */
-function NutChepMatKhau({ chu }: { chu: string }) {
-  const [xong, setXong] = useState(false);
-  useEffect(() => { if (!xong) return undefined; const h = setTimeout(() => setXong(false), 2000); return () => clearTimeout(h); }, [xong]);
-  return (
-    <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" disabled={!chu} aria-label={t('Chép mật khẩu ban đầu')} aria-live="polite"
-      onClick={() => { void navigator.clipboard?.writeText(chu).then(() => setXong(true), () => undefined); }}>{xong ? t('Đã chép') : t('Chép')}</button>
-  );
-}
-
 /** Tạo tài khoản mới, hoặc sửa vai trò / quyền riêng / mật khẩu của một tài khoản đã có. */
-function AccountDialog({ account, branches, onClose, onDone }: {
-  account?: Account; branches: Branch[]; onClose: () => void; onDone: () => void;
+function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
+  account?: Account; branches: Branch[]; loiCn: ReactNode; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
   const { session } = useSession();
@@ -652,7 +645,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                 <span className="flex items-stretch gap-2">
                   <input className="field min-w-0 flex-1" autoComplete="off" spellCheck={false} {...lf.o(loi, 'mat-khau')} value={form.password} title={t('Người dùng đổi lại ở hồ sơ cá nhân.')}
                     onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  <NutChepMatKhau chu={form.password} />
+                  <NutSaoChep chu={form.password} nhan={t('Chép mật khẩu ban đầu')} />
                 </span>
               </Field>
               <Field label={t('Số điện thoại')}>
@@ -673,6 +666,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </div>
           <div className="space-y-2" {...lf.o(loi, 'vai-tro')}>
             {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
+            {loiCn}
             <SuaVaiChiNhanh value={grants} onChange={setGrants} branches={branches} qtCuaMinh={qtCuaMinh}
               loiHang={(i) => lf.loiCua(loi, `vai-${i}`)} propsHang={(i) => lf.o(loi, `vai-${i}`)} />
           </div>
