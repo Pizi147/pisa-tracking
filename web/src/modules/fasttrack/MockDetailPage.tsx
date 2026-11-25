@@ -423,7 +423,6 @@ export default function MockDetailPage() {
             )}
           </span>
         </div>
-        <ConLaiLuot ds={conLai} />
       </section>
 
       {/* ④ BẢNG KỸ NĂNG — một dòng một kỹ năng; bấm dòng mở vùng Nhận xét | Case & phương án + Lịch sử kỹ năng ngay dưới. */}

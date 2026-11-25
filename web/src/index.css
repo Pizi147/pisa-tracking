@@ -2291,3 +2291,6 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   a.ten-hv.ten-ho-so { position: relative; }
   a.ten-hv.ten-ho-so::after { content: ''; position: absolute; inset: -12px -4px; }
 }
+/* #12 (rà 25/11): ô chọn lớp đã chọn — dòng phụ ("FT LT1 · Monbay · 33 em · tuần 16") xuống dòng, không cắt "…" (min-height 40, cao theo chữ). */
+.oc:not(.gon) .da { flex-wrap: wrap; white-space: normal; align-items: baseline; row-gap: 0; }
+.oc:not(.gon) .da small { overflow: visible; text-overflow: clip; white-space: normal; }
