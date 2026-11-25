@@ -216,7 +216,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         <div className="surface-2 rounded-lg p-3 grid gap-3 sm:grid-cols-2">
           <Field label={t('Thêm vào lớp')} required loi={lf.loiCua(loiLo, 'lop')}>
             {/* Rà ngoài 01 B4: lỗi tải ≠ "Đang tải…" — báo tại ô + Thử lại; dòng đã gõ / ô dán giữ nguyên. */}
-            {classes.error && !classes.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={classes.reload} className="" /> :
+            {classes.error && !classes.data ? <LoiTaiNho id={lf.oId('lop')} chu={t('Không tải được lớp.')} onRetry={classes.reload} className="" /> :
             <ChonLop ariaLabel={t('Thêm vào lớp')} {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : t('Đang tải…')}
               onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
               ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code,

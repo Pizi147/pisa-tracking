@@ -30,7 +30,7 @@ export function NutSaoChep({ chu, ten, nhan: nhanRieng }: { chu: string; ten?: s
       {chan && (
         <NoiTren neo={nut} canh="phai" cach={4} role="alert" className="w-[min(20rem,calc(100vw-2rem))] rounded-lg border p-2 text-[13px] text-late shadow-lg" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <span className="mb-1 block">⚠ {t('Không chép được — bôi đen rồi nhấn Ctrl + C')}</span>
-          <textarea ref={hop} readOnly rows={4} defaultValue={chu} className="w-full resize-none rounded border p-1.5 text-[13px] text-[color:var(--text)]" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }} />
+          <textarea ref={hop} readOnly rows={4} value={chu} className="w-full resize-none rounded border p-1.5 text-[13px] text-[color:var(--text)]" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }} />
           <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={() => setChan(false)}>{t('Đóng')}</button>
         </NoiTren>
       )}

@@ -55,6 +55,8 @@ export const HOC_TIEP_TRONG: GiaTriHocTiep = { tg: null, lopKhac: false, lopMoiI
 export const thanHocTiep = (v: GiaTriHocTiep) => ({
   chon: 'hoc_tiep' as const, ...(v.tg?.trim() ? { mucTieu: v.tg.trim().replace(',', '.') } : {}), ...(v.lopKhac && v.lopMoiId ? { lopMoiId: v.lopMoiId } : {}),
 });
+/** id ô Lớp của Học tiếp = `lf.oId('lop-hoc-tiep')` ở form gọi (`loiHocTiep`) — "n ô cần sửa ↑" nhảy tới ô / nút Thử lại. */
+const O_LOP_HOC_TIEP = 'o-lop-hoc-tiep';
 const CHU_KHONG_HOC_TIEP = () => t('Chỉ khi em đang học lộ trình này — chọn Lộ trình mới.');
 export const loiHocTiep = (v: GiaTriHocTiep, bt: TrangThaiBuocTiep) => (bt.hocTiepDuoc === false ? [{ khoa: 'chon', nhan: t('Học tiếp'), lyDo: CHU_KHONG_HOC_TIEP() }]
   : v.lopKhac && !v.lopMoiId ? [{ khoa: 'lop-hoc-tiep', nhan: t('Lớp'), lyDo: t('Chọn lớp') }] : []);
@@ -92,9 +94,9 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled, nen = 
             <NutChon chon={v.lopKhac} onClick={() => onChange({ ...v, lopKhac: true })}>{t('Lớp khác')}</NutChon>
           </div>
           {/* Rà ngoài 01 B4: lỗi tải ≠ "Đang tải…" / rỗng — báo tại ô + Thử lại, lựa chọn khác giữ nguyên. */}
-          {v.lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
+          {v.lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho id={O_LOP_HOC_TIEP} chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
             : v.lopKhac && (
-            <ChonLop ariaLabel={t('Lớp khác')} value={v.lopMoiId} onChange={(id) => onChange({ ...v, lopMoiId: id })} invalid={bamLuu && !v.lopMoiId} tat={disabled}
+            <ChonLop id={O_LOP_HOC_TIEP} ariaLabel={t('Lớp khác')} value={v.lopMoiId} onChange={(id) => onChange({ ...v, lopMoiId: id })} invalid={bamLuu && !v.lopMoiId} tat={disabled}
               khongKhop={dsLop.data ? t('Không có lớp Fast Track khác đang chạy') : t('Đang tải…')} ds={ds} />
           )}
         </div>
@@ -234,9 +236,9 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
               <NutChon chon={!lopKhac} onClick={() => setLopKhac(false)}>{t('Giữ {lop}', { lop: xem.data?.lopGiu?.code ?? bt.lopNay?.code ?? lop ?? '' })}</NutChon>
               <NutChon chon={lopKhac} onClick={() => setLopKhac(true)}>{t('Lớp khác')}</NutChon>
             </div>
-            {lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
+            {lopKhac && dsLop.error && !dsLop.data ? <LoiTaiNho id={lf.oId('lop')} chu={t('Không tải được lớp.')} onRetry={dsLop.reload} className="" />
               : lopKhac && (
-              <ChonLop ariaLabel={t('Lớp khác')} value={lopMoiId} onChange={setLopMoiId} invalid={bamLuu && !lopMoiId}
+              <ChonLop id={lf.oId('lop')} ariaLabel={t('Lớp khác')} value={lopMoiId} onChange={setLopMoiId} invalid={bamLuu && !lopMoiId}
                 khongKhop={dsLop.data ? t('Không có lớp {lt} đang chạy', { lt: r === 'RF' ? 'RF' : khac ? 'FT' : 'LT' }) : t('Đang tải…')}
                 ds={r ? lopChonLoTrinhMoi(r, dsLop.data?.lop ?? []) : []} />
             )}

@@ -26,9 +26,12 @@ export async function runPrSuaLoi01Tests(t: { check: any; assert: any }) {
   });
   check('B4 · danh sách lớp lỗi lần đầu: báo tại ô + Thử lại (Tiếp nhận HV, Lộ trình mới, Học tiếp) — không treo "Đang tải…"', () => {
     const lt = doc('web/src/modules/students/PanelLoTrinhMoi.tsx');
-    assert((lt.match(/dsLop\.error && !dsLop\.data \? <LoiTaiNho chu=\{t\('Không tải được lớp\.'\)\} onRetry=\{dsLop\.reload\}/g) ?? []).length === 2, 'Lộ trình mới / Học tiếp');
+    assert((lt.match(/dsLop\.error && !dsLop\.data \? <LoiTaiNho id=\{[^}]+\} chu=\{t\('Không tải được lớp\.'\)\} onRetry=\{dsLop\.reload\}/g) ?? []).length === 2, 'Lộ trình mới / Học tiếp');
     const ip = doc('web/src/modules/students/IntakePanel.tsx');
-    assert(ip.includes("classes.error && !classes.data ? <LoiTaiNho chu={t('Không tải được lớp.')} onRetry={classes.reload}"), 'Tiếp nhận HV');
+    assert(ip.includes("classes.error && !classes.data ? <LoiTaiNho id={lf.oId('lop')} chu={t('Không tải được lớp.')} onRetry={classes.reload}"), 'Tiếp nhận HV');
+    /* PTA rà #2163 P2: ô lỗi giữ id của ô lớp → focus sau Lưu / "n ô cần sửa ↑" vẫn tới được. */
+    assert(lt.includes('<LoiTaiNho id={O_LOP_HOC_TIEP}') && lt.includes('<ChonLop id={O_LOP_HOC_TIEP}') && lt.includes("<LoiTaiNho id={lf.oId('lop')}") && lt.includes("<ChonLop id={lf.oId('lop')}"), 'ô lớp mất id');
+    assert(doc('web/src/ui/ui.tsx').includes('<button id={id} type="button" className="link appearance-none'), 'LoiTaiNho không gắn id');
   });
   check('B5 · Tài khoản: danh mục chi nhánh lỗi → form duyệt / sửa báo lỗi + Thử lại tại chỗ chọn chi nhánh; Duyệt tắt tới khi tải được', () => {
     const s = doc('web/src/modules/platform/AccountsAdmin.tsx');
@@ -43,6 +46,7 @@ export async function runPrSuaLoi01Tests(t: { check: any; assert: any }) {
     const s = doc('web/src/modules/platform/AccountsAdmin.tsx');
     assert(s.includes("<NutSaoChep chu={form.password} nhan={t('Chép mật khẩu ban đầu')} />") && !s.includes('NutChepMatKhau') && !s.includes('() => undefined); }}'), 'còn nút chép im lặng');
     const n = doc('web/src/ui/NutSaoChep.tsx');
+    assert(n.includes('readOnly rows={4} value={chu}'), 'hộp dự phòng giữ chữ cũ khi ô đổi (PTA rà #2163 P2)');
     assert(n.includes('catch { setChan(true); }') && n.includes("nhanRieng ?? t('Sao chép việc quá hạn của {gv} để nhắn'"), 'NutSaoChep mất nhánh lỗi / nhãn riêng');
   });
   check('B7 · Mock / lượt lớp thường: danh sách đợt lỗi báo tại chỗ + Thử lại; tải lại chung gọi lại danh sách đợt khi nó lỗi', () => {

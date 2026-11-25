@@ -298,11 +298,12 @@ function NutVeCha() {
 const NUT_DAI_LOI = 'btn btn-sm ml-auto shrink-0 max-sm:min-h-[44px] max-sm:basis-full max-sm:justify-center';
 
 /** 6c (bảng kê lỗi 6): lỗi tải GỌN cho chỗ hẹp (chuông, dải đầu hồ sơ) — nói rõ không tải được + Thử lại, không im lặng như rỗng. */
-export function LoiTaiNho({ chu, onRetry, className = 'px-3.5 py-2.5' }: { chu: string; onRetry: () => void; className?: string }) {
+/** `id`: thay chỗ một ô form (vd ô lớp lỗi tải) — gắn lên nút Thử lại để "n ô cần sửa ↑" / focus sau Lưu vẫn tới được. */
+export function LoiTaiNho({ chu, onRetry, className = 'px-3.5 py-2.5', id }: { chu: string; onRetry: () => void; className?: string; id?: string }) {
   return (
     <p role="alert" className={`m-0 text-[13px] text-bad ${className}`}>
       {chu}{' '}
-      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={onRetry}>{t('Thử lại')}</button>
+      <button id={id} type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={onRetry}>{t('Thử lại')}</button>
     </p>
   );
 }
