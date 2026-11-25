@@ -241,7 +241,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
           confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi Head')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>
             <p className="m-0">
-              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, bacVe })}
+              {rutDuoc ? t('Rút đề xuất · mất lần xử lý {nhan} ngày {ngay} và {soTep} tệp bằng chứng · {length} vi phạm về chưa xử lý', { nhan: bacDu(dich(d.nhan)), ngay: the?.taoLuc ? ngay(the.taoLuc, homNay) : '—', length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, bacVe })}
             </p>
             {!rutDuoc && (
               <div className="pt-3">

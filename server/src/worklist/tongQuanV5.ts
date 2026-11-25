@@ -2,7 +2,7 @@ import { db } from '../db.ts';
 import { dauNgayVnUtc, hanBaoPhHieuLuc, khoangMacDinh, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import { bangLop, type Principal } from '../permissions.ts';
+import { bangLop, lopDayDu, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { bangChiNhanh } from './bangChiNhanh.ts';
@@ -72,11 +72,22 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
   let chiNhanh: DongCnV5[] | null = null;
   let lopCn: DongLopCnV5[] | null = null;
   if (bang.cheDo === 'lop') {
-    const s = theo((l) => l);
-    lop = bang.hang.map((h) => ({
-      id: h.id, khoa: h.khoa, ma: h.nhan, hv: h.o.hocVien.n, gvcn: h.gvcn ?? null,
-      datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id), sos23Ids: h.sos23 ?? [],
-    }));
+    const s = theo((l) => l ?? undefined);
+    /* Rà 25/11 (việc 1): lớp đã kết thúc (rời hàng bảng) mà còn em trong ô Đạt MT / Thi tháng này → vẫn một hàng (HV / SOS / Case = 0), Σ hàng = ô tổng
+       — như chế độ chi nhánh. Mã lớp từ bảng lớp nhớ tiến trình (0 câu). */
+    const coSo = new Set<number>([...(dm?.mau ?? [])].map((sid) => dm!.luot.get(sid)!.classId).concat([...thi.values()].map((x) => x.lop))
+      .filter((k): k is number => k != null));
+    const them = [...coSo].filter((id) => !bang.hang.some((h) => h.id === id)).sort((a, b) => a - b);
+    lop = [
+      ...bang.hang.map((h) => ({
+        id: h.id, khoa: h.khoa, ma: h.nhan, hv: h.o.hocVien.n, gvcn: h.gvcn ?? null,
+        datMt: s.datMt(h.id), sos: [h.o.sos1.n, h.o.sos2.n, h.o.sos3.n] as [number, number, number], caseChuaPa: h.o.caseChuaChot.n, thiThangNay: s.thi(h.id), sos23Ids: h.sos23 ?? [],
+      })),
+      ...them.map((id) => ({
+        id, khoa: `lop:${id}`, ma: lopDayDu().get(id)?.code ?? `#${id}`, hv: 0, gvcn: null,
+        datMt: s.datMt(id), sos: [0, 0, 0] as [number, number, number], caseChuaPa: 0, thiThangNay: s.thi(id), sos23Ids: [],
+      })),
+    ];
   } else {
     const s = theo(cnCua);
     const ttMau = new Map<number, number>(), ttDat = new Map<number, number>();

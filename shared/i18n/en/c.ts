@@ -562,6 +562,7 @@ export const EN_C = {
   'Yêu cầu chờ bạn duyệt': 'Requests awaiting you',
   '{n} yêu cầu chờ bạn duyệt': (b) => `${soNhieu(b.n, 'request', 'requests')} awaiting you`,
   'Đã mở lại Case': 'Case reopened',
+  'Không hoàn tác được nữa — bấm Mở lại Case nếu cần.': 'Can no longer undo — use Reopen Case if needed.',
   'Không mở lại được': 'Could not reopen',
   'Đang mở lại…': 'Reopening…',
   'Sửa xác nhận': 'Edit confirmation',

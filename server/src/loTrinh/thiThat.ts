@@ -14,6 +14,7 @@ import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
+import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 
 const DIEM = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof DIEM)[number], number | null>;
@@ -154,6 +155,8 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
       writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
         before: { buocTiep: 'hoc_tiep', buocTiepHen: null }, after: { buocTiep: null, buocTiepHen: null, _nguon: 'Kết quả thi lần sau' } });
     }
+    /* SỔ NGHĨA VỤ (rà 25/11): KQ thi thật đổi "MT chưa làm còn là việc" (N46, `LUOT_CON_KE_HOACH_SQL`) — ghi lại lượt của em ngay, không chờ đối chiếu đêm. */
+    ghiSoHocVien([c.student_id]);
     /* `khoiPhucId`: nhật ký của lần lưu này — toast Hoàn tác gửi lại (`khoiPhucThiThat`); không đổi gì → null (không có gì để hoàn tác). */
     return { ...cycleById(cycleId), khoiPhucId };
   });
@@ -226,6 +229,7 @@ export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?
     });
     const khoiPhucId = writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
       before: { ...truongNk(cu), _hoan: hoan }, after: { ...truongNk(sau), _nguon: 'Khôi phục bản trước' } });
+    ghiSoHocVien([c.student_id]);   // SỔ NGHĨA VỤ: như lần lưu
     return { ...sau, khoiPhucId };
   });
 }

@@ -205,8 +205,14 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
         outcome, note, closedOn: closedOn || undefined,
         metrics: componentsPayload(category, metrics, counts),
       });
-      invalidate('/cases'); invalidate('/my-work'); invalidate('/students');
-      toast.push('ok', t('Đã hoàn thành Case'));
+      const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); };
+      lamMoi();
+      /* Rà 25/11 (5c): Hoàn tác ngắn — máy chủ chỉ nhận người vừa hoàn thành, trong cửa sổ ngắn (`moLaiCase` `hoanTac`); trả cả PA đã dừng cùng lần. */
+      const key = `ht-case:${caseId}`;
+      toast.hoanTac(t('Đã hoàn thành Case'), async () => {
+        try { await api.post(`/cases/${caseId}/mo-lai`, { hoanTac: true }); lamMoi(); toast.push('ok', t('Đã mở lại Case'), { key }); }
+        catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
+      }, { key });
       onSaved();
     } catch (e: any) {
       toast.push('error', e?.message ?? t('Không lưu được'));

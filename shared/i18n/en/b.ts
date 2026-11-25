@@ -157,7 +157,7 @@ const EN_B_WEB = {
   'Từ chối…': 'Decline…',
   'Trả lời…': 'Reply…',
   '+ Thêm PA': '+ Add PA',
-  'Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.': 'Withdraw this proposal? The incident goes back to unhandled and the evidence files are deleted.',
+  'Rút đề xuất · mất lần xử lý ngày {ngay} và {n} tệp bằng chứng · vi phạm về chưa xử lý.': (b) => `Withdraw proposal · removes the action of ${b.ngay} and ${so(b.n, 'evidence file', 'evidence files')} · incidents go back to unhandled.`,
   'Lý do không cần theo dõi': 'Reason to stop tracking',
   'Ví dụ: Em ốm cả tuần Test': 'E.g. Ill for the whole test week',
   'Tuần Test mới': 'New test week',

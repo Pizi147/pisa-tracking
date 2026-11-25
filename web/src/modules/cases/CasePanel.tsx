@@ -576,8 +576,17 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const toiThieu = CHU_TOI_THIEU_CASE;   // #4 ngưỡng chung (trước 15) · Case MT / S cũng 8 (chủ SP 14/11, trước 10)
+  /* Rà 25/11 (việc 5a): S chấm chéo chờ xác nhận — chữ đang gõ là NHÁP (không tự lưu: tự lưu 1 s từng gửi "xác nhận" với nửa câu, gửi hai lần).
+     Xác nhận chỉ khi bấm "Xác nhận với mô tả này"; nháp giữ khi đóng panel hỏi "Bỏ chữ?" (`useBaoDangSua`). */
+  const [nhapS, setNhapS] = useState('');
+  const nS = nhapS.trim().length;
+  useBaoDangSua(!!s && nS > 0);
+  const vietS = async () => {
+    setBusy(true); setLoi(null);
+    try { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach: 'viet', moTa: nhapS.trim() }); setNhapS(''); setGo(false); setDaXn(t('Đã xác nhận Case')); onXong(); }
+    catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
   const luu = async (x: string) => {
-    if (s) { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach: 'viet', moTa: x }); setDaXn(t('Đã xác nhận Case')); onXong(); return; }
     const body = laMt ? { luc: data.capNhatLuc, observation: x, ...(!chinh ? { nhom: nhomNhap } : {}) } : { luc: data.capNhatLuc, summary: x };
     const d = await api.patch<CaseDetail>(`/cases/${data.id}`, body);
     onDoi(d);
@@ -588,8 +597,19 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
     catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   const hoanTacS = async () => { await api.post(`/cases/${data.id}/hoan-tac-xac-nhan-s`); onXong(); };
-  const o = go ? (
-    <OGoTuLuu dau={s ? '' : chu} toiThieu={toiThieu} toiDa={TRAN_CHU.moTaCase} nhan={t('Mô tả')} placeholder={t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}
+  const o = go && s ? (
+    <div className={`o-mo ${nS > TRAN_CHU.moTaCase ? 'loi' : ''}`}>
+      <textarea className="field w-full" rows={3} autoFocus aria-label={t('Mô tả')} value={nhapS} placeholder={t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}
+        onChange={(e) => setNhapS(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setNhapS(''); setGo(false); } }} />
+      <div className="duoi-o" aria-live="polite">
+        {nS > TRAN_CHU.moTaCase ? <span className="tt-luu loi">⚠ {t('Dài quá {toiDa} — rút bớt {n} ký tự để lưu', { toiDa: TRAN_CHU.moTaCase, n: nS - TRAN_CHU.moTaCase })}</span>
+          : nS > 0 && nS < toiThieu ? <span className="tt-luu nhap">{t('Cần ít nhất {n} ký tự để lưu', { n: toiThieu })}</span>
+          : <span className="tt-luu nhap">{t('Nháp — bấm Xác nhận với mô tả này để lưu')}</span>}
+        <span className="max-sm:hidden">{t('Esc: bỏ thay đổi')}</span>
+      </div>
+    </div>
+  ) : go ? (
+    <OGoTuLuu dau={chu} toiThieu={toiThieu} toiDa={TRAN_CHU.moTaCase} nhan={t('Mô tả')} placeholder={t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}
       chan={laMt && !chinh && !s && !nhomNhap.length ? t('Chọn Nguyên nhân ở trên để lưu') : null} goiY={viec} luu={luu} onDong={() => setGo(false)} />
   ) : chu && !s ? (
     sua ? <GiaTriSua kieu="chu" nhan={t('Sửa mô tả')} onClick={() => setGo(true)}><ChuDich chu={chu} nguon={laMt && chinh ? { bang: 'case_issues', id: chinh.id, cot: 'observation' } : { bang: 'sos_cases', id: data.id, cot: 'summary' }} /></GiaTriSua>
@@ -614,9 +634,11 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
           {/* GD-4b Q28 / Q29: dùng nhận xét người chấm (mặc định) · đang gõ mô tả của mình = viết khác. */}
           <DongQuyChe px="px-0" qc={quyCheXacNhanS(go || !s.nhanXet, s.nguoiCham, toiThieu)} />
           <span className="flex flex-wrap items-center gap-2">
-            {s.nhanXet && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
+            {go && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || nS < toiThieu || nS > TRAN_CHU.moTaCase}
+              onClick={() => void vietS()}>{busy ? t('Đang lưu…') : t('Xác nhận với mô tả này')}</button>}
+            {s.nhanXet && <button type="button" className={`btn btn-sm ${go ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
             {chinh?.observation && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('giu')}>{t('Giữ mô tả đang có')}</button>}
-            <span className="text-[13px] text-faint">{t('hoặc gõ mô tả của bạn ở ô trên')}</span>
+            {go ? null : <span className="text-[13px] text-faint">{t('hoặc gõ mô tả của bạn ở ô trên')}</span>}
           </span>
           {chinh?.observation && <span className="text-[13px] text-slate-300">{t('Mô tả đang có')}: “{chinh.observation}”</span>}
           {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
@@ -1086,7 +1108,7 @@ function KetThucSom({ iv, hoanThanhCase, onThoi, onXong }: { iv: any; hoanThanhC
       lamMoi();
       toast.hoanTac(daHt ? t('Đã kết thúc PA · đã hoàn thành Case') : t('Đã kết thúc PA'), async () => {
         try {
-          if (daHt && hoanThanhCase) await api.post(`/cases/${hoanThanhCase.caseId}/mo-lai`);
+          if (daHt && hoanThanhCase) await api.post(`/cases/${hoanThanhCase.caseId}/mo-lai`, { hoanTac: true });
           await api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`);
           lamMoi(); toast.push('ok', t('Đã mở lại PA'), { key });
         } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }

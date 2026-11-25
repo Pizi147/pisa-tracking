@@ -49,7 +49,7 @@ import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, napTenGiua, tenGiuaCua, traXacNhanNgam, xacNhanCase, xacNhanPaQuyChe } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
-import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
+import { GhiDao, HOAN_TAC_PHUT, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 
 /**
@@ -347,7 +347,11 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
  * `closed` + nhật ký; PA đã khép KHÔNG sống lại. Khoá chống trùng đã nhả cho Case mới cùng hạng mục → chặn (mở Case mới đó). Case hệ thống đóng
  * (em kết thúc học…) đi đường riêng của nó (`moLaiCaseHeThongDong`).
  */
-export function moLaiCase(p: Principal, caseId: number) {
+/**
+ * `hoanTac` (rà 25/11, việc 5c — luật "không khoá cứng, luôn Hoàn tác ngắn"): toast "Đã hoàn thành Case · Hoàn tác" gọi đây — chỉ CHÍNH người vừa hoàn thành,
+ * trong `HOAN_TAC_PHUT` phút từ lúc lưu (`outcome_at`), Case vẫn ở đúng lần đóng đó; còn lại 409 (Mở lại Case vẫn là đường đầy đủ). Kiểm ngay trong câu UPDATE (0 câu thêm).
+ */
+export function moLaiCase(p: Principal, caseId: number, o: { hoanTac?: boolean } = {}) {
   const conn = db();
   const c = loadCase(caseId);
   if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Head hoặc người hoàn thành được Case này mở lại được.');
@@ -357,10 +361,12 @@ export function moLaiCase(p: Principal, caseId: number) {
   const today = demoToday();
   return tx(() => {
     /* Không PA nào → "Mới mở"; có PA → trạng thái suy như mọi đường khác (`dongBoTrangThaiCase`). */
-    conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
+    const doi = conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
                    closed_by = NULL, closed_at = NULL, dismiss_reason_code = NULL, dismiss_reason_text = NULL, system_close_reason = NULL,
                    dedup_key = COALESCE(dedup_key, ?), updated_at = ?
-                  WHERE id = ?`).run(chanMoLaiKhoa(c), nowIso(), caseId);
+                  WHERE id = ? AND status = 'done'${o.hoanTac ? ' AND outcome_by = ? AND outcome_at >= ?' : ''}`)
+      .run(chanMoLaiKhoa(c), nowIso(), caseId, ...(o.hoanTac ? [p.userId, new Date(Date.now() - HOAN_TAC_PHUT * 60_000).toISOString()] : [])).changes;
+    if (!doi) throw conflict(o.hoanTac ? 'Không hoàn tác được nữa — bấm Mở lại Case nếu cần.' : 'Case này chưa hoàn thành.');
     /* RKC-2a: lần Hoàn thành đã kết thúc sớm PA chưa khép → trả các PA + thẻ chờ về như cũ (chỉ khi chưa ai đổi chúng sau đó; đổi rồi thì PA giữ đã dừng). */
     const gd = timGhiDao(conn, 'hoan_thanh_case', 'sos_cases', caseId);
     if (gd && daoDuoc(gd)) daoLai(conn, gd, p.userId);

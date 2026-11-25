@@ -201,6 +201,18 @@ function kiemNguoiNhan(uid: unknown, branchId: number | null): number {
   return id;
 }
 
+/** Nhiều người nhận MỘT câu (rà 25/11, việc 4) — cùng luật `kiemNguoiNhan`, giữ thứ tự, bỏ trùng; một người sai → lỗi như `kiemNguoiNhan`. */
+function kiemNguoiNhanLo(uids: readonly unknown[], branchId: number | null): number[] {
+  const ids = [...new Set(uids.map(Number))];
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) throw badRequest('Chọn người nhận việc.');
+  const ok = new Set((db().prepare(`SELECT CAST(j.value AS INTEGER) AS id FROM json_each(?1) j WHERE ${HOAT_DONG_O('j.value', '?2')}
+      AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = j.value AND ur.status = 'active'
+        AND r.key IN (SELECT value FROM json_each(?3)) AND (ur.branch_id IS NULL OR ur.branch_id = ?2))`)
+    .all(JSON.stringify(ids), branchId, JSON.stringify(VAI_GIAO_VIEC)) as { id: number }[]).map((r) => r.id));
+  if (ids.some((id) => !ok.has(id))) throw badRequest('Người này không có tài khoản đang hoạt động ở chi nhánh của việc — chọn người khác.');
+  return ids;
+}
+
 // ---------------------------------------------------------------- theo dõi + tin "Cập nhật"
 
 /** TRONG tx: thêm người theo dõi (trùng / không hoạt động / không có vai ở chi nhánh của việc → bỏ qua). Trả số dòng thêm. */
@@ -311,17 +323,21 @@ export function themTheoDoi(p: Principal, loai: LoaiGiao, id: number, body: { us
   const traKhoi = () => { try { return xemGiaoViec(p, loai, id); } catch { return { ok: true as const }; } };
   /* PTA rà #2166: bấm Hoàn tác hai lần — đang theo dõi rồi thì coi như xong, không 403. */
   if (tuThemLai && chinhMinh && db().prepare('SELECT 1 FROM viec_theo_doi WHERE loai = ? AND ref_id = ? AND user_id = ?').get(loai, id, p.userId)) return traKhoi();
-  const ds = tuThemLai ? (chinhMinh ? [p.userId] : []) : tho.map((u) => kiemNguoiNhan(u, v.branchId));
+  const ds = tuThemLai ? (chinhMinh ? [p.userId] : []) : kiemNguoiNhanLo(tho, v.branchId);
   const bo = ds.length ? vuaBo(loai, id, ds, p.userId) : new Map<number, DongBo>();
   if (tuThemLai && !bo.has(p.userId)) throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
   if (!ds.length) throw badRequest('Chọn người theo dõi.');
   tx(() => {
-    for (const uid of ds) {
-      const cu = bo.get(uid);
-      if (!cu) { if (themTheoDoiDong(loai, id, [uid], 'tay', p.userId, v.branchId)) ghiLan(loai, id, 'theo_doi', null, uid, p.userId); continue; }
-      if (db().prepare('INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) VALUES (?,?,?,?,?,?) ON CONFLICT(loai, ref_id, user_id) DO NOTHING')
-        .run(loai, id, uid, cu.nguon, cu.them_boi, cu.luc).changes) ghiLan(loai, id, 'theo_doi', null, uid, p.userId);
-    }
+    /* Rà 25/11 (việc 4): MỘT câu thêm + MỘT câu lịch sử cho cả lô (trước: 2–3 câu mỗi người). Người vừa bỏ trong cửa sổ Hoàn tác về đúng nguồn cũ (`vuaBo`);
+       còn lại `tay`. Người nhận đã kiểm ở trên (`kiemNguoiNhanLo`; tự thêm lại = chính mình có trong `bo`). */
+    const luc = nowIso();
+    const dong = ds.map((uid) => { const cu = bo.get(uid); return cu ? [uid, cu.nguon, cu.them_boi, cu.luc] : [uid, 'tay', p.userId, luc]; });
+    const moi = (db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
+        SELECT ?1, ?2, json_extract(j.value, '$[0]'), json_extract(j.value, '$[1]'), json_extract(j.value, '$[2]'), json_extract(j.value, '$[3]') FROM json_each(?3) j WHERE true
+        ON CONFLICT(loai, ref_id, user_id) DO NOTHING RETURNING user_id`).all(loai, id, JSON.stringify(dong)) as { user_id: number }[])
+      .map((r) => r.user_id);
+    if (moi.length) db().prepare(`INSERT INTO viec_giao_lan (loai, ref_id, truong, cu, moi, boi, luc) SELECT ?1, ?2, 'theo_doi', NULL, CAST(j.value AS TEXT), ?3, ?4 FROM json_each(?5) j`)
+      .run(loai, id, p.userId, luc, JSON.stringify(moi));
     const gds = [...bo.values()].map((x) => x.gd).filter((x): x is number => x != null);
     if (gds.length) db().prepare(`UPDATE ghi_dao SET dao_luc = ?, dao_boi = ? WHERE dao_luc IS NULL AND id IN (${DS_JSON})`).run(nowIso(), p.userId, JSON.stringify(gds));
   });

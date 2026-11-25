@@ -149,11 +149,13 @@ export function suaTinhHinh(p: Principal, id: number, v: { noiDung?: unknown }):
  * Rút (người gửi hoặc QL) khi chưa có kết quả → `rut`, giữ dòng; việc TVV (gv_tvv) "Đã bỏ" lý do hệ thống. Ngay sau gửi (≤ 2 phút, `hoanTac`) → xoá hẳn.
  */
 export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } = {}): { ok: true; xoa: boolean } {
-  const r = load(id);
-  if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Head rút được.');
-  if (r.trang_thai !== 'mo' || coKetQua(r)) throw badRequest('Đã có kết quả — không rút được.');
-  const xoa = !!o.hoanTac && r.nguoi_gui === p.userId && trongHoanTac(r.tao_luc);
-  tx(() => {
+  /* Rà 25/11 (việc 5b): đọc + kiểm "đã có kết quả" TRONG giao dịch (khoá ghi `BEGIN IMMEDIATE`) — TVV / GVCN ghi kết quả xen giữa thì Rút báo lỗi,
+     không bỏ việc đã có kết quả. Cùng một câu đọc như trước (0 câu thêm). */
+  return tx(() => {
+    const r = load(id);
+    if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Head rút được.');
+    if (r.trang_thai !== 'mo' || coKetQua(r)) throw badRequest('Đã có kết quả — không rút được.');
+    const xoa = !!o.hoanTac && r.nguoi_gui === p.userId && trongHoanTac(r.tao_luc);
     if (xoa) {
       if (r.bp_id && db().prepare('DELETE FROM viec_bao_ph WHERE id = ? AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)').run(r.bp_id).changes) donViec('bao_ph', [r.bp_id]);   // GV-1: id dùng lại
       db().prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`tinh-hinh-hoi:${id}`);
@@ -169,8 +171,8 @@ export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } =
     }
     writeAudit({ actorUserId: p.userId, action: xoa ? 'tinh_hinh.hoan_tac' : 'tinh_hinh.rut', entityType: 'tinh_hinh_hoc_tap', entityId: id,
       entityLabel: `${r.student_code} · tình hình học tập`, before: { noiDung: r.noi_dung, trangThai: r.trang_thai } });
+  return { ok: true as const, xoa };
   });
-  return { ok: true, xoa };
 }
 
 /**

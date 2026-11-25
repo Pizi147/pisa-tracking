@@ -78,6 +78,9 @@ export type NguCanhThe = {
 
 export type DinhNghiaLoai = {
   loai: LoaiYeuCau;
+  /** PTA rà #2190 (5d): thẻ là VIỆC CỦA LỚP lúc tạo (GVCN / GV lớp đó giữ) — phạm vi duyệt + hộp theo lớp + chi nhánh LÚC TẠO kể cả khi em đã đổi chi nhánh
+   *  (Rulebook: việc theo lớp nguồn). Không đặt → thẻ của em theo chi nhánh HIỆN TẠI của em (`yeuCau.ts` `cnCuaThe`). */
+  theoLopTao?: true;
   /** Áp quyết định vào bảng nguồn — chạy TRONG tx của hộp. Hàm nguồn tự gọi `chotYeuCau`; không gọi cũng được, hộp chốt sau. */
   khiDuyet?: (p: Principal, yc: YeuCauRow, vao: { ghiChu: string | null; duLieu?: unknown }) => void;
   khiTuChoi?: (p: Principal, yc: YeuCauRow, lyDo: string) => void;
@@ -607,7 +610,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         ],
         neuDuyet: `GVCN ghi "Đã thực hiện" trong 5 ngày · TVV nhận việc báo PH${d.kind === 'meeting_cx' ? ' · CX chi nhánh được báo có họp' : ''}.`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
-        duLieu: { cach },
+        duLieu: { cach, soTep: d.soTep ?? 0 },   // rà 25/11 (7b): hộp Rút nêu đúng số tệp sẽ mất (số đếm sống ở `nap`)
       };
     },
   },
@@ -785,6 +788,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-LT2a · Kế hoạch bổ trợ lớp thường Giữa khoá — PR-CT2: CHỈ ĐỌC LỊCH SỬ (bỏ nộp / duyệt) */
   {
     loai: 'ke_hoach_bo_tro',
+    theoLopTao: true,
     /* PR-CT2 (§8): PA bổ trợ chạy ngay khi Xác nhận Case — thẻ cũ không còn duyệt / từ chối (migrate B đóng `tu_dong`). */
     khiDuyet: () => { throw conflict('Đã bỏ bước duyệt kế hoạch bổ trợ.'); },
     khiTuChoi: () => { throw conflict('Đã bỏ bước duyệt kế hoạch bổ trợ.'); },
@@ -824,6 +828,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-LT2b · Báo QL: Mini Test dưới 70% (M-05, T76, K1-41) — tạo lúc ghi Mini Test, không cần duyệt */
   {
     loai: 'bao_len_mini_test',
+    theoLopTao: true,
     /* Hết ý nghĩa khi Mini Test đã đạt (sửa điểm) hoặc mọi Case của nhóm đã Hoàn thành (QL xử lý xong). */
     chet: {
       /* QTV2-BAND: ngưỡng theo bản tại ngày làm — getter: tính lúc chạy (bản có thể đổi), không lúc nạp mô-đun. */
@@ -851,6 +856,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-LT2b · Báo QL: Cuối khoá dời quá tuần cuối khoá (K4-23 vế 2) — một thẻ mỗi bài */
   {
     loai: 'bao_len_cuoi_khoa',
+    theoLopTao: true,
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = y.doi_tuong_id AND a.status = 'planned')`,
       lyDo: 'Bài đã có điểm đủ hoặc đã huỷ',

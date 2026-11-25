@@ -336,12 +336,12 @@ export function ChipBac({ bac, ten, children }: { bac: number; ten: string; chil
 const LUOI_KHOI = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)]`;
 const LUOI_DONG = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[minmax(0,1fr)_340px_236px]`;
 /** Hồ sơ HV (mockup v20 A4): thêm cột Ngày đầu dòng. */
-const LUOI_DONG_NGAY = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[96px_minmax(0,1fr)_320px_236px]`;
+const LUOI_DONG_NGAY = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[116px_minmax(0,1fr)_320px_236px]`;
 
 /** Đầu cột (khung rộng): không số (chủ SP 12/11). */
 export function DauCotEm({ ph, khongHv = false }: { ph?: ReactNode; /** Hồ sơ HV: cột Ngày thay cột Học viên (cùng lưới `DongLan` có `moc`). */ khongHv?: boolean }) {
   return (
-    <div className={`hidden min-h-[40px] items-center border-b text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid ${khongHv ? '[@container(min-width:1220px)]:grid-cols-[96px_minmax(0,1fr)_320px_236px]' : 'px-3 [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)_340px_236px]'}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+    <div className={`hidden min-h-[40px] items-center border-b text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid ${khongHv ? '[@container(min-width:1220px)]:grid-cols-[116px_minmax(0,1fr)_320px_236px]' : 'px-3 [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)_340px_236px]'}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       <span aria-hidden className="px-4">{khongHv ? t('Ngày') : t('Học viên')}</span>
       <span aria-hidden className="px-4">{t('Vấn đề')}</span>
       <span className="flex items-center gap-1 px-4"><span aria-hidden>{t('Đã xử lý')}</span>{ph}</span>
@@ -390,7 +390,7 @@ export function DongLan({ vp, dx, tiep, nen, duoi, ls = false, homNay, moVp, onM
   return (
     <div className={`border-t border-dashed first:border-t-0 ${nen === 'vua' ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
       <div className={moc !== undefined ? LUOI_DONG_NGAY : LUOI_DONG}>
-        {moc !== undefined && <div className={`${o} pb-0 text-[13px] font-semibold tabular-nums leading-[22px] text-slate-400 [@container(min-width:1220px)]:pb-3`}>{moc ? ngay(moc, homNay) : ''}</div>}
+        {moc !== undefined && <div className={`${o} pb-0 text-[13px] font-semibold tabular-nums leading-[22px] whitespace-nowrap text-slate-400 [@container(min-width:1220px)]:pb-3`}>{moc ? ngay(moc, homNay) : ''}</div>}
         <div className={o}>{the && <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">{the}</div>}{vanDe ?? <DsVp ds={vp} homNay={homNay} moId={moVp} onMo={onMoVp} chiTiet={chiTietVp} />}</div>
         <div className={`${o} ${dx == null ? `hidden [@container(min-width:1220px)]:block` : ''} max-sm:pt-0`}>{nhan(t('Đã xử lý'))}{dx ?? <ODaXuLy />}</div>
         {ls

@@ -2327,9 +2327,9 @@ export const TRAN_GHI_LO = {
   boRutYeuCau: 18, tuThemLaiTheoDoi: 38, loHoanTacCapBac2Em: 33,   // đo 25/11 (seed, ngoài request, sau rà PTA #2166 lần 2): 8 · 28 · 23 câu → max(đo + 10, ⌈đo × 1,3⌉)
   /** RA-2511 (N66): POST /students/:id/y-thuc/khai-bac/hoan-tac — GVCN hoàn tác khai mới một em (cùng lõi lô + một câu tìm lớp em); đo trong prSuaQuyen SQ-5. */
   hoanTacCapBacEm: 22,   // đo 25/11 (seed, ngoài request): 12 câu → max(đo + 10, ⌈đo × 1,3⌉)
-  /** PTA rà #2166: POST …/theo-doi Head thêm 20 người một lần (thêm mới 97 câu · thêm lại 20 người vừa bỏ 99 câu): đọc lịch sử + bản chụp theo LÔ (2 câu);
-   *  còn lại là câu GHI + kiểm người nhận từng người như trước PR. ponytail: ghi theo lô nếu hay thêm nhiều người. */
-  themTheoDoi20: 129,
+  /** PTA rà #2166 → rà 25/11 (việc 4): POST …/theo-doi Head thêm 20 người một lần — kiểm người nhận, thêm, lịch sử mỗi thứ MỘT câu cho cả lô (`json_each`).
+   *  Đo 25/11 (seed, ngoài request): thêm mới 97 → 20 câu · thêm lại 20 người vừa bỏ 99 → 22 câu → max(22 + 10, ⌈22 × 1,3⌉). */
+  themTheoDoi20: 32,
   guiSuaKhai: 30, loGuiSuaKhai4Em: 71,   // đo 24/11 (seed, ngoài request): 20 câu · 61 câu / 4 em (15,3 / em) → đo + 10
   /** LG-12: POST /violations/:id/khong-xu-ly — đọc vi phạm + trạng thái Ý thức em (trước + sau, trong giao dịch) + ghi cột, phản hồi, hạn, lịch sử, nhật ký, tin; đo trong prYt4 LG-12 (3). */
   khongXuLy: 37,   // đo 15/11 (seed, ngoài request — không bộ nhớ request): 27 câu → max(27 + 10, ⌈27 × 1,3⌉)

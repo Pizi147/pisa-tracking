@@ -278,7 +278,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     )}
   </>;
   const nutO = o && <>
-    <button type="button" className={btnChan} onClick={dongO} disabled={busy}>{dong ? t('Huỷ') : o.loai !== 'tuan' && o.loai !== 'rut' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
+    <button type="button" className={btnChan} onClick={dongO} disabled={busy}>{dong || o.loai === 'rut' ? t('Huỷ') : o.loai !== 'tuan' && chu.trim() ? t('Huỷ thay đổi') : t('Đóng')}</button>
     <button type="button" className={`${btnChan} ${o.loai === 'rut' ? 'btn-danger' : 'btn-primary'}`} onClick={guiO} disabled={busy}>
       {busy ? t('Đang gửi…') : o.loai === 'tu-choi' ? t('Gửi từ chối') : o.loai === 'tra-loi' ? t('Gửi trả lời') : o.loai === 'tuan' ? t('Trả lời đề nghị dời')
         : o.loai === 'rut' ? t('Rút đề xuất') : o.loai === 'sua' || o.loai === 'sua-tra-loi' ? t('Lưu') : t('Duyệt')}
@@ -289,7 +289,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const noiO = o && (
     <>
       {o.loai === 'rut' ? (
-        <p className="m-0 text-[13px] text-slate-300">{t('Rút đề xuất này? Vi phạm về chưa xử lý, tệp bằng chứng bị xoá.')}</p>
+        /* Rà 25/11 (7b): nêu đúng đối tượng sẽ mất — lần xử lý (ngày gửi) + số tệp bằng chứng. */
+        <p className="m-0 text-[13px] text-slate-300">{t('Rút đề xuất · mất lần xử lý ngày {ngay} và {n} tệp bằng chứng · vi phạm về chưa xử lý.', { ngay: ngan(yc.taoLuc), n: Number(yc.duLieu?.soTep ?? 0) })}</p>
       ) : suaKtd ? (
         <div className="space-y-1.5">
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Lý do không cần theo dõi')}>

@@ -200,6 +200,9 @@
     font-size: 14px;   /* NHẸ HƠN (chủ SP 22/11): chữ thường 14 (thang 12 · 13 · 14 · 16 · 20 · 26) */
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    /* Rà 25/11 (việc 6): chữ người dùng gõ (≤ 500, N35) có liên kết / từ dài liền mạch → xuống dòng trong khung, không tràn / bị che. `break-word` chỉ ngắt khi một
+       từ dài hơn dòng (chữ thường không đổi) và không đổi bề rộng tối thiểu của bảng. */
+    overflow-wrap: break-word;
   }
   * { border-color: var(--line); }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -314,6 +317,9 @@
     td .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
     /* OV-14b: lưới trong panel việc (Công việc / Tổng quan) rộng hơn panel — cuộn trong khung riêng, đầu panel không trôi ngang theo. */
     .luoi-trong-panel .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
+    /* Rà 25/11 (việc 8): MỌI bảng trong thân panel (`.pn-than`, vd panel "Nhập điểm · n" của hồ sơ lớp) — panel không phải trang: giữ khung cuộn ngang riêng,
+       không để bảng rộng hơn panel tràn rồi bị thẻ `overflow-clip` cắt mất cột cuối (cột S). */
+    .pn-than .bang-dinh { overflow-x: auto; overflow-y: hidden; --th-top: 0px; }
   }
   /* Rà #235 I2: bảng RỘNG HƠN khung ở 1280–1439 px (Tổng hợp 1332–1393 px; lưới Điểm theo lớp 1108 px, khung 950 px) giữ khung cuộn riêng, chỉ dính đầu từ 1440. */
   @media (min-width: 1280px) and (max-width: 1439px) {
@@ -1679,10 +1685,10 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   /* ghi chú: MỘT dòng chữ đọc, bấm để sửa tại chỗ (Enter lưu · Esc huỷ); "+ Ghi chú" ở phần mở */
   .lt-ghi { appearance: none; display: block; max-width: 100%; min-width: 0; margin: -4px -6px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; text-align: left; cursor: text; }
   .lt-ghi:hover { background: var(--surface-2); }
-  .lt-ghi > span { display: block; font-size: 13px; line-height: 1.4; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lt-ghi > span { display: block; font-size: 13px; line-height: 1.4; color: var(--text-dim); white-space: normal; overflow-wrap: anywhere; }   /* rà 25/11 (việc 6): ghi chú ≤ 500 xuống dòng, không cắt "…" */
   .lt-ghi:hover > span { color: var(--text); }
   .lt-ghi-nh { font-weight: 500; color: var(--text-faint); }
-  .lt-ghi-o { height: 34px; font-size: 14px; width: 100%; }
+  .lt-ghi-o { min-height: 34px; font-size: 14px; width: 100%; resize: vertical; line-height: 1.4; }
   .lt-bang tr.lt-h, .lt-the > li:not(.lt-lop) { cursor: pointer; }
   .lt-mo-ct { appearance: none; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid transparent; border-radius: 8px; background: none; color: var(--text-dim); cursor: pointer; }
   .lt-mo-ct:hover { border-color: var(--line-strong); color: var(--text); }
