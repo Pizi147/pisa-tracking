@@ -10,7 +10,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, boVaiBpxl, boVaiCx, can, coQuyenBuocTiepCtx, coVaiCx, editableSkills, isCoreTeacherOf, qlDiem, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, giuOCu, boVaiBpxl, boVaiCx, can, coQuyenBuocTiepCtx, coVaiCx, editableSkills, isCoreTeacherOf, qlDiem, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -834,7 +834,8 @@ export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
 /** Lớp người xem nhập điểm được ít nhất một kỹ năng (`can` SCORE_EDIT — cùng luật `mySkills` sinh ô "mine"), đọc bộ nhớ (`bangLop`, grants), 0 câu. */
 function lopNhapDiemDuoc(p: Principal): number[] {
   const kn = [...new Set([...ENTRY_SKILLS, ...[...allProgrammes().values()].flatMap((x) => x.skills)])];
-  return [...bangLop().keys()].filter((id) => kn.some((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId: id, skill })));
+  /* N71 · Q2: + lớp GV cũ còn bài thi chưa chấm (`giuOCu`) — ô nào của họ do `oCuaToi` quyết. */
+  return [...bangLop().keys()].filter((id) => giuOCu(p, id) || kn.some((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId: id, skill })));
 }
 const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'office_admin'), grants: p.grants.filter((g) => g.roleKey !== 'office_admin') });
 

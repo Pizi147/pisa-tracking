@@ -8,7 +8,10 @@ export async function runPrSuaN71Tests(t: any) {
   console.log('\nSUA-N71 · nợ điểm theo người lúc thi (N71, Q2) · sổ nghĩa vụ cùng bộ lọc (N46)');
   const { scoreDebtCells } = await import('../worklist/scoreDebt.ts');
   const studentsSvc: any = await import('../students/students.ts');
-  const { tinhBai } = await import('../phanTich/soNghiaVu.ts');
+  const { tinhBai, tinhBaiNhieu } = await import('../phanTich/soNghiaVu.ts');
+  const canCham: any = await import('../cham/canCham.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
+  const { mondayOf } = await import('../platform/week.ts');
   const { loadPrincipal, scoreEditPath } = await import('../permissions.ts');
   const { listAttempts } = await import('../fasttrack/attempts.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -106,20 +109,75 @@ export async function runPrSuaN71Tests(t: any) {
     const moi = conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' JOIN classes c ON c.id = ?
         WHERE ur.status = 'active' AND (ur.branch_id = c.branch_id OR ur.branch_id IS NULL) AND ur.user_id != ? ORDER BY ur.user_id LIMIT 1`).get(o.class_id, o.gv) as any;
     assert(moi, 'seed: cần GV khác cùng chi nhánh');
-    thu('n71f', () => {
+    /* Một lượt khác của lớp có ô L thi TỪ ngày đổi (tuần này) — của GV mới. */
+    const sau = conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id AND k.skill = 'listening' AND k.required = 1
+        JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+       WHERE a.class_id = ? AND a.id != ? AND a.status = 'planned' AND a.lich_su = 0
+         AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'listening' AND sc.band IS NOT NULL) ORDER BY a.id LIMIT 1`).get(o.class_id, o.id) as any;
+    assert(sau, 'seed: cần lượt thứ hai có ô L chưa chấm');
+    const doiGv = () => {
       conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(TODAY, o.ta_id);
       conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, ?, 'active', ?)`)
         .run(moi.id, o.class_id, TODAY, new Date().toISOString());
+      conn.prepare(`UPDATE attempt_skills SET planned_period_id = (SELECT id FROM report_periods WHERE week_start = ?), sit_status = 'scheduled' WHERE attempt_id = ? AND skill = 'listening'`)
+        .run(mondayOf(TODAY), sau.id);
+      capNhatConOCho([sau.id]);
       xoaNho();
+    };
+    const oL = (gv: number) => scoreDebtCells(P.admin, TODAY, null, [o.class_id]).filter((c: any) => c.skill === 'listening' && c.userId === gv);
+    thu('n71f', () => {
+      doiGv();
       const cu = loadPrincipal(o.gv), gvMoi = loadPrincipal(moi.id);
       const nguoi = coNo(o.id, o.class_id).find((c: any) => c.skill === 'listening')?.userId;
       assert(nguoi === o.gv, `nợ điểm: người giữ ô ${nguoi} (phải GV cũ ${o.gv})`);
-      assert(scoreEditPath(cu, o.class_id, 'listening', { lich_su: 0, kind: 'mock' }) !== null, 'GV cũ phải nhập được ô đã thi');
+      assert(coNo(sau.id, o.class_id).find((c: any) => c.skill === 'listening')?.userId === moi.id, 'ô thi từ ngày đổi: của GV mới');
+      /* P1-3: quyền nhập theo đúng ô — GV cũ ô cũ được, ô mới (của GV mới) không; GV mới ô mới được. */
+      assert(scoreEditPath(cu, o.class_id, 'listening', { lich_su: 0, kind: 'mock', id: o.id }) === 'assigned', 'GV cũ phải nhập được ô đã thi');
+      assert(scoreEditPath(cu, o.class_id, 'listening', { lich_su: 0, kind: 'mock', id: sau.id }) === null, 'GV cũ KHÔNG nhập được ô thi sau ngày đổi (của GV mới)');
+      assert(scoreEditPath(cu, o.class_id, 'listening') === null, 'không nêu ô → GV cũ không có quyền cả môn');
+      assert(scoreEditPath(gvMoi, o.class_id, 'listening', { lich_su: 0, kind: 'mock', id: sau.id }) === 'assigned', 'GV mới nhập được ô mới');
+      /* Chiều ngược: mọi ô nợ của GV cũ → GV cũ nhập được. */
+      for (const c of oL(o.gv)) assert(scoreEditPath(cu, o.class_id, c.skill, { lich_su: 0, kind: 'mock', id: c.attemptId }) !== null, `ô ${c.attemptId} của GV cũ mà không nhập được`);
       const cuaCu = listAttempts(cu, { classIds: [o.class_id], chiDangHoc: true, chiConO: true }).rows.find((r: any) => r.id === o.id);
       assert(cuaCu?.myPendingDetail?.some((x: any) => x.skill === 'listening'), 'Công việc GV cũ: thiếu ô L đã thi');
       const cuaMoi = listAttempts(gvMoi, { classIds: [o.class_id], chiDangHoc: true, chiConO: true }).rows.find((r: any) => r.id === o.id);
       assert(!cuaMoi?.myPendingDetail?.some((x: any) => x.skill === 'listening'), 'GV mới không nhận ô thi trước ngày đổi');
+      const cuSau = listAttempts(cu, { classIds: [o.class_id], chiDangHoc: true, chiConO: true }).rows.find((r: any) => r.id === sau.id);
+      assert(!cuSau?.myPendingDetail?.some((x: any) => x.skill === 'listening'), 'GV cũ không thấy ô thi sau ngày đổi là "của tôi"');
+      /* P1-2: một số liệu một hàm — Công việc · nợ điểm · Lịch Test (tuần của ô) · sổ nghĩa vụ cùng số ô của từng GV ở lớp (mọi môn của người đó). */
+      for (const [ten, pp] of [['GV cũ', cu], ['GV mới', gvMoi]] as const) {
+        xoaNho();
+        const no = scoreDebtCells(P.admin, TODAY, null, [o.class_id]).filter((c: any) => c.userId === pp.userId);
+        const cv = listAttempts(pp, { classIds: [o.class_id], chiDangHoc: true, chiConO: true }).rows
+          .reduce((s: number, r: any) => s + (r.myPendingDetail ?? []).length, 0);
+        assert(cv === no.length, `${ten}: Công việc ${cv} ≠ nợ điểm ${no.length}`);
+        const so = [...tinhBaiNhieu(conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id = ?`).all(o.class_id).map((r: any) => r.id)).values()].flat()
+          .filter((d: any) => d.nguoi === pp.userId && !d.xongLuc && !d.khongTinh && d.tuan <= TODAY);
+        assert(so.length === no.length, `${ten}: sổ ${so.length} ≠ nợ điểm ${no.length}`);
+        /* Badge "n bài chờ chấm" của lớp ở danh sách lớp (GV: phạm vi "của tôi"). GV cũ không còn dạy lớp: lớp không ở danh sách của họ. */
+        const badge = (classesSvc.listClassSummaries(pp).rows as any[]).find((r) => r.id === o.class_id);
+        if (badge || pp === gvMoi) assert(badge?.needScores === no.length, `${ten}: badge lớp ${badge?.needScores} ≠ nợ điểm ${no.length}`);
+        const tuanO = conn.prepare(`SELECT kp.id, kp.week_start FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = 'listening'`)
+          .get(pp === cu ? o.id : sau.id) as any;
+        const lt = canCham.lichTest(pp, tuanO.id, null, TODAY, { phamVi: 'tat-ca' }).lop.find((l: any) => l.classId === o.class_id);
+        const noTuan = no.filter((c: any) => conn.prepare(`SELECT 1 FROM attempt_skills k WHERE k.attempt_id = ? AND k.skill = ? AND k.planned_period_id = ?`)
+          .get(c.attemptId, /^writing/.test(c.skill) ? 'writing' : c.skill, tuanO.id)).length;
+        assert((lt?.conBaiCuaToi ?? 0) === noTuan, `${ten}: Lịch Test tuần ${tuanO.week_start} của tôi ${lt?.conBaiCuaToi} ≠ nợ điểm tuần đó ${noTuan}`);
+      }
     });
+    /* P1-1 (N69): GV cũ bị xoá tài khoản / hết vai ở chi nhánh (đổi GV vì nghỉ) → không giữ bài: ô về GV đang hiệu lực. */
+    for (const [ten, nghi] of [['xoá tài khoản', `UPDATE users SET status = 'deleted' WHERE id = ?`], ['hết vai ở chi nhánh', `UPDATE user_roles SET status = 'inactive' WHERE user_id = ?`]] as const) {
+      thu('n71j', () => {
+        doiGv();
+        conn.prepare(nghi).run(o.gv);
+        xoaNho();
+        const nguoi = coNo(o.id, o.class_id).find((c: any) => c.skill === 'listening')?.userId;
+        assert(nguoi === moi.id, `${ten}: ô cũ phải về GV đang hiệu lực ${moi.id} (được ${nguoi})`);
+        assert(!(loadPrincipal(o.gv).phanCongCu ?? []).length, `${ten}: GV đã nghỉ còn phanCongCu`);
+        const so = tinhBai(o.id).find((d: any) => d.kieu === 'listening');
+        assert(so?.nguoi === moi.id, `${ten}: sổ ô chưa xong phải của GV đang hiệu lực (được ${so?.nguoi})`);
+      });
+    }
   });
 
   check('⑤ MT0 lớp thường: ô W1 / W2 thuộc GV Writing của lớp (phân công `writing`), không "Chưa phân công"', () => {

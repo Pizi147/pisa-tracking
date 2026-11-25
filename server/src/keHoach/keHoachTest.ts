@@ -733,7 +733,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
       throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng hoặc kỹ năng đã huỷ thì chọn tuần mới (Dời).`);
     }
     /* BPXL-1 (N57, PTA rà #1923): thi lại huỷ điểm đã có — chặn TRƯỚC giao dịch người không sửa được điểm (BPXL), không 403 giữa chừng. */
-    if (entrySkillsOf(k as any).some((e) => !scoreEditPath(p, a.class_id, e, { lich_su: 0, kind: a.kind }))) throw forbidden(THI_LAI_MSG);
+    if (entrySkillsOf(k as any).some((e) => !scoreEditPath(p, a.class_id, e, { lich_su: 0, kind: a.kind, id: a.id }))) throw forbidden(THI_LAI_MSG);
   }
   return tx(() => {
     for (const k of i.skills.map(chonKyNang)) {

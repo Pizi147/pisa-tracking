@@ -12,11 +12,13 @@ export const dongHocVien = (id: number): any => nho(`hv:${id}`, () => db().prepa
 export const HV_DANG_HOC_SQL = (s: string) => `${s}.status = 'active' AND ${s}.archived_at IS NULL`;
 /**
  * N71 (rà 25/11): em NGỪNG HỌC (Tạm dừng / Kết thúc học — cả hai vào Lưu trữ, `archived_at` = ngày dừng) vẫn nợ ô thi TRƯỚC ngày dừng tới khi chấm xong
- * (việc của GV lớp lúc thi — như `LOP_CON_VIEC_SQL`). `tuan` = biểu thức tuần thi (lượt: `o_cho_tu` — sớm nhất của các ô chờ). Ô thi từ ngày dừng: không nợ.
- * `kemTamDung`: thêm em Tạm dừng chưa lưu trữ (bảng điểm lớp — như `LUOT_HIEN_TAI_SQL`).
+ * (việc của GV lớp lúc thi). `tuan` = biểu thức tuần thi (lượt: `o_cho_tu` — sớm nhất của các ô chờ). CÙNG dấu `<` với `LOP_CON_VIEC_SQL` (tuần thi TRƯỚC
+ * ngày dừng / ngày lớp kết thúc: còn việc; dừng đúng thứ Hai tuần thi: em không thi tuần đó); ô thi từ ngày dừng: không nợ. `kemTamDung`: thêm em Tạm dừng
+ * chưa lưu trữ (bảng điểm lớp — như `LUOT_HIEN_TAI_SQL`).
  */
+const EM_DANG_HOC_SQL = (s: string, kemTamDung: boolean) => `${HV_DANG_HOC_SQL(s)}${kemTamDung ? ` OR (${s}.status = 'inactive' AND ${s}.archived_at IS NULL)` : ''}`;
 export const HV_CON_NO_SQL = (s: string, tuan: string, kemTamDung = false) =>
-  `(${HV_DANG_HOC_SQL(s)}${kemTamDung ? ` OR (${s}.status = 'inactive' AND ${s}.archived_at IS NULL)` : ''} OR NULLIF(${tuan}, '') < substr(${s}.archived_at, 1, 10))`;
+  `(${EM_DANG_HOC_SQL(s, kemTamDung)} OR NULLIF(${tuan}, '') < substr(${s}.archived_at, 1, 10))`;
 /** Phần NGÀY DỪNG của `HV_CON_NO_SQL` cho MỘT ô có tuần thi `tuan` — lọc từng ô sau câu SQL (lượt còn ô chờ trước ngày dừng có thể còn ô thi sau ngày dừng).
  *  Em chưa lưu trữ: không lọc (câu SQL của nơi gọi đã chọn em). */
 export const oConNoKhiDung = (archivedAt: string | null | undefined, tuan: string | null | undefined): boolean =>
@@ -29,10 +31,11 @@ export const oConNoKhiDung = (archivedAt: string | null | undefined, tuan: strin
  *   · lượt thuộc lộ trình MỚI NHẤT của em CÙNG LOẠI (học lại = mọi thứ reset; FT `route` có giá trị và khoá lớp thường `route IS NULL` chạy song song được);
  *   · lượt còn là kế hoạch (`LUOT_CON_KE_HOACH_SQL`: MT chưa làm của lộ trình đã có kết quả thi thật không còn).
  * Lượt cũ, em ngừng học chỉ còn ở hồ sơ HV, Lưu trữ, Báo cáo — không xoá / huỷ gì; quay lại học là hiện lại.
- * `a` bí danh `assessment_attempts`, `s` bí danh `students` (cùng em).
+ * `a` bí danh `assessment_attempts`, `s` bí danh `students` (cùng em). `chiDangHoc`: nơi KHÔNG phải việc (số thi tuần này, MT sắp tới, MT kế tiếp của lớp,
+ * Progress ở Cuối khoá, bài chưa làm lúc bàn giao) — bỏ ngoại lệ N71, em đã dừng không vào.
  */
-export const LUOT_HIEN_TAI_SQL = (a: string, s: string, kemTamDung = false) =>
-  `${HV_CON_NO_SQL(s, `${a}.o_cho_tu`, kemTamDung)} AND ${LUOT_LO_TRINH_CUOI_SQL(a)} AND ${LUOT_CON_KE_HOACH_SQL(a)}`;
+export const LUOT_HIEN_TAI_SQL = (a: string, s: string, kemTamDung = false, chiDangHoc = false) =>
+  `${chiDangHoc ? `(${EM_DANG_HOC_SQL(s, kemTamDung)})` : HV_CON_NO_SQL(s, `${a}.o_cho_tu`, kemTamDung)} AND ${LUOT_LO_TRINH_CUOI_SQL(a)} AND ${LUOT_CON_KE_HOACH_SQL(a)}`;
 /** Phần "lộ trình mới nhất" của `LUOT_HIEN_TAI_SQL` — cho câu đã lọc em đang học bằng ghi danh (LEFT JOIN lượt, không có `students`).
  *  Lượt bị thay khi em có lộ trình `seq` lớn hơn CÙNG LOẠI (FT / lớp thường — em học FT vẫn có thể có khoá lớp thường mở song song, `regular.ts`).
  *  LOP-CU (chủ SP 11/11): lượt khoá LỚP THƯỜNG cũ còn ô chờ điểm từ trước ngày khoá mới bắt đầu (`o_cho_tu` ≤ `started_at`) KHÔNG bị thay — Final /
@@ -44,10 +47,10 @@ export const LUOT_LO_TRINH_CUOI_SQL = (a: string, chat = false) =>
      AND (cyo.route IS NOT NULL OR ${a}.o_cho_tu IS NULL OR ${a}.o_cho_tu > cyn.started_at)`})`;
 /**
  * LOP-CU (chủ SP 11/11): lớp của lượt còn sinh việc nhập điểm — lớp đang học, HOẶC lớp đã kết thúc (em cuối chuyển đi) mà lượt còn ô chờ điểm từ
- * trước ngày kết thúc (`o_cho_tu` ≤ `finished_at`): việc thuộc GV lớp lúc thi tới khi nhập xong. Lượt xếp sau ngày kết thúc, lượt huỷ, ô "-"
- * (lọc ở `skillCells`) không kéo lại. `a` bí danh `assessment_attempts`, `c` bí danh `classes` của lượt.
+ * trước ngày kết thúc (`o_cho_tu` < ngày `finished_at` — N71: cùng dấu với `HV_CON_NO_SQL`; bản chép 25/11: 0 lượt đúng bằng ngày): việc thuộc GV lớp lúc thi
+ * tới khi nhập xong. Lượt xếp từ ngày kết thúc, lượt huỷ, ô "-" (lọc ở `skillCells`) không kéo lại. `a` bí danh `assessment_attempts`, `c` bí danh `classes` của lượt.
  */
-export const LOP_CON_VIEC_SQL = (a: string, c: string) => `(${c}.status = 'active' OR ${a}.o_cho_tu <= ${c}.finished_at)`;
+export const LOP_CON_VIEC_SQL = (a: string, c: string) => `(${c}.status = 'active' OR ${a}.o_cho_tu < substr(${c}.finished_at, 1, 10))`;
 /** Lộ trình FT có kết quả thi thật: đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay) — MỘT điều kiện với Bước tiếp
  *  (`loTrinh/buocTiep.ts` `CO_KET_QUA`, `coKetQuaThi`). `c` bí danh `learning_cycles`. */
 export const CO_KET_QUA_THI_SQL = (c: string) => `(${c}.thi_that_khong_thi = 1 OR (${c}.thi_that_l IS NOT NULL AND ${c}.thi_that_r IS NOT NULL AND ${c}.thi_that_w IS NOT NULL AND ${c}.thi_that_s IS NOT NULL)

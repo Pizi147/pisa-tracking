@@ -18,7 +18,7 @@ import {
 import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
-import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
@@ -305,11 +305,12 @@ export function noQuaHan(
   };
   /* Môn NHẬP của người xem ở lớp (W1, W2 phân công riêng) — hỏi một lần mỗi lớp + môn; S Mock chấm chéo không là của ai (T18). */
   const cuaToiNho = new Map<string, boolean>();
-  const cuaToi = (classId: number, kind: string, nhap: string) => {
+  /* N71 · Q2: ô đã thi là việc của người lúc thi (`oCuaToi`) — cùng Công việc, badge lớp, Lịch Test tuần. */
+  const cuaToi = (classId: number, kind: string, nhap: string, tuan: string | null) => {
     if (laChamCheo(kind, nhap)) return false;
     const k = `${classId}:${nhap}`;
     if (!cuaToiNho.has(k)) cuaToiNho.set(k, mySkills(p, classId, [nhap]).length > 0);
-    return cuaToiNho.get(k)!;
+    return oCuaToi(p, classId, nhap, tuan, today, cuaToiNho.get(k)!);
   };
   type Doi = {
     key: string; skill: string; hv: string; attemptId: number; moved: MonDoiLich;
@@ -351,10 +352,11 @@ export function noQuaHan(
       cu._aid.add(a.id);
       const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
       if (gv) cu._gv.add(gv); else cu._chuaPc = true;
-      cu._gvMon.push({ ten: gv ?? 'chưa phân công', kn: x.skill, toi: cuaToi(a.classId, a.kind, x.skill) });
+      const toi = cuaToi(a.classId, a.kind, x.skill, x.weekStart);
+      cu._gvMon.push({ ten: gv ?? 'chưa phân công', kn: x.skill, toi });
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
       if (x.overdue) cu.quaHan = true;
-      if (cuaToi(a.classId, a.kind, x.skill)) {
+      if (toi) {
         cu._toiKn.add(x.skill); cu._toiCon += 1;
         if (x.overdue) cu._toiQuaHan = true;
       } else {
@@ -393,7 +395,7 @@ export function noQuaHan(
       gvMon: gomGvMon(_gvMon.filter((x) => !phanRieng || !x.toi)),
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
-      cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,
+      cuaToi: _toiKn.size > 0,   // N71 · Q2: theo từng ô (`cuaToi` trên) — không theo phân công hôm nay
       /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
       coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
@@ -609,7 +611,7 @@ function hangLopTuan(
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
-              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task
+              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task, s.archived_at AS hv_archived
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
          JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: cùng tập khối Nợ / badge
@@ -662,6 +664,8 @@ function hangLopTuan(
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
+    /* N71: em ngừng học — tuần thi sau ngày dừng không còn "còn chờ" (cùng `scoreDebt.ts`). */
+    if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start))) continue;
     if (!giuLop(r.class_id)) continue;
     /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */
     const mt0 = r.kind === 'mt0';

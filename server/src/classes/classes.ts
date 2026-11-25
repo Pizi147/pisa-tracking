@@ -27,7 +27,8 @@ import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
 import { coNho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { ghiDanhLop } from '../yThuc/trangThai.ts';
-import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { oCuaToi } from '../worklist/scoreDebt.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { luuPhanCong } from './phanCongGv.ts';
@@ -209,7 +210,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind, a.bo_mon,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
               a.deadline_override, a.target_at_attempt, a.kck_at_attempt, a.attempt_no, a.lich_su, a.created_at,
               COALESCE(a.route_at_attempt, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id)) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
-              pr.week_start AS period_start, pr.week_end AS period_end
+              pr.week_start AS period_start, pr.week_end AS period_end, s.archived_at AS hv_archived
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: badge cùng tập Nợ điểm
          JOIN classes c ON c.id = a.class_id
@@ -260,10 +261,12 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
         const v = views.get(k);
         return {
           skill: k,
-          required: !!v,
+          /* N71: em ngừng học — ô thi sau ngày dừng không còn chờ (cùng `scoreDebt.ts`). */
+          required: !!v && oConNoKhiDung(a.hv_archived, v.weekStart),
           scored: row?.raw_score !== null && row?.raw_score !== undefined,
           progress: v?.progress ?? 'upcoming',
-          mine: mineSkills.includes(k),
+          /* N71 · Q2: ô đã thi là việc của người lúc thi (`oCuaToi`) — cùng Công việc. */
+          mine: oCuaToi(p, a.class_id, k, v?.weekStart, today, mineSkills.includes(k)),
         };
       });
       /*
@@ -277,7 +280,8 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     }
 
     /* Không truyền `hoanTat` (R11) có chủ ý: chỉ đếm ô chưa có điểm theo band/noShow/mine, không đọc canEdit/khoa — đỡ 3 câu SQL. */
-    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), undefined, undefined, true);
+    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), undefined, undefined, true)
+      .map((c) => (!c.required || oConNoKhiDung(a.hv_archived, c.weekStart) ? c : { ...c, required: false, mine: false }));   // N71: như `listAttempts`
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     if (pending.length) bump(needScores, a.class_id, pending.length);
   }

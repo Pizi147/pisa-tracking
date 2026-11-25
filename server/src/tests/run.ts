@@ -3188,13 +3188,9 @@ check('Bỏ phân công thì mất luôn quyền nhập điểm kỹ năng đó'
     ],
   });
   const after = loadPrincipal(slot!.userId);
-  /* N71 · Q2 (chủ SP 25/11): bài ĐÃ THI trước ngày bỏ mà chưa chấm vẫn là việc + quyền nhập của GV cũ (`phanCongCu`) — hết bài đó thì mất quyền. */
-  assert(!can({ ...after, phanCongCu: [] }, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }),
-    'Bỏ phân công rồi (không còn bài đã thi chưa chấm) mà vẫn nhập được điểm kỹ năng đó');
-  const conBaiCu = !!conn.prepare(`SELECT 1 FROM assessment_attempts WHERE class_id = ? AND status != 'cancelled' AND o_cho_tu IS NOT NULL AND o_cho_tu != '' AND o_cho_tu < ?`)
-    .get(mbClass, demoToday());
-  assert(can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }) === conBaiCu,
-    `Q2: còn bài đã thi chưa chấm (${conBaiCu}) ⇔ GV cũ còn quyền nhập`);
+  /* N71 · Q2 (chủ SP 25/11): GV cũ chỉ còn quyền nhập Ô mình giữ lúc thi (ngữ cảnh nêu ô — `prSuaN71` ④), không còn quyền cả môn. */
+  assert(!can(after, PERMISSIONS.SCORE_EDIT, { classId: mbClass, skill: slot!.skill }),
+    'Bỏ phân công rồi mà vẫn nhập được điểm kỹ năng đó');
 });
 
 check('GVCN phải dạy ít nhất MỘT kỹ năng ở lớp mình chủ nhiệm', () => {

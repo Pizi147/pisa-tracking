@@ -10,6 +10,7 @@ import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { mocTreNhapDiem } from '../platform/week.ts';
 import { LOP_CON_VIEC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_LO_TRINH_CUOI_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { nguoiGiuO } from '../worklist/scoreDebt.ts';
 import { layMoc, trongBoNho } from '../platform/nguCanhRequest.ts';
 import type { MocHeThong } from '../platform/mocHeThong.ts';
 import type { Principal } from '../permissions.ts';
@@ -89,6 +90,7 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
     (pc.get(k) ?? pc.set(k, []).get(k)!).push({ id: a.id, gv: a.user_id, tu: a.effective_from, den: a.effective_to ?? null });
   }
   const tamDung = khoangTamDung(sids);
+  const giu = nguoiGiuO(lopCo, today);
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
@@ -124,6 +126,9 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
           nguoi = ks.map((k) => nguoiPcSau(pc.get(`${l}|${k}`) ?? [], tuan)).find((g) => g != null) ?? null;
           pcNhapSau = nguoi != null;
         }
+        /* N71 (P2-5): ô CHƯA xong là việc đang mở — đúng người Công việc giao (`nguoiGiuO`: người lúc thi còn dạy ở chi nhánh, không có thì người đang
+           hiệu lực / chưa có người). Ô đã xong giữ người theo lịch sử phân công ở trên. */
+        if (!xongLuc && tuan <= today) nguoi = giu(l, x.skill, tuan)?.userId ?? null;
       }
       const khongTinh = a.status === 'cancelled' ? 'huy'
         : KHONG_TINH_TIEN_DO[x.progress] ?? (x.noShow ? 'dau-tru'
