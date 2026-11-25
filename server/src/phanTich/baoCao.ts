@@ -183,7 +183,7 @@ function thiThangNayTheoPhamVi(cs: { sql: string; params: unknown[] }, f: { bran
 }
 
 /** PANEL-MC: `diem` — dòng điểm của CHÍNH lượt / lần thi làm em vào ô (MT: `diemTuMock`; thi thật: bốn band so Target), 0 câu. */
-type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string; diem: DiemHv; /** PT-PANEL: lượt MT của ô (hàng Thi: không). */ attemptId?: number };
+type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; /** Rà 25/11 PR 2: id lớp của dòng — Tổng quan chia chi nhánh theo id, không theo mã. */ lopId: number | null; nhan: string; diem: DiemHv; /** PT-PANEL: lượt MT của ô (hàng Thi: không). */ attemptId?: number };
 
 /**
  * KẾT QUẢ MT (SV-SO3, `10` mục 5) — hàng → em → kết quả. MT: lượt MT0 (lớp thường hoặc FT) / MT lớp FT có tuần thi trong kỳ, đã có ít nhất một band
@@ -231,7 +231,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     out.set(l, new Map([...m].map(([s, d]) => {
       const tg = cua.get(d.attemptId)!.target_at_attempt;
       const target = tg === null || tg === undefined ? null : Number(tg);
-      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}`, diem: diemTuMock(d), attemptId: d.attemptId }];
+      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, lopId: d.classId ?? null, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}`, diem: diemTuMock(d), attemptId: d.attemptId }];
     })));
   }
   out.set('thi', new Map([...thi].map(([s, r]) => {
@@ -245,7 +245,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
       luot: t('Thi thật'), tuan: r.ngayThi, tam: false, overall: r.ovr, soVoi: target === null ? null : { nhan: 'Target', v: target },
       kn: ([['L', r.l], ['R', r.r], ['W', r.w], ['S', r.s]] as const).map(([k, v]) => ({ k, v, dat: v === null || target === null ? null : v >= target })),
     };
-    return [s, { cot, ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', nhan: t('thi {ngay}', { ngay }), diem }];
+    return [s, { cot, ovr: r.ovr, target, truoc: r.ovr === null ? null : truoc(r.cycleId, Infinity), lop: r.lop ?? '', lopId: r.classId ?? null, nhan: t('thi {ngay}', { ngay }), diem }];
   })));
   return out;
 }

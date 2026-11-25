@@ -113,7 +113,7 @@ export type YThucHocVien = {
 export type TinhHinhView = {
   id: number; studentId: number; chieu: 'gv_tvv' | 'tvv_gvcn'; noiDung: string;
   nguoiGuiId: number; nguoiGui: string | null; taoLuc: string; suaLuc: string | null;
-  han: string | null; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut';
+  han: string | null; quaHan: boolean; /** `bo`: TVV bỏ việc — đã khép, không phải xong. */ trangThai: 'mo' | 'xong' | 'rut' | 'bo';
   traLoi: string | null; traLoiBoi: string | null; traLoiLuc: string | null;
   baoPh: { id: number; trangThai: 'mo' | 'xong' | 'bo'; tvv: string | null; lan: { ketQua: string; ngay: string; noiDung: string | null } | null; coTheGhi: boolean } | null;
   coTheSua: boolean; coTheTraLoi: boolean; hoanTacDuoc: boolean;

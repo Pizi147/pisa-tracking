@@ -9564,6 +9564,9 @@ await runPrHangMucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, 
 // AUDIT-2111 gói 7 SO-LIEU-4 (N63): số liệu cùng nguồn
 const { runPrSoLieu4Tests } = bocTep('prSoLieu4', await import('./prSoLieu4.tests.ts'));
 await runPrSoLieu4Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// Rà 25/11 PR 2 sua-so-lieu: một số liệu một nguồn (chip / cột Việc, hạn + ngày Báo PH, tab Ý thức, Họp tuần, Tổng quan chi nhánh, Chọn bước tiếp)
+const { runPrSoLieu2511Tests } = bocTep('prSoLieu2511', await import('./prSoLieu2511.tests.ts'));
+await runPrSoLieu2511Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtDeXuatTests } = bocTep('prYtDeXuat', await import('./prYtDeXuat.tests.ts'));
 await runPrYtDeXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)

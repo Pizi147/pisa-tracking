@@ -186,8 +186,8 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     for (const r of conn.prepare(
       `SELECT m.id, COALESCE(m.performer_name, pu.full_name) AS nguoi,
               (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep,
-              b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = b.id AND b.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, b.tra_lai_id AS bp_cho, m.student_id, s.consultant_user_id,
-              (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id AND l.ket_qua = 'da_bao') AS bp_ngay,
+              b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = b.id AND b.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, b.tra_lai_id AS bp_cho, b.phu_trach_id AS bp_pt, b.giao_boi AS bp_gb, m.student_id, s.consultant_user_id,
+              (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id AND l.ket_qua = 'da_bao') AS bp_ngay,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id) AS bp_so,
               (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
          FROM discipline_measures m LEFT JOIN users pu ON pu.id = m.performed_by LEFT JOIN viec_bao_ph b ON b.measure_id = m.id
@@ -199,8 +199,8 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
   for (let i = 0; i < thIds.length; i += 400) {
     const lo = thIds.slice(i, i + 400);
     for (const r of conn.prepare(
-      `SELECT v.bao_lai_cua AS id, v.id AS bp_id, v.trang_thai AS bp_tt, v.han AS bp_han, v.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, v.tra_lai_id AS bp_cho, v.student_id, s.consultant_user_id,
-              (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS bp_ngay,
+      `SELECT v.bao_lai_cua AS id, v.id AS bp_id, v.trang_thai AS bp_tt, v.han AS bp_han, v.han_chon AS bp_han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS bp_han_lan, v.tra_lai_id AS bp_cho, v.phu_trach_id AS bp_pt, v.giao_boi AS bp_gb, v.student_id, s.consultant_user_id,
+              (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS bp_ngay,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS bp_so,
               (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.bao_lai_cua IN (${lo.map(() => '?').join(',')}) ORDER BY v.id`,
@@ -214,8 +214,9 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
     phu.get(r.id)![r.laBaoLai ? 'baoLai' : 'baoPh'] = {
       id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && quaHanBaoPh(han, homNay, r.bp_cho), daChinh: r.bp_han_chon != null && r.bp_han_lan !== 2,   /* TL-2: hạn máy tính lại (mac_dinh 2) không là "đã chỉnh" */ ...(r.bp_cho ? { choGvSua: true as const } : {}),
-      coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
-      coTheSuaHan: r.bp_tt === 'mo' && !!o.p && coTheSuaHan(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
+      /* Rà 25/11 PR 2 (N58, N64): người được giao / người giao có nút như ở Công việc — đọc `phu_trach_id`, `giao_boi` cùng câu. */
+      coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id, phu_trach_id: r.bp_pt }),
+      coTheSuaHan: r.bp_tt === 'mo' && !!o.p && coTheSuaHan(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id, phu_trach_id: r.bp_pt, giao_boi: r.bp_gb }),
       soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
     };
   }
@@ -253,7 +254,8 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     }
   }
   const nhom = Object.fromEntries(NHOM_EM.map((k) => [k, [] as DongEm[]])) as Record<NhomEm, DongEm[]>;
-  const baoPh = baoPhMoiNhat(p, ids, homNay);
+  const giaoCho = new Map<number, number>();   // em → người được giao việc Báo PH đang mở (N58)
+  const baoPh = baoPhMoiNhat(p, ids, homNay, giaoCho);
   const choBaoPh: DongEm[] = [];
   const choThuHoi: DongEm[] = [];
   const dongCuaEm = new Map<number, DongEm>();
@@ -261,7 +263,8 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   /* G3-14: người GIỮ việc Báo PH của em (như Công việc): TVV của em; em chưa có TVV → QL trong phạm vi. */
   const coTheDuyet = duyetYThuc(p, { classId });   // N52: CX duyệt Ý thức như Head
   const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null,
-    giuBaoPh: info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
+    /* Rà 25/11 PR 2 (N58): việc đã giao → người được giao giữ (TVV đã giao đi không còn "của tôi"), như Công việc. */
+    giuBaoPh: giaoCho.has(id) ? giaoCho.get(id) === p.userId : info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
   danhDauDangXinThuHoi(tatCa);
   for (const dong of tatCa) {
     const em = trang.get(dong.studentId)!;
@@ -334,23 +337,25 @@ export function hangCuaEm(p: Principal, em: EmYThuc, ten: string, maHv: string, 
   return hang;
 }
 
-/** Việc Báo PH MỚI NHẤT của mỗi em (một câu cho cả lớp) — hạn hiệu lực trừ ngày tạm dừng như panel TVV. */
-function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map<number, NonNullable<DongEm['baoPh']>> {
+/** Việc Báo PH của mỗi em (một câu cho cả lớp): việc còn MỞ cũ nhất (gấp nhất), không còn việc mở thì việc mới nhất — rà 25/11 PR 2: trước lấy MAX(id), việc cũ còn mở bị giấu.
+ *  Hạn hiệu lực trừ ngày tạm dừng như panel TVV. */
+function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string, giaoCho?: Map<number, number>): Map<number, NonNullable<DongEm['baoPh']>> {
   const out = new Map<number, NonNullable<DongEm['baoPh']>>();
   const khoang = khoangTamDung(ids);
   theoLo(ids, (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT v.id, v.student_id, v.nhan, v.han, v.han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS han_lan, v.trang_thai, v.tra_lai_id, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
+      `SELECT v.id, v.student_id, v.nhan, v.han, v.han_chon, (SELECT h.mac_dinh FROM viec_han_lan h WHERE h.loai = 'bao_ph' AND h.viec_id = v.id AND v.han_chon IS NOT NULL ORDER BY h.id DESC LIMIT 1) AS han_lan, v.trang_thai, v.tra_lai_id, v.phu_trach_id, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-              (SELECT l.ngay FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.id DESC LIMIT 1) AS ngay_xong
+              (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay_xong   -- rà 25/11 PR 2: lần "đã báo" ĐẦU như sổ đúng hạn
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
-        WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
+        WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
+      if (r.trang_thai === 'mo' && r.phu_trach_id != null) giaoCho?.set(r.student_id, r.phu_trach_id);
       out.set(r.student_id, {
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
         nhanTrangThai: r.trang_thai === 'mo' && r.tra_lai_id ? CHO_GV_SUA : nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && quaHanBaoPh(han, homNay, r.tra_lai_id), ngayXong: r.ngay_xong ?? null,
-        coTheGhi: r.trang_thai === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
+        coTheGhi: r.trang_thai === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id, phu_trach_id: r.phu_trach_id }),
         daChinh: r.han_chon != null && r.han_lan !== 2,
       });
     }

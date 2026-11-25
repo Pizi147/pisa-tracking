@@ -390,8 +390,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
         && hangHv.xuLyGanNhat === hangLop.xuLyGanNhat, `tab HV khác tab lớp: ${JSON.stringify(hangHv)}`);
     }
     assert(xuLyHv.yThucHocVien(lop.gvcn, b).hang.baoPh === null, 'em chưa có xử lý: tab HV không có Báo PH');
+    /* Rà 25/11 PR 2 (5b): việc mới đã xong KHÔNG giấu việc cũ còn mở (Công việc vẫn có nó) — hết việc mở mới rời hàng. */
     bp(d, TODAY, 'xong');
-    assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh.length === 0, 'việc mới nhất đã xong → em sạch không còn hàng');
+    assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh[0]?.baoPh?.id === x.id, 'việc cũ còn mở bị việc mới đã xong giấu');
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?`).run(x.id);
+    assert(board.bangYThucLop(lop.gvcn, lop.id).choBaoPh.length === 0, 'hết việc mở → em sạch không còn hàng');
   });
   check('YT4 (3) · Bảng lớp: dòng thời gian CẢ LỚP có tên em, mới nhất trước; không có thang', () => {
     const lop = lopMoi('MB FT YT4DT');

@@ -329,8 +329,9 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 128 },
     { key: 'hv', nhan: 'HV', kieu: 'diem', rong: 128 },
     { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', rong: 128 },
-    { key: 'chua', nhan: t('Chưa nhập'), kieu: 'diem', rong: 128 },
-    { key: 'qh', nhan: t('Quá hạn'), kieu: 'diem', rong: 128 },
+    /* Rà 25/11 PR 2 (V13): hai cột đếm BÀI — tên cột ghi đơn vị (trước "Chưa nhập / Quá hạn" đọc như số việc của badge, 12 vs 8). */
+    { key: 'chua', nhan: t('Bài chưa nhập điểm'), kieu: 'diem', rong: 128 },
+    { key: 'qh', nhan: t('Bài quá hạn'), kieu: 'diem', rong: 128 },
   ];
   const oCua = (l: LopHs, c: CotBang): ReactNode => {
     switch (c.key) {
@@ -357,10 +358,11 @@ function KhoiLop({ data, phu }: { data: HoSo; phu: Map<number, string> | null })
       {(phu?.get(l.id) || (!l.laGvcn && l.gvcn)) && (
         <span className="text-[13px] text-dim">{[phu?.get(l.id), !l.laGvcn && l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}</span>
       )}
-      <span className="mt-1 grid grid-cols-3 gap-x-2">
+      {/* Rà 25/11 PR 2: nhãn có đơn vị dài hơn ("Bài chưa nhập điểm") — một dòng, cột theo nội dung, số thẳng hàng (375). */}
+      <span className="mt-1 grid grid-cols-[repeat(3,auto)] justify-between gap-x-3">
         {(['hv', 'chua', 'qh'] as const).map((k) => (
           <span key={k} className="grid content-start justify-items-start gap-1">
-            <span className="text-xs text-dim">{COT.find((c) => c.key === k)!.nhan}</span>
+            <span className="whitespace-nowrap text-xs text-dim">{COT.find((c) => c.key === k)!.nhan}</span>
             <span className="inline-flex min-h-9 items-center text-[14px] font-semibold">{oCua(l, COT.find((c) => c.key === k)!)}</span>
           </span>
         ))}

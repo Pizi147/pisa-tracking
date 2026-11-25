@@ -118,7 +118,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.find((x: any) => x.key === 'xep-lop')?.nhan === 'Cần xếp lớp tiếp · 4', 'xep-lop');
     const cham = tatCa.find((x: any) => x.key === 'cham');
-    assert(cham?.nhan === 'Chờ chấm · 9' && cham?.title === 'Bạn cần chấm: 9 bài', JSON.stringify(cham));
+    assert(cham?.nhan === 'Chờ chấm · 9 bài' && cham?.title === 'Bạn cần chấm: 9 bài', JSON.stringify(cham));
     assert(!tatCa.some((x: any) => x.key === 'case'), 'badge "Case mở" đã bỏ');
     assert(b.hien.length === 2, 'tối đa 2 badge');
   });
