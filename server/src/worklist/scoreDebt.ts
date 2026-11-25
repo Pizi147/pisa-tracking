@@ -1,11 +1,12 @@
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich, conPhaiNhap, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
-import { activeAt, phanCongDaNap, type Principal } from '../permissions.ts';
+import { GV_CON_DAY_SQL, activeAt, khopMon, phanCongDaNap, type Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
-import { LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
-import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { nguoiPcLuc, type DongPc } from '../phanTich/luatBai.ts';
 
 /**
  * Ô ĐIỂM CÒN NỢ — một ô = một kỹ năng một lượt, tuần thi đã bắt đầu, người được phân công chưa nhập (S12 + đặc tả §6).
@@ -30,8 +31,8 @@ export type DebtCell = { attemptId: number; classId: number; skill: string; user
  * PR-Dọn (Q13): MỘT luật phân công cho "người giữ việc" (Nợ điểm), "GV chấm" (Lịch Test) và "người khác" (Công việc) — phân công
  * `active`, đang hiệu lực tại `ngay`; nhiều dòng cùng (lớp, môn) thì dòng `id` nhỏ nhất thắng (như `teacherOf` cũ). Khoá `lớp|môn`.
  */
-export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): Map<string, { userId: number; ten: string }> {
-  const out = new Map<string, { userId: number; ten: string }>();
+export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): Map<string, NguoiPc> {
+  const out = new Map<string, NguoiPc>();
   /* TL-VIEC: Công việc đã nạp mọi phân công một câu — lọc đúng WHERE dưới. */
   const da = phanCongDaNap();
   if (da) {
@@ -39,16 +40,16 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
     for (const r of da) {
       if (!lop.has(r.classId) || r.skill === null || !activeAt(r, ngay)) continue;
       const k = `${r.classId}|${r.skill}`;
-      if (!out.has(k)) out.set(k, { userId: r.userId, ten: r.ten });
+      if (!out.has(k)) out.set(k, { userId: r.userId, ten: r.ten, tu: r.effectiveFrom });
     }
-    return out;
+    return themKhoaW(out);
   }
   /* TD4: nhớ theo lớp trong request GET — Công việc gọi lại cùng tập lớp (danh sách lượt, "Tất cả", người giữ kết quả PA). */
   const theoLop = nhoTheoId(`pc:${ngay}:`, [...new Set(classIds)], (thieu) => {
     const m = new Map<number, any[]>();
     theoLoJson(thieu, (json) => {
       for (const r of db()
-        .prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.user_id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+        .prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.user_id, u.full_name, ta.effective_from FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
                    WHERE ta.class_id IN (${DS_JSON}) AND ta.status = 'active' AND ta.skill IS NOT NULL
                      AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`)
         .all(json, ngay, ngay) as any[]) (m.get(r.class_id) ?? m.set(r.class_id, []).get(r.class_id)!).push(r);
@@ -57,7 +58,82 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
   });
   for (const r of [...theoLop.values()].flat().sort((a, b) => a.id - b.id)) {
     const k = `${r.class_id}|${r.skill}`;
-    if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name });
+    if (!out.has(k)) out.set(k, { userId: r.user_id, ten: r.full_name, tu: r.effective_from });
+  }
+  return themKhoaW(out);
+}
+type NguoiPc = { userId: number; ten: string; tu: string };
+/** SUA-N71 (P2-5): lớp thường phân công MỘT môn `writing`, MT0 chấm hai ô W1 / W2 (như `hasAssignment`) — khoá `lớp|writing1`, `lớp|writing2` theo dòng `writing`. */
+function themKhoaW(m: Map<string, NguoiPc>): Map<string, NguoiPc> {
+  for (const [k, v] of [...m]) {
+    if (!k.endsWith('|writing')) continue;
+    for (const o of ['writing1', 'writing2']) if (!m.has(`${k.slice(0, -7)}${o}`)) m.set(`${k.slice(0, -7)}${o}`, v);
+  }
+  return m;
+}
+
+/**
+ * N71 · Q2 (chủ SP 25/11): NGƯỜI GIỮ một ô ĐÃ THI = người được phân công lớp × môn LÚC THI (thứ Hai tuần thi `tuan`) — đổi GV "Ngay hôm nay" / bỏ phân công
+ * sau tuần thi không chuyển bài chưa chấm sang người mới. Ô chưa tới tuần thi, người hiện tại đã nhận từ trước tuần thi, hoặc lúc thi không ai được phân
+ * công → người đang hiệu lực hôm nay (`phanCongDangHieuLuc`, như cũ). Dòng đã kết thúc chỉ đọc khi cần (đa số ô: 0 câu thêm). Cùng luật ngày của sổ nghĩa vụ
+ * (`nguoiPcLuc`: ngày đổi — người mới). Nợ điểm, Công việc ("Của GV", "của tôi"), Lịch Test, quyền nhập đi qua đây.
+ */
+export function nguoiGiuO(classIds: readonly number[], today: string): (classId: number, skill: string, tuan: string | null | undefined) => NguoiPc | null {
+  const nay = phanCongDangHieuLuc(classIds, today);
+  let cu: Map<string, (DongPc & { ten: string })[]> | null = null;
+  return (classId, skill, tuan) => {
+    const hienTai = nay.get(`${classId}|${skill}`) ?? null;
+    const t = tuan ? tuan.slice(0, 10) : null;
+    if (!t || t > today || (hienTai && hienTai.tu.slice(0, 10) <= t)) return hienTai;
+    cu ??= phanCongDaKetThuc(classIds);
+    const ds = [...(cu.get(`${classId}|${skill}`) ?? []), ...(/^writing[12]$/.test(skill) ? cu.get(`${classId}|writing`) ?? [] : [])];
+    const g = nguoiPcLuc(ds, t);
+    return g == null ? hienTai : { userId: g, ten: ds.find((x) => x.gv === g)!.ten, tu: '' };
+  };
+}
+/**
+ * N71 · Q2: ô (lớp, môn, tuần thi) có là VIỆC của `p` không. `nay` = luật cũ (`mySkills` — phân công hôm nay). Chỉ hỏi người lúc thi (`laNguoiGiuO`) khi
+ * ô đã thi mà `p` là GV cũ của môn đó (`phanCongCu`) hoặc nhận lớp SAU tuần thi — còn lại giữ `nay` (0 câu thêm). GV cũ: ô thi sau ngày đổi không là của họ.
+ */
+export function oCuaToi(p: Principal, classId: number | null | undefined, skill: string, tuan: string | null | undefined, today: string, nay: boolean): boolean {
+  const t = tuan ? tuan.slice(0, 10) : null;
+  if (!classId || !t || t > today) return nay;
+  const cu = !!p.phanCongCu?.some((a) => a.classId === classId && khopMon(a.skill, skill));
+  if (!nay && !cu) return false;
+  if (!cu && !p.assignments.some((a) => a.classId === classId && khopMon(a.skill, skill) && activeAt(a, today) && a.effectiveFrom.slice(0, 10) > t)) return nay;
+  return laNguoiGiuO(p, classId, skill, t, today);
+}
+/** P2-4: người giữ ô nhớ theo request — cả request GHI (`nhoTheoBang`: quên khi ghi vào phân công / tài khoản / vai / lớp): lưới, đường ghi nhiều ô không đọc lại. */
+export function laNguoiGiuO(p: Principal, classId: number, skill: string, tuan: string, today: string): boolean {
+  return nhoTheoBang(['teacher_assignments', 'users', 'user_roles', 'roles', 'classes'], `giu-o:${classId}|${skill}|${tuan.slice(0, 10)}|${today}`,
+    () => nguoiGiuO([classId], today)(classId, skill, tuan)?.userId ?? null) === p.userId;
+}
+/** Tuần thi (thứ Hai) của ô nhập `skill` ở lượt — dòng lịch của kỹ năng (W1 / W2 → `writing`), thiếu thì tuần của lượt (như `TUAN_O` của cờ ô chờ). */
+export function tuanThiCuaO(attemptId: number, skill: string): string | null {
+  const kn = /^writing[12]$/.test(skill) ? 'writing' : skill;
+  /* `nho` (GET), không `nhoTheoBang`: `attempt_skills` có trigger ghi (nguCanhRequest) — request ghi đọc lại, chỉ khi người xem là GV cũ (`giuOCu`). */
+  return nho(`tuan-thi-o:${attemptId}:${kn}`, () => (db().prepare(`SELECT COALESCE((SELECT MIN(kp.week_start) FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
+      WHERE k.attempt_id = a.id AND k.skill = ?), pr.week_start) AS t FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id WHERE a.id = ?`)
+    .get(kn, attemptId) as any)?.t ?? null);
+}
+/** Dòng phân công môn ĐÃ KẾT THÚC (`ended`) của các lớp — khoá `lớp|môn`. Nhớ theo lớp trong request GET. P1-1 (N69): chỉ người CÒN dạy ở chi nhánh
+ *  của lớp (`GV_CON_DAY_SQL`) — GV đã nghỉ / xoá tài khoản / hết vai ở chi nhánh không giữ bài: ô về người đang hiệu lực, không có thì "chưa có người". */
+function phanCongDaKetThuc(classIds: readonly number[]): Map<string, (DongPc & { ten: string })[]> {
+  const theoLop = nhoTheoId('pc-ket-thuc:', [...new Set(classIds)], (thieu) => {
+    const m = new Map<number, any[]>();
+    theoLoJson(thieu, (json) => {
+      for (const r of db().prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.user_id, u.full_name, ta.effective_from, ta.effective_to FROM teacher_assignments ta
+          JOIN users u ON u.id = ta.user_id WHERE ta.class_id IN (${DS_JSON}) AND ta.status = 'ended' AND ta.is_core = 0 AND ta.skill IS NOT NULL AND ta.effective_to IS NOT NULL
+            AND ${GV_CON_DAY_SQL('ta')} ORDER BY ta.id`).all(json) as any[]) {
+        (m.get(r.class_id) ?? m.set(r.class_id, []).get(r.class_id)!).push(r);
+      }
+    });
+    return m;
+  });
+  const out = new Map<string, (DongPc & { ten: string })[]>();
+  for (const r of [...theoLop.values()].flat()) {
+    const k = `${r.class_id}|${r.skill}`;
+    (out.get(k) ?? out.set(k, []).get(k)!).push({ id: r.id, gv: r.user_id, ten: r.full_name, tu: r.effective_from, den: r.effective_to ?? null });
   }
   return out;
 }
@@ -84,6 +160,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
   const rows = conn
     .prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
+              s.archived_at AS hv_archived,   -- N71: em ngừng học chỉ nợ ô thi trước ngày dừng (oConNoKhiDung)
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route  -- OV-12b: kỳ vọng ô (skillCells) không hỏi lẻ từng lượt
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
@@ -102,8 +179,9 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
     .all(...args, today) as any[];
   if (!rows.length) return [];
 
-  /* PR-UXF-a → PR-Dọn (Q13): phân công ĐANG HIỆU LỰC, một luật chung (`phanCongDangHieuLuc`). */
-  const teacherOf = new Map([...phanCongDangHieuLuc([...new Set(rows.map((r) => r.class_id as number))], today)].map(([k, v]) => [k, v.userId]));
+  /* PR-UXF-a → PR-Dọn (Q13) → N71 · Q2: người giữ ô = phân công LÚC THI (`nguoiGiuO`; ô chưa thi / không đổi người: đang hiệu lực như cũ). */
+  const giu = nguoiGiuO([...new Set(rows.map((r) => r.class_id as number))], today);
+  const teacherOf = (classId: number, skill: string, tuan: string | null | undefined) => giu(classId, skill, tuan)?.userId ?? null;
 
   const bundle = loadBundle([...rows.map((r) => r.id as number), ...nho<number[]>(KEM_NO_DIEM, () => [])], { boCase: true });   // TL-TQ: không dùng Case
   const programmes = allProgrammes();          // một lần cho cả bảng, không mỗi lượt một câu
@@ -116,15 +194,16 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) {
         const v = views.get(skill);
-        if (!v || !conPhaiNhap(v)) continue;   // NHAP-DIEM-a: một luật
-        out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf.get(`${a.class_id}|${skill}`) ?? null, overdue: v.overdue, han: v.deadline ?? null });
+        if (!v || !conPhaiNhap(v) || !oConNoKhiDung(a.hv_archived, v.weekStart)) continue;   // NHAP-DIEM-a: một luật
+        out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf(a.class_id, skill, v.weekStart), overdue: v.overdue, han: v.deadline ?? null });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows, undefined, undefined, true)) {   // TD-HVL: chỉ đếm
         if (!conPhaiNhap({ required: c.required, scored: c.xong, noShow: c.noShow !== null, progress: c.progress })) continue;
+        if (!oConNoKhiDung(a.hv_archived, c.weekStart)) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
-        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
+        out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf(a.class_id, c.skill, c.weekStart),
           overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });
       }
     }

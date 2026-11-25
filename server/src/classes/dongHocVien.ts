@@ -9,7 +9,7 @@
  */
 import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, nhanLoaiXuLy, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { DS_JSON, db } from '../db.ts';
-import { activeAt, boVaiBpxl, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { activeAt, boVaiBpxl, can, giuOCu, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -50,7 +50,7 @@ export type NhapDiemViec = { kyNang: string[]; dot: string | null; quaHan: boole
 export function nhapDiemTheoEm(p: Principal, classIds: readonly number[], homNay: string, lopCua: (sid: number) => number | undefined): Map<number, NhapDiemViec> {
   /* Lớp người xem có VIỆC nhập điểm: đang được phân công, hoặc vai không phải giáo viên có SCORE_EDIT ở lớp (Quản trị) — như `mySkills`. */
   const day = new Set(p.assignments.filter((a) => activeAt(a, homNay)).map((a) => a.classId));
-  const lop = [...new Set(classIds)].filter((id) => day.has(id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
+  const lop = [...new Set(classIds)].filter((id) => day.has(id) || giuOCu(p, id) || can(p, PERMISSIONS.SCORE_EDIT, { classId: id }));
   const out = new Map<number, NhapDiemViec & { hanQua?: string | null }>();
   if (!lop.length) return out;
   for (const a of listAttempts(p, { classIds: lop, chiDangHoc: true, chiConO: true }).rows as any[]) {

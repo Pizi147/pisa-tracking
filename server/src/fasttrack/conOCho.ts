@@ -38,13 +38,18 @@ const MA_CT_LUOT = `(CASE WHEN a.class_id IS NOT NULL THEN (SELECT c.programme_c
  */
 const LICH_SU_KHONG_CHO = `a.lich_su = 1 AND COALESCE(${MA_CT_LUOT} IN (SELECT pg.code FROM programmes pg WHERE pg.scoring_mode = 'ratio' AND pg.code != 'FT'), 0) = 0`;
 
+/** SUA-N71 (P2-6): lượt đã giữ bộ môn cũ (`bo_mon` — MON-CT-1311, như `docBoMonLuot`) chờ điểm theo BỘ ĐÓ, không theo `programme_skills` hiện tại: bỏ môn khỏi
+ *  chương trình không làm mất ô chưa chấm của môn cũ. */
+const CO_BO_MON = `(CASE WHEN json_valid(a.bo_mon) THEN json_type(a.bo_mon) = 'array' AND json_array_length(a.bo_mon) > 0 ELSE 0 END)`;
+
 /** Biểu thức tính cờ cho dòng `a` của `assessment_attempts` (dùng trong UPDATE … AS a / SELECT … AS a). */
 export const O_CHO_TU_SQL = `(CASE
   WHEN ${LICH_SU_KHONG_CHO} THEN NULL
   WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = ${MA_CT_LUOT}) = 'ratio'
-  THEN (SELECT MIN(${TUAN_O('ps.skill')}) FROM programme_skills ps
-         WHERE ps.programme_code = ${MA_CT_LUOT}
-           AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL))
+  THEN (SELECT MIN(${TUAN_O('ps.skill')}) FROM (
+          SELECT j.value AS skill FROM json_each(CASE WHEN ${CO_BO_MON} THEN a.bo_mon ELSE '[]' END) j
+          UNION ALL SELECT p2.skill FROM programme_skills p2 WHERE p2.programme_code = ${MA_CT_LUOT} AND NOT ${CO_BO_MON}) ps
+         WHERE NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL))
   ELSE (SELECT MIN(${TUAN_O('e.kn', 'e.o')}) FROM (
           SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading', 'reading' UNION ALL SELECT 'writing1', 'writing'
           UNION ALL SELECT 'writing2', 'writing' UNION ALL SELECT 'speaking', 'speaking') e

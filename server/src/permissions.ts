@@ -4,6 +4,7 @@ import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoBang } from './platform/nguCanhRequest.ts';
 import { nhoThamChieu } from './platform/mocHeThong.ts';
+import { laNguoiGiuO, tuanThiCuaO } from './worklist/scoreDebt.ts';
 
 /**
  * Quyền = Permission của role × Phạm vi chi nhánh của CHÍNH grant đó × Phân công lớp/kỹ năng.
@@ -54,6 +55,11 @@ export type Principal = {
   boTro?: { studentId: number; classId: number | null }[];
   /** N48 (rà bảo mật #1804): true = tắt quyền xem tạm GV lớp cũ (`lopCuTamCo`). Dùng `khongQuyenTam(p)` / `boLopCu(p)`. */
   khongLopCu?: boolean;
+  /**
+   * N71 · Q2 (chủ SP 25/11): phân công MÔN đã kết thúc (đổi GV / bỏ người) mà lớp còn bài thi TRƯỚC ngày kết thúc chưa chấm — GV cũ vẫn xem lớp + nhập
+   * điểm môn đó (`giuOCu`) tới khi chấm xong; ô nào là việc của ai vẫn theo người lúc thi (`worklist/scoreDebt.ts` `nguoiGiuO`). Đọc cùng câu phiên.
+   */
+  phanCongCu?: Assignment[];
 };
 /** Principal chỉ còn quyền THẬT — bỏ quyền xem tạm người dạy bổ trợ (`boTroTamCo`) và GV lớp cũ (`lopCuTamCo`, N48): nơi "xem thật" mở quyền ghi (người báo Case sửa / đính kèm). */
 export const khongQuyenTam = (p: Principal): Principal => ({ ...p, boTro: [], khongLopCu: true });
@@ -68,6 +74,8 @@ export type Ctx = {
   /** Kiểm tra ở mức màn hình: nội dung bên trong vẫn được lọc lại theo phạm vi. */
   anyScope?: boolean;
   date?: string;
+  /** N71 · Q2: lượt của ô đang ghi — `SCORE_EDIT` của GV cũ (`giuOCu`) chỉ mở khi họ là người giữ ô lúc thi. */
+  attemptId?: number;
 };
 
 /**
@@ -76,6 +84,26 @@ export type Ctx = {
  * hiệu lực ngay). Ba khối JSON giữ đúng câu cũ (lọc, JOIN, thứ tự): vai (kèm quyền theo vai), quyền cấp riêng, phân công.
  * `json(...)` vì cột con lấy qua truy vấn con mất kiểu JSON — không bọc thì quyền thành chuỗi.
  */
+/**
+ * N71 · P1-1 (N69): người của dòng phân công `ta` CÒN dạy ở chi nhánh của lớp — tài khoản đang hoạt động, còn vai giảng dạy (như `teacherCandidatesBranch`)
+ * phủ chi nhánh. GV đã nghỉ / bị xoá / hết vai ở chi nhánh không giữ bài cũ (ô về người đang hiệu lực hoặc "chưa có người").
+ */
+export const GV_CON_DAY_SQL = (ta: string) => `EXISTS (SELECT 1 FROM users ux JOIN user_roles urx ON urx.user_id = ux.id AND urx.status = 'active'
+  JOIN roles rx ON rx.id = urx.role_id AND rx.key IN ('teacher', 'manager')
+  WHERE ux.id = ${ta}.user_id AND ux.status = 'active' AND (urx.branch_id IS NULL OR urx.branch_id = (SELECT cx.branch_id FROM classes cx WHERE cx.id = ${ta}.class_id)))`;
+/**
+ * N71 · Q2: dòng phân công MÔN đã kết thúc mà lớp còn ô ĐÚNG MÔN đó thi trong thời gian dòng hiệu lực ([từ, đến]) chưa có điểm — tập cha của ô `nguoiGiuO`
+ * trả về người này (chiều ngược: người được giao việc có quyền nhập). Người còn dạy ở chi nhánh (`GV_CON_DAY_SQL`).
+ */
+const PHAN_CONG_CU_SQL = (ta: string) => `${ta}.status = 'ended' AND ${ta}.is_core = 0 AND ${ta}.skill IS NOT NULL AND ${ta}.effective_to IS NOT NULL AND ${GV_CON_DAY_SQL(ta)}
+  AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.class_id = ${ta}.class_id AND a.o_cho_tu IS NOT NULL AND a.status != 'cancelled'
+    AND a.o_cho_tu <= substr(${ta}.effective_to, 1, 10)
+    AND COALESCE((SELECT MIN(kp.week_start) FROM attempt_skills k JOIN report_periods kp ON kp.id = k.planned_period_id
+          WHERE k.attempt_id = a.id AND k.skill = (CASE WHEN ${ta}.skill IN ('writing1', 'writing2') THEN 'writing' ELSE ${ta}.skill END)
+            AND k.required = 1 AND k.sit_status NOT IN ('cancelled', 'absent')),
+        (SELECT pr.week_start FROM report_periods pr WHERE pr.id = a.planned_period_id)) BETWEEN substr(${ta}.effective_from, 1, 10) AND substr(${ta}.effective_to, 1, 10)
+    AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ${ta}.skill AND (sc.band IS NOT NULL OR sc.raw_score IS NOT NULL)))`;
+
 export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title, u.ngon_ngu AS u_ngon_ngu, u.da_xem_huong_dan AS u_da_xem_hd,
   (SELECT json_group_array(json_array(g.id, g.branch_id, g.role_key, g.role_name, g.branch_name, json(g.perms))) FROM (
      SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name,
@@ -91,6 +119,8 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
     WHERE up.user_id = u.id) AS u_rieng,
   (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to))
      FROM teacher_assignments ta WHERE ta.user_id = u.id AND ta.status = 'active') AS u_phan_cong,
+  (SELECT json_group_array(json_array(ta.id, ta.class_id, ta.skill, ta.effective_from, ta.effective_to))
+     FROM teacher_assignments ta WHERE ta.user_id = u.id AND ${PHAN_CONG_CU_SQL('ta')}) AS u_phan_cong_cu,
   (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang,
   (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.bg_mo, d.id)) FROM (SELECT x.class_id, x.hieu_luc, x.id,
        EXISTS (SELECT 1 FROM ban_giao_gv b WHERE b.class_id = x.class_id AND b.nguoi_cu = x.nguoi_cu AND b.trang_thai = 'mo') AS bg_mo
@@ -147,6 +177,8 @@ export function principalTuDong(row: any): Principal {
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
     xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, bgMo, doiId]) => ({ classId, tu, den: xemCuDen(tu, !!bgMo), doiId })),
     boTro: (row.u_bo_tro ? JSON.parse(row.u_bo_tro) as any[][] : []).map(([studentId, classId]) => ({ studentId, classId: classId ?? null })),
+    phanCongCu: (row.u_phan_cong_cu ? JSON.parse(row.u_phan_cong_cu) as any[][] : [])
+      .map(([id, classId, skill, effectiveFrom, effectiveTo]) => ({ id, classId, skill, isCore: false, effectiveFrom, effectiveTo })),
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
@@ -441,7 +473,12 @@ const laGvSpeakingSua = (p: Principal, classId: number, date?: string, kind?: st
 
 /** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo (lớp FT; lớp thường khi lượt MT0 — `kind`). Chỉ dùng ở đường chấm. */
 export function coTheXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }): boolean {
-  return can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) || !!(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date, ctx.kind));
+  return can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) || !!(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date, ctx.kind)) || giuOCu(p, ctx.classId);   // N71 · Q2: GV cũ còn bài chưa chấm
+}
+/** N71 · Q2: phạm vi lượt của đường chấm + lớp GV cũ còn bài thi chưa chấm (`phanCongCu`) — Công việc, Lịch Test của họ tới khi xong. Không mở hồ sơ / danh sách khác. */
+export function themLopCu(p: Principal, s: Scope): Scope {
+  if (s.all || !p.phanCongCu?.length) return s;
+  return { ...s, none: false, classIds: [...new Set([...s.classIds, ...p.phanCongCu.map((a) => a.classId)])] };
 }
 export function requireXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }, message: string) {
   if (!coTheXemLuotCham(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
@@ -458,7 +495,7 @@ export function xemLuotQuaLopDangHoc(p: Principal, studentId: number, date = dem
 }
 /** Phạm vi DANH SÁCH của đường chấm (Lịch Test, Test › Điểm theo lớp): `scopeFor(ATTEMPT_VIEW)` + lớp FT GV Speaking chấm S chéo. */
 export function scopeXemLuotCham(p: Principal, date = demoToday()): Scope {
-  const s = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const s = themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));
   const lopS = s.all ? [] : lopFtChoGvSpeaking(p, date);
   /* OV-14c: GV Speaking không phân công lớp nào (`scopeFor` rỗng) vẫn có phạm vi chấm = các lớp FT này. */
   return lopS.length ? { ...s, none: false, classIds: [...new Set([...s.classIds, ...lopS])] } : s;
@@ -471,6 +508,26 @@ function ctxBranches(ctx: Ctx): number[] {
   if (ctx.classId) { const b = branchOfClass(ctx.classId); if (b) set.add(b); }
   if (ctx.studentId) for (const b of branchesOfStudent(ctx.studentId)) set.add(b);
   return [...set];
+}
+
+/** Phân công môn `a` phủ ô nhập `skill` — lớp thường một môn `writing` phủ W1 / W2 của MT0 (PR-MT0, như `hasAssignment`). */
+export const khopMon = (a: string | null, skill: string): boolean => a === skill || (a === 'writing' && (skill === 'writing1' || skill === 'writing2'));
+/**
+ * N71 · Q2: GV CŨ còn giữ bài đã thi chưa chấm ở lớp `classId` (môn `skill` nếu nêu) — `phanCongCu`. Chỉ mở xem lớp + nhập điểm môn đó; việc nào của ai
+ * vẫn theo người lúc thi (`oCuaToi`). Hết bài chưa chấm → dòng rời `phanCongCu` ở lần đọc phiên sau.
+ */
+export function giuOCu(p: Principal, classId: number | null | undefined, skill?: string | null): boolean {
+  if (!classId || !p.phanCongCu?.length) return false;
+  return p.phanCongCu.some((a) => a.classId === classId && (skill === undefined || (!!skill && khopMon(a.skill, skill))));
+}
+/**
+ * N71 · Q2 (P1-3): `SCORE_EDIT` của GV cũ CHỈ ở ô họ giữ lúc thi — ngữ cảnh phải nêu ô (`attemptId`); không nêu (cờ cả lớp, danh sách) → không mở.
+ * GV cũ Reading không nhập được ô Reading thi sau ngày đổi (của GV mới).
+ */
+function giuODangGhi(p: Principal, ctx: Ctx): boolean {
+  if (!ctx.classId || !ctx.skill || !giuOCu(p, ctx.classId, ctx.skill)) return false;
+  const tuan = ctx.attemptId ? tuanThiCuaO(ctx.attemptId, ctx.skill) : null;
+  return !!tuan && laNguoiGiuO(p, ctx.classId, ctx.skill, tuan, ctx.date ?? demoToday());
 }
 
 /** Giáo viên có được phân công đúng lớp (và đúng kỹ năng nếu ngữ cảnh nêu kỹ năng) không? */
@@ -597,6 +654,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
   switch (permission) {
     // Nhập điểm: phải đúng kỹ năng được phân công ở đúng lớp.
     case PERMISSIONS.SCORE_EDIT:
+      return hasAssignment(p, ctx, 'skill') || giuODangGhi(p, ctx);
     case PERMISSIONS.ESTIMATE_EDIT:
       return hasAssignment(p, ctx, 'skill');
 
@@ -887,8 +945,8 @@ export function defaultWorkScope(p: Principal): WorkScope {
 
 /** Người dùng đang sửa điểm bằng đường nào — dùng để ghi nhật ký cho đúng. 'lich_su' = lượt MT cũ + (Quản lý lớp, hoặc GVCN lớp — mọi ô, PR-MTa T22). */
 export function scoreEditPath(p: Principal, classId: number, skill: string,
-  attempt?: { lich_su: number; kind?: string | null }): 'assigned' | 'lich_su' | 'override' | null {
-  if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
+  attempt?: { lich_su: number; kind?: string | null; id?: number }): 'assigned' | 'lich_su' | 'override' | null {
+  if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill, attemptId: attempt?.id })) return 'assigned';   // N71 · Q2: ô của lượt (GV cũ)
   /* PR-HSM: GV Speaking chấm S chéo lớp FT cùng chi nhánh — nhật ký như nhập điểm thường (`score.edit`), tên GV chấm ghi ở ô. */
   if (skill === 'speaking' && laGvSpeakingSua(p, classId, undefined, attempt?.kind)) return 'assigned';
   if (attempt?.lich_su === 1 && (qlDiem(p, { classId }) || isCoreTeacherOf(p, classId))) return 'lich_su';

@@ -9,7 +9,8 @@ import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { mocTreNhapDiem } from '../platform/week.ts';
-import { khoangTamDung } from '../students/tamDung.ts';
+import { LOP_CON_VIEC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_LO_TRINH_CUOI_SQL, khoangTamDung } from '../students/tamDung.ts';
+import { nguoiGiuO } from '../worklist/scoreDebt.ts';
 import { layMoc, trongBoNho } from '../platform/nguCanhRequest.ts';
 import type { MocHeThong } from '../platform/mocHeThong.ts';
 import type { Principal } from '../permissions.ts';
@@ -33,7 +34,8 @@ export type DongNv = {
   /** Bài: Thứ Hai tuần thi (mốc W4 OCT xét theo tuần thi — spec 1.6); việc: null. */
   tuan: string | null;
   xongLuc: string | null; nguoiLam: number | null;
-  /** Mã lý do không tính (spec 1.4): vang · dau-tru · huy · cho-doi · lich-su · nghi-truoc-han · nguoi-ngoai · khong-ghi-nguoi-cham. */
+  /** Mã lý do không tính (spec 1.4): vang · dau-tru · huy · cho-doi · lich-su · nghi-truoc-han · nguoi-ngoai · khong-ghi-nguoi-cham
+   *  · khong-con-viec (N46 · N71: Công việc không còn giữ ô chưa xong — lộ trình cũ / đã có KQ thi thật / lớp kết thúc). */
   khongTinh: string | null;
 };
 
@@ -59,7 +61,10 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
   const rows = conn.prepare(
     `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
             (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route,
-            s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
+            s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived,
+            /* N46 · N71 (rà 25/11): CÙNG bộ lọc Công việc / nợ điểm (scoreDebt.ts) — lượt lộ trình cũ, lượt chưa làm của lộ trình đã có KQ thi thật,
+               lượt lớp đã kết thúc không còn ô chờ từ trước ngày kết thúc: ô chưa xong không còn là việc → không tính "Chưa làm". */
+            (${LOP_CON_VIEC_SQL('a', 'cl')} AND ${LUOT_LO_TRINH_CUOI_SQL('a')} AND ${LUOT_CON_KE_HOACH_SQL('a')}) AS con_viec
        FROM assessment_attempts a JOIN classes cl ON cl.id = a.class_id JOIN students s ON s.id = a.student_id
        LEFT JOIN programmes pg ON pg.code = cl.programme_code LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
       WHERE a.id IN (${DS_JSON})`,
@@ -85,6 +90,7 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
     (pc.get(k) ?? pc.set(k, []).get(k)!).push({ id: a.id, gv: a.user_id, tu: a.effective_from, den: a.effective_to ?? null });
   }
   const tamDung = khoangTamDung(sids);
+  const giu = nguoiGiuO(lopCo, today);
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
@@ -108,20 +114,26 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
       /* NHAP-DIEM-a: ô xoá điểm giữ `nhap_dau_ngay` (nhập lại không tính muộn) — chỉ ô CÒN điểm mới là xong. */
       const xongLuc = row && (row.band != null || row.raw_score != null) ? row.nhap_dau_ngay ?? null : null;
       const cheo = laChamCheo(a.kind, x.skill);
-      const ngayPc = x.deadline ?? tuan;
+      /* N71 · Q2 (chủ SP 25/11): người chịu bài = phân công LÚC THI (thứ Hai tuần thi) — cùng luật `nguoiGiuO` của Công việc (thay "lúc hạn");
+         em đang học tính theo ngày thi như nợ điểm (`oConNoKhiDung`): ô thi trước ngày em dừng vẫn là việc. */
       let nguoi: number | null = null, pcNhapSau = false;
       if (cheo) nguoi = xongLuc ? row?.examiner_user_id ?? null : null;
       else {
-        const ks = kyNangPhuTrach(li.ct, x.skill);
-        nguoi = ks.map((k) => nguoiPcLuc(pc.get(`${l}|${k}`) ?? [], ngayPc)).find((g) => g != null) ?? null;
+        /* SUA-N71 (P2-5): MT0 lớp thường — ô W1 / W2 thuộc phân công `writing` của lớp (như `hasAssignment`). */
+        const ks = [...kyNangPhuTrach(li.ct, x.skill), ...(/^writing[12]$/.test(x.skill) ? ['writing'] : [])];
+        nguoi = ks.map((k) => nguoiPcLuc(pc.get(`${l}|${k}`) ?? [], tuan)).find((g) => g != null) ?? null;
         if (nguoi == null) {
-          nguoi = ks.map((k) => nguoiPcSau(pc.get(`${l}|${k}`) ?? [], ngayPc)).find((g) => g != null) ?? null;
+          nguoi = ks.map((k) => nguoiPcSau(pc.get(`${l}|${k}`) ?? [], tuan)).find((g) => g != null) ?? null;
           pcNhapSau = nguoi != null;
         }
+        /* N71 (P2-5): ô CHƯA xong là việc đang mở — đúng người Công việc giao (`nguoiGiuO`: người lúc thi còn dạy ở chi nhánh, không có thì người đang
+           hiệu lực / chưa có người). Ô đã xong giữ người theo lịch sử phân công ở trên. */
+        if (!xongLuc && tuan <= today) nguoi = giu(l, x.skill, tuan)?.userId ?? null;
       }
       const khongTinh = a.status === 'cancelled' ? 'huy'
         : KHONG_TINH_TIEN_DO[x.progress] ?? (x.noShow ? 'dau-tru'
-          : !dangHocLuc(a, tamDung[a.student_id] ?? [], ngayPc) ? 'nghi-truoc-han'
+          : !xongLuc && !a.con_viec ? 'khong-con-viec'
+          : !dangHocLuc(a, tamDung[a.student_id] ?? [], tuan) ? 'nghi-truoc-han'
           : cheo && xongLuc && nguoi == null ? (row?.examiner_name ? 'nguoi-ngoai' : 'khong-ghi-nguoi-cham') : null);
       ds.push({
         loai: 'bai', kieu: x.skill, khoa: khoaBai(a.id, x.skill), chiNhanh: li.cn, lop: l, hocVien: a.student_id, nguoi, sCheo: cheo, pcNhapSau,

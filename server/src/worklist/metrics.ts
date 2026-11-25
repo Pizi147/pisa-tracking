@@ -7,7 +7,7 @@ import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, mondayOfDate, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
-import { bangLop, boVaiBpxl, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
+import { bangLop, boVaiBpxl, can, classScopeSql, isCoreTeacherOf, scopeFor, themLopCu, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, loi } from '../util.ts';
 import { COT_GV_CU_NGAY, ghiDuocPaMany, hanGvCuCuaPa, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
@@ -829,7 +829,7 @@ export function overdueScoreBai(p: Principal, branchId: number | null, today: st
   /** UX-2 (1): lớp của từng bài — Lịch Test "Quá hạn chấm" lọc theo lớp đang xem trên CHÍNH tập này. */
   lopCua: Map<number, number>;
 } {
-  const sc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const sc = themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // N71 · Q2: + lớp GV cũ còn bài chưa chấm (cùng phạm vi đường chấm)
   const chiTiet: NonNullable<MetricResult['chiTiet']> = new Map();
   const lopCua = new Map<number, number>();
   if (sc.none) return { ids: [], chiTiet, lopCua };

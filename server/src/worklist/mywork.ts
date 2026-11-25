@@ -10,7 +10,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, boVaiBpxl, boVaiCx, can, coQuyenBuocTiepCtx, coVaiCx, editableSkills, isCoreTeacherOf, qlDiem, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, giuOCu, boVaiBpxl, boVaiCx, can, coQuyenBuocTiepCtx, coVaiCx, editableSkills, isCoreTeacherOf, qlDiem, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -26,7 +26,7 @@ import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../n
 import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
-import { phanCongDangHieuLuc } from './scoreDebt.ts';
+import { nguoiGiuO, phanCongDangHieuLuc } from './scoreDebt.ts';
 import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { SQL_GV_CU_GHI_PA, ctxSuaCaseNhieu, hanGvCuTuNgayChuyen, laGvcnLopDangHoc } from '../cases/cases.ts';
@@ -776,7 +776,7 @@ export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: num
  */
 export function viecNhapDiemCuaEm(p: Principal, studentId: number, today: string, lopId: number | null): WorkItem[] {
   /* Cùng cổng `nhapDiemTheoEm`: người xem không có phân công ở lớp em đang học (và không có SCORE_EDIT ở đó) thì không có việc Nhập điểm — khỏi đọc lượt. */
-  if (!lopId || !(p.assignments.some((a) => a.classId === lopId && activeAt(a, today)) || can(p, PERMISSIONS.SCORE_EDIT, { classId: lopId }))) return [];
+  if (!lopId || !(p.assignments.some((a) => a.classId === lopId && activeAt(a, today)) || giuOCu(p, lopId) || can(p, PERMISSIONS.SCORE_EDIT, { classId: lopId }))) return [];
   const dongs: BaiChuaCham[] = [];
   for (const a of listAttempts(p, { studentId, chiDangHoc: true, chiConO: true }).rows as any[]) {
     if (a.status === 'cancelled') continue;
@@ -834,7 +834,8 @@ export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
 /** Lớp người xem nhập điểm được ít nhất một kỹ năng (`can` SCORE_EDIT — cùng luật `mySkills` sinh ô "mine"), đọc bộ nhớ (`bangLop`, grants), 0 câu. */
 function lopNhapDiemDuoc(p: Principal): number[] {
   const kn = [...new Set([...ENTRY_SKILLS, ...[...allProgrammes().values()].flatMap((x) => x.skills)])];
-  return [...bangLop().keys()].filter((id) => kn.some((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId: id, skill })));
+  /* N71 · Q2: + lớp GV cũ còn bài thi chưa chấm (`giuOCu`) — ô nào của họ do `oCuaToi` quyết. */
+  return [...bangLop().keys()].filter((id) => giuOCu(p, id) || kn.some((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId: id, skill })));
 }
 const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'office_admin'), grants: p.grants.filter((g) => g.roleKey !== 'office_admin') });
 
@@ -1037,8 +1038,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* PR-Ra Q1: "Tất cả trong phạm vi" cộng thêm bài chưa chấm của GIÁO VIÊN KHÁC trong phạm vi. */
   if (tatCa && co('score')) {
     const classIds = [...new Set(attempts.map((a: any) => a.classId).filter((x: any): x is number => x !== null))];
-    /* Người phụ trách môn — PR-Dọn (Q13): CÙNG luật với Nợ điểm và Lịch Test (`phanCongDangHieuLuc`). */
-    const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
+    /* Người phụ trách môn — PR-Dọn (Q13) → N71 · Q2: CÙNG luật với Nợ điểm và Lịch Test — người lúc thi (`nguoiGiuO`). */
+    const giu = nguoiGiuO(classIds, today);
     const khacDongs: BaiChuaCham[] = [];
     /*
      * Rà 11/11 #2 (G5-02 / G5-03; thay P12 Q12 25/10 bằng luật chủ SP 09/11): S chấm chéo quá hạn là "quá hạn" ở mọi vai (cả Admin), nhóm "Speaking chấm
@@ -1053,7 +1054,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (vaoChamS(a, c)) continue;
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const cheo = laChamCheo(a.kind, c.skill);
-        const ownerId = !a.classId || cheo ? null : (ownerOf.get(`${a.classId}|${c.skill}`) ?? null);
+        const ownerId = !a.classId || cheo ? null : (giu(a.classId, c.skill, c.weekStart)?.userId ?? null);
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,

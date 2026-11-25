@@ -3,12 +3,12 @@ import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, dotGvCham, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangHuy, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { nguoiGiuO, oCuaToi, phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  CHU_CHAN_NHAP_DIEM, bangLop, can, giuOCu, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, laBpxlXepLich, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -39,7 +39,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -464,7 +464,8 @@ export function skillCells(
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
-  const nhacNx = !chiDem && editable.length > 0 && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
+  /* N71 · Q2: + GV cũ còn ô ở lớp (`giuOCu`) — ô của họ sửa được thì cũng được nhắc nhận xét. */
+  const nhacNx = !chiDem && (editable.length > 0 || (!!attempt.class_id && giuOCu(p, attempt.class_id))) && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -526,6 +527,9 @@ export function skillCells(
     /* N38 L2: huỷ vắng 2 lần không phải "Quản lý đổi kết luận" — không ghi câu này ở ô đã huỷ. */
     const noShowNote = row?.no_show_settled_at && !row.no_show_cu && row.no_show_period_id === view.periodId && view.sitStatus !== 'absent' && view.sitStatus !== 'cancelled'
       ? NO_SHOW_OVERRIDDEN_NOTE : null;
+    /* N71 · Q2 (P1-3): GV cũ (`giuOCu`) sửa được / có việc ĐÚNG ô mình giữ lúc thi (`oCuaToi` với `nay` = false); hỏi chỉ khi có phân công cũ. */
+    const giuCu = !!attempt.class_id && giuOCu(p, attempt.class_id, skill) && oCuaToi(p, attempt.class_id, skill, view.weekStart, today, false);
+    const suaDuoc = editable.includes(skill) || giuCu;
     const daChot = row?.no_show_settled_at && !row.no_show_cu && !hasScore && row.no_show_period_id && attempt.class_id
       ? (() => {
           const tuanGoc = row.no_show_week_start
@@ -533,7 +537,7 @@ export function skillCells(
           /* `editable` đã tính cho cả dòng — không hỏi quyền nhập lại cho từng ô (PR-TD: trần câu SQL). */
           /* CV-SUA-1011: gỡ mọi lúc, cả vắng 2 lần (huỷ phần thi) — người nhập ô / GVCN / QL (`duocGoDau`). */
           const boVang = view.periodId !== row.no_show_period_id;
-          const loi = duocGoDau(p, { classId: attempt.class_id, skill, today, duocNhap: editable.includes(skill), daHuyPhan: view.sitStatus === 'cancelled' });
+          const loi = duocGoDau(p, { classId: attempt.class_id, skill, today, duocNhap: suaDuoc, daHuyPhan: view.sitStatus === 'cancelled' });
           return {
             doiSang: boVang && view.weekStart ? tuanLich(view.weekStart, today) : null,
             /* OV-11a (TE-2): tuần gốc của lần vắng — hộp ở tuần thi bù ghi "vắng lần 1 · dời từ W2 SEP". */
@@ -551,7 +555,7 @@ export function skillCells(
     /* NHAP-DIEM-a: chưa tới tuần thi / chưa xếp tuần không còn khoá ô — lưu thì máy tự dời về tuần này (`doiVeTuanNayNeuChua`). */
     const canEdit = required && (!cancelled || khoiPhucDuoc)
       /* LUAT-34 (L3): "Đủ điểm" không còn khoá — GV đúng ô sửa mọi lúc (cùng `saveScore`). */
-      && editable.includes(skill);
+      && suaDuoc;
     const noShow = ns.state === 'none' ? null : {
       /* Tuần viết bằng `tuanLich` (G-6): "W3 SEP", chỉ kèm năm khi khác năm hôm nay — không in mã tuần có năm. */
       state: ns.state, text: noShowText(ns, view.weekStart ? tuanLich(view.weekStart, today) : view.periodCode, today) ?? '',
@@ -584,7 +588,7 @@ export function skillCells(
       canEdit,
       /* Việc nhập điểm của người xem (bảng lớp "Nhập điểm …") — như `canEdit` nhưng trước hoàn tất bỏ quyền sửa mọi lúc của Quản lý. */
       viec: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
-        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill)),
+        && (hoanTat.hoanTat ? suaSauHoanTat : viecList.includes(skill) || giuCu),
       /* LUAT-34: "Đủ điểm" — chỉ là trạng thái của đợt (tên trường giữ từ R11), không còn khoá ô. */
       khoa: hoanTat.hoanTat,
       /* LUAT-34 (T20b): ô có điểm đã huỷ còn cất → "Khôi phục điểm". */
@@ -593,7 +597,8 @@ export function skillCells(
        * "TÔI SỬA ĐƯỢC" KHÁC "ĐÂY LÀ VIỆC CỦA TÔI" (mục 3.3).
        * Người có quyền sửa hộ vẫn bấm vào ô được, nhưng không vì thế mà nợ việc đó.
        */
-      mine: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && mine.includes(skill),
+      /* N71 · Q2: ô đã thi là việc của người được phân công LÚC THI (`oCuaToi`) — GV cũ giữ, GV mới không nhận bài cũ. */
+      mine: required && !cancelled && !chamCheo && view.sitStatus !== 'cancelled' && oCuaToi(p, attempt.class_id, skill, view.weekStart, today, mine.includes(skill)),
       periodId: view.periodId,
       periodCode: view.periodCode,
       weekStart: view.weekStart,
@@ -745,30 +750,22 @@ export const CON_O_SQL = `a.status != 'cancelled' AND a.o_cho_tu <= ?
  * Danh sách ở phạm vi quản lý là để ĐÔN ĐỐC nên phải kèm tên; nạp theo từng lớp một lần,
  * đừng hỏi lại cho từng hàng — một trang danh sách có thể có hàng chục lượt.
  */
-/** PR-Dọn (Q13): GV chấm của từng (lớp, môn) theo luật phân công chung `phanCongDangHieuLuc` (đang hiệu lực, dòng đầu thắng). */
-function ownersByClass(classIds: number[]): Map<number, Record<string, string>> {
-  const map = new Map<number, Record<string, string>>();
-  for (const [k, v] of phanCongDangHieuLuc(classIds, demoToday())) {
-    const [lop, mon] = k.split('|');
-    if (!map.has(+lop)) map.set(+lop, {});
-    map.get(+lop)![mon] = v.ten;
-  }
-  return map;
-}
-
 /**
  * T18 (PR-LT3): người làm từng môn — Speaking Mock → "GV chấm chéo" (không phải GVBM S, không phải "chưa phân công"); null = chưa phân công.
- * Danh sách lượt (`pendingOwners`) + hồ sơ lượt FT / lớp thường (`nguoiLam`, LUOT-TEN-GV) cùng một luật.
+ * Danh sách lượt (`pendingOwners`) + hồ sơ lượt FT / lớp thường (`nguoiLam`, LUOT-TEN-GV) cùng một luật. PR-Dọn (Q13) → N71 · Q2: người giữ ô lúc thi
+ * (`nguoiGiuO`, tuần thi của từng môn `tuanOf`) — cùng luật Công việc / nợ điểm.
  */
-function nguoiLamMon(rec: Record<string, string>, skills: readonly string[], kind: string): Record<string, string | null> {
+function nguoiLamMon(giu: ReturnType<typeof nguoiGiuO>, classId: number | null, skills: readonly string[], kind: string,
+  tuanOf: (s: string) => string | null | undefined): Record<string, string | null> {
   const out: Record<string, string | null> = {};
-  for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : rec[s] ?? null;
+  for (const s of skills) out[s] = laChamCheo(kind, s) ? CHAM_CHEO : classId === null ? null : giu(classId, s, tuanOf(s))?.ten ?? null;
   return out;
 }
 
 /** LUOT-TEN-GV: người làm từng môn của MỘT lượt (lớp lúc Test) — tên ở "Còn lại" / cột Trạng thái của trang lượt. */
-export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[], kind: string): Record<string, string | null> {
-  return nguoiLamMon(classId !== null ? ownersByClass([classId]).get(classId) ?? {} : {}, skills, kind);
+export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[], kind: string,
+  tuanOf: (s: string) => string | null | undefined = () => null): Record<string, string | null> {
+  return nguoiLamMon(nguoiGiuO(classId !== null ? [classId] : [], demoToday()), classId, skills, kind, tuanOf);
 }
 
 /** QUET-THEO-KY Q1: CHỈ phép kiểm bật — `listAttempts` `kemChuaTuan` đi câu `OR` cũ để so với `UNION ALL`. */
@@ -787,7 +784,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
-  const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  const scope = f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
   /* LOP-THUONG-QUYEN: đường chấm còn đọc lượt MT0 của lớp thường mà GV Speaking chấm S chéo — chỉ lượt `mt0`, không Progress / Final. */
   const lopMt0 = f.phamViCham && !scope.all ? lopMt0ChoGvSpeaking(p).filter((id) => !scope.classIds.includes(id)) : [];
   if (scope.none && !lopMt0.length) return { rows: [], scopeEmpty: true };
@@ -854,10 +851,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const bundle = loadBundle(rows.map((r) => r.id));
   /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
-  const ownersMap = ownersByClass(
-    rows.map((r) => r.class_id).filter((id): id is number => id !== null),
-  );
-  const ownersOf = (classId: number | null, skills: string[], kind: string) => nguoiLamMon((classId !== null && ownersMap.get(classId)) || {}, skills, kind);
+  const giuLop = nguoiGiuO(rows.map((r) => r.class_id).filter((id): id is number => id !== null), today);
+  const ownersOf = (classId: number | null, skills: string[], kind: string, tuanOf: (s: string) => string | null | undefined) =>
+    nguoiLamMon(giuLop, classId, skills, kind, tuanOf);
 
   /*
    * Lớp thường chấm theo số câu đúng chứ không theo band, nên KHÔNG được đo bằng bộ kỹ năng
@@ -869,6 +865,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
+    /* N71: em ngừng học chỉ còn việc ở ô thi trước ngày dừng (cùng luật nợ điểm `scoreDebt.ts`). */
+    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan);
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
     /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
     const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
@@ -878,19 +876,21 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma), a.created_at, bundle.skillRows.get(a.id));
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
-      const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       /*
        * LỚP NORMAL CŨNG TÁCH LỊCH THEO MÔN (mục 10.1): bốn môn có thể trải hai ba tuần.
        * Nên "đã đến lúc phải nhập điểm" phải hỏi theo TỪNG MÔN, không hỏi theo tuần của
        * cả bài. Hạn của lớp thường là hết thứ Tư tuần sau tuần thi môn đó (T19, như Fast Track).
        */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, regularSkills);
+      /* N71 · Q2: môn đã thi là việc của người được phân công LÚC THI (`oCuaToi`). */
+      const phanCongToi = a.class_id ? new Set(mySkills(p, a.class_id, regularSkills)) : new Set<string>();
+      const mineSkills = a.class_id ? regularSkills.filter((k) => oCuaToi(p, a.class_id, k, views.get(k)?.weekStart, today, phanCongToi.has(k))) : [];
       const pendingOf = (k: string) => {
         const v = views.get(k);
         if (!v) return null;
         const row = scores.find((x) => x.skill === k);
         const scored = row?.raw_score !== null && row?.raw_score !== undefined;
-        return !scored && awaitingScore(v.progress) ? v : null;
+        return !scored && awaitingScore(v.progress) && conNo(v.weekStart) ? v : null;
       };
       const c = bundle.cases.get(a.id);
       /* Cùng hình dạng PendingCell mà luật đếm dùng chung cần — dựng thẳng, không qua bộ chuyển. */
@@ -899,7 +899,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         const row = scores.find((x) => x.skill === k);
         const scoredFlag = row?.raw_score !== null && row?.raw_score !== undefined;
         return {
-          skill: k, required: !!v, scored: scoredFlag,
+          skill: k, required: !!v && conNo(v.weekStart), scored: scoredFlag,
           progress: v?.progress ?? 'upcoming', mine: mineSkills.includes(k),
         };
       });
@@ -955,7 +955,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         /* Số ô ĐÃ CÓ ĐIỂM trong cùng phạm vi — Cần chấm phân biệt "Chấm" với "Chấm tiếp". */
         scoredInScope: scoredInScopeOf(pendingCells, workScope),
         /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
-        pendingOwners: ownersOf(a.class_id, pending, a.kind),
+        pendingOwners: ownersOf(a.class_id, pending, a.kind, (k) => views.get(k)?.weekStart),
         /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
         pendingWeeks: [...new Set(pending.map((k) => views.get(k)?.periodCode).filter(Boolean))],
         /** Lịch từng môn của bài này — bốn môn có thể ở ba tuần khác nhau. */
@@ -974,7 +974,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* TD-QUET: `chiDem` — dòng chỉ đọc band / noShow / mine / lịch / hạn; cờ nhắc nhận xét (`nenCoNhanXet`, `thieuNhanXet`) không vào dòng trả về. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const active = cells.filter((c) => c.required);
-    const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
+    /* N71: em ngừng học — ô thi từ ngày dừng không còn là việc (`oConNoKhiDung`); ô thi trước ngày dừng vẫn chờ chấm. */
+    const cellsNo = cells.map((c) => (!c.required || conNo(c.weekStart) ? c : { ...c, required: false, mine: false }));
+    const pending = pendingSkillsOf(pendingInputOf(cellsNo), workScope);
     return {
       id: a.id,
       /*
@@ -1019,11 +1021,11 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
        * ĐANG NỢ ĐIỂM = đã đến tuần thi CỦA CHÍNH MÔN ĐÓ mà chưa có điểm. Bao gồm cả môn
        * đã xác nhận đã thi nhưng chưa chấm. Môn thi tuần sau KHÔNG tính là nợ.
        */
-      myPendingSkills: cells
+      myPendingSkills: cellsNo
         .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => c.skill),
       /* Bài đã báo "-" không còn là việc phải chấm — cùng luật với `pendingSkillsOf`, không hai luật đếm. */
-      myPendingDetail: cells
+      myPendingDetail: cellsNo
         .filter((c) => c.mine && !c.xong && awaitingScore(c.progress) && !c.noShow)
         .map((c) => ({ skill: c.skill, deadline: c.deadline, weekCode: c.periodCode, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null, overdue: !!c.overdue })),
       /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
@@ -1040,7 +1042,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       }),
       scoredInScope: scoredInScopeOf(pendingInputOf(cells), workScope),
       /* Ai phụ trách từng bài — danh sách của Quản lý là để ĐÔN ĐỐC, nên phải có tên. */
-      pendingOwners: ownersOf(a.class_id, pending, a.kind),
+      pendingOwners: ownersOf(a.class_id, pending, a.kind, (k) => cells.find((x) => x.skill === k)?.weekStart),
       /** Tuần thi của CHÍNH các môn còn nợ — để hàng đợi nói "nợ từ tuần nào". */
       pendingWeeks: [...new Set(
         pending.map((k) => cells.find((c) => c.skill === k)?.periodCode).filter(Boolean),
@@ -1252,7 +1254,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     /** HSL-MAY-CHU (N10): lượt S Ex của em trong các tuần của lượt — chỉ đọc, ngoài Overall / SOS. */
     sEx: (sExCuaHv(p, [a.student_id], today).get(a.student_id) ?? []).filter((x) => tuanLuot.has(x.tuan)),
     /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng — như phân công FT; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
-    nguoiLam: nguoiLamCuaLuot(a.class_id, ENTRY_SKILLS, a.kind),
+    nguoiLam: nguoiLamCuaLuot(a.class_id, ENTRY_SKILLS, a.kind, (k) => cells.find((c) => c.skill === k)?.weekStart),
     /* OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
     phuTrachS: laChamCheo(a.kind, 'speaking') && quyenPhuTrachS(p, a.class_id),
     attemptNo: a.attempt_no,
@@ -1602,7 +1604,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
             nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
-    const path = a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) : null;
+    const path = a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id }) : null;
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
       entityType: 'assessment_attempt', entityId: a.id, entityLabel: s.skill, before: s,
@@ -1622,7 +1624,7 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
   db().prepare(`UPDATE assessment_scores SET raw_score = NULL, entered_by = ?, entered_at = ?, nhap_dau_ngay = NULL
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(p.userId, luc, a.id);
   for (const s of o) {
-    const path = scoreEditPath(p, a.class_id!, s.skill);
+    const path = scoreEditPath(p, a.class_id!, s.skill, { lich_su: 0, id: a.id });
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'regular.score.override' : 'regular.score',
       entityType: 'assessment_score', entityId: s.id, entityLabel: `${maCt} · ${s.skill}`, before: s,
@@ -1652,7 +1654,7 @@ export function xoaLuot(p: Principal, attemptId: number) {
   const coDiem = scoresOf(attemptId).filter((s) => (s.band !== null || s.raw_score !== null)
     && ds.some((r) => r.skill === assessedSkillOf(s.skill) && r.bo_task !== s.skill));
   /* BPXL-1 (N57, PTA rà #1923): xoá MT đã có điểm = huỷ điểm — người không sửa được điểm (BPXL) chặn TRƯỚC câu hỏi, không 403 giữa chừng. */
-  if (coDiem.some((s) => !scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind }))) throw loi(403, '{nhan} đã có điểm — nhờ Head xoá.', { nhan });
+  if (coDiem.some((s) => !scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id }))) throw loi(403, '{nhan} đã có điểm — nhờ Head xoá.', { nhan });
   chanBpxlCoDiem(p, a, null, `${nhan} đã có điểm — nhờ Head xoá.`);   // N63 ② (rà PTA #1950): cùng luật với Khôi phục — kể cả điểm đang cất
   if (coDiem.length) canXacNhan('{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)', { nhan }, 'Huỷ điểm và xoá');
   return tx(() => {
@@ -2284,7 +2286,7 @@ export function saveScore(
    * chấm chéo), GVCN, Quản lý sửa MỌI LÚC: sau hoàn tất, cả khi lớp đã kết thúc. Kiểm nhập vẫn đủ (`luuNhanXet`); kèm điểm → luật dưới như cũ.
    */
   const nxMoiLuc = chiNhanXetNhom(patch) && !!a.class_id
-    && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) || isCoreTeacherOf(p, a.class_id));
+    && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id }) || isCoreTeacherOf(p, a.class_id));
   /* RKC (mở Q-B1 "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa / xoá / "-" như lớp đang chạy (nhật ký thường); Quản lý đi đường `override`. */
   const lopKetThuc = nxMoiLuc ? laLopKetThuc(a.class_id) : kiemLopKetThuc(p, a.class_id);
   /*
@@ -2310,9 +2312,9 @@ export function saveScore(
    * GVBM đúng ô sửa / xoá điểm mọi lúc qua đường của mình; nhật ký ghi `sauHoanTat`. Lớp đã kết thúc vẫn chỉ Quản lý (`kiemLopKetThuc`, Q-B1 ①).
    */
   const hoanTat = dotHoanTat(attemptId, today);
-  let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) : null;
+  let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id }) : null;
   if (!path && !nxMoiLuc) {
-    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill }, CHU_CHAN_NHAP_DIEM(p));
+    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill, attemptId: a.id }, CHU_CHAN_NHAP_DIEM(p));
   }
   if (lopKetThuc) path = 'override';
   const assessed = assessedSkillOf(skill);
@@ -2766,7 +2768,7 @@ export function classScoreSheet(
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];
 
-  return {
+  const kq = {
     classId, classCode: cls.code, branchName: cls.branch_name,
     period: period ? { id: period.id, code: period.code, weekStart: period.week_start, weekEnd: period.week_end } : null,
     /* OV-13h: lớp đã kết thúc GV vẫn nhập ô trống — cờ từng ô (`canEdit`) quyết, không tắt cả môn. */
@@ -2811,6 +2813,12 @@ export function classScoreSheet(
     /* LG-5c: "GV chấm S" đầu cột đã chọn (người xem × lớp × đợt — `dotGvCham`), 1 câu theo khoá chính. */
     gvChamCot: docGvChamCot(p, classId, dotGvCham(period?.id ?? null, attempts.map((a) => a.attempt_no as number))),
   };
+  /* N71 · Q2: GV cũ — môn có ô họ giữ lúc thi (`canEdit` từng ô) vào `editableSkills`: nút "Nhập điểm" / "Lưu · bài tiếp" như GV đang dạy. */
+  if (p.phanCongCu?.length) {
+    const sua = new Set<string>([...kq.editableSkills, ...kq.rows.flatMap((r: any) => r.cells.filter((c: any) => c.canEdit).map((c: any) => c.skill as string))]);
+    kq.editableSkills = ENTRY_SKILLS.filter((k) => sua.has(k));
+  }
+  return kq;
 }
 
 /** OV-14c: tuần thi của ô S (lịch riêng của kỹ năng, không có thì tuần của lượt) — mảnh SQL dùng alias `a`, `pr` của `ATTEMPT_SELECT`. */

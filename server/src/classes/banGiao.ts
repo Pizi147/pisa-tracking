@@ -151,7 +151,7 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
   const baiChuaLam = new Map<number, number>();
   theoLo(sids, (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT a.student_id, COUNT(*) AS n FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
+      `SELECT a.student_id, COUNT(*) AS n FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', false, true)}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
         WHERE a.status = 'planned' AND a.student_id IN (${ph}) GROUP BY a.student_id`,
     ).all(...lo) as any[]) baiChuaLam.set(r.student_id, r.n);
   });

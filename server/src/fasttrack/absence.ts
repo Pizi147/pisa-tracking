@@ -685,9 +685,11 @@ export function duocGoDau(p: Principal, o: {
   daHuyPhan?: boolean;
   /** LUAT-34 (T09): Hoàn tác — chính người vừa gõ "-", trong cửa sổ `duocHoanTacVang` — gỡ được cả khi "-" vừa huỷ phần thi (vắng 2 lần). */
   hoanTac?: boolean;
+  /** N71 · Q2: lượt của ô — GV cũ gỡ được "-" ở ô mình giữ lúc thi (`scoreEditPath` theo ô). */
+  attemptId?: number;
 }): string | null {
   if (qlDiem(p, { classId: o.classId })) return null;   // BPXL-1: gỡ "-" là việc điểm — BPXL không
-  if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
+  if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind, id: o.attemptId }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Head gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
   return null;
@@ -714,7 +716,7 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
   const assessed = assessedSkillOf(skill);
   const hien = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const hoanTac = dau.no_show_by === p.userId && duocHoanTacVang(dau.no_show_at, Date.now());
-  const loi = duocGoDau(p, { classId: a.class_id, skill, today, kind: a.kind, daHuyPhan: hien.sit_status === 'cancelled', hoanTac });
+  const loi = duocGoDau(p, { classId: a.class_id, skill, today, kind: a.kind, daHuyPhan: hien.sit_status === 'cancelled', hoanTac, attemptId });
   if (loi) throw forbidden(loi);
   const entry = entrySkillsOf(assessed);
   return tx(() => {
@@ -797,7 +799,7 @@ function baoVangTrong(p: Principal, attemptId: number, skill: string, lyDo: stri
   const conn = db();
   let a = loadAttempt(attemptId);
   /* NHAP-DIEM-a (chủ SP 14/11 "GV nhập có quyền ghi vắng, bỏ vắng"): + người nhập được ô của kỹ năng — như gõ "-" ở ô. */
-  if (!canRequest(p, a) && !(a.class_id && entrySkillsOf(skill as AssessedSkill).some((e) => scoreEditPath(p, a.class_id, e, { lich_su: a.lich_su ?? 0, kind: a.kind }) !== null))) {
+  if (!canRequest(p, a) && !(a.class_id && entrySkillsOf(skill as AssessedSkill).some((e) => scoreEditPath(p, a.class_id, e, { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id }) !== null))) {
     throw forbidden('Chỉ người nhập được ô này, GVCN của lớp và Head báo vắng được.');
   }
   if (isRatio(a)) throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');   // chủ SP 14/11: MT0 báo vắng như Mock (N38)
@@ -866,9 +868,9 @@ export function huyDiemKn(p: Principal, attemptId: number, skill: string, huy: b
   const thuong = isRatio(a);
   const kn = thuong ? skill : assessedSkillOf(skill);
   const o: string[] = thuong ? [kn] : entrySkillsOf(kn as AssessedSkill);
-  const lq = { lich_su: a.lich_su ?? 0, kind: a.kind };
+  const lq = { lich_su: a.lich_su ?? 0, kind: a.kind, id: a.id };
   const duoc = canRequest(p, a) || (!!a.class_id && o.some((e) => scoreEditPath(p, a.class_id, e, lq) !== null
-    || can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill: e })));
+    || can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill: e, attemptId: a.id })));
   if (!duoc) throw loi(403, 'Chỉ người nhập được ô này, GVCN lớp hoặc Head huỷ / khôi phục được điểm.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ — khôi phục lượt trước.');
   return tx(() => {
