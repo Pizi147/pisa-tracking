@@ -136,8 +136,8 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
   /* OV-15b (mockup 2 · 6): band trước, số câu là dòng phụ dưới ô (`SoCau`). */
   if (c.rawScore !== null) {
-    /* Chủ SP 25/11: L / R MỘT dòng "29/40 - 6.5" (số câu đúng / 40 - band), không dòng "29 câu" dưới ô. */
-    return { chu: c.band !== null ? `${c.rawScore}/40 - ${fmtBand(c.band)}` : String(c.rawScore), doc: t('{rawScore} câu, band {fmtBand}', { rawScore: c.rawScore, fmtBand: fmtBand(c.band) }), kieu: null };
+    /* Chủ SP 25/11: L / R MỘT dòng "6.5 · 29/40" (band tô màu trước, số câu đúng / 40 chữ trắng sau), không dòng "29 câu" dưới ô — phần số câu vẽ ở `ODiemMt`. */
+    return { chu: c.band !== null ? fmtBand(c.band) : String(c.rawScore), doc: t('{rawScore} câu, band {fmtBand}', { rawScore: c.rawScore, fmtBand: fmtBand(c.band) }), kieu: null };
   }
   if (c.band !== null) return { chu: fmtBand(c.band), doc: `band ${fmtBand(c.band)}`, kieu: null };
   /* OV-15b (mục 1, ô "cần nhập"): khung rỗng — chữ "Nhập" chỉ còn cho trình đọc màn hình. */
@@ -205,7 +205,8 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   const kq = dauKq && cell.band !== null && !h.kieu ? dauKq : null;
   /* BANG-0 (`ODiem`): chỗ ký hiệu giữ khi ô có số mà không ký hiệu (số thẳng cột). */
   const kyHieu = cell.band !== null && !h.kieu ? <span className="inline-block w-[14px] shrink-0 text-center" aria-hidden>{kq ? <DauKetQua kq={kq} /> : ' '}</span> : null;   /* LECH-BANG: chỗ trống giữ một khoảng trắng — span rỗng làm đường cơ sở ô (nút flex) tụt về giữa nút, lệch số 4,7 px */
-  const so = <span className={`whitespace-nowrap ${h.kieu ? '' : `text-[14px] font-bold ${lopKq(kq)}`}`}>{h.chu}</span>;
+  const soCau = !h.kieu && cell.rawScore !== null && cell.band !== null ? <span className="ml-1 text-[13px] font-medium text-[color:var(--text)]">· {cell.rawScore}/40</span> : null;
+  const so = <span className="whitespace-nowrap"><span className={`${h.kieu ? '' : `text-[14px] font-bold ${lopKq(kq)}`}`}>{h.chu}</span>{soCau}</span>;
   /* MỘT dòng phụ (04 mục 7): vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu (thiếu nhận xét = viền vàng, không chữ). */
   const thiBu = !!cell.daChot?.doiSang && !vangGoc;
   const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
