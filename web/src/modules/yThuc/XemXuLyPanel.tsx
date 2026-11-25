@@ -245,7 +245,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
             </p>
             {!rutDuoc && (
               <div className="pt-3">
-                <Truong nhan={t('Lý do')} batBuoc loi={daBam && lyDo.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: lyDo.trim().length, can: CHU_TOI_THIEU }}>
+                <Truong nhan={t('Lý do')} batBuoc loi={daBam && lyDo.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null}>
                   <textarea className="field w-full" rows={2} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
                 </Truong>
                 {ql && d.daBaoPh && (

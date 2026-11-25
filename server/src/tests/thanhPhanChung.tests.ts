@@ -453,7 +453,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/<NutLuat label=\{t\('Đã xoá'\)\}>\{t\('Giữ 30 ngày, sau đó xoá hẳn\.'\)\}<\/NutLuat>/.test(dx), 'câu 30 ngày phải vào ⓘ ở Lưu trữ');
     assert(/useApi<MucRac\[\]>\(loai \? `\/thung-rac\?loai=\$\{loai\}` : '\/thung-rac'\)/.test(dx), 'một loại → máy chủ lọc loại');
     const kp = doc('server/src/platform/khoiPhucRac.ts');
-    assert(/\$\{loai \? ' AND t\.loai = \?' : ''\}/.test(kp) && /export const demRac = \(p: Principal, loai: MucRac\['loai'\]\) => \(\{ n: danhSachRac\(p, loai\)\.length \}\)/.test(kp), 'đếm cùng tập danh sách (một câu, lọc loại trong SQL)');
+    assert(/\$\{loai \? ' AND t\.loai = \?' : ''\}/.test(kp) && /if \(!can\(p, PERMISSIONS\.ADMIN_CONFIG, \{ anyScope: true \}\)\) return \{ n: danhSachRac\(p, loai\)\.length \};/.test(kp)
+      && /SELECT COUNT\(\*\) AS n FROM thung_rac WHERE xoa_luc >= \? AND loai = \?/.test(kp), 'đếm cùng tập danh sách (một câu, lọc loại trong SQL)');
     const lt = doc('server/src/classes/luuTru.ts');
     assert(/lopCuoiId: lopCuoiCua\.get\(s\.id\)\?\.id \?\? null/.test(lt) && /branchId: r\.branch_id/.test(lt), 'máy chủ trả branchId / lopCuoiId');
   });
