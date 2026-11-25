@@ -198,6 +198,11 @@
 .cv.nua { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
 .man .pn { width:50%; }
 .lg.cs .ct { white-space:normal; overflow-wrap:anywhere; padding-block:6px; }
+/* đầu panel: tên + ⓘ ⋯ ✕ một hàng, mã lớp · tuần · bài · hạn hàng dưới (nửa màn 640 không đủ chỗ một hàng) */
+.man .pn-dau { flex-wrap:wrap; row-gap:0; padding-bottom:8px; }
+.man .pn-dau h2 { flex:1 1 auto; }
+.man .pn-dau .goc { order:2; }
+.man .pn-dau .meta { order:3; flex-basis:100%; }
 .od.nhap { border-color:var(--soon); }
 .dt .pht1 .nut-ma { min-height:44px; min-width:44px; }
 .hoan { display:grid; justify-items:center; gap:8px; padding:28px 16px 24px; text-align:center; color:var(--text-dim); }
@@ -308,12 +313,12 @@ const luoiS = (dt, hang, tach) => `<div class="lc" role="table" aria-label="Đi�
 const gvCham = `<div class="pht1"><span><span class="lb">GV chấm</span><b>Vũ Thu Lan</b><button class="nut nut-ma">Đổi</button></span></div>`;
 function pnCs(dt, k = {}) {
   const than = k.xong
-    ? `<div class="hoan">${ic('ok')}<b>Đã xong phần của bạn</b><span>MB FT 101 · W1 SEP: đã lưu 8 bài</span></div>${luoiS(dt, [], 'Đã có điểm · 8 bài')}`
+    ? `<div class="hoan">${ic('ok')}<b>Đã xong phần của bạn</b><span>MB FT 101 · W4 AUG, W1 SEP: đã lưu 8 bài</span></div>${luoiS(dt, [], 'Đã có điểm · 8 bài')}`
     : `${gvCham}${luoiS(dt, HV, 'Đã có điểm · 2 bài')}`;
   const luu = k.xong ? `<span class="luu da">${ic('dau')}Đã lưu 8 bài</span>` : `<span class="luu nhap">Chưa lưu · 1 bài</span>`;
   const nut = k.xong ? `<button class="nut nut-chinh">Lớp tiếp: MB FOU 12 ›</button>` : `<button class="nut">Lưu</button><button class="nut nut-chinh">Lưu · lớp tiếp ›</button>`;
   return `<section class="pn" aria-label="Chấm Speaking · MB FT 101">
-    ${dauPn('Chấm Speaking', '<a href="#">MB FT 101</a><span>W1 SEP</span>' + (k.xong ? '<span>đã chấm 8 bài</span>' : '<span>8 bài</span><span class="hn qua">25/08/2026</span>'), dt)}
+    ${dauPn('Chấm Speaking', '<a href="#">MB FT 101</a><span>W4 AUG, W1 SEP</span>' + (k.xong ? '<span>đã chấm 8 bài</span>' : '<span>8 bài</span><span class="hn qua">25/08/2026</span>'), dt)}
     <div class="pn-than">${than}</div>${chanPn(luu, nut)}</section>`;
 }
 /* phương án B: panel nhiều lớp, ngăn gập, ô tìm, Chi nhánh khác */
