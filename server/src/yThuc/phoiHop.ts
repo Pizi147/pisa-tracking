@@ -17,8 +17,8 @@ import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
-import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot } from './baoPhTvv.ts';
-import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, tenVaiTai } from '../worklist/giaoViec.ts';
+import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot, chotLeadBaoPh } from './baoPhTvv.ts';
+import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, luatMeeting } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -235,22 +235,23 @@ export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLu
 
 /**
  * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (meeting_phan + tên). Người phụ trách được giao chỉ hiệu lực khi còn hoạt động + còn vai ở
- * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `tenVaiTai` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
+ * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `luatMeeting` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
  * một câu mỗi request, dùng chung với `/my-work`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
  */
 export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }> {
   const out = new Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }>();
   if (!ids.length) return out;
   for (const r of db().prepare(
-    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
+    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.nguoi_luat, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
             CASE WHEN mp.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('mp.phu_trach_id', 'mp.branch_id')} THEN pt.full_name END AS pt_ten
        FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
        LEFT JOIN users xb ON xb.id = mp.xong_boi LEFT JOIN users pt ON pt.id = mp.phu_trach_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
       WHERE mp.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
     const xep = r.phan === 'xep_lich';
-    const vaiTen = tenVaiTai(r.phan, r.branch_id ?? null);
-    const vai = vaiTen ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
+    const luat = luatMeeting(r.phan, r.branch_id ?? null, r.nguoi_luat);   // VAI-0 (N74): một người — GĐCN / CX / BPXL
+    const vaiTen = luat?.ten ?? null;
+    const vai = luat ? (xep ? 'BPXL' : luat.vai === 'branch_director' ? 'GĐCN' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
     const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,
       nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? vaiTen ?? (xep ? r.tvv_ten ?? null : null), vai };
     const m = out.get(r.phoi_hop_id) ?? { xepLich: null, ketQua: null };
@@ -414,6 +415,7 @@ function dongBoViecTvv(id: number, truoc: string): void {
     if (buoc && !v) {
       bp = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(id, r.student_id, tenViec(r.kind, r.pb_moc ?? null), hanTvv(), nowIso()).lastInsertRowid);
+      chotLeadBaoPh([bp]);   // VAI-0 (N76b)
     } else if (buoc && v && v.trang_thai === 'bo' && v.bo_ly_do === LY_DO_MEETING_MO_LAI) {
       /* (10) mở lại = hạn mới từ hôm nay, bỏ hạn người dùng chọn của lần trước. */
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`)

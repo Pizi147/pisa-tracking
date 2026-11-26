@@ -2376,8 +2376,10 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   phoi_hop_id INTEGER,                   -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
   tinh_hinh_id INTEGER,                  -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
   phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,   -- GV-1 (N58): người được giao; NULL = theo luật
-  tra_lai_id INTEGER                     -- TL-1 (N61): yêu cầu trả lại đang mở làm việc "Chờ GV sửa" (hạn tạm dừng); NULL = không chờ
+  tra_lai_id INTEGER,                    -- TL-1 (N61): yêu cầu trả lại đang mở làm việc "Chờ GV sửa" (hạn tạm dừng); NULL = không chờ
+  nguoi_luat INTEGER REFERENCES users(id)   -- VAI-0 (N76b): em chưa có TVV lúc sinh → Lead TVV chốt (ít việc mở nhất); NULL = Head giữ. Em có TVV → TVV (đọc)
 );
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat ON viec_bao_ph(nguoi_luat) WHERE trang_thai = 'mo' AND nguoi_luat IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_bao_lai ON viec_bao_ph(bao_lai_cua);   -- YT-BAO-PH / G3-14
@@ -2466,8 +2468,18 @@ CREATE TABLE IF NOT EXISTS meeting_phan (
   xong_boi INTEGER REFERENCES users(id), xong_luc TEXT, nhap_ho_boi INTEGER REFERENCES users(id),
   han_chon TEXT,                         -- hạn đặt tay (YYYY-MM-DD), NULL = không hạn
   phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,
-  tao_luc TEXT NOT NULL
+  tao_luc TEXT NOT NULL,
+  nguoi_luat INTEGER REFERENCES users(id)   -- VAI-0 (N74): người nhận theo luật, chốt MỘT người lúc sinh (`nguoiNhanTuDong`); hết hiệu lực → người gán sớm nhất khi đọc
 );
+CREATE INDEX IF NOT EXISTS idx_meeting_phan_luat ON meeting_phan(nguoi_luat) WHERE trang_thai = 'mo' AND nguoi_luat IS NOT NULL;
+-- VAI-0 (N77, chủ SP 26/11): CVXL tự nhận lớp để xếp lịch — mọi việc BPXL tự sinh của lớp về người này. Một lớp một người. Migrate `prVaiMoi` chép y.
+CREATE TABLE IF NOT EXISTS lop_xep_lich (
+  class_id INTEGER PRIMARY KEY REFERENCES classes(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  gan_boi INTEGER REFERENCES users(id),
+  gan_luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_lop_xep_lich_nguoi ON lop_xep_lich(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
 -- Việc giao cho tôi (/my-work, một câu UNION ALL): chỉ mục một phần — dòng theo luật (NULL) không vào chỉ mục, câu cũ không đổi kế hoạch.

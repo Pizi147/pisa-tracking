@@ -37,7 +37,7 @@ import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { giuViecQl, viecHoSoTvv } from './viecTvv.ts';
+import { giuViecQl, laLeadTvv, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
@@ -902,6 +902,12 @@ function lopNhapDiemDuoc(p: Principal): number[] {
 }
 const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'office_admin'), grants: p.grants.filter((g) => g.roleKey !== 'office_admin') });
 
+/** VAI-0 (N76b): việc TVV Lead TVV đang giữ (em chưa có TVV, chi nhánh mình) — cùng các hàm nhóm TVV, chỉ dòng của tôi. */
+function viecLeadTvv(p: Principal, branchId: number | null): WorkItem[] {
+  const o = { today: demoToday(), tatCa: false, branchId };
+  return ([...viecHoSoTvv(p, { ...o, chot: true, boSung: true }), ...viecThiThat(p, o), ...viecBuocTiep(p, o), ...viecBaoPhCuaToi(p, o)] as WorkItem[]).filter((it) => it.mine);
+}
+
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
   /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
@@ -924,6 +930,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const coVanHanh = !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt');
   const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca', vanHanh: coVanHanh })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
+  /* VAI-0 (N76b): Lead TVV giữ việc TVV của em chưa có TVV ở chi nhánh mình — grant "như CX" bị bỏ khỏi lượt chính (N52), nên đọc riêng bằng principal gốc và
+     ghép như việc giao (trùng khoá giữ một; "Tất cả" của CX tính là của tôi qua `giao`). Chỉ khi có grant Lead TVV gán chi nhánh — vai khác: 0 câu. */
+  if (!f.boGiao && laLeadTvv(p)) giao.push(...viecLeadTvv(p, f.branchId ?? null).filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group)));
   const chiGiao = () => {
     const dong = dungDong(giao);
     const groups = [...new Set(giao.map((i) => i.group))].map((g) => {

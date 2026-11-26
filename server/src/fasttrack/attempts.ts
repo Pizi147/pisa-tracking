@@ -8,7 +8,7 @@ import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  CHU_CHAN_NHAP_DIEM, bangLop, can, giuOCu, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  CHU_CHAN_NHAP_DIEM, bangLop, can, giuOCu, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeLichTest, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, laBpxlXepLich, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -719,6 +719,8 @@ export type AttemptFilters = {
   /** PR-LT3 (rà #218 I2): CHỈ ĐỌC cho Lịch Test — phạm vi `scopeXemLuotCham` (thêm lớp FT cùng chi nhánh của GV Speaking chấm chéo),
    *  cùng phạm vi khối 2/3. Đường ghi vẫn kiểm quyền riêng (`scoreEditPath`). */
   phamViCham?: boolean;
+  /** VAI-0 (N77): khối "Test quá hạn chấm" của Lịch Test — phạm vi như hàng lớp (`scopeLichTest`: BPXL mọi chi nhánh). */
+  phamViLich?: boolean;
   /**
    * TURSO-LOG-1311: kèm `phamViCham` — lớp CHỈ vào nhờ chấm S chéo (ngoài `scopeFor`) chỉ đọc lượt Mock / MT0 mà ô Speaking chưa có band (tập cha của ô S
    * chéo còn chờ). Nơi gọi chỉ dùng ô S chéo ở các lớp đó (Công việc `vaoChamS`); log 10–11/11: GV Speaking đọc mọi lượt còn ô chờ của cả chi nhánh.
@@ -785,7 +787,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
-  const scope = f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
+  const scope = f.phamViLich ? scopeLichTest(p) : f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // VAI-0: khối quá hạn Lịch Test cùng phạm vi hàng lớp   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
   /* LOP-THUONG-QUYEN: đường chấm còn đọc lượt MT0 của lớp thường mà GV Speaking chấm S chéo — chỉ lượt `mt0`, không Progress / Final. */
   const lopMt0 = f.phamViCham && !scope.all ? lopMt0ChoGvSpeaking(p).filter((id) => !scope.classIds.includes(id)) : [];
   if (scope.none && !lopMt0.length) return { rows: [], scopeEmpty: true };

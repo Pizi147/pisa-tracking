@@ -193,14 +193,18 @@ export async function runPrOv13dTests(t: YThucTestKit) {
   /* Rà planning #408: lô chạy trên Netlify (~7,5 s, Turso ~20–50 ms/câu) — khoá số câu SQL mỗi em để một lời gọi web (≤ 4 em xử lý · ≤ 12 em cấp bậc) vừa giờ. */
   const { soCauSql } = await import('../platform/nguCanhRequest.ts');
   const dem = (fn: () => unknown) => { const truoc = soCauSql(); fn(); return soCauSql() - truoc; };
-  await checkAsync('OV13d-6 · Tốc độ: Xác nhận xử lý ≤ 17 câu / em (SV-YT-TVV +2: việc Báo PH + chuông người giữ) (lô 4 em, mỗi em 3 vi phạm) · Xác nhận cấp bậc ≤ 6 câu / em (lô 12 em)', () => thu(() => {
+  const accounts: any = await import('../platform/accounts.ts');
+  await checkAsync('OV13d-6 · Tốc độ: Xác nhận xử lý ≤ 19 câu / em (SV-YT-TVV +2: việc Báo PH + chuông người giữ; VAI-0 +2 khi chi nhánh có Lead TVV, em chưa có TVV: một câu đọc + một câu chốt — N76b, đo 19.0) (lô 4 em, mỗi em 3 vi phạm) · Xác nhận cấp bậc ≤ 6 câu / em (lô 12 em)', () => thu(() => {
+    /* VAI-0 (rà PTA): đo khi chi nhánh lớp CÓ Lead TVV và em chưa có TVV — đường chốt Lead TVV (`chotLeadBaoPh`) chạy thật. */
+    const cnLop = (conn.prepare('SELECT b.code FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?').get(cid) as any).code as string;
+    accounts.createAccount(P.admin, { email: `ov13d.lead${accounts.EMAIL_SUFFIX}`, password: 'matkhau-ov13d-lead', fullName: 'Đo Lead TVV', roles: [{ role: 'lead_consultant', branches: [cnLop] }] });
     const ems = Array.from({ length: 4 }, () => moiEm());
-    for (const sid of ems) nVp(sid, 3);
+    for (const sid of ems) { nVp(sid, 3); conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid); }
     const nXl = dem(() => { const r = lo.loXuLy(gvcn, cid, { em: ems.map((studentId) => ({ studentId })), performedOn: TODAY, note: MO_TA, idempotencyKey: 'ov13d-6' }); assert(r.em.every((x: any) => x.ok), JSON.stringify(r)); });
     const moi = Array.from({ length: 12 }, () => moiEm());
     const nCb = dem(() => { const r = lo.loCapBac(gvcn, cid, { em: moi.map((studentId) => ({ studentId, bac: 0 })) }); assert(r.em.every((x: any) => x.ok), JSON.stringify(r)); });
     console.log(`      đo: xử lý ${nXl} câu / 4 em = ${(nXl / 4).toFixed(1)} · cấp bậc ${nCb} câu / 12 em = ${(nCb / 12).toFixed(1)}`);
-    assert(nXl / 4 <= 17, `xử lý ${(nXl / 4).toFixed(1)} câu / em`);
+    assert(nXl / 4 <= 19, `xử lý ${(nXl / 4).toFixed(1)} câu / em`);
     assert(nCb / 12 <= 6, `cấp bậc ${(nCb / 12).toFixed(1)} câu / em`);
   }));
 }

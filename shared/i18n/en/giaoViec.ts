@@ -41,4 +41,15 @@ export const EN_GIAO_VIEC = {
   'Chi nhánh chưa có BPXL: TVV của em xếp lịch; chưa có CX: Head ghi kết quả.': 'No scheduler at the branch: the counsellor schedules; no CX: Head records the result.',
   'Giao việc cho người khác': 'Assign task to someone else', 'Trả việc về người theo luật': 'Return task to the default owner', 'Hoàn tác đổi người phụ trách': 'Undo owner change',
   'Sửa hạn việc': 'Edit task deadline', 'Hoàn thành phần Meeting': 'Complete meeting part', 'Sửa phần Meeting': 'Edit meeting part', 'Hoàn tác phần Meeting': 'Undo meeting part',
+  /* VAI-0 (N77): CVXL nhận lớp. */
+  'Thiếu người đang nhận lớp — mở lại rồi thử lại.': 'Missing the current scheduler of the class — reopen and try again.',
+  'Người nhận không hợp lệ.': 'Invalid assignee.',
+  'Lớp vừa được người khác nhận — mở lại để xem.': 'Someone just took this class — reopen to see it.',
+  'Chỉ BPXL tự nhận lớp; Head, GĐCN, Quản trị hoặc lead BPXL gán hộ được.': 'Only schedulers take a class themselves; Head, Branch director, Admin or the scheduling lead can assign one.',
+  'Người được gán không có vai BPXL đang hoạt động.': 'The assignee has no active scheduler role.',
+  'Lớp đã kết thúc — không nhận lớp mới.': 'The class has ended — it cannot be taken.',
+  'Không có lần nhận lớp nào để hoàn tác.': 'There is no class assignment to undo.',
+  'Quá thời gian hoàn tác — nhận / gán lại trực tiếp.': 'The undo window has passed — take or assign the class again directly.',
+  'Chỉ người đã đổi, Head, GĐCN, Quản trị hoặc lead BPXL hoàn tác được.': 'Only the person who changed it, Head, Branch director, Admin or the scheduling lead can undo.',
+  'Nhận xếp lịch lớp': 'Take class scheduling', 'Bỏ nhận xếp lịch lớp': 'Release class scheduling', 'Hoàn tác nhận xếp lịch lớp': 'Undo class scheduling change',
 } as const;

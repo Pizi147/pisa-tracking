@@ -5,7 +5,9 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { chuViecTvv, laLeadTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+/** VAI-0: loại việc của phía TVV (Lead TVV giữ khi em chưa có TVV). */
+const LOAI_TVV: ReadonlySet<string> = new Set(['bao-ph-yt', 'phoi-hop-tvv', 'bo-sung', 'buoc-tiep', 'thi-that']);   // 'bao-ph' = Phối hợp được giao — không phải việc TVV
 import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
@@ -321,6 +323,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   const chu = boVaiCx(p);
   const that = new Set(chu.grants.length ? viecCuaHocVien(chu, sid, board, n).cuaBan.map((x) => x.key) : []);
   for (const k of giaoToi) that.add(k);
+  /* VAI-0 (N76b): Lead TVV giữ việc TVV của em chưa có TVV (người giữ tính ở `chuViecTvv` / `viecBaoPhCuaToi`) — vẫn "của bạn". */
+  if (laLeadTvv(p)) for (const x of kq.cuaBan) if (LOAI_TVV.has(x.loai)) that.add(x.key);
   const lamThay = kq.cuaBan.filter((x) => !that.has(x.key))
     .map((x) => ({ ...x, cuaBan: false, nguoi: x.nguoi.id === p.userId ? { id: null, ten: 'Chưa có người phụ trách', vai: null } : x.nguoi }));
   return { cuaBan: kq.cuaBan.filter((x) => that.has(x.key)), nguoiKhac: [...lamThay, ...kq.nguoiKhac] };

@@ -68,7 +68,7 @@ type HangNguoiTho = { id: number; full_name: string; code: string; role: string 
  * GV-2 (N58): vai NHẬN được việc giao liên phòng ban — MỘT danh sách cho ô chọn (`timNguoiGiaoViec`) và máy chủ (`kiemNguoiNhan` ở `worklist/giaoViec.ts`).
  * Bỏ `tutor` / `head_tutor` (PTA rà quyền #1930 C): không có khu Công việc. Vai toàn hệ thống (chi nhánh trống, vd CX) tính là có ở mọi chi nhánh.
  */
-export const VAI_GIAO_VIEC = ['teacher', 'manager', 'consultant', 'office_admin', 'cx', 'scheduler', 'system_admin'] as const;
+export const VAI_GIAO_VIEC = ['teacher', 'manager', 'branch_director', 'consultant', 'lead_consultant', 'office_admin', 'cx', 'scheduler', 'system_admin'] as const;   // VAI-0: + GĐCN, Lead TVV
 function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: readonly number[] | null, vaiTaiCn: number | null = null): HangNguoiTho[] {
   const keys = ROLE_KEYS_OF[nhom];
   const keyPlaceholders = keys.map(() => '?').join(',');

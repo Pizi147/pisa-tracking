@@ -230,6 +230,13 @@ const USER: Record<Vai, number> = {
   CX: userByRole('cx', null),
   HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
   BPXL: userByRole('scheduler', 'MB'),   // BPXL-1: tài khoản demo Chuyên viên Xếp lịch Monbay
+  /* VAI-0: tạo SAU mọi tài khoản đo khác (id các vai cũ giữ nguyên — băm /my-work không đổi). */
+  GDCN: accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.gdcn.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-gdcn', fullName: 'Đo GĐCN MB', roles: [{ role: 'branch_director', branches: ['MB'] }],
+  }).userId as number,
+  LEADTVV: accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.leadtvv.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-leadtvv', fullName: 'Đo Lead TVV MB', roles: [{ role: 'lead_consultant', branches: ['MB'] }],
+  }).userId as number,
 };
 /** TQ-SOS-CN: `{sos23}` = id em SOS 2–3 của chi nhánh `{cn}` (chính `sos23Ids` của bảng Tổng quan) — tính lại sau khi nhân dữ liệu. */
 const tinhSos23 = () => ((bangChiNhanh(loadPrincipal(USER.QT), { ct: 'ft', chuY: true }).hang.find((h: any) => h.id === CN)?.sos23 ?? []) as number[]).join(',');
@@ -1590,14 +1597,18 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        vào việc Bổ sung hồ sơ thiếu; 0 câu thêm (dòng đã đọc). Đã kiểm: `emBoSung: undefined` → cả 11 băm trùng ảnh cũ.
        Trước: QL toi 4f025585561f2eab, QL tat-ca 50125dbbf3460fcc, QT tat-ca 99b9f7ce08e5b071, QT tat-ca cn 41c0c2a404b291fa */
     /* BAOPH-0 (N72 ⑤ ⑥, 26/11): chụp lại 8 băm — đổi CÓ CHỦ Ý: GVCN / Head thôi việc Báo PH kết quả Test + Trao đổi gia đình (mục 3c bỏ, nguồn TVV rời dòng Phối hợp), việc TVV mới ở nhóm Báo PH (dữ liệu mẫu báo qua TVV), hint nhóm phoi_hop. QT toi / ADMIN toi / GVS toi giữ. Trước: QL toi 4b9329d8861262f3, GVCN toi 6dacfaab65010b5f, GVBM toi ffba3d289a958121, GVCN_THUONG toi 6dacfaab65010b5f, QL tat-ca 6619650d184e792e, QT tat-ca c86ee14b9dbdd191, QT tat-ca cn 9043067ed4ef66da, QL gvcn f298a4e8477e0426 */
-    'QL toi': 'b38fc43debef4461', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
+    /* VAI-0 (N74, N76b — 26/11): chụp lại 4 băm — đổi CÓ CHỦ Ý. Đã kiểm từng nguyên nhân trên nhánh: (1) tài khoản đo Lead TVV MB (tạo sau seed) → việc tính từ hồ sơ của em
+       chưa có TVV (Chốt ngày thi, Bổ sung hồ sơ, Bước tiếp, KQ thi thật) về Lead TVV, rời Head — bỏ 2 tài khoản đo thì 'QL toi' / 'QL tat-ca' về băm cũ; (2) Head lùi MỘT người
+       (`headCua`) + phần Meeting chưa chốt (`nguoi_luat` NULL — seed tạo BPXL cuối seed) không nhảy sang BPXL → 'QT tat-ca' / 'QT tat-ca cn' đổi ownerId. Trước: QL toi
+       b38fc43debef4461, QL tat-ca 8d8946c963a08012, QT tat-ca f1b6a1a61ac9fa54, QT tat-ca cn 05751b21042eb7cf */
+    'QL toi': '3b5b2c5cc315bb67', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '8d8946c963a08012', 'QT tat-ca': 'f1b6a1a61ac9fa54',
-    'QT tat-ca cn': '05751b21042eb7cf', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '6daa449480d10d2b', 'QT tat-ca': '5b6062172b9e63fd',
+    'QT tat-ca cn': 'c0b53eb771110380', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

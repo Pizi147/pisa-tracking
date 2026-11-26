@@ -13,7 +13,8 @@
 
 /** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. TU2-5: HDT = Head tutor, chỉ đo đường trang Tutor. */
 /* BPXL-1 (N57): BPXL = Chuyên viên Xếp lịch MB — chỉ đo đường trang đầu Kế hoạch Test + Công việc + Tổng quan MT (PR giao diện BPXL-2 dùng). */
-export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT' | 'BPXL';
+/* VAI-0 (N75 / N76): GDCN = GĐCN Monbay (quyền Head, không việc tự động của Head) · LEADTVV = Lead TVV Monbay (quyền CX, giữ việc em chưa có TVV) — đo /my-work. */
+export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT' | 'BPXL' | 'GDCN' | 'LEADTVV';
 
 export const MOI_VAI: readonly Vai[] = ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'];
 
@@ -125,6 +126,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: 0 câu nghiệp vụ) · trang Công việc "Tất cả" (đọc như QL, không ai là chủ việc). */
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work' },
+  /* VAI-0: Công việc GĐCN / Lead TVV — Của tôi + Tất cả. */
+  { trang: 'Công việc vai mới', vai: ['GDCN', 'LEADTVV'], url: '/my-work' },
+  { trang: 'Công việc vai mới', vai: ['GDCN', 'LEADTVV'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* GV-1 (N58): tab "Đang theo dõi" — đường riêng, chỉ gọi khi mở tab (không vào /my-work, không số đếm), mọi vai. */
@@ -370,6 +374,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Kế hoạch Test BPXL', vai: ['BPXL'], url: '/demo/session' },
   { trang: 'Kế hoạch Test BPXL', vai: ['BPXL'], url: '/ke-hoach-test/lop' },
   { trang: 'Kế hoạch Test BPXL', vai: ['BPXL'], url: '/ke-hoach-test/ft/{lopFT}' },
+  /* VAI-0 (N77): CVXL nhận lớp — đọc người đã nhận (hồ sơ lớp / Kế hoạch Test). */
+  { trang: 'Kế hoạch Test BPXL', vai: ['BPXL', 'QL'], url: '/classes/{lopFT}/xep-lich' },
   { trang: 'Công việc BPXL', vai: ['BPXL'], url: '/my-work' },
   { trang: 'Tổng quan MT BPXL', vai: ['BPXL'], url: '/tong-quan/mock-test' },
   {
@@ -841,10 +847,13 @@ export const TRAN: Record<string, number> = {
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   /* BPXL-1 (N57): đường mới đo — trần = max(đo + 10, ⌈đo × 1,3⌉). /my-work: BPXL không việc theo luật (không lượt myWork); Tổng quan MT: không lượt myWork (Admin đo 28). */
   'BPXL /demo/session': 13, 'BPXL /ke-hoach-test/lop': 20, 'BPXL /ke-hoach-test/ft/{lopFT}': 23, 'BPXL /my-work': 12, 'BPXL /tong-quan/mock-test': 27,   // đo 3 · 10 · 13 · 2 · 17
+  'BPXL /classes/{lopFT}/xep-lich': 13, 'QL /classes/{lopFT}/xep-lich': 13,   // VAI-0 (N77): đo 3 · 3 → max(đo + 10, ⌈đo × 1,3⌉)
+  /* VAI-0 (N75 / N76): Công việc GĐCN / Lead TVV — đo 31 · 10 (Của tôi) · 51 · 54 (Tất cả) → max(đo + 10, ⌈đo × 1,3⌉). */
+  'GDCN /my-work': 41, 'LEADTVV /my-work': 20, 'GDCN /my-work?nguoi=tat-ca': 67, 'LEADTVV /my-work?nguoi=tat-ca': 71,
   'ADMIN /my-work': 22,   // RA-DOC-0611: đường mới đo — đo 12 (gồm 4 câu việc Xuất báo cáo PH) → max(đo + 10, ⌈đo × 1,3⌉)
   'QL /my-work': 48,   // AU-VIEC N49: đo 39 → 45 (+5 câu như dòng `branchId` dưới), trần giữ · PC-GV-A +1 (quét lịch đổi phân công GV tới hạn — một câu rẻ trong `quetLenhDenHan`, mọi đường đọc có quét); SV-NX-CASE +1 (MT mới nhất của em, một câu / trang); TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69) · TL-VIEC: đo 39 (trước 54)
   'QT /my-work': 48,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn); SV-NX-CASE +1; TD4: đo 60 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69) · TL-VIEC: đo 39 (trước 54)
-  'QL /my-work?nguoi=tat-ca': 68,   // AU-VIEC N49: đo (phép OV11c-9, demo MB) 66 sau khi gộp AU-SO gói 1 (+3 câu: tiến độ lớp + tuỳ chỉnh đợt của chi nhánh; em + bản ghi chỉ khi có đợt quá hạn > 7 ngày), trần đo + 2 · LG-3: "Tất cả" có việc Báo cáo PH của GV trong phạm vi (= "Của một GV") — +5 câu (phân công nhớ, tiến độ lớp, tuỳ chỉnh đợt, em, bản ghi đủ), demo MB đo 63, trần đo + 2; ×3 45 → 50 câu, 2085 → 2252 dòng · GV-CU-BO-TRO +1 (Người dạy nhóm `mt:` — `nguoiDayNhom`, một câu khi tập có PA bổ trợ miễn phí) · PHOI-HOP-SOS-INFO: đo 57 (+3 câu: lượt + điểm + lịch kỹ năng của thẻ kết quả SOS, một lô cho cả tập lớp, không theo lớp / em), trần đo + 2; TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
+  'QL /my-work?nguoi=tat-ca': 72,   // đo 70 + 2 (rà PTA: như các dòng khác) — gộp main 26/11 (4 PR) + VAI-0 · VAI-0 (N74) +1: người giữ vai Head / Quản trị / Lead TVV một câu mỗi request (Head lùi MỘT người `headCua`) · AU-VIEC N49: đo (phép OV11c-9, demo MB) 66 sau khi gộp AU-SO gói 1 (+3 câu: tiến độ lớp + tuỳ chỉnh đợt của chi nhánh; em + bản ghi chỉ khi có đợt quá hạn > 7 ngày), trần đo + 2 · LG-3: "Tất cả" có việc Báo cáo PH của GV trong phạm vi (= "Của một GV") — +5 câu (phân công nhớ, tiến độ lớp, tuỳ chỉnh đợt, em, bản ghi đủ), demo MB đo 63, trần đo + 2; ×3 45 → 50 câu, 2085 → 2252 dòng · GV-CU-BO-TRO +1 (Người dạy nhóm `mt:` — `nguoiDayNhom`, một câu khi tập có PA bổ trợ miễn phí) · PHOI-HOP-SOS-INFO: đo 57 (+3 câu: lượt + điểm + lịch kỹ năng của thẻ kết quả SOS, một lô cho cả tập lớp, không theo lớp / em), trần đo + 2; TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
   'QT /my-work?nguoi=tat-ca': 59,   // PHOI-HOP-SOS-INFO: +3 câu như QL (đo 57); TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
   'GVCN /my-work?nguoi=tat-ca': 12,   // TL-NEN: đo 2 (trước 7)
   'QL /my-work?nguoi=tat-ca&branchId={cn}': 56, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 56,   // AU-VIEC N49 (Báo cáo PH quá hạn cho QL): đo 49 → 54 (+5: tiến độ lớp, tuỳ chỉnh đợt — chi nhánh; em + bản ghi chỉ khi có đợt quá hạn > 7 ngày sau ngày bật), trần đo + 2 · LG-3: đo 50 (+5 câu như trên; dòng 2037 → 2204 ×3), trần đo + 2 · PHOI-HOP-SOS-INFO: đo 47 (+3 như trên, demo chi nhánh có ít lớp SOS hơn), trần đo + 2; DOC-THUA: đo 44 (Báo PH lọc chi nhánh trong SQL — cùng số câu), trần đo + 2
@@ -2282,7 +2291,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /regular/classes/{lopThuong}/sheet': 171,   // đo 121
   'QT /regular/classes/{lopThuong}/sheet': 169,   // đo 119
   'GVCN_THUONG /regular/classes/{lopThuong}/sheet': 169,   // đo 119
-  'QT /admin/permissions/matrix': 210,   // đo 160
+  'QT /admin/permissions/matrix': 240,   // đo 160 · VAI-0: đo 228 (+2 vai GĐCN · Lead TVV = +47 dòng quyền vai)
   'QT /admin/routes': 67,   // đo 17
   'QT /admin/programmes': 100,   // đo 50
   'QT /admin/chi-nhanh': 56,   // đo 6
@@ -2325,7 +2334,7 @@ export const TRAN_GHI_LO = {
    * thường L 61 → 54 · R 61 → 54 · W 84 → 69 · S 96 → 79 (183 → 113 dòng). Bản chép 12/11 (GV thật): R 80 → 76 · L 63 → 57 · W2 183 → 150 · thường 57–65 → 50–56.
    */
   luuDiemFt: 106, luuDiemFtDong: 289,
-  luuDiemFtChotLuot: 196, luuDiemFtChotLuotDong: 301,
+  luuDiemFtChotLuot: 197, luuDiemFtChotLuotDong: 301,   // VAI-0 (N76b) +1: chốt lượt sinh việc TVV → một câu đọc chốt Lead TVV (`chotLeadBaoPh`; bộ đo có Lead TVV MB)
   luuDiemThuong: 89, luuDiemThuongDong: 147,
   /** TD-HEAD-CX: ghi một vi phạm + POST /students/:id/y-thuc/xu-ly (sinh việc Báo PH + người theo dõi mặc định MỘT câu, gồm Head / CX); đo trong prGiaoViec TD-HEAD-CX. */
   /** TD-HEAD-CX (rà PTA (3)): sửa cả lớp bỏ TVV mọi em MB FT 101 (đồng bộ Head / CX một lần cuối lô) · lưu vai một tài khoản; đo trong prGiaoViec. */

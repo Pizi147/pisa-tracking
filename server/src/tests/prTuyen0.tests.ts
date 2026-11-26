@@ -160,6 +160,8 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
   }));
 
   await checkAsync('TUYEN0-6 · Phối hợp CÓ bước TVV · Meeting hai phần, Kết quả meeting cuối · BPXL thấy khung, không nhận noiDung (C3)', () => thu(() => {
+    /* VAI-0 (N74 / N77): Xếp lịch họp về MỘT người — CVXL đã nhận lớp; chi nhánh MB của bộ demo đã có BPXL khác nên cho BPXL thử nhận lớp. */
+    conn.prepare('INSERT OR REPLACE INTO lop_xep_lich (class_id, user_id, gan_luc) VALUES (?, ?, ?)').run(lop, bpxl.userId, '2026-01-01');
     const sid = moiEm();
     const { att, ids } = luot(sid, ['cx_meeting_student']);
     const a = tuyen(tvv, 'phoi_hop', att);

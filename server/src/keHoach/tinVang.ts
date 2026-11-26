@@ -6,7 +6,7 @@
 import { db } from '../db.ts';
 import { nowIso } from '../util.ts';
 import { tuanLich } from '../../../shared/domain/index.ts';
-import { nguoiVaiCuaChiNhanh } from '../platform/audit.ts';
+import { cvxlCuaLop, nhomVaiCn } from '../worklist/nguoiNhan.ts';
 import { nhoTheoBang } from '../platform/nguCanhRequest.ts';
 
 /** Điều kiện SQL trên ô điểm `sc`; một tham số `?` = thứ Hai tuần thi (`YYYY-MM-DD`). */
@@ -30,7 +30,8 @@ export function capNhatTinVang(classId: number | null, tuan: string, moi: boolea
   const conn = db();
   const lop = conn.prepare('SELECT code, branch_id FROM classes WHERE id = ?').get(classId) as { code: string; branch_id: number } | undefined;
   if (!lop) return;
-  const nhan = nhoTheoBang(['user_roles', 'roles', 'users'], `bpxl-cn:${lop.branch_id}`, () => nguoiVaiCuaChiNhanh(lop.branch_id, 'scheduler'));
+  /* VAI-0 (N74 / N77): MỘT người — CVXL đã nhận lớp → BPXL gán chi nhánh lớp đầu tiên (tin không phải việc: không đếm việc, ổn định); lead toàn hệ thống không nhận. */
+  const nhan = nhoTheoBang(['user_roles', 'roles', 'users', 'lop_xep_lich'], `bpxl-lop:${classId}`, () => { const u = cvxlCuaLop(classId) ?? nhomVaiCn('scheduler', lop.branch_id)[0]; return u ? [u] : []; });
   if (!nhan.length) return;
   const khoa = `vang_lop:${classId}:${tuan}`;
   const dong = conn.prepare(

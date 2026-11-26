@@ -149,6 +149,7 @@ import { migratePrVeLopLucThi } from './migrate/prVeLopLucThi.ts';
 import { migratePrLuuTruDong } from './migrate/prLuuTruDong.ts';
 import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
 import { migratePrTuyen0 } from './migrate/prTuyen0.ts';
+import { migratePrVaiMoi, themCotPrVaiMoi } from './migrate/prVaiMoi.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -588,9 +589,13 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* LUU-TRU-DONG (chủ SP 26/11): em đang Lưu trữ còn việc mở → đóng như lúc vào Lưu trữ; nhật ký `student.luu_tru_dong`, khôi phục `khoiPhucLuuTruDong` (một lần, khoá demo_config). */
   buoc(() => themCotPrBaoPh0(conn, applied));   // BAOPH-0: TRƯỚC Lưu trữ — `dongViecLuuTru` đọc `viec_xu_ly`
   buoc(() => migratePrLuuTruDong(conn, applied));
+  /* VAI-0: cột viec_bao_ph.nguoi_luat / meeting_phan.nguoi_luat + lop_xep_lich TRƯỚC BAOPH-0 — `dongBoViecTvvLuot` (sinh việc TVV) chốt Lead TVV vào cột này. */
+  buoc(() => { const t: string[] = []; themCotPrVaiMoi(conn, t); if (t.length) applied.push(`VAI-0 (cột): ${t.join(', ')}.`); });
   buoc(() => migratePrBaoPh0(conn, applied));   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
   /* TUYEN-0 (N72 ①): bảng tuyen_bo_theo_doi + chỉ mục người làm bước (chỉ thêm, chạy lặp được). */
   buoc(() => migratePrTuyen0(conn, applied));
+  /* VAI-0 (N74–N77): vai GĐCN + Lead TVV, bảng lop_xep_lich, meeting_phan.nguoi_luat + chốt một người cho phần Meeting đang mở. */
+  buoc(() => migratePrVaiMoi(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
