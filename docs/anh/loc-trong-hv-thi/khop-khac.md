@@ -29,12 +29,12 @@ Không đổi: khối "Quá hạn chấm" (nợ từ tuần trước, không ph�
 
 | Chỗ | TRƯỚC | SAU | KHỚP / KHÁC |
 |---|---|---|---|
-| Chip Lịch thi | "Đã thi 03/09/2026 · chờ K" bị cắt | "Đã thi 03/09/2026" + dòng phụ "chờ KQ" (cùng dạng dòng phụ của Lộ trình / MT gần nhất); ngày giữ dd/mm/yyyy (NH4); cột 152 (1280) / 172 (1440) | KHỚP |
-| Cột Việc cần làm | cột rộng, trống | không em nào có việc CỦA NGƯỜI XEM → bỏ cột; Học viên co giãn, các cột còn lại cố định cân nhau, ⋯ sát mép phải (NH9). Có việc thì cột giữ như cũ. CX vẫn có cột Phụ huynh | KHỚP |
+| Chip Lịch thi | "Đã thi 03/09/2026 · chờ K" bị cắt | chip hai dòng, CẢ CỤM TRONG nền chip: "Đã thi 03/09/2026" / "chờ KQ"; đủ chữ, không cắt; ngày giữ dd/mm/yyyy (NH4) | KHỚP |
+| Cột Việc cần làm | cột rộng, trống | không em nào có việc CỦA NGƯỜI XEM → bỏ cột; Học viên 220 px (vừa tên dài nhất), năm cột Lộ trình · MT gần nhất · Hỗ trợ · Ý thức · Lịch thi CHIA ĐỀU phần còn lại, ⋯ sát mép phải (NH9). Có việc thì cột giữ như cũ. CX vẫn có cột Phụ huynh | KHỚP |
 | MT gần nhất 1280 | 200 | 182 (nhường 18 px cho Lịch thi; tổng cột cố định giữ 956) | KHỚP |
 | Menu ⋯ dòng em | + Task · Case · Vi phạm / Nhắc nhở · Tình hình học tập │ Sửa thông tin · Chuyển lớp… | thêm "Ghi KQ thi thật" sau nhóm "+ Task", chỉ em Đã thi · chờ KQ mà người xem nhập được | KHỚP |
 | "Ghi KQ thi thật" | — | mở panel Sau thi CÓ SẴN (`PanelSauThi`, cùng "Kết quả thi thật" ở hồ sơ HV): lưu xong danh sách tải lại khi đóng panel (không kéo panel đi mất khi còn "Chọn bước tiếp") | KHỚP |
-| 375 | chip một dòng "Đã thi … · chờ KQ" | giữ nguyên chip một dòng | KHỚP |
+| 375 (thẻ) | chip một dòng "Đã thi … · chờ KQ" | giữ nguyên chip một dòng (thẻ rộng đủ) | KHỚP |
 
 Quyền: máy chủ trả `choKq: { cycleId, coTheNhap }` theo `coTheNhapThiThat` (GVCN, QL, Admin, TVV, CX — #2176 Q4); web chỉ ẩn / hiện mục, máy chủ vẫn kiểm khi lưu. TVV / CX đã có mục "Kết quả thi thật" (cùng panel) nên không thêm mục thứ hai.
 

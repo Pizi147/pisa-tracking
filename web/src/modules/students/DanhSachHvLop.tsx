@@ -292,7 +292,7 @@ const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV
 function OLich({ h, ev, onMoEm, theDt = false }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) => void; /** Thẻ điện thoại: chip một dòng "Đã thi dd/mm/yyyy · chờ KQ" (bảng: "chờ KQ" xuống dòng phụ). */ theDt?: boolean }) {
   return (
     <span className="block">
-      {h.lich || !ev ? <><ChipLichThi l={h.lich} them={theDt && h.lich?.trangThai === 'da-thi' ? t('chờ KQ') : undefined} />{!theDt && h.lich?.trangThai === 'da-thi' && <span className="dong2">{t('chờ KQ')}</span>}</> : <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span>}
+      {h.lich || !ev ? <><ChipLichThi l={h.lich} them={theDt && h.lich?.trangThai === 'da-thi' ? t('chờ KQ') : undefined} haiDong={!theDt && h.lich?.trangThai === 'da-thi' ? t('chờ KQ') : undefined} /></> : <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span>}
       {ev?.sauThi && onMoEm && (
         <button type="button" className="mt-1 block cursor-pointer appearance-none whitespace-normal border-0 bg-transparent p-0 text-left hover:underline" onClick={() => onMoEm(h.id)}>
           <NhanSauThi s={ev.sauThi} gon />
@@ -339,9 +339,9 @@ function useDai() {
 export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim, tvv, viecDaTai }: PropsBang) {
   const dai = useDai();
   /* Chủ SP 26/11 ("cột Việc cần làm trống mà rộng"): không em nào (trong mọi lớp đang lọc) có việc của người xem → bỏ cột; cột Học viên co giãn nhận phần dư
-     (luật cột NH9). CX giữ cột Phụ huynh. ponytail: chỉ xét lớp đang hiện — lọc đổi thì bảng tính lại. */
+     (luật cột NH9: Học viên vừa đủ tên, các cột còn lại chia đều). CX giữ cột Phụ huynh. ponytail: chỉ xét lớp đang hiện — lọc đổi thì bảng tính lại. */
   const khongViec = !!viecDaTai && (!vai || vai.coViec) && !nhom.some((g) => g.hv.some((h) => viec.get(h.id)?.length));
-  const cot = khongViec ? cotHv(vai).filter((c) => c.key !== 'viec').map((c) => (c.key === 'ten' ? { ...c, linhHoat: true } : c)) : cotHv(vai);
+  const cot = khongViec ? cotHv(vai).filter((c) => c.key !== 'viec') : cotHv(vai);
   const o = (h: HvGon, c: CotBang) => {
     const g = h.hang;
     const ev = vai?.em.get(h.id);

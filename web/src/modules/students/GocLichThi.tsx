@@ -32,12 +32,12 @@ export function khoangThang(thangUrl: string | null, homNay: string): [string, s
 }
 
 /** MỘT chip lịch thi thật cho Học viên & Lớp (cột Lịch thi + góc Lịch thi): Thi 17/09 · Đã thi · Chưa chốt · 09/2026 · Dự kiến 10/2026 · Chưa có lịch. */
-export function ChipLichThi({ l, them }: { l: LichThi | null | undefined; them?: string }) {
+export function ChipLichThi({ l, them, haiDong }: { l: LichThi | null | undefined; them?: string; /** Chữ dòng thứ hai trong chip (chỉ "Đã thi"). */ haiDong?: string }) {
   const { homNay } = useNgayNghiepVu();
   if (!l || l.trangThai === 'chua-co') return <NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>;
   const sau = them ? ` · ${them}` : '';
   if (l.trangThai === 'da-chot-ngay') return <NhanLich loai="co">{t('Thi {ngay}', { ngay: shortDate(l.ngay, homNay) })}{sau}</NhanLich>;
-  if (l.trangThai === 'da-thi') return <NhanLich loai="da-thi">{t('Đã thi {ngay}', { ngay: shortDate(l.ngay, homNay) })}{sau}</NhanLich>;
+  if (l.trangThai === 'da-thi') return <NhanLich loai="da-thi" haiDong={haiDong}>{t('Đã thi {ngay}', { ngay: shortDate(l.ngay, homNay) })}{sau}</NhanLich>;
   const moc = l.tuan ? tuanLich(l.tuan, homNay) : nhanThang(l.thang!);
   return l.trangThai === 'chua-chot-ngay'
     ? <NhanLich loai="du-kien">{t('Chưa chốt · {moc}', { moc })}</NhanLich>
