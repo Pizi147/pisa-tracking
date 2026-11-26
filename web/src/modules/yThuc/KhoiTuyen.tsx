@@ -77,7 +77,7 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
       /* TUYEN-3 (mockup v27 T9): các bước cùng lúc CHỜ bước người xem đang giữ → "Sau khi bạn duyệt · cùng lúc" (Head duyệt) / "Sau bước của bạn · cùng lúc". */
       const truoc = hien[i - 1];
       const sauToi = !!truoc?.laToi && truoc.trangThai === 'dang' && hien.slice(i, i + n).every((x) => x.trangThai === 'cho');
-      dong.push(<li key={`nhom-${b.khoa}`} className="nhom"><span>{sauToi ? (truoc!.ten === 'Head duyệt' ? t('Sau khi bạn duyệt · cùng lúc') : t('Sau bước của bạn · cùng lúc')) : t('Cùng lúc · {n} bước', { n })}</span></li>);
+      dong.push(<li key={`nhom-${b.khoa}`} className="nhom"><span>{sauToi ? (truoc!.khoa === 'duyet' ? t('Sau khi bạn duyệt · cùng lúc') : t('Sau bước của bạn · cùng lúc')) : t('Cùng lúc · {n} bước', { n })}</span></li>);
     }
     const con = !!b.cha || b.cungLuc;
     const rieng = thanRieng?.(b) ?? null;
