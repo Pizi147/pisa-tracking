@@ -12,7 +12,7 @@ import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
 import { notify, nguoiVaiCuaChiNhanh, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, loi, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
   MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docDiemSua, dotMacDinh, dotTruoc, dsDotLop, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan, tieuChiTrong,
@@ -440,37 +440,48 @@ export function datNhanhBaoCaoPh(p: Principal, classId: number, body: any) {
   return { o: ket, soO: ket.reduce((n, k) => n + k.khoa.length, 0), boQua, loi, thieuChu, suaLuc: luc };
 }
 
+/** Tối đa em một lần bỏ / khôi phục (lớp đông nhất ~40 em). */
+const TOI_DA_BO_EM = 200;
 /**
- * POST /classes/:id/bao-cao-ph/bo-em { dot, studentId, khoiPhuc? } — BO-BAO-CAO-PH (chủ SP 26/11: "cho Admin/ Head có thể bỏ không báo cáo của một vài học sinh đơn lẻ").
- * Bỏ: em không cần Báo cáo PH ĐỢT NÀY (đợt sau vẫn báo cáo) — rời việc GV, chip tab, việc Admin / QL, "n/N", tệp xuất (`emTrongDot`). Bài đã viết GIỮ (không xoá chữ);
- * không có trạng thái "đã gửi" (xuất là ảnh lúc bấm) nên bỏ được cả khi em đã đủ. Khôi phục (= Hoàn tác) xoá dòng. Quyền như bỏ đợt (`quyetDot`: Head · Quản trị · Admin
- * chi nhánh lớp; GV / TVV 403). Lặp lại không lỗi (bấm Hoàn tác hai lần). Nhật ký theo em (hồ sơ HV › Lịch sử).
- * Turso: lớp (nhớ) + đợt (tiến độ, tuỳ chỉnh) + em (1) + 1 ghi + 1 nhật ký; bỏ em cuối còn thiếu → + 2 câu tin Admin "đủ".
+ * POST /classes/:id/bao-cao-ph/bo-em { dot, studentIds, khoiPhuc? } — BO-BAO-CAO-PH (chủ SP 26/11: "cho Admin/ Head có thể bỏ không báo cáo của một vài học sinh đơn lẻ"
+ * · "cho chọn tick nhiều đi"). Bỏ: các em không cần Báo cáo PH ĐỢT NÀY Ở LỚP NÀY (đợt sau vẫn báo cáo) — rời việc GV, chip tab, việc Admin / QL, "n/N", tệp xuất
+ * (`emTrongDot`). Bài đã viết GIỮ (không xoá chữ); không có trạng thái "đã gửi" (xuất là ảnh lúc bấm) nên bỏ được cả em đã đủ. Khôi phục (= Hoàn tác) xoá dòng.
+ * Quyền như bỏ đợt (`quyetDot`: Head · Quản trị · Admin chi nhánh lớp; GV / TVV 403). Một em không thuộc lớp × đợt → 404 cả lô (không ghi gì). Em đã ở trạng thái
+ * đích bỏ qua (bấm Hoàn tác hai lần không lỗi); `doi` = em thật sự đổi. Nhật ký mỗi em (hồ sơ HV › Lịch sử).
+ * Turso: lớp (nhớ) + đợt (tiến độ, tuỳ chỉnh) + em (1) + 1 ghi nhiều dòng + 1 nhật ký nhiều dòng — không theo số em; bỏ em cuối còn thiếu → + 2 câu tin Admin "đủ".
  */
 export function boEmBaoCaoPh(p: Principal, classId: number, body: any) {
   const c = docLop(classId);
   const homNay = demoToday();
   if (!quyenBc(p, c, homNay).quyetDot) throw forbidden('Chỉ Head, Quản trị, Admin của chi nhánh bỏ được báo cáo PH của học viên.');
+  if (body?.khoiPhuc !== undefined && typeof body.khoiPhuc !== 'boolean') throw badRequest('Yêu cầu không hợp lệ');
+  const tho = Array.isArray(body?.studentIds) ? body.studentIds : [];
+  const sids = [...new Set(tho.map(toInt))] as (number | null)[];
+  if (!sids.length || sids.some((x) => !x || x < 1)) throw badRequest('Chọn ít nhất một học viên');
+  if (sids.length > TOI_DA_BO_EM) throw loi(400, 'Tối đa {n} học viên một lần', { n: TOI_DA_BO_EM });
   const d0 = dotCuaLop(c, homNay);
   if (!d0) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');
   const d = d0.ds.find((x) => x.ma === String(body?.dot ?? ''));
   if (!d) throw badRequest('Đợt báo cáo chưa mở hoặc không có ở lớp này');
-  const sid = toInt(body?.studentId);
   const emDot = emCuaDot(classId, d, homNay, true);
-  const e = sid ? emDot.find((x) => x.id === sid) : undefined;
-  if (!e) throw notFound('Học viên không có trong đợt báo cáo này');   // em lớp khác (kể cả id thật) qua id lớp mình
-  if (body?.khoiPhuc !== undefined && typeof body.khoiPhuc !== 'boolean') throw badRequest('Yêu cầu không hợp lệ');
+  const theoId = new Map(emDot.map((e) => [e.id, e]));
+  if (sids.some((x) => !theoId.has(x!))) throw notFound('Học viên không có trong đợt báo cáo này');   // em lớp khác (kể cả id thật) qua id lớp mình
   const khoiPhuc = body?.khoiPhuc === true;
-  if (e.bo === !khoiPhuc) return { doi: false };
+  const doi = sids.map((x) => theoId.get(x!)!).filter((e) => e.bo === khoiPhuc);
+  if (!doi.length) return { doi: [] as number[] };
   const luc = nowIso();
+  const ids = JSON.stringify(doi.map((e) => e.id));
   tx(() => {
-    if (khoiPhuc) db().prepare('DELETE FROM bao_cao_ph_bo_em WHERE student_id = ? AND class_id = ? AND dot = ?').run(e.id, classId, d.ma);
-    else db().prepare('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc) VALUES (?, ?, ?, ?, ?)').run(e.id, d.ma, classId, p.userId, luc);
-    writeAudit({ actorUserId: p.userId, action: khoiPhuc ? 'bao_cao_ph.bo_em_khoi_phuc' : 'bao_cao_ph.bo_em', entityType: 'student', entityId: e.id, entityLabel: c.code,
-      after: { dot: d.ma, nhan: nhanDotBc(d, homNay) } });
+    if (khoiPhuc) db().prepare(`DELETE FROM bao_cao_ph_bo_em WHERE class_id = ? AND dot = ? AND student_id IN (${DS_JSON})`).run(classId, d.ma, ids);
+    else chenNhieuDong('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc)', doi.map((e) => [e.id, d.ma, classId, p.userId, luc]));
+    writeAuditLo(doi.map((e) => ({ actorUserId: p.userId, action: khoiPhuc ? 'bao_cao_ph.bo_em_khoi_phuc' : 'bao_cao_ph.bo_em', entityType: 'student', entityId: e.id,
+      entityLabel: c.code, after: { dot: d.ma, nhan: nhanDotBc(d, homNay) } })));
   });
-  if (!khoiPhuc) baoAdminLopDu(c, d, d0.bo, emDot.filter((x) => !x.bo && x.id !== e.id), homNay);
-  return { doi: true, luc };
+  if (!khoiPhuc) {
+    const bo = new Set(doi.map((e) => e.id));
+    baoAdminLopDu(c, d, d0.bo, emDot.filter((x) => !x.bo && !bo.has(x.id)), homNay);
+  }
+  return { doi: doi.map((e) => e.id), luc };
 }
 
 /**
