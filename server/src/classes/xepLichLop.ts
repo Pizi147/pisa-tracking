@@ -14,6 +14,7 @@ import { notify, writeAudit } from '../platform/audit.ts';
 import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { chotNguoiLuatMeeting } from '../worklist/giaoViec.ts';
 import { CON_VAI_BPXL } from '../worklist/nguoiNhan.ts';
+import { chotNguoiNhanTin } from './lienPhongBan.ts';
 
 const LOAI = 'xep_lich_lop';
 /** Ai xem được người nhận lớp: ai xem / xếp được lịch lớp (BPXL mọi chi nhánh — N77). */
@@ -67,6 +68,9 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
     const g = new GhiDao(db());
     const phan = (db().prepare(PHAN_CUA_LOP).all(classId) as { id: number }[]).map((r) => r.id);
     if (phan.length) g.sua('meeting_phan', `id IN (${phan.map(() => '?').join(',')})`, ...phan);
+    /* LPB-0 (rà PTA #2266 P1-2, N77): việc BPXL Nhận thông tin đang mở của lớp, chưa ai chuyển tay → người mới (bỏ nhận → chốt lại theo N74); Hoàn tác trả lại. */
+    const nt = (db().prepare(`SELECT id FROM viec_nhan_tin WHERE class_id = ? AND trang_thai = 'mo' AND phu_trach_id IS NULL`).all(classId) as { id: number }[]).map((r) => r.id);
+    if (nt.length) g.sua('viec_nhan_tin', `id IN (${nt.map(() => '?').join(',')})`, ...nt);
     const luc = new Date().toISOString();
     if (moi === null) {
       g.xoa('lop_xep_lich', 'class_id = ?', classId);
@@ -86,13 +90,15 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
       if (moi !== null) db().prepare(`UPDATE meeting_phan SET nguoi_luat = ? WHERE id IN (${phan.map(() => '?').join(',')})`).run(moi, ...phan);
       else chotNguoiLuatMeeting(phan);
     }
+    if (nt.length) chotNguoiNhanTin(nt, moi);
     g.boKhongDoi('meeting_phan');
+    g.boKhongDoi('viec_nhan_tin');
     const gid = luuGhiDao(db(), { loai: LOAI, bang: 'classes', id: classId, nguoi: p.userId, ghi: g });
     const aid = writeAudit({ actorUserId: p.userId, action: moi === null ? 'xep_lich_lop.bo' : 'xep_lich_lop.nhan', entityType: 'classes', entityId: classId, entityLabel: lop.code,
-      before: { cvxl: cu }, after: { cvxl: moi, soViec: phan.length } });
+      before: { cvxl: cu }, after: { cvxl: moi, soViec: phan.length + nt.length } });
     if (cu && cu !== p.userId && cu !== moi) {
       notify({ userId: cu, kind: 'cap_nhat', title: `Lớp ${lop.code}: ${moi ? 'người khác đã nhận xếp lịch' : 'đã bỏ bạn khỏi xếp lịch'}`,
-        body: phan.length ? `${phan.length} việc xếp lịch đang mở đã chuyển.` : null, entityType: 'classes', entityId: classId, dedupKey: `xep-lich-lop:${aid}` });
+        body: phan.length + nt.length ? `${phan.length + nt.length} việc xếp lịch đang mở đã chuyển.` : null, entityType: 'classes', entityId: classId, dedupKey: `xep-lich-lop:${aid}` });
     }
     if (moi && moi !== p.userId) {
       notify({ userId: moi, kind: 'cap_nhat', title: `Bạn được gán xếp lịch lớp ${lop.code}`, body: null, entityType: 'classes', entityId: classId, dedupKey: `xep-lich-lop:${aid}:moi` });

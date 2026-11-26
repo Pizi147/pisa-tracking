@@ -435,7 +435,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 80, `xoá tốn ${nIt} câu (> 80)`);   // LPB-0: +1 câu xoá dòng em trong việc BPXL Nhận thông tin   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 81, `xoá tốn ${nIt} câu (> 81)`);   // LPB-0: +2 câu (đóng việc BPXL hết em · xoá dòng em trong việc Nhận thông tin)   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
@@ -835,7 +835,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 19 (#1418: +3 câu chụp email phụ / quyền / phân công · N69 +1 câu đọc việc đứng tên)', () => {
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 20 (LPB-0 +1 câu chốt lại việc Nhận thông tin của người hết vai · #1418: +3 câu chụp email phụ / quyền / phân công · N69 +1 câu đọc việc đứng tên)', () => {
     const han = taoTK('demhan');
     const mem = taoTK('demmem');
     conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
@@ -845,7 +845,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(user(mem.id)?.status === 'deleted' && user(han.id)?.status === 'deleted', 'tiền đề: cả hai xoá mềm (G5-10)');
     /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
     const them = xoaTK.CAU_DAU_VET.length - 1;
-    assert(nXem <= 8 + them && nMem <= 19 + them && nHan <= 19 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
+    assert(nXem <= 8 + them && nMem <= 20 + them && nHan <= 20 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {

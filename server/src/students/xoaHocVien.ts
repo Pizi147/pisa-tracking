@@ -56,6 +56,8 @@ const M = `SELECT id FROM discipline_measures WHERE student_id = ?1 OR cycle_id 
 const X = `SELECT id FROM sos_coordination_actions WHERE student_id = ?1 OR attempt_id IN (${A})`;
 const R = `SELECT id FROM skill_move_requests WHERE attempt_id IN (${A})`;
 const Q = 'SELECT id FROM yeu_cau_duyet WHERE hoc_vien_id = ?1';
+/** LPB-0: lệnh chuyển lớp của em (dòng em trong việc BPXL Nhận thông tin). */
+const LE = `SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})`;
 
 /** GV-1: việc của em theo khoá mềm (loại, id) — người theo dõi, lịch sử giao, lịch sử hạn, bản ghi đảo giao việc. */
 const VIEC_CUA_EM = (loai: string, id: string) => `((${loai} = 'bao_ph' AND ${id} IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
@@ -102,7 +104,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'ban_giao_gv_em', sql: 'DELETE FROM ban_giao_gv_em WHERE student_id = ?1' },   // PR-B: góp ý bàn giao đổi GV (việc của lớp giữ)
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
   /* LPB-0: dòng em trong việc BPXL Nhận thông tin (liên kết mềm tới lệnh) — việc của lớp giữ; hết em thì không hiện ở Công việc. */
-  { bang: 'viec_nhan_tin_dong', sql: `DELETE FROM viec_nhan_tin_dong WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
+  { bang: 'viec_nhan_tin_dong', sql: `DELETE FROM viec_nhan_tin_dong WHERE lenh_id IN (${LE})` },
   { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */
   { bang: 'yeu_cau_duyet', sql: 'DELETE FROM yeu_cau_duyet WHERE hoc_vien_id = ?1' },
@@ -271,6 +273,11 @@ export function xoaHocVien(p: Principal, studentId: number, _input: { maXacNhan?
     if (con !== null && con < XOA_CAN_CON_MS) throw new HttpError(503, 'Máy chủ đang bận, chưa xoá gì. Thử lại sau ít phút.');
     const conn = db();
     const dem = demMat(studentId).soDong;
+    /* LPB-0 (rà PTA #2266): việc BPXL Nhận thông tin còn mở mà em này là em cuối → đóng (hết em) — một câu, TRƯỚC khi xoá dòng (câu UPDATE này ngoài bản chụp thùng
+       rác: khôi phục em thì dòng em về, việc giữ đã đóng). */
+    conn.prepare(`UPDATE viec_nhan_tin SET trang_thai = 'bo', bo_ly_do = 'het_em', bo_luc = ?2 WHERE trang_thai = 'mo'
+        AND id IN (SELECT viec_id FROM viec_nhan_tin_dong WHERE lenh_id IN (${LE}))
+        AND NOT EXISTS (SELECT 1 FROM viec_nhan_tin_dong d WHERE d.viec_id = viec_nhan_tin.id AND COALESCE(d.mau, '') != 'x' AND d.lenh_id NOT IN (${LE}))`).run(studentId, new Date().toISOString());
     for (const c of CAU_XOA_HOC_VIEN) {
       if (c.bang === 'attachments#tep') {
         for (const r of conn.prepare(c.sql).all(studentId) as { url: string }[]) chup.tep.push(r.url);

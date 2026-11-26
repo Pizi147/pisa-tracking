@@ -730,10 +730,8 @@ export const SQL_TUYEN_THEO_DOI = `SELECT 'vi_pham' AS l, m.id AS k, m.created_a
        WHERE t.user_id = ?1 AND t.loai = 'xu_ly' AND xl.trang_thai = 'mo'
      UNION ALL SELECT 'vi_pham', m.id, t.luc, t.nguon, 'da_thuc_hien:' || m.id FROM viec_theo_doi t JOIN discipline_measures m ON m.id = t.ref_id
        WHERE t.user_id = ?1 AND t.loai = 'da_thuc_hien' AND (m.status = 'da_duyet' OR COALESCE(m.updated_at, m.created_at) >= ?3)
-     /* LPB-0 (N73 ④, 4.7): phụ trách chính (GVCN lớp nguồn) theo dõi cả tuyến Chuyển lớp · BPXL đã xác nhận · việc theo dõi (người ra lệnh / người lưu phân công
-        đã là người theo dõi mặc định của việc Báo PH / Nhận thông tin — đi vế viec_theo_doi, không thêm vế). Tối đa 20 vế UNION (Turso). */
-     UNION ALL SELECT 'chuyen_lop', l.id, l.tao_luc, 'lam', NULL FROM teacher_assignments ta JOIN lenh_chuyen_lop l ON l.lop_nguon_id = ta.class_id
-       WHERE ta.user_id = ?1 AND ta.is_core = 1 AND ta.status = 'active' AND l.lop_dich_id IS NOT NULL AND l.trang_thai != 'huy' AND l.tao_luc >= ?2
+     /* LPB-0 (N73 ④, 4.7): BPXL đã xác nhận · người theo dõi việc Nhận thông tin — người ra lệnh / người lưu phân công / phụ trách chính (GVCN lớp → Head) là người
+        theo dõi mặc định của việc đó (đi vế viec_theo_doi, không thêm vế; tối đa 20 vế UNION — Turso). */
      UNION ALL SELECT CASE v.loai WHEN 'doi_gv' THEN 'doi_gv' ELSE 'chuyen_lop' END, CASE v.loai WHEN 'doi_gv' THEN v.id ELSE d.lenh_id END, v.xong_luc, 'lam', NULL
        FROM viec_nhan_tin v JOIN viec_nhan_tin_dong d ON d.viec_id = v.id AND COALESCE(d.mau, '') != 'x' WHERE v.xong_boi = ?1 AND v.xong_luc >= ?2
      UNION ALL SELECT CASE v.loai WHEN 'doi_gv' THEN 'doi_gv' ELSE 'chuyen_lop' END, CASE v.loai WHEN 'doi_gv' THEN v.id ELSE d.lenh_id END, t.luc, t.nguon, 'nhan_tin:' || v.id

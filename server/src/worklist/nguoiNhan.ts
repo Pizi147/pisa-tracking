@@ -59,6 +59,21 @@ export function itViecNhat(ds: readonly number[]): number | null {
   return tot;
 }
 
+/**
+ * Rà PTA #2266 (N74): chọn LẦN LƯỢT cho một lô việc sinh cùng lúc — đếm việc mở MỘT lần (`soViecMo`), mỗi lần chọn người ít việc nhất rồi cộng dần (hoà → gán sớm hơn).
+ * Trả hàm chọn: gọi một lần mỗi việc của lô. Nhóm ≤ 1 người: 0 câu.
+ */
+export function chonLanLuot(ds: readonly number[]): () => number | null {
+  if (ds.length <= 1) return () => ds[0] ?? null;
+  const n = soViecMo(ds);
+  return () => {
+    let tot = ds[0];
+    for (const u of ds) if ((n.get(u) ?? 0) < (n.get(tot) ?? 0)) tot = u;
+    n.set(tot, (n.get(tot) ?? 0) + 1);
+    return tot;
+  };
+}
+
 /** CVXL đã nhận lớp (N77) — còn hoạt động + còn vai BPXL ở bất kỳ chi nhánh nào (BPXL xếp lịch mọi chi nhánh). */
 export function cvxlCuaLop(lopId: number | null | undefined): number | null {
   if (!lopId) return null;

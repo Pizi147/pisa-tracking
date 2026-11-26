@@ -31,7 +31,8 @@ import { giuViecQl, tvvConVai } from './viecTvv.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import type { WorkItem } from './mywork.ts';
 import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
-import { CON_VAI_BPXL, conVaiO, cvxlCuaLop, headCua, nguoiNhanTuDong, nhomVaiCn } from './nguoiNhan.ts';
+import { CON_VAI_BPXL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
+import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 
 /* TL-1 (N61): `tra_lai` = vi_pham_tra_lai — GV xử lý vi phạm / lần xử lý TVV trả lại (người theo luật = `nguoi_nhan`, hết vai → GVCN → Head). */
@@ -192,12 +193,12 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
  */
 function docViecNhanTin(id: number): Viec {
   const r = db().prepare(`SELECT v.*, c.code AS lop_code, xu.full_name AS xong_ten,
-      CASE WHEN v.nguoi_luat IS NOT NULL AND ${HL_NHAN_TIN('v.nguoi_luat', 'v.branch_id')} THEN v.nguoi_luat END AS luat_con,
       CASE WHEN v.phu_trach_id IS NOT NULL AND ${HL_NHAN_TIN('v.phu_trach_id', 'v.branch_id')} THEN v.phu_trach_id END AS pt_con
     FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id LEFT JOIN users xu ON xu.id = v.xong_boi WHERE v.id = ?`).get(id) as any;
   if (!r) throw notFound('Không tìm thấy việc.');
   const branchId: number | null = r.branch_id ?? null;
-  const luat = r.luat_con ?? cvxlCuaLop(r.class_id) ?? (branchId ? nhomVaiCn(VAI_BPXL, branchId)[0] : undefined) ?? headCua(branchId);
+  /* Rà PTA #2266 P1-3: MỘT nguồn — cột `nguoi_luat` (chốt lúc sinh; Nhận lớp / hết vai chốt lại — `chotNguoiNhanTin`), cùng cột Công việc / Tuyến / Đang theo dõi đọc. */
+  const luat = r.nguoi_luat ?? headCua(branchId);
   const macDinh = luat ? [luat] : [];
   const pt: number | null = r.pt_con ?? null;
   const tieuDe = `Nhận thông tin · ${r.loai === 'doi_gv' ? 'Đổi GV' : 'Chuyển lớp'} · ${r.lop_code}`;
@@ -527,6 +528,7 @@ export function donGiaoHetHieuLuc(o: { userId?: number; studentIds?: readonly nu
     for (const r of ds) ghiLan(loai, r.id, 'phu_trach', r.pt, null, boi);
   }
   if (o.userId) capNhatNguoiNhanTraLai({ userId: o.userId }, boi);   // TL-1: người nhận theo luật hết vai → người kế (đổi chi nhánh em: `theoGvcnHienTai` làm)
+  if (o.userId) nhanTinHetHieuLuc(o.userId);   // LPB-0 (rà PTA #2266 P1-3): người chốt việc Nhận thông tin hết vai → chốt lại theo N74 (một nguồn cho mọi nơi đọc)
   return rows.length + (o.userId ? vanHanhHetHieuLuc(o.userId, boi) : 0);
 }
 
@@ -1168,7 +1170,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
     const COT_NT = `SELECT 'nhan_tin', v.id, NULL, v.phu_trach_id, v.giao_boi, v.han, v.han_chon, c.code, NULL, NULL, v.class_id, v.loai, NULL,
         (SELECT COUNT(*) FROM viec_nhan_tin_dong d WHERE d.viec_id = v.id AND COALESCE(d.mau, '') != 'x'), v.branch_id, v.tao_luc, NULL, v.nguoi_luat, NULL, NULL, NULL FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id`;
     const tatCaNt = !!o.tatCa && (laLeadBpxl(p) || p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx'));
-    ve.push(`${COT_NT} WHERE v.phu_trach_id = ? AND v.trang_thai = 'mo'`, `${COT_NT} WHERE v.nguoi_luat = ? AND v.phu_trach_id IS NULL AND v.trang_thai = 'mo' AND ${HL_NHAN_TIN('v.nguoi_luat', 'v.branch_id')}`);
+    ve.push(`${COT_NT} WHERE v.phu_trach_id = ? AND v.trang_thai = 'mo'`, `${COT_NT} WHERE v.nguoi_luat = ? AND v.phu_trach_id IS NULL AND v.trang_thai = 'mo'`);   // `nguoi_luat` luôn còn hiệu lực (`nhanTinHetHieuLuc`)
     thamSo.push(p.userId, p.userId);
     if (tatCaNt) { ve.push(`${COT_NT} WHERE v.trang_thai = 'mo' AND COALESCE(v.phu_trach_id, v.nguoi_luat) IS NOT ?`); thamSo.push(p.userId); }
   }

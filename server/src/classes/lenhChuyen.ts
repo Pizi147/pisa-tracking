@@ -452,7 +452,7 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
       l = docLenh(id);
       if (!quyenLenh(p, l)) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }   // N63 ①: lệnh Cuối khoá — CX không
       kiemConSuaDuoc(l);
-      tx(() => huyMotLenh(p, l, why));
+      tx(() => { huyMotLenh(p, l, why); dongBoLienPhongLenh([l.id], p.userId); });   // LPB-0 (rà PTA #2266): đồng bộ CÙNG giao dịch huỷ
       kq.ok.push(id); daHuy.push(l);
     } catch (e) {
       if (!(e instanceof HttpError)) throw e;
@@ -460,8 +460,6 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
     }
   }
   if (ngoaiQuyen === ds.length) throw forbidden(CUNG_LOP_CHI_NHANH);
-  /* LPB-0: việc liên phòng ban của các lệnh vừa huỷ — MỘT lượt đồng bộ cho cả lô (không theo số lệnh). */
-  if (daHuy.length) tx(() => dongBoLienPhongLenh(daHuy.map((l) => l.id as number), p.userId));
   guiChuongHuyNhieu(p, daHuy, why);
   return kq;
 }

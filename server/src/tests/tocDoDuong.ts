@@ -1477,7 +1477,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QL /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40,
   /* BAOPH-0 (N72 ⑤): Head + CX theo dõi MỌI việc Báo PH (không chỉ vi phạm) — QL đo 57 dòng (seed) → đo + 50.
      TUYEN-0 (N72 ①): + một dòng một tuyến (tìm tuyến người xem đã làm bước / theo dõi việc N58 + dựng theo lô) — câu không đổi trần; sau gộp BAOPH-0 đo QL 173 → max(173 + 50, ⌈173 × 1,3⌉) = 225; GVCN 135 → 185 · CX 149 → 200 · vai khác đo ≤ 25 → 100. */
-  'QL /my-work/theo-doi': 250, 'QT /my-work/theo-doi': 100, 'GVCN /my-work/theo-doi': 185, 'GVBM /my-work/theo-doi': 100, 'TVV /my-work/theo-doi': 100, 'CX /my-work/theo-doi': 225, 'ADMIN /my-work/theo-doi': 100,   // LPB-0: QL 225 → 250, CX 200 → 225 — đo 235 · 210 (+10 dòng: tra việc Nhận thông tin theo dòng theo dõi + vế phụ trách chính tuyến Chuyển lớp; chủ SP 23/11 bỏ lo dòng đọc)
+  'QL /my-work/theo-doi': 250, 'QT /my-work/theo-doi': 100, 'GVCN /my-work/theo-doi': 200, 'GVBM /my-work/theo-doi': 100, 'TVV /my-work/theo-doi': 100, 'CX /my-work/theo-doi': 225, 'ADMIN /my-work/theo-doi': 100,   // LPB-0: QL 225 → 250, CX 200 → 225, GVCN 185 → 200 — đo 235 · 210 · 191 (GVCN = phụ trách chính, theo dõi tuyến Chuyển lớp) (+10 dòng: tra việc Nhận thông tin theo dòng theo dõi + vế phụ trách chính tuyến Chuyển lớp; chủ SP 23/11 bỏ lo dòng đọc)
   /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
   'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -2325,7 +2325,7 @@ export const TRAN_VIEC_CON = { tao: { cau: 41 }, mo: { cau: 27, dong: 67 } };   
  * (tìm khoá + dựng, đo ngoài request — đường thật dùng lại bộ nhớ phạm vi); `theoDoi`: phần tuyến của GET /my-work/theo-doi. Số câu không theo số tuyến
  * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +3 · 36 (khoá tuyến đọc từ panel — PTA rà #2231 P2-9; trước +6) · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉) · sau gộp BAOPH-0 (Head + CX theo dõi mọi Báo PH): theo dõi 9 câu · 206 dòng → dòng 270.
  */
-export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 12, dong: 270 } };
+export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 13, dong: 300 } };   // LPB-0: theo dõi +1 câu (dựng tuyến Chuyển lớp — MỘT câu mỗi loại tuyến, không theo số tuyến) · đo 13 câu 277 dòng
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 /** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */
@@ -2464,7 +2464,7 @@ export const TRAN_GHI_LO = {
   /** PR-SL: Sửa cả lớp — 30 em MB FT 101 đổi họ tên. Xem trước đọc theo lô (không tăng theo số em); lưu gọi `updateStudent` từng em trong một giao dịch. */
   xemTruocSuaCaLop30: 97,   // đo 74 câu (quyền theo em đọc DB) → max(74+10, ⌈74×1,3⌉) = 97
   /** PHEP-DO-LO: huỷ `LO_HANG_LOAT_EM` (8) quyết định chuyển lớp một lần (`huyNhieuLenh`, lô web gửi), cuộn lại sau đo. */
-  huyNhieuLenh8: 127,   // đo 97 câu, 58 dòng (1 lệnh 14 câu — ~12 / lệnh, mỗi lệnh một giao dịch) → max(97 + 10, ⌈97 × 1,3⌉)
+  huyNhieuLenh8: 152,   // LPB-0 (rà PTA #2266): việc liên phòng ban đồng bộ CÙNG giao dịch huỷ mỗi lệnh (+~5 câu / lệnh: đọc lệnh + việc TVV + việc BPXL + ghi) — đo 142 → đo + 10 · đo 97 câu, 58 dòng (1 lệnh 14 câu — ~12 / lệnh, mỗi lệnh một giao dịch) → max(97 + 10, ⌈97 × 1,3⌉)
   /** PHEP-DO-LO: `ganChuCaseThieu` cho mọi em có Case mở (tối đa 500) nhiều lớp, mọi Case mở chưa chủ (`suggestCaseOwner`), cuộn lại sau đo. */
   ganChuCase500Em: 786,   // ×3: 174 em có Case mở (≤ 500), 19 lớp, 291 Case → đo 604 câu, 399 dòng (trước gom phân công theo lớp: 874 câu, 1 864 dòng; còn lại 2 câu GHI / Case) → max(604 + 10, ⌈604 × 1,3⌉)
   luuSuaCaLopMotLo: 119,   // một lô 8 em đổi họ tên: đo 91 câu → ⌈91×1,3⌉ = 119 (30 em một lần cũ: 289 câu, 7–14 s trên Turso). ponytail: lô cố định 8 em theo số em, không theo số câu — em đổi nhiều ô (tuần bắt đầu dời MT, Target) nặng hơn ~3 lần; lưới chặn cuối: dừng trước 10 s mỗi dòng (503, lô đó cuộn lại); chia lô theo ước lượng câu nếu hay gặp 503

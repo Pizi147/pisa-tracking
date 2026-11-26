@@ -22,6 +22,11 @@ export async function runPrLpb0Tests(t: any) {
   const { migratePrLpb0 } = await import('../migrate/prLpb0.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+  const xl: any = await import('../classes/xepLichLop.ts');
+  const fs: any = await import('node:fs');
+  const path: any = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   console.log('\nLPB-0 · Việc liên phòng ban TVV / BPXL (N73, N74, N77)');
 
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
@@ -230,7 +235,7 @@ export async function runPrLpb0Tests(t: any) {
     gv.doiPhuTrach(loadPrincipal(bpMoi), 'nhan_tin', nt.id, { userId: tp, phuTrachCu: bpMoi });
     xoaNho();
     assert(!gv.xemGiaoViec(cu, 'nhan_tin', nt.id).coTheDoiNguoi, 'A → B → C: A chỉ còn theo dõi');
-    assert(ma(() => lpb.xacNhanNhanTin(cu, nt.id)) === 403 || cu.roleKeys.includes('manager'), 'người theo dõi không xác nhận');
+    assert(ma(() => lpb.xacNhanNhanTin(cu, nt.id)) === 403, 'người theo dõi không xác nhận');
     const lead = accounts.createAccount(P.admin, { email: `lpb0.lbp${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB0 Lead BPXL', roles: [{ role: 'scheduler', branches: [] }] }).userId;
     xoaNho();
     assert(lpb.xacNhanNhanTin(loadPrincipal(lead), nt.id).nhanTin.trangThai === 'xong', 'lead BPXL làm hộ');
@@ -294,40 +299,128 @@ export async function runPrLpb0Tests(t: any) {
     const nt = ntCua(dich)[0];
     xoaHv.xoaHocVien(P.admin, a);
     xoaNho();
-    assert(ntCua(dich)[0].so === 0 && !get('SELECT 1 FROM viec_bao_ph WHERE student_id = ?', a), 'dọn dòng + việc TVV');
+    assert(ntCua(dich)[0].so === 0 && ntCua(dich)[0].trang_thai === 'bo' && !get('SELECT 1 FROM viec_bao_ph WHERE student_id = ?', a), 'dọn dòng + việc TVV + việc BPXL hết em tự đóng');
     const w = myWork(loadPrincipal(nt.nguoi_luat), {}) as any;
     const ds = (w.items ?? w.groups?.flatMap((g: any) => g.items) ?? []) as any[];
     assert(!ds.some((i) => i.key === `nhan_tin:${nt.id}`), 'không hiện');
   }));
 
-  check('LPB-13 · tốc độ: ra lệnh 1 em vs 8 em — số câu phần việc liên phòng ban KHÔNG tăng theo số em', () => thu(() => {
-    const { nguon, dich } = dung();
+  check('LPB-13 · tốc độ (rà PTA #2266): ra lệnh 1 em vs 8 em CÙNG điều kiện (đều sinh việc mới ở lớp đích mới) · sửa cả lô sau khi BPXL đã xác nhận (MỘT tin mỗi việc) · panel', () => thu(() => {
+    const { nguon, dich, dich2 } = dung();
     const ss = Array.from({ length: 9 }, () => em(nguon));
     xoaNho();
-    const do1 = () => { const s0 = soCauSql(); ra(nguon, dich, [ss[0]]); return soCauSql() - s0; };
-    const n1 = do1();
-    const s0 = soCauSql(); ra(nguon, dich, ss.slice(1)); const n8 = soCauSql() - s0;
-    console.log(`    (đo raLenh có việc liên phòng ban: 1 em ${n1} câu · 8 em ${n8} câu)`);
-    assert(n8 <= n1 + 3, `số câu tăng theo số em: ${n1} → ${n8}`);
-    /* Đường mới: GET /giao-viec/nhan_tin/:id (khối + bảng em + chuỗi chấm từng em) · POST …/xac-nhan — trần ở `TRAN_GHI_LO`. */
-    const nt = ntCua(dich)[0];
-    const bpxl = loadPrincipal(nt.nguoi_luat);
+    const doRa = (lopDich: number, sids: number[], tuan?: string) => { xoaNho(); const s0 = soCauSql(); chayTrongRequest('POST', () => ra(nguon, lopDich, sids, tuan ? { tuan } : {})); return soCauSql() - s0; };
+    const n1 = doRa(dich, [ss[0]]);
+    const n8 = doRa(dich2, ss.slice(1));
+    /* Phần LPB-0 đo RIÊNG (cùng điều kiện: mỗi bên sinh việc mới ở lớp đích mới) — `raLenh` sẵn có tự tăng theo số em (ngoài phạm vi PR này). */
+    const { dich: d3 } = dung(); const l1 = ra(nguon, d3, [em(nguon)], { tuan: TUAN[1] });
+    const { dich: d4 } = dung(); const l8 = ra(nguon, d4, Array.from({ length: 8 }, () => em(nguon)), { tuan: TUAN[1] });
+    const doDongBo = (ids: number[], lopDich: number) => {
+      /* Đưa về "chưa sinh việc" rồi đồng bộ lại — đúng phần `raLenh` gọi sau khi lưu lệnh. */
+      conn.prepare(`DELETE FROM viec_nhan_tin_dong WHERE lenh_id IN (SELECT value FROM json_each(?))`).run(JSON.stringify(ids));
+      conn.prepare(`DELETE FROM viec_bao_ph WHERE lenh_chuyen_id IN (SELECT value FROM json_each(?))`).run(JSON.stringify(ids));
+      conn.prepare(`UPDATE viec_nhan_tin SET trang_thai = 'bo' WHERE class_id = ?`).run(lopDich);
+      xoaNho(); const c0 = soCauSql(); chayTrongRequest('POST', () => lpb.dongBoLienPhongLenh(ids, P.mbManager.userId)); return soCauSql() - c0;
+    };
+    const dong1 = doDongBo(l1, d3), dong8 = doDongBo(l8, d4);
+    console.log(`    (đo đồng bộ việc liên phòng ban: 1 em ${dong1} câu · 8 em ${dong8} câu)`);
+    assert(dong8 <= dong1 + 1, `đồng bộ tăng theo số em: ${dong1} → ${dong8}`);
+    console.log(`    (đo raLenh có việc liên phòng ban, đều sinh việc mới: 1 em ${n1} câu · 8 em ${n8} câu)`);
+    assert(ntCua(dich).length === 1 && ntCua(dich2).length === 1 && ntCua(dich2)[0].so === 8, 'mỗi lớp đích một việc mới');
+    /* Panel 1 em vs 8 em — trong request (nhớ trong request như thật). */
+    const doXem = (nt: any) => { const bp0 = loadPrincipal(nt.nguoi_luat); xoaNho(); const c0 = soCauSql();
+      chayTrongRequest('GET', () => { gv.xemGiaoViec(bp0, 'nhan_tin', nt.id); lpb.xemNhanTin(bp0, nt.id); tuyen.tuyenNhanTin(bp0, nt.id); }); return soCauSql() - c0; };
+    const nt1 = ntCua(dich)[0], nt8 = ntCua(dich2)[0];
+    const xem1 = doXem(nt1), xem = doXem(nt8);
+    const bpxl = loadPrincipal(nt8.nguoi_luat);
     xoaNho(); let c0 = soCauSql();
-    chayTrongRequest('GET', () => { gv.xemGiaoViec(bpxl, 'nhan_tin', nt.id); lpb.xemNhanTin(bpxl, nt.id); tuyen.tuyenNhanTin(bpxl, nt.id); });   // như một request thật (nhớ trong request)
-    const xem = soCauSql() - c0;
-    xoaNho(); c0 = soCauSql();
-    chayTrongRequest('POST', () => lpb.xacNhanNhanTin(bpxl, nt.id));
+    chayTrongRequest('POST', () => lpb.xacNhanNhanTin(bpxl, nt8.id));
     const xn = soCauSql() - c0;
-    /* Việc 1 em (lớp đích khác) — số câu panel không theo số em. */
-    const { dich2 } = dung();
-    ra(nguon, dich2, [em(nguon)]);
-    const nt1 = ntCua(dich2)[0];
-    const bp1 = loadPrincipal(nt1.nguoi_luat);
-    xoaNho(); c0 = soCauSql();
-    chayTrongRequest('GET', () => { gv.xemGiaoViec(bp1, 'nhan_tin', nt1.id); lpb.xemNhanTin(bp1, nt1.id); tuyen.tuyenNhanTin(bp1, nt1.id); });
-    const xem1 = soCauSql() - c0;
-    console.log(`    (đo GET /giao-viec/nhan_tin/:id 1 em ${xem1} câu · 9 em ${xem} câu · Xác nhận ${xn} câu)`);
+    /* Đã xác nhận rồi sửa tuần cả lô 8 em → không việc mới, MỘT tin "Cập nhật" cho người giữ. */
+    const tin = () => get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key LIKE ?`, nt8.nguoi_luat, `nt:${nt8.id}:%`).n;
+    const t0 = tin();
+    const nSua = doRa(dich2, ss.slice(1), TUAN[1]);
+    assert(ntCua(dich2).length === 1 && (nt8.nguoi_luat === P.mbManager.userId || tin() === t0 + 1), `một tin mỗi việc: ${t0} → ${tin()}`);
+    console.log(`    (đo GET /giao-viec/nhan_tin/:id 1 em ${xem1} câu · 8 em ${xem} câu · Xác nhận ${xn} câu · sửa 8 lệnh đã xác nhận ${nSua} câu)`);
     assert(xem <= xem1 + 3, `panel tăng theo số em: ${xem1} → ${xem}`);
+    assert(nSua <= n8 + 3, `sửa cả lô: ${nSua} câu`);   // sửa 8 lệnh đã xác nhận không đắt hơn lần ra lệnh
     assert(xem <= TRAN_GHI_LO.xemNhanTin && xn <= TRAN_GHI_LO.xacNhanNhanTin, `${xem} / ${xn}`);
+  }));
+
+  check('LPB-14 · (rà P1-1) lệnh trở về đúng điều PH đã được báo (sửa X → Y → X): "Báo lại" tự đóng, BPXL lớp X có em, lớp Y không; khôi phục Xét lại gọi cùng hàm đồng bộ', () => thu(() => {
+    const { nguon, dich, dich2 } = dung();
+    const a = em(nguon);
+    const [la] = ra(nguon, dich, [a]);
+    bp.ghiKetQuaBaoPh(loadPrincipal(TVV), { viecIds: [tvvCua(la)[0].id], ketQua: 'da_bao', ghiChu: 'Đã báo lớp X' });
+    lenh.suaLenh(P.mbManager, la, { toClassId: dich2 }); xoaNho();
+    assert(tvvCua(la).length === 2 && tvvCua(la)[1].trang_thai === 'mo', 'Báo lại khi sang Y');
+    lenh.suaLenh(P.mbManager, la, { toClassId: dich }); xoaNho();
+    const vs = tvvCua(la);
+    assert(vs.length === 2 && vs[1].trang_thai === 'bo' && vs[1].bo_ly_do === 'system_lenh_khoi_phuc', JSON.stringify(vs.map((v: any) => [v.nhan, v.trang_thai, v.bo_ly_do])));
+    assert(ntCua(dich).some((x: any) => x.so === 1 && x.trang_thai === 'mo') && ntCua(dich2).every((x: any) => x.so === 0), `BPXL: X ${JSON.stringify(ntCua(dich))} · Y ${JSON.stringify(ntCua(dich2))}`);
+    const src = fs.readFileSync(path.join(REPO, 'server/src/normal/xetLai.ts'), 'utf8');
+    assert(/function khoiPhucLenh\(p: Principal, anh[\s\S]*?dongBoLienPhongLenh\(\[id\], p\.userId\)/.test(src), 'xetLai khoiPhucLenh gọi dongBoLienPhongLenh');
+  }));
+
+  check('LPB-15 · (rà P1-2) CVXL nhận lớp đích → việc Nhận thông tin đang mở (chưa giao tay) về người nhận; Hoàn tác trả lại', () => thu(() => {
+    const { nguon, dich } = dung();
+    ra(nguon, dich, [em(nguon)]);
+    const nt = ntCua(dich)[0];
+    const moi = accounts.createAccount(P.admin, { email: `lpb0.cv${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB0 CVXL', roles: [{ role: 'scheduler', branches: ['MB'] }] }).userId;
+    xoaNho();
+    const cu = xl.xemXepLich(dich)?.userId ?? null;
+    xl.ganXepLich(loadPrincipal(moi), dich, { userId: moi, cu }); xoaNho();
+    assert(ntCua(dich)[0].nguoi_luat === moi, `nhận lớp: ${ntCua(dich)[0].nguoi_luat}`);
+    xl.hoanTacXepLich(loadPrincipal(moi), dich); xoaNho();
+    assert(ntCua(dich)[0].nguoi_luat === nt.nguoi_luat, 'Hoàn tác trả người cũ');
+  }));
+
+  check('LPB-16 · (rà P1-3) người chốt việc hết vai BPXL → chốt lại theo N74 (một nguồn): panel, Công việc "Của tôi", Tuyến cùng một người', () => thu(() => {
+    const { nguon, dich } = dung();
+    const bpTam = accounts.createAccount(P.admin, { email: `lpb0.tam${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB0 BPXL tạm', roles: [{ role: 'scheduler', branches: ['MB'] }] }).userId;
+    xoaNho();
+    const [la] = ra(nguon, dich, [em(nguon)]);
+    const nt = ntCua(dich)[0];
+    conn.prepare('UPDATE viec_nhan_tin SET nguoi_luat = ? WHERE id = ?').run(bpTam, nt.id);
+    accounts.setRoles(P.admin, bpTam, [{ role: 'teacher', branches: ['MB'] }]); xoaNho();
+    const sau = ntCua(dich)[0].nguoi_luat;
+    assert(sau && sau !== bpTam, `chốt lại: ${sau}`);
+    const khoi = gv.xemGiaoViec(P.mbManager, 'nhan_tin', nt.id);
+    assert(khoi.phuTrach[0].id === sau, 'panel cùng người');
+    const ds = ((myWork(loadPrincipal(sau), {}) as any).items as any[]).filter((i) => i.key === `nhan_tin:${nt.id}` && i.mine);
+    assert(ds.length === 1, 'Của tôi của người mới');
+    const tu = tuyen.dungTuyen(P.mbManager, { loai: 'chuyen_lop', khoa: String(la) });
+    const b = tu.buoc.find((x: any) => x.khoa === `nhan_tin:${nt.id}`);
+    assert(b?.nguoi === get('SELECT full_name FROM users WHERE id = ?', sau).full_name, `tuyến: ${b?.nguoi}`);
+  }));
+
+  check('LPB-17 · (rà P1-4) dòng gộp Final + Chuyển lớp: nguồn Final bị gỡ (huỷ lượt) → tách phần Final, việc Chuyển lớp còn mở; chiều gộp ngược (lệnh trước, Final sau)', () => thu(() => {
+    const { nguon, dich } = dung();
+    const a = em(nguon);
+    const [la] = ra(nguon, dich, [a]);
+    const cy = get('SELECT id FROM learning_cycles WHERE student_id = ?', a).id;
+    const at = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 1, 'final', ?, 'done', ?)`)
+      .run(cy, a, nguon, new Date().toISOString()).lastInsertRowid);
+    const x = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at) VALUES (?, ?, 'bao_ph_tvv', 'pending', ?)`)
+      .run(at, a, new Date().toISOString()).lastInsertRowid);
+    bp.dongBoViecTvvLuot([at]);
+    const v = tvvCua(la);
+    assert(v.length === 1 && v[0].phoi_hop_id === x && /^Kết quả Final · Chuyển lớp$/.test(v[0].nhan), `gộp ngược: ${JSON.stringify(v)}`);
+    assert(!get('SELECT 1 FROM viec_bao_ph WHERE phoi_hop_id = ? AND id != ?', x, v[0].id), 'không việc thứ hai');
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(at);
+    bp.dongBoViecTvvLuot([at]);
+    const s = tvvCua(la)[0];
+    assert(s.trang_thai === 'mo' && s.phoi_hop_id == null && s.nhan === 'Chuyển lớp' && s.lenh_chuyen_id === la, JSON.stringify(s));
+  }));
+
+  check('LPB-18 · (rà P2) chia lần lượt N74: đếm việc mở MỘT lần rồi cộng dần — hai BPXL mới (0 việc) → A, B, A, B', () => thu(() => {
+    const a = accounts.createAccount(P.admin, { email: `lpb0.la${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB0 A', roles: [{ role: 'scheduler', branches: ['MB'] }] }).userId;
+    const b = accounts.createAccount(P.admin, { email: `lpb0.lb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB0 B', roles: [{ role: 'scheduler', branches: ['MB'] }] }).userId;
+    xoaNho();
+    const s0 = soCauSql();
+    const chon = nn.chonLanLuot([a, b]);
+    const ds = [chon(), chon(), chon(), chon()];
+    assert(ds.join() === [a, b, a, b].join(), ds.join());
+    assert(soCauSql() - s0 === 1, `một câu đếm: ${soCauSql() - s0}`);
   }));
 }

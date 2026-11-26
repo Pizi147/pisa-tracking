@@ -22,7 +22,7 @@ import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { laLeadTvv, tvvConVai, tvvHieuLuc } from '../worklist/viecTvv.ts';
-import { KHONG_TVV_SQL, conVaiO, headCua, itViecNhat } from '../worklist/nguoiNhan.ts';
+import { KHONG_TVV_SQL, chonLanLuot, conVaiO, headCua } from '../worklist/nguoiNhan.ts';
 import { VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
@@ -30,6 +30,8 @@ import { banChupBaoPh, noiDungNguonTvv } from './phoiHop.ts';
 import { CN_EM } from '../worklist/hieuLuc.ts';
 import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 import { gopFinalVaoChuyenLop } from '../classes/lienPhongBan.ts';
+/** LPB-0: tên việc nguồn chuyển lớp (khớp `NHAN_BAO_PH_CL.moi`, lienPhongBan — hằng chữ để không đọc vòng import lúc nạp). */
+const NHAN_CHUYEN_LOP = 'Chuyển lớp';
 
 /** A3-09 (AUDIT-2111): ngày giờ họp đã xếp của Meeting CX/GĐCN (phần Xếp lịch họp đã xong) — dòng Báo PH · Meeting của TVV ghi như dòng của CX.
     Câu con theo chỉ mục duy nhất `uq_meeting_phan (phoi_hop_id, phan)`: ≤ 1 dòng, chỉ dòng có `phoi_hop_id`. */
@@ -76,7 +78,7 @@ export function nguoiGiuBaoPh(studentId: number, nguoiLuat?: number | null): num
 /* TVV hết vai = chưa có TVV (như viecTvv). */
 export function chotLeadBaoPh(ids: readonly number[], theo: 'id' | 'measure_id' = 'id'): void {
   if (!ids.length) return;
-  const chon = new Map<string, number | null>();
+  const chon = new Map<string, () => number | null>();
   const ghi: [number, number][] = [];
   /* MỘT câu đọc: việc chưa chốt của em chưa có TVV + Lead TVV gán chi nhánh em (sớm → muộn); không Lead TVV → không ghi gì (rà PTA: trần câu lô xử lý). */
   for (const r of db().prepare(`SELECT v.id, (SELECT json_group_array(l.u) FROM (SELECT ur.user_id AS u FROM user_roles ur JOIN roles rl ON rl.id = ur.role_id JOIN users lu ON lu.id = ur.user_id
@@ -84,10 +86,10 @@ export function chotLeadBaoPh(ids: readonly number[], theo: 'id' | 'measure_id' 
       FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
       WHERE v.${theo} IN (${DS_JSON}) AND v.nguoi_luat IS NULL AND ${KHONG_TVV_SQL('s')}`).all(JSON.stringify(ids)) as { id: number; leads: string }[]) {
     const ds = [...new Set(JSON.parse(r.leads ?? '[]') as number[])];
-    /* LPB-0 (lô chuyển lớp cả lớp): một lần chọn mỗi nhóm Lead TVV, MỘT câu ghi cho cả lô (trước: một UPDATE mỗi việc). ponytail: cả lô về cùng một Lead (đếm việc lúc sinh). */
+    /* LPB-0 (lô chuyển lớp cả lớp): đếm việc mở MỘT lần mỗi nhóm Lead TVV rồi chia LẦN LƯỢT (N74 — ít việc nhất, cộng dần); MỘT câu ghi cho cả lô (trước: một UPDATE mỗi việc). */
     const k = ds.join();
-    if (!chon.has(k)) chon.set(k, ds.length ? itViecNhat(ds) : null);
-    const u = chon.get(k);
+    if (!chon.has(k)) chon.set(k, chonLanLuot(ds));
+    const u = chon.get(k)!();
     if (u) ghi.push([r.id, u]);
   }
   if (ghi.length) db().prepare(`UPDATE viec_bao_ph SET nguoi_luat = (SELECT json_extract(j.value, '$[1]') FROM json_each(?1) j WHERE json_extract(j.value, '$[0]') = viec_bao_ph.id)
@@ -216,14 +218,18 @@ export function dongBoViecTvvLoTrinh(cycleIds: readonly number[]): void {
 export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: number | null = null): number[] {
   if (!attemptIds.length) return [];
   const rows = db().prepare(
-    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, a.status AS a_tt, v.id AS viec, v.trang_thai, v.bo_ly_do,
+    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, a.status AS a_tt, v.id AS viec, v.trang_thai, v.bo_ly_do, v.lenh_chuyen_id AS lenh,
             (a.status = 'cancelled' OR ${LUOT_SAU_THI_SQL('a')}) AS ngoai   -- N46 (rà #2233 P1-4): lượt huỷ / lộ trình đã thi thật không sinh việc
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = x.id
       WHERE x.attempt_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`,
   ).all(JSON.stringify(attemptIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[];
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
+  /* LPB-0 (rà PTA #2266 P1-4): dòng gộp Kết quả Final + Chuyển lớp mà nguồn Final bị HỆ THỐNG gỡ (huỷ lượt / sau thi thật / gỡ theo điểm) → tách phần Final, việc
+     Chuyển lớp còn nguyên (không đóng cả dòng). Nguồn hồi → `gopFinalVaoChuyenLop` nhập lại. */
+  const tachFinal = (viec: number) => db().prepare(`UPDATE viec_bao_ph SET phoi_hop_id = NULL, nhan = ? WHERE id = ? AND trang_thai = 'mo'`).run(NHAN_CHUYEN_LOP, viec);
   for (const r of rows) {
+    if (r.ngoai && r.lenh && r.trang_thai === 'mo') { tachFinal(r.viec); continue; }
     if (r.ngoai) {
       /* N46 (rà #2233 vòng 2 P1-A): lộ trình đã có KQ thi thật / lượt huỷ → việc còn mở ĐÓNG ở gốc (Việc được giao, KPI đọc DB) — KQ thi thật gỡ thì mở lại (nhánh dưới). */
       if (r.trang_thai === 'mo') db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
@@ -242,6 +248,8 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
       chotLeadBaoPh([Number(k.lastInsertRowid)]);   // VAI-0 (N76b)
     } else if (r.status === 'pending' && r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do)) {   // rà #2233 P1-1 / P1-2: cả huỷ lượt, kết thúc lộ trình
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`).run(hanBaoPh(homNay), r.viec);
+    } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do) && r.lenh) {
+      tachFinal(r.viec);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do)) {
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
         .run(NGUON_GO.has(r.ly_do) ? r.ly_do : 'system_nguon_go', luc, r.viec);
