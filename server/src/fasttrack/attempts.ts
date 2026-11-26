@@ -39,7 +39,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -772,7 +772,7 @@ export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[
 export const listAttemptsOrKhiKiem = { bat: false };
 
 const ATTEMPT_SELECT = `
-  SELECT a.*,  s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
+  SELECT a.*,  s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.programme_code AS cy_programme_code, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -865,8 +865,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
-    /* N71: em ngừng học chỉ còn việc ở ô thi trước ngày dừng (cùng luật nợ điểm `scoreDebt.ts`). */
-    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan);
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (cùng luật nợ điểm `scoreDebt.ts`). */
+    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan, a.hv_quay_lai);
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
     /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
     const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
@@ -974,7 +974,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* TD-QUET: `chiDem` — dòng chỉ đọc band / noShow / mine / lịch / hạn; cờ nhắc nhận xét (`nenCoNhanXet`, `thieuNhanXet`) không vào dòng trả về. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const active = cells.filter((c) => c.required);
-    /* N71: em ngừng học — ô thi từ ngày dừng không còn là việc (`oConNoKhiDung`); ô thi trước ngày dừng vẫn chờ chấm. */
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (`oConNoKhiDung`). */
     const cellsNo = cells.map((c) => (!c.required || conNo(c.weekStart) ? c : { ...c, required: false, mine: false }));
     const pending = pendingSkillsOf(pendingInputOf(cellsNo), workScope);
     return {
@@ -2788,7 +2788,9 @@ export function classScoreSheet(
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
       const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat, vangCu);
       /* MT0-THEO-EM: MT0 hiện ở lớp FT không là việc / trễ của lớp FT (vẫn ở lớp thường cũ); sửa được hay không giữ theo quyền lớp cũ. */
-      const cells = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
+      const cells1 = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
+      /* Lưu trữ (chủ SP 26/11, rà #2217 P2-1): em đã quay lại học — ô thi trước tuần quay lại không còn là việc / quá hạn (cùng `oConNoKhiDung` của nợ điểm). */
+      const cells = cells1.map((c) => (oConNoKhiDung(null, c.weekStart, a.hv_quay_lai) ? c : { ...c, viec: false, overdue: false }));
       return {
         attemptId: a.id,
         studentId: a.student_id,

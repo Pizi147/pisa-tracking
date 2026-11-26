@@ -4,7 +4,7 @@ import { GV_CON_DAY_SQL, activeAt, khopMon, phanCongDaNap, type Principal } from
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
-import { LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nguoiPcLuc, type DongPc } from '../phanTich/luatBai.ts';
 
@@ -160,7 +160,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
   const rows = conn
     .prepare(
       `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
-              s.archived_at AS hv_archived,   -- N71: em ngừng học chỉ nợ ô thi trước ngày dừng (oConNoKhiDung)
+              s.archived_at AS hv_archived, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai,   -- Lưu trữ (chủ SP 26/11): em dừng không nợ, quay lại không mở ô cũ (oConNoKhiDung)
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route  -- OV-12b: kỳ vọng ô (skillCells) không hỏi lẻ từng lượt
          FROM assessment_attempts a
          JOIN classes cl ON cl.id = a.class_id
@@ -194,14 +194,14 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) {
         const v = views.get(skill);
-        if (!v || !conPhaiNhap(v) || !oConNoKhiDung(a.hv_archived, v.weekStart)) continue;   // NHAP-DIEM-a: một luật
+        if (!v || !conPhaiNhap(v) || !oConNoKhiDung(a.hv_archived, v.weekStart, a.hv_quay_lai)) continue;   // NHAP-DIEM-a: một luật
         out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf(a.class_id, skill, v.weekStart), overdue: v.overdue, han: v.deadline ?? null });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows, undefined, undefined, true)) {   // TD-HVL: chỉ đếm
         if (!conPhaiNhap({ required: c.required, scored: c.xong, noShow: c.noShow !== null, progress: c.progress })) continue;
-        if (!oConNoKhiDung(a.hv_archived, c.weekStart)) continue;
+        if (!oConNoKhiDung(a.hv_archived, c.weekStart, a.hv_quay_lai)) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf(a.class_id, c.skill, c.weekStart),
           overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });

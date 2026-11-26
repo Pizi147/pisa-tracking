@@ -84,7 +84,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
       .prepare(
         `SELECT a.id, a.attempt_no, a.status, pr.code AS period_code, pr.week_start
            FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', false, true)} AND ${LUOT_LO_TRINH_CUOI_SQL('a', true)}   -- lỗi chủ SP 28/10: MT sắp tới của lộ trình hiện tại (LOP-CU: không bài nợ khoá cũ)
+           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND ${LUOT_LO_TRINH_CUOI_SQL('a', true)}   -- lỗi chủ SP 28/10: MT sắp tới của lộ trình hiện tại (LOP-CU: không bài nợ khoá cũ)
           WHERE a.student_id = ? AND a.status = 'planned' AND a.lich_su = 0 ORDER BY pr.week_start IS NULL, pr.week_start, a.attempt_no LIMIT 1`,
       )
       .get(s.id) as any;   /* PR-MT: MT lịch sử (tuần thi đã qua) không phải "MT sắp tới" */
@@ -506,7 +506,7 @@ export function hocLai(p: Principal, studentId: number, o: {
     datLaiHanCase(studentId, date);
     /* CV-LOI: Học lại (lớp mới hoặc khôi phục lớp cũ) — Case chưa có người phụ trách của em gán theo lớp đang học, cùng giao dịch. */
     ganChuCaseThieu({ studentIds: [studentId], actorId: p.userId, luc: nowIso() });
-    addJourney({
+    const journeyId = addJourney({
       studentId, cycleId, eventType: 'resume', eventDate: date, title: 'Học lại',
       detail: [lyDo, lopMoi ? `sang lớp ${lopMoi.code}` : null].filter(Boolean).join(' — ') || null, createdBy: p.userId,
     });
@@ -514,7 +514,7 @@ export function hocLai(p: Principal, studentId: number, o: {
     writeAudit({
       actorUserId: p.userId, action: 'student.rejoin', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at, branchId: s.branch_id, ...tgDoi.truoc },
-      after: { ...tgDoi.sau, status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong, soGhiDanh: khoiPhuc.length, ghiDanhKhoiPhuc, loTrinhKhoiPhuc, lopMoLai, moi },
+      after: { ...tgDoi.sau, status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong, soGhiDanh: khoiPhuc.length, ghiDanhKhoiPhuc, loTrinhKhoiPhuc, lopMoLai, moi, journeyId },
     });
     ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
@@ -587,6 +587,8 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
           before: { status: 'active' }, after: { status: 'finished', on: l.finishedAt, lyDo: `Hoàn tác Học lại: ${s.full_name}` } });
       }
     }
+    /* Rà #2217 P1: bỏ mốc "Học lại" lần đó (như Hoàn tác Quay lại) — không thì ô thi trước lần Học lại bị ẩn vĩnh viễn (`QUAY_LAI_SQL`). */
+    if (a?.journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'resume'`).run(a.journeyId, studentId);
     addJourney({ studentId, eventType: 'finish', eventDate: demoToday(), title: 'Hoàn tác Học lại', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.rejoin_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code, before: a, after: { status: 'finished', finishedAt: b.finishedAt, archivedAt: b.archivedAt } });
     ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
@@ -678,6 +680,7 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
     if (journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'pause'`).run(journeyId, studentId);
     writeAudit({ actorUserId: p.userId, action: 'student.pause_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'inactive', ...cuoi.after }, after: { status: 'active' } });
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em ra khỏi Lưu trữ — ô của em tính lại (rà #2217 P2-2)
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
@@ -702,6 +705,7 @@ export function hoanTacQuayLai(p: Principal, studentId: number) {
     if (cuoi.after?.journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'resume'`).run(cuoi.after.journeyId, studentId);
     writeAudit({ actorUserId: p.userId, action: 'student.resume_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'active' }, after: { status: 'inactive', archivedAt: archivedCu } });
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em về Lưu trữ (rà #2217 P2-2)
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }

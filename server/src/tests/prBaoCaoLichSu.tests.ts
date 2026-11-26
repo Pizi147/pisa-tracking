@@ -124,10 +124,11 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   }));
 
   const soNv: any = await import('../phanTich/soNghiaVu.ts');
-  check('PBC-5 · em lưu trữ hôm nay → Chấm điểm GV kỳ trước giữ nguyên; em thôi học TRƯỚC hạn vẫn bỏ', () => {
+  /* Lưu trữ (chủ SP 26/11): em vào Lưu trữ → ô CHƯA làm không tính quá hạn nữa; ô đã xong (Đúng hạn / Làm muộn) kỳ trước giữ nguyên. */
+  check('PBC-5 · em lưu trữ hôm nay → Đúng hạn / Làm muộn kỳ trước giữ nguyên; em thôi học TRƯỚC hạn vẫn bỏ', () => {
     /* Kỳ trước: hết 2 tuần trước hôm nay — mọi hạn nhập đã qua (ô hạn từ hôm nay trở đi thì em lưu trữ hôm nay đúng là không còn học). */
     const kyTruoc = { ...ky, den: d.addDaysIso(den, -14) };
-    const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, kyTruoc).hang.map((h: any) => [h.id, h.chamDiem])); };
+    const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, kyTruoc).hang.map((h: any) => [h.id, h.chamDiem?.k === 'so' ? [h.chamDiem.dung, h.chamDiem.muon] : null])); };
     const lop = classId('MB FT 101');
     /* Lưu trữ SAU mọi hạn của kỳ (phép kiểm trước có thể đã dời hạn vài ô qua hôm nay — ô đó em lưu trữ hôm nay đúng là không tính). */
     const hanMax = get(`SELECT MAX(COALESCE(deadline_override, '')) AS h FROM assessment_attempts WHERE class_id = ?`, lop)?.h ?? '';
@@ -139,7 +140,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
       const truoc = cham();
       conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE status = 'active' AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(sauHan, sauHan, lop);
       soNv.ghiSoHocVien(ids);
-      assert(cham() === truoc, 'lưu trữ hôm nay làm đổi Chấm điểm kỳ trước');
+      assert(cham() === truoc, 'lưu trữ hôm nay làm đổi Đúng hạn / Làm muộn kỳ trước');
       conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE finished_at = ? AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(kyTruoc.tu, kyTruoc.tu, sauHan, lop);
       soNv.ghiSoHocVien(ids);
       assert(cham() !== truoc, 'em thôi học trước hạn vẫn phải bỏ khỏi Chấm điểm');
