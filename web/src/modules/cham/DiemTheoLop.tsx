@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type MutableRefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { OHaiTang } from '../../ui/LuoiTrongPanel.tsx';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
@@ -252,9 +253,11 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                   <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <DongThiContext.Provider value>
+                        <OHaiTang.Provider value>
                         <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon
                           chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} onMotKyNang={setMotKyNang}
                           datConTro={!!yeuCau} lanCuon={yeuCau?.seq} />
+                        </OHaiTang.Provider>
                       </DongThiContext.Provider>
                     </BaoDangLuuContext.Provider>
                   </div>

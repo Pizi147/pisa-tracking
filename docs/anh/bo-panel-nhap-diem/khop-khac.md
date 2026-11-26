@@ -14,6 +14,7 @@ Không đổi bố cục: dùng khối "Điểm Mock Test / Test của lớp" s�
 | Chọn đợt MT · "Chỉ ô còn trống" · GV chấm S · hộp nhập · ⋯ Vắng / Dời lịch / Huỷ điểm · Lưu | có | có (cùng lưới, không đổi) |
 | Lọc kỹ năng Tất cả · L · R · W1 · W2 · S | chỉ ở panel | THÊM vào khối điểm (cùng `ChonMon`, 375 đã có chip riêng) |
 | Đang ở tab Ý thức / Báo cáo PH rồi bấm Nhập điểm | mở panel | về tab mặc định rồi cuộn tới lưới |
+| Ô L/R có điểm ở khối điểm hồ sơ lớp | một dòng "5.5 · 20/40" | HAI TẦNG như panel Công việc (#2196): band to trên, "20 câu" nhỏ dưới (chủ SP 26/11); một dòng chỉ còn ở Lịch Test tuần. Ô "Vắng · không dự thi" ở cột S rộng ra một dòng, không xuống 3 dòng |
 | Đổi lượt khi còn ô chưa lưu | chặn | chặn (cùng đường `doiLuot`) |
 
 Số request: không đổi (lưới dùng lại `diem-theo-luot` đã có).
