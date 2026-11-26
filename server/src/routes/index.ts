@@ -1198,6 +1198,8 @@ api.post('/classes/:classId/bao-cao-ph/dat-nhanh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.datNhanhBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
+/* BO-BAO-CAO-PH (chủ SP 26/11): Head / Quản trị / Admin bỏ / khôi phục Báo cáo PH của một em trong một đợt. */
+api.post('/classes/:classId/bao-cao-ph/bo-em', requireAuth, wrap((req) => baoCaoPhSvc.boEmBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {})));
 
 
 /**
@@ -2269,7 +2271,7 @@ api.get('/lenh-chuyen/ban-giao', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const lop = qInt(req, 'lop');
   if (!lop) throw badRequest('Cần lớp (lop).');
-  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined });
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined, chon: qInt(req, 'lenh') });   // BAN-GIAO-DOT: thêm đợt của em mở thẳng
 }));
 api.get('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
   maybeSimulateReadError();

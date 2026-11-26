@@ -9951,6 +9951,8 @@ await runPrChanRoiNhapTests({ check, checkAsync, assert } as any);
 // ==================================================================== BO-QUA-XEP-MT (chủ SP 03/11: QL bỏ qua việc Xếp lịch MT)
 const { runPrBoQuaMocTests } = bocTep('prBoQuaMoc', await import('./prBoQuaMoc.tests.ts'));
 await runPrBoQuaMocTests({ check, assert, conn, P, classId } as any);
+const { runPrMtQuaThiTests } = bocTep('prMtQuaThi', await import('./prMtQuaThi.tests.ts'));
+await runPrMtQuaThiTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== XEP-MT-NHAC (chủ SP 07/11: nhắc xếp MT chỉ khi lộ trình thiếu MT)
 const { runPrXepMtNhacTests } = bocTep('prXepMtNhac', await import('./prXepMtNhac.tests.ts'));
 await runPrXepMtNhacTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
@@ -10126,6 +10128,9 @@ await runPrSuaLoiATests({ check, assert } as any);
 // ==================================================================== RA-2511 PR 1 (sua-quyen): quyền máy chủ + Case / PA / Tutor
 const { runPrSuaQuyenTests } = bocTep('prSuaQuyen', await import('./prSuaQuyen.tests.ts'));
 await runPrSuaQuyenTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== BAN-GIAO-DOT (chủ SP 26/11: đợt bàn giao không kéo em đợt cũ)
+const { runPrBanGiaoDotTests } = bocTep('prBanGiaoDot', await import('./prBanGiaoDot.tests.ts'));
+await runPrBanGiaoDotTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== VAI-0 (N74–N77, chủ SP 26/11): GĐCN · Lead TVV · BPXL theo lớp · một việc một người
 const { runPrVaiMoiTests } = bocTep('prVaiMoi', await import('./prVaiMoi.tests.ts'));
 await runPrVaiMoiTests({ check, checkAsync, assert, conn, P, classId } as any);

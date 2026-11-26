@@ -105,6 +105,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('danh_gia_dau_ra', 'sua_boi', DV, 'đánh giá đầu ra'),   // UI-HO-SO-LOP
   c('bao_cao_ph', 'sua_boi', DV, 'báo cáo PH'),   // BAO-CAO-PH
   c('bao_cao_ph_dot', 'nguoi', DV, 'đợt báo cáo PH'),   // BC-DOT-QL
+  c('bao_cao_ph_bo_em', 'nguoi', DV, 'bỏ báo cáo PH của em'),   // BO-BAO-CAO-PH
   c('xet_lai_lo_trinh', 'nguoi_id', DV, 'xét lại lộ trình'),   // P9a XET-LAI
   c('thi_that_lich_su', 'chon_boi', DV, 'Học tiếp sau thi'),   // HOC-TIEP
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c

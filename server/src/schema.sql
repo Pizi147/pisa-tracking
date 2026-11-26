@@ -402,6 +402,8 @@ CREATE TABLE learning_cycles (
   lich_thi_ket_luan TEXT, lich_thi_thang TEXT, lich_thi_ghi_chu TEXT, lich_thi_ghi_chu_boi INTEGER, lich_thi_ghi_chu_luc TEXT,
   -- LICH-THI-NOI-THI: nơi thi thật (chữ ngắn, vd IDP · BC; NULL = chưa ghi).
   noi_thi TEXT,
+  -- MT-QUA-THI: Head bỏ qua việc "MT sau ngày thi" — dấu (ngày thi + các MT; đổi thì việc hiện lại), người / lúc bỏ qua.
+  mt_thi_bo_qua TEXT, mt_thi_bo_qua_boi INTEGER, mt_thi_bo_qua_luc TEXT,
   UNIQUE (student_id, seq)
 );
 
@@ -2733,6 +2735,18 @@ CREATE TABLE bao_cao_ph_dot (
   UNIQUE (class_id, ma)
 );
 CREATE INDEX idx_bcph_dot_lop ON bao_cao_ph_dot(class_id);
+/* BO-BAO-CAO-PH (chủ SP 26/11): Head / Quản trị / Admin bỏ Báo cáo PH của TỪNG EM trong một đợt — em không cần báo cáo đợt đó (không chờ / quá hạn ở đâu, không vào tệp xuất);
+ * xoá dòng = khôi phục. `dot` = mã đợt (như bao_cao_ph.dot); bỏ theo LỚP (`class_id` — PTA 26/11: lớp A bỏ không làm em rời lớp B; đổi tuần thi dời mã theo lớp). Bài đã viết giữ nguyên. Lịch sử ở audit_logs
+ * ('bao_cao_ph.bo_em*'). migrate/prBaoCaoPhBoEm.ts. */
+CREATE TABLE bao_cao_ph_bo_em (
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  dot TEXT NOT NULL,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  nguoi INTEGER REFERENCES users(id),
+  luc TEXT NOT NULL,
+  PRIMARY KEY (student_id, class_id, dot)
+);
+CREATE INDEX idx_bcph_bo_em_lop ON bao_cao_ph_bo_em(class_id, dot);
 -- SỔ NGHĨA VỤ (chủ SP 09/11, spec 2026-11-09-so-nghia-vu-design mục 2.1): mỗi bài phải chấm / việc có hạn một dòng — ghiSo (phanTich/soNghiaVu.ts). migrate/prNghiaVu.ts chép y.
 CREATE TABLE IF NOT EXISTS nghia_vu (
   id INTEGER PRIMARY KEY,

@@ -571,4 +571,129 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const nk = conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action IN ('bao_cao_ph.dat_nhanh', 'bao_cao_ph.hoan_dat_nhanh')").get() as any;
     assert(nk.n >= r.o.length + h.o.length, 'nhật ký từng em');
   }));
+  check('BC-24 · BO-BAO-CAO-PH: Head bỏ báo cáo MỘT em một đợt → rời việc GV / chip / việc Admin / nhắc QL / "n/N" / tệp xuất; bài đã viết giữ; Hoàn tác trả lại; GV, TVV 403; đợt sau vẫn có; trần câu', () => thu(() => {
+    const { soCauSql } = nc;
+    const han = d.addDaysIso(TODAY, 6);
+    const ma = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt bỏ em', mo: TODAY, han }).ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const [e0] = tr.em;
+    const n = tr.em.length;
+    assert(n > 1 && tr.em.every((e: any) => e.bo === null), 'tiền đề: lớp có ≥ 2 em, chưa em nào bỏ');
+    const cuaS = (homNay = TODAY) => xbc.viecBaoCaoPhGv([P.sTeacher], homNay).filter((v: any) => v.classId === lop && v.dot === ma);
+    assert(cuaS()[0]?.soEm === n && cuaS()[0]?.thieu === n, 'trước: GV S thiếu n em');
+    /* GV viết dở em 0 trước khi bị bỏ — bài phải giữ */
+    bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: { c1: 'tot' }, chu: 'Đang viết dở' });
+    const soBai = () => (conn.prepare('SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND student_id = ?').get(ma, e0.id) as any).n;
+    const bai0 = soBai();
+    /* quyền: GV (kể cả GVCN), TVV, Head chi nhánh khác → 403 */
+    const tvv = nguoi('consultant', 'MB');
+    for (const x of [P.lrTeacher, P.coreTeacher, tvv, P.cpManager].filter(Boolean)) {
+      let ma403 = 0;
+      try { bc.boEmBaoCaoPh(x, lop, { dot: ma, studentIds: [e0.id] }); } catch (err: any) { ma403 = err?.status ?? -1; }
+      assert(ma403 === 403, `${x.fullName}: phải 403, được ${ma403}`);
+    }
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, ma).quyetDot === false, 'GV không thấy ⋯ Không báo cáo');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: 'thang:2099-01', studentIds: [e0.id] }), /./, 'đợt chưa mở');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [99999999] }), /./, 'em lạ');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], khoiPhuc: 'true' }), /./, 'khoiPhuc không phải boolean → 400');
+    /* em CÓ THẬT của lớp khác (cùng chi nhánh) qua id lớp mình → 404, không ghi */
+    const lopKhac = classId('MB FT 102');
+    const emKhac = (conn.prepare("SELECT student_id id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id NOT IN (SELECT student_id FROM enrollments WHERE class_id = ?) LIMIT 1").get(lopKhac, lop) as any)?.id;
+    if (emKhac) {
+      let ma404 = 0;
+      try { bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [emKhac] }); } catch (err: any) { ma404 = err?.status ?? -1; }
+      assert(ma404 === 404 && !(conn.prepare('SELECT 1 FROM bao_cao_ph_bo_em WHERE student_id = ?').get(emKhac)), `em lớp khác: phải 404, được ${ma404}`);
+    }
+    /* bỏ theo LỚP: dòng bỏ ghi ở lớp khác (cùng mã đợt) không làm em rời lớp này */
+    conn.prepare('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc) VALUES (?,?,?,?,?)').run(e0.id, ma, lopKhac, P.mbManager.userId, new Date().toISOString());
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id)?.bo === null && cuaS()[0]?.soEm === n, 'dòng bỏ của lớp khác không ảnh hưởng lớp này');
+    conn.prepare('DELETE FROM bao_cao_ph_bo_em WHERE class_id = ?').run(lopKhac);
+
+    /* Head bỏ — đo câu */
+    xoaNho();
+    const c0 = soCauSql();
+    const r = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id] });
+    const cau = soCauSql() - c0;
+    console.log(`    đo bỏ báo cáo một em: ${cau} câu`);
+    assert(r.doi.join() === String(e0.id) && cau <= 14, `trần câu bỏ một em: ${cau}`);   // lớp + đợt (tiến độ, tuỳ chỉnh) + em + ghi + nhật ký + đếm lớp đủ / tin Admin
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id] }).doi.length === 0, 'bỏ lặp: không lỗi, không ghi thêm');
+    xoaNho();
+    const sau = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const s0 = sau.em.find((e: any) => e.id === e0.id);
+    assert(sau.em.length === n && s0?.bo?.luc && s0.bo.ten, 'tab: em bỏ vẫn hiện (mờ) kèm ai / lúc nào: ' + JSON.stringify(s0?.bo));
+    assert(cuaS()[0]?.soEm === n - 1 && cuaS()[0]?.thieu === n - 1, 'việc GV: n − 1 em');
+    assert(cuaS(d.addDaysIso(han, 30))[0]?.soEm === n - 1, 'quá hạn: em bỏ không tính quá hạn');
+    assert(!bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening').em.some((e: any) => e.id === e0.id), 'panel viết không có em bỏ');
+    assert(soBai() === bai0, 'bài đã viết của em bỏ giữ nguyên');
+    assert(bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: { c1: 'tot' }, chu: 'Gõ nốt' }).suaLuc, 'panel đang mở: lưu vẫn nhận (chữ không mất)');
+    const xl = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null);
+    assert(xl.dem.hocVien === n - 1 && !xl.sheets[0].aoa[0].includes(e0.ten), 'Excel lớp: không có em bỏ');
+    assertThrows(() => xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id), /./, 'xuất riêng em bỏ: không có trong đợt');
+    /* viết đủ mọi em CÒN LẠI → lớp đủ: việc Admin "đủ", chip không còn, QL không nhắc — em bỏ không chặn */
+    viet(lop, ma, sau.em.filter((e: any) => e.id !== e0.id), sau.phan);
+    xoaNho();
+    assert(!cuaS().length, 'GV đủ phần mình (trừ em bỏ) → việc rời');
+    if (admin) assert(xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu === 0 && v.soEm === n - 1), 'Admin: việc Xuất "đủ" n − 1 em');
+    /* ngày "lớp đủ" = sau cùng của lần lưu và lần bỏ em: bài viết xong 10 ngày trước, bỏ em cuối hôm nay → việc Admin vẫn hiện (7 ngày từ hôm nay) */
+    if (admin) {
+      conn.prepare('UPDATE bao_cao_ph SET sua_luc = ? WHERE dot = ?').run(`${d.addDaysIso(TODAY, -10)}T03:00:00.000Z`, ma);
+      conn.prepare('UPDATE bao_cao_ph_bo_em SET luc = ? WHERE dot = ? AND class_id = ?').run(`${TODAY}T03:00:00.000Z`, ma, lop);
+      xoaNho();
+      const v = xbc.viecXuatBaoCaoPh(admin, null).find((x: any) => x.classId === lop && x.dot === ma);
+      assert(v?.duLuc === TODAY, 'ngày đủ theo lần bỏ em cuối: ' + JSON.stringify(v));
+      conn.prepare('UPDATE bao_cao_ph_bo_em SET luc = ? WHERE dot = ? AND class_id = ?').run(`${d.addDaysIso(TODAY, -10)}T03:00:00.000Z`, ma, lop);
+      xoaNho();
+      assert(!xbc.viecXuatBaoCaoPh(admin, null).some((x: any) => x.classId === lop && x.dot === ma), 'cả lưu lẫn bỏ quá 7 ngày → việc rời');
+    }
+    const chip = bc.chipBaoCaoPh(P.mbManager, lop);
+    assert(!chip || chip.dot !== ma || chip.quaHan === 0, 'chip không báo quá hạn vì em bỏ');
+    try {
+      cfg.setConfig('demo_date', d.addDaysIso(han, 9)); xoaNho();
+      assert(!xbc.viecBcPhQuaHanQl(P.mbManager, null).some((v: any) => v.classId === lop && v.dot === ma), 'QL: không nhắc quá hạn vì em bỏ');
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
+    const nk = conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'bao_cao_ph.bo_em' AND entity_id = ?").get(e0.id) as any;
+    assert(nk.n === 1, 'nhật ký một dòng theo em');
+
+    /* Hoàn tác (= Khôi phục) → em trở lại mọi nơi */
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], khoiPhuc: true }).doi.length === 1, 'khôi phục');
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id)?.bo === null, 'tab: em trở lại bình thường');
+    assert(cuaS()[0]?.soEm === n && cuaS()[0]?.thieu === 1, 'việc GV S trở lại, thiếu đúng em vừa khôi phục');
+    assert(bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening').em.find((e: any) => e.id === e0.id)?.banGhi?.chu === 'Gõ nốt', 'chữ đã gõ còn');
+    if (admin) assert(dq && bc.boEmBaoCaoPh(admin, lop, { dot: ma, studentIds: [e0.id] }).doi.length === 1, 'Admin bỏ được');
+    if (admin) bc.boEmBaoCaoPh(admin, lop, { dot: ma, studentIds: [e0.id], khoiPhuc: true });
+
+    /* LÔ (chủ SP "cho chọn tick nhiều đi"): bỏ 3 em một lần — số câu không theo số em; một em lạ → 404 cả lô, không ghi; Hoàn tác lô trả đủ */
+    const ba = tr.em.slice(1, 4).map((e: any) => e.id);
+    let maLo = 0;
+    try { bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [...ba, 99999999] }); } catch (err: any) { maLo = err?.status ?? -1; }
+    assert(maLo === 404 && !(conn.prepare(`SELECT 1 FROM bao_cao_ph_bo_em WHERE dot = ? AND class_id = ? AND student_id IN (${ba.join(',')})`).get(ma, lop)), 'lô có em lạ: 404, không ghi em nào');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [] }), /./, 'lô rỗng');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: Array.from({ length: 201 }, (_, i) => i + 1) }), /./, 'quá 200 em');
+    let ma403lo = 0;
+    try { bc.boEmBaoCaoPh(P.lrTeacher, lop, { dot: ma, studentIds: ba }); } catch (err: any) { ma403lo = err?.status ?? -1; }
+    assert(ma403lo === 403, 'GV bỏ lô → 403');
+    xoaNho();
+    const cl = soCauSql();
+    const lo = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [...ba, e0.id] });
+    const cauLo = soCauSql() - cl;
+    console.log(`    đo bỏ lô ${ba.length + 1} em: ${cauLo} câu`);
+    assert(lo.doi.length === 4 && cauLo <= 16,   // + tin Admin "đủ" (lớp vừa đủ) — không theo số em
+      `lô 4 em: ${JSON.stringify(lo)} · ${cauLo} câu`);
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.filter((e: any) => e.bo).length === 4 && !cuaS().length, 'tab: 4 em bỏ; GV S hết việc (em còn thiếu duy nhất đã bỏ)');
+    const nkLo = conn.prepare(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'bao_cao_ph.bo_em' AND entity_id IN (${ba.join(',')})`).get() as any;
+    assert(nkLo.n === 3, 'nhật ký mỗi em của lô');
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: lo.doi, khoiPhuc: true }).doi.length === 4, 'Hoàn tác lô');
+    xoaNho();
+    assert(cuaS()[0]?.soEm === n && bc.trangBaoCaoPh(P.mbManager, lop, ma).em.every((e: any) => e.bo === null), 'Hoàn tác lô: mọi em trở lại');
+
+    /* chỉ đúng đợt đó: đợt sau em vẫn báo cáo */
+    const ma2 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt sau', mo: TODAY, han }).ma[0].ma;
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma2).em.find((e: any) => e.id === e0.id)?.bo === null, 'đợt sau: em vẫn báo cáo');
+    assert(xbc.viecBaoCaoPhGv([P.sTeacher], TODAY).find((v: any) => v.classId === lop && v.dot === ma2)?.soEm === n, 'đợt sau: việc GV đủ n em');
+  }));
 }

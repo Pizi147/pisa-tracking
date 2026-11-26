@@ -37,7 +37,8 @@ export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, q
   quayLai?: { nhan: string; onClick: () => void };
 }) {
   const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(
-    docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [docLenh, classId, mon]);
+    /* BAN-GIAO-DOT: `lenh` — em mở thẳng (Cuối khoá, hồ sơ HV) thuộc đợt đã xong vẫn có trong panel (máy chủ thêm đúng đợt đó). */
+    docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}${lenhId ? `&lenh=${lenhId}` : ''}`, [docLenh, classId, mon, lenhId]);
   if (error) {
     return (
       <KhungPanel hd="ban-giao" quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
@@ -221,6 +222,8 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
       {em && (
         <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[236px_minmax(0,1fr)]'}`}>
           {!chiDoc && <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
+            /* BAN-GIAO-DOT (PTA rà #2249): nhiều đợt còn chờ → mỗi đợt một khối theo mã tuần chuyển, đợt mới trên cùng, "a/b đã xác nhận" từng đợt. */
+            nhom={dto.dot.length > 1 ? { khoa: (e) => e.dot, nhan: (k) => { const d = dto.dot.find((x) => x.tuan === k); return d ? <>{tuanLich(d.tuan, homNay)} · {t('{a}/{b} đã xác nhận', { a: d.daXacNhan, b: d.tong })}</> : null; } } : undefined}
             dau={loNx.vua ? <DaiChenLo n={loNx.vua.length} onHoanTac={() => { void loNx.hoanTac(); setDaChenEm(new Set()); }} />
               : choChenNx.length >= 2 ? <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:min-h-0"
                 onClick={() => { void loNx.chenLo(choChenNx); setDaChenEm(new Set(choChenNx.map((c) => c.e.lenhId))); }}>{t('Chèn cho {n} em', { n: choChenNx.length })}</button> : undefined}
