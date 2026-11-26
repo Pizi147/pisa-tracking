@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, cnMacDinhBpxl, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, coVaiCx, cnMacDinhBpxl, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -144,7 +144,7 @@ import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../workl
 import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
-import { phamViXemViec } from '../worklist/xemViec.ts';
+import { nhinNhuQl, phamViXemViec } from '../worklist/xemViec.ts';
 import { emCuaTvv, soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
@@ -543,7 +543,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
     chiNhanh: qInt(req, 'chiNhanh'),
     moiVai: nhom === 'giao_viec',   // GV-2 (N58): ô giao việc liên phòng ban — mọi vai ở chi nhánh của việc
-    quyen: ['chot', 'xep_lich', 'khong_bpxl'].includes(qStr(req, 'quyen') ?? '') ? qStr(req, 'quyen') as 'chot' | 'xep_lich' | 'khong_bpxl' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT · việc TVV / Bàn giao
+    quyen: ['chot', 'xep_lich', 'khong_bpxl', 'nhan_tin'].includes(qStr(req, 'quyen') ?? '') ? qStr(req, 'quyen') as 'chot' | 'xep_lich' | 'khong_bpxl' | 'nhan_tin' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT · việc TVV / Bàn giao
   });
 }));
 
@@ -1734,7 +1734,9 @@ api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
   const xin = [...new Set(String(req.query.ids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50);
   if (!xin.length) return {};
   /* Rà PTA #2273 P2-2: việc trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`) HOẶC việc được giao cho người xem (`phu_trach_id`) — như /my-work. */
-  const cua = new Set(baoPhSvc.viecBaoPhCuaToi(p, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
+  /* RA-2711: CX / Lead TVV xem "Tất cả" như QL (`nhinNhuQl`, như /my-work) — trước tập rỗng (CX) / chỉ việc mình chốt (Lead TVV): panel nhiều em trả {}. */
+  const pXem = coVaiCx(p) && phamViXemViec(p) ? nhinNhuQl(p) : p;
+  const cua = new Set(baoPhSvc.viecBaoPhCuaToi(pXem, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
   const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
       WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
     .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number; luot: number }[];

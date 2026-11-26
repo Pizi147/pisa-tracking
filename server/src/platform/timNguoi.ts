@@ -102,7 +102,7 @@ export function timNguoi(
     /** GV-2: ô giao việc — mọi vai ở chi nhánh `chiNhanh` (`nhom=giao_viec` ở `/ref/nguoi`). */
     moiVai?: boolean;
     /** LPB-1 (N73 ④, N63 ①): việc Head — chỉ người có quyền chốt lộ trình (`chot`: class.edit, trừ CX / Lead TVV) / xếp lịch MT (`xep_lich`: plan.week). */
-    quyen?: 'chot' | 'xep_lich' | 'khong_bpxl' | null },
+    quyen?: 'chot' | 'xep_lich' | 'khong_bpxl' | 'nhan_tin' | null },
 ): HangNguoi[] {
   if (opts.moiVai) return timNguoiGiaoViec(p, opts.q ?? '', opts.chiNhanh ?? null, opts.quyen ?? null);
   const nhom: NhomNguoi = opts.nhom === 'nhan_vien' || opts.nhom === 'gv_speaking' ? opts.nhom : 'giao_vien';
@@ -165,7 +165,7 @@ const TRAN_GIAO_VIEC = 300;
  * Chỉ trả mã chi nhánh của VIỆC cho mọi dòng (không lộ chi nhánh khác của người đó; vai toàn hệ thống cùng nhóm). Lọc tên không dấu ở JS trên tập đã giới hạn (không có cột tên không dấu).
  * ponytail: chi nhánh > 300 người có vai thì người cuối danh sách chữ cái không tìm được — thêm cột tên không dấu + LIKE nếu chạm trần.
  */
-function timNguoiGiaoViec(p: Principal, q: string, cnViec: number | null, quyen: 'chot' | 'xep_lich' | 'khong_bpxl' | null = null): HangNguoi[] {
+function timNguoiGiaoViec(p: Principal, q: string, cnViec: number | null, quyen: 'chot' | 'xep_lich' | 'khong_bpxl' | 'nhan_tin' | null = null): HangNguoi[] {
   if (!cnViec) return [];
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const bang = bangLop();
@@ -174,10 +174,10 @@ function timNguoiGiaoViec(p: Principal, q: string, cnViec: number | null, quyen:
   const rows = db().prepare(
     `SELECT u.id, u.full_name, u.code, MIN(r.name_vi) AS role, (SELECT b.code FROM branches b WHERE b.id = ?) AS ma
        FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id
-      WHERE u.status = 'active' AND u.deleted_at IS NULL AND r.key IN (${VAI_GIAO_VIEC.map(() => '?').join(',')}) AND (ur.branch_id = ? OR ur.branch_id IS NULL)
-        ${quyen === 'khong_bpxl' ? `AND r.key != 'scheduler'` : quyen ? `AND r.id IN (SELECT rp.role_id FROM role_permissions rp JOIN permissions pm ON pm.id = rp.permission_id WHERE pm.key = ?)${quyen === 'chot' ? ` AND r.key NOT IN ('cx', 'lead_consultant')` : ''}` : ''}
+      WHERE u.status = 'active' AND u.deleted_at IS NULL AND r.key IN (${VAI_GIAO_VIEC.map(() => '?').join(',')}) AND (ur.branch_id = ? OR ur.branch_id IS NULL${quyen === 'nhan_tin' ? ` OR r.key = 'scheduler'` : ''})   -- RA-2711 (N77): Nhận thông tin — BPXL mọi chi nhánh
+        ${quyen === 'nhan_tin' ? '' : quyen === 'khong_bpxl' ? `AND r.key != 'scheduler'` : quyen ? `AND r.id IN (SELECT rp.role_id FROM role_permissions rp JOIN permissions pm ON pm.id = rp.permission_id WHERE pm.key = ?)${quyen === 'chot' ? ` AND r.key NOT IN ('cx', 'lead_consultant')` : ''}` : ''}
       GROUP BY u.id ORDER BY u.full_name, u.id LIMIT ${TRAN_GIAO_VIEC}`,
-  ).all(cnViec, ...VAI_GIAO_VIEC, cnViec, ...(quyen && quyen !== 'khong_bpxl' ? [quyen === 'chot' ? PERMISSIONS.CLASS_EDIT : PERMISSIONS.PLAN_WEEK] : [])) as { id: number; full_name: string; code: string; role: string | null; ma: string | null }[];
+  ).all(cnViec, ...VAI_GIAO_VIEC, cnViec, ...(quyen && quyen !== 'khong_bpxl' && quyen !== 'nhan_tin' ? [quyen === 'chot' ? PERMISSIONS.CLASS_EDIT : PERMISSIONS.PLAN_WEEK] : [])) as { id: number; full_name: string; code: string; role: string | null; ma: string | null }[];
   const needle = normalizeName(q.trim());
   return rows.filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code ?? '').includes(needle))
     .sort((a, b) => a.full_name.localeCompare(b.full_name, 'vi') || a.id - b.id).slice(0, needle ? 12 : 20)

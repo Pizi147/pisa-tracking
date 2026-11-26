@@ -374,4 +374,28 @@ export async function runPrBaoPh0Tests(t: any) {
     luu.moLaiViecLuuTru(null, xl.sid, d);
     assert(get('SELECT trang_thai AS t, phu_trach_id AS pt FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'mo', 'Hoàn tác không trả');
   }));
+
+  const tu: any = await import('../yThuc/tuyen.ts');
+  const vio: any = await import('../yThuc/violations.ts');
+  check('LOI2-1 · RA-2711 (N72 ①): người ghi Báo PH của lần xử lý vi phạm = người đã làm một bước của tuyến (vế "đã làm" của Đang theo dõi; trước không có)', () => thu('loi21', () => {
+    const v = get(`SELECT v.id, v.measure_id AS mid, s.consultant_user_id AS tvv FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND s.archived_at IS NULL
+      JOIN discipline_measures m ON m.id = v.measure_id AND m.created_by IS NOT s.consultant_user_id
+      WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND s.consultant_user_id IS NOT NULL ORDER BY v.id LIMIT 1`);
+    assert(v, 'seed: cần Báo PH vi phạm đang mở, em có TVV');
+    const pT = loadPrincipal(v.tvv);
+    const lam = () => (conn.prepare(tu.SQL_TUYEN_THEO_DOI).all(pT.userId, '2000-01-01', '2000-01-01') as any[]).some((r) => r.l === 'vi_pham' && String(r.k) === String(v.mid) && r.nguon === 'lam');
+    assert(!lam(), 'seed: TVV đã có bước làm ở tuyến này trước khi báo');
+    bp.ghiKetQuaBaoPh(pT, { viecIds: [v.id], ketQua: 'chua_lien_he', ngay: TODAY, ghiChu: 'Gọi mẹ em chưa được, sẽ gọi lại.' });
+    assert(lam(), 'TVV đã ghi Báo PH mà không là người làm bước của tuyến Vi phạm');
+  }));
+  check('LOI2-2 · RA-2711: đợt Xử lý vi phạm hết mà không ai lưu (vi phạm bị gỡ) → lượt quét đóng dòng giao việc; em còn bắt buộc thì giữ', () => thu('loi22', () => {
+    assert(xl, 'seed: cần em có việc Xử lý vi phạm');
+    gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: P.mbManager.userId, phuTrachCu: null });
+    gv.dongXuLyHetDot(TODAY);
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'mo', 'em còn bắt buộc xử lý mà dòng bị đóng');
+    for (const r of conn.prepare(`SELECT id FROM violations WHERE student_id = ?`).all(xl.sid) as any[]) { xoaNho(); vio.deleteViolation(P.admin, r.id); }   // Xoá vi phạm (đường thật, có Thùng rác)
+    xoaNho();
+    gv.dongXuLyHetDot(TODAY);
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'xong', 'đợt hết mà dòng giao việc còn mở (người được giao / hạn cũ sẽ dính đợt sau)');
+  }));
 }

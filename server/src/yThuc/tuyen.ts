@@ -22,7 +22,8 @@ import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { trangThaiYThuc } from './trangThai.ts';
 import { xemLienHePh, xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
-import { luatMeeting } from '../worklist/giaoViec.ts';
+import { luatMeeting, luatMeetingXemTruoc } from '../worklist/giaoViec.ts';
+import { tvvConVai } from '../worklist/viecTvv.ts';
 import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
 import { conVaiO as giuVaiO, headCua } from '../worklist/nguoiNhan.ts';
 import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
@@ -115,11 +116,14 @@ const LY_DO_LUU_TRU = 'Học viên vào Lưu trữ';
 const DONG_LUU_TRU = 'Đóng — em vào Lưu trữ';
 
 /** Người giữ Báo PH theo luật (N2, N72 ⑤): người được giao → TVV của em → Head chi nhánh. */
-function giuBaoPh(t: TuyenNoi, pt: number | null, ptTen: string | null, tvvTen: string | null, nl: number | null = null) {
+function giuBaoPh(t: TuyenNoi, pt: number | null, ptTen: string | null, tvvTen: string | null, nl: number | null = null, xemTruoc = false) {
   if (pt) return { ids: [pt], nguoi: ptTen, vai: false };
-  if (t.tvv) return { ids: [t.tvv], nguoi: tvvTen, vai: false };
-  /* VAI-0 (N76b): Lead TVV chốt lúc sinh, còn vai ở CN em. */
+  /* RA-2711: TVV hết vai ở chi nhánh em = chưa có TVV — cùng luật `nguoiGiuBaoPh` / Công việc (trước: Tuyến ghi TVV cũ, Phụ trách ghi Lead TVV / Head). */
+  if (t.tvv && tvvConVai(t.tvv, t.cn)) return { ids: [t.tvv], nguoi: tvvTen, vai: false };
+  /* VAI-0 (N76b): Lead TVV chốt lúc sinh, còn vai ở CN em. RA-2711: bước ○ (chưa sinh việc) — Lead TVV gán chi nhánh em sớm nhất (cùng thứ tự `chotLeadBaoPh`). */
   if (giuVaiO(nl, 'lead_consultant', t.cn)) return { ids: [nl!], nguoi: nguoiVai().find((y) => y.u === nl)?.ten ?? null, vai: false };
+  const lead = xemTruoc && t.cn != null ? nguoiVai().find((y) => y.key === 'lead_consultant' && y.b === t.cn) : undefined;
+  if (lead) return { ids: [lead.u], nguoi: lead.ten, vai: true };
   return theoVai(head(t.cn), 'Head chi nhánh');
 }
 
@@ -151,7 +155,7 @@ function buocBaoPh(t: TuyenNoi, b: any, o: { khoa: string; ten: string; cha?: st
 }
 /** Báo PH chưa có việc (chưa tới lượt) — người giữ theo luật, chữ "sau khi …". */
 const baoPhCho = (t: TuyenNoi, o: { khoa: string; ten: string; sau: string; cha?: string | null; tvvTen: string | null }): BuocNoi =>
-  buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'cho', chiTiet: o.sau, cha: o.cha ?? null, ...giuBaoPh(t, null, null, o.tvvTen) });
+  buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'cho', chiTiet: o.sau, cha: o.cha ?? null, ...giuBaoPh(t, null, null, o.tvvTen, null, true) });
 
 /* ---------------------------------------------------------------- tuyến Vi phạm (một lần xử lý) */
 
@@ -374,7 +378,8 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         if (ph === 'ket_qua') baoPh();
         const r = phan.find((y) => y.phan === ph);
         const tenP = ph === 'xep_lich' ? 'Xếp lịch họp' : 'Kết quả meeting';
-        const luat = luatMeeting(ph, r?.cn ?? t.cn, r?.nl ?? null);   // VAI-0 (N74): một người — cùng nguồn với Công việc / panel
+        /* VAI-0 (N74): một người — cùng nguồn với Công việc / panel. RA-2711: bước ○ (chưa sinh phần) — người giữ vai ở chi nhánh em (BPXL · GĐCN → CX), không TVV / Head. */
+        const luat = r ? luatMeeting(ph, r.cn ?? t.cn, r.nl ?? null) : luatMeetingXemTruoc(ph, t.cn);
         const giu = r?.pt ? { ids: [r.pt], nguoi: r.ptTen ?? null, vai: false } : luat ? { ids: [luat.u], nguoi: luat.ten, vai: true }
           : ph === 'xep_lich' && t.tvv ? { ids: [t.tvv], nguoi: tvvTen, vai: false } : theoVai(head(t.cn), 'Head chi nhánh');
         const kp = `${khoa}:${ph}`;
@@ -734,6 +739,12 @@ export const SQL_TUYEN_THEO_DOI = `SELECT 'vi_pham' AS l, m.id AS k, m.created_a
      UNION ALL SELECT 'phoi_hop', x.attempt_id, mp.xong_luc, 'lam', NULL FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id
        WHERE mp.xong_boi = ?1 AND mp.xong_luc >= ?2
      UNION ALL SELECT 'tinh_hinh', t.id, t.tao_luc, 'lam', NULL FROM tinh_hinh_hoc_tap t WHERE t.nguoi_gui = ?1 AND t.tao_luc >= ?2
+     /* RA-2711 (N72 ①): người ghi Báo PH (mỗi lần ghi) · người xác nhận "Đã thực hiện" cũng là người đã làm một bước (19, 20 / 20 vế). */
+     UNION ALL SELECT CASE WHEN b.measure_id IS NOT NULL OR b.bao_lai_cua IS NOT NULL THEN 'vi_pham' WHEN b.phoi_hop_id IS NOT NULL THEN 'phoi_hop'
+           WHEN b.tinh_hinh_id IS NOT NULL THEN 'tinh_hinh' ELSE 'chuyen_lop' END,
+         COALESCE(b.measure_id, b.bao_lai_cua, (SELECT x.attempt_id FROM sos_coordination_actions x WHERE x.id = b.phoi_hop_id), b.tinh_hinh_id, b.lenh_chuyen_id), l.ghi_luc, 'lam', NULL
+       FROM viec_bao_ph_lan l JOIN viec_bao_ph b ON b.id = l.viec_id WHERE l.ghi_boi = ?1 AND l.ghi_luc >= ?2
+     UNION ALL SELECT 'vi_pham', m.id, m.confirmed_at, 'lam', NULL FROM discipline_measures m WHERE m.confirmed_by = ?1 AND m.confirmed_at >= ?2
      UNION ALL SELECT 'cap_bac', y.id, y.tao_luc, 'lam', NULL FROM yeu_cau_duyet y WHERE y.loai = 'sua_khai_bac' AND y.nguoi_xin = ?1 AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
      UNION ALL SELECT 'cap_bac', y.id, y.xu_ly_luc, 'lam', NULL FROM yeu_cau_duyet y WHERE y.nguoi_duyet = ?1 AND y.loai = 'sua_khai_bac' AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
      UNION ALL SELECT CASE WHEN b.measure_id IS NOT NULL OR b.bao_lai_cua IS NOT NULL THEN 'vi_pham' WHEN b.phoi_hop_id IS NOT NULL THEN 'phoi_hop'
@@ -850,7 +861,11 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
     if (!xemKhung(p, t)) continue;
     const x = xuat(p, t);
     const lam = t.buoc.filter((b) => b.lam.includes(p.userId));
-    const lamKhiMo = !!d.lam && lam.length > 0 && (!x.ketThuc || lam.some((b) => (b.ngay ?? '') < (x.ketThucLuc ?? '')));
+    /* RA-2711 (PTA chốt): làm KHI tuyến còn mở — bước có ngày trước ngày kết thúc, hoặc CÙNG ngày nhưng đứng trước bước kết thúc (bước chỉ có ngày, không giờ;
+       trước: so ngày → Head duyệt sáng, GVCN xác nhận chiều cùng ngày → Head không thấy tuyến ở "Vừa xong"). */
+    const iKetThuc = x.ketThuc ? t.buoc.reduce((m, b, i) => (b.ngay && b.ngay === x.ketThucLuc ? i : m), -1) : -1;
+    const lamKhiMo = !!d.lam && lam.length > 0 && (!x.ketThuc
+      || lam.some((b) => (b.ngay ?? '') < (x.ketThucLuc ?? '') || (b.ngay === x.ketThucLuc && t.buoc.indexOf(b) < iKetThuc)));
     if (!lamKhiMo && !d.viec.length) continue;
     if (x.ketThuc ? (x.ketThucLuc ?? '') < tu : t.buoc.some((b) => (b.trangThai === 'dang' || b.trangThai === 'tam_dung') && b.ids.includes(p.userId))) continue;
     const dang = t.buoc.filter((b) => b.trangThai === 'dang');

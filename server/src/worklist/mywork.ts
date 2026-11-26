@@ -41,7 +41,7 @@ import { giuViecQl, laLeadTvv, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
-import { dongViecGiao, viecGiaoChoToi } from './giaoViec.ts';
+import { dongViecGiao, dongXuLyHetDot, viecGiaoChoToi } from './giaoViec.ts';
 import { chuKhung, giaoChoNguoi, type LoaiKhung } from './khungViec.ts';
 import { SQL_MOC, viecMoc } from './mocQuyChe.ts';
 
@@ -1123,7 +1123,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   /* ponytail: dựng một phần (`chiNhom`) bỏ hai lời quét ghi này — GET đầy đủ kế tiếp quét. */
   if (!f.chiNhom) {
-    quetTheoMoc('quet:doi-qua-han', today, () => { sweepExpiredMoves(); });   // TL-NEN: theo mốc DB toàn hệ thống (60 s, sau ghi, sang ngày)
+    quetTheoMoc('quet:doi-qua-han', today, () => { sweepExpiredMoves(); dongXuLyHetDot(today); });   // RA-2711: + đợt Xử lý vi phạm đã hết   // TL-NEN: theo mốc DB toàn hệ thống (60 s, sau ghi, sang ngày)
   }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA (K5-02, T75, §5.6; OV-12a: kỳ hai tuần) — một PA một dòng

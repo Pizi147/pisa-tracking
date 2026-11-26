@@ -11,6 +11,9 @@ export const CHI_MUC_TUYEN = [
   'CREATE INDEX IF NOT EXISTS idx_meeting_phan_xong_boi ON meeting_phan(xong_boi)',
   'CREATE INDEX IF NOT EXISTS idx_tinh_hinh_gui ON tinh_hinh_hoc_tap(nguoi_gui)',
   'CREATE INDEX IF NOT EXISTS idx_tra_lai_xong_boi ON vi_pham_tra_lai(xong_boi)',
+  /* RA-2711: hai vế "đã làm" mới của Đang theo dõi (người ghi Báo PH · người xác nhận Đã thực hiện) — chỉ mục MỘT PHẦN, không câu nào khác lọc hai cột này. */
+  'CREATE INDEX IF NOT EXISTS idx_bao_ph_lan_ghi_boi ON viec_bao_ph_lan(ghi_boi) WHERE ghi_boi IS NOT NULL',
+  'CREATE INDEX IF NOT EXISTS idx_dm_xac_nhan_boi ON discipline_measures(confirmed_by) WHERE confirmed_by IS NOT NULL',
   "CREATE INDEX IF NOT EXISTS idx_ycd_nguoi_duyet ON yeu_cau_duyet(nguoi_duyet) WHERE nguoi_duyet IS NOT NULL",
   "CREATE INDEX IF NOT EXISTS idx_ycd_xin_thu_hoi ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'thu_hoi_y_thuc'",
   "CREATE INDEX IF NOT EXISTS idx_ycd_xin_khai ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'sua_khai_bac'",

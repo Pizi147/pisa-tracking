@@ -2329,7 +2329,7 @@ export const TRAN_VIEC_CON = { tao: { cau: 41 }, mo: { cau: 27, dong: 67 } };   
  * (tìm khoá + dựng, đo ngoài request — đường thật dùng lại bộ nhớ phạm vi); `theoDoi`: phần tuyến của GET /my-work/theo-doi. Số câu không theo số tuyến
  * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +3 · 36 (khoá tuyến đọc từ panel — PTA rà #2231 P2-9; trước +6) · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉) · sau gộp BAOPH-0 (Head + CX theo dõi mọi Báo PH): theo dõi 9 câu · 206 dòng → dòng 270.
  */
-export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 14, dong: 300 } };   // LPB-0: theo dõi +1 câu (dựng tuyến Chuyển lớp / Đổi GV — MỘT câu mỗi loại có mặt, phụ trách chính đọc trong cùng câu; không theo số tuyến) · đo 13 câu 277 dòng (prTuyen0 TUYEN0-11; người theo dõi cả hai loại — prLpb0 LPB-19 — cũng 13) → đo + 1
+export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 15, dong: 340 } };   // RA-2711 (LOI-2): theo dõi +1 câu (vai TVV còn hiệu lực — `tvvConVai`, nhớ request, không theo số tuyến) + 2 vế 'đã làm' (ghi Báo PH · xác nhận Đã thực hiện): đo 14 câu · 309 dòng → câu đo + 1, dòng đo + 31   // LPB-0: theo dõi +1 câu (dựng tuyến Chuyển lớp / Đổi GV — MỘT câu mỗi loại có mặt, phụ trách chính đọc trong cùng câu; không theo số tuyến) · đo 13 câu 277 dòng (prTuyen0 TUYEN0-11; người theo dõi cả hai loại — prLpb0 LPB-19 — cũng 13) → đo + 1
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 /** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */

@@ -31,7 +31,7 @@ import { giuViecQl, tvvConVai } from './viecTvv.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import type { WorkItem } from './mywork.ts';
 import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
-import { CON_VAI_BPXL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
+import { CON_VAI_BPXL, KHONG_TVV_SQL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
 import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, laKhung, type LoaiKhung } from './khungViec.ts';
@@ -261,6 +261,17 @@ export function damBaoDong(loai: LoaiGiao, id: number): void {
 export function xongViecXuLy(studentIds: readonly number[]): void {
   if (studentIds.length) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'xong' WHERE trang_thai = 'mo' AND id IN (${DS_JSON})`).run(JSON.stringify(studentIds));
 }
+/**
+ * RA-2711: đợt hết KHÔNG qua lưu / gửi (xoá vi phạm, hết cửa sổ 3 vi phạm / 2 tuần) → dòng 'mo' còn người được giao + hạn cũ; đợt sau việc hiện ở người cũ,
+ * đỏ Quá hạn ngay. Lượt quét nền (`quet:doi-qua-han`, ≤ 1 lần / 60 s): dòng 'mo' mà em không còn bắt buộc xử lý (không tạm dừng — tạm dừng giữ đợt) → `xong`,
+ * đợt sau `damBaoDong` làm dòng mới. Không dòng 'mo' → một câu.
+ */
+export function dongXuLyHetDot(homNay: string): void {
+  const ids = (db().prepare(`SELECT id FROM viec_xu_ly WHERE trang_thai = 'mo'`).all() as { id: number }[]).map((r) => r.id);
+  if (!ids.length) return;
+  const tt = trangThaiYThuc(ids, homNay);
+  xongViecXuLy(ids.filter((id) => { const e = tt.get(id); return !e || (!e.tamDung && e.soBatBuoc === 0); }));
+}
 
 /**
  * LPB-1 (N73 ⑤): Bàn giao môn (lớp × môn) chưa có id → tạo dòng khung (một lần, chạy lặp trả cùng id) để panel mở khối Phụ trách · Hạn · Theo dõi.
@@ -325,9 +336,11 @@ function requireDoc(p: Principal, v: Viec): void {
 }
 
 /** Tài khoản đang hoạt động có vai NHẬN được việc (`VAI_GIAO_VIEC` — cùng danh sách ô chọn) ở chi nhánh của việc hoặc toàn hệ thống. */
-function kiemNguoiNhan(uid: unknown, branchId: number | null): number {
+function kiemNguoiNhan(uid: unknown, branchId: number | null, nhanTin = false): number {
   const id = Number(uid);
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Chọn người nhận việc.');
+  /* RA-2711 (PTA chốt, N77): việc Nhận thông tin — BPXL mọi chi nhánh nhận / theo dõi được (cùng `HL_NHAN_TIN` của Công việc / "Nhận lớp"). */
+  if (nhanTin && (db().prepare(`SELECT ${CON_VAI_BPXL('?1')} AS ok`).get(id) as any).ok === 1) return id;
   if (!hoatDongO(id, branchId) || !db().prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active'
       AND r.key IN (SELECT value FROM json_each(?)) AND (ur.branch_id IS NULL OR ur.branch_id = ?)`).get(id, JSON.stringify(VAI_GIAO_VIEC), branchId)) {
     throw badRequest('Người này không có tài khoản đang hoạt động ở chi nhánh của việc — chọn người khác.');
@@ -354,12 +367,12 @@ function kiemNguoiNhanKhung(loai: LoaiKhung, v: Viec, uid: number): void {
 }
 
 /** Nhiều người nhận MỘT câu (rà 25/11, việc 4) — cùng luật `kiemNguoiNhan`, giữ thứ tự, bỏ trùng; một người sai → lỗi như `kiemNguoiNhan`. */
-function kiemNguoiNhanLo(uids: readonly unknown[], branchId: number | null): number[] {
+function kiemNguoiNhanLo(uids: readonly unknown[], branchId: number | null, nhanTin = false): number[] {
   const ids = [...new Set(uids.map(Number))];
   if (ids.some((id) => !Number.isInteger(id) || id <= 0)) throw badRequest('Chọn người nhận việc.');
-  const ok = new Set((db().prepare(`SELECT CAST(j.value AS INTEGER) AS id FROM json_each(?1) j WHERE ${HOAT_DONG_O('j.value', '?2')}
+  const ok = new Set((db().prepare(`SELECT CAST(j.value AS INTEGER) AS id FROM json_each(?1) j WHERE (${HOAT_DONG_O('j.value', '?2')}
       AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = j.value AND ur.status = 'active'
-        AND r.key IN (SELECT value FROM json_each(?3)) AND (ur.branch_id IS NULL OR ur.branch_id = ?2))`)
+        AND r.key IN (SELECT value FROM json_each(?3)) AND (ur.branch_id IS NULL OR ur.branch_id = ?2)))${nhanTin ? ` OR ${CON_VAI_BPXL('j.value')}` : ''}`)
     .all(JSON.stringify(ids), branchId, JSON.stringify(VAI_GIAO_VIEC)) as { id: number }[]).map((r) => r.id));
   if (ids.some((id) => !ok.has(id))) throw badRequest('Người này không có tài khoản đang hoạt động ở chi nhánh của việc — chọn người khác.');
   return ids;
@@ -484,7 +497,7 @@ export function themTheoDoi(p: Principal, loai: LoaiGiao, id: number, body: { us
   const traKhoi = () => { try { return xemGiaoViec(p, loai, id); } catch { return { ok: true as const }; } };
   /* PTA rà #2166: bấm Hoàn tác hai lần — đang theo dõi rồi thì coi như xong, không 403. */
   if (tuThemLai && chinhMinh && db().prepare('SELECT 1 FROM viec_theo_doi WHERE loai = ? AND ref_id = ? AND user_id = ?').get(loai, id, p.userId)) return traKhoi();
-  const ds = tuThemLai ? (chinhMinh ? [p.userId] : []) : kiemNguoiNhanLo(tho, v.branchId);
+  const ds = tuThemLai ? (chinhMinh ? [p.userId] : []) : kiemNguoiNhanLo(tho, v.branchId, loai === 'nhan_tin');
   const bo = ds.length ? vuaBo(loai, id, ds, p.userId) : new Map<number, DongBo>();
   if (tuThemLai && !bo.has(p.userId)) throw forbidden('Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.');
   if (!ds.length) throw badRequest('Chọn người theo dõi.');
@@ -537,7 +550,7 @@ export function doiPhuTrach(p: Principal, loai: LoaiGiao, id: number, body: { us
   if (!coTheDoiNguoi(p, v)) throw forbidden('Chỉ người đang phụ trách, Head, Quản trị hoặc CX của chi nhánh đổi được người phụ trách.');
   const CHAM = 'Người phụ trách vừa được người khác đổi — mở lại việc để xem.';
   if ((body.phuTrachCu == null || body.phuTrachCu === '' ? null : Number(body.phuTrachCu)) !== v.pt) throw conflict(CHAM);
-  const nhan = body.userId == null || body.userId === '' ? null : kiemNguoiNhan(body.userId, v.branchId);
+  const nhan = body.userId == null || body.userId === '' ? null : kiemNguoiNhan(body.userId, v.branchId, loai === 'nhan_tin');
   if (nhan !== null && laKhung(loai)) kiemNguoiNhanKhung(loai, v, nhan);
   const moi = nhan !== null && v.macDinh.length === 1 && v.macDinh[0] === nhan ? null : nhan;
   if (moi === v.pt && (v.row.phu_trach_id ?? null) === moi) return { ...xemGiaoViec(p, loai, id), hoanTac: null };
@@ -711,11 +724,16 @@ export function sauDoiChiNhanhEm(studentIds: readonly number[], boi: number | nu
  */
 export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => {
   const cn = CN_EM(`${v}.student_id`);
+  /* RA-2711 (N72 ⑤ / N76): người giữ theo luật như `nguoiGiuBaoPh` — TVV CÒN vai → Lead TVV đã chốt (còn vai ở CN em) → Head. Head theo dõi khi người giữ không
+     phải Head (trước: chỉ khi em có `consultant_user_id` — em chưa TVV mà Lead TVV giữ thì Head không theo dõi; TVV hết vai thì Head vừa giữ vừa theo dõi). */
+  const tvvCon = `NOT ${KHONG_TVV_SQL(s)}`;
+  const leadGiu = `(${v}.nguoi_luat IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles l_ JOIN roles lr_ ON lr_.id = l_.role_id JOIN users lu_ ON lu_.id = l_.user_id
+    WHERE l_.user_id = ${v}.nguoi_luat AND lr_.key = 'lead_consultant' AND l_.status = 'active' AND lu_.status = 'active' AND lu_.deleted_at IS NULL AND l_.branch_id = ${cn}))`;
   return `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
-  AND ((r.key = 'manager' AND ${s}.consultant_user_id IS NOT NULL AND ur.branch_id = ${cn})
-    OR (r.key = 'lead_consultant' AND ur.branch_id = ${cn} AND ${s}.consultant_user_id IS NOT NULL)   -- VAI-0 (N76): Lead TVV chi nhánh em theo dõi (nguồn 'cx')
+  AND ((r.key = 'manager' AND (${tvvCon} OR ${leadGiu}) AND ur.branch_id = ${cn})
+    OR (r.key = 'lead_consultant' AND ur.branch_id = ${cn} AND ${tvvCon})   -- VAI-0 (N76): Lead TVV chi nhánh em theo dõi (nguồn 'cx')
     OR (r.key = 'cx' AND (ur.branch_id IS NULL OR ur.branch_id = ${cn})
-      AND NOT (${s}.consultant_user_id IS NULL AND EXISTS (SELECT 1 FROM user_roles m_ JOIN roles mr_ ON mr_.id = m_.role_id WHERE m_.user_id = ur.user_id
+      AND NOT (NOT ${tvvCon} AND NOT ${leadGiu} AND EXISTS (SELECT 1 FROM user_roles m_ JOIN roles mr_ ON mr_.id = m_.role_id WHERE m_.user_id = ur.user_id
         AND mr_.key = 'manager' AND m_.status = 'active' AND (m_.branch_id IS NULL OR m_.branch_id = ${cn})))))`;
 };
 export const NGUOI_VAI = 'user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id';
@@ -1192,6 +1210,13 @@ export function luatMeeting(phan: string, cn: number | null, nguoiLuat: number |
   for (const k of vai) { const x = (m.get(k) ?? []).find((y) => y.b !== null && y.b === cn); if (x) return { u: x.u, ten: x.ten, vai: k }; }
   return null;
 }
+/** RA-2711: người giữ phần Meeting CHƯA SINH (bước ○ của Tuyến) — người gán đúng chi nhánh sớm nhất theo thứ tự vai của phần (ổn định, không đếm việc mở). */
+export function luatMeetingXemTruoc(phan: string, cn: number | null): LuatMeeting | null {
+  if (cn == null) return null;
+  const m = nguoiGiuVai();
+  for (const k of VAI_PHAN(phan)) { const x = (m.get(k) ?? []).find((y) => y.b === cn); if (x) return { u: x.u, ten: x.ten, vai: k }; }
+  return null;
+}
 /** Lớp đang học của em (việc BPXL theo lớp — N77). */
 const lopCuaEm = (studentId: number): number | null => (db().prepare(`SELECT e.class_id AS c FROM enrollments e WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`)
   .get(studentId) as any)?.c ?? null;
@@ -1285,7 +1310,8 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
      lead BPXL (lọc chi nhánh ở dưới). Chỉ mục một phần `idx_viec_nhan_tin_giao` / `idx_viec_nhan_tin_luat`; vế "Tất cả" quét việc đang mở (ít dòng). */
   if (!o.studentId) {
     const COT_NT = `SELECT 'nhan_tin', v.id, NULL, v.phu_trach_id, v.giao_boi, v.han, v.han_chon, c.code, NULL, NULL, v.class_id, v.loai, NULL,
-        (SELECT COUNT(*) FROM viec_nhan_tin_dong d WHERE d.viec_id = v.id AND COALESCE(d.mau, '') != 'x'), v.branch_id, v.tao_luc, NULL, v.nguoi_luat, NULL, NULL, NULL FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id`;
+        (SELECT COUNT(*) FROM viec_nhan_tin_dong d LEFT JOIN lenh_chuyen_lop l ON l.id = d.lenh_id LEFT JOIN students s ON s.id = l.student_id   -- RA-2711: bỏ em Lưu trữ như panel xemNhanTin
+          WHERE d.viec_id = v.id AND COALESCE(d.mau, '') != 'x' AND s.archived_at IS NULL), v.branch_id, v.tao_luc, NULL, v.nguoi_luat, NULL, NULL, NULL FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id`;
     const tatCaNt = !!o.tatCa && (laLeadBpxl(p) || p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx'));
     ve.push(`${COT_NT} WHERE v.phu_trach_id = ? AND v.trang_thai = 'mo'`, `${COT_NT} WHERE v.nguoi_luat = ? AND v.phu_trach_id IS NULL AND v.trang_thai = 'mo'`);   // `nguoi_luat` luôn còn hiệu lực (`nhanTinHetHieuLuc`)
     thamSo.push(p.userId, p.userId);
