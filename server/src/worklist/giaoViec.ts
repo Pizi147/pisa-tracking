@@ -23,7 +23,7 @@ import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../p
 import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
+import { canManageDiscipline, gvcnCuaEm, xemYThucHv } from '../yThuc/access.ts';
 import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
 import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
@@ -971,9 +971,11 @@ export function xemMeeting(p: Principal, phoiHopId: number): { phoiHopId: number
   const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,
       (SELECT MAX(c.sos_level) FROM sos_cases c WHERE c.attempt_id = x.attempt_id) AS sos
     FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN users u ON u.id = x.performed_by WHERE x.id = ?`).get(phoiHopId) as any;
-  const lienHe = phan.some((g) => g.meeting?.coTheLam || g.coTheDoiNguoi) || canManageDiscipline(p, x.student_id);
+  /* Chủ SP 27/11 (rà #2273 P1, "Có, khi đang giữ việc"): MỘT luật với dòng Phụ huynh ở bước GVCN của Tuyến (`tuyen.ts` `docEm`) — người xem được Ý thức em
+     (`xemYThucHv`, bỏ vai BPXL) HOẶC đang giữ phần Xếp lịch họp CÒN MỞ của em này. BPXL khác / theo dõi / đã giao đi / phần đã xong → không thấy PH, ghi chú GVCN. */
+  const lienHe = xemYThucHv(p, x.student_id) || phan.some((g) => g.meeting?.phan === 'xep_lich' && g.meeting.trangThai === 'mo' && g.phuTrach.some((n) => n.id === p.userId));
   return { phoiHopId, phan, baoPhId: bp?.id ?? null, boiCanh: {
-    sos: x.sos ?? null, ngay: x.performed_on ?? null, gvcn: x.gvcn ?? null, ghiChu: x.note?.trim() || null,
+    sos: x.sos ?? null, ngay: x.performed_on ?? null, gvcn: x.gvcn ?? null, ghiChu: lienHe ? x.note?.trim() || null : null,
     phuHuynh: lienHe ? { ten: x.parent_name ?? null, quanHe: x.parent_relation ?? null, sdt: x.parent_phone ?? null } : null,
   } };
 }
