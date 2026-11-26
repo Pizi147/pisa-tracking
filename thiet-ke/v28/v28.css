@@ -89,3 +89,4 @@
 .hop, .hop > .than { grid-template-columns:minmax(0,1fr); }
 .bnt .mo-e { display:inline-flex; align-items:center; gap:6px; border:0; background:none; padding:0; }
 .se-giao .khong { color:var(--text-dim); font-size:var(--c13); }
+.bem .hn { font:600 var(--c13) var(--phong-so); color:var(--text-dim); white-space:nowrap; }
