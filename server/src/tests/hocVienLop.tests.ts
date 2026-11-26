@@ -175,6 +175,9 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq(d.mucMenuDongHocVien({ ...q, laLopThuong: false }).includes('lo-trinh-tiep'), false, 'FT không có Lộ trình tiếp theo');
     eq(d.mucMenuDongHocVien({ ...q, dangHoc: false }), [], 'Em đã kết thúc: không có thao tác');
     eq(d.mucMenuDongHocVien({ ...q, coTheGhiViPham: false, coTheNhapDiem: false }), ['case', 'sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop'], 'Theo quyền');
+    eq(d.mucMenuDongHocVien({ ...q, coTheGhiKqThi: true }), ['case', 'vi-pham', 'nhap-diem', 'ghi-kq-thi', 'sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop'], 'Chủ SP 26/11: em Đã thi · chờ KQ + nhập được → "Ghi KQ thi thật" sau Nhập điểm');
+    eq(d.MUC_MENU_DONG_NHAN['ghi-kq-thi'], 'Ghi KQ thi thật', 'Chữ mục Ghi KQ thi thật');
+    eq(d.mucMenuDongHocVien({ ...q, coTheGhiKqThi: false }).includes('ghi-kq-thi'), false, 'Không cờ → không mục');
     eq(d.MUC_MENU_DONG_NHAN['vi-pham'], 'Vi phạm / Nhắc nhở', 'Chữ');
     eq([...d.MUC_MENU_DONG_HIEM], ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'], 'Việc hiếm (PR-CT thêm Đề xuất chuyển lớp…, PR-OV2b Sửa thông tin)');
     /* OV-3b: GVCN thôi ghi Hướng — không có mục "Lộ trình tiếp theo" (chỉ Quản lý mở hộp Lộ trình ở bảng lớp). */

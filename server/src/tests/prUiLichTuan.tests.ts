@@ -36,6 +36,21 @@ export async function runPrUiLichTuanTests(t: Kit) {
     }
   });
 
+  check('ULT-4 · "Còn trống" (chủ SP 26/11): ô của TUẦN ĐANG XEM chưa điểm — tuần khác / có band / "-" / huỷ / vắng không tính; số lớp lọc = số hàng conBai > 0, cộng bài = "còn chấm" của dải số', () => {
+    const o = (x: any) => ({ required: true, band: null, noShow: false, progress: 'due', weekStart: '2026-11-23', ...x });
+    const T = '2026-11-23';
+    assert(d.oTrongTuanFt(o({}), T), 'ô trống đúng tuần');
+    assert(d.oTrongTuanFt(o({ progress: 'sat' }), T) && d.oTrongTuanFt(o({ progress: 'upcoming' }), T), 'đã thi / chưa tới lịch vẫn là ô trống của tuần');
+    assert(!d.oTrongTuanFt(o({ weekStart: '2026-11-30' }), T), 'ô thi tuần khác không tính');
+    assert(!d.oTrongTuanFt(o({ weekStart: null }), T) && !d.oTrongTuanFt(o({}), null), 'không biết tuần → không tính');
+    assert(!d.oTrongTuanFt(o({ band: 6 }), T) && !d.oTrongTuanFt(o({ noShow: true }), T), 'có band / "-" không tính');
+    assert(!d.oTrongTuanFt(o({ progress: 'cancelled' }), T) && !d.oTrongTuanFt(o({ progress: 'absent' }), T) && !d.oTrongTuanFt(o({ required: false }), T), 'huỷ / vắng / không bắt buộc không tính');
+    const r = cham.lichTest(P.mbManager, tuan.id, null, TODAY, { phamVi: 'tat-ca' });
+    const trong = r.lop.filter((l: any) => l.conBai > 0);
+    assert(trong.length <= r.lop.length && r.lop.every((l: any) => l.conBai >= 0 && l.conBai <= l.tong), 'conBai nằm trong [0, tong]');
+    assert(trong.reduce((n: number, l: any) => n + l.conBai, 0) === r.tongQuan.conPhaiCham, 'cộng bài trống các hàng lọc = "còn chấm" của dải số (QL)');
+  });
+
   check('ULT-3 · /nhap-diem/* chuyển hướng: FT theo tuần → Lịch tuần (lớp, tuần, kn); lượt không theo tuần → panel Nhập điểm lớp; id hỏng → Lịch', () => {
     const q = (s: string) => new URLSearchParams(s);
     assert(d.duongNhapDiemCu('12', q('periodId=40&kn=reading'), true) === '/test/lich?classId=12&periodId=40&kn=reading', 'FT');

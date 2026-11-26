@@ -438,9 +438,9 @@ export function nhomGiaoVienBoMon(
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
 /* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Vi phạm / Nhắc nhở" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
-export type MucMenuDong = 'vi-pham' | 'xu-ly-y-thuc' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
+export type MucMenuDong = 'vi-pham' | 'xu-ly-y-thuc' | 'case' | 'nhap-diem' | 'ghi-kq-thi' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'vi-pham': t('Vi phạm / Nhắc nhở'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
+  'vi-pham': t('Vi phạm / Nhắc nhở'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'ghi-kq-thi': t('Ghi KQ thi thật'), 'sua-thong-tin': t('Sửa thông tin'),
   'lo-trinh-tiep': t('Cuối khoá…'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Case · Ghi vi phạm · Xác nhận xử lý · Nhập điểm). */
@@ -458,6 +458,8 @@ export function mucMenuDongHocVien(i: {
   coTheDeXuatChuyenLop?: boolean;
   /** OV-12e (mockup v3 §8): em đang cần xử lý Ý thức + người xem ghi được vi phạm → "Xác nhận xử lý" mở panel ngay trên trang. */
   coTheXuLyYThuc?: boolean;
+  /** Chủ SP 26/11: em Đã thi · chờ KQ + người xem nhập được KQ thi thật (máy chủ `coTheNhapThiThat`) → "Ghi KQ thi thật" mở panel Sau thi có sẵn. */
+  coTheGhiKqThi?: boolean;
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
   const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
@@ -466,6 +468,7 @@ export function mucMenuDongHocVien(i: {
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheXuLyYThuc) out.push('xu-ly-y-thuc');
   if (i.coTheNhapDiem) out.push('nhap-diem');
+  if (i.coTheGhiKqThi) out.push('ghi-kq-thi');
   /* PR-OV2b: Sửa thông tin một em ngay tại dòng (panel như ⋯ hồ sơ HV). */
   if (i.coTheSuaHocVien) out.push('sua-thong-tin');
   if (bat.loTrinhTiepTheo && i.laLopThuong && i.coTheChuyenLop) out.push('lo-trinh-tiep');

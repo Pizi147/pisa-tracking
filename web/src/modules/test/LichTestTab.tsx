@@ -12,6 +12,7 @@ import { useDienThoai, useManHinh } from '../../ui/TheDong.tsx';
 import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
+import { ChiOTrongContext } from '../cham/DongThi.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import { CHAM_CHEO, chuOChuaLuu, conTrongLichTest, gopNoTheoLop, khungLichTestMacDinh, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
 import { khoaHang, type DongNoLop, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
@@ -73,6 +74,8 @@ export function LichTestTab() {
   const urlKn = params.get('kn');
   const phamViParam = params.get('phamVi');
   const loaiParam = params.get('loai') as Loai | null;
+  /* Chủ SP 26/11: bộ lọc "Còn trống" — chỉ hàng lớp / em có ô CỦA TUẦN ĐANG XEM chưa có điểm. Trên đường dẫn như `loai` (F5 / Back giữ). */
+  const chiTrong = params.get('trong') === '1';
 
   const qs = new URLSearchParams();
   if (periodParam) qs.set('periodId', String(periodParam));
@@ -191,7 +194,10 @@ export function LichTestTab() {
   const theoKhung = <T extends { mode: LopLichTest['mode']; kind?: string | null }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
   /* LT-GON (chủ SP 05/11): khối "Quá hạn chấm" MỘT HÀNG MỘT LỚP — gộp mọi đợt / MT / bài của lớp từ dữ liệu đã nạp (không thêm request). */
   const noTab = gopNoTheoLop(theoKhung(data?.no ?? []), CHAM_CHEO);
-  const lopTab = theoKhung(data?.lop ?? []);
+  const lopKhung = theoKhung(data?.lop ?? []);
+  /* "Còn trống": hàng lớp còn bài chưa chấm của tuần (`conBai` máy chủ: chưa điểm, chưa "-"; ô thi tuần khác không nằm trong hàng) — dùng dữ liệu đã tải. */
+  const lopTrong = lopKhung.filter((l) => l.conBai > 0);
+  const lopTab = chiTrong ? lopTrong : lopKhung;
   /* Thu một khối là bỏ lưới đang mở trong đó — còn ô chưa lưu thì hỏi trước (Q14). */
   const thuKhoi = (k: 'k1' | 'k3') => {
     if (!moKhoi[k]) { setMoKhoi((m) => ({ ...m, [k]: true })); return; }
@@ -241,6 +247,11 @@ export function LichTestTab() {
   /* M6 6b-1 (bảng kê lỗi 7): panel lên URL như ô số — ‹ / Back / F5 theo ngăn xếp `?panel=` (Nhập điểm của dòng là view kế). */
   const [moQuaHan, setMoQuaHan] = useMoSoLieu('qua-han-cham');
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+  /* Bật "Còn trống": mở sẵn các hàng lớp còn trống để thấy ngay phần nào (L R W S…) chưa có điểm — như ô "đã chấm" (`bamSo`); lưới nạp lười theo khung nhìn. */
+  const doiChiTrong = () => {
+    if (!chiTrong) setEpMo((s) => new Set([...s, ...lopTrong.map(khoaHang)]));
+    datThamSo({ trong: chiTrong ? null : '1' });
+  };
   const bamSo = (o: OSo) => {
     if (!data) return;
     /* UX-2 (1): "bài quá hạn" mở DANH SÁCH đúng các ô đã đếm. B8: "đã chấm" → nhóm Test tuần này + ép mở hàng còn bài (thao tác của ô "còn chấm" đã bỏ). */
@@ -272,6 +283,13 @@ export function LichTestTab() {
   const congTacKhung = (dem.ft > 0 || dem.thuong > 0) && (
     <CongTacKhung v8 giuSo trang="lich-test" value={loai ?? 'tat-ca'} coTatCa dem={dem}
       onChange={(k) => datThamSo({ loai: k })} />
+  );
+  /* Chủ SP 26/11: "Còn trống · n" — n lớp (lượt) của khung đang xem còn ô chưa điểm trong tuần; cùng kiểu chip lọc với Tuần / Khung (`nut-loc`). */
+  const nutChiTrong = (
+    <button type="button" className="nut-loc max-sm:min-h-[44px]" aria-pressed={chiTrong} data-hd="lich-test-con-trong" onClick={doiChiTrong}
+      title={t('{n} lớp · {m} bài chưa có điểm trong tuần', { n: new Set(lopTrong.map((l) => l.classId)).size, m: lopTrong.reduce((a, l) => a + l.conBai, 0) })}>
+      {t('Còn trống')} · {new Set(lopTrong.map((l) => l.classId)).size}
+    </button>
   );
   const nhomPhamVi = data.coPhamViRong && (
     /* U06 (mockup V11 `.doan`): đoạn chọn liền như Fast Track / Lớp thường — mục chọn nền + vạch đáy + đậm. */
@@ -331,7 +349,7 @@ export function LichTestTab() {
         <div className="flex flex-wrap items-center gap-2">
           {tuanPicker}
           {/* ⑦ A6: 375 công tắc khung vẫn trên hàng tuần; phạm vi + chi nhánh trong "Lọc". */}
-          <span className="ml-1 inline-flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">{congTacKhung}{!dienThoai && nhomPhamVi}</span>
+          <span className="ml-1 inline-flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">{congTacKhung}{nutChiTrong}{!dienThoai && nhomPhamVi}</span>
           {!dienThoai && locChiNhanh}
           <span className="ml-auto inline-flex items-center gap-3">
             {nutMoHet}
@@ -388,11 +406,13 @@ export function LichTestTab() {
               <NhomDau id="lich-test-k3-than" rong={!lopTab.length} mo={moKhoi.k3 && lopTab.length > 0} onMo={() => thuKhoi('k3')}
                 tieuDe={data.laTuanNay ? t('Tuần này') : maTuan} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}
+                <ChiOTrongContext.Provider value={chiTrong}>
                 <HangLop lop={lopTab} gvLop={data.gvLop} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
+                </ChiOTrongContext.Provider>
               </NhomDau>
               {/* GD-11a (⑦ A5): tuần không có Test — một dòng trong nhóm (Quá hạn chấm vẫn ở trên). */}
-              {!lopTab.length && <div className="px-4 py-5 text-center text-sm text-dim">{data.tuan ? t('Tuần {maTuan} không có Test.', { maTuan }) : t('Tuần này không có Test.')}</div>}
+              {!lopTab.length && <div className="px-4 py-5 text-center text-sm text-dim">{chiTrong && lopKhung.length ? t('Tuần {maTuan} không còn ô trống.', { maTuan }) : data.tuan ? t('Tuần {maTuan} không có Test.', { maTuan }) : t('Tuần này không có Test.')}</div>}
             </div>
             {nhacMtCu}
             </div>

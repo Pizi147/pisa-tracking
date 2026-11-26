@@ -62,7 +62,7 @@ type TrangHocVienLop = {
   rows: LopTrenTrang[]; scopeEmpty: boolean;
   phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
   dem: Record<LocHocVien, number>;
-  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; them?: ThemEm; hang?: HangHv; tvv?: string | null; lich?: LichThi }[];
+  hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; them?: ThemEm; hang?: HangHv; tvv?: string | null; lich?: LichThi; choKq?: { cycleId: number; coTheNhap: boolean } }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" theo phạm vi, không theo kết quả ô tìm. */
@@ -613,7 +613,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             ) : (
               <>
                 {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} tim={q} tvv={vai === 'tvv'} />
-                  : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} tim={q} tvv={vai === 'tvv'} />}
+                  : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} tim={q} tvv={vai === 'tvv'} viecDaTai={work.data !== null || !!work.error} />}
                 {/* Phân trang chỉ cuối bảng (B-04 cũ — bỏ bản lặp trên). */}
                 {nhomLop.length > pt.thanh.co && <div className="border-t px-3" style={{ borderColor: 'var(--line)' }}><PhanTrang {...pt.thanh} duoi /></div>}
               </>

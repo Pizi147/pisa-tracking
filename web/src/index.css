@@ -663,10 +663,14 @@
   .nhan-lop > [class*='surface-2'] { background-color: rgb(var(--muted-bg-rgb)) !important; }
   /* ≥ 1440: cột đúng mockup A (208 · 100 · 300 · 186 · 100 · 172 · Việc giãn · 48); < 1440 giữ cột cân cho 1280 (`COT_HV`, chủ SP 03/11). */
   @media (min-width: 1440px) {
-    .bang-hv .bang > colgroup > col:nth-child(1) { width: 208px !important; } .bang-hv .bang > colgroup > col:nth-child(2) { width: 100px !important; }
-    .bang-hv .bang > colgroup > col:nth-child(3) { width: 300px !important; } .bang-hv .bang > colgroup > col:nth-child(4) { width: 186px !important; }
-    .bang-hv .bang > colgroup > col:nth-child(6) { width: 172px !important; }
+    .bang-hv:not([data-khong-viec]) .bang > colgroup > col:nth-child(1) { width: 208px !important; } .bang-hv:not([data-khong-viec]) .bang > colgroup > col:nth-child(2) { width: 100px !important; }
+    .bang-hv:not([data-khong-viec]) .bang > colgroup > col:nth-child(3) { width: 300px !important; } .bang-hv:not([data-khong-viec]) .bang > colgroup > col:nth-child(4) { width: 186px !important; }
+    .bang-hv:not([data-khong-viec]) .bang > colgroup > col:nth-child(6) { width: 172px !important; }
   }
+  /* Chủ SP 26/11: không có cột Việc cần làm (không em nào có việc của người xem) — Học viên vừa đủ tên dài nhất, năm cột giữa CHIA ĐỀU phần còn lại (cột `auto` của
+     bảng cố định chia bằng nhau), ⋯ sát mép phải (NH9). */
+  .bang-hv[data-khong-viec] .bang > colgroup > col:nth-child(1) { width: 220px !important; }
+  .bang-hv[data-khong-viec] .bang > colgroup > col:nth-child(n+2):nth-child(-n+6) { width: auto !important; }
   /* GD-13a (mockup v21 ⑥ `.lt-nho`): ô Lịch thi của bảng Tất cả là CHỮ — "Chưa có lịch" chữ dim, "Dự kiến 01/2027" chữ thường 500; không viên viền
      (chỉ bảng này — NhanLich dùng chung; !important đè tiện ích Tailwind). Lịch đã chốt / đã thi giữ chip. */
   .bang-hv [class*='lich-vien'], .bang-hv [class*='thieu-vien'] { box-shadow: none !important; border: 0; background: none !important; padding-left: 0; padding-right: 0;

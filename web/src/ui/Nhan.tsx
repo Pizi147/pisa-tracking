@@ -118,7 +118,8 @@ const LICH: Record<'co' | 'du-kien' | 'chua' | 'da-thi', string> = {
   'du-kien': 'bg-transparent text-[color:var(--lich-chu)] shadow-[inset_0_0_0_1px_var(--lich-vien)]',
   chua: 'bg-transparent text-faint shadow-[inset_0_0_0_1px_var(--thieu-vien)]',
 };
-export function NhanLich({ loai, title, children }: { loai: keyof typeof LICH; title?: string; children: ReactNode }) {
+export function NhanLich({ loai, title, children, haiDong }: { loai: keyof typeof LICH; title?: string; children: ReactNode; /** Dòng thứ hai TRONG chip (vd "chờ KQ") — cột hẹp, chip cao hai dòng thay vì cắt chữ. */ haiDong?: ReactNode }) {
+  if (haiDong) return <span title={title} className={`inline-flex flex-col items-start justify-center gap-[3px] whitespace-nowrap rounded-[2px] px-2 py-[5px] text-xs font-semibold leading-none tabular-nums ${LICH[loai]}`}><span>{children}</span><span className="font-medium opacity-80">{haiDong}</span></span>;
   return <span title={title} className={`inline-flex h-[22px] items-center whitespace-nowrap rounded-[2px] px-2 text-xs font-semibold leading-none tabular-nums ${LICH[loai]}`}>{children}</span>;
 }
 
