@@ -10123,6 +10123,9 @@ await runPrSuaLoiATests({ check, assert } as any);
 // ==================================================================== RA-2511 PR 1 (sua-quyen): quyền máy chủ + Case / PA / Tutor
 const { runPrSuaQuyenTests } = bocTep('prSuaQuyen', await import('./prSuaQuyen.tests.ts'));
 await runPrSuaQuyenTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== BAN-GIAO-DOT (chủ SP 26/11: đợt bàn giao không kéo em đợt cũ + Head bỏ bàn giao từng em)
+const { runPrBanGiaoDotTests } = bocTep('prBanGiaoDot', await import('./prBanGiaoDot.tests.ts'));
+await runPrBanGiaoDotTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

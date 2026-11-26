@@ -2,7 +2,7 @@ import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, dotBanGiao, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { boVaiBpxl, boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
@@ -210,13 +210,15 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const homNay = demoToday();
   const ct = (nguon.programme_code ?? null) as string | null;
 
-  const rows = conn.prepare(
+  const tatCa = conn.prepare(
     `SELECT l.*, s.full_name, s.student_code, d.code AS dich_code, xn.full_name AS xn_ten, ${MDK_SQL('l')} AS mdk
        FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id
        LEFT JOIN classes d ON d.id = l.lop_dich_id LEFT JOIN users xn ON xn.id = l.xac_nhan_boi
       WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ${f.lenhId ? 'AND l.id = ?' : ''}
       ORDER BY s.full_name, l.id`,
   ).all(...(f.lenhId ? [lopId, f.lenhId] : [lopId])) as any[];
+  /* BAN-GIAO-DOT (chủ SP 26/11): panel cả lớp = ĐỢT đang mở — em đã xác nhận ở đợt trước không hiện, không đếm. Một phiếu (`lenhId`, hồ sơ HV) đọc thẳng. */
+  const rows = f.lenhId ? tatCa : dotBanGiao(tatCa);
 
   const gv = conn.prepare(
     `SELECT ta.user_id, ta.is_core, ta.skill, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
@@ -547,7 +549,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
   const lenh: any[] = [];
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich,
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, l.ngay_ra_lenh, s.full_name, d.code AS dich,
               n.programme_code AS ct_nguon, d.programme_code AS ct_dich, ${MDK_SQL('l')} AS mdk,
               CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
                 FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
@@ -571,13 +573,17 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
     }
   }
   const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
+  /* BAN-GIAO-DOT (chủ SP 26/11): mỗi lớp nguồn chỉ ĐỢT đang mở (cùng hàm với panel) — "a/n đã xác nhận" của việc = của panel. */
+  const theoLop = new Map<number, any[]>();
+  for (const l of lenh) (theoLop.get(l.lop_nguon_id) ?? theoLop.set(l.lop_nguon_id, []).get(l.lop_nguon_id)!).push(l);
+  const dot = new Map([...theoLop].map(([id, ds]) => [id, dotBanGiao(ds)]));
   /* Em không học môn (N13) không thành việc của GV môn đó. */
   const hoc = (l: any, m: string) => boMonBanGiaoCt(l.ct_nguon ?? null, l.mdk).includes(m);
   const canMon = (l: any, m: string) => hoc(l, m) && !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {
     const { lopId } = x;
-    const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
+    const cua = dot.get(lopId) ?? [];
     const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
     if (!chuaXn.length) continue;
     const mons = boMonBanGiaoCt(x.ct);

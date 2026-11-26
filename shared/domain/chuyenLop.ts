@@ -115,6 +115,18 @@ export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
  * `permissions.ts`). Lệnh cũ không có phiếu (trước OV-13l: `han_gvcn` NULL — không sinh việc, không ai xác nhận) KHÔNG tính: không mở quyền xem vô hạn.
  */
 export const PHIEU_BAN_GIAO_MO_SQL = (l: string) => `${l}.trang_thai != 'huy' AND ${l}.huong != 'dung_hoc' AND ${l}.han_gvcn IS NOT NULL AND ${l}.xac_nhan_luc IS NULL`;
+
+/**
+ * BAN-GIAO-DOT (chủ SP 26/11): ĐỢT bàn giao của MỘT lớp nguồn — lệnh chưa xác nhận + lệnh đã xác nhận KỂ TỪ khi đợt bắt đầu. Đợt bắt đầu = ngày ra lệnh sớm nhất
+ * của lệnh chưa xác nhận; lớp hết lệnh chờ → đợt gần nhất (ngày ra lệnh mới nhất). Lệnh ra TRƯỚC mốc đó và xác nhận TRƯỚC mốc đó thuộc đợt cũ: không hiện, không đếm.
+ * MỘT hàm cho panel Bàn giao, việc Bàn giao (Công việc, chip hồ sơ GV) và dải hồ sơ lớp — cùng một số ở mọi nơi.
+ */
+export function dotBanGiao<T extends { ngay_ra_lenh: string; xac_nhan_luc?: string | null }>(ds: readonly T[]): T[] {
+  const xong = (l: T) => l.xac_nhan_luc?.slice(0, 10) ?? null;
+  const moc = ds.filter((l) => !xong(l)).map((l) => l.ngay_ra_lenh).sort()[0] ?? ds.map((l) => l.ngay_ra_lenh).sort().at(-1);
+  if (!moc) return [];
+  return ds.filter((l) => { const x = xong(l); return !x || l.ngay_ra_lenh >= moc || x >= moc; });
+}
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 

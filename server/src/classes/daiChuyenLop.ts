@@ -1,7 +1,7 @@
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
-import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan, xemDen } from '../../../shared/domain/index.ts';
+import { dotBanGiao, kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan, xemDen } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { lopXemTam, type Principal } from '../permissions.ts';
@@ -29,41 +29,43 @@ function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolea
   const homNay = demoToday();
   const ra = coTheRaLenh(p, classId);
   const rows = conn.prepare(
-    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h
+    `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h, l.ngay_ra_lenh AS i
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy'
-     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL
+     UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL, NULL
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id
       WHERE l.lop_dich_id = ? AND (l.trang_thai = 'cho' OR (l.trang_thai = 'da_chuyen' AND l.tuan_bat_dau >= ?))
-     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lam_lai = 0 AND b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
-     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
-     UNION ALL SELECT 'ld', l.id, l.lop_dich_id, NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'ld', l.id, l.lop_dich_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL
-     UNION ALL SELECT 'mdk', l.id, ${MDK_SQL('l')}, NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'mdk', l.id, ${MDK_SQL('l')}, NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.xac_nhan_luc IS NULL
-     UNION ALL SELECT 'ta', ta.class_id, c.programme_code, ta.user_id, ta.skill, ta.is_core, NULL, NULL, NULL
+     UNION ALL SELECT 'ta', ta.class_id, c.programme_code, ta.user_id, ta.skill, ta.is_core, NULL, NULL, NULL, NULL
        FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.status = 'active' AND (ta.class_id = ? OR ta.class_id IN (SELECT lop_dich_id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai != 'huy' AND xac_nhan_luc IS NULL))
-     UNION ALL SELECT 'bgv', b.id, uc.full_name, b.trang_thai, b.han, b.nguoi_lam, b.xong_luc, b.nguoi_cu, b.hieu_luc
+     UNION ALL SELECT 'bgv', b.id, uc.full_name, b.trang_thai, b.han, b.nguoi_lam, b.xong_luc, b.nguoi_cu, b.hieu_luc, NULL
        FROM ban_giao_gv b JOIN users uc ON uc.id = b.nguoi_cu WHERE b.class_id = ? AND (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_luc >= ?))
-     UNION ALL SELECT 'bgm', m.ban_giao_id, m.mon, um.full_name, m.nguoi_moi, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'bgm', m.ban_giao_id, m.mon, um.full_name, m.nguoi_moi, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id JOIN users um ON um.id = m.nguoi_moi
       WHERE b.class_id = ? AND m.trang_thai = 'mo' AND (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_luc >= ?))
-     UNION ALL SELECT 'bge', x.ban_giao_id, x.mon, x.student_id, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'bge', x.ban_giao_id, x.mon, x.student_id, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_gv_em x JOIN ban_giao_gv b ON b.id = x.ban_giao_id AND b.class_id = ? AND b.trang_thai = 'mo'
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id = b.class_id AND e.status = 'active' JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
-     UNION ALL SELECT 'hv', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
+     UNION ALL SELECT 'hv', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
        FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}
          AND EXISTS (SELECT 1 FROM ban_giao_gv b WHERE b.class_id = e.class_id AND b.trang_thai = 'mo')
-     UNION ALL SELECT 'xt', d.khoa, um.full_name, d.nguoi_moi, d.hieu_luc, d.xem_den, NULL, NULL, NULL
+     UNION ALL SELECT 'xt', d.khoa, um.full_name, d.nguoi_moi, d.hieu_luc, d.xem_den, NULL, NULL, NULL, NULL
        FROM doi_phan_cong d JOIN users um ON um.id = d.nguoi_moi WHERE d.class_id = ? AND d.nguoi_cu = ? AND d.trang_thai = 'da_ap' AND d.xem_den IS NOT NULL
-     UNION ALL SELECT 'kqdr', COUNT(DISTINCT substr(e.started_at, 1, 10)), NULL, NULL, NULL, NULL, NULL, NULL, NULL ${EM_KQDR_FT_SQL}`,
+     UNION ALL SELECT 'kqdr', COUNT(DISTINCT substr(e.started_at, 1, 10)), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL ${EM_KQDR_FT_SQL}`,
   ).all(classId, classId, addDays(homNay, -14), classId, classId, classId, classId, classId, classId, classId, addDays(homNay, -14), classId, addDays(homNay, -14), classId, classId, classId, p.userId,
     classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
 
-  const nguon = rows.filter((r) => r.k === 'nguon' && r.b !== 'dung_hoc');
+  const nguonHet = rows.filter((r) => r.k === 'nguon' && r.b !== 'dung_hoc');
+  /* BAN-GIAO-DOT (chủ SP 26/11): dải "a/b đã xác nhận" = ĐỢT đang mở — cùng hàm với panel và Công việc. */
+  const nguon = dotBanGiao(nguonHet.map((r) => ({ ...r, ngay_ra_lenh: r.i as string, xac_nhan_luc: r.e as string | null })));
   const chuaXn = nguon.filter((r) => !r.e);
   const coGvcn = (rows.find((r) => r.k === 'gvcn')?.a ?? 0) > 0;
   const hanGvcn = min(chuaXn.map((r) => r.f));
@@ -110,7 +112,7 @@ function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolea
   const sapNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'cho'));
   const daNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'da_chuyen'));
   /* BAN-GIAO-2: lớp nguồn — lệnh đã chuyển ≤ 14 ngày khi dải Bàn giao đã hết (xác nhận đủ): người viết vẫn có chỗ mở / sửa phiếu. */
-  const daDi = banGiao ? [] : nguon.filter((r) => r.c === 'da_chuyen' && r.d >= addDays(homNay, -14));
+  const daDi = banGiao ? [] : nguonHet.filter((r) => r.c === 'da_chuyen' && r.d >= addDays(homNay, -14));
   const daChuyen = daDi.length ? { daXacNhan: daDi.filter((r) => !!r.e).length, tong: daDi.length } : null;
 
   /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (N20: từ thứ Hai tuần trước Final, còn em chưa chốt). */
