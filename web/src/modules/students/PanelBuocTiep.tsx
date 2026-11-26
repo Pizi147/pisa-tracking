@@ -12,6 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_DA_XONG, HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ngay, shortDate, tuanLich, type HuongSauThi, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { HopGiaHan } from './HopGiaHan.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 
 /** `GET /cycles/:id/buoc-tiep` (máy chủ `trangThaiBuocTiep`). */
 export type TrangThaiBuocTiep = {
@@ -133,9 +134,9 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       <span className="font-semibold text-slate-100"><span className="text-ok">✓</span> {dich(bt.daXong)}</span>
       {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: shortDate(bt.ngayThi, hn) })}</span>}
       {!bt.chon && bt.daGiaHan && <span className="text-slate-400">· {t('đã gia hạn')}</span>}
+      {/* OV-13q + chủ SP 26/11: bấm ngày hạn → hộp gia hạn nhỏ đè panel này (không đóng panel); không còn nút "Gia hạn". */}
+      {!bt.chon && bt.coTheGiaHan && bt.han && <HanBam ten={shortDate(bt.han, hn)} onClick={() => setGiaHan(true)} className="text-slate-400">· {t('hạn {ngay}', { ngay: shortDate(bt.han, hn) })}</HanBam>}
       <span className="flex-1" />
-      {/* OV-13q: Gia hạn — hộp nhỏ đè panel này (không đóng panel). */}
-      {!bt.chon && bt.coTheGiaHan && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
       {onSuaKetQua && bt.chon !== 'hoc_tiep' && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
       <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
       {giaHan && <HopGiaHan x={{ cycleId, han: bt.han, daGiaHan: bt.daGiaHan }} hocVien={em?.ten || null} lop={lop ?? bt.lopNay?.code ?? null}

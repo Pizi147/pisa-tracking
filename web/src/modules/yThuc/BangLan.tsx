@@ -7,6 +7,7 @@ import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 import { TenDich } from '../../ui/ChuDich.tsx';
 import { lucVn } from '../congViec/gioVn.ts';
 import type { BaoPhLan } from './kieu.ts';
@@ -192,9 +193,10 @@ export function OBaoPh({ b, homNay, tvv, moDu, onXemDu, onSuaHan }: {
       {badge}
       {b.trangThai === 'mo' && b.lan && <span className="text-xs tabular-nums text-slate-400">{t('ghi {ngay}', { ngay: ngay(b.lan.ngay, homNay) })}</span>}
       {b.trangThai === 'mo' && (
-        <span className="text-xs tabular-nums text-slate-400">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}
-          {b.coTheSuaHan && onSuaHan && <>{' · '}<button type="button" onClick={onSuaHan}
-            className="link min-h-[28px] appearance-none border-0 bg-transparent p-0 text-xs font-semibold max-sm:min-h-[44px]">{t('Sửa hạn')}</button></>}
+        <span className="text-xs tabular-nums text-slate-400">
+          {/* Chủ SP 26/11: bấm chính hạn để sửa (không nút "Sửa hạn"). */}
+          {b.coTheSuaHan && onSuaHan ? <HanBam ten={ngay(b.han, homNay)} onClick={onSuaHan} className="max-sm:min-h-[44px]">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</HanBam> : t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}
+          {b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}
         </span>
       )}
       {b.trangThai === 'xong' && tvv && <span className="text-xs text-slate-400">{t('TVV {ten}', { ten: tvv })}</span>}
@@ -229,8 +231,11 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
     <div className="grid gap-2.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       <div className="flex flex-wrap items-center gap-2.5">
         <h4 className="m-0 text-[14px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: bacDu(dich(v.nhan)) })}</h4>
-        {v.trangThai === 'mo' && <span className="rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2">{t('hạn {ngay}', { ngay: ngay(v.han, homNay) })}</span>}
-        {v.coTheSuaHan && onSuaHan && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={onSuaHan}>{t('Sửa hạn')}</button>}
+        {v.trangThai === 'mo' && (() => {
+          const chu = t('hạn {ngay}', { ngay: ngay(v.han, homNay) });
+          const the = 'rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2';
+          return v.coTheSuaHan && onSuaHan ? <HanBam ten={ngay(v.han, homNay)} onClick={onSuaHan} className={the}>{chu}</HanBam> : <span className={the}>{chu}</span>;
+        })()}
       </div>
       {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${bacDu(dich(v.bo.nhan))}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}
       {ds.length === 0 ? <p className="m-0 text-[13px] text-slate-500">{t('Chưa có lần ghi nào.')}</p> : ds.map((l, i) => (

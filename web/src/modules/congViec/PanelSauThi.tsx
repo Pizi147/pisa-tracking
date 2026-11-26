@@ -15,6 +15,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import { PanelBuocTiep, useKhoiPhucThiThat, type TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, chuGradeKyThi, ketQuaKyThi, ketQuaThiThat, kiemDiemKyThi, kyThiCuaChuongTrinh, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, luuRoiTiep, thangKe, type HuongSauThi } from '@shared/domain/index.ts';
 import { HOC_TIEP_TRONG, KhoiDung, KhoiHocTiep, PanelLoTrinhMoi, loiHocTiep, thanHocTiep, type GiaTriDung, type GiaTriHocTiep } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -288,9 +289,10 @@ export function PanelSauThi({ cycleId, em, lop, han, quayLai, onDong, onDaLam, o
         </Buoc>
 
         {!kt && (
-          <Buoc so="2" tieuDe={t('Bước tiếp')} mo={!khoaBuoc2 || daChonTruoc || !!daChot} phu={coKq && b.han ? t('hạn {ngay}', { ngay: shortDate(b.han, hn) }) : null}
-            them={coKq && !moDiem && !b.chon && !daChot && b.coTheGiaHan
-              ? <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-xs font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button> : null}>
+          <Buoc so="2" tieuDe={t('Bước tiếp')} mo={!khoaBuoc2 || daChonTruoc || !!daChot} phu={coKq && b.han
+              ? (coKq && !moDiem && !b.chon && !daChot && b.coTheGiaHan
+                ? <HanBam ten={shortDate(b.han, hn)} onClick={() => setGiaHan(true)}>{t('hạn {ngay}', { ngay: shortDate(b.han, hn) })}</HanBam>
+                : t('hạn {ngay}', { ngay: shortDate(b.han, hn) })) : null}>
             {/* Tiêu đề bước đã là "Bước tiếp" — nhóm nút không nhãn riêng; lỗi (sau khi bấm Chốt) ngay dưới. */}
             {/* PTA rà #1952: ba lựa chọn MỘT hàng (rộng theo chữ) khi panel ≥ 480 px, hẹp thì xếp dọc đều — không 2 + 1 lệch (container query, LuaChonRadio dùng chung). */}
             <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none [container-type:inline-size] [&_[role=radiogroup]]:grid [&_[role=radiogroup]]:grid-cols-1 [@container(min-width:480px)]:[&_[role=radiogroup]]:flex [@container(min-width:480px)]:[&_[role=radiogroup]]:flex-nowrap">
@@ -318,7 +320,7 @@ export function PanelSauThi({ cycleId, em, lop, han, quayLai, onDong, onDaLam, o
 }
 
 /** Một bước của panel (mockup `.buoc`): khung viền, số / ✓ trong vòng tròn, tiêu đề + chữ phụ (+ `them`: nút chữ nhỏ cuối dòng); bước chưa mở thì mờ. */
-function Buoc({ so, tieuDe, phu, them, xong, mo = true, children }: { so: string; tieuDe: string; phu?: string | null; them?: ReactNode; xong?: boolean; mo?: boolean; children: ReactNode }) {
+function Buoc({ so, tieuDe, phu, them, xong, mo = true, children }: { so: string; tieuDe: string; phu?: ReactNode; them?: ReactNode; xong?: boolean; mo?: boolean; children: ReactNode }) {
   return (
     <section className={`flex flex-col gap-3 rounded-[10px] border p-4 ${mo ? '' : 'opacity-[.55]'}`} style={{ borderColor: 'var(--line)' }} aria-label={tieuDe}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">

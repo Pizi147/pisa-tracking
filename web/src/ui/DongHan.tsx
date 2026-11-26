@@ -5,15 +5,18 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { mucHan, ngay, shortDate } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { DauQuaHan, LOP_MUC_HAN, NhanChoGv } from './Nhan.tsx';
+import { HanBam } from './HanBam.tsx';
 
 /**
  * DÒNG HẠN + SỬA HẠN TẠI CHỖ (HAN-BAO-PH, chủ SP 03/11 N34; mockup `thiet-ke/audit-0311/u10-y-thuc.html` K5 · K8) — dùng chung việc Báo PH và Meeting CX.
- * Xem: "10/11 · còn 7 ngày · đã chỉnh · mặc định 07/11 · Sửa hạn". Sửa: ô ngày (gõ + lịch) · Lưu hạn · Huỷ · Về mặc định — lưu RIÊNG, không lý do,
+ * Xem: ngày hạn (bấm được khi có quyền — chủ SP 26/11, không nút "Sửa hạn") · đã chỉnh · mặc định 07/11. Sửa: ô ngày (gõ + lịch) · Lưu hạn · Huỷ · Về mặc định — lưu RIÊNG, không lý do,
  * không trần; ngày đã qua vẫn nhận (hiện quá hạn). 409 (người khác vừa sửa): ngày đang gõ giữ trong ô + Tải lại. Quyền kiểm ở máy chủ (`suaHanBaoPh`, `suaHanPhoiHop`).
  * GV-2 (N58, mockup v22 G1 / G2b): cụm Hạn của khối Phụ trách · Hạn · Theo dõi (`khoi` — nơi gọi dựng cụm từ giá trị · nút "Sửa hạn"); việc không hạn → "Chưa có hạn" · "Đặt hạn".
  * NHẸ HƠN PR-2b (v23 `.pht1`, luật hạn): trong khối chỉ ngày dd/mm/yyyy tô theo `mucHan` (quá hạn: chữ đỏ + nền đỏ nhạt, không ⚠ — HAN-BO-DAU) — không "quá hạn / còn n ngày" (chỉ ở đầu panel), không thẻ "mặc định" trần.
  */
-export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, onLuu, onTaiLai, gon, khoi, tamDung, tinhLai }: {
+export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, onLuu, onTaiLai, gon, khoi, tamDung, tinhLai, moSan, onDong }: {
+  /** Mở ô sửa ngay lúc vẽ (người bấm ngày ở dòng khác) · `onDong` báo khi ô sửa đóng. */
+  moSan?: boolean; onDong?: () => void;
   /** TL-1 / GV-2: hạn đang tạm dừng (Báo PH "Chờ GV sửa", cờ máy chủ) — không đếm ngày / không tô quá hạn. */
   tamDung?: boolean;
   /** TL-2 (mockup v22 T6b): hạn đang có do MÁY tính lại sau khi GV gửi lại — ghi "tính lại sau khi GV gửi lại" thay "đã chỉnh". */
@@ -38,7 +41,9 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
   const hn = homNay ?? '';
   /* TL-2 (mockup v22 T3a): hạn đang tạm dừng (chờ GV sửa) — không Sửa hạn; GV gửi lại / TVV rút thì sửa lại được. */
   const suaDuoc = suaDuocGoc && !tamDung;
-  const [sua, setSua] = useState(false);
+  const [sua, setSuaTrong] = useState(!!moSan);
+  /* `moSan`: nơi gọi mở ô sửa ngay khi bấm ngày (dòng việc Phối hợp) — đóng thì báo lại để nơi gọi bỏ khối. */
+  const setSua = (v: boolean) => { setSuaTrong(v); if (!v) onDong?.(); };
   const [nhap, setNhap] = useState(han ?? '');
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<{ chu: string; xungDot: boolean } | null>(null);
@@ -90,22 +95,23 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
     </span>
   ) : (
     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+      {/* Chủ SP 26/11: không nút "Sửa hạn" — có quyền (`suaDuoc`, cờ máy chủ) thì chính ngày là nút mở ô sửa tại chỗ; việc không hạn: "Chưa có hạn" bấm để đặt. */}
       {han ? (() => {
         /* Màu theo `mucHan` — việc đã xong / tạm dừng không tô. */
         const muc = xong || tamDung || !hn ? 'xa' : mucHan(han, hn);
-        return <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]} ${khoi || gon ? 'text-sm' : 'text-base'}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
+        const ngayVe = <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]} ${khoi || gon ? 'text-sm' : 'text-base'}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
+        return suaDuoc && !xong ? <HanBam ref={nutSua} ten={ngay(han)} onClick={moSua}>{ngayVe}</HanBam> : ngayVe;
       })()
-        : <span className="text-sm text-faint">{t('Chưa có hạn')}</span>}
+        : suaDuoc && !xong
+          ? <button ref={nutSua} type="button" aria-label={t('Đặt hạn')} title={t('Đặt hạn')} onClick={moSua}
+            className="inline-flex min-h-[44px] cursor-pointer items-center appearance-none border-0 bg-transparent p-0 text-sm text-faint underline decoration-dotted decoration-1 underline-offset-4 hover:decoration-solid sm:min-h-0">{t('Chưa có hạn')}</button>
+          : <span className="text-sm text-faint">{t('Chưa có hạn')}</span>}
       {tinh && <span className="text-[13px] tabular-nums">{tinh}</span>}
       {!xong && nguon}
-      {suaDuoc && !xong && !khoi && <button ref={nutSua} type="button" className={`link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0 ${gon ? '' : 'ml-auto'}`} onClick={moSua}>{t('Sửa hạn')}</button>}
     </span>
   );
   if (gon) return giaTri;
-  if (khoi) return khoi(giaTri, sua || !suaDuoc || xong ? null
-    : <button ref={nutSua} type="button" className="btn btn-sm min-h-[44px] sm:h-[28px] sm:min-h-[28px]" onClick={moSua}>
-      {/* v23 P3: 375 ghi "Sửa" (cột nút hẹp) — tên đọc vẫn đủ "Sửa hạn". */}
-      {han ? <><span className="sm:hidden" aria-hidden>{t('Sửa')}</span><span className="max-sm:sr-only">{t('Sửa hạn')}</span></> : t('Đặt hạn')}</button>, sua);
+  if (khoi) return khoi(giaTri, null, sua);
   return (
     <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-x-3 border-b pb-3 max-sm:grid-cols-1 max-sm:gap-y-1.5" style={{ borderColor: 'var(--line)' }}>
       <span className="text-[13px] font-medium text-slate-400">{t('Hạn')}</span>

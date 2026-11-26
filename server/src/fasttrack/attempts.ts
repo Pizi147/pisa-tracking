@@ -2812,6 +2812,8 @@ export function classScoreSheet(
     })(),
     /* LG-5c: "GV chấm S" đầu cột đã chọn (người xem × lớp × đợt — `dotGvCham`), 1 câu theo khoá chính. */
     gvChamCot: docGvChamCot(p, classId, dotGvCham(period?.id ?? null, attempts.map((a) => a.attempt_no as number))),
+    /* Chủ SP 26/11: cờ quyền cho ⋯ đầu hộp chấm (Dời lịch · Huỷ điểm — `thaoTacKyNang`, một nguồn với hồ sơ Mock); máy chủ vẫn kiểm lại ở từng đường lưu. */
+    quyen: { canPlan: choSuaLichTest(p, { classId }), laGvcn: isCoreTeacherOf(p, classId), diem: !laBpxlXepLich(p, { classId }) },
   };
   /* N71 · Q2: GV cũ — môn có ô họ giữ lúc thi (`canEdit` từng ô) vào `editableSkills`: nút "Nhập điểm" / "Lưu · bài tiếp" như GV đang dạy. */
   if (p.phanCongCu?.length) {

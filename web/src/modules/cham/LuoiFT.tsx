@@ -10,7 +10,8 @@ import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
-import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
+import { ODiemMt, chuVangO, type HopProps, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
+import { useThaoTacO } from './thaoTacO.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, chipSosMt0, nhanKetQuaLuoi, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
@@ -26,6 +27,8 @@ export type FtSheet = {
   classId: number; classCode: string; branchName: string;
   period: { id: number; code: string; weekStart: string; weekEnd: string } | null;
   editableSkills: string[];
+  /** Chủ SP 26/11: cờ quyền máy chủ cho ⋯ đầu hộp chấm (Dời lịch · Huỷ điểm). Nguồn không gửi (panel Chấm Speaking…) → mục ẩn, trừ phần theo quyền ô. */
+  quyen?: { canPlan: boolean; laGvcn: boolean; diem: boolean };
   /** LG-5c: "GV chấm S" đầu cột đã chọn ở máy chủ (người xem × lớp × đợt); chưa chọn = mặc định theo vai (GV Speaking "Tôi"). */
   gvChamCot?: NguoiChon | null;
   rows: {
@@ -151,6 +154,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
   const phien = usePhienCham();
   const [hetHv, setHetHv] = useState(false);
+  const thaoO = useThaoTacO(data, onReload);
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   /* AUDIT-UI B8 (T4, HSL6): không cột MT — chip "MTn ›" cạnh tên em đã ghi lượt (và là link). */
   const cot = {
@@ -254,9 +258,12 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   /* Chân hộp đang mở: "Tiếp: Reading · Minh Anh" hoặc trạng thái hết. */
   const keMo = mo && !phien.het ? phien.ke({ khoa: mo.aid, kyNang: mo.s }, conThieu, kyNangToi, dsAid) : null;
   const tenKe = keMo && rows.find((r) => r.attemptId === keMo.khoa)?.studentName;
+  const rowMo = mo ? rows.find((r) => r.attemptId === mo.aid) : undefined;
+  const cellMo = mo ? rowMo?.cells.find((c) => c.skill === mo.s) : undefined;
   const hop: PhienO = {
     nhanTiep: keMo && tenKe ? (keMo.kyNang !== mo?.s ? `${skillLabel(keMo.kyNang)} · ${tenKe}` : tenKe) : null,
     ketThuc: phien.het ? { phamVi: `${data.classCode} · ${tuanXem ? tuanLich(tuanXem) : tenDotFt(data)}`, daLuu: phien.soDaLuu(), nut: onHet?.() ?? null } : null,
+    thaoTac: rowMo && cellMo ? thaoO.cua(rowMo, cellMo) : undefined,
   };
 
 
@@ -281,6 +288,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           </article>
         ))}
         {dongHetHv && <div className="px-3.5 py-2">{dongHetHv}</div>}
+        {thaoO.hopTt}
       </div>
     );
   }
@@ -321,6 +329,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           <td className="td text-xs text-slate-400" colSpan={cotDs.length - 1}>{h.chu}</td>
         </tr>
       ))}</>} />
+    {thaoO.hopTt}
     </>
   );
 }
@@ -408,7 +417,7 @@ function DongVang({ vang, tuan }: { vang: string | null; tuan: string | null }) 
 }
 
 /** Chân hộp của ô đang mở trong phiên chấm (chỉ hàng đang mở nhận). */
-export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null };
+export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null; /** ⋯ đầu hộp (chủ SP 26/11): Dời lịch · Huỷ điểm của ô đang mở. */ thaoTac?: HopProps['thaoTac'] };
 
 function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;

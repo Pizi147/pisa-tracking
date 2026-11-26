@@ -25,6 +25,7 @@ import {
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { DongThi, LuotChinhContext, nhanKyNangFt } from './DongThi.tsx';
+import { useThaoTacO } from './thaoTacO.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, tenDotFt, type FtSheet, type HangMo, type PhienO } from './LuoiFT.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import {
@@ -175,6 +176,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
   const [gvCot, setGvCot] = useGvChamCot(data.classId, dot, data.gvChamCot);
+  const thaoO = useThaoTacO(data, onReload);
 
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} onHet={onHet} />;
 
@@ -200,9 +202,12 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
   };
   const keMo = mo !== null && !phien.het ? phien.ke({ khoa: mo, kyNang: chon }, conThieu, kyNangToi, dsAid) : null;
   const tenKe = keMo && rows.find((r) => r.attemptId === keMo.khoa)?.studentName;
+  const rowMo = mo !== null ? rows.find((r) => r.attemptId === mo) : undefined;
+  const cellMo = rowMo && oCua(rowMo, chon);
   const hop: PhienO = {
     nhanTiep: keMo && tenKe ? (keMo.kyNang !== chon ? `${skillLabel(keMo.kyNang)} · ${tenKe}` : tenKe) : null,
     ketThuc: phien.het ? { phamVi: `${data.classCode} · ${tuanXem ? tuanLich(tuanXem) : tenDotFt(data)}`, daLuu: phien.soDaLuu(), nut: onHet?.() ?? null } : null,
+    thaoTac: rowMo && cellMo ? thaoO.cua(rowMo, cellMo) : undefined,
   };
 
   return (
@@ -229,6 +234,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
           </li>
         ))}
       </ul>
+      {thaoO.hopTt}
     </div>
   );
 }

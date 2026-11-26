@@ -95,6 +95,8 @@ export type HopProps = {
   gvMacDinh?: NguoiChon | null;
   /** Thứ Hai của tuần lưới đang xem (null: nơi không theo tuần — hồ sơ MT, Điểm theo lớp theo lượt). */
   tuanXem?: string | null;
+  /** Chủ SP 26/11: mục "Dời lịch" · "Huỷ điểm" của ⋯ đầu hộp — nơi gọi đưa việc làm được (`thaoTacKyNang`, cờ máy chủ); thiếu → mục ẩn. Vắng là của chính hộp. */
+  thaoTac?: { doiLich?: () => void; huyDiem?: () => void };
 };
 
 /* TD-WEB-2: thân hộp + hộp nhận xét ở mảnh riêng (`HopNhapDiemHop.tsx`) — lưới / trang lớp không tải ~560 dòng hộp trước khi bấm ô. Nơi dùng giữ nguyên JSX + props. */

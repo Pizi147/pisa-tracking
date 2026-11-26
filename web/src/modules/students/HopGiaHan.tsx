@@ -8,6 +8,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { BadgeHan, CHIP_TRON, Nhan } from '../../ui/Nhan.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 import { chipSauThi, chuSauThi, ngay, type GiaiDoanSauThi } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -69,14 +70,15 @@ export function HopGiaHan({ x, hocVien, lop, onClose, onDone }: { x: HanSauThi; 
  * "Đã thi · chờ kết quả" + "hạn 23/10" (· "quá hạn" đỏ / "đã gia hạn") — MỘT nhãn cho đầu hồ sơ, panel một em, Học viên & Lớp (chữ + màu, không chỉ màu).
  * `gon`: ô bảng hẹp — chữ màu thay chip, xuống dòng được.
  */
-export function NhanSauThi({ s, gon }: { s: { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean }; gon?: boolean }) {
+export function NhanSauThi({ s, gon, onHan }: { s: { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean }; gon?: boolean; /** Chủ SP 26/11: có quyền gia hạn → bấm ngày hạn mở hộp (không nút "Gia hạn"). */ onHan?: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const chu = chuSauThi(s);
   if (!chu) return null;
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
+  const chuHan = s.han ? [ngay(s.han, homNay), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ') : '';
   const han = !s.han ? null : (
     <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
-      {s.quaHan && <span className="sr-only">{t('quá hạn')} </span>}{[ngay(s.han, homNay), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
+      {s.quaHan && <span className="sr-only">{t('quá hạn')} </span>}{onHan ? <HanBam ten={ngay(s.han, homNay)} onClick={onHan}>{chuHan}</HanBam> : chuHan}
     </span>
   );
   /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ: chip viền đỏ + chữ sr-only "quá hạn" (V22: không biểu tượng). */
