@@ -38,7 +38,7 @@ function Dau({ tt }: { tt: TrangThaiBuoc }) {
 }
 
 /**
- * KHỐI TUYẾN (TUYEN-1, N72 ②–④; mockup `thiet-ke/v27/tuyen-cong-viec.html` T0, ghi chú mục 1) — một kiểu mọi nơi: nhãn "Tuyến · {tên}" + "Xong a/b · đang n",
+ * KHỐI TUYẾN (TUYEN-1, N72 ②–④; mockup `thiet-ke/v27/tuyen-cong-viec.html` T0, ghi chú mục 1) — một kiểu mọi nơi: nhãn "Tuyến · {tên}" + "Xong a/b" (chủ SP 27/11: bỏ "· đang n"),
  * một dòng một bước (dấu · tên · chi tiết · người · ngày / hạn · ˅). Dữ liệu dựng ở máy chủ (`dungTuyen`) — web không suy người / bước.
  * Bấm dòng có nội dung → mở ngay dưới dòng (không đổi panel). Không quyền xem nội dung → không ˅ (title "Không xem được nội dung").
  * Bước chưa tới lượt (○) chỉ xám ở đây — không thành việc / số / chuông (N72 ③). > 5 bước: gập các bước đã xong (bước cha còn con mở luôn hiện).
@@ -112,7 +112,7 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
         <h3>{t('Tuyến')}</h3>
         <span className="ten-tn">{tuyen.tieuDe}</span>
         <span className="phai">
-          <span className="tien">{t('Xong')} <b>{tuyen.xong}/{tuyen.tong}</b>{tuyen.soDang > 1 ? <> · {t('đang')} <b>{tuyen.soDang}</b></> : null}</span>
+          <span className="tien">{t('Xong')} <b>{tuyen.xong}/{tuyen.tong}</b></span>
           <NutLuat label={t('Về tuyến')} phai>
             <p className="m-0">{t('Cả tuyến việc của em: bước đã xong ✓, bước đang ở ●, bước chưa tới lượt ○ (chưa thành việc của ai), đã bỏ ×, tạm dừng ⏸.')}</p>
             <p className="m-0">{t('Bấm một bước đã xong để xem nội dung, nếu bạn được xem phần đó.')}</p>
