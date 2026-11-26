@@ -12,7 +12,7 @@ import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
 import { notify, nguoiVaiCuaChiNhanh, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, loi, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
   MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docDiemSua, dotMacDinh, dotTruoc, dsDotLop, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan, tieuChiTrong,
@@ -107,7 +107,7 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   const ungVien = d.ds.filter((x) => soNgayQuaHan(x, homNay) <= 7 || x.han >= batTu);
   if (!ungVien.length) return khong;
   const ghiDanh = db().prepare(
-    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo
        FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn'`,
   ).all(classId) as any[];
   const emDot = new Map(ungVien.map((x) => [x.ma, [...new Set(ghiDanh.filter((r) => emTrongDot(r, x, homNay)).map((r) => r.id as number))]]));
@@ -125,27 +125,40 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   return khong;
 }
 
-/** Em trong đợt: ghi danh lớp phủ ngày mốc (hạn, hoặc hôm nay khi đợt còn mở) + em đang học (đặc tả §4). Xếp theo tên. */
-export function emCuaDot(classId: number, d: DotBc, homNay: string): { id: number; ten: string }[] {
+/**
+ * Em trong đợt: ghi danh lớp phủ ngày mốc (hạn, hoặc hôm nay khi đợt còn mở) + em đang học (đặc tả §4). Xếp theo tên.
+ * BO-BAO-CAO-PH: em đã bỏ đợt này không có — `kemBo`: có, `bo: true` (tab lớp hiện mờ "Không báo cáo"; lưu bài vẫn nhận, chữ đang gõ không mất).
+ */
+export function emCuaDot(classId: number, d: DotBc, homNay: string, kemBo = false): { id: number; ten: string; bo: boolean }[] {
   const moc = d.han < homNay ? d.han : homNay;
   const thay = new Set<number>();
   return (db().prepare(
-    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai
+    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo
        FROM enrollments e JOIN students s ON s.id = e.student_id
       WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ? AND e.status != 'withdrawn'
       ORDER BY s.full_name`,
-  ).all(classId, moc) as any[]).filter((r) => emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id)).map((r) => ({ id: r.id, ten: r.full_name }));
+  ).all(classId, moc) as any[]).filter((r) => emTrongDot(r, d, homNay, kemBo) && !thay.has(r.id) && thay.add(r.id))
+    .map((r) => ({ id: r.id, ten: r.full_name, bo: emBoDot(r, d) }));
 }
 
 /** N71: loại bài Progress / Final em có ở lớp của ghi danh ĐÃ RỜI (`group_concat`); ghi danh còn mở → NULL, không đọc lượt. `e` bí danh `enrollments`. */
 export const COT_BAI_ROI = (e: string) => `CASE WHEN ${e}.ended_at IS NOT NULL THEN (SELECT group_concat(DISTINCT a.kind) FROM assessment_attempts a
   WHERE a.student_id = ${e}.student_id AND a.class_id = ${e}.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled') END`;
 /**
+ * BO-BAO-CAO-PH (chủ SP 26/11): mã các đợt Head / Quản trị / Admin đã bỏ báo cáo của em Ở LỚP CỦA GHI DANH (`group_concat`, khoá em × lớp × đợt) — cột kèm
+ * câu ghi danh, KHÔNG thêm câu. `s` bí danh `students`, `e` bí danh `enrollments`. Bỏ theo lớp (PTA 26/11): lớp khác của em không bị ảnh hưởng. Mọi nơi đếm em trong đợt đi qua `emTrongDot` nên em bỏ rời mọi nơi cùng lúc.
+ */
+export const COT_BO_EM = (s: string, e: string) => `(SELECT group_concat(b.dot) FROM bao_cao_ph_bo_em b WHERE b.student_id = ${s}.id AND b.class_id = ${e}.class_id)`;
+/** Em đã bỏ báo cáo đợt `d`? (`bo` = cột `COT_BO_EM`; mã đợt không có dấu phẩy). */
+export const emBoDot = (r: { bo?: string | null }, d: Pick<DotBc, 'ma'>): boolean => !!r.bo && r.bo.split(',').includes(d.ma);
+/**
  * Em có trong đợt: ghi danh phủ ngày mốc (hạn; đợt còn mở: hôm nay). N71 (chủ SP 25/11): em rời lớp TRONG đợt Progress / Final (Cuối khoá "Ngay hôm nay" /
  * "Từ tuần", chuyển một em) mà bài đợt đó ở lớp này → vẫn trong đợt tới khi GV lớp cũ viết xong — trước: em rơi khỏi đợt ngay ngày rời lớp.
- * `emCuaDot` và `emTheoLo` (việc GV / Admin / QL, xuất) dùng chung.
+ * `emCuaDot` và `emTheoLo` (việc GV / Admin / QL, xuất) dùng chung. BO-BAO-CAO-PH: em Head / Quản trị / Admin đã bỏ đợt này → không trong đợt (`kemBo`: vẫn tính, để tab lớp
+ * hiện "Không báo cáo" + Khôi phục).
  */
-export function emTrongDot(r: { tu: string | null; den: string | null; bai: string | null }, d: DotBc, homNay: string): boolean {
+export function emTrongDot(r: { tu: string | null; den: string | null; bai: string | null; bo?: string | null }, d: DotBc, homNay: string, kemBo = false): boolean {
+  if (!kemBo && emBoDot(r, d)) return false;
   const moc = d.han < homNay ? d.han : homNay;
   if (!r.tu || r.tu > moc) return false;
   if (!r.den || r.den > moc) return true;
@@ -207,15 +220,22 @@ export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | nu
       phan: phanCot(new Map()), em: [] };
   }
   const d = chonDot(ds, dotMa, homNay);
-  const em = emCuaDot(classId, d, homNay);
+  /* BO-BAO-CAO-PH: em đã bỏ vẫn trả (`bo` = ai, lúc nào) — web hiện mờ cuối bảng, không đếm "n/N"; QL / Admin Khôi phục. Một câu người bỏ, chỉ khi có em bỏ. */
+  const em = emCuaDot(classId, d, homNay, true);
   const o = new Map<string, 'du' | 'nhap'>();
   if (em.length) {
     for (const r of db().prepare(`SELECT student_id, phan, du FROM bao_cao_ph WHERE dot = ? AND student_id IN (${DS_JSON})`)
       .all(d.ma, JSON.stringify(em.map((e) => e.id))) as any[]) o.set(`${r.student_id}:${r.phan}`, r.du ? 'du' : 'nhap');
   }
+  const boBoi = new Map<number, { ten: string | null; luc: string }>();
+  if (em.some((e) => e.bo)) {
+    for (const r of db().prepare(`SELECT b.student_id, b.luc, u.full_name FROM bao_cao_ph_bo_em b LEFT JOIN users u ON u.id = b.nguoi WHERE b.dot = ? AND b.class_id = ? AND b.student_id IN (${DS_JSON})`)
+      .all(d.ma, classId, JSON.stringify(em.filter((e) => e.bo).map((e) => e.id))) as any[]) boBoi.set(r.student_id, { ten: r.full_name ?? null, luc: r.luc });
+  }
   return {
     ...chungTrang, dot: d.ma, daBo: null, sapMo: null, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
-    em: em.map((e) => ({ id: e.id, ten: e.ten, o: Object.fromEntries(bo.map((x) => [x.khoa, o.get(`${e.id}:${x.khoa}`) ?? null])) })),
+    em: em.map((e) => ({ id: e.id, ten: e.ten, o: Object.fromEntries(bo.map((x) => [x.khoa, o.get(`${e.id}:${x.khoa}`) ?? null])),
+      bo: e.bo ? boBoi.get(e.id) ?? { ten: null, luc: '' } : null })),
   };
 }
 
@@ -294,7 +314,8 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   const q = quyenBc(p, c, homNay);
   if (!q.cuaToi.has(ph.khoa) && !q.vietHo) throw forbidden('Bạn không được phân công viết phần này.');
   const sid = toInt(body?.studentId);
-  const emDot = emCuaDot(classId, d, homNay);
+  /* BO-BAO-CAO-PH: em vừa bị bỏ đợt này vẫn lưu được (panel đang mở — chữ đang gõ không mất); em bỏ không tính "lớp đủ". */
+  const emDot = emCuaDot(classId, d, homNay, true);
   if (!sid || !emDot.some((e) => e.id === sid)) throw badRequest('Học viên không có trong đợt báo cáo này');
 
   const khoaTc = new Set(tieuChiPhan(ph).map((x) => x.khoa));
@@ -328,7 +349,7 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   ).run(classId, d.ma, sid, ph.khoa, JSON.stringify(muc), JSON.stringify(datSan), chu, diemSua, du, p.userId, luc);
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.luu', entityType: 'student', entityId: sid, entityLabel: c.code,
     after: { dot: d.ma, phan: ph.khoa, du: !!du, vietHo: !q.cuaToi.has(ph.khoa) } });
-  if (du) baoAdminLopDu(c, d, d0.bo, emDot, homNay);
+  if (du) baoAdminLopDu(c, d, d0.bo, emDot.filter((e) => !e.bo), homNay);
   return { du: !!du, suaLuc: luc };
 }
 
@@ -419,13 +440,58 @@ export function datNhanhBaoCaoPh(p: Principal, classId: number, body: any) {
   return { o: ket, soO: ket.reduce((n, k) => n + k.khoa.length, 0), boQua, loi, thieuChu, suaLuc: luc };
 }
 
+/** Tối đa em một lần bỏ / khôi phục (lớp đông nhất ~40 em). */
+const TOI_DA_BO_EM = 200;
+/**
+ * POST /classes/:id/bao-cao-ph/bo-em { dot, studentIds, khoiPhuc? } — BO-BAO-CAO-PH (chủ SP 26/11: "cho Admin/ Head có thể bỏ không báo cáo của một vài học sinh đơn lẻ"
+ * · "cho chọn tick nhiều đi"). Bỏ: các em không cần Báo cáo PH ĐỢT NÀY Ở LỚP NÀY (đợt sau vẫn báo cáo) — rời việc GV, chip tab, việc Admin / QL, "n/N", tệp xuất
+ * (`emTrongDot`). Bài đã viết GIỮ (không xoá chữ); không có trạng thái "đã gửi" (xuất là ảnh lúc bấm) nên bỏ được cả em đã đủ. Khôi phục (= Hoàn tác) xoá dòng.
+ * Quyền như bỏ đợt (`quyetDot`: Head · Quản trị · Admin chi nhánh lớp; GV / TVV 403). Một em không thuộc lớp × đợt → 404 cả lô (không ghi gì). Em đã ở trạng thái
+ * đích bỏ qua (bấm Hoàn tác hai lần không lỗi); `doi` = em thật sự đổi. Nhật ký mỗi em (hồ sơ HV › Lịch sử).
+ * Turso: lớp (nhớ) + đợt (tiến độ, tuỳ chỉnh) + em (1) + 1 ghi nhiều dòng + 1 nhật ký nhiều dòng — không theo số em; bỏ em cuối còn thiếu → + 2 câu tin Admin "đủ".
+ */
+export function boEmBaoCaoPh(p: Principal, classId: number, body: any) {
+  const c = docLop(classId);
+  const homNay = demoToday();
+  if (!quyenBc(p, c, homNay).quyetDot) throw forbidden('Chỉ Head, Quản trị, Admin của chi nhánh bỏ được báo cáo PH của học viên.');
+  if (body?.khoiPhuc !== undefined && typeof body.khoiPhuc !== 'boolean') throw badRequest('Yêu cầu không hợp lệ');
+  const tho = Array.isArray(body?.studentIds) ? body.studentIds : [];
+  const sids = [...new Set(tho.map(toInt))] as (number | null)[];
+  if (!sids.length || sids.some((x) => !x || x < 1)) throw badRequest('Chọn ít nhất một học viên');
+  if (sids.length > TOI_DA_BO_EM) throw loi(400, 'Tối đa {n} học viên một lần', { n: TOI_DA_BO_EM });
+  const d0 = dotCuaLop(c, homNay);
+  if (!d0) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');
+  const d = d0.ds.find((x) => x.ma === String(body?.dot ?? ''));
+  if (!d) throw badRequest('Đợt báo cáo chưa mở hoặc không có ở lớp này');
+  const emDot = emCuaDot(classId, d, homNay, true);
+  const theoId = new Map(emDot.map((e) => [e.id, e]));
+  if (sids.some((x) => !theoId.has(x!))) throw notFound('Học viên không có trong đợt báo cáo này');   // em lớp khác (kể cả id thật) qua id lớp mình
+  const khoiPhuc = body?.khoiPhuc === true;
+  const doi = sids.map((x) => theoId.get(x!)!).filter((e) => e.bo === khoiPhuc);
+  if (!doi.length) return { doi: [] as number[] };
+  const luc = nowIso();
+  const ids = JSON.stringify(doi.map((e) => e.id));
+  tx(() => {
+    if (khoiPhuc) db().prepare(`DELETE FROM bao_cao_ph_bo_em WHERE class_id = ? AND dot = ? AND student_id IN (${DS_JSON})`).run(classId, d.ma, ids);
+    else chenNhieuDong('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc)', doi.map((e) => [e.id, d.ma, classId, p.userId, luc]));
+    writeAuditLo(doi.map((e) => ({ actorUserId: p.userId, action: khoiPhuc ? 'bao_cao_ph.bo_em_khoi_phuc' : 'bao_cao_ph.bo_em', entityType: 'student', entityId: e.id,
+      entityLabel: c.code, after: { dot: d.ma, nhan: nhanDotBc(d, homNay) } })));
+  });
+  if (!khoiPhuc) {
+    const bo = new Set(doi.map((e) => e.id));
+    baoAdminLopDu(c, d, d0.bo, emDot.filter((x) => !x.bo && !bo.has(x.id)), homNay);
+  }
+  return { doi: doi.map((e) => e.id), luc };
+}
+
 /**
  * LG-3 (chủ SP 14/11, lời 16 ý 3): lần lưu làm lớp × đợt ĐỦ (mọi em đủ mọi phần) → MỘT tin "Cập nhật" cho Admin (`office_admin`) chi nhánh lớp, trỏ tab
  * Báo cáo PH đúng đợt — cùng lúc việc "Xuất báo cáo PH" xuất hiện. `dedup_key` theo lớp × đợt: lưu lại / đủ lại không tạo tin mới.
  * Turso: chỉ khi lần lưu là "đủ" — một câu đếm (≤ em × phần) + một câu người nhận + một ghi mỗi Admin khi lớp vừa đủ.
  */
 function baoAdminLopDu(c: Lop, d: DotBc, bo: readonly PhanBc[], em: readonly { id: number }[], homNay: string) {
-  const n = (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (SELECT value FROM json_each(?))
+  if (!em.length) return;   // BO-BAO-CAO-PH: bỏ hết em → không có gì để xuất
+  const n =(db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (SELECT value FROM json_each(?))
       AND phan IN (SELECT value FROM json_each(?))`).get(d.ma, JSON.stringify(em.map((e) => e.id)), JSON.stringify(bo.map((x) => x.khoa))) as any).n;
   if (n < em.length * bo.length) return;
   const nhan = nhanDotBc(d, homNay);

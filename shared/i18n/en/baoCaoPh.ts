@@ -128,4 +128,13 @@ export const EN_BAO_CAO_PH = {
   'Nhắc GV còn thiếu, hoặc viết hộ.': 'Remind the teachers still missing, or write on their behalf.',
   'Mọi em đủ báo cáo; dòng tự rời.': 'Every student has a complete report; the row leaves by itself.',
   'Đợt không cần: <b>Không báo cáo đợt này</b>.': 'Round not needed: <b>No report this round</b>.',
+  /* BO-BAO-CAO-PH (chủ SP 26/11): bỏ báo cáo PH của một em trong một đợt. */
+  'Không báo cáo · {ten}': 'No report · {ten}',
+  'Đã khôi phục báo cáo · {ten}': 'Report restored · {ten}',
+  'Yêu cầu không hợp lệ': 'Invalid request',
+  'Tối đa {n} học viên một lần': 'At most {n} students at a time',
+  'Không báo cáo · {n} em': 'No report · {n} students',
+  'Khôi phục · {n} em': 'Restore · {n} students',
+  'Đã khôi phục báo cáo · {n} em': 'Report restored · {n} students',
+  'Chỉ Head, Quản trị, Admin của chi nhánh bỏ được báo cáo PH của học viên.': 'Only Heads, System Admins and Admins of the branch can drop a student’s parent report.',
 } satisfies Record<string, Dich>;
