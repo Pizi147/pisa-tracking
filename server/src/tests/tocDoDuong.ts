@@ -2309,7 +2309,12 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 /** AU-2111 P1-01: TVV mở MỘT việc Vận hành được giao (`GET /mgmt-tasks/:id`, cổng khu Công việc + chi tiết) — đo trên seed có dữ liệu (tocDo.run.ts). */
-export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
+export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };
+/**
+ * TUYEN-1 (PTA rà #2261): người GIỮ việc Báo PH (TVV — vai không có khu Công việc) tạo VIỆC CON (`POST /mgmt-tasks` có `chaLoai`, cổng + `docViec` việc cha) và mở
+ * việc con (`GET /mgmt-tasks/:id`, quyền qua `giuViecCha` nhớ theo request). Đo ở tocDo.run.ts — câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉).
+ */
+export const TRAN_VIEC_CON = { tao: { cau: 41 }, mo: { cau: 27, dong: 67 } };   // đo 26/11: tạo 35 câu (đường tạo việc Vận hành sẵn có + một `docViec` việc cha) · mở 21 câu · 17 dòng (việc Vận hành được giao 15 · 9: + `giuViecCha` đọc việc cha một lần / request)   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
 
 /**
  * NHẸ HƠN PR-6: GET /students/:id/phoi-hop-sos có MỘT Meeting CX đã xác nhận (GVCN, em mới MB FT 101) — thêm câu lô `meeting_phan` (+1) và người giữ vai

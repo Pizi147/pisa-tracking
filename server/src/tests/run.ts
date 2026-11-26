@@ -9850,7 +9850,7 @@ const { runPrLuuTruDongTests } = bocTep('prLuuTruDong', await import('./prLuuTru
 await runPrLuuTruDongTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== BAOPH-0 (N72 ⑤ ⑥ C8: việc TVV báo PH mọi nguồn · giao việc Ý thức)
 const { runPrBaoPh0Tests } = bocTep('prBaoPh0', await import('./prBaoPh0.tests.ts'));
-await runPrBaoPh0Tests({ check, assert, conn, P, TODAY } as any);
+await runPrBaoPh0Tests({ check, checkAsync, assert, conn, P, TODAY } as any);
 // ==================================================================== AU-SO gói 2 SO-QL (AUDIT-1611: số của QL cùng nguồn)
 const { runPrAuSoQlTests } = bocTep('prAuSoQl', await import('./prAuSoQl.tests.ts'));
 await runPrAuSoQlTests({ check, assert, assertThrows, conn, P } as any);

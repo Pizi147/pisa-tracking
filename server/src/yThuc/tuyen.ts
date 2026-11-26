@@ -223,7 +223,7 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
     const truoc = t.buoc.at(-1)!.ten;
     if (viecPh) t.buoc.push(...buocBaoPh(t, viecPh, { khoa: 'bao_ph', ten: 'Báo PH', tvvTen }));
     /* TUYEN-1: khác mặc định — Báo PH chạy cùng lúc với Đã thực hiện, cùng chờ Head duyệt. */
-    else if (['cho_duyet', 'da_duyet'].includes(m.status)) t.buoc.push(baoPhCho(t, { khoa: 'bao_ph', ten: 'Báo PH', sau: de ? 'sau khi Head duyệt' : `sau khi ${truoc.toLowerCase()}`, tvvTen }));
+    else if (['cho_duyet', 'da_duyet'].includes(m.status)) t.buoc.push(baoPhCho(t, { khoa: 'bao_ph', ten: 'Báo PH', sau: de && m.status === 'cho_duyet' ? 'sau khi Head duyệt' : `sau khi ${truoc.toLowerCase()}`, tvvTen }));
     /* Thu hồi (N5): thẻ chờ Head → bước đang ở; đã áp → tuyến kết thúc ✕; Báo PH đã xong → "Báo lại PH". */
     const th = the.filter((y) => y.loai === 'thu_hoi_y_thuc').at(-1);
     if (th?.tt === 'cho') {

@@ -297,6 +297,8 @@ export async function runPrBaoPh0Tests(t: any) {
     gv.themTheoDoi(pG, 'xu_ly', xl.sid, { userIds: [ngoai.id] });
     xoaNho();
     assert(/403/.test(loi(() => mg.createMgmtTask(loadPrincipal(ngoai.id), { title: 'Việc lạ 2', chaLoai: 'xu_ly', chaId: xl.sid }))), 'người theo dõi thêm được việc con');
+    assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(ngoai.id), c.id, { progress: 'doing' }))), 'người theo dõi tick được việc con');
+    assert(/403/.test(loi(() => mg.editMgmtTask(loadPrincipal(ngoai.id), c.id, { title: 'đổi' }))), 'người theo dõi sửa được việc con');
     /* Giao việc cha cho người khác → GVCN thôi giữ, mất quyền việc con KHÔNG giao cho mình (việc con giao cho GVCN thì GVCN vẫn tick — người được giao). */
     const c2 = mg.createMgmtTask(pG, { title: 'Chuẩn bị biên bản', chaLoai: 'xu_ly', chaId: xl.sid });
     gv.doiPhuTrach(pG, 'xu_ly', xl.sid, { userId: ngoai.id, phuTrachCu: null });
@@ -304,7 +306,65 @@ export async function runPrBaoPh0Tests(t: any) {
     assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(xl.gvcn), c2.id, { progress: 'doing' }))), 'GVCN đã giao việc cha đi vẫn tick việc con không giao cho mình');
     mg.updateMgmtTask(loadPrincipal(ngoai.id), c2.id, { progress: 'doing' });
     mg.updateMgmtTask(loadPrincipal(xl.gvcn), c.id, { progress: 'doing' });   // người được giao việc con c vẫn tick việc của mình
+    assert(/403/.test(loi(() => mg.editMgmtTask(loadPrincipal(xl.gvcn), c2.id, { title: 'GVCN đã giao đi sửa' }))), 'GVCN đã giao việc cha đi vẫn sửa được việc con');
   }));
+
+  check('TUYEN-1 (PTA rà #2261) · việc con: người giữ việc cha chỉ sửa DANH SÁCH TRẮNG (lap / hangMuc / taskType / groupId / branchId 403); chaLoai sai 400; em khác chi nhánh 403; cha kết thúc 400; đợt Xử lý trước không dính', () => thu('tuyen1vc2', () => {
+    assert(xl, 'seed');
+    const pG = loadPrincipal(xl.gvcn);
+    const c = mg.createMgmtTask(pG, { title: 'Việc con đợt 1', chaLoai: 'xu_ly', chaId: xl.sid });
+    for (const [k, val] of [['lap', { kieu: 'tuan', ngay: [1] }], ['hangMuc', 'giao_trinh'], ['taskType', 'in_period'], ['groupId', null], ['branchId', null]] as [string, unknown][]) {
+      assert(/403/.test(loi(() => mg.editMgmtTask(pG, c.id, { [k]: val } as any))), `người giữ việc cha sửa được ${k}`);
+    }
+    mg.editMgmtTask(pG, c.id, { title: 'Việc con đợt 1 (sửa)', note: 'ghi chú', due: TODAY, lyDoDoiHan: 'dời' });
+    assert(get('SELECT title AS t FROM tasks WHERE id = ?', c.id).t === 'Việc con đợt 1 (sửa)', 'người giữ không sửa được tên');
+    /* Head sửa lặp ở việc con của việc Ý thức → 400 (không đường vòng sinh việc Vận hành định kỳ). */
+    assert(/400/.test(loi(() => mg.editMgmtTask(P.admin, c.id, { lap: { kieu: 'tuan', ngay: [1] } } as any))), 'việc con của việc Ý thức đặt được lặp');
+    assert(/400/.test(loi(() => mg.createMgmtTask(pG, { title: 'x', chaLoai: 'khong_co', chaId: xl.sid }))), 'chaLoai sai không 400');
+    assert(/400/.test(loi(() => mg.createMgmtTask(pG, { title: 'x', chaLoai: 'xu_ly', chaId: xl.sid, unitReportId: 1 } as any))), 'việc con gắn họp đơn vị không 400');
+    /* Em chi nhánh khác: GVCN không giữ, không quản lý → 403 (không lộ trạng thái việc cha). */
+    const emKhac = get(`SELECT s.id FROM students s WHERE s.archived_at IS NULL AND s.branch_id != (SELECT branch_id FROM students WHERE id = ?) ORDER BY s.id LIMIT 1`, xl.sid);
+    assert(emKhac, 'seed: cần em chi nhánh khác');
+    assert(/403/.test(loi(() => mg.createMgmtTask(pG, { title: 'x', chaLoai: 'xu_ly', chaId: emKhac.id }))), 'em chi nhánh khác không 403');
+    /* Đợt Xử lý xong → việc con đợt đó không còn của người giữ đợt sau; khối không hiện việc con cũ; tạo thêm → 400 (cha kết thúc) hoặc đợt mới tách việc cũ. */
+    gv.xongViecXuLy([xl.sid]);
+    xoaNho();
+    assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(xl.gvcn), c.id, { progress: 'done' }))), 'đợt đã xong: GVCN (không được giao việc con) vẫn tick');
+    assert(!gv.xemGiaoViec(pG, 'xu_ly', xl.sid).viecCon.some((x: any) => x.id === c.id), 'việc con đợt trước hiện ở khối đợt sau');
+    const v = get(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND s.archived_at IS NULL ORDER BY v.id LIMIT 1`);
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?`).run(v.id);
+    assert(/400/.test(loi(() => mg.createMgmtTask(P.admin, { title: 'x', chaLoai: 'bao_ph', chaId: v.id }))), 'việc cha kết thúc không 400');
+  }));
+
+  await t.checkAsync('TUYEN-1 (PTA rà #2261) · HTTP: TVV (không khu Công việc) giữ Báo PH tạo việc con 200; TVV không giữ 403; tạo việc Vận hành thường 403', async () => {
+    const { createApp } = await import('../app.ts');
+    const v = get(`SELECT v.id, s.consultant_user_id AS tvv, s.branch_id AS cn FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL
+        AND s.consultant_user_id IS NOT NULL AND s.archived_at IS NULL ORDER BY v.id LIMIT 1`);
+    const tvvKhac = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id WHERE r.key = 'consultant' AND ur.status = 'active'
+        AND u.status = 'active' AND ur.user_id != ? AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1`, v?.tvv, v?.cn);
+    assert(v && tvvKhac, 'seed: cần Báo PH đang mở có TVV + TVV khác cùng chi nhánh');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const vao = async (userId: number) => (await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) }))
+      .headers.get('set-cookie')?.split(';')[0] ?? '';
+    const goi = async (cookie: string, body: unknown) => {
+      const res = await fetch(`http://127.0.0.1:${cong}/api/mgmt-tasks`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify(body) });
+      let json: any = null; try { json = await res.json(); } catch { /* không thân */ }
+      return { status: res.status, json };
+    };
+    let id: number | null = null;
+    try {
+      const ckT = await vao(v.tvv), ckK = await vao(tvvKhac.id);
+      const r = await goi(ckT, { title: 'TUYEN-1 HTTP việc con', chaLoai: 'bao_ph', chaId: v.id, assigneeUserId: v.tvv });
+      assert(r.status === 200 && r.json?.id, `TVV giữ việc: ${r.status} ${r.json?.error}`);
+      id = r.json.id;
+      assert((await goi(ckK, { title: 'TUYEN-1 HTTP lạ', chaLoai: 'bao_ph', chaId: v.id })).status === 403, 'TVV không giữ việc tạo được');
+      assert((await goi(ckT, { title: 'TUYEN-1 HTTP Vận hành' })).status === 403, 'TVV tạo được việc Vận hành thường');
+    } finally {
+      may.close();
+      if (id) { gv.donViec('van_hanh', [id]); conn.prepare('DELETE FROM tasks WHERE id = ?').run(id); }
+    }
+  });
 
   check('BP0-7 · Lưu trữ: khối giao việc Xử lý vi phạm đóng (bo), Hoàn tác trả mo; Quay lại học thì giao lại từ đầu', () => thu('bp7', () => {
     assert(xl, 'seed');
