@@ -23,7 +23,7 @@ import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../p
 import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { canManageDiscipline, gvcnCuaEm, xemYThucHv } from '../yThuc/access.ts';
+import { canManageDiscipline, gvcnCuaEm, xemLienHePh } from '../yThuc/access.ts';
 import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
 import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
@@ -968,12 +968,13 @@ export function xemMeeting(p: Principal, phoiHopId: number): { phoiHopId: number
   if (!phan.length) throw chan;
   /* GV-2 (mockup v22 G8a): bối cảnh đầu panel — một câu: mức SOS của lượt · ngày + GVCN xác nhận · ghi chú GVCN · PH. SĐT PH chỉ cho người LÀM được một
      phần / người đổi được việc (Head · QT · CX) / người quản lý Ý thức của em (GVCN, Head) — người theo dõi thuần không thấy. */
-  const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,
+  const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, s.consultant_user_id AS tvv, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,
       (SELECT MAX(c.sos_level) FROM sos_cases c WHERE c.attempt_id = x.attempt_id) AS sos
     FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN users u ON u.id = x.performed_by WHERE x.id = ?`).get(phoiHopId) as any;
-  /* Chủ SP 27/11 (rà #2273 P1, "Có, khi đang giữ việc"): MỘT luật với dòng Phụ huynh ở bước GVCN của Tuyến (`tuyen.ts` `docEm`) — người xem được Ý thức em
-     (`xemYThucHv`, bỏ vai BPXL) HOẶC đang giữ phần Xếp lịch họp CÒN MỞ của em này. BPXL khác / theo dõi / đã giao đi / phần đã xong → không thấy PH, ghi chú GVCN. */
-  const lienHe = xemYThucHv(p, x.student_id) || phan.some((g) => g.meeting?.phan === 'xep_lich' && g.meeting.trangThai === 'mo' && g.phuTrach.some((n) => n.id === p.userId));
+  /* Chủ SP 27/11 (rà #2273 P1, "Có, khi đang giữ việc"): MỘT luật với bước GVCN của Tuyến (`xemLienHePh`) — BPXL chỉ khi ĐANG GIỮ phần còn mở của em này;
+     BPXL khác / theo dõi / đã giao đi / phần đã xong / GV bộ môn chỉ xem → không thấy PH, ghi chú GVCN. */
+  const lienHe = xemLienHePh(p, { id: x.student_id, tvv: x.tvv ?? null, cn: phan[0].branchId },
+    phan.some((g) => g.meeting?.trangThai === 'mo' && g.phuTrach.some((n) => n.id === p.userId)));
   return { phoiHopId, phan, baoPhId: bp?.id ?? null, boiCanh: {
     sos: x.sos ?? null, ngay: x.performed_on ?? null, gvcn: x.gvcn ?? null, ghiChu: lienHe ? x.note?.trim() || null : null,
     phuHuynh: lienHe ? { ten: x.parent_name ?? null, quanHe: x.parent_relation ?? null, sdt: x.parent_phone ?? null } : null,

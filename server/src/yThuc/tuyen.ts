@@ -20,7 +20,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { trangThaiYThuc } from './trangThai.ts';
-import { xemYThucHv } from './access.ts';
+import { xemLienHePh, xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
 import { luatMeeting } from '../worklist/giaoViec.ts';
 import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
@@ -68,7 +68,7 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Người ĐÃ LÀM bước (theo dõi theo tuyến, C1). */ lam: number[];
   nd: string | null;
   /** TUYEN-2 (rà #2273 P2-3): phần nội dung CHỈ người xem được Ý thức em đọc (liên hệ phụ huynh) — nối sau `nd`. */ ndEm?: string | null;
-  /** Chủ SP 27/11 (#2273 P1): người ngoài `xemYThucHv` đọc được CẢ nội dung bước (kể `ndEm`) — người giữ phần Xếp lịch họp còn mở. */ docEm?: (p: Principal) => boolean;
+  /** Chủ SP 27/11 (#2273 P1): có thì THAY xem Ý thức em cho `ndEm` và mở đọc cả bước — luật liên hệ PH `xemLienHePh`. */ docEm?: (p: Principal) => boolean;
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
 };
@@ -353,8 +353,9 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         b.nd = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
         b.ndEm = ph ? `Phụ huynh: ${ph}` : null;
         /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc cả bước (ghi chú + PH) — cùng luật `xemMeeting` boiCanh. */
-        const kxl = `${khoa}:xep_lich`;
-        b.docEm = (p) => { const xl = t.buoc.find((y) => y.khoa === kxl); return !!xl && xl.trangThai === 'dang' && xl.ids.includes(p.userId); };
+        const kp2 = [`${khoa}:xep_lich`, `${khoa}:ket_qua`];
+        b.docEm = (p) => xemLienHePh(p, { id: t.em!.id, tvv: t.tvv, cn: t.cn },
+          t.buoc.some((y) => kp2.includes(y.khoa) && y.trangThai === 'dang' && y.ids.includes(p.userId)));
       }
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
@@ -584,9 +585,10 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
   const hd = conVaiO(p, t.cn);
   const buocRa: BuocTuyen[] = t.buoc.map((b) => {
     const co = !!b.nd?.trim() || !!b.ndEm;
-    const em = xemEm || !!b.docEm?.(p);
+    /* `docEm` (bước GVCN xác nhận Meeting): luật liên hệ PH `xemLienHePh` quyết cả dòng PH lẫn đọc cả bước; bước khác: `ndEm` theo xem Ý thức em. */
+    const em = b.docEm ? b.docEm(p) : xemEm;
     const nd = [b.nd?.trim() ? b.nd : null, em ? b.ndEm : null].filter(Boolean).join('\n');
-    const duoc = !!nd && (em || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
+    const duoc = !!nd && (xemEm || em || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
     const { ids: _i, lam: _l, nd: _n, ndEm: _e, docEm: _m, docRieng: _d, vai: _v, ...goc } = b;
     return { ...goc, laToi: b.ids.includes(p.userId) && (b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho' || b.lam.includes(p.userId)),
       coNoiDung: duoc, khongQuyen: co && !duoc, ...(duoc ? { noiDung: nd! } : {}) };
