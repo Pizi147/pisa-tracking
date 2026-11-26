@@ -138,12 +138,15 @@ Cả hai: skill `karpathy-guidelines`, `ponytail` (VAI-0 `full`). VAI-0 là logi
 7. Quyền khác của BPXL (Học viên & Lớp…) vẫn theo CN gán — chủ SP chỉ mở "xếp lịch" toàn bộ.
 8. Lớp kết thúc giữ dòng nhận lớp cho lịch sử.
 9. **Việc tính lúc đọc** (việc TVV từ bảng `students`: Chốt ngày thi, Bổ sung hồ sơ, Bước tiếp, KQ thi thật; không có dòng lưu): giữ tính lúc đọc, KHÔNG tạo dòng mới (tránh chồng LPB-1). Em không TVV → **Lead TVV gán CN em được gán sớm nhất** (ổn định, không cần đếm việc) → Head. Em được gán TVV → việc tự về TVV như nay. Việc có dòng lưu (Báo PH `viec_bao_ph`, `meeting_phan`, Nhận thông tin) → N74 đủ (ít việc nhất, lưu người). "Ít việc mở" chỉ đếm dòng có `phu_trach_id = người` (một câu gộp, không đếm việc tính lúc đọc).
-10. **Người nhận hết hiệu lực** (gỡ vai / khoá tài khoản / hết CN): chạy lại `nguoiNhanTuDong` và lưu người mới (thay `donGiaoHetHieuLuc` đặt NULL); người cũ không còn thấy.
+10. **Người nhận hết hiệu lực** (gỡ vai / khoá tài khoản / hết CN): việc về người **gán CN sớm nhất** lúc đọc (không đếm lại việc, ổn định); người cũ không còn thấy. *(VAI-0 làm: người theo luật lưu ở cột riêng `meeting_phan.nguoi_luat`, giữ nguyên nghĩa `phu_trach_id` = người được chuyển tay.)*
 11. **Nhận lớp CN khác:** được (BPXL xếp lịch mọi CN, tự chủ động nhận). Đã nhận thì nhận việc BPXL của lớp đó dù CN khác — `HOAT_DONG_O` / hết hiệu lực coi dòng `lop_xep_lich` là còn hiệu lực với BPXL.
 12. **Nhận lớp (lần đầu hoặc nhận lại):** việc BPXL đang mở của lớp chuyển sang người nhận, **trừ** việc đã được chuyển tay (có người giao — `giao_boi`); Hoàn tác trả đúng người cũ từng việc.
 13. **Gom theo lớp đích:** như 4.2 cũ đổi khoá — mọi lệnh (khác ngày cũng được) vào cùng lớp đích dồn vào việc Nhận thông tin của lớp đó **còn mở**; đã xác nhận → việc mới. Nếu LPB-0 chưa mở: gộp N74 + lô lớp đích vào LPB-0; đã merge: VAI-0 đổi khoá lô.
 14. **GĐCN không nhận tin "để biết" / theo dõi nguồn `head`** (lead không tự theo dõi). Helper `laHead` dùng cho QUYỀN, không dùng cho đường gửi tin / giao việc / theo dõi mặc định.
 15. **Head ở N74 bước 3:** Head gán CN (ít việc nhất) → không có: Head toàn hệ thống (ít việc nhất) → không có: việc để trống người, hiện ở Công việc › "Tất cả" của Quản trị / Head / GĐCN (không mất việc).
+
+16. **BPXL xem / xếp mọi CN** = 4 quyền lịch (`plan.week`, `schedule.move`, `test.view`, `attempt.view`) phủ mọi CN; đường ghi điểm vẫn chặn BPXL. Trang Test không gửi chi nhánh → mở CN gán; `branchId=all` → mọi CN (web VAI-1 thêm ô chọn).
+17. **Bản chép thật (VAI-0, 26/11):** migrate thêm 2 vai (GĐCN 30 quyền = Head, Lead TVV 17 quyền = CX), chốt CX cho 23 phần Kết quả meeting đang mở; Xếp lịch họp 23 phần chưa có BPXL → giữ TVV → Head như cũ; chạy lại không đổi.
 
 ## 12. Ảnh hưởng luật cũ (PTA sửa khi ghi 1.6)
 

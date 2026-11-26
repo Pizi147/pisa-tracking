@@ -167,7 +167,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
        */
       const pv = scopeFor(p, PERMISSIONS.CYCLE_EDIT, o.today);
       if (!pv.all) {
-        const cn = o.branchId != null ? pv.branchIds.filter((b) => b === o.branchId) : pv.branchIds;
+        const goc = [...new Set([...pv.branchIds, ...cnLeadTvvCuaToi(p)])];   // VAI-0 (N76b): + chi nhánh tôi là Lead TVV giữ việc
+        const cn = o.branchId != null ? goc.filter((b) => b === o.branchId) : goc;
         dk.push(`(s.consultant_user_id = ? OR s.id IN (SELECT x.student_id FROM classes cx JOIN enrollments x ON x.class_id = cx.id AND x.status = 'active'
                    WHERE cx.status = 'active' AND cx.branch_id IN (${cn.map(() => '?').join(',')})))`);
         thamSo.push(p.userId, ...cn);
@@ -178,7 +179,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
     /* AUDIT-1611 PR 5: QL "Của tôi" — `giu` chỉ nhận em mình là TVV hoặc em CHƯA có TVV (`nguoiGiuTvv`, không `tatCa`) → lọc ngay trong SQL, không đọc
        mọi em của các chi nhánh (QL 5 chi nhánh: ~820 dòng / lần). Kết quả không đổi. */
     /* AUDIT-2111 (rà #1960): + em có TVV HẾT hiệu lực ở chi nhánh em (như chưa có TVV → Head giữ) — so với vai TVV còn hiệu lực đã đọc (`tvvConVai`, 1 câu nhỏ / request). */
-    if (ql && !o.tatCa) {
+    if ((ql || cnLead.length) && !o.tatCa) {   // VAI-0: Lead TVV — chỉ em mình là TVV / chưa có TVV / TVV hết hiệu lực
       const vai = JSON.stringify([...vaiTvvConHieuLuc()]);
       dk.push(`(s.consultant_user_id = ? OR s.consultant_user_id IS NULL OR s.consultant_user_id = 0
         OR ((s.consultant_user_id || ':' || COALESCE(c.branch_id, s.branch_id)) NOT IN (SELECT value FROM json_each(?)) AND (s.consultant_user_id || ':0') NOT IN (SELECT value FROM json_each(?))))`);

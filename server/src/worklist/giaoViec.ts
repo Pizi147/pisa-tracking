@@ -1109,6 +1109,8 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   const xemTatCaTraLai = !!o.tatCa && p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx');
   if (xemTatCaTraLai) ve.push(veToi(`${COT_TRA_LAI} WHERE t.trang_thai = 'mo' AND COALESCE(t.phu_trach_id, t.nguoi_nhan) IS NOT ?`, 't'));
   ve.push(veToi(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE mp.phu_trach_id = ? AND mp.trang_thai = 'mo'`, 'x'));
+  /* VAI-0 (N74 / N77): phần theo luật chốt cho tôi (`nguoi_luat`, chỉ mục `idx_meeting_phan_luat`) — kể cả chi nhánh tôi không có grant (CVXL nhận lớp chi nhánh khác). */
+  ve.push(veToi(`SELECT ${COT_MEETING} FROM meeting_phan mp ${MEETING_SONG} WHERE mp.nguoi_luat = ? AND mp.phu_trach_id IS NULL AND mp.trang_thai = 'mo'`, 'x'));
   if (vai.length) {
     const loc = [`mp.trang_thai = 'mo'`, ...(toanBo ? [] : [`mp.branch_id IN (${DS_JSON})`]), o.tatCa ? '(mp.phu_trach_id IS NULL OR mp.phu_trach_id != ?)' : 'mp.phu_trach_id IS NULL'];
     if (!toanBo) thamSo.push(JSON.stringify(cn));

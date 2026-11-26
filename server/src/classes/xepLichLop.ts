@@ -51,6 +51,7 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
   if (moi !== null && !laBpxl(moi)) throw badRequest('Người được gán không có vai BPXL đang hoạt động.');
   if (moi !== null && lop.status !== 'active') throw badRequest('Lớp đã kết thúc — không nhận lớp mới.');
   return tx(() => {
+    if ((xemXepLich(classId)?.userId ?? null) !== cu) throw conflict('Lớp vừa được người khác nhận — mở lại để xem.');   // đọc lại trong giao dịch
     const g = new GhiDao(db());
     const phan = (db().prepare(PHAN_CUA_LOP).all(classId) as { id: number }[]).map((r) => r.id);
     if (phan.length) g.sua('meeting_phan', `id IN (${phan.map(() => '?').join(',')})`, ...phan);
@@ -60,10 +61,13 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
       db().prepare('DELETE FROM lop_xep_lich WHERE class_id = ?').run(classId);
     } else if (hienTai) {
       g.sua('lop_xep_lich', 'class_id = ?', classId);
-      db().prepare('UPDATE lop_xep_lich SET user_id = ?, gan_boi = ?, gan_luc = ? WHERE class_id = ?').run(moi, p.userId, luc, classId);
+      if (!db().prepare('UPDATE lop_xep_lich SET user_id = ?, gan_boi = ?, gan_luc = ? WHERE class_id = ? AND user_id = ?').run(moi, p.userId, luc, classId, cu).changes) {
+        throw conflict('Lớp vừa được người khác nhận — mở lại để xem.');
+      }
     } else {
       g.theoDoi('lop_xep_lich', 'class_id = ?', [classId], () =>
-        db().prepare('INSERT INTO lop_xep_lich (class_id, user_id, gan_boi, gan_luc) VALUES (?, ?, ?, ?)').run(classId, moi, p.userId, luc));
+        db().prepare('INSERT INTO lop_xep_lich (class_id, user_id, gan_boi, gan_luc) VALUES (?, ?, ?, ?) ON CONFLICT(class_id) DO NOTHING').run(classId, moi, p.userId, luc));
+      if (xemXepLich(classId)?.userId !== moi) throw conflict('Lớp vừa được người khác nhận — mở lại để xem.');
     }
     if (phan.length) {
       if (moi !== null) db().prepare(`UPDATE meeting_phan SET nguoi_luat = ? WHERE id IN (${phan.map(() => '?').join(',')})`).run(moi, ...phan);
@@ -88,7 +92,7 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
 export function hoanTacXepLich(p: Principal, classId: number): { xepLich: XepLichLop } {
   const g = timGhiDao(db(), LOAI, 'classes', classId);
   if (!g) throw conflict('Không có lần nhận lớp nào để hoàn tác.');
-  if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict(`Quá ${HOAN_TAC_PHUT} phút — nhận / gán lại trực tiếp.`);
+  if (Date.now() - Date.parse(g.luc) > HOAN_TAC_PHUT * 60_000) throw conflict('Quá thời gian hoàn tác — nhận / gán lại trực tiếp.');
   if (g.nguoi !== p.userId && !ganHoDuoc(p, classId)) throw forbidden('Chỉ người đã đổi, Head, GĐCN, Quản trị hoặc lead BPXL hoàn tác được.');
   tx(() => {
     daoLai(db(), g, p.userId);

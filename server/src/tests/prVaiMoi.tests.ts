@@ -8,7 +8,8 @@ export async function runPrVaiMoiTests(t: any) {
   const { check, assert, conn, P, classId } = t;
   const accounts: any = await import('../platform/accounts.ts');
   const { migratePrVaiMoi } = await import('../migrate/prVaiMoi.ts');
-  const { loadPrincipal, can, scopeFor, qlDiem, duocSuaLichLop, cnMacDinhBpxl } = await import('../permissions.ts');
+  const { loadPrincipal, can, scopeFor, qlDiem, duocSuaLichLop, cnMacDinhBpxl, scopeXemLuotCham } = await import('../permissions.ts');
+  const { myWork } = await import('../worklist/mywork.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { giuViecQl, leadTvvCua } = await import('../worklist/viecTvv.ts');
   const { quanLyCuaChiNhanh } = await import('../platform/audit.ts');
@@ -172,4 +173,31 @@ export async function runPrVaiMoiTests(t: any) {
     assert(xl.xemXepLich(MB_FT)?.userId === bpB, 'Hoàn tác bỏ nhận');
     assert(ma(() => xl.ganXepLich(P.admin, MB_FT, { userId: P.coreTeacher.userId, cu: bpB })) === 400, 'người không BPXL → 400');
   }));
+
+  check('VM-8 · (rà C1) Lead TVV thấy việc em chưa có TVV ở /my-work THẬT (Của tôi + Tất cả); Head "Của tôi" không còn', () => thu(() => {
+    const v = one(`SELECT v.id, v.student_id FROM viec_bao_ph v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+        WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND c.branch_id = ? ORDER BY v.id LIMIT 1`, MB);
+    conn.prepare(`UPDATE students SET consultant_user_id = NULL WHERE id = ?`).run(v.student_id);
+    xoaNho();
+    const co = (pp: any, nguoi?: 'tat-ca') => ((myWork(pp, { nguoi }) as any).items as any[]).filter((i) => i.key.includes(`:${v.id}`) && i.mine);
+    assert(co(loadPrincipal(leadMb)).length === 1, 'Lead Của tôi');
+    assert(co(loadPrincipal(leadMb), 'tat-ca').length === 1, 'Lead Tất cả');
+    assert(!co(P.mbManager).length, 'Head Của tôi không còn');
+  }));
+
+  check('VM-9 · (rà C2) CVXL chi nhánh X nhận lớp MB → phần Xếp lịch họp của em lớp đó ở /my-work của CVXL', () => thu(() => {
+    xl.ganXepLich(loadPrincipal(bpA), MB_FT, { userId: bpA, cu: null });
+    const { xep } = taoMeeting();
+    assert(xep.nguoi_luat === bpA, `nguoi_luat ${xep.nguoi_luat}`);
+    xoaNho();
+    const it = ((myWork(loadPrincipal(bpA)) as any).items as any[]).filter((i) => i.key.includes(String(xep.id)) && i.mine);
+    assert(it.length === 1, JSON.stringify(it));
+  }));
+
+  check('VM-10 · (rà I1) BPXL: Lịch Test tuần mọi chi nhánh, nhưng KHÔNG xem hồ sơ lượt / Học viên & Lớp chi nhánh khác', () => {
+    xoaNho();
+    const a = loadPrincipal(bpA);
+    assert(scopeXemLuotCham(a).all, 'Lịch Test tuần mọi chi nhánh');
+    assert(!scopeFor(a, PERMISSIONS.ATTEMPT_VIEW).all && !can(a, PERMISSIONS.ATTEMPT_VIEW, { classId: CP_FT }), 'không mở attempt.view');
+  });
 }

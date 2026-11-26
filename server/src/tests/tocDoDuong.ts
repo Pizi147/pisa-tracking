@@ -2285,7 +2285,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /regular/classes/{lopThuong}/sheet': 171,   // đo 121
   'QT /regular/classes/{lopThuong}/sheet': 169,   // đo 119
   'GVCN_THUONG /regular/classes/{lopThuong}/sheet': 169,   // đo 119
-  'QT /admin/permissions/matrix': 210,   // đo 160
+  'QT /admin/permissions/matrix': 240,   // đo 160 · VAI-0: đo 228 (+2 vai GĐCN · Lead TVV = +47 dòng quyền vai)
   'QT /admin/routes': 67,   // đo 17
   'QT /admin/programmes': 100,   // đo 50
   'QT /admin/chi-nhanh': 56,   // đo 6

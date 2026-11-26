@@ -36,6 +36,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('user_skills', 'user_id', TL, 'kỹ năng'), c('gv_cham_cot', 'user_id', TL, 'GV chấm S đã chọn'), c('gv_cham_cot', 'examiner_user_id', TL, 'GV chấm S đã chọn'), c('user_prefs', 'user_id', TL, 'tuỳ chọn'), c('demo_sessions', 'user_id', TL, 'phiên đăng nhập'),
   c('teacher_assignments', 'user_id', TL, 'phân công'), c('notifications', 'user_id', TL, 'thông báo'), c('task_followers', 'user_id', TL, 'theo dõi công việc'),
   c('tuyen_bo_theo_doi', 'user_id', TL, 'bỏ theo dõi tuyến'),   // TUYEN-0
+  c('lop_xep_lich', 'user_id', TL, 'lớp nhận xếp lịch'),   // VAI-0 (N77): tài khoản xoá mềm → `cvxlCuaLop` bỏ qua, việc về BPXL chi nhánh
   /* dấu vết (66) */
   c('assessment_attempts', 'created_by', DV, 'lượt Test'), c('assessment_attempts', 'deadline_override_by', DV, 'lượt Test'),
   c('assessment_scores', 'entered_by', DV, 'điểm đã nhập'), c('assessment_scores', 'no_show_by', DV, 'điểm đã nhập'),
@@ -62,6 +63,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   /* GV-1 (N58): giao việc — người được giao / người giao / người theo dõi / người làm phần Meeting (dấu vết: xoá mềm giữ lịch sử). */
   ...(['viec_bao_ph', 'sos_coordination_actions', 'tinh_hinh_hoc_tap', 'meeting_phan', 'viec_xu_ly', 'discipline_measures'] as const).flatMap((b) => [c(b, 'phu_trach_id', DV, 'giao việc'), c(b, 'giao_boi', DV, 'giao việc')]),
   c('meeting_phan', 'xong_boi', DV, 'giao việc'), c('meeting_phan', 'nhap_ho_boi', DV, 'giao việc'),
+  c('meeting_phan', 'nguoi_luat', DV, 'giao việc'), c('lop_xep_lich', 'gan_boi', DV, 'giao việc'),   // VAI-0 (N74): người theo luật hết hiệu lực → `luatMeeting` lùi
   /* TL-1 (N61): trả lại vi phạm — người trả / người nhận / người xử lý / giao việc (dấu vết). */
   ...(['nguoi_tra', 'nguoi_nhan', 'xong_boi', 'phu_trach_id', 'giao_boi'] as const).map((cot) => c('vi_pham_tra_lai', cot, DV, 'trả lại vi phạm')),
   c('task_groups', 'tao_boi', DV, 'nhóm công việc'),   // VH-1

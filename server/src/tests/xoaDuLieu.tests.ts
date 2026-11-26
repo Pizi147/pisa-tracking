@@ -634,9 +634,10 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const thua = coDinh.filter((k) => !COT_USERS.includes(k));
     assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
     /* BAOPH-0: +4 (discipline_measures.phu_trach_id · giao_boi, viec_xu_ly.phu_trach_id · giao_boi). TUYEN-0: +1 (tuyen_bo_theo_doi.user_id). */
-    assert(!thua.length && coDinh.length === 148 && new Set(coDinh).size === 148, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    /* VAI-0: +3 (meeting_phan.nguoi_luat, lop_xep_lich.gan_boi dấu vết · lop_xep_lich.user_id thiết lập). */
+    assert(!thua.length && coDinh.length === 151 && new Set(coDinh).size === 151, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
-    assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'gv_cham_cot.examiner_user_id', 'gv_cham_cot.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id', 'tuyen_bo_theo_doi.user_id',
+    assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'gv_cham_cot.examiner_user_id', 'gv_cham_cot.user_id', 'lop_xep_lich.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id', 'tuyen_bo_theo_doi.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());
   });
 

@@ -22,6 +22,7 @@ import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { trangThaiYThuc } from './trangThai.ts';
 import { xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
+import { luatMeeting } from '../worklist/giaoViec.ts';
 
 export const LOAI_TUYEN = ['vi_pham', 'phoi_hop', 'tinh_hinh', 'cap_bac'] as const;
 export type LoaiTuyen = (typeof LOAI_TUYEN)[number];
@@ -284,7 +285,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
             x.remove_reason_code, x.removed_at, COALESCE(x.performer_name, pu.full_name) AS thuc_ten, ptu.full_name AS pt_ten,
             a.attempt_no, COALESCE(a.kind, 'mock') AS a_kind, (SELECT MAX(c.sos_level) FROM sos_cases c WHERE c.attempt_id = x.attempt_id) AS sos, ${EM_COT},
             json((SELECT json_group_array(json_object('id', mp.id, 'phan', mp.phan, 'tt', mp.trang_thai, 'pt', mp.phu_trach_id, 'ptTen', mpu.full_name, 'hanChon', mp.han_chon, 'tao', mp.tao_luc,
-                'xongBoi', mp.xong_boi, 'xongTen', xu.full_name, 'xongLuc', mp.xong_luc, 'ngayGio', mp.ngay_gio, 'kq', mp.ket_qua, 'cn', mp.branch_id))
+                'xongBoi', mp.xong_boi, 'xongTen', xu.full_name, 'xongLuc', mp.xong_luc, 'ngayGio', mp.ngay_gio, 'kq', mp.ket_qua, 'cn', mp.branch_id, 'nl', mp.nguoi_luat))
               FROM meeting_phan mp LEFT JOIN users mpu ON mpu.id = mp.phu_trach_id LEFT JOIN users xu ON xu.id = mp.xong_boi WHERE mp.phoi_hop_id = x.id)) AS mp,
             ${BAO_PH_JSON('b.phoi_hop_id = x.id')} AS bp
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id JOIN students s ON s.id = x.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
@@ -341,8 +342,8 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         if (ph === 'ket_qua') baoPh();
         const r = phan.find((y) => y.phan === ph);
         const tenP = ph === 'xep_lich' ? 'Xếp lịch họp' : 'Kết quả meeting';
-        const vai = vaiO(ph === 'xep_lich' ? 'scheduler' : 'cx', r?.cn ?? t.cn);
-        const giu = r?.pt ? { ids: [r.pt], nguoi: r.ptTen ?? null, vai: false } : vai.length ? theoVai(vai, '')
+        const luat = luatMeeting(ph, r?.cn ?? t.cn, r?.nl ?? null);   // VAI-0 (N74): một người — cùng nguồn với Công việc / panel
+        const giu = r?.pt ? { ids: [r.pt], nguoi: r.ptTen ?? null, vai: false } : luat ? { ids: [luat.u], nguoi: luat.ten, vai: true }
           : ph === 'xep_lich' && t.tvv ? { ids: [t.tvv], nguoi: tvvTen, vai: false } : theoVai(head(t.cn), 'Head chi nhánh');
         const kp = `${khoa}:${ph}`;
         const nd = r ? [r.ngayGio ? `Họp ${r.ngayGio}` : null, r.kq].filter(Boolean).join('\n') || null : null;

@@ -315,6 +315,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(w.items.some((x: any) => x.key === `bao-ph:${id}` && x.mine) && w.summary.viec >= 1, `BPXL /my-work: ${JSON.stringify(w.items.map((x: any) => x.key))}`);
     bp.ghiKetQuaBaoPh(bpxl, { viecIds: [id], ketQua: 'da_bao', ghiChu: 'BPXL đã gọi phụ huynh em' });
     assert(mot('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', id).trang_thai === 'xong', 'BPXL ghi được');
+    /* VAI-0 (N74 / N77): Xếp lịch họp về MỘT người — CVXL nhận lớp (bộ demo MB đã có BPXL khác). */
+    conn.prepare('INSERT OR REPLACE INTO lop_xep_lich (class_id, user_id, gan_luc) VALUES (?, ?, ?)').run(lop, bpxl.userId, '2026-01-01');
     const { xep } = meeting(moiEm());
     xoaNho();
     assert(((myWork(bpxl, {}) as any).items as any[]).some((x) => x.key === `meeting_xep_lich:${xep.id}` && x.mine), 'BPXL có Xếp lịch họp');
@@ -355,13 +357,14 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const { m, cau, dong } = doc();
     assert(m && m.xepLich && m.ketQua, `thiếu phần: ${JSON.stringify(m)}`);
     assert(m.xepLich.nguoi === 'GIAOVIEC ADMIN' && m.xepLich.vai === (coBpxl ? 'BPXL' : 'TVV') && m.xepLich.trangThai === 'mo', `Xếp lịch: ${JSON.stringify(m.xepLich)}`);
-    assert(m.ketQua.nguoi === gv.tenVaiTai('ket_qua', mbId) && m.ketQua.nguoi && m.ketQua.vai === 'CX', `Kết quả: ${JSON.stringify(m.ketQua)}`);
+    const luat = (phan: string) => gv.tenVaiTai(phan, mbId, mot('SELECT nguoi_luat FROM meeting_phan WHERE phoi_hop_id = ? AND phan = ?', aid, phan)?.nguoi_luat)?.ten ?? null;   // VAI-0: một người
+    assert(m.ketQua.nguoi === luat('ket_qua') && m.ketQua.nguoi && m.ketQua.vai === 'CX', `Kết quả: ${JSON.stringify(m.ketQua)}`);
     assert(cau <= TRAN_PHOI_HOP_MEETING.cau && dong <= TRAN_PHOI_HOP_MEETING.dong, `đường hồ sơ (1 Meeting): ${cau} câu / ${dong} dòng > trần ${TRAN_PHOI_HOP_MEETING.cau} / ${TRAN_PHOI_HOP_MEETING.dong}`);
     console.log(`    · đo /students/:id/phoi-hop-sos (1 Meeting đã xác nhận): ${cau} câu · ${dong} dòng`);
     /* N58: người được giao đã nghỉ → không hiện tên, về người theo luật (BPXL / TVV của em). */
     conn.prepare(`UPDATE users SET status = 'inactive' WHERE id = ?`).run(admin.userId);
     const sau = doc().m.xepLich;
-    assert(sau.nguoi !== 'GIAOVIEC ADMIN' && sau.nguoi === (coBpxl ? gv.tenVaiTai('xep_lich', mbId) : 'GIAOVIEC TVV'), `người nghỉ: ${JSON.stringify(sau)}`);
+    assert(sau.nguoi !== 'GIAOVIEC ADMIN' && sau.nguoi === (coBpxl ? luat('xep_lich') : 'GIAOVIEC TVV'), `người nghỉ: ${JSON.stringify(sau)}`);
   }));
 
   await checkAsync('GV1-12 · (B) phần Meeting: người giữ vai đọc MỘT lần mỗi request, không câu con theo dòng; một em → lọc ngay trong vế', () => thu(() => voiMeeting(async () => {
@@ -688,6 +691,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
   const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
   const { migratePrTraLai } = await import('../migrate/prTraLai.ts');
   const { migratePrTuyen0 } = await import('../migrate/prTuyen0.ts');
+  const { themCotPrVaiMoi } = await import('../migrate/prVaiMoi.ts');
   await checkAsync('AU-2111 P0-01 (B1-01) · người giao mất vai ở chi nhánh → xem / sửa hạn / theo dõi / Hoàn tác / mô tả 403 và DB KHÔNG đổi (Báo PH · Phối hợp · đường riêng)', () => thu(async () => {
     const sid = moiEm(); const id = baoPhViPham(sid); const phId = phoiHopViec(sid);
     const cxRoi = taiKhoan('cxroi', 'cx');
@@ -934,6 +938,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     migratePrTraLai(cu, []);   // TL-1: DB cũ đi tiếp migrate sau → so cột / chỉ mục với schema.sql hiện tại
     themCotPrBaoPh0(cu, []);   // BAOPH-0
     migratePrTuyen0(cu, []);   // TUYEN-0: chỉ mục người làm bước (meeting_phan.xong_boi)
+    themCotPrVaiMoi(cu, []);   // VAI-0: meeting_phan.nguoi_luat + lop_xep_lich
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND (name LIKE '%giao%' OR name LIKE '%theo_doi%' OR name LIKE '%meeting_phan%') ORDER BY name`).all() as any[]));

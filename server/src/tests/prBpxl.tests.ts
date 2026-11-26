@@ -88,9 +88,10 @@ export async function runPrBpxlTests(t: any) {
     assert(g.length === 1 && g[0].b === null, `toàn hệ thống: ${JSON.stringify(g)}`);
     const mb = loadPrincipal(idMb); const tat = loadPrincipal(idAll);
     const sai: string[] = [];
-    if (!can(mb, PERMISSIONS.PLAN_WEEK, { classId: MB_FT }) || can(mb, PERMISSIONS.PLAN_WEEK, { classId: CP_FT })) sai.push('plan.week sai phạm vi');
+    /* VAI-0 (N77, chủ SP 26/11 "cứ cho xếp hết toàn bộ"): quyền lịch BPXL phủ mọi chi nhánh (thay N57 "chi nhánh khác 403"). */
+    if (!can(mb, PERMISSIONS.PLAN_WEEK, { classId: MB_FT }) || !can(mb, PERMISSIONS.PLAN_WEEK, { classId: CP_FT })) sai.push('plan.week sai phạm vi');
     if (!can(tat, PERMISSIONS.PLAN_WEEK, { classId: CP_FT }) || !can(tat, PERMISSIONS.PLAN_WEEK, { classId: MB_FT })) sai.push('toàn hệ thống thiếu plan.week');
-    if (!duocSuaLichLop(mb, MB_THUONG) || duocSuaLichLop(mb, KHAC_THUONG) || !duocSuaLichLop(tat, KHAC_THUONG)) sai.push('lịch lớp thường sai phạm vi');
+    if (!duocSuaLichLop(mb, MB_THUONG) || !duocSuaLichLop(mb, KHAC_THUONG) || !duocSuaLichLop(tat, KHAC_THUONG)) sai.push('lịch lớp thường sai phạm vi');
     if (duocSuaLichLop(mb, MB_FT) || duocSuaLichLop(tat, CP_FT)) sai.push('sửa được lịch lớp FT');
     for (const k of CAM) if (can(tat, k, { classId: MB_FT, studentId: emMb })) sai.push(`có ${k}`);
     assert(!sai.length, sai.join(' | '));
@@ -124,8 +125,9 @@ export async function runPrBpxlTests(t: any) {
     const e3 = loi(() => svc.setPlanningWeek(mb, m1, pid('2026-10-19'), null, { force: true }));
     assert(e3 === null, `BPXL đổi tuần lượt: ${e3}`);
     const b = em(CP_FT); const n1 = b.luot(1, '2026-10-05');
-    assert(ma(() => ss.setSkillWeek(mb, n1, 'listening', pid('2026-10-12'), {})) === 403, 'BPXL MB dời MT lớp CP phải 403');
-    assert(ma(() => svc.createAttempt(mb, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid('2026-10-26') })) === 403, 'BPXL MB tạo MT lớp CP phải 403');
+    /* VAI-0 (N77): BPXL MB xếp / dời lịch lớp CP được. */
+    assert(loi(() => ss.setSkillWeek(mb, n1, 'listening', pid('2026-10-12'), {})) === null, 'BPXL MB dời MT lớp CP được (N77)');
+    assert(loi(() => svc.createAttempt(mb, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid('2026-10-26') })) === null, 'BPXL MB tạo MT lớp CP được (N77)');
     const e4 = loi(() => ss.setSkillWeek(tat, n1, 'reading', pid('2026-10-12'), {}));
     assert(e4 === null, `BPXL toàn hệ thống dời CP: ${e4}`);
     /* Huỷ / khôi phục lượt: không (`attempt.cancel`). */
@@ -142,7 +144,7 @@ export async function runPrBpxlTests(t: any) {
     assert(ma(() => svc.setSkillSkip(mb, m, 'listening', true, 'BPXL xoá')) === 403 && sk(m, 'listening') === 1, 'kỹ năng có điểm: 403, không đổi');
     assert(ma(() => svc.setSkillSkip(mb, m, 'listening', true, 'BPXL xoá', { xoaDiem: true })) === 403, 'Xoá kèm điểm: 403');
     const b = em(CP_FT); const n = b.luot(1, '2026-10-05');
-    assert(ma(() => svc.setSkillSkip(mb, n, 'reading', true, 'BPXL xoá')) === 403, 'BPXL MB xoá kỹ năng lớp CP: 403');
+    assert(loi(() => svc.setSkillSkip(mb, n, 'reading', true, 'BPXL xoá')) === null, 'BPXL MB xoá kỹ năng chưa điểm lớp CP được (N77)');
   }));
 
   check('BX-5 · khoá cuối tuần N15 như Admin: T6 dời MT tuần này → hỏi "Vẫn đổi lịch"; tuần +3 → được', () => thu((doiNgay) => {
@@ -177,7 +179,7 @@ export async function runPrBpxlTests(t: any) {
       r = await goi('PATCH', `/classes/${MB_FT}/progress`, ck, {});
       assert(r.status === 403, `lớp FT MB: ${r.status}`);
       r = await goi('PATCH', `/classes/${KHAC_THUONG}/progress`, ck, {});
-      assert(r.status === 403, `lớp thường chi nhánh khác: ${r.status}`);
+      assert(r.status === 200, `lớp thường chi nhánh khác (N77 được): ${r.status}`);
     });
 
     await checkAsync('BX-6 · chỉ xem: sửa điểm, sửa HV, thêm HV, chuyển lớp, báo Case, ghi vi phạm, khôi phục lượt, Phân tích → 403; xem em CP → 403 / 404', async () => {
@@ -256,7 +258,6 @@ export async function runPrBpxlTests(t: any) {
       const sai = await sai403([
         ['POST', '/s-expert', { studentId: emMb, tuan, diem: 6.5 }],
         ['POST', '/s-expert', { studentId: emMb, tuan, nhanXet: 'BPXL thử' }],
-        ['POST', '/s-expert', { studentId: emCp, tuan }],
       ]);
       let x = await goi('POST', '/s-expert', ck, { studentId: emMb, tuan });
       if (x.status !== 200 || !x.json?.id) sai.push(`tạo lượt trống: ${x.status} ${x.json?.error}`);
@@ -293,7 +294,8 @@ export async function runPrBpxlTests(t: any) {
       if (r.status !== 200) sai.push(`khôi phục lượt chưa điểm: ${r.status} ${r.json?.error ?? ''}`);
       const c = em(CP_FT); const m3 = c.luot(1, '2026-10-19');
       svc.huyLuot(P.admin, m3, {});
-      sai.push(...(await sai403([['POST', `/attempts/${m3}/reopen`, {}]])).map((y) => `CP: ${y}`));
+      const r3 = await goi('POST', `/attempts/${m3}/reopen`, ck, {});   // VAI-0 (N77): lịch mọi chi nhánh — lượt chưa điểm lớp CP khôi phục được
+      if (r3.status !== 200) sai.push(`CP lượt chưa điểm: ${r3.status} ${r3.json?.error ?? ''}`);
       assert(!sai.length, sai.join(' | '));
     });
 
@@ -317,7 +319,6 @@ export async function runPrBpxlTests(t: any) {
         ['POST', '/classes', { branchId: MB, chuongTrinh: 'FT', loTrinh: 'LT1', so: '991' }],
         ['POST', `/y-thuc/xu-ly/${xuLy}/gui`, {}],
         ['POST', `/yeu-cau/${yc}/duyet`, {}],
-        ['GET', `/ke-hoach-test/ft/${CP_FT}`],
       ]);
       assert(!sai.length, sai.join(' | '));
     });

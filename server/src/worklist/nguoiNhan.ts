@@ -25,7 +25,8 @@ export const dauNhom = (vai: string, cn: number | null): number | null => (cn ? 
 function soViecMo(ids: readonly number[]): Map<number, number> {
   const ds = JSON.stringify(ids);
   const rows = db().prepare(`SELECT nguoi, COUNT(*) AS n FROM (
-      SELECT COALESCE(phu_trach_id, nguoi_luat) AS nguoi FROM meeting_phan WHERE trang_thai = 'mo' AND COALESCE(phu_trach_id, nguoi_luat) IN (SELECT value FROM json_each(?1))
+      SELECT phu_trach_id AS nguoi FROM meeting_phan WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT nguoi_luat FROM meeting_phan WHERE trang_thai = 'mo' AND phu_trach_id IS NULL AND nguoi_luat IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM viec_bao_ph WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM sos_coordination_actions WHERE status = 'pending' AND phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))

@@ -20,6 +20,14 @@ export const CHI_MUC_NGUOI_LUAT = `CREATE INDEX IF NOT EXISTS idx_meeting_phan_l
 const co = (conn: any, ten: string) => !!conn.prepare('SELECT 1 FROM sqlite_master WHERE name = ?').get(ten);
 const coCot = (conn: any, bang: string, cot: string) => (conn.prepare(`PRAGMA table_info(${bang})`).all() as any[]).some((c) => c.name === cot);
 
+/** Phần lược đồ (bảng, cột, chỉ mục) — chỉ thêm; phép kiểm DB cũ gọi riêng (không đụng dữ liệu). */
+export function themCotPrVaiMoi(conn: any, them: string[]) {
+  if (!co(conn, 'lop_xep_lich')) { conn.exec(BANG_LOP_XEP_LICH); them.push('bảng lop_xep_lich'); }
+  if (!co(conn, 'idx_lop_xep_lich_nguoi')) conn.exec(CHI_MUC_LOP_XEP_LICH);
+  if (!coCot(conn, 'meeting_phan', 'nguoi_luat')) { conn.exec('ALTER TABLE meeting_phan ADD COLUMN nguoi_luat INTEGER REFERENCES users(id)'); them.push('cột meeting_phan.nguoi_luat'); }
+  if (!co(conn, 'idx_meeting_phan_luat')) conn.exec(CHI_MUC_NGUOI_LUAT);
+}
+
 export function migratePrVaiMoi(conn: any, applied: string[]) {
   if (!co(conn, 'roles') || !co(conn, 'role_permissions') || !co(conn, 'meeting_phan') || !co(conn, 'classes')) return;
   const them: string[] = [];
@@ -31,10 +39,7 @@ export function migratePrVaiMoi(conn: any, applied: string[]) {
         WHERE r.key = ?`).run(id, goc).changes;
     them.push(`vai ${ten} (${n} quyền như ${goc === 'manager' ? 'Head' : 'CX'})`);
   }
-  if (!co(conn, 'lop_xep_lich')) { conn.exec(BANG_LOP_XEP_LICH); them.push('bảng lop_xep_lich'); }
-  if (!co(conn, 'idx_lop_xep_lich_nguoi')) conn.exec(CHI_MUC_LOP_XEP_LICH);
-  if (!coCot(conn, 'meeting_phan', 'nguoi_luat')) { conn.exec('ALTER TABLE meeting_phan ADD COLUMN nguoi_luat INTEGER REFERENCES users(id)'); them.push('cột meeting_phan.nguoi_luat'); }
-  if (!co(conn, 'idx_meeting_phan_luat')) conn.exec(CHI_MUC_NGUOI_LUAT);
+  themCotPrVaiMoi(conn, them);
   const chot = chotNguoiLuatMeeting();
   if (chot) them.push(`chốt người theo luật cho ${chot} phần Meeting đang mở`);
   if (them.length) applied.push(`VAI-0: ${them.join(', ')}.`);
