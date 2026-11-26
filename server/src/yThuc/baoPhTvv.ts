@@ -22,7 +22,7 @@ import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { laLeadTvv, tvvHieuLuc } from '../worklist/viecTvv.ts';
-import { conVaiO, headCua, nguoiNhanTuDong } from '../worklist/nguoiNhan.ts';
+import { coLeadTvv, conVaiO, headCua, nguoiNhanTuDong } from '../worklist/nguoiNhan.ts';
 import { VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
@@ -70,10 +70,10 @@ export function nguoiGiuBaoPh(studentId: number, nguoiLuat?: number | null): num
  * VAI-0 (N76b, N74): TRONG tx — việc Báo PH vừa sinh của em CHƯA có TVV → chốt MỘT Lead TVV gán chi nhánh em (ít việc mở nhất) vào `nguoi_luat`. Không có Lead TVV → NULL
  * (Head giữ). Việc sinh trước khi có Lead TVV giữ ở Head (không nhảy). Em được gán TVV sau → việc về TVV (đọc).
  */
-export function chotLeadBaoPh(ids: readonly number[]): void {
-  if (!ids.length) return;
+export function chotLeadBaoPh(ids: readonly number[], theo: 'id' | 'measure_id' = 'id'): void {
+  if (!ids.length || !coLeadTvv()) return;   // chưa ai là Lead TVV: 0 câu
   for (const r of db().prepare(`SELECT v.id, ${CHI_NHANH_EM} AS cn FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
-      WHERE v.id IN (${DS_JSON}) AND v.nguoi_luat IS NULL AND s.consultant_user_id IS NULL`).all(JSON.stringify(ids)) as { id: number; cn: number | null }[]) {
+      WHERE v.${theo} IN (${DS_JSON}) AND v.nguoi_luat IS NULL AND s.consultant_user_id IS NULL`).all(JSON.stringify(ids)) as { id: number; cn: number | null }[]) {
     const u = nguoiNhanTuDong(VAI_LEAD_TVV, r.cn);
     if (u) db().prepare('UPDATE viec_bao_ph SET nguoi_luat = ? WHERE id = ?').run(u, r.id);
   }
@@ -91,7 +91,7 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
           OR t.violation_id IN (SELECT mv.violation_id FROM measure_violations mv WHERE mv.measure_id = ?1)) ORDER BY t.id DESC LIMIT 1))
      ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
-  chotLeadBaoPh([(db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(m.id) as { id: number }).id]);   // VAI-0 (N76b)
+  chotLeadBaoPh([m.id], 'measure_id');   // VAI-0 (N76b)
   /* GV-1 (N58): người theo dõi mặc định của Báo PH vi phạm — GVCN lớp em + GV đã ghi vi phạm (nhận tin "Cập nhật" khi có kết quả; thay tin riêng N41). */
   /* MỘT câu (lô xác nhận xử lý: +1 câu / em): GVCN đang hiệu lực của lớp em đang học (nguồn `gvcn` — đổi GVCN thì chuyển theo) + người ghi các vi phạm
      (`gv_ghi` — giữ); GVCN cũng là người ghi → một dòng `gvcn`. Chỉ người còn hoạt động + còn vai ở chi nhánh của em.

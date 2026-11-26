@@ -6,7 +6,7 @@
  * "Ít việc mở" chỉ đếm dòng đã lưu người (`phu_trach_id` / `nguoi_luat` / `assignee_user_id`) — một câu; việc tính lúc đọc không đếm.
  */
 import { db } from '../db.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { LUOT_SAU_THI_SQL } from '../students/tamDung.ts';
 
 /** Người còn hoạt động + còn vai BPXL (bất kỳ chi nhánh) — người nhận lớp đã nghỉ / gỡ vai không hiện, lớp như chưa ai nhận. */
@@ -29,12 +29,12 @@ const CON_VIEC = (pa: string) => `(${pa}.id IS NULL OR (${pa}.status != 'cancell
 function soViecMo(ids: readonly number[]): Map<number, number> {
   const ds = JSON.stringify(ids);
   const MP = `FROM meeting_phan mp JOIN sos_coordination_actions mx ON mx.id = mp.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = mx.attempt_id WHERE mp.trang_thai = 'mo' AND ${CON_VIEC('pa')}`;
-  const BP = `FROM viec_bao_ph v LEFT JOIN sos_coordination_actions bx ON bx.id = v.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = bx.attempt_id WHERE v.trang_thai = 'mo' AND ${CON_VIEC('pa')}`;
+  const VIEC_TVV = `FROM viec_bao_ph v LEFT JOIN sos_coordination_actions bx ON bx.id = v.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = bx.attempt_id WHERE v.trang_thai = 'mo' AND ${CON_VIEC('pa')}`;
   const rows = db().prepare(`SELECT nguoi, COUNT(*) AS n FROM (
       SELECT mp.phu_trach_id AS nguoi ${MP} AND mp.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT mp.nguoi_luat ${MP} AND mp.phu_trach_id IS NULL AND mp.nguoi_luat IN (SELECT value FROM json_each(?1))
-      UNION ALL SELECT v.phu_trach_id ${BP} AND v.phu_trach_id IN (SELECT value FROM json_each(?1))
-      UNION ALL SELECT v.nguoi_luat ${BP} AND v.phu_trach_id IS NULL AND v.nguoi_luat IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT v.phu_trach_id ${VIEC_TVV} AND v.phu_trach_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT v.nguoi_luat ${VIEC_TVV} AND v.phu_trach_id IS NULL AND v.nguoi_luat IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT x.phu_trach_id FROM sos_coordination_actions x LEFT JOIN assessment_attempts pa ON pa.id = x.attempt_id
         WHERE x.status = 'pending' AND ${CON_VIEC('pa')} AND x.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
@@ -62,6 +62,9 @@ export function cvxlCuaLop(lopId: number | null | undefined): number | null {
 /** Người giữ vai Head / Quản trị / Lead TVV (mọi chi nhánh) — MỘT câu mỗi request; sắp theo lúc được gán. Kiểm "còn hiệu lực" lúc đọc, Head lùi một người. */
 const giuVai = () => nho('nguoi-nhan:giu-vai', () => db().prepare(`SELECT r.key AS k, ur.user_id AS u, ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id
     JOIN users u ON u.id = ur.user_id WHERE r.key IN ('manager', 'system_admin', 'lead_consultant') AND ${HOAT_DONG} ORDER BY ur.created_at, ur.id`).all() as { k: string; u: number; b: number | null }[]);
+/** Hệ thống có Lead TVV gán chi nhánh nào không — nhớ theo phiên bản bảng vai (0 câu ở mọi lần ghi khi chưa ai đổi vai). Chưa có → khỏi chốt (OV13d-6: trần câu lô xử lý). */
+export const coLeadTvv = (): boolean => nhoTheoBang(['user_roles', 'roles', 'users'], 'vai0:co-lead-tvv', () => !!db().prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+    JOIN users u ON u.id = ur.user_id WHERE r.key = 'lead_consultant' AND ur.branch_id IS NOT NULL AND ${HOAT_DONG} LIMIT 1`).get());
 /** `u` còn giữ vai `vai` gán ĐÚNG chi nhánh `cn`. */
 export const conVaiO = (u: number | null | undefined, vai: string, cn: number | null | undefined): boolean => !!u && !!cn && giuVai().some((x) => x.u === u && x.k === vai && x.b === cn);
 /** N74: Head lùi MỘT người — Head gán chi nhánh sớm nhất → Head toàn hệ thống sớm nhất → Quản trị sớm nhất (như `ql` cũ nhưng một người). */
