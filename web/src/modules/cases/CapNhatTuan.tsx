@@ -469,7 +469,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
   const khoiDoi = deXuat ? (
     <div className="space-y-2">
       <FormDoiPa d={doi} lf={lf} />
-      <p className="m-0 text-xs text-slate-400">{t('PA hiện tại chạy tới khi Head duyệt')}</p>
     </div>
   ) : null;
   /* Quyết định bị chặn theo kết quả (vd "Chưa đủ dữ liệu" thì chưa Kết thúc) — bấm thì nói lý do ngay dưới, không chọn. */

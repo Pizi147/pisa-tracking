@@ -136,7 +136,6 @@ export function CauHinhCaseSos() {
             ))}
             <li className="grid gap-0.5 border-t py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
               <span className="text-[12px] font-semibold text-slate-500">{t('Bản gốc')}</span>
-              <span className="text-sm text-slate-300">{t('Đúng danh sách trước khi có màn này')}</span>
               {!chiXem && data[loai].id !== 0 && (
                 <button type="button" className="btn btn-ghost btn-sm min-h-[44px] justify-self-end text-[color:var(--accent)] sm:min-h-0" onClick={() => moKhoiPhuc(0, t('bản gốc'))}>{t('Khôi phục về đây')}</button>
               )}

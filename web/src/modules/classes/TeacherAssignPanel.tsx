@@ -201,7 +201,6 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone, oMo = null }
               <span className="text-xs font-bold text-slate-200">{t('GVCN')}</span>
               <span className="text-sm text-slate-300">
                 {data.core.map((c) => c.name).join(' · ') || t('Chưa có')}
-                <span className="block text-xs text-slate-500">{t('Đổi GVCN: nhờ Head chi nhánh.')}</span>
                 {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
               </span>
             </div>

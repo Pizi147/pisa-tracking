@@ -341,7 +341,6 @@ const EN_D_WEB = {
   'Không có lượt phối hợp nào': 'No coordination rounds',
   '{label} việc hoàn thành': '{label} tasks done',
   'Hỗ trợ học thuật xem ở tab Học thuật': 'Academic support is in the Academic tab',
-  'Học thuật theo dõi ở bảng kỹ năng': 'Academics tracked in the skill table',
   '+ Thêm việc': '+ Add task',
   'Đã đưa lại Cần xử lý': 'Moved back to Action needed',
   'Đã khôi phục': 'Restored',

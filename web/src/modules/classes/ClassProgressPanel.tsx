@@ -119,7 +119,6 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
         {t('Hai đường đi:')}
         {' '}{data.placementOptions.map((o) => `${o.name} (${o.code})`).join(` — ${t('hoặc')} — `)}
       </p>
-      <p className="m-0 mt-1.5 text-xs text-slate-500">{t('Hệ thống không tự chuyển em nào.')}</p>
       {onChuyenTiep && (
         <button type="button" className="btn btn-sm btn-primary mt-2 min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>
       )}

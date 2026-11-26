@@ -6,7 +6,6 @@ export const EN_HAN_BAO_PH = {
   'Đã lưu hạn': 'Deadline saved',
   'Lưu hạn': 'Save deadline',
   'mặc định': 'default',
-  'đã chỉnh · mặc định {ngay}': 'edited · default {ngay}',
   'Về mặc định {ngay}': 'Back to default {ngay}',
   'Chưa lưu.': 'Not saved.',
   'Ngày bạn gõ vẫn giữ trong ô.': 'The date you typed is kept in the box.',
