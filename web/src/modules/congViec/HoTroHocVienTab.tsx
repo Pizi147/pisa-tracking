@@ -133,7 +133,8 @@ export function HoTroHocVienTab() {
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
   /* VAI-1 (N76b, mockup v29 V4): Lead TVV ở "Của tôi" giữ việc TVV của em chưa có TVV — chia tab như TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ);
      "Của GV" / "Tất cả" vẫn tab như CX. Chỉ đổi cách chia tab, không đổi quyền / nút. */
-  const tabTvv = laTvv || (nguoi === 'toi' && !!session?.grants?.some((g) => g.vaiThat === 'lead_consultant'));
+  const laLeadTvv = !!session?.grants?.some((g) => g.vaiThat === 'lead_consultant');
+  const tabTvv = laTvv || (nguoi === 'toi' && laLeadTvv);
   const hep = useManHinh('(max-width: 639px)');
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
   /* CV-TAB (chủ SP 06/11): tab hạng mục ở `nhom=` (tham số sẵn có — link Tổng quan / chuông / Quay lại cũ vẫn đúng); link `loai=` (một loại việc) → tab chứa loại đó. */
@@ -618,7 +619,8 @@ export function HoTroHocVienTab() {
                       if (k !== 'toi' && next.get('nhom') === 'duyet') next.delete('nhom');
                       setParams(next, { replace: true });
                     }}
-                    muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'gv' ? soGvQuaHan || null : null, title: k === 'gv' && soGvQuaHan ? t('{n} quá hạn', { n: soGvQuaHan }) : undefined }))} /></span>}
+                    /* VAI-1 (PTA 26/11, mockup v29 V4): Lead TVV trọng HV / khách hàng — chỉ Của tôi · Tất cả, không "Của GV". */
+                    muc={LOC_NGUOI_VIEC.filter((k) => !(laLeadTvv && k === 'gv')).map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'gv' ? soGvQuaHan || null : null, title: k === 'gv' && soGvQuaHan ? t('{n} quá hạn', { n: soGvQuaHan }) : undefined }))} /></span>}
                 {/* DEM-VIEC: nút "Của tôi" không số. NHẸ HƠN PR-2a: "Của GV · n" = số quá hạn (chỉ khi đã nạp danh sách tất cả). */}
               </>
             )}

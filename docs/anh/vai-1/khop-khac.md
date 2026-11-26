@@ -20,9 +20,9 @@
 | V2a · Head bấm ô tên → hộp chọn BPXL + "Bỏ người xếp lịch" | `XepLichDau` (DauTrangLop) → `XepLichLop ganHo` + `HopNeo` + `ChonNguoi` | V2a-1440 | KHỚP; đặt cùng dòng GV (đầu hồ sơ web khác khuôn mockup) |
 | V2b · vừa đổi → toast Hoàn tác | như trên | V2b-1280 | KHỚP |
 | V2c · 375 lớp chưa ai nhận | như trên | V2c-375 | KHỚP |
-| V3a/b · GĐCN "Của tôi" có Kết quả meeting | không đổi mã (máy chủ VAI-0 giao; panel Meeting sẵn có) | — | Không chụp được: dữ liệu demo không có Meeting SOS 3 đang mở |
+| V3a/b · GĐCN "Của tôi" có Kết quả meeting | không đổi mã (máy chủ VAI-0 giao; panel Meeting sẵn có) | V3a-1440, V3b-375 | KHỚP người nhận ("Phụ trách Trương Đức Long · bạn · mặc định", 2 việc). KHÁC khuôn panel: web giữ panel Meeting CX/GĐCN hiện có (Tuyến / khối việc là phần TUYEN-1); mặc định tab "Chờ bạn duyệt" vì GĐCN duyệt như Head. Dữ liệu: 2 Meeting SOS 3 ghi tạm vào DB demo (không commit), nên "Theo dõi: Chưa có" |
 | V3c · GĐCN không việc riêng → mở "Tất cả" | `HoTroHocVienTab` (`laGdcn` → mặc định như CX) | V3c-1280 | KHỚP; GIỮ tab Chấm điểm / Chấm Speaking như Head (mockup vẽ ít tab hơn) |
-| V4a/b · Lead TVV "Của tôi" chia tab kiểu TVV | `HoTroHocVienTab` (`tabTvv`) | V4a-1440, V4b-375 | KHỚP tab (dữ liệu demo chỉ có 1 việc Bổ sung hồ sơ) · KHÁC xem [XM-2], [XM-3] |
+| V4a/b · Lead TVV "Của tôi · Tất cả" (không "Của GV"), chia tab kiểu TVV | `HoTroHocVienTab` (`tabTvv`, `laLeadTvv`) | V4a-1440, V4b-375 | KHỚP (dữ liệu demo chỉ có 1 việc Bổ sung hồ sơ) · KHÁC xem [XM-2] |
 
 BỎ: không. GIỮ: mọi thao tác cũ (bảng mục 2).
 
@@ -36,7 +36,7 @@ BỎ: không. GIỮ: mọi thao tác cũ (bảng mục 2).
 | Sửa tài khoản | 8 vai | 10 vai + dòng phụ hậu quả (GĐCN, Lead TVV, BPXL toàn HT / theo CN) | không |
 | Hồ sơ lớp | — | + "Xếp lịch {tên}": BPXL Nhận / Bỏ; Head / GĐCN / QT / lead BPXL đổi qua hộp chọn | không |
 | Công việc GĐCN | (vai chưa có) | như Head; mặc định Của tôi khi có việc, không → Tất cả | — |
-| Công việc Lead TVV | (vai chưa có) | như CX; "Của tôi" chia tab Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ | — |
+| Công việc Lead TVV | (vai chưa có) | như CX, chỉ "Của tôi · Tất cả" (PTA 26/11); "Của tôi" chia tab Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ | — |
 
 ## 3. Máy chủ (nhỏ, phục vụ web)
 
@@ -47,10 +47,10 @@ BỎ: không. GIỮ: mọi thao tác cũ (bảng mục 2).
 
 ## 4. [XM] hỏi PTA Plan
 
-- **[XM-1]** Mockup V4 bỏ "Của GV" cho Lead TVV ("như CX: Của tôi · Tất cả"), nhưng CX trên web hiện có Của tôi · Của GV · Tất cả → GIỮ như CX (một vai như CX, không bớt thao tác).
-- **[XM-2]** Mockup V4a: dòng việc ghi "· chưa có TVV" / "· TVV đã nghỉ" và panel có khối "Em chưa có TVV · Gán TVV cho em ›" — chưa làm: máy chủ chưa gửi lý do (chưa gán / hết vai) theo việc; cần một cờ ở `/my-work`. Đề xuất PR nhỏ sau (máy chủ + web).
-- **[XM-3]** V3a / V3b (GĐCN có Kết quả meeting) chưa chụp được trên dữ liệu demo; mã panel dùng chung với CX, không đổi.
-- **[XM-4]** Cụm Xếp lịch ở Kế hoạch Test chỉ hiện cho BPXL (mockup chỉ vẽ BPXL); Head đổi người ở hồ sơ lớp.
+- **[XM-1] — PTA quyết 26/11:** theo mockup, Lead TVV không có "Của GV" (vai mới, không mất thao tác cũ). Đã làm.
+- **[XM-2] — PTA đồng ý để PR nhỏ sau.** Mockup V4a: dòng việc ghi "· chưa có TVV" / "· TVV đã nghỉ" và panel có khối "Em chưa có TVV · Gán TVV cho em ›" — chưa làm: máy chủ chưa gửi lý do (chưa gán / hết vai) theo việc; cần một cờ ở `/my-work`. Đề xuất PR nhỏ sau (máy chủ + web).
+- **[XM-3] — đã xong:** V3a / V3b chụp trên 2 Meeting SOS 3 ghi tạm vào DB demo (không commit).
+- **[XM-4] — PTA đồng ý.** Cụm Xếp lịch ở Kế hoạch Test chỉ hiện cho BPXL (mockup chỉ vẽ BPXL); Head đổi người ở hồ sơ lớp.
 
 ## 5. Audit (impeccable `audit` + `web-design-guidelines`, phạm vi PR)
 
