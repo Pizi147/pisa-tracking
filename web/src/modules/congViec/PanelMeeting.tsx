@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -52,7 +52,13 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const toiPhan = data?.phan.find((g) => g.meeting?.phan === cuaToi) ?? null;
   const tieuDe = toiPhan?.meeting?.ten ?? t('Meeting CX/GĐCN');
   /* A3-08 (AUDIT-2111): chân như mọi panel — Đóng trước, "Việc tiếp ›" sau. */
-  const chan = { huy: { nhan: t('Đóng'), onClick: onDong }, chinh: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined };
+  /* TUYEN-2 (mockup v27 T6, PTA chốt): phần của mình đang mở → "Hoàn thành" là nút CHÍNH ở chân (nhất quán chân lưu); "Việc tiếp ›" phụ. */
+  const [nutPhan, setNutPhan] = useState<NutPhan | null>(null);
+  const viecTiep = onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined;
+  const chan = nutPhan?.mo
+    ? { huy: { nhan: t('Đóng'), onClick: onDong }, phu: viecTiep, trai: nutPhan.loi ? <span className="text-bad">⚠ {nutPhan.loi}</span> : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={nutPhan.dang} onClick={nutPhan.lam}>{nutPhan.dang ? t('Đang lưu…') : t('Hoàn thành')}</button> }
+    : { huy: { nhan: t('Đóng'), onClick: onDong }, chinh: viecTiep };
   if (error) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!phan) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
   const datPhan = (g: KhoiGv) => { setBan(phan.map((x) => (x.id === g.id ? g : x))); onDaLam(); };
@@ -65,11 +71,12 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
         <KhoiGiaoViec g={minh} dat={datPhan} reload={reload} onDaDoi={onDaLam} />
         {/* Bước GVCN xác nhận (cha của hai phần) mở sẵn: nội dung gửi — họp vì sao. */}
         <KhoiTuyen tuyen={tuyen} moSan={(b) => b.coNoiDung && tuyen.buoc.some((c) => c.cha === b.khoa && c.ten !== 'Báo PH')} />
-        {bc?.phuHuynh && (bc.phuHuynh.ten || bc.phuHuynh.sdt) && <BoiCanh dong={[
+        {/* TUYEN-2: Phụ huynh nằm trong nội dung bước GVCN xác nhận (máy chủ, chỉ người xem được em); người không đọc được bước đó (BPXL) giữ dòng liên hệ riêng. */}
+        {bc?.phuHuynh && (bc.phuHuynh.ten || bc.phuHuynh.sdt) && !tuyen.buoc.some((b) => b.coNoiDung && tuyen.buoc.some((c) => c.cha === b.khoa && c.ten !== 'Báo PH')) && <BoiCanh dong={[
           [t('Phụ huynh'), <span className="flex flex-wrap items-center gap-x-1.5">{bc.phuHuynh.ten}{bc.phuHuynh.ten && bc.phuHuynh.quanHe ? ` (${bc.phuHuynh.quanHe})` : ''}
             {bc.phuHuynh.sdt && <>{bc.phuHuynh.ten ? ' · ' : ''}<a className="link tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" href={`tel:${bc.phuHuynh.sdt.replace(/\D/g, '')}`}>{sdtDoc(bc.phuHuynh.sdt)}</a></>}</span>],
         ]} />}
-        <PhanMeeting g={minh} dat={datPhan} reload={reload} trongPanel />
+        <PhanMeeting g={minh} dat={datPhan} reload={reload} trongPanel baoChan={setNutPhan} />
         <MucViecCon g={minh} onDoi={reload} />
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
@@ -122,8 +129,11 @@ const TheTrangThai = ({ xong, chu }: { xong: boolean; chu: string }) => (
  * tuỳ chọn = ô ngày gõ được + lịch + ô giờ, Kết quả tuỳ chọn; Kết quả meeting: Kết quả tuỳ chọn) + Hoàn thành. Người bấm không phải người phụ trách (TVV nhập hộ
  * CX) → dải "Bạn nhập hộ CX {tên}". Xong → dải "✓ {phần} · Xong · Hoàn tác" 10 giây; "Sửa" mở lại ô (lưu = sửa, có lịch sử). Phần đã bỏ (Meeting đưa về Cần xử lý) chỉ đọc.
  */
-export function PhanMeeting({ g, dat, reload, trongPanel }: { g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
-  /** TUYEN-2 (T6a): panel một phần — khối Phụ trách · Hạn đã ở đầu panel; đầu khối "{phần} · phần của bạn", không khung viền. */ trongPanel?: boolean }) {
+/** TUYEN-2: nút Hoàn thành của phần đang mở — panel vẽ ở chân. */
+type NutPhan = { mo: boolean; dang: boolean; loi: string | null; lam: () => void };
+export function PhanMeeting({ g, dat, reload, trongPanel, baoChan }: { g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
+  /** TUYEN-2 (T6a): panel một phần — khối Phụ trách · Hạn đã ở đầu panel; đầu khối "{phần} · phần của bạn", không khung viền. */ trongPanel?: boolean;
+  /** TUYEN-2 (T6, PTA chốt): báo nút Hoàn thành lên chân panel — không vẽ nút trong khối. */ baoChan?: (n: NutPhan | null) => void }) {
   const hn = useHn();
   const { session } = useSession();
   const toast = useToast();
@@ -156,6 +166,11 @@ export function PhanMeeting({ g, dat, reload, trongPanel }: { g: KhoiGv; dat: (g
       if (!xong) setVuaXong(Date.now() + 10_000); else toast.push('ok', t('Đã lưu'));
     } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); if (e?.status === 409) reload(); } finally { setDang(false); }
   };
+  /* TUYEN-2: chân panel giữ nút Hoàn thành — báo hàm lưu MỚI NHẤT (đọc ô đang gõ) mỗi lần ô / trạng thái đổi. */
+  const lamRef = useRef(hoanThanh);
+  lamRef.current = hoanThanh;
+  useEffect(() => { baoChan?.({ mo: !!mo, dang, loi, lam: () => void lamRef.current() }); }, [mo, dang, loi]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => baoChan?.(null), []);   // eslint-disable-line react-hooks/exhaustive-deps
   const hoanTac = async () => {
     setVuaXong(null);
     try { dat(await api.post<KhoiGv>(`${duongGiaoViec('meeting', g.id)}/mo-lai`)); lamMoiGiaoViec(g.studentId); if (!xep) reload(); toast.push('ok', t('Đã hoàn tác')); }
@@ -203,10 +218,10 @@ export function PhanMeeting({ g, dat, reload, trongPanel }: { g: KhoiGv; dat: (g
           </label>
         </div>
         {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
-        <span className="flex flex-wrap gap-2 max-sm:grid">
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={dang} onClick={() => void hoanThanh()}>{dang ? t('Đang lưu…') : t('Hoàn thành')}</button>
+        {(!baoChan || sua) && <span className="flex flex-wrap gap-2 max-sm:grid">
+          {!baoChan && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={dang} onClick={() => void hoanThanh()}>{dang ? t('Đang lưu…') : t('Hoàn thành')}</button>}
           {sua && <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" disabled={dang} onClick={() => setSua(false)}>{t('Huỷ sửa')}</button>}
-        </span>
+        </span>}
       </>}
     </section>
   );

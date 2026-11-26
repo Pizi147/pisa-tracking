@@ -296,7 +296,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
             json((SELECT json_group_array(json_object('id', mp.id, 'phan', mp.phan, 'tt', mp.trang_thai, 'pt', mp.phu_trach_id, 'ptTen', mpu.full_name, 'hanChon', mp.han_chon, 'tao', mp.tao_luc,
                 'xongBoi', mp.xong_boi, 'xongTen', xu.full_name, 'xongLuc', mp.xong_luc, 'ngayGio', mp.ngay_gio, 'kq', mp.ket_qua, 'cn', mp.branch_id, 'nl', mp.nguoi_luat))
               FROM meeting_phan mp LEFT JOIN users mpu ON mpu.id = mp.phu_trach_id LEFT JOIN users xu ON xu.id = mp.xong_boi WHERE mp.phoi_hop_id = x.id)) AS mp,
-            ${BAO_PH_JSON('b.phoi_hop_id = x.id')} AS bp
+            ${BAO_PH_JSON('b.phoi_hop_id = x.id')} AS bp, s.parent_name AS ph_ten, s.parent_relation AS ph_qh, s.parent_phone AS ph_sdt
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id JOIN students s ON s.id = x.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
        LEFT JOIN users pu ON pu.id = x.performed_by LEFT JOIN users ptu ON ptu.id = x.phu_trach_id
       WHERE x.attempt_id IN (SELECT value FROM json_each(?1))`,
@@ -335,6 +335,14 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
           ? buoc({ khoa, ten, trangThai: 'xong', chiTiet: x.performed_by ? null : x.thuc_ten ?? null, nguoi: x.thuc_ten ?? null, ngay: x.performed_on, ids: lam, lam, cungLuc: song, nd: x.note ?? null, viec: vx })
           : buoc({ khoa, ten, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'Đã bỏ', ngay: ngay10(x.removed_at), ...giuGvcn(x), cungLuc: song, viec: vx }));
       t.buoc.at(-1)!.docRieng = (p) => t.buoc.find((b) => b.khoa === khoa)!.ids.includes(p.userId) || theoDoiTayCua(p).has(`phoi_hop:${x.id}`);
+      /* TUYEN-2 (mockup v27 T6, PTA chốt): bước GVCN xác nhận Meeting — nội dung = "Nội dung gửi" + Phụ huynh (tên · quan hệ · SĐT). Có liên hệ PH → CHỈ người xem được
+         Ý thức em (`xemYThucHv`) đọc nội dung bước này (không qua quyền riêng của bước / theo dõi tay). */
+      if (laMeetingCx(x.kind) && x.status === 'done') {
+        const ph = [x.ph_qh ? `${x.ph_qh.charAt(0).toUpperCase()}${x.ph_qh.slice(1)}` : null, x.ph_ten, x.ph_sdt].filter(Boolean).join(' · ');
+        const b = t.buoc.at(-1)!;
+        b.nd = [x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null, ph ? `Phụ huynh: ${ph}` : null].filter(Boolean).join('\n') || null;
+        if (ph) b.docRieng = () => false;
+      }
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
       const baoPh = () => {
