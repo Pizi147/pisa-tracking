@@ -159,18 +159,21 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     viol.deleteViolation(P.mbManager, ids[2]);
     assert(vp(ids[0]).han_xu_ly === null && vp(ids[1]).han_xu_ly === null, `${vp(ids[0]).han_xu_ly} · ${vp(ids[1]).han_xu_ly}`);
   });
-  check('Pb2b (1h) · Tạm dừng rồi Quay lại: chưa phản hồi → hạn tính lại từ ngày quay lại; đã phản hồi → giữ', () => {
+  /* Lưu trữ (chủ SP 26/11, thay "hạn tính lại từ ngày quay lại"): vi phạm chưa phản hồi trước lần quay lại dừng hẳn — hạn chốt bỏ; đã phản hồi giữ. */
+  check('Pb2b (1h) · Tạm dừng rồi Quay lại: chưa phản hồi → dừng hẳn, bỏ hạn chốt; đã phản hồi → giữ', () => {
     const a = hv(); const b = hv();
     const va = [ghiVp(a, addDays(D, -2)), ghiVp(a, addDays(D, -1)), ghiVp(a, D)];
     const vb = [ghiVp(b, addDays(D, -2)), ghiVp(b, addDays(D, -1)), ghiVp(b, D)];
     const hCu = vp(va[0]).han_xu_ly;
     conn.prepare(`UPDATE violations SET han_xu_ly = ? WHERE id IN (${va.join(',')})`).run(addDays(D, -20));
     conn.prepare(`UPDATE violations SET han_xu_ly = ?, phan_hoi_ngay = ? WHERE id IN (${vb.join(',')})`).run(addDays(D, -20), addDays(D, -21));
+    conn.prepare(`UPDATE violations SET reported_on = occurred_on WHERE id IN (${[...va, ...vb].join(',')})`).run();   // ghi trước ngày quay lại
     for (const s of [a, b]) {
-      studentsSvc.setStudentStatus(P.mbManager, s, 'inactive', D, 'Tạm nghỉ');
+      studentsSvc.setStudentStatus(P.mbManager, s, 'inactive', addDays(D, -1), 'Tạm nghỉ');   // lần dừng thật (ngày trước ngày quay lại)
       studentsSvc.setStudentStatus(P.mbManager, s, 'active', D, 'Đi học lại');
     }
-    assert(hCu && va.every((v) => vp(v).han_xu_ly === hanDung(a, v) && vp(v).han_xu_ly !== addDays(D, -20)), va.map((v) => vp(v).han_xu_ly).join());
+    /* Ghi trước ngày quay lại (D−2, D−1) → dừng hẳn, bỏ hạn chốt; ghi đúng ngày quay lại (D) là vi phạm sau lần dừng — còn một mình, hết bắt buộc → cũng bỏ hạn. */
+    assert(hCu && va.every((v) => vp(v).han_xu_ly === null), va.map((v) => vp(v).han_xu_ly).join());
     assert(vb.every((v) => vp(v).han_xu_ly === addDays(D, -20)), 'đã phản hồi phải giữ hạn');
   });
   check('Pb2b (1i) · phan_hoi_ngay: nháp → không đặt; gửi đề xuất → hôm nay; QL từ chối rồi gửi lại → giữ ngày đầu; xác nhận xử lý → hôm nay', () => {
