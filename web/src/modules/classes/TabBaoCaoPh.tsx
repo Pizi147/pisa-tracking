@@ -276,29 +276,34 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
                 className={`inline-flex min-h-[32px] appearance-none items-center border-0 bg-transparent px-0.5 font-bold ${p.cuaToi ? 'text-[color:var(--accent)] hover:underline' : 'text-slate-100'}`}>{p.ngan}</button>
             );
             return (
-              <li key={e.id} className="flex items-start gap-2 py-2">
-                <div className="min-w-0 flex-1">
-                  <Link className="ten-ho-so text-[14px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
-                  {!thieu.length && !nhap.length && <div className="text-[13px] text-slate-400">✓ {t('đủ')}</div>}
-                  {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
-                  {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
+              <li key={e.id} className="py-2">
+                {/* BO-BAO-CAO-PH: "Không báo cáo" trên dòng tên — dòng Thiếu / Nháp giữ cả bề ngang. */}
+                <div className="flex items-center justify-between gap-2">
+                  <Link className="ten-ho-so min-w-0 text-[14px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
+                  {data.quyetDot && nutBoEm(e, 'shrink-0')}
                 </div>
-                {data.quyetDot && nutBoEm(e, 'shrink-0')}
+                {!thieu.length && !nhap.length && <div className="text-[13px] text-slate-400">✓ {t('đủ')}</div>}
+                {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
+                {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
               </li>
             );
           })}
-          {/* BO-BAO-CAO-PH: em đã bỏ — mờ cuối danh sách, Khôi phục bấm thẳng (Head / Quản trị / Admin). */}
-          {emBo.map((e) => (
-            <li key={e.id} className="row-muted flex items-center gap-2 py-2">
-              <div className="min-w-0 flex-1">
-                <Link className="ten-ho-so text-[14px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
-                <div className="text-[13px]">{nhanBo(e.bo!)}</div>
-              </div>
-              {data.quyetDot && nutBoEm(e, 'shrink-0')}
-            </li>
-          ))}
         </ul>
         {!them && em.length > 8 && <button type="button" className="btn mt-2 min-h-[44px] font-semibold" onClick={() => setThem(true)}>{t('Xem thêm {n} em', { n: em.length - 8 })}</button>}
+        {/* BO-BAO-CAO-PH: em đã bỏ — danh sách mờ riêng sau mọi em cần báo cáo; Khôi phục bấm thẳng (Head / Quản trị / Admin). */}
+        {emBo.length > 0 && (
+          <ul className="m-0 mt-2 list-none divide-y border-t p-0" style={{ borderColor: 'var(--line)' }}>
+            {emBo.map((e) => (
+              <li key={e.id} className="row-muted flex items-center gap-2 py-2">
+                <div className="min-w-0 flex-1">
+                  <Link className="ten-ho-so text-[14px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
+                  <div className="text-[13px]">{nhanBo(e.bo!)}</div>
+                </div>
+                {data.quyetDot && nutBoEm(e, 'shrink-0')}
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="mt-3 flex flex-wrap gap-x-3 border-t pt-2 text-[12px] text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
           <span>{t('Đủ')} /{em.length}</span>
           {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{em.filter((e) => e.o[p.khoa] === 'du').length}</b></span>)}
@@ -319,7 +324,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
           phuCua={(e, c) => (c.key === 'ten' && e.bo ? nhanBo(e.bo) : null)}
           cot={[
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
-            ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: 120, goiY: p.ten })),
+            ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: data.quyetDot ? 108 : 120, goiY: p.ten })),   // BO-BAO-CAO-PH: + cột "Không báo cáo" vẫn vừa 1280
             ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 112 } as CotBang] : []),
             ...(data.quyetDot ? [{ key: 'nut', nhan: '', kieu: 'nut', rong: 128 } as CotBang] : []),
           ]}
@@ -353,6 +358,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
               <td className="td" data-kieu="ten">{t('Đủ')}</td>
               {data.phan.map((p) => <td key={p.khoa} className="td" data-kieu="so">{em.filter((e) => e.o[p.khoa] === 'du').length}/{em.length}</td>)}
               {data.xuat && <td className="td" data-kieu="nut" />}
+              {data.quyetDot && <td className="td" data-kieu="nut" />}
             </tr>
           )} />
       </div>
