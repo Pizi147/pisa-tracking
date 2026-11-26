@@ -45,7 +45,7 @@
   </section>
   <section class="khu" id="t6">
     <h2>T6 · Meeting CX/GĐCN — BPXL · TVV nhiều em · CX · TVV một em</h2>
-    <p class="ghi">Ba phần là ba bước con "cùng lúc" của bước GVCN xác nhận. Khối Tuyến <b>thay</b> dòng "phần của người khác" + dòng Báo PH + dòng bối cảnh GVCN cũ (một nơi, không lặp). Phần của mình vẫn mở form như v22. BPXL thấy "Báo PH Meeting · Đã báo PH" nhưng <b>không có ▸</b> (không đọc nội dung — N72 ④, N63 ⑤). TVV nhiều em (trước: bảng không có phần Meeting) giờ cùng bảng chuỗi chấm.</p>
+    <p class="ghi"><b>Chủ SP 26/11:</b> em SOS 3 chỉ <b>một lần báo PH</b> (Báo PH · Trao đổi gia đình của TVV — nói luôn việc họp CX); <b>bỏ phần "Báo PH Meeting"</b>. Meeting còn hai phần: Xếp lịch họp (BPXL) → <b>Kết quả meeting (CX/GĐCN) là bước cuối, dưới cùng tuyến</b>. BPXL không đọc nội dung Báo PH (không ˅ — N72 ④).</p>
     <div class="hang-khung" data-khu="T6"></div>
   </section>
   <section class="khu" id="t7">
@@ -65,7 +65,7 @@
   </section>
   <section class="khu" id="t10">
     <h2>T10 · Hồ sơ HV (TVV) · Hồ sơ lớp (GVCN) — tab Ý thức &amp; Phối hợp</h2>
-    <p class="ghi">Chỉ phần tab Ý thức &amp; Phối hợp vẽ lại; đầu hồ sơ rút gọn. TVV mở em SOS 3 thấy trước <b>○ Báo PH Meeting · chờ GVCN xác nhận</b> (N72 ③ — không thành việc). Chuỗi chấm + Tuyến thay thanh bước cũ (<code>ThanhBuoc</code> / <code>tienDoViec</code>).</p>
+    <p class="ghi">Chỉ phần tab Ý thức &amp; Phối hợp vẽ lại; đầu hồ sơ rút gọn. TVV mở em SOS 3 thấy trước <b>○ Xếp lịch họp / Kết quả meeting · chờ GVCN xác nhận</b> (N72 ③ — không thành việc). Chuỗi chấm + Tuyến thay thanh bước cũ (<code>ThanhBuoc</code> / <code>tienDoViec</code>).</p>
     <div class="hang-khung" data-khu="T10"></div>
   </section>
   <section class="khu" id="t11">
@@ -195,27 +195,25 @@ const tnBn = (tvv) => [
 ];
 /* Phối hợp SOS · em × lượt (GVCN xem) */
 const tnPh = (ten, o = {}) => [
-  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
+  { nhom: 'MT2 · SOS 3' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ban: 1, ngay: '10/09/2026', nd: '<span class="k">Nội dung</span><span>Em nhận chưa tự học Reading; hẹn nộp bài luyện thứ 4, thứ 6.</span>' },
   { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ng: 'Phan Mai', ngay: ['hạn 15/09/2026', 'gan'] },
-  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: o.daXn ? 'xong' : 'dang', ten: 'Meeting CX/GĐCN · xác nhận', ban: 1, ngay: o.daXn ? '14/09/2026' : ['hạn 19/09/2026', ''] },
   { tt: 'cho', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: 'chờ bạn' },
   { tt: 'cho', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: 'chờ bạn' },
-  { tt: 'cho', con: 1, ten: 'Báo PH Meeting', ng: 'Phan Mai', ngay: 'chờ bạn' },
 ];
 /* Meeting · Kiều Thảo Nhi — vai: bpxl | cx | tvv */
 const NOI_DUNG_GVCN = '<span class="k">Nội dung gửi</span><span>Em tụt Overall 2 lượt liền (6.0 → 5.5); cần họp cùng gia đình về giờ tự học và điện thoại.</span><span class="k">Phụ huynh</span><span>Mẹ · Nguyễn Thu Hà · 0912 345 678</span>';
 const tnMeeting = (vai, o = {}) => [
-  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
+  { nhom: 'MT2 · SOS 3' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '07/09/2026' },
-  { tt: 'xong', ten: 'Báo PH · Trao đổi gia đình', ct: 'Đã báo PH', ...(vai === 'tvv' ? { ban: 1 } : { ng: 'Phan Mai' }), ngay: '09/09/2026', ...(vai === 'bpxl' ? { khoa: 1 } : { nd: '<span class="k">Nội dung</span><span>Đã báo mẹ kết quả MT2 và việc sắp họp CX.</span>' }) },
-  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
+  /* MỘT lần báo PH cho cả mốc SOS 3 (chủ SP 26/11) — không còn "Báo PH Meeting" riêng */
+  { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ct: 'Chưa liên hệ được · lần 1', ...(vai === 'tvv' ? { ban: 1 } : { ng: 'Phan Mai' }), ngay: ['hạn 12/09/2026', 'qua'], ...(vai === 'bpxl' ? { khoa: 1 } : { nd: '<span class="k">11/09/2026</span><span>Gọi mẹ báo kết quả MT2 và việc họp CX, máy bận; hẹn gọi lại sau 17:00.</span>' }) },
   { tt: 'xong', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Trần Ngọc Hà', ngay: '08/09/2026', nd: NOI_DUNG_GVCN, mo: o.moGvcn },
   { tt: 'dang', con: 1, ten: 'Xếp lịch họp', ...(vai === 'bpxl' ? { ban: 1 } : { ng: 'Lương Thu Trang' }), ngay: ['hạn 12/09/2026', 'qua'] },
+  /* Kết quả meeting = bước CUỐI, dưới cùng tuyến */
   vai === 'cx' ? { tt: 'dang', con: 1, ten: 'Kết quả meeting', ban: 1, ngay: ['hạn 21/09/2026', ''] }
     : { tt: 'dang', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: ['hạn 21/09/2026', ''] },
-  { tt: 'dang', con: 1, ten: 'Báo PH Meeting', ct: 'Chưa liên hệ được · lần 1', ...(vai === 'tvv' ? { ban: 1 } : { ng: 'Phan Mai' }), ngay: ['hạn 12/09/2026', 'qua'], ...(vai === 'bpxl' ? { khoa: 1 } : { nd: '<span class="k">11/09/2026</span><span>Gọi mẹ, máy bận; hẹn gọi lại sau 17:00.</span>' }) },
 ];
 
 /* ================= T0 · bảng thành phần ================= */
@@ -256,9 +254,8 @@ const DS_GVCN = [
 ];
 const TAB_GVCN = [['Chấm điểm', 4, 1], ['Case học thuật', 3], ['Ý thức &amp; Phối hợp', 6, 1], ['Vận hành'], ['Đang theo dõi']];
 const DS_TVV = [{ ten: 'Báo PH', viec: [
-  { id: 'b1', lop: 'MB FT 101', n: 2, ct: 'Meeting CX/GĐCN · MT2', han: ['12/09/2026', 'qua'] },
   { id: 'b8', lop: 'MB FT 101', ten: 'Đỗ Minh Khôi', ct: 'Vi phạm · WL 3', han: ['14/09/2026', 'gan'] },
-  { id: 'b3', lop: 'MB FT 101', n: 3, ct: 'Trao đổi gia đình · MT2', han: ['15/09/2026', 'gan'] },
+  { id: 'b3', lop: 'MB FT 101', n: 4, ct: 'Trao đổi gia đình · MT2', han: ['12/09/2026', 'qua'] },
   { id: 'b5', lop: 'MB FT 101', ten: 'Bùi Thảo Vy', ct: 'Tình hình học tập', han: ['15/09/2026', 'gan'] },
   { id: 'b2', lop: 'MB FT 101', ten: 'Trịnh Bảo Ngọc', ct: 'Vi phạm · chờ GV sửa', han: ['16/09/2026'] },
   { id: 'b6', lop: 'MB FOU 12', ten: 'Quách Minh Triết', ct: 'Báo lại · thu hồi Report 1', han: ['16/09/2026'] },
@@ -267,7 +264,7 @@ const DS_TVV = [{ ten: 'Báo PH', viec: [
     { id: 'b4c', ten: 'Mai Gia Hân', ct: 'Chưa đạt R', han: ['18/09/2026'] }, { id: 'b4d', ten: 'Tô Bảo Trâm', ct: 'Chưa đạt L · R', han: ['18/09/2026'] }] },
   { id: 'b7', lop: 'MB BE 03', ten: 'Đào Hải Nam', ct: 'Kết quả Final · học lại', han: ['19/09/2026'] },
 ] }];
-const TAB_TVV = [['Báo PH', 8, 1], ['Sau thi', 2], ['Chốt ngày thi', 1], ['Bổ sung hồ sơ', 3], ['Vận hành'], ['Đang theo dõi']];
+const TAB_TVV = [['Báo PH', 7, 1], ['Sau thi', 2], ['Chốt ngày thi', 1], ['Bổ sung hồ sơ', 3], ['Vận hành'], ['Đang theo dõi']];
 const DS_BPXL = [{ ten: 'Xếp lịch họp', viec: [
   { id: 'm1', lop: 'MB FT 101', ten: 'Kiều Thảo Nhi', sos: 3, ct: 'Meeting CX/GĐCN · MT2', han: ['12/09/2026', 'qua'] },
   { id: 'm2', lop: 'MB FT 98', ten: 'Phùng Anh Kiệt', sos: 3, ct: 'Meeting CX/GĐCN · MT3', han: ['17/09/2026'] }] }];
@@ -320,7 +317,7 @@ const tenEm = (ten, phu, mo) => `<span class="ten-e"><button class="mo-e" aria-e
 const pnPhoiHop = (dt) => panel({ dt, ten: 'Meeting CX/GĐCN', meta: '<a href="#">MB FT 101</a><span>MT2 · 4 em</span><span class="hn">19/09/2026</span>',
   than: `<div style="display:flex;justify-content:flex-end"><button class="nut nut-nho">Xác nhận 4 em ${chev('xo')}</button></div>
     ${bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: pht('Bạn', ['Head Nguyễn Khánh Vy'], { toi: 'Trần Ngọc Hà', han: ['19/09/2026', ''] }) + tuyen({ ten: 'Phối hợp SOS · Lưu Bảo Anh · MT2', buoc: tnPh('Lưu Bảo Anh'), mo: true }) + viecCon([]),
-      hang: EM_MT.map(([t, p], i) => [tenEm(t, p, i === 0), cc('xddccc', 'Bạn · xác nhận Meeting'), '<span class="dang-o">Bạn · <b>xác nhận Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Xác nhận</button>']) })}
+      hang: EM_MT.map(([t, p], i) => [tenEm(t, p, i === 0), cc('xddcc', 'Bạn · xác nhận Meeting'), '<span class="dang-o">Bạn · <b>xác nhận Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Xác nhận</button>']) })}
     <div class="toast duoi" role="status"><span><b>✓ Đã xác nhận</b> · Đặng Quốc Bảo · theo dõi ở <a href="#">Đang theo dõi</a></span><button class="nut nut-ma">Hoàn tác</button></div>`,
   chan: chanPn('<a href="#">Đã xác nhận · 2 em ›</a>', '<button class="nut nut-chinh">Việc tiếp ›</button>') });
 
@@ -333,14 +330,9 @@ const pnMeeting = (vai, dt) => panel({ dt, ten: vai === 'bpxl' ? 'Xếp lịch h
   con: vai === 'bpxl' ? [['Đặt phòng 203 chiều 18/09', 'Bạn', '11/09/2026', 1]] : [],
   than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting(vai, { moGvcn: true }) })}${phanMinh(vai)}${lichSu(5, 'Giao 08/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', `${dt ? '' : '<button class="nut">Lưu</button>'}<button class="nut nut-chinh">Hoàn thành</button>`) });
-const pnMeetingTvvNhieu = () => panel({ ten: 'Báo PH · Meeting CX/GĐCN', meta: '<a href="#">MB FT 101</a><span>2 em</span><span class="hn qua">12/09/2026</span>',
-  than: bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['12/09/2026', 'qua'] }) + tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv') }) + viecCon([]),
-    hang: [[tenEm('Kiều Thảo Nhi', '5.5 / 6.0', true), cc('xxxddd', 'Bạn · Báo PH Meeting'), '<span class="dang-o">Bạn · <b>Báo PH Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Ghi</button>'],
-      [tenEm('Đặng Quốc Bảo', '5.0 / 6.0'), cc('xxxddd', 'Bạn · Báo PH Meeting'), '<span class="dang-o">Bạn · <b>Báo PH Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']] }),
-  chan: chanPn('', '<button class="nut nut-chinh">Việc tiếp ›</button>') });
-const pnMeetingTvvMot = (dt) => panel({ dt, ten: 'Báo PH · Meeting CX/GĐCN', meta: '<a href="#">Kiều Thảo Nhi</a><a href="#">MB FT 101</a><span class="hn qua">12/09/2026</span>',
+const pnMeetingTvvMot = (dt) => panel({ dt, ten: 'Báo PH · Trao đổi gia đình', meta: '<a href="#">Kiều Thảo Nhi</a><a href="#">MB FT 101</a><span class="hn qua">12/09/2026</span>',
   ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['12/09/2026', 'qua'] }), con: [],
-  than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv', { moGvcn: true }) })}${formBaoPh(dt, 'Đã báo mẹ kết quả MT2 và việc họp CX; lịch cụ thể sẽ báo khi BPXL xếp.')}${lichSu(3, 'Giao 08/09/2026')}`,
+  than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv', { moGvcn: true }) })}${formBaoPh(dt, 'Đã báo mẹ kết quả MT2 và việc họp CX; lịch họp cụ thể BPXL báo sau.')}${lichSu(3, 'Giao 08/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt)) });
 
 /* ================= T7 · Tình hình học tập ================= */
@@ -364,7 +356,7 @@ const DS_TD = [
     { id: 'd1', lop: 'MB FT 101', ten: 'Trịnh Bảo Ngọc', ct: 'Đang ở Trả lại · Lê Minh Khoa', han: ['14/09/2026', 'gan'] },
     { id: 'd2', lop: 'MB FT 101', ten: 'Đỗ Minh Khôi', ct: 'Đang ở Báo PH · Phan Mai', han: ['14/09/2026', 'gan'] }] },
   { ten: 'Phối hợp SOS', viec: [
-    { id: 'd3', lop: 'MB FT 101', ten: 'Đặng Quốc Bảo', sos: 3, ct: 'Đang ở Meeting · 3 phần cùng lúc', han: ['18/09/2026'] },
+    { id: 'd3', lop: 'MB FT 101', ten: 'Đặng Quốc Bảo', sos: 3, ct: 'Đang ở Meeting · 2 phần', han: ['18/09/2026'] },
     { id: 'd4', lop: 'MB FT 101', ten: 'Đỗ Minh Khôi', sos: 2, ct: 'Đang ở Báo PH · Phan Mai', han: ['15/09/2026', 'gan'] }] },
   { ten: 'Báo PH kết quả Test', viec: [{ id: 'd5', lop: 'MB FOU 15', n: 4, ct: 'Đang ở Báo PH · Phan Mai', han: ['18/09/2026'] }] },
   { ten: 'Vừa xong 7 ngày', gap: 1, donVi: 'tuyến', viec: [1, 2, 3] },
@@ -373,19 +365,17 @@ const DS_TD_HEAD = [
   { ten: 'Vi phạm', viec: [
     { id: 'h1', lop: 'MB FT 101', ten: 'Đỗ Minh Khôi', ct: 'Đang ở Báo PH · Phan Mai', han: ['14/09/2026', 'gan'] },
     { id: 'h2', lop: 'MB FOU 12', ten: 'Quách Minh Triết', ct: 'Đang ở Báo lại PH · Phan Mai', han: ['16/09/2026'] }] },
-  { ten: 'Phối hợp SOS', viec: [{ id: 'h3', lop: 'MB FT 101', ten: 'Kiều Thảo Nhi', sos: 3, ct: 'Đang ở Meeting · 3 phần', han: ['12/09/2026', 'qua'] }] },
+  { ten: 'Phối hợp SOS', viec: [{ id: 'h3', lop: 'MB FT 101', ten: 'Kiều Thảo Nhi', sos: 3, ct: 'Đang ở Báo PH, Meeting', han: ['12/09/2026', 'qua'] }] },
   { ten: 'Báo PH kết quả Test', viec: [{ id: 'h4', lop: 'MB BE 03', ten: 'Đào Hải Nam', ct: 'Đang ở Báo PH · Phan Mai', han: ['19/09/2026'] }] },
   { ten: 'Vừa xong 7 ngày', gap: 1, donVi: 'tuyến', viec: [1, 2, 3, 4, 5] },
 ];
 const tnDqb = [
-  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
+  { nhom: 'MT2 · SOS 3' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '09/09/2026' },
   { tt: 'xong', ten: 'Báo PH · Trao đổi gia đình', ct: 'Đã báo PH', ng: 'Phan Mai', ngay: '12/09/2026', nd: '<span class="k">Nội dung</span><span>Đã báo bố kết quả MT2; bố xin lịch họp sau 17:00.</span>' },
-  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: 'xong', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Bạn', ngay: '13/09/2026' },
   { tt: 'dang', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: ['hạn 18/09/2026', ''] },
   { tt: 'dang', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: ['hạn 27/09/2026', ''] },
-  { tt: 'dang', con: 1, ten: 'Báo PH Meeting', ng: 'Phan Mai', ngay: ['hạn 18/09/2026', ''] },
 ];
 const pnTheoDoi = (dt) => panel({ dt, ten: 'Phối hợp SOS', meta: '<a href="#">Đặng Quốc Bảo</a><a href="#">MB FT 101</a><span>MT2 · SOS 3</span>',
   dai: '<div class="dai-td"><span><b>Bạn đang theo dõi</b> · chỉ xem</span><span class="phai"><button class="nut nut-nho">Bỏ theo dõi</button></span></div>',
@@ -420,38 +410,36 @@ const TAB_HEAD = [['Chờ bạn duyệt', 3, 1], ['Case học thuật', 2], ['Ý
 
 /* ================= T10 · Hồ sơ ================= */
 const tnNbc = [
-  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
+  { nhom: 'MT2 · SOS 3' },
   { tt: 'dang', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: 'không hạn' },
-  { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] },
-  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
+  { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ct: 'một lần, gồm việc họp CX', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] },
   { tt: 'dang', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Trần Ngọc Hà', ngay: ['hạn 19/09/2026', ''] },
   { tt: 'cho', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: 'chờ GVCN xác nhận' },
   { tt: 'cho', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: 'chờ GVCN xác nhận' },
-  { tt: 'cho', con: 1, ten: 'Báo PH Meeting', ban: 1, ngay: 'chờ GVCN xác nhận' },
 ];
 const hsDong = (t, s, d, h, mo) => `<button class="hs-dong" aria-expanded="${!!mo}"><span class="t">${t}</span>${cc(s)}<span class="d">${d}</span>${hanChu(h)}</button>`;
 const hoSoHv = (dt) => `<div class="noi-dung"><div class="hs-dau"><h1>Ngô Bảo Châu</h1><span class="chip sos3">SOS 3</span><span class="phu"><a href="#">MB FT 101</a><span>GVCN Trần Ngọc Hà</span><span>TVV Bạn</span><span>Target 6.5</span></span></div>
   ${hangTab([['Tổng quan'], ['Học thuật'], ['Test'], ['Ý thức &amp; Phối hợp'], ['Hồ sơ']], 'Ý thức &amp; Phối hợp')}
   <div class="hs-luoi"><section class="ds"><div class="ds-dau"><h3>Phối hợp SOS</h3><span>2 lượt</span></div>
-    ${hsDong('MT2 · SOS 3', 'dddccc', 'Đang ở Bạn · Báo PH · +2 bước', ['15/09/2026', 'gan'], true)}<div class="hs-khay">${tuyen({ ten: 'Phối hợp SOS · MT2', buoc: tnNbc, mo: true })}</div>
+    ${hsDong('MT2 · SOS 3', 'dddcc', 'Đang ở Bạn · Báo PH · +2 bước', ['15/09/2026', 'gan'], true)}<div class="hs-khay">${tuyen({ ten: 'Phối hợp SOS · MT2', buoc: tnNbc, mo: true })}</div>
     ${hsDong('MT1 · SOS 2', 'xxx', 'Xong 24/08/2026')}</section>
   <section class="ds"><div class="ds-dau"><h3>Vi phạm</h3><span>2 lần xử lý</span></div>${hsDong('Report 1', 'xxx', 'Xong · đã báo PH 22/08/2026')}${hsDong('Chờ xử lý', 'dc', 'Đang ở GVCN · 1 vi phạm')}</section></div></div>`;
 const hoSoLop = `<div class="noi-dung"><div class="hs-dau"><h1>MB FT 101</h1><span class="phu"><span>GVCN Bạn</span><span>17 em</span></span></div>
   ${hangTab([['Học viên'], ['Test'], ['Ý thức &amp; Phối hợp']], 'Ý thức &amp; Phối hợp')}
   <section class="ds"><div class="ds-dau"><h3>Phối hợp SOS · MT2</h3><span>6 em</span></div>
-    ${hsDong('Kiều Thảo Nhi', 'xxxddd', 'Đang ở Meeting · 3 phần cùng lúc', ['12/09/2026', 'qua'])}
-    ${hsDong('Đặng Quốc Bảo', 'xxxddd', 'Đang ở Meeting · 3 phần cùng lúc', ['18/09/2026'], true)}<div class="hs-khay">${tuyen({ ten: 'Phối hợp SOS · Đặng Quốc Bảo', buoc: tnDqb })}</div>
-    ${hsDong('Ngô Bảo Châu', 'dddccc', 'Đang ở Bạn · xác nhận Meeting · +2 bước', ['19/09/2026'])}
+    ${hsDong('Kiều Thảo Nhi', 'xdxdd', 'Đang ở Báo PH · Phan Mai · +2 bước', ['12/09/2026', 'qua'])}
+    ${hsDong('Đặng Quốc Bảo', 'xxxdd', 'Đang ở Meeting · 2 phần', ['18/09/2026'], true)}<div class="hs-khay">${tuyen({ ten: 'Phối hợp SOS · Đặng Quốc Bảo', buoc: tnDqb })}</div>
+    ${hsDong('Ngô Bảo Châu', 'dddcc', 'Đang ở Bạn · xác nhận Meeting · +2 bước', ['19/09/2026'])}
     ${hsDong('Đỗ Minh Khôi', 'xd', 'Đang ở Báo PH · Phan Mai', ['15/09/2026', 'gan'])}
     ${hsDong('Bùi Thảo Vy', 'xx', 'Xong 12/09/2026')}</section></div>`;
 
 /* ================= T11 · Báo PH thống nhất ================= */
-const EM_TDGD = [['Đỗ Minh Khôi', 'SOS 2', '5.5 / 6.0'], ['Vũ Gia Huy', 'SOS 3', '5.0 / 6.0'], ['Trịnh Bảo Ngọc', 'SOS 1', '5.5 / 6.0']];
-const pnTraoDoi = () => panel({ ten: 'Báo PH · Trao đổi gia đình', meta: '<a href="#">MB FT 101</a><span>MT2 · 3 em</span><span class="hn gan">15/09/2026</span>',
+const EM_TDGD = [['Đỗ Minh Khôi', 'SOS 2', '5.5 / 6.0'], ['Kiều Thảo Nhi', 'SOS 3', '5.5 / 6.0'], ['Vũ Gia Huy', 'SOS 3', '5.0 / 6.0'], ['Trịnh Bảo Ngọc', 'SOS 1', '5.5 / 6.0']];
+const pnTraoDoi = () => panel({ ten: 'Báo PH · Trao đổi gia đình', meta: '<a href="#">MB FT 101</a><span>MT2 · 4 em</span><span class="hn qua">12/09/2026</span>',
   than: bangEm({ dau: ['Học viên', 'Tuyến', 'Máy điền sẵn', ''], mo: 0,
     khay: `${pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['15/09/2026', 'gan'] })}${tuyen({ ten: 'Phối hợp SOS · Đỗ Minh Khôi · MT2', buoc: [{ nhom: 'MT2 · SOS 2 · việc của mốc, cùng lúc' }, { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '11/09/2026' }, { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}
       <div class="kv3"><span>Máy điền sẵn</span><span>MT2 W1 SEP · Overall <b class="so">5.5</b> / kỳ vọng <b class="so">6.0</b> · trượt <b>R</b>, <b>W</b> · Case Writing: Bổ trợ 4 buổi (GV Cao Khánh Linh)</span></div>${formBaoPh(false, 'Đã báo mẹ kết quả MT2 và lịch bổ trợ Writing.')}${viecCon([])}`,
-    hang: EM_TDGD.map(([t, s, p], i) => [`<span class="ten-e"><button class="mo-e" aria-expanded="${i === 0}"><a href="#">${t}</a>${chev('xo')}<span class="chip ${s === 'SOS 1' ? 'sos1' : s === 'SOS 2' ? 'sos2' : 'sos3'}">${s}</span></button><small>MT2 · Overall ✗ ${p}</small></span>`, cc(i === 1 ? 'xdd' : 'xd'), '<span class="dang-o">Điểm · môn trượt · Case</span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']) }),
+    hang: EM_TDGD.map(([t, s, p], i) => [`<span class="ten-e"><button class="mo-e" aria-expanded="${i === 0}"><a href="#">${t}</a>${chev('xo')}<span class="chip ${s === 'SOS 1' ? 'sos1' : s === 'SOS 2' ? 'sos2' : 'sos3'}">${s}</span></button><small>MT2 · Overall ✗ ${p}</small></span>`, cc(i === 1 ? 'xdxdd' : i === 2 ? 'xdd' : 'xd'), '<span class="dang-o">Điểm · môn trượt · Case</span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']) }),
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(false)) });
 const pnProgress = (dt) => panel({ dt, ten: 'Báo PH · Kết quả Progress', meta: '<a href="#">Hồ Diệu Linh</a><a href="#">MB FOU 15</a><span>W2 SEP</span><span class="hn">18/09/2026</span>',
   ph: pht('Bạn', ['GVCN Đinh Thu Hằng', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['18/09/2026', ''] }), con: [],
@@ -470,7 +458,7 @@ const DS_HEAD_YT = [{ ten: 'Báo PH', viec: [
 const q = (s) => document.querySelector(`[data-khu="${s}"]`);
 q('T0').innerHTML = hinh('T0a · tối · 720 + 375', 'T0a-toi', t0('toi')) + hinh('T0b · sáng · 720 + 375', 'T0b-sang', t0('sang'));
 const manGvcn = (chon, pn, h) => man({ tt: ttGvcn, dau: dauTrang(6, 1), tabs: hangTab(TAB_GVCN, 'Ý thức &amp; Phối hợp'), ds: danhSach(DS_GVCN, { chon }), pn, h });
-const manTvv = (chon, pn, h, o = {}) => man({ tt: ttTvv('Công việc'), dau: dauTrang(8, 1, '+ Task'), tabs: hangTab(TAB_TVV, 'Báo PH'), ds: danhSach(DS_TVV, { chon, ...o }), pn, h });
+const manTvv = (chon, pn, h, o = {}) => man({ tt: ttTvv('Công việc'), dau: dauTrang(7, 1, '+ Task'), tabs: hangTab(TAB_TVV, 'Báo PH'), ds: danhSach(DS_TVV, { chon, ...o }), pn, h });
 q('T1').innerHTML = hinh('T1 · 1440 · tối · GVCN · Xử lý vi phạm (mặc định)', 'T1-1440-toi', manGvcn('x1', pnXuLy(false, false), 1080))
   + hinh('T1 · 375 · sáng · chọn "Không nâng" → thêm ○ Head duyệt', 'T1-375-sang', manDt(pnXuLy(true, true)))
   + hinh('T2 · 1440 · tối · GVCN · Đã thực hiện (Head đã duyệt; Báo PH chạy cùng lúc)', 'T2-1440-toi', manGvcn('x2', pnDaTh(false), 980))
@@ -482,9 +470,9 @@ q('T3').innerHTML = hinh('T3 · 1440 · tối · TVV · Báo PH vi phạm đang 
 q('T5').innerHTML = hinh('T5 · 1440 · tối · GVCN · Meeting CX/GĐCN 4 em · em đầu mở Tuyến · vừa xác nhận 1 em', 'T5-1440-toi', manGvcn('p1', pnPhoiHop(false), 1040))
   + hinh('T5 · 375 · sáng', 'T5-375-sang', manDt(pnPhoiHop(true)));
 q('T6').innerHTML = hinh('T6a · 1440 · tối · BPXL · Xếp lịch họp (Báo PH: không ▸)', 'T6a-1440-toi-bpxl', man({ tt: ttBpxl, dau: dauTrang(2, 1, ''), tabs: hangTab([['Xếp lịch họp', 2, 1], ['Việc được giao', 1], ['Đang theo dõi']], 'Xếp lịch họp'), ds: danhSach(DS_BPXL, { chon: 'm1' }), pn: pnMeeting('bpxl', false), h: 960 }))
-  + hinh('T6b · 1440 · tối · TVV · Meeting nhiều em — bảng chuỗi chấm có phần Meeting', 'T6b-1440-toi-tvv-nhieu', manTvv('b1', pnMeetingTvvNhieu(), 960))
+  + hinh('T6b · 1440 · tối · CX · Kết quả meeting — bước cuối, dưới cùng tuyến', 'T6b-1440-toi-cx', man({ tt: thanhTren('Vũ Thanh Tâm', 'TT', ['Tổng quan', 'Học viên &amp; Lớp', 'Công việc'], 0), dau: dauTrang(2, 0, '', true), tabs: hangTab([['Kết quả meeting', 2], ['Đang theo dõi']], 'Kết quả meeting'), ds: danhSach([{ ten: 'Kết quả meeting', viec: [{ id: 'k1', lop: 'MB FT 101', ten: 'Kiều Thảo Nhi', sos: 3, ct: 'Meeting CX/GĐCN · MT2', han: ['21/09/2026'] }, { id: 'k2', lop: 'MB FT 98', ten: 'Phùng Anh Kiệt', sos: 3, ct: 'Meeting CX/GĐCN · MT3', han: ['24/09/2026'] }] }], { chon: 'k1' }), pn: pnMeeting('cx', false), h: 960 }))
   + hinh('T6c · 375 · sáng · CX · Kết quả meeting', 'T6c-375-sang-cx', manDt(pnMeeting('cx', true)))
-  + hinh('T6d · 375 · sáng · TVV · Báo PH Meeting một em', 'T6d-375-sang-tvv', manDt(pnMeetingTvvMot(true)));
+  + hinh('T6d · 375 · sáng · TVV · Báo PH · Trao đổi gia đình (em SOS 3: một lần báo PH, Meeting ở dưới)', 'T6d-375-sang-tvv', manDt(pnMeetingTvvMot(true)));
 q('T7').innerHTML = hinh('T7a · 1440 · tối · TVV · Báo PH · Tình hình học tập (GV gửi)', 'T7a-1440-toi', manTvv('b5', pnTinhHinhTvv(false), 920))
   + hinh('T7b · 375 · sáng · GVCN · TVV hỏi', 'T7b-375-sang', manDt(pnHoiTinhHinh(true)));
 q('T8').innerHTML = hinh('T8a · 1440 · tối · GVCN · Đang theo dõi + panel chỉ đọc', 'T8a-1440-toi', man({ tt: ttGvcn, dau: dauTrang(6, 1), tabs: hangTab(TAB_GVCN, 'Đang theo dõi'), ds: danhSach(DS_TD, { chon: 'd3' }), pn: pnTheoDoi(false), h: 940 }))
@@ -498,7 +486,7 @@ q('T10').innerHTML = hinh('T10a · 1440 · tối · TVV xem hồ sơ Ngô Bảo 
   + hinh('T10c · 375 · sáng · TVV · hồ sơ HV', 'T10c-375-sang', manDt(hoSoHv(true)));
 q('T11').innerHTML = hinh('T11a · 1440 · tối · TVV · tab Báo PH đủ mọi nguồn · panel Trao đổi gia đình (3 em)', 'T11a-1440-toi', manTvv('b3', pnTraoDoi(), 1120))
   + hinh('T11b · 375 · sáng · TVV · Kết quả Progress (máy điền)', 'T11b-375-sang', manDt(pnProgress(true)))
-  + hinh('T11c · 1440 · tối · TVV · danh sách Báo PH chưa mở panel (một nhóm, chi tiết = nguồn)', 'T11c-1440-toi-ds', `<div class="man toi cao" data-web style="min-height:0">${ttTvv('Công việc')}<div class="noi-dung">${dauTrang(8, 1)}<div class="cv"><div class="trai kA">${hangTab(TAB_TVV, 'Báo PH')}${danhSach(DS_TVV, { mo: 'b4' })}</div></div></div></div>`)
+  + hinh('T11c · 1440 · tối · TVV · danh sách Báo PH chưa mở panel (một nhóm, chi tiết = nguồn)', 'T11c-1440-toi-ds', `<div class="man toi cao" data-web style="min-height:0">${ttTvv('Công việc')}<div class="noi-dung">${dauTrang(7, 1)}<div class="cv"><div class="trai kA">${hangTab(TAB_TVV, 'Báo PH')}${danhSach(DS_TVV, { mo: 'b4' })}</div></div></div></div>`)
   + hinh('T11d · 1440 · tối · Head · em chưa có TVV → việc Báo PH ở Head', 'T11d-1440-toi-head', `<div class="man toi cao" data-web style="min-height:0">${ttHead('Công việc')}<div class="noi-dung">${dauTrang(16, 3, '', true)}<div class="cv"><div class="trai kA">${hangTab(TAB_HEAD, 'Ý thức &amp; Phối hợp')}${danhSach(DS_HEAD_YT)}</div></div></div></div>`);
 document.addEventListener('click', (e) => { const b = e.target.closest('.v[aria-expanded]'); if (b) b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); });
 </script>

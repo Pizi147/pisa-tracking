@@ -38,7 +38,7 @@ Mọi panel: **đầu** (tên việc · em · lớp · ⓘ ⋯ ✕ — không c�
 | Ý | Khung | Đạt? |
 |---|---|---|
 | "bấm vào tên người rồi đổi luôn, hoặc để trong box… hạn cũng để dạng badge hoặc trong box" | MỘT kiểu **ô bấm** (`.o-bam`, viền mảnh 6 px, cao 30 / 40 ở 375) cho Phụ trách (tên · bạn · ▾) và Hạn (ngày tô màu) ở mọi panel + hạn việc con; bỏ nút "Đổi"; không quyền → chữ trơn (T4 Vi phạm bị trả lại); tạm dừng → "dừng · ngày" không bấm (T3) | đạt |
-| "meeting CX/GĐCN… để nó ở mốc cuối cùng, nó là việc cuối" | Tuyến: "việc của mốc, cùng lúc" rồi **"Mốc cuối · Meeting CX/GĐCN"** + ba phần (T5, T6, T8, T10); nhóm Phối hợp SOS của GVCN: Trao đổi ngắn → GVCN meeting → **Meeting cuối** (T1–T5). Danh sách TVV giữ luật "quá hạn lên đầu nhóm" (NH10) | đạt ([XM] 12) |
+| Chủ SP nói lại: "việc báo PH và trao đổi với gia đình về việc SOS 3 chỉ cần 1 lần… kết quả meeting… sẽ là cái ở dưới cùng, chứ không cần cái báo PH meeting nữa" | **Bỏ "Báo PH Meeting"** ở mọi khung; em SOS 3 chỉ một việc TVV **Báo PH · Trao đổi gia đình** (T6d, T11a 4 em gồm Kiều Thảo Nhi); Meeting hai phần: Xếp lịch họp → **Kết quả meeting dưới cùng** (T0 d, T5, T6a–d, T8, T10); TVV không còn dòng "Meeting CX/GĐCN" (T11c); T6b đổi thành CX · Kết quả meeting 1440. Nhóm Phối hợp SOS của GVCN: Trao đổi ngắn → GVCN meeting → Meeting cuối | đạt |
 
 ## 2. Bảng ý → khung (tự rà từng ý)
 
@@ -101,7 +101,7 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 7. Hồ sơ HV / lớp (T10) chỉ vẽ tab Ý thức & Phối hợp, đầu hồ sơ rút gọn — không đổi phần khác.
 8. Dải "Chờ GV sửa" (T3) giữ chữ nút "Rút" như web.
 10. **[ĐÃ CHỐT 26/11 — chủ SP "Cho mọi việc"]** **Đổi người cho Xử lý vi phạm / Đã thực hiện / Phối hợp SOS** (mở rộng N58 theo lời "chọn / đổi người thực hiện"): người nhận làm được đúng việc đó, lịch sử ghi tên. Trước đây chỉ GVCN / Head làm (N64 làm thay). Nếu chủ SP chỉ muốn đổi người ở việc TVV / Báo PH thì bỏ nút Đổi ở ba việc này.
-12. **Meeting mốc cuối không chặn:** GVCN vẫn xác nhận Meeting khi việc khác của mốc chưa xong (không thêm điều kiện chặn). Muốn Meeting chỉ mở sau khi các việc khác xong thì chủ SP báo.
+12. ~~Meeting mốc cuối có chặn không~~ — chủ SP nói lại (C8): ý là một lần báo PH + Kết quả meeting dưới cùng; không thêm chặn.
 11. Việc con không vào số việc của việc cha và không chặn việc cha xong (như Vận hành N59).
 
 ## 5. Skill đã chạy
