@@ -259,7 +259,8 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>
         <DiemMotDong th={luot.the} />
-        {han && <HanEm han={han} onSua={!tvv && a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />}
+        {/* TUYEN-2 (mockup v27 T5): có cột Tuyến → hạn nằm ở khối Phụ trách · Hạn trong khay em (bấm ngày để sửa), dòng không lặp ngày. */}
+        {han && !tom && <HanEm han={han} onSua={!tvv && a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />}
       </span>
       {tom && gop && <span role="cell" className={`${O} grid content-center gap-1`}><ChuoiCham chuoi={tom.chuoi} />
         {tom.dangO && <span className="text-[13px] text-dim">{tom.dangO.nguoi === null ? tom.dangO.ten : <>{tom.dangO.ten} · {tom.dangO.nguoi}</>}</span>}</span>}
