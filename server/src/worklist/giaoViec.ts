@@ -267,7 +267,8 @@ export function xongViecXuLy(studentIds: readonly number[]): void {
  * đợt sau `damBaoDong` làm dòng mới. Không dòng 'mo' → một câu.
  */
 export function dongXuLyHetDot(homNay: string): void {
-  const ids = (db().prepare(`SELECT id FROM viec_xu_ly WHERE trang_thai = 'mo'`).all() as { id: number }[]).map((r) => r.id);
+  /* Chỉ dòng mang người được giao / hạn đặt tay (dòng trống không dính gì sang đợt sau). */
+  const ids = (db().prepare(`SELECT id FROM viec_xu_ly WHERE trang_thai = 'mo' AND (phu_trach_id IS NOT NULL OR han_chon IS NOT NULL)`).all() as { id: number }[]).map((r) => r.id);
   if (!ids.length) return;
   const tt = trangThaiYThuc(ids, homNay);
   xongViecXuLy(ids.filter((id) => { const e = tt.get(id); return !e || (!e.tamDung && e.soBatBuoc === 0); }));
@@ -722,12 +723,15 @@ export function sauDoiChiNhanhEm(studentIds: readonly number[], boi: number | nu
  * chi nhánh em / Head toàn hệ thống là người theo luật nên không thêm — kể cả khi người đó kiêm CX (rà PTA (2)). Bí danh: `ur` `r` `u` (vai · người —
  * `NGUOI_VAI`), `v` `s` (việc · em) truyền vào.
  */
+let daCoCotNguoiLuat = false;   // chỉ nhớ khi CÓ (cột không mất đi) — DB cũ đang migrate hỏi lại tới khi bước VAI-0 thêm cột
+const coCotNguoiLuat = (): boolean => (daCoCotNguoiLuat ||= !!db().prepare(`SELECT 1 FROM pragma_table_info('viec_bao_ph') WHERE name = 'nguoi_luat'`).get());
 export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => {
   const cn = CN_EM(`${v}.student_id`);
   /* RA-2711 (N72 ⑤ / N76): người giữ theo luật như `nguoiGiuBaoPh` — TVV CÒN vai → Lead TVV đã chốt (còn vai ở CN em) → Head. Head theo dõi khi người giữ không
      phải Head (trước: chỉ khi em có `consultant_user_id` — em chưa TVV mà Lead TVV giữ thì Head không theo dõi; TVV hết vai thì Head vừa giữ vừa theo dõi). */
   const tvvCon = `NOT ${KHONG_TVV_SQL(s)}`;
-  const leadGiu = `(${v}.nguoi_luat IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles l_ JOIN roles lr_ ON lr_.id = l_.role_id JOIN users lu_ ON lu_.id = l_.user_id
+  /* Migrate DB cũ: `theoDoiVaiBaoPh` (prGiaoViec) chạy TRƯỚC bước VAI-0 thêm cột `nguoi_luat` → chưa có cột thì chưa có Lead TVV giữ việc. */
+  const leadGiu = !coCotNguoiLuat() ? '0' : `(${v}.nguoi_luat IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles l_ JOIN roles lr_ ON lr_.id = l_.role_id JOIN users lu_ ON lu_.id = l_.user_id
     WHERE l_.user_id = ${v}.nguoi_luat AND lr_.key = 'lead_consultant' AND l_.status = 'active' AND lu_.status = 'active' AND lu_.deleted_at IS NULL AND l_.branch_id = ${cn}))`;
   return `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
   AND ((r.key = 'manager' AND (${tvvCon} OR ${leadGiu}) AND ur.branch_id = ${cn})
