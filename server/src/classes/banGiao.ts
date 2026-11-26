@@ -2,7 +2,7 @@ import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, dotBanGiao, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, dotBanGiao, tuanDotBanGiao, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { boVaiBpxl, boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
@@ -196,8 +196,9 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
  * Người đọc: GV/QL lớp nguồn; GV/QL lớp chuyển đến chỉ khi phiếu đã xác nhận hoặc lệnh đã chuyển (Q15). Còn lại 403.
  */
 /** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
-export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto { return trongBoNho(() => phieuBanGiaoGoc(p, f)); }
-function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto {
+/** `chon` (BAN-GIAO-DOT): lệnh người dùng mở thẳng trong panel cả lớp — panel hiện thêm đúng đợt của lệnh đó (Sửa phiếu đã xác nhận của em đợt cũ). */
+export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string; chon?: number | null }): PhieuBanGiaoDto { return trongBoNho(() => phieuBanGiaoGoc(p, f)); }
+function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string; chon?: number | null }): PhieuBanGiaoDto {
   const conn = db();
   let lopId = f.lopNguonId ?? 0;
   if (f.lenhId) {
@@ -210,15 +211,13 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const homNay = demoToday();
   const ct = (nguon.programme_code ?? null) as string | null;
 
-  const tatCa = conn.prepare(
+  const rows = conn.prepare(
     `SELECT l.*, s.full_name, s.student_code, d.code AS dich_code, xn.full_name AS xn_ten, ${MDK_SQL('l')} AS mdk
        FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id
        LEFT JOIN classes d ON d.id = l.lop_dich_id LEFT JOIN users xn ON xn.id = l.xac_nhan_boi
       WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ${f.lenhId ? 'AND l.id = ?' : ''}
       ORDER BY s.full_name, l.id`,
   ).all(...(f.lenhId ? [lopId, f.lenhId] : [lopId])) as any[];
-  /* BAN-GIAO-DOT (chủ SP 26/11): panel cả lớp = ĐỢT đang mở — em đã xác nhận ở đợt trước không hiện, không đếm. Một phiếu (`lenhId`, hồ sơ HV) đọc thẳng. */
-  const rows = f.lenhId ? tatCa : dotBanGiao(tatCa);
 
   const gv = conn.prepare(
     `SELECT ta.user_id, ta.is_core, ta.skill, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
@@ -243,6 +242,13 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
     if (!thay.length) throw forbidden('Bạn không có quyền đọc bàn giao của lớp này.');
   }
   if (f.lenhId && !thay.length) throw forbidden('Bạn không có quyền đọc bàn giao này.');
+  /*
+   * BAN-GIAO-DOT (chủ SP 26/11; PTA rà #2249): phía NGUỒN mở cả lớp = các đợt (tuần chuyển) còn em chờ + đợt của lệnh mở thẳng (`chon`); đợt đã xác nhận hết không
+   * hiện, không đếm. Phía ĐÍCH lọc theo quyền như cũ, KHÔNG lọc đợt (GV lớp mới vẫn đọc phiếu em đợt cũ sau khi lớp nguồn ra đợt mới). Một phiếu (`lenhId`) đọc thẳng.
+   * Đợt mới trên cùng; trong đợt giữ thứ tự tên (sort ổn định).
+   */
+  if (q.doNguon && !f.lenhId) thay = dotBanGiao(thay, f.chon);
+  thay = [...thay].sort((a, b) => tuanDotBanGiao(b.tuan_bat_dau).localeCompare(tuanDotBanGiao(a.tuan_bat_dau)));
 
   const dongMon = new Map<number, Map<string, any>>();
   if (thay.length) {
@@ -303,7 +309,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
     const chup = r.tu_dien ? (JSON.parse(r.tu_dien) as { tuDien: TuDien; gvbmChuaBanGiao: string[] }) : null;
     return {
       lenhId: r.id, studentId: r.student_id, ten: r.full_name, maHv: r.student_code, huong: r.huong, trangThaiLenh: r.trang_thai,
-      lopDich: r.lop_dich_id ? { id: r.lop_dich_id, code: r.dich_code } : null, tuan: r.tuan_bat_dau, ngayXemLai: r.ngay_xem_lai ?? null,
+      lopDich: r.lop_dich_id ? { id: r.lop_dich_id, code: r.dich_code } : null, tuan: r.tuan_bat_dau, ngayXemLai: r.ngay_xem_lai ?? null, dot: tuanDotBanGiao(r.tuan_bat_dau),
       hanGvbm: r.han_gvbm, hanGvcn: r.han_gvcn,
       phieu: trangThaiPhieu({ soMonDaGhi: daGhi, soMon: mon.length, daXacNhan: !!r.xac_nhan_luc }), soMonDaGhi: daGhi, soMon: mon.length,
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
@@ -331,6 +337,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
       /* N64: Head làm thay GVCN — panel hiện dải "Đang giao cho …" (tên GVCN đã có trong `gv`, không thêm câu). Lớp không GVCN: việc của Head, không dải. */
       lamThay: q.qlThay && !q.laGvcn && coGvcnLop ? { ten: gv.find((r) => !!r.is_core)?.full_name ?? null } : null },
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
+    dot: [...new Set(ds.map((e) => e.dot))].map((tuan) => { const cua = ds.filter((e) => e.dot === tuan); return { tuan, tong: cua.length, daXacNhan: cua.filter((e) => e.xacNhan).length }; }),
     hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
       ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return (!!x?.noiDung && !x.lamLai) || !!x?.cungGv; }).length,
@@ -549,7 +556,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
   const lenh: any[] = [];
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, l.ngay_ra_lenh, s.full_name, d.code AS dich,
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, l.tuan_bat_dau, s.full_name, d.code AS dich,
               n.programme_code AS ct_nguon, d.programme_code AS ct_dich, ${MDK_SQL('l')} AS mdk,
               CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
                 FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
@@ -573,7 +580,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
     }
   }
   const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
-  /* BAN-GIAO-DOT (chủ SP 26/11): mỗi lớp nguồn chỉ ĐỢT đang mở (cùng hàm với panel) — "a/n đã xác nhận" của việc = của panel. */
+  /* BAN-GIAO-DOT (chủ SP 26/11): mỗi lớp nguồn chỉ các đợt còn em chờ (cùng hàm với panel) — "a/n đã xác nhận" của việc = của panel. */
   const theoLop = new Map<number, any[]>();
   for (const l of lenh) (theoLop.get(l.lop_nguon_id) ?? theoLop.set(l.lop_nguon_id, []).get(l.lop_nguon_id)!).push(l);
   const dot = new Map([...theoLop].map(([id, ds]) => [id, dotBanGiao(ds)]));

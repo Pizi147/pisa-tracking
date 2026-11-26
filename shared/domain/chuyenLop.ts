@@ -117,16 +117,21 @@ export const coPhieu = (h: HuongLenh): boolean => h !== 'dung_hoc';
 export const PHIEU_BAN_GIAO_MO_SQL = (l: string) => `${l}.trang_thai != 'huy' AND ${l}.huong != 'dung_hoc' AND ${l}.han_gvcn IS NOT NULL AND ${l}.xac_nhan_luc IS NULL`;
 
 /**
- * BAN-GIAO-DOT (chủ SP 26/11): ĐỢT bàn giao của MỘT lớp nguồn — lệnh chưa xác nhận + lệnh đã xác nhận KỂ TỪ khi đợt bắt đầu. Đợt bắt đầu = ngày ra lệnh sớm nhất
- * của lệnh chưa xác nhận; lớp hết lệnh chờ → đợt gần nhất (ngày ra lệnh mới nhất). Lệnh ra TRƯỚC mốc đó và xác nhận TRƯỚC mốc đó thuộc đợt cũ: không hiện, không đếm.
- * MỘT hàm cho panel Bàn giao, việc Bàn giao (Công việc, chip hồ sơ GV) và dải hồ sơ lớp — cùng một số ở mọi nơi.
+ * BAN-GIAO-DOT (chủ SP 26/11; PTA chốt rà #2249): ĐỢT bàn giao của MỘT lớp nguồn = các lệnh cùng TUẦN CHUYỂN (`tuan_bat_dau` quy về Thứ Hai — đúng mã tuần
+ * "W3 NOV", "W1 DEC" người dùng thấy). Hiện các đợt CÒN em chưa xác nhận (mọi em của đợt đó, kể cả em đã xác nhận); đợt đã xác nhận hết thì không hiện, không đếm.
+ * `chon` (lệnh người dùng mở thẳng — vd Sửa phiếu đã xác nhận của em đợt cũ) → thêm đúng đợt của lệnh đó. Không còn đợt chờ, không chọn → đợt mới nhất.
+ * MỘT hàm cho panel Bàn giao, việc Bàn giao (Công việc, chip hồ sơ GV) và các dải hồ sơ lớp — cùng một số ở mọi nơi.
  */
-export function dotBanGiao<T extends { ngay_ra_lenh: string; xac_nhan_luc?: string | null }>(ds: readonly T[]): T[] {
-  const xong = (l: T) => l.xac_nhan_luc?.slice(0, 10) ?? null;
-  const moc = ds.filter((l) => !xong(l)).map((l) => l.ngay_ra_lenh).sort()[0] ?? ds.map((l) => l.ngay_ra_lenh).sort().at(-1);
-  if (!moc) return [];
-  return ds.filter((l) => { const x = xong(l); return !x || l.ngay_ra_lenh >= moc || x >= moc; });
+export const tuanDotBanGiao = (tuan: string): string => mondayOfDate(tuan);
+export function dotBanGiao<T extends { id: number; tuan_bat_dau: string; xac_nhan_luc?: string | null }>(ds: readonly T[], chon?: number | null): T[] {
+  const mo = new Set(ds.filter((l) => !l.xac_nhan_luc).map((l) => tuanDotBanGiao(l.tuan_bat_dau)));
+  const lc = chon ? ds.find((l) => l.id === chon) : undefined;
+  if (lc) mo.add(tuanDotBanGiao(lc.tuan_bat_dau));
+  const moiNhat = ds.map((l) => tuanDotBanGiao(l.tuan_bat_dau)).sort().at(-1);
+  if (!mo.size && moiNhat) mo.add(moiNhat);
+  return ds.filter((l) => mo.has(tuanDotBanGiao(l.tuan_bat_dau)));
 }
+
 /** Tạm dừng học (bảo lưu) và Dừng học hẳn không có lớp chuyển đến. */
 export const canLopDich = (h: HuongLenh): boolean => h !== 'bao_luu' && h !== 'dung_hoc';
 
@@ -341,6 +346,8 @@ export type PhieuMon = {
 export type PhieuEm = {
   lenhId: number; studentId: number; ten: string; maHv: string; huong: string; trangThaiLenh: string;
   lopDich: { id: number; code: string } | null; tuan: string; ngayXemLai: string | null;
+  /** BAN-GIAO-DOT: đợt của em = Thứ Hai tuần chuyển (`tuanDotBanGiao`). */
+  dot: string;
   hanGvbm: string | null; hanGvcn: string | null;
   phieu: { khoa: string; nhan: string }; soMonDaGhi: number; soMon: number;
   tuDien: TuDien | null; tuDienDaChup: boolean;
@@ -365,6 +372,8 @@ export type PhieuBanGiaoDto = {
   /** N64: `lamThay` = Head làm thay GVCN (panel hiện dải, không hỏi). */
   nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; monDay: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean; lamThay: { ten: string | null } | null };
   tong: number; daXacNhan: number; hanGvcn: string | null;
+  /** BAN-GIAO-DOT: các đợt đang hiện (mới trước) — "a/b đã xác nhận" từng đợt; `ds` xếp theo cùng thứ tự. */
+  dot: { tuan: string; tong: number; daXacNhan: number }[];
   /** Tên em có `hanGvcn` (hạn sớm nhất trong các em chưa xác nhận). */
   hanGvcnEm: string | null;
   theoMon: { ma: string; daGhi: number; tong: number; han: string | null }[];

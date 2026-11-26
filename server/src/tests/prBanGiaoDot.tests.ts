@@ -22,20 +22,20 @@ export async function runPrBanGiaoDotTests(t: YThucTestKit) {
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
 
   // ------------------------------------------------------------------ 1 · hàm thuần
-  check('BGD-1 · dotBanGiao: em xong trước khi đợt mới bắt đầu không vào đợt; cùng đợt xong rồi vẫn vào; hết chờ → đợt gần nhất', () => {
-    const l = (id: number, ra: string, xn: string | null = null) => ({ id, ngay_ra_lenh: ra, xac_nhan_luc: xn });
-    const ids = (ds: any[]) => d.dotBanGiao(ds).map((x: any) => x.id).join();
-    /* Ảnh chủ SP: em chuyển W3 NOV (ra lệnh 13/11, xác nhận 17/11) + 5 em W1 DEC (ra lệnh 25/11, chưa xác nhận). */
-    const anh = [l(1, '2026-11-13', '2026-11-17T09:35:00'), ...[2, 3, 4, 5, 6].map((i) => l(i, '2026-11-25'))];
+  check('BGD-1 · dotBanGiao gom theo TUẦN CHUYỂN: đợt đã xác nhận hết không hiện; còn chờ thì cả đợt; nhiều đợt chờ cùng hiện; mở thẳng em đợt cũ → thêm đợt đó; hết chờ → đợt mới nhất', () => {
+    const l = (id: number, tuan: string, xn: string | null = null) => ({ id, tuan_bat_dau: tuan, xac_nhan_luc: xn });
+    const ids = (ds: any[], chon?: number) => d.dotBanGiao(ds, chon).map((x: any) => x.id).join();
+    /* Ảnh chủ SP: em chuyển W3 NOV (đã xác nhận) + 5 em W1 DEC (chưa xác nhận). */
+    const anh = [l(1, '2026-11-16', '2026-11-17T02:35:00Z'), ...[2, 3, 4, 5, 6].map((i) => l(i, '2026-11-30'))];
     assert(ids(anh) === '2,3,4,5,6', `ảnh chủ SP: ${ids(anh)}`);
-    /* Em cùng đợt đã xác nhận → vẫn trong đợt (tiến độ "a/b đã xác nhận" không tụt). */
-    assert(ids([...anh, l(7, '2026-11-25', '2026-11-26T08:00:00')]) === '2,3,4,5,6,7', 'cùng đợt đã xác nhận');
-    /* Em đợt cũ xác nhận MUỘN (sau khi đợt mới bắt đầu) → còn là việc của đợt này. */
-    assert(ids([l(1, '2026-11-13', '2026-11-26T10:00:00'), l(2, '2026-11-25')]) === '1,2', 'xác nhận sau mốc đợt mới');
-    /* Lệnh cũ còn chờ (quá hạn) kéo mốc về sớm — vẫn là việc, không giấu. */
-    assert(ids([l(1, '2026-11-01'), l(2, '2026-11-13', '2026-11-17T09:00:00'), l(3, '2026-11-25')]) === '1,2,3', 'lệnh cũ còn chờ');
-    /* Hết chờ: đợt gần nhất (ngày ra lệnh mới nhất). */
-    assert(ids([l(1, '2026-11-13', '2026-11-17T09:00:00'), l(2, '2026-11-25', '2026-11-26T09:00:00'), l(3, '2026-11-25', '2026-11-27T09:00:00')]) === '2,3', 'hết chờ → đợt mới nhất');
+    /* Cùng tuần chuyển, ra lệnh rải nhiều ngày, một em đã xác nhận → vẫn cùng đợt (5/6 — không theo ngày ra lệnh / giờ UTC). */
+    assert(ids([...anh, l(7, '2026-11-30', '2026-11-20T01:00:00Z')]) === '2,3,4,5,6,7', 'cùng tuần chuyển đã xác nhận');
+    /* "Ngay hôm nay" giữa tuần cùng đợt với Thứ Hai tuần đó. */
+    assert(ids([l(1, '2026-12-02'), l(2, '2026-11-30', '2026-11-26T01:00:00Z'), l(3, '2026-11-23', '2026-11-20T01:00:00Z')]) === '1,2', 'chuyển giữa tuần');
+    /* Lệnh cũ còn chờ (bị quên) → đợt đó vẫn hiện, không trộn em đã xong của đợt khác. */
+    assert(ids([l(1, '2026-10-26'), l(2, '2026-10-26', '2026-10-27T01:00:00Z'), l(3, '2026-11-16', '2026-11-17T01:00:00Z'), l(4, '2026-11-30')]) === '1,2,4', 'nhiều đợt chờ');
+    assert(ids(anh, 1) === '1,2,3,4,5,6', 'mở thẳng em đợt cũ → thêm đúng đợt đó');
+    assert(ids([l(1, '2026-11-16', 'x'), l(2, '2026-11-30', 'x'), l(3, '2026-11-30', 'x')]) === '2,3', 'hết chờ → đợt mới nhất');
     assert(d.dotBanGiao([]).length === 0, 'rỗng');
   });
 
@@ -71,10 +71,10 @@ export async function runPrBanGiaoDotTests(t: YThucTestKit) {
       return sids.map((s) => get('SELECT * FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', s).id as number);
     };
     const gvcn = loadPrincipal(GV[0].userId);
-    /* Đợt cũ: ra lệnh 20 ngày trước, GVCN xác nhận 15 ngày trước. */
+    /* Đợt cũ: chuyển hai tuần trước tuần chuyển của đợt mới, đã chuyển, GVCN đã xác nhận. */
     const [cu] = ra([em()]);
     bg.xacNhanBanGiao(gvcn, cu, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
-    conn.prepare('UPDATE lenh_chuyen_lop SET ngay_ra_lenh = ?, xac_nhan_luc = ? WHERE id = ?').run(addDays(TODAY, -20), `${addDays(TODAY, -15)}T09:00:00`, cu);
+    conn.prepare(`UPDATE lenh_chuyen_lop SET ngay_ra_lenh = ?, tuan_bat_dau = ?, trang_thai = 'da_chuyen' WHERE id = ?`).run(addDays(TODAY, -20), addDays(TUAN[0], -14), cu);
     const moi = ra([em(), em(), em()]);
     xoaNho();
     return { nguon, dich, cu, moi, gvcn, gvbm: loadPrincipal(GV[1].userId), gvDich: loadPrincipal(GV[3].userId) };
@@ -103,5 +103,40 @@ export async function runPrBanGiaoDotTests(t: YThucTestKit) {
     xoaNho();
     const ph2 = bg.phieuBanGiao(x.gvcn, { lopNguonId: x.nguon });
     assert(ph2.tong === 3 && ph2.daXacNhan === 1 && viecGvcn(x).daXacNhan === 1 && viecGvcn(x).n === 3, `sau xác nhận ${ph2.daXacNhan}/${ph2.tong}`);
+  }));
+
+  check('BGD-3 · phía ĐÍCH: GV lớp chuyển đến vẫn đọc phiếu em đợt cũ sau khi lớp nguồn ra đợt mới (không 403)', () => thu(() => {
+    const x = dung();
+    const ph = bg.phieuBanGiao(x.gvDich, { lopNguonId: x.nguon });
+    assert(ph.ds.length === 1 && ph.ds[0].lenhId === x.cu && ph.ds[0].xacNhan, `đích: ${ph.ds.map((e: any) => e.lenhId)}`);
+  }));
+
+  check('BGD-4 · mở thẳng em đợt cũ (Sửa phiếu đã xác nhận): panel thêm đúng đợt đó, chia khối theo tuần, đợt mới trên cùng, a/b từng đợt', () => thu(() => {
+    const x = dung();
+    const ph = bg.phieuBanGiao(x.gvcn, { lopNguonId: x.nguon, chon: x.cu });
+    assert(ph.ds.length === 4 && ph.ds.at(-1).lenhId === x.cu && ph.ds[0].dot > ph.ds.at(-1).dot, `thứ tự: ${ph.ds.map((e: any) => e.dot)}`);
+    assert(JSON.stringify(ph.dot.map((k: any) => [k.daXacNhan, k.tong])) === '[[0,3],[1,1]]', JSON.stringify(ph.dot));
+    assert(ph.ds.find((e: any) => e.lenhId === x.cu).suaDuoc, 'em đợt cũ: Sửa được');
+  }));
+
+  check('BGD-5 · hai đợt còn chờ (lệnh cũ bị quên): cả hai đợt hiện, đếm từng đợt; việc GVCN = panel', () => thu(() => {
+    const x = dung();
+    conn.prepare('UPDATE lenh_chuyen_lop SET xac_nhan_luc = NULL, tu_dien = NULL WHERE id = ?').run(x.cu);
+    xoaNho();
+    const ph = bg.phieuBanGiao(x.gvcn, { lopNguonId: x.nguon });
+    assert(ph.tong === 4 && ph.dot.length === 2 && ph.dot[0].tong === 3 && ph.dot[1].tong === 1, JSON.stringify(ph.dot));
+    const v = viecGvcn(x);
+    assert(v.n === 4 && v.daXacNhan === 0, `việc ${v.daXacNhan}/${v.n}`);
+  }));
+
+  check('BGD-6 · dải "Đã chuyển ≤ 14 ngày" (hết đợt chờ) = panel mở không chọn em: chỉ đợt mới nhất', () => thu(() => {
+    const x = dung();
+    for (const id of x.moi) bg.xacNhanBanGiao(x.gvcn, id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
+    conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'da_chuyen', tuan_bat_dau = ? WHERE id IN (${x.moi.join(',')})`).run(addDays(TUAN[0], -7));
+    xoaNho();
+    const dl = dai.daiLop(x.gvcn, x.nguon, { pr: pr(x), ft: false, ct: 'FOU' });
+    const ph = bg.phieuBanGiao(x.gvcn, { lopNguonId: x.nguon });
+    assert(!dl.banGiao && dl.daChuyen && dl.daChuyen.tong === 3 && dl.daChuyen.tong === ph.tong && dl.daChuyen.daXacNhan === ph.daXacNhan, `dải ${JSON.stringify(dl.daChuyen)} · panel ${ph.daXacNhan}/${ph.tong}`);
+    assert(!viecGvcn(x), 'hết việc GVCN');
   }));
 }
