@@ -2413,6 +2413,17 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
   .tn-ds > li.xem button { height: 44px; }
 }
 
+/* TUYEN-2 (mockup v27 `.cc`): CHUỖI CHẤM — một chấm một bước, cùng hình với dấu khối Tuyến. */
+.cc { display: inline-flex; align-items: center; vertical-align: middle; }
+.cc i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface); flex: none; }
+.cc i + i { margin-left: 6px; position: relative; }
+.cc i + i::before { content: ""; position: absolute; right: 100%; top: 50%; width: 6px; height: 1.5px; margin-top: -.75px; background: var(--line-strong); }
+.cc i.x { border-color: rgb(var(--ok-line-rgb)); background: rgb(var(--ok-rgb)); }
+.cc i.d { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.cc i.c { border-style: dashed; border-color: var(--text-faint); }
+.cc i.t { border-color: rgb(var(--soon-line-rgb)); background: rgb(var(--soon-rgb)); border-radius: 2px; }
+.cc i.b { border-color: var(--line-strong); background: repeating-linear-gradient(135deg, transparent 0 2px, var(--line-strong) 2px 3px); }
+
 /* TUYEN-1 (chủ SP 26/11, C7 — mockup v27 `.o-bam`): Phụ trách + Hạn = MỘT kiểu Ô BẤM — giá trị trong ô viền mảnh, bấm thẳng là đổi người / sửa hạn (không nút "Đổi").
    Không quyền → chữ trơn (không viền). 375: cao 40. */
 .o-bam { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface);

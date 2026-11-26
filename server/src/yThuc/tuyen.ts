@@ -20,7 +20,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { trangThaiYThuc } from './trangThai.ts';
-import { xemYThucHv } from './access.ts';
+import { xemLienHePh, xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
 import { luatMeeting } from '../worklist/giaoViec.ts';
 import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
@@ -68,6 +68,8 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Người có mặt ở bước (giữ / làm / nhận) — quyền khung + "Bạn". */ ids: number[];
   /** Người ĐÃ LÀM bước (theo dõi theo tuyến, C1). */ lam: number[];
   nd: string | null;
+  /** TUYEN-2 (rà #2273 P2-3): phần nội dung CHỈ người xem được Ý thức em đọc (liên hệ phụ huynh) — nối sau `nd`. */ ndEm?: string | null;
+  /** Chủ SP 27/11 (#2273 P1): có thì THAY xem Ý thức em cho `ndEm` và mở đọc cả bước — luật liên hệ PH `xemLienHePh`. */ docEm?: (p: Principal) => boolean;
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
 };
@@ -304,7 +306,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
             json((SELECT json_group_array(json_object('id', mp.id, 'phan', mp.phan, 'tt', mp.trang_thai, 'pt', mp.phu_trach_id, 'ptTen', mpu.full_name, 'hanChon', mp.han_chon, 'tao', mp.tao_luc,
                 'xongBoi', mp.xong_boi, 'xongTen', xu.full_name, 'xongLuc', mp.xong_luc, 'ngayGio', mp.ngay_gio, 'kq', mp.ket_qua, 'cn', mp.branch_id, 'nl', mp.nguoi_luat))
               FROM meeting_phan mp LEFT JOIN users mpu ON mpu.id = mp.phu_trach_id LEFT JOIN users xu ON xu.id = mp.xong_boi WHERE mp.phoi_hop_id = x.id)) AS mp,
-            ${BAO_PH_JSON('b.phoi_hop_id = x.id')} AS bp
+            ${BAO_PH_JSON('b.phoi_hop_id = x.id')} AS bp, s.parent_name AS ph_ten, s.parent_relation AS ph_qh, s.parent_phone AS ph_sdt
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id JOIN students s ON s.id = x.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
        LEFT JOIN users pu ON pu.id = x.performed_by LEFT JOIN users ptu ON ptu.id = x.phu_trach_id
       WHERE x.attempt_id IN (SELECT value FROM json_each(?1))`,
@@ -343,6 +345,19 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
           ? buoc({ khoa, ten, trangThai: 'xong', chiTiet: x.performed_by ? null : x.thuc_ten ?? null, nguoi: x.thuc_ten ?? null, ngay: x.performed_on, ids: lam, lam, cungLuc: song, nd: x.note ?? null, viec: vx })
           : buoc({ khoa, ten, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'Đã bỏ', ngay: ngay10(x.removed_at), ...giuGvcn(x), cungLuc: song, viec: vx }));
       t.buoc.at(-1)!.docRieng = (p) => t.buoc.find((b) => b.khoa === khoa)!.ids.includes(p.userId) || theoDoiTayCua(p).has(`phoi_hop:${x.id}`);
+      /* TUYEN-2 (mockup v27 T6, PTA chốt): bước GVCN xác nhận Meeting — nội dung = "Nội dung gửi" + Phụ huynh (tên · quan hệ · SĐT). Dòng PH: CHỈ người xem được
+         Ý thức em (`xemYThucHv`) — không qua quyền riêng của bước / theo dõi tay. */
+      if (laMeetingCx(x.kind) && x.status === 'done') {
+        const ph = [x.ph_qh ? `${x.ph_qh.charAt(0).toUpperCase()}${x.ph_qh.slice(1)}` : null, x.ph_ten, x.ph_sdt].filter(Boolean).join(' · ');
+        const b = t.buoc.at(-1)!;
+        /* Rà #2273 P2-3: "Nội dung gửi" theo quyền đọc nội dung bước như cũ; dòng Phụ huynh (`ndEm`) CHỈ người xem được Ý thức em. */
+        b.nd = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
+        b.ndEm = ph ? `Phụ huynh: ${ph}` : null;
+        /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc cả bước (ghi chú + PH) — cùng luật `xemMeeting` boiCanh. */
+        const kp2 = [`${khoa}:xep_lich`, `${khoa}:ket_qua`];
+        b.docEm = (p) => xemLienHePh(p, { id: t.em!.id, tvv: t.tvv, cn: t.cn },
+          t.buoc.some((y) => kp2.includes(y.khoa) && y.trangThai === 'dang' && y.ids.includes(p.userId)));
+      }
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
       const baoPh = () => {
@@ -576,9 +591,12 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
   const xemEm = t.em ? xemYThucHv(p, t.em.id) : false;
   const hd = conVaiO(p, t.cn);
   const buocRa: BuocTuyen[] = t.buoc.map((b) => {
-    const co = !!b.nd?.trim();
-    const duoc = co && (xemEm || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
-    const { ids: _i, lam: _l, nd, docRieng: _d, vai: _v, ...goc } = b;
+    const co = !!b.nd?.trim() || !!b.ndEm;
+    /* `docEm` (bước GVCN xác nhận Meeting): luật liên hệ PH `xemLienHePh` quyết cả dòng PH lẫn đọc cả bước; bước khác: `ndEm` theo xem Ý thức em. */
+    const em = b.docEm ? b.docEm(p) : xemEm;
+    const nd = [b.nd?.trim() ? b.nd : null, em ? b.ndEm : null].filter(Boolean).join('\n');
+    const duoc = !!nd && (xemEm || em || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
+    const { ids: _i, lam: _l, nd: _n, ndEm: _e, docEm: _m, docRieng: _d, vai: _v, ...goc } = b;
     return { ...goc, laToi: b.ids.includes(p.userId) && (b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho' || b.lam.includes(p.userId)),
       coNoiDung: duoc, khongQuyen: co && !duoc, ...(duoc ? { noiDung: nd! } : {}) };
   });

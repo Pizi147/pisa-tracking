@@ -2,7 +2,6 @@
 export const EN_TUYEN_1 = {
   'Tuyến': 'Flow',
   'Tuyến · {ten}': 'Flow · {ten}',
-  'đang': 'in progress',
   'Đang ở bước này': 'Current step',
   'Chưa tới lượt': 'Not yet',
   'Xem {n} bước đã xong': 'Show {n} done steps',

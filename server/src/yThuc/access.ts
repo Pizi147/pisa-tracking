@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { boVaiBpxl, can, require_, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, laTvvCuaEm, require_, type Principal } from '../permissions.ts';
 import { forbidden, notFound } from '../util.ts';
 import { conHieuLuc } from '../worklist/hieuLuc.ts';
 
@@ -60,6 +60,15 @@ export function requireViewStudent(p: Principal, studentId: number) {
 
 /** N63 ⑤: người xem thấy Ý thức của em (hồ sơ HV gửi khối Ý thức chỉ khi có) — cùng cổng `requireViewStudent`. */
 export const xemYThucHv = (p: Principal, studentId: number): boolean => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, studentCtx(studentId));
+
+/**
+ * Chủ SP 27/11 (rà #2273 P1): MỘT luật liên hệ phụ huynh (tên · quan hệ · SĐT + ghi chú GVCN) của Meeting CX/GĐCN — panel Meeting (`xemMeeting` boiCanh) VÀ bước
+ * GVCN xác nhận của Tuyến: người xử lý Ý thức em (GVCN, Head, QT) · Head / CX / QT chi nhánh em · TVV của em · người ĐANG GIỮ một phần Meeting còn mở (`giuPhanMo`
+ * — BPXL giữ Xếp lịch họp, CX giữ Kết quả). BPXL khác / theo dõi / đã giao đi / phần đã xong · GV bộ môn chỉ xem → không.
+ */
+export const xemLienHePh = (p: Principal, em: { id: number; tvv: number | null; cn: number | null }, giuPhanMo: boolean): boolean =>
+  giuPhanMo || canManageDiscipline(p, em.id) || laTvvCuaEm(p, { consultant_user_id: em.tvv, student_id: em.id, em_branch: em.cn })
+  || p.grants.some((g) => ['manager', 'system_admin', 'cx'].includes(g.roleKey) && (g.branchId === null || g.branchId === em.cn));
 
 export function requireRecordViolation(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopGanNhat(studentId), studentId },   // RKC-3b: GV lớp ghi danh gần nhất của em Tạm dừng / đã học xong

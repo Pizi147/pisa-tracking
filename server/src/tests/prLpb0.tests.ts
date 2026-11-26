@@ -285,6 +285,9 @@ export async function runPrLpb0Tests(t: any) {
     const dt = (wt.items ?? wt.groups?.flatMap((g: any) => g.items) ?? []) as any[];
     const v = tvvCua(la)[0];
     assert(dt.some((i) => i.key === `bao-ph:${v.id}` && i.nhomChuyenLop?.lopId === nguon), 'TVV dòng chuyển lớp');
+    /* TUYEN-2 (mockup v27 T11c): hai em cùng lệnh → MỘT dòng gộp "Chuyển lớp · {lớp cũ} · n em" (lớp của dòng = lớp nguồn, `gopNguon`). */
+    const cl = dt.filter((i) => i.nhomChuyenLop?.lopId === nguon);
+    assert(cl.length === 2 && cl.every((i) => i.classId === nguon && i.gopNguon) && new Set(cl.map((i) => d.khoaGopCua(i))).size === 1, `TUYEN-2 gộp: ${JSON.stringify(cl.map((i) => [i.classId, i.gopNguon]))}`);
     const tu = tuyen.dungTuyen(P.mbManager, { loai: 'chuyen_lop', khoa: String(la) });
     const k = tu.buoc.map((b: any) => b.khoa);
     assert(k[0] === 'lenh' && k.includes('ban_giao') && k.some((x: string) => x.startsWith('bao_ph:')) && k.some((x: string) => x.startsWith('nhan_tin:')) && k.at(-1) === 'vao_lop', k.join());

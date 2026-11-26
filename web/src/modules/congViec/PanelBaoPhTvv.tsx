@@ -34,6 +34,8 @@ type ViecBaoPh = {
   coTheGhi: boolean; nhanXuLy: string | null;
   /** PHOI-HOP-V2: việc "Báo PH · Meeting CX/GĐCN" (sau GVCN xác nhận Meeting) — GV-2: panel hiện cả hai phần Meeting (mockup v22 G8b). */
   phoiHopId: number | null;
+  /** TUYEN-2: việc TVV sinh thẳng từ nguồn (Trao đổi gia đình · Progress · Final) — KHÔNG phải Báo PH Meeting. */
+  nguonTvv?: boolean;
   /** TINH-HINH: việc "Báo PH · Tình hình học tập" (GV báo) — bối cảnh = người gửi + nội dung, không có vi phạm. */
   tinhHinhId?: number | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
@@ -65,8 +67,10 @@ const khoiPhucBaoPh = async (id: number) => {
  * Bối cảnh chỉ đọc (lần xử lý · nội dung GVCN · PH + SĐT bấm gọi) · form 3 trường (Kết quả · Ngày · Ghi chú, nháp theo việc) · Lịch sử mọi lần ghi.
  * "Chưa liên hệ được" = một lần thử: việc vẫn mở, hạn giữ. Kết thúc ngoại lệ = ⋯ › Bỏ việc (lý do sẵn có). Lưu / Lưu · việc tiếp › — chỉ sang việc kế sau khi lưu xong.
  */
-export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: {
+export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem, nhung }: {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null; tenTiep?: string | null;
+  /** TUYEN-2 (mockup v27 T11a): nằm trong khay một em của panel nhiều em — không khung panel, nút Lưu cuối khay. */
+  nhung?: boolean;
   /** GV-2 (mockup v22 G5): mở từ tab "Đang theo dõi" — dải "Bạn đang theo dõi · chỉ xem · Bỏ theo dõi" (bỏ xong thì đóng panel). */
   chiXem?: boolean;
 }) {
@@ -75,7 +79,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const { data: v, error, reload } = useApi<ViecBaoPh>(`/y-thuc/bao-ph/${it.viecId}`, [it.viecId]);
   /* GV-2 (N58): khối Phụ trách · Hạn · Theo dõi đầu thân panel — một GET song song; Meeting: thêm hai phần (một GET, chỉ khi là việc Meeting). */
   const gv = useGiaoViec('bao_ph', it.viecId);
-  const laMeeting = it.group === 'phoi_hop_tvv' || v?.phoiHopId != null;
+  /* TUYEN-2: Báo PH Meeting = việc sau Meeting CX (có `phoiHopId`, không phải việc TVV sinh thẳng từ nguồn) — trước: mọi `phoiHopId` → Progress / Final mở nhầm "Meeting CX/GĐCN". */
+  const laMeeting = v ? v.phoiHopId != null && !v.nguonTvv : it.group === 'phoi_hop_tvv';
   const meet = useMeeting(laMeeting ? v?.phoiHopId : null);
   const [kq, setKq] = useNhap<KetQuaBaoPh | ''>('kq', '');
   const [ngay, setNgay] = useNhap('ngay', hn);
@@ -115,8 +120,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
   /* T3a: thẻ "Chờ GV sửa" cạnh tiêu đề (chữ + nền, không chỉ màu). */
   if (v?.choGvSua && v.trangThai === 'mo') (dau as { tieu?: ReactNode }).tieu = <>{bacDu(tieuDe)}<TheChoGv /></>;   // cùng chữ khung tự vẽ (`bacDu`)
-  if (error) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!v) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (error) return nhung ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!v) return nhung ? <Skeleton rows={4} /> : <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const sua = !daLuu && v.coTheGhi;
   const daGo = sua && (!!kq || !!ghiChu.trim() || ngay !== hn);
@@ -200,10 +205,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
   const dsVp = v.boiCanh.viPham.length > 0 ? <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
     onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} /> : null;
   const khoi = gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={daiDoi} gon={laMeeting} anTheoDoi={laMeeting} />;
-  return (
-    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
-      quyChe={sua && !bo ? (v.choGvSua && v.trangThai === 'mo' ? { chu: t('Hạn tạm dừng khi chờ GV · GV gửi lại → hạn mới 5 ngày') } : quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null)) : null}>
-      <div className="relative flex flex-col gap-4 pt-4">
+  const than = (
+      <div className={`relative flex flex-col gap-4 ${nhung ? '' : 'pt-4'}`}>
         {chiXem && gv.g && <DaiChiXem g={gv.g} onBo={onDong} />}
         {vua && <DaiDaLam chu={vua.chu} het={vua.het} onHet={() => setVua(null)} onHoanTac={vua.hoanTac} />}
         {dsMo.map((y) => <DaiChoGvSua key={y.id} y={y} hn={hn} onRut={v.coTheTraLai && !chiXem ? () => rut(y) : null}
@@ -263,6 +266,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
+          /* TUYEN-2 (mockup v27 T11a / T11b): nội dung máy điền theo nguồn (lượt · Overall · kỹ năng trượt · Case / điểm từng môn). */
+          [t('Máy điền sẵn'), v.nguonTvv && v.boiCanh.noiDung ? <span className="whitespace-pre-line font-normal">{v.boiCanh.noiDung}</span> : null],
           [t('Ghi chú GVCN'), v.tinhHinhId == null && !laMeeting && v.boiCanh.ghiChu ? <span className="font-normal">
             <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span> : null],
           /* NHẸ HƠN PR-2b (v23 P1 `.ph`): MỘT dòng "Phụ huynh  Tên (mẹ) · ☎ số" — dữ liệu sẵn trong GET panel, không thêm câu; thiếu tên thì chỉ số. */
@@ -296,6 +301,19 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
         </LichSuGap>
       </div>
+  );
+  /* TUYEN-2: trong khay — trạng thái lưu + nút chính cuối khay (Đóng panel / việc tiếp ở chân panel nhiều em). */
+  if (nhung) return (
+    <div className="grid gap-3">
+      {than}
+      {(chan.trai || chan.chinh) && <div className="flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+        <span className="min-w-0 flex-1 text-sm">{chan.trai}</span>{chan.chinh}</div>}
+    </div>
+  );
+  return (
+    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
+      quyChe={sua && !bo ? (v.choGvSua && v.trangThai === 'mo' ? { chu: t('Hạn tạm dừng khi chờ GV · GV gửi lại → hạn mới 5 ngày') } : quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null)) : null}>
+      {than}
     </KhungPanel>
   );
 }

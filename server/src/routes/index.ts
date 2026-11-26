@@ -1724,6 +1724,25 @@ api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { t
   return traLaiSvc.giuNguyenTraLai(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
 }));
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
+/**
+ * TUYEN-2 (mockup v27 T11a, PTA chốt): bảng Báo PH nhiều em — mỗi việc (`?ids=`) chuỗi chấm tuyến (em × lượt) + "Máy điền sẵn". Gọi KHI MỞ panel (không ở `/my-work`):
+ * chỉ việc nằm trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`, câu đã nhớ theo request) · MỘT câu tìm nguồn · tuyến theo LÔ · nội dung theo LÔ.
+ */
+api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const xin = [...new Set(String(req.query.ids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50);
+  if (!xin.length) return {};
+  /* Rà PTA #2273 P2-2: việc trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`) HOẶC việc được giao cho người xem (`phu_trach_id`) — như /my-work. */
+  const cua = new Set(baoPhSvc.viecBaoPhCuaToi(p, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
+  const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
+      WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
+    .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number; luot: number }[];
+  if (!nguon.length) return {};
+  const chuoi = tuyenSvc.chuoiPhoiHop(p, nguon.map((r) => r.luot));
+  const nd = phoiHopSvc.noiDungNguonTvvLo(p, nguon.map((r) => r.ph));
+  return Object.fromEntries(nguon.map((r) => [r.id, { chuoi: chuoi[r.luot]?.chuoi ?? null, mayDien: nd.get(r.ph) ?? null }]));
+}));
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);

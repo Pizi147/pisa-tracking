@@ -54,4 +54,6 @@ export const moCaDong = (it: WorkItem): boolean => !!it.con?.length && !laViecCh
   && (it.group === 'xac_nhan_pa' ? it.con.every((c) => !!c.paId)
     /* GD-20c (mockup ⑫ C1–C2): Ghi kết quả PA cùng lớp + cùng kỳ — bấm dòng mở LƯỚI (mỗi dòng một PA), thay khay "n em ▾". */
     : it.group === 'ghi_ket_qua_pa' ? it.con.every((c) => !!c.paId && c.caseId !== null)
-    : it.group === 'score' && it.con.every((c) => !!c.periodId && c.classId !== null));
+    : it.group === 'score' ? it.con.every((c) => !!c.periodId && c.classId !== null)
+    /* TUYEN-2 (mockup v27 T11a): Báo PH lớp × nguồn "n em" — bấm dòng mở panel nhiều em (khay từng em), như Phối hợp SOS cả lớp. */
+    : it.group === 'bao_ph_yt' && it.con.every((c) => !!c.viecId && !!c.gopNguon));
