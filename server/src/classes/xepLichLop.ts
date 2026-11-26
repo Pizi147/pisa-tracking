@@ -55,6 +55,7 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
   if (moi !== null && lop.status !== 'active') throw badRequest('Lớp đã kết thúc — không nhận lớp mới.');
   return tx(() => {
     if ((xemXepLich(classId)?.userId ?? null) !== cu) throw conflict('Lớp vừa được người khác nhận — mở lại để xem.');   // đọc lại trong giao dịch
+    const tho = db().prepare('SELECT user_id FROM lop_xep_lich WHERE class_id = ?').get(classId) as { user_id: number } | undefined;   // kể cả người đã mất vai
     const g = new GhiDao(db());
     const phan = (db().prepare(PHAN_CUA_LOP).all(classId) as { id: number }[]).map((r) => r.id);
     if (phan.length) g.sua('meeting_phan', `id IN (${phan.map(() => '?').join(',')})`, ...phan);
@@ -62,9 +63,10 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
     if (moi === null) {
       g.xoa('lop_xep_lich', 'class_id = ?', classId);
       db().prepare('DELETE FROM lop_xep_lich WHERE class_id = ?').run(classId);
-    } else if (hienTai) {
+    } else if (tho) {
+      /* Có dòng: người đang nhận (`cu`) hoặc người cũ đã nghỉ / gỡ vai BPXL (ẩn, `cu` = null) — ghi đè đúng dòng đã đọc (rà PTA: không kẹt lớp). */
       g.sua('lop_xep_lich', 'class_id = ?', classId);
-      if (!db().prepare('UPDATE lop_xep_lich SET user_id = ?, gan_boi = ?, gan_luc = ? WHERE class_id = ? AND user_id = ?').run(moi, p.userId, luc, classId, cu).changes) {
+      if (!db().prepare('UPDATE lop_xep_lich SET user_id = ?, gan_boi = ?, gan_luc = ? WHERE class_id = ? AND user_id = ?').run(moi, p.userId, luc, classId, tho.user_id).changes) {
         throw conflict('Lớp vừa được người khác nhận — mở lại để xem.');
       }
     } else {

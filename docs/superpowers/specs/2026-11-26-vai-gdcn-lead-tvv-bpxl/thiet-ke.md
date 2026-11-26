@@ -50,7 +50,8 @@ Session `vai-moi` (Fable 5.2 · high, brainstorming với chủ SP 26/11). Chỉ
 **N74 · Một việc một người nhận (chủ SP 26/11).** Mọi việc tự sinh lưu **một** người phụ trách lúc sinh (không giao "cả vai"). Hàm chung `nguoiNhanTuDong(loai, cn, lopId?)`:
 1. Việc xếp lịch (BPXL) có lớp → **CVXL đã nhận lớp đó** (N76).
 2. Còn lại → trong **nhóm người giữ vai đó gán đúng CN** (grant `branch_id = cn`; **bỏ grant toàn hệ thống**): người có **ít việc mở nhất** (đếm việc mở mọi loại mà người đó phụ trách), bằng nhau → người được gán CN **sớm hơn** (`user_roles.created_at`, rồi `id`).
-3. Không ai → **Head** CN (cùng quy tắc ít việc nhất nếu CN nhiều Head).
+3. Không ai → **MỘT Head** (`headCua`): Head gán CN được gán sớm nhất → *chỉ khi CN không có Head*: Head toàn hệ thống sớm nhất → Quản trị sớm nhất (đường cuối, rà PTA 26/11).
+- **Việc tính lúc đọc** (không có dòng lưu — việc Head: Chốt lộ trình, Xếp lịch MT…; việc TVV tính từ hồ sơ khi em chưa có TVV) cũng **một người, ổn định**: Head = `headCua`; Lead TVV = người gán CN **sớm nhất** — người mới vào CN không làm việc nhảy. Việc có dòng lưu (Báo PH, phần Meeting) chốt **ít việc mở nhất** lúc sinh. TVV hết vai ở CN em = em chưa có TVV.
 - Người nhận lưu cố định — người mới vào CN **không** làm việc cũ nhảy người. Đổi người theo N73 ④ (chuyển tay, Hoàn tác).
 - Áp cho: Xếp lịch họp (sửa N58 "mọi BPXL CN"), Nhận thông tin · Chuyển lớp / Đổi GV (N73), Kết quả meeting (N75), việc TVV khi em chưa có TVV (N76b).
 - **Lead (grant toàn hệ thống, GĐCN, Lead TVV) mặc định chỉ theo dõi**; chỉ nhận việc đặc thù ghi rõ ở N75 / N76b.

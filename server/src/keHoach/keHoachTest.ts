@@ -65,9 +65,9 @@ function lopMt0CoLuot(p: Principal): Set<number> {
 const chiMt0Lop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId }) && !teachesClass(p, classId);
 /**
  * VAI-0 (N77, chủ SP 26/11 "Ẩn điểm, chỉ lịch"): BPXL xem / xếp Kế hoạch Test lớp chi nhánh KHÁC (không quyền xem lượt `attempt.view`) — máy chủ bỏ mọi trường điểm
- * (band từng kỹ năng, Overall, kỳ vọng, nhận xét, S Ex) khỏi các dòng; chỉ còn lịch (tuần, lượt, trạng thái). Người xem được lượt: trả nguyên.
+ * (band từng kỹ năng, Overall, kỳ vọng, nhận xét — cả trong lượt S Ex) khỏi các dòng; chỉ còn lịch (tuần, lượt, trạng thái). Người xem được lượt: trả nguyên.
  */
-const KHOA_DIEM: ReadonlySet<string> = new Set(['diem', 'ovr', 'kyVong', 'nhanXet', 'band', 'overall', 'sEx']);
+const KHOA_DIEM: ReadonlySet<string> = new Set(['diem', 'ovr', 'kyVong', 'nhanXet', 'band', 'overall']);   // S Ex: giữ lịch (tuần / ngày / trạng thái), bỏ điểm (PTA 26/11)
 const boDiem = (x: unknown): unknown => (Array.isArray(x) ? x.map(boDiem)
   : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).filter(([k]) => !KHOA_DIEM.has(k)).map(([k, v]) => [k, boDiem(v)])) : x);
 export function chiLich<T extends { hang: unknown }>(p: Principal, classId: number, kq: T): T {

@@ -27,7 +27,7 @@ import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
 import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
 import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
-import { giuViecQl } from './viecTvv.ts';
+import { giuViecQl, tvvConVai } from './viecTvv.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import type { WorkItem } from './mywork.ts';
 import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
@@ -137,7 +137,7 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
   const gvcn = gvcnCuaEm(r.student_id, homNay).gvcn;
   let macDinh: number[]; let mo: boolean; let tieuDe: string;
   if (loai === 'bao_ph') {
-    macDinh = tvv ? [tvv] : conVaiO(r.nguoi_luat, VAI_LEAD_TVV, branchId) ? [r.nguoi_luat] : ql(branchId);   // BAOPH-0 (N72 ⑤) + VAI-0 (N76b): em chưa có TVV → Lead TVV chốt lúc sinh → Head
+    macDinh = tvv && tvvConVai(tvv, branchId) ? [tvv] : conVaiO(r.nguoi_luat, VAI_LEAD_TVV, branchId) ? [r.nguoi_luat] : ql(branchId);   // TVV hết vai = chưa có TVV   // BAOPH-0 (N72 ⑤) + VAI-0 (N76b): em chưa có TVV → Lead TVV chốt lúc sinh → Head
     mo = r.trang_thai === 'mo';
     tieuDe = `Báo PH · ${r.nhan} · ${ten(r)}`;
   } else if (loai === 'phoi_hop') {

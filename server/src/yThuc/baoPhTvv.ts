@@ -21,8 +21,8 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
-import { laLeadTvv, tvvHieuLuc } from '../worklist/viecTvv.ts';
-import { coLeadTvv, conVaiO, headCua, nguoiNhanTuDong } from '../worklist/nguoiNhan.ts';
+import { laLeadTvv, tvvConVai, tvvHieuLuc } from '../worklist/viecTvv.ts';
+import { KHONG_TVV_SQL, conVaiO, headCua, itViecNhat } from '../worklist/nguoiNhan.ts';
 import { VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
@@ -60,7 +60,7 @@ export const CHI_NHANH_EM = `COALESCE((SELECT c.branch_id FROM enrollments e JOI
 export function nguoiGiuBaoPh(studentId: number, nguoiLuat?: number | null): number[] {
   const s = db().prepare(`SELECT s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id FROM students s WHERE s.id = ?`).get(studentId) as any;
   if (!s) return [];
-  if (s.tvv) return [s.tvv as number];
+  if (s.tvv && tvvConVai(s.tvv, s.branch_id ?? null)) return [s.tvv as number];   // TVV hết vai = chưa có TVV
   if (conVaiO(nguoiLuat, VAI_LEAD_TVV, s.branch_id)) return [nguoiLuat!];
   const h = s.branch_id ? headCua(s.branch_id) : null;
   return h ? [h] : [];
@@ -70,11 +70,16 @@ export function nguoiGiuBaoPh(studentId: number, nguoiLuat?: number | null): num
  * VAI-0 (N76b, N74): TRONG tx — việc Báo PH vừa sinh của em CHƯA có TVV → chốt MỘT Lead TVV gán chi nhánh em (ít việc mở nhất) vào `nguoi_luat`. Không có Lead TVV → NULL
  * (Head giữ). Việc sinh trước khi có Lead TVV giữ ở Head (không nhảy). Em được gán TVV sau → việc về TVV (đọc).
  */
+/* TVV hết vai = chưa có TVV (như viecTvv). */
 export function chotLeadBaoPh(ids: readonly number[], theo: 'id' | 'measure_id' = 'id'): void {
-  if (!ids.length || !coLeadTvv()) return;   // chưa ai là Lead TVV: 0 câu
-  for (const r of db().prepare(`SELECT v.id, ${CHI_NHANH_EM} AS cn FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
-      WHERE v.${theo} IN (${DS_JSON}) AND v.nguoi_luat IS NULL AND s.consultant_user_id IS NULL`).all(JSON.stringify(ids)) as { id: number; cn: number | null }[]) {
-    const u = nguoiNhanTuDong(VAI_LEAD_TVV, r.cn);
+  if (!ids.length) return;
+  /* MỘT câu đọc: việc chưa chốt của em chưa có TVV + Lead TVV gán chi nhánh em (sớm → muộn); không Lead TVV → không ghi gì (rà PTA: trần câu lô xử lý). */
+  for (const r of db().prepare(`SELECT v.id, (SELECT json_group_array(l.u) FROM (SELECT ur.user_id AS u FROM user_roles ur JOIN roles rl ON rl.id = ur.role_id JOIN users lu ON lu.id = ur.user_id
+        WHERE rl.key = 'lead_consultant' AND ur.status = 'active' AND lu.status = 'active' AND lu.deleted_at IS NULL AND ur.branch_id = ${CHI_NHANH_EM} ORDER BY ur.created_at, ur.id) l) AS leads
+      FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
+      WHERE v.${theo} IN (${DS_JSON}) AND v.nguoi_luat IS NULL AND ${KHONG_TVV_SQL('s')}`).all(JSON.stringify(ids)) as { id: number; leads: string }[]) {
+    const ds = [...new Set(JSON.parse(r.leads ?? '[]') as number[])];
+    const u = ds.length ? itViecNhat(ds) : null;
     if (u) db().prepare('UPDATE viec_bao_ph SET nguoi_luat = ? WHERE id = ?').run(u, r.id);
   }
 }

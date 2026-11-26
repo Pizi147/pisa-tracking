@@ -6,12 +6,17 @@
  * "Ít việc mở" chỉ đếm dòng đã lưu người (`phu_trach_id` / `nguoi_luat` / `assignee_user_id`) — một câu; việc tính lúc đọc không đếm.
  */
 import { db } from '../db.ts';
-import { nho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { LUOT_SAU_THI_SQL } from '../students/tamDung.ts';
+import { CN_EM } from './hieuLuc.ts';
 
 /** Người còn hoạt động + còn vai BPXL (bất kỳ chi nhánh) — người nhận lớp đã nghỉ / gỡ vai không hiện, lớp như chưa ai nhận. */
 export const CON_VAI_BPXL = (u: string) => `EXISTS (SELECT 1 FROM user_roles ur_ JOIN roles r_ ON r_.id = ur_.role_id JOIN users u_ ON u_.id = ur_.user_id WHERE ur_.user_id = ${u}
   AND r_.key = 'scheduler' AND ur_.status = 'active' AND u_.status = 'active' AND u_.deleted_at IS NULL)`;
+/** VAI-0: em (bí danh `s`) chưa có TVV CÒN HIỆU LỰC — chưa gán, hoặc TVV không còn vai TVV ở chi nhánh em (như `tvvConVai`, viecTvv.ts). */
+export const KHONG_TVV_SQL = (s: string) => `(${s}.consultant_user_id IS NULL OR NOT EXISTS (SELECT 1 FROM user_roles t_ JOIN roles tr_ ON tr_.id = t_.role_id JOIN users tu_ ON tu_.id = t_.user_id
+  WHERE t_.user_id = ${s}.consultant_user_id AND tr_.key = 'consultant' AND t_.status = 'active' AND tu_.status = 'active' AND tu_.deleted_at IS NULL
+    AND (t_.branch_id IS NULL OR t_.branch_id = ${CN_EM(`${s}.id`)})))`;
 const HOAT_DONG = `u.status = 'active' AND u.deleted_at IS NULL AND ur.status = 'active'`;
 
 /** Người giữ vai `vai` ĐÚNG chi nhánh `cn` (không tính grant toàn hệ thống), sắp theo lúc được gán (sớm trước). Nhớ theo request. */
@@ -35,6 +40,7 @@ function soViecMo(ids: readonly number[]): Map<number, number> {
       UNION ALL SELECT mp.nguoi_luat ${MP} AND mp.phu_trach_id IS NULL AND mp.nguoi_luat IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT v.phu_trach_id ${VIEC_TVV} AND v.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT v.nguoi_luat ${VIEC_TVV} AND v.phu_trach_id IS NULL AND v.nguoi_luat IN (SELECT value FROM json_each(?1))
+        AND EXISTS (SELECT 1 FROM students s WHERE s.id = v.student_id AND ${KHONG_TVV_SQL('s')})   -- chỉ việc Lead TVV đang giữ thật (em chưa có TVV)
       UNION ALL SELECT x.phu_trach_id FROM sos_coordination_actions x LEFT JOIN assessment_attempts pa ON pa.id = x.attempt_id
         WHERE x.status = 'pending' AND ${CON_VIEC('pa')} AND x.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
@@ -62,9 +68,6 @@ export function cvxlCuaLop(lopId: number | null | undefined): number | null {
 /** Người giữ vai Head / Quản trị / Lead TVV (mọi chi nhánh) — MỘT câu mỗi request; sắp theo lúc được gán. Kiểm "còn hiệu lực" lúc đọc, Head lùi một người. */
 const giuVai = () => nho('nguoi-nhan:giu-vai', () => db().prepare(`SELECT r.key AS k, ur.user_id AS u, ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id
     JOIN users u ON u.id = ur.user_id WHERE r.key IN ('manager', 'system_admin', 'lead_consultant') AND ${HOAT_DONG} ORDER BY ur.created_at, ur.id`).all() as { k: string; u: number; b: number | null }[]);
-/** Hệ thống có Lead TVV gán chi nhánh nào không — nhớ theo phiên bản bảng vai (0 câu ở mọi lần ghi khi chưa ai đổi vai). Chưa có → khỏi chốt (OV13d-6: trần câu lô xử lý). */
-export const coLeadTvv = (): boolean => nhoTheoBang(['user_roles', 'roles', 'users'], 'vai0:co-lead-tvv', () => !!db().prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-    JOIN users u ON u.id = ur.user_id WHERE r.key = 'lead_consultant' AND ur.branch_id IS NOT NULL AND ${HOAT_DONG} LIMIT 1`).get());
 /** `u` còn giữ vai `vai` gán ĐÚNG chi nhánh `cn`. */
 export const conVaiO = (u: number | null | undefined, vai: string, cn: number | null | undefined): boolean => !!u && !!cn && giuVai().some((x) => x.u === u && x.k === vai && x.b === cn);
 /** N74: Head lùi MỘT người — Head gán chi nhánh sớm nhất → Head toàn hệ thống sớm nhất → Quản trị sớm nhất (như `ql` cũ nhưng một người). */

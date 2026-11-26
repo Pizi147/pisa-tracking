@@ -13,6 +13,7 @@ export async function runPrVaiMoiTests(t: any) {
   const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
   const cases: any = await import('../cases/cases.ts');
   const kh: any = await import('../keHoach/keHoachTest.ts');
+  const bpMod: any = await import('../yThuc/baoPhTvv.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { giuViecQl, leadTvvCua } = await import('../worklist/viecTvv.ts');
   const { quanLyCuaChiNhanh } = await import('../platform/audit.ts');
@@ -261,6 +262,16 @@ export async function runPrVaiMoiTests(t: any) {
       if (await goi('POST', `/classes/${CP_FT}/xep-lich`, ckA, { userId: bpA, cu: null }) !== 200) sai.push('BPXL nhận lớp CN khác');
       if (await goi('POST', `/classes/${CP_FT}/xep-lich/hoan-tac`, await vao(tvvMb)) !== 403) sai.push('TVV hoàn tác');
       if (await goi('POST', `/classes/${CP_FT}/xep-lich/hoan-tac`, ckA) !== 200) sai.push('BPXL hoàn tác của mình');
+      if (await goi('GET', `/classes/${MB_FT}/xep-lich`, await vao(P.cpManager.userId)) !== 403) sai.push('Head CP xem lớp MB phải 403');
+      /* VM-14 qua HTTP: BPXL CN X xem Kế hoạch Test lớp CN khác — không trường điểm (FT + lớp thường), lịch S Ex giữ. */
+      const docJson = async (url: string, ck: string): Promise<any> => (await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie: ck } })).json();
+      const ft = JSON.stringify((await docJson(`/ke-hoach-test/ft/${CP_FT}`, ckA)).hang ?? 'loi');
+      if (/"(diem|ovr|kyVong|nhanXet)":/.test(ft) || ft === '"loi"') sai.push(`HTTP FT CN khác còn điểm / lỗi: ${ft.slice(0, 200)}`);
+      const thuong = one(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code WHERE c.branch_id != ? AND c.status = 'active' AND pg.scoring_mode = 'ratio' ORDER BY c.id LIMIT 1`, X.id)?.id;
+      if (thuong) {
+        const th = JSON.stringify((await docJson(`/ke-hoach-test/thuong/${thuong}`, ckA)).hang ?? 'loi');
+        if (/"(diem|ovr|kyVong|nhanXet)":/.test(th) || th === '"loi"') sai.push(`HTTP lớp thường CN khác còn điểm / lỗi: ${th.slice(0, 200)}`);
+      }
       const emCp = emCua(CP_FT);
       const stL = await goi('PATCH', `/students/${emCp}`, await vao(leadMb), { phone: '0900000000' });
       if (stL !== 403 && stL !== 404) sai.push(`Lead TVV MB sửa HV CP: ${stL}`);
@@ -272,8 +283,44 @@ export async function runPrVaiMoiTests(t: any) {
     xoaNho();
     const a = loadPrincipal(bpA);
     const bpx = JSON.stringify(kh.chiLich(a, CP_FT, kh.luoiFT(a, CP_FT)).hang);
-    assert(!/"(diem|ovr|kyVong|nhanXet|sEx)":/.test(bpx), `BPXL CN khác còn điểm: ${bpx.slice(0, 300)}`);
+    assert(!/"(diem|ovr|kyVong|nhanXet)":/.test(bpx) && /"sEx":/.test(bpx), `BPXL CN khác còn điểm: ${bpx.slice(0, 300)}`);
     const head = JSON.stringify(kh.chiLich(P.cpManager, CP_FT, kh.luoiFT(P.cpManager, CP_FT)).hang);
     assert(/"(diem|ovr)":/.test(head), 'Head CP vẫn thấy điểm (seed CP FT 110 cần lượt có điểm)');
   });
+
+  check('VM-15 · (rà PTA) CVXL đã nhận lớp mất vai BPXL → lớp như chưa ai nhận; người khác nhận được (không 409 kẹt); Hoàn tác trả dòng cũ', () => thu(() => {
+    const cuNguoi = tao('scheduler', [X.code]);
+    xl.ganXepLich(loadPrincipal(cuNguoi), MB_FT, { userId: cuNguoi, cu: null });
+    conn.prepare(`UPDATE user_roles SET status = 'inactive' WHERE user_id = ?`).run(cuNguoi);
+    xoaNho();
+    assert(xl.xemXepLich(MB_FT) === null, 'ẩn người mất vai');
+    const r = xl.ganXepLich(loadPrincipal(bpB), MB_FT, { userId: bpB, cu: null });
+    assert(r.xepLich?.userId === bpB, JSON.stringify(r));
+    xl.hoanTacXepLich(loadPrincipal(bpB), MB_FT);
+    assert(one('SELECT user_id FROM lop_xep_lich WHERE class_id = ?', MB_FT)?.user_id === cuNguoi, 'Hoàn tác trả dòng cũ');
+    /* Head gán hộ cũng được khi người cũ mất vai. */
+    xl.ganXepLich(P.mbManager, MB_FT, { userId: bpA, cu: null });
+    assert(xl.xemXepLich(MB_FT)?.userId === bpA, 'Head gán hộ');
+  }));
+
+  check('VM-16 · (rà PTA) Báo PH sinh qua đường nghiệp vụ THẬT (Trao đổi gia đình → dongBoViecTvvLuot) khi em chưa có TVV / TVV hết vai → chốt Lead TVV CN em', () => thu(() => {
+    const bp: any = bpMod;
+    const tvvCu = tao('consultant', ['MB']);
+    const thu1 = (tvv: number | null) => {
+      const att = one(`SELECT a.id, a.student_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+          WHERE c.branch_id = ? AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id)
+          AND NOT EXISTS (SELECT 1 FROM viec_bao_ph v WHERE v.student_id = a.student_id AND v.trang_thai = 'mo') ORDER BY a.id DESC LIMIT 1`, MB);
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv, att.student_id);
+      conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'talk_family', 1, 'pending', ?)`)
+        .run(att.id, att.student_id, new Date().toISOString());
+      xoaNho();
+      bp.dongBoViecTvvLuot([att.id]);
+      return one('SELECT nguoi_luat FROM viec_bao_ph WHERE student_id = ? AND trang_thai = ? ORDER BY id DESC LIMIT 1', att.student_id, 'mo')?.nguoi_luat;
+    };
+    assert(thu1(null) === leadMb, 'em chưa có TVV → Lead TVV');
+    conn.prepare(`UPDATE user_roles SET status = 'inactive' WHERE user_id = ?`).run(tvvCu);
+    assert(thu1(tvvCu) === leadMb, 'TVV hết vai → Lead TVV');
+    const tvvCon = one(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.branch_id = ? AND ur.status = 'active' LIMIT 1`, MB).u;
+    assert(thu1(tvvCon) == null, 'em có TVV → không chốt');
+  }));
 }
