@@ -18,7 +18,7 @@ import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } fr
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot } from './baoPhTvv.ts';
-import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, tenVaiTai } from '../worklist/giaoViec.ts';
+import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, luatMeeting } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -235,7 +235,7 @@ export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLu
 
 /**
  * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (meeting_phan + tên). Người phụ trách được giao chỉ hiệu lực khi còn hoạt động + còn vai ở
- * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `tenVaiTai` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
+ * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `luatMeeting` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
  * một câu mỗi request, dùng chung với `/my-work`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
  */
 export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }> {
@@ -249,7 +249,7 @@ export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xe
       WHERE mp.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
     const xep = r.phan === 'xep_lich';
-    const luat = tenVaiTai(r.phan, r.branch_id ?? null, r.nguoi_luat);   // VAI-0 (N74): một người — GĐCN / CX / BPXL
+    const luat = luatMeeting(r.phan, r.branch_id ?? null, r.nguoi_luat);   // VAI-0 (N74): một người — GĐCN / CX / BPXL
     const vaiTen = luat?.ten ?? null;
     const vai = luat ? (xep ? 'BPXL' : luat.vai === 'branch_director' ? 'GĐCN' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
     const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,

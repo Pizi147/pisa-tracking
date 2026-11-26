@@ -1048,8 +1048,6 @@ export function chotNguoiLuatMeeting(ids?: readonly number[]): number {
   }
   return n;
 }
-/** NHẸ HƠN PR-6: tên + vai người theo luật của phần Meeting (cùng bộ nhớ `nguoiGiuVai`, 0 câu thêm) — thanh chấm Phối hợp SOS ở hồ sơ. */
-export const tenVaiTai = (phan: string, cn: number | null, nguoiLuat?: number | null): LuatMeeting | null => luatMeeting(phan, cn, nguoiLuat);
 
 /**
  * Việc người khác giao cho tôi (ba bảng có `phu_trach_id = tôi`, đi chỉ mục một phần) + phần Meeting (giao cho tôi; theo luật ở chi nhánh tôi có vai

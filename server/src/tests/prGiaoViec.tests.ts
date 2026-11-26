@@ -357,7 +357,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const { m, cau, dong } = doc();
     assert(m && m.xepLich && m.ketQua, `thiếu phần: ${JSON.stringify(m)}`);
     assert(m.xepLich.nguoi === 'GIAOVIEC ADMIN' && m.xepLich.vai === (coBpxl ? 'BPXL' : 'TVV') && m.xepLich.trangThai === 'mo', `Xếp lịch: ${JSON.stringify(m.xepLich)}`);
-    const luat = (phan: string) => gv.tenVaiTai(phan, mbId, mot('SELECT nguoi_luat FROM meeting_phan WHERE phoi_hop_id = ? AND phan = ?', aid, phan)?.nguoi_luat)?.ten ?? null;   // VAI-0: một người
+    const luat = (phan: string) => gv.luatMeeting(phan, mbId, mot('SELECT nguoi_luat FROM meeting_phan WHERE phoi_hop_id = ? AND phan = ?', aid, phan)?.nguoi_luat)?.ten ?? null;   // VAI-0: một người
     assert(m.ketQua.nguoi === luat('ket_qua') && m.ketQua.nguoi && m.ketQua.vai === 'CX', `Kết quả: ${JSON.stringify(m.ketQua)}`);
     assert(cau <= TRAN_PHOI_HOP_MEETING.cau && dong <= TRAN_PHOI_HOP_MEETING.dong, `đường hồ sơ (1 Meeting): ${cau} câu / ${dong} dòng > trần ${TRAN_PHOI_HOP_MEETING.cau} / ${TRAN_PHOI_HOP_MEETING.dong}`);
     console.log(`    · đo /students/:id/phoi-hop-sos (1 Meeting đã xác nhận): ${cau} câu · ${dong} dòng`);

@@ -18,8 +18,6 @@ export function nhomVaiCn(vai: string, cn: number): number[] {
   ).all(vai, cn) as { u: number }[]).map((r) => r.u));
 }
 
-/** Người được gán sớm nhất của nhóm (lùi lúc ĐỌC — ổn định, không đếm việc). */
-export const dauNhom = (vai: string, cn: number | null): number | null => (cn ? nhomVaiCn(vai, cn)[0] ?? null : null);
 
 /** Số việc mở mỗi người (đã lưu người) — MỘT câu cho cả nhóm. */
 function soViecMo(ids: readonly number[]): Map<number, number> {
