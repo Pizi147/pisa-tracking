@@ -13,8 +13,11 @@ import { badRequest, conflict, forbidden, notFound } from '../util.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { chotNguoiLuatMeeting } from '../worklist/giaoViec.ts';
+import { CON_VAI_BPXL } from '../worklist/nguoiNhan.ts';
 
 const LOAI = 'xep_lich_lop';
+/** Ai xem được người nhận lớp: ai xem / xếp được lịch lớp (BPXL mọi chi nhánh — N77). */
+export const xemDuocXepLich = (p: Principal, classId: number) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId });
 export type XepLichLop = { userId: number; ten: string } | null;
 
 const laBpxl = (uid: number) => !!db().prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
@@ -25,7 +28,7 @@ const coVaiBpxl = (p: Principal) => p.grants.some((g) => g.roleKey === 'schedule
 export const ganHoDuoc = (p: Principal, classId: number) => laLeadBpxl(p) || can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
 
 export function xemXepLich(classId: number): XepLichLop {
-  const r = db().prepare(`SELECT l.user_id, u.full_name FROM lop_xep_lich l JOIN users u ON u.id = l.user_id WHERE l.class_id = ?`).get(classId) as any;
+  const r = db().prepare(`SELECT l.user_id, u.full_name FROM lop_xep_lich l JOIN users u ON u.id = l.user_id WHERE l.class_id = ? AND ${CON_VAI_BPXL('l.user_id')}`).get(classId) as any;
   return r ? { userId: r.user_id, ten: r.full_name } : null;
 }
 

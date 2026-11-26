@@ -8,8 +8,10 @@ export async function runPrVaiMoiTests(t: any) {
   const { check, assert, conn, P, classId } = t;
   const accounts: any = await import('../platform/accounts.ts');
   const { migratePrVaiMoi } = await import('../migrate/prVaiMoi.ts');
-  const { loadPrincipal, can, scopeFor, qlDiem, duocSuaLichLop, cnMacDinhBpxl, scopeXemLuotCham } = await import('../permissions.ts');
+  const { loadPrincipal, can, scopeFor, qlDiem, duocSuaLichLop, cnMacDinhBpxl, scopeXemLuotCham, scopeLichTest } = await import('../permissions.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
+  const cases: any = await import('../cases/cases.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { giuViecQl, leadTvvCua } = await import('../worklist/viecTvv.ts');
   const { quanLyCuaChiNhanh } = await import('../platform/audit.ts');
@@ -125,6 +127,10 @@ export async function runPrVaiMoiTests(t: any) {
     conn.prepare(`UPDATE students SET consultant_user_id = NULL WHERE id = ?`).run(v.student_id);
     xoaNho();
     assert(leadTvvCua(MB) === leadMb, 'Lead TVV MB');
+    /* (rà PTA P1-1) việc sinh TRƯỚC khi chốt (nguoi_luat NULL) giữ ở Head — có Lead TVV mới không làm việc cũ nhảy. */
+    assert(gv.docViec('bao_ph', v.id).macDinh.join() === String(nn.headCua(MB)), 'việc cũ giữ một Head');
+    bp.chotLeadBaoPh([v.id]);   // như lúc sinh việc mới
+    xoaNho();
     assert(gv.docViec('bao_ph', v.id).macDinh.join() === String(leadMb), 'macDinh Lead TVV');
     const cua = (pp: any, tatCa: boolean) => bp.viecBaoPhCuaToi(pp, { today: demoToday(), tatCa, branchId: null, studentId: v.student_id }).filter((i: any) => i.key.includes(String(v.id)));
     const l = cua(loadPrincipal(leadMb), false);
@@ -178,11 +184,19 @@ export async function runPrVaiMoiTests(t: any) {
     const v = one(`SELECT v.id, v.student_id FROM viec_bao_ph v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
         WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND c.branch_id = ? ORDER BY v.id LIMIT 1`, MB);
     conn.prepare(`UPDATE students SET consultant_user_id = NULL WHERE id = ?`).run(v.student_id);
+    bp.chotLeadBaoPh([v.id]);
     xoaNho();
     const co = (pp: any, nguoi?: 'tat-ca') => ((myWork(pp, { nguoi }) as any).items as any[]).filter((i) => i.key.includes(`:${v.id}`) && i.mine);
     assert(co(loadPrincipal(leadMb)).length === 1, 'Lead Của tôi');
     assert(co(loadPrincipal(leadMb), 'tat-ca').length === 1, 'Lead Tất cả');
     assert(!co(P.mbManager).length, 'Head Của tôi không còn');
+    /* (rà PTA P1-2) hồ sơ HV: việc của Lead TVV là "của bạn"; (P1-3) người giữ Báo PH cùng nguồn. */
+    const lp = loadPrincipal(leadMb);
+    const lopEm = one(`SELECT class_id c FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`, v.student_id).c;
+    const kq = viecCuaHocVien(lp, v.student_id, cases.skillSupportBoard(lp, v.student_id), { trangThaiEm: 'active', lopId: lopEm, chuongTrinh: null, yThuc: null, miniTest: null, dai: null } as any);
+    const hs = [...kq.cuaBan, ...kq.nguoiKhac].filter((x: any) => x.key === `bao-ph:${v.id}`);
+    assert(hs.length === 1 && hs[0].cuaBan, `hồ sơ: ${JSON.stringify(hs)}`);
+    assert(bp.nguoiGiuBaoPh(v.student_id, leadMb).join() === String(leadMb), 'nguoiGiuBaoPh cùng nguồn');
   }));
 
   check('VM-9 · (rà C2) CVXL chi nhánh X nhận lớp MB → phần Xếp lịch họp của em lớp đó ở /my-work của CVXL', () => thu(() => {
@@ -197,7 +211,59 @@ export async function runPrVaiMoiTests(t: any) {
   check('VM-10 · (rà I1) BPXL: Lịch Test tuần mọi chi nhánh, nhưng KHÔNG xem hồ sơ lượt / Học viên & Lớp chi nhánh khác', () => {
     xoaNho();
     const a = loadPrincipal(bpA);
-    assert(scopeXemLuotCham(a).all, 'Lịch Test tuần mọi chi nhánh');
+    assert(scopeLichTest(a).all && !scopeXemLuotCham(a).all, 'Lịch Test tuần mọi chi nhánh; Điểm theo lớp (bảng 403 CN khác) không liệt kê');
     assert(!scopeFor(a, PERMISSIONS.ATTEMPT_VIEW).all && !can(a, PERMISSIONS.ATTEMPT_VIEW, { classId: CP_FT }), 'không mở attempt.view');
+  });
+
+  check('VM-11 · (rà PTA P2) phần Meeting chưa chốt (nguoi_luat NULL) không nhảy sang BPXL mới; Head lùi MỘT người', () => thu(() => {
+    const { xep } = taoMeeting();
+    conn.prepare('UPDATE meeting_phan SET nguoi_luat = NULL WHERE id = ?').run(xep.id);
+    xoaNho();
+    const md = gv.docViec('meeting', xep.id).macDinh;
+    assert(md.length === 1 && !nn.nhomVaiCn('scheduler', MB).includes(md[0]), `NULL → TVV / Head, không BPXL: ${md}`);
+    assert(gv.ql(MB).length === 1 && gv.ql(MB)[0] === nn.headCua(MB), 'ql một Head');
+  }));
+
+  check('VM-12 · (rà PTA) GĐCN không có việc Head trên /my-work thật; GĐCN / Lead TVV toàn hệ thống không nhận việc', () => thu(() => {
+    xoaNho();
+    const g = myWork(loadPrincipal(gdcnMb)) as any;
+    const h = myWork(P.mbManager) as any;
+    const head = new Set((h.items as any[]).filter((i) => i.mine).map((i) => i.key));
+    const trung = (g.items as any[]).filter((i) => i.mine && head.has(i.key));
+    assert(!trung.length, `GĐCN có việc Head: ${trung.map((i) => i.key).slice(0, 5)}`);
+    const gToan = tao('branch_director', []); const lToan = tao('lead_consultant', []);
+    xoaNho();
+    assert(!nn.nhomVaiCn('branch_director', MB).includes(gToan) && !nn.nhomVaiCn('lead_consultant', MB).includes(lToan) && leadTvvCua(MB) !== lToan, 'toàn hệ thống không vào nhóm nhận');
+    assert(!((myWork(loadPrincipal(lToan)) as any).items as any[]).some((i) => i.mine), 'Lead TVV toàn HT không có việc');
+  }));
+
+  await t.checkAsync('VM-13 · (rà PTA) HTTP: /classes/:id/xep-lich — TVV, CX, Head chi nhánh khác 403; người ngoài Hoàn tác 403; BPXL CN khác xem được; Lead TVV sửa HV CN khác 403', async () => {
+    const { createApp } = await import('../app.ts');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const goi = async (method: string, url: string, cookie: string, body?: unknown) => {
+      const res = await fetch(`http://127.0.0.1:${cong}/api${url}`, { method, headers: { 'content-type': 'application/json', cookie }, body: body === undefined ? undefined : JSON.stringify(body) });
+      return res.status;
+    };
+    const vao = async (userId: number) => (await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) }))
+      .headers.get('set-cookie')?.split(';')[0] ?? '';
+    try {
+      const tvvMb = one(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.branch_id = ? AND ur.status = 'active' LIMIT 1`, MB).u;
+      const cxMb = one(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'cx' AND ur.status = 'active' LIMIT 1`).u;
+      const sai: string[] = [];
+      for (const [ten, uid] of [['TVV', tvvMb], ['CX', cxMb], ['Head CP', P.cpManager.userId]] as const) {
+        const st = await goi('POST', `/classes/${MB_FT}/xep-lich`, await vao(uid), { userId: bpA, cu: null });
+        if (st !== 403) sai.push(`${ten} gán: ${st}`);
+      }
+      const ckA = await vao(bpA);
+      if (await goi('GET', `/classes/${CP_FT}/xep-lich`, ckA) !== 200) sai.push('BPXL xem lớp CN khác');
+      if (await goi('POST', `/classes/${CP_FT}/xep-lich`, ckA, { userId: bpA, cu: null }) !== 200) sai.push('BPXL nhận lớp CN khác');
+      if (await goi('POST', `/classes/${CP_FT}/xep-lich/hoan-tac`, await vao(tvvMb)) !== 403) sai.push('TVV hoàn tác');
+      if (await goi('POST', `/classes/${CP_FT}/xep-lich/hoan-tac`, ckA) !== 200) sai.push('BPXL hoàn tác của mình');
+      const emCp = emCua(CP_FT);
+      const stL = await goi('PATCH', `/students/${emCp}`, await vao(leadMb), { phone: '0900000000' });
+      if (stL !== 403 && stL !== 404) sai.push(`Lead TVV MB sửa HV CP: ${stL}`);
+      assert(!sai.length, sai.join(' | '));
+    } finally { may.close(); xoaNho(); }
   });
 }

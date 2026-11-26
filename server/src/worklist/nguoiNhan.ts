@@ -7,7 +7,11 @@
  */
 import { db } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { LUOT_SAU_THI_SQL } from '../students/tamDung.ts';
 
+/** Người còn hoạt động + còn vai BPXL (bất kỳ chi nhánh) — người nhận lớp đã nghỉ / gỡ vai không hiện, lớp như chưa ai nhận. */
+export const CON_VAI_BPXL = (u: string) => `EXISTS (SELECT 1 FROM user_roles ur_ JOIN roles r_ ON r_.id = ur_.role_id JOIN users u_ ON u_.id = ur_.user_id WHERE ur_.user_id = ${u}
+  AND r_.key = 'scheduler' AND ur_.status = 'active' AND u_.status = 'active' AND u_.deleted_at IS NULL)`;
 const HOAT_DONG = `u.status = 'active' AND u.deleted_at IS NULL AND ur.status = 'active'`;
 
 /** Người giữ vai `vai` ĐÚNG chi nhánh `cn` (không tính grant toàn hệ thống), sắp theo lúc được gán (sớm trước). Nhớ theo request. */
@@ -19,14 +23,20 @@ export function nhomVaiCn(vai: string, cn: number): number[] {
 }
 
 
-/** Số việc mở mỗi người (đã lưu người) — MỘT câu cho cả nhóm. */
+/** Dòng việc mở còn là việc (không theo lượt đã huỷ / lượt sau thi thật — N46): bí danh lượt `pa` (LEFT JOIN, NULL = việc không theo lượt). */
+const CON_VIEC = (pa: string) => `(${pa}.id IS NULL OR (${pa}.status != 'cancelled' AND NOT ${LUOT_SAU_THI_SQL(pa)}))`;
+/** Số việc mở mỗi người (đã lưu người) — MỘT câu cho cả nhóm; dòng "mở" đã chết (lượt huỷ, sau thi thật) không tính. */
 function soViecMo(ids: readonly number[]): Map<number, number> {
   const ds = JSON.stringify(ids);
+  const MP = `FROM meeting_phan mp JOIN sos_coordination_actions mx ON mx.id = mp.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = mx.attempt_id WHERE mp.trang_thai = 'mo' AND ${CON_VIEC('pa')}`;
+  const BP = `FROM viec_bao_ph v LEFT JOIN sos_coordination_actions bx ON bx.id = v.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = bx.attempt_id WHERE v.trang_thai = 'mo' AND ${CON_VIEC('pa')}`;
   const rows = db().prepare(`SELECT nguoi, COUNT(*) AS n FROM (
-      SELECT phu_trach_id AS nguoi FROM meeting_phan WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
-      UNION ALL SELECT nguoi_luat FROM meeting_phan WHERE trang_thai = 'mo' AND phu_trach_id IS NULL AND nguoi_luat IN (SELECT value FROM json_each(?1))
-      UNION ALL SELECT phu_trach_id FROM viec_bao_ph WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
-      UNION ALL SELECT phu_trach_id FROM sos_coordination_actions WHERE status = 'pending' AND phu_trach_id IN (SELECT value FROM json_each(?1))
+      SELECT mp.phu_trach_id AS nguoi ${MP} AND mp.phu_trach_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT mp.nguoi_luat ${MP} AND mp.phu_trach_id IS NULL AND mp.nguoi_luat IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT v.phu_trach_id ${BP} AND v.phu_trach_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT v.nguoi_luat ${BP} AND v.phu_trach_id IS NULL AND v.nguoi_luat IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT x.phu_trach_id FROM sos_coordination_actions x LEFT JOIN assessment_attempts pa ON pa.id = x.attempt_id
+        WHERE x.status = 'pending' AND ${CON_VIEC('pa')} AND x.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT assignee_user_id FROM tasks WHERE progress NOT IN ('done', 'stopped') AND assignee_user_id IN (SELECT value FROM json_each(?1))
     ) GROUP BY nguoi`).all(ds) as { nguoi: number; n: number }[];
@@ -47,6 +57,17 @@ export function cvxlCuaLop(lopId: number | null | undefined): number | null {
   if (!lopId) return null;
   return (db().prepare(`SELECT l.user_id AS u FROM lop_xep_lich l JOIN users u ON u.id = l.user_id WHERE l.class_id = ? AND u.status = 'active' AND u.deleted_at IS NULL
       AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = l.user_id AND ur.status = 'active' AND r.key = 'scheduler')`).get(lopId) as any)?.u ?? null;
+}
+
+/** Người giữ vai Head / Quản trị / Lead TVV (mọi chi nhánh) — MỘT câu mỗi request; sắp theo lúc được gán. Kiểm "còn hiệu lực" lúc đọc, Head lùi một người. */
+const giuVai = () => nho('nguoi-nhan:giu-vai', () => db().prepare(`SELECT r.key AS k, ur.user_id AS u, ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+    JOIN users u ON u.id = ur.user_id WHERE r.key IN ('manager', 'system_admin', 'lead_consultant') AND ${HOAT_DONG} ORDER BY ur.created_at, ur.id`).all() as { k: string; u: number; b: number | null }[]);
+/** `u` còn giữ vai `vai` gán ĐÚNG chi nhánh `cn`. */
+export const conVaiO = (u: number | null | undefined, vai: string, cn: number | null | undefined): boolean => !!u && !!cn && giuVai().some((x) => x.u === u && x.k === vai && x.b === cn);
+/** N74: Head lùi MỘT người — Head gán chi nhánh sớm nhất → Head toàn hệ thống sớm nhất → Quản trị sớm nhất (như `ql` cũ nhưng một người). */
+export function headCua(cn: number | null | undefined): number | null {
+  const ds = giuVai();
+  return (cn ? ds.find((x) => x.k === 'manager' && x.b === cn) : undefined)?.u ?? ds.find((x) => x.k === 'manager' && x.b === null)?.u ?? ds.find((x) => x.k === 'system_admin')?.u ?? null;
 }
 
 /** N74: người nhận MỘT việc tự sinh của vai `vai` ở chi nhánh `cn` (lớp `lopId` cho việc BPXL). null = không ai — nơi gọi lùi theo luật. */

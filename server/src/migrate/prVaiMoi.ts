@@ -26,6 +26,8 @@ export function themCotPrVaiMoi(conn: any, them: string[]) {
   if (!co(conn, 'idx_lop_xep_lich_nguoi')) conn.exec(CHI_MUC_LOP_XEP_LICH);
   if (!coCot(conn, 'meeting_phan', 'nguoi_luat')) { conn.exec('ALTER TABLE meeting_phan ADD COLUMN nguoi_luat INTEGER REFERENCES users(id)'); them.push('cột meeting_phan.nguoi_luat'); }
   if (!co(conn, 'idx_meeting_phan_luat')) conn.exec(CHI_MUC_NGUOI_LUAT);
+  if (co(conn, 'viec_bao_ph') && !coCot(conn, 'viec_bao_ph', 'nguoi_luat')) { conn.exec('ALTER TABLE viec_bao_ph ADD COLUMN nguoi_luat INTEGER REFERENCES users(id)'); them.push('cột viec_bao_ph.nguoi_luat'); }
+  if (co(conn, 'viec_bao_ph') && !co(conn, 'idx_viec_bao_ph_luat')) conn.exec(`CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat ON viec_bao_ph(nguoi_luat) WHERE trang_thai = 'mo' AND nguoi_luat IS NOT NULL`);
 }
 
 export function migratePrVaiMoi(conn: any, applied: string[]) {

@@ -1458,7 +1458,7 @@ api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
 /* VAI-0 (N77): CVXL nhận lớp — xem (ai xem được lịch lớp) · nhận / bỏ / gán hộ (`{ userId | null, cu }`) · Hoàn tác. */
 api.get('/classes/:id/xep-lich', requireAuth, wrap((req) => {
   const id = pInt(req, 'id');
-  require_(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id });
+  if (!xepLichLopSvc.xemDuocXepLich(principalOf(req), id)) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
   return { xepLich: xepLichLopSvc.xemXepLich(id) };
 }));
 api.post('/classes/:id/xep-lich', requireAuth, wrap((req) => {

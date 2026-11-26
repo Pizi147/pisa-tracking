@@ -917,7 +917,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước GV-1: cắt ba dòng cột giao việc + khối bảng GV-1 khỏi chữ schema.sql. */
-    const cat = catBaoPh0(SCHEMA)   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
+    /* VAI-0: bỏ viec_bao_ph.nguoi_luat + chỉ mục (themCotPrVaiMoi thêm lại bên dưới) — bộ cắt cũ khớp dòng `tra_lai_id` cuối bảng. */
+    const cat = catBaoPh0(SCHEMA.replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, ''))   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
       /* TUYEN-0 (sau TL-1): bỏ khối bảng bỏ theo dõi tuyến + chỉ mục người làm bước. */
       .replace(/-- TUYEN-0 \(N72 ①\)[\s\S]*?idx_tra_lai_xong_boi[^\n]*\n/, '')
       /* TL-1 (sau GV-1): bỏ viec_bao_ph.tra_lai_id + khối vi_pham_tra_lai trước — DB trước GV-1 cũng trước TL-1. */

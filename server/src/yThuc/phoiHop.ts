@@ -17,7 +17,7 @@ import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
-import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot } from './baoPhTvv.ts';
+import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot, chotLeadBaoPh } from './baoPhTvv.ts';
 import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, luatMeeting } from '../worklist/giaoViec.ts';
 
 /**
@@ -415,6 +415,7 @@ function dongBoViecTvv(id: number, truoc: string): void {
     if (buoc && !v) {
       bp = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(id, r.student_id, tenViec(r.kind, r.pb_moc ?? null), hanTvv(), nowIso()).lastInsertRowid);
+      chotLeadBaoPh([bp]);   // VAI-0 (N76b)
     } else if (buoc && v && v.trang_thai === 'bo' && v.bo_ly_do === LY_DO_MEETING_MO_LAI) {
       /* (10) mở lại = hạn mới từ hôm nay, bỏ hạn người dùng chọn của lần trước. */
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`)

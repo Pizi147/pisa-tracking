@@ -13,7 +13,8 @@
 
 /** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. TU2-5: HDT = Head tutor, chỉ đo đường trang Tutor. */
 /* BPXL-1 (N57): BPXL = Chuyên viên Xếp lịch MB — chỉ đo đường trang đầu Kế hoạch Test + Công việc + Tổng quan MT (PR giao diện BPXL-2 dùng). */
-export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT' | 'BPXL';
+/* VAI-0 (N75 / N76): GDCN = GĐCN Monbay (quyền Head, không việc tự động của Head) · LEADTVV = Lead TVV Monbay (quyền CX, giữ việc em chưa có TVV) — đo /my-work. */
+export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT' | 'BPXL' | 'GDCN' | 'LEADTVV';
 
 export const MOI_VAI: readonly Vai[] = ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'];
 
@@ -125,6 +126,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: 0 câu nghiệp vụ) · trang Công việc "Tất cả" (đọc như QL, không ai là chủ việc). */
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work' },
+  /* VAI-0: Công việc GĐCN / Lead TVV — Của tôi + Tất cả. */
+  { trang: 'Công việc vai mới', vai: ['GDCN', 'LEADTVV'], url: '/my-work' },
+  { trang: 'Công việc vai mới', vai: ['GDCN', 'LEADTVV'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* GV-1 (N58): tab "Đang theo dõi" — đường riêng, chỉ gọi khi mở tab (không vào /my-work, không số đếm), mọi vai. */

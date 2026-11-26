@@ -230,6 +230,13 @@ const USER: Record<Vai, number> = {
   CX: userByRole('cx', null),
   HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
   BPXL: userByRole('scheduler', 'MB'),   // BPXL-1: tài khoản demo Chuyên viên Xếp lịch Monbay
+  /* VAI-0: tạo SAU mọi tài khoản đo khác (id các vai cũ giữ nguyên — băm /my-work không đổi). */
+  GDCN: accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.gdcn.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-gdcn', fullName: 'Đo GĐCN MB', roles: [{ role: 'branch_director', branches: ['MB'] }],
+  }).userId as number,
+  LEADTVV: accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.leadtvv.mb${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-leadtvv', fullName: 'Đo Lead TVV MB', roles: [{ role: 'lead_consultant', branches: ['MB'] }],
+  }).userId as number,
 };
 /** TQ-SOS-CN: `{sos23}` = id em SOS 2–3 của chi nhánh `{cn}` (chính `sos23Ids` của bảng Tổng quan) — tính lại sau khi nhân dữ liệu. */
 const tinhSos23 = () => ((bangChiNhanh(loadPrincipal(USER.QT), { ct: 'ft', chuY: true }).hang.find((h: any) => h.id === CN)?.sos23 ?? []) as number[]).join(',');

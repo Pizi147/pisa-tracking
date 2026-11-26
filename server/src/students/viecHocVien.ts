@@ -7,7 +7,7 @@ import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, laLeadTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 /** VAI-0: loại việc của phía TVV (Lead TVV giữ khi em chưa có TVV). */
-const LOAI_TVV: ReadonlySet<string> = new Set(['bao-ph', 'buoc-tiep', 'thi-that']);
+const LOAI_TVV: ReadonlySet<string> = new Set(['bao-ph-yt', 'phoi-hop-tvv', 'bo-sung', 'buoc-tiep', 'thi-that']);   // 'bao-ph' = Phối hợp được giao — không phải việc TVV
 import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';

@@ -32,6 +32,7 @@ import { xepCoHoanTac } from './hoanTacLich.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
+import { CON_VAI_BPXL } from '../worklist/nguoiNhan.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
@@ -95,7 +96,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
                 WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn,
               xl.user_id AS xep_lich_id, xu.full_name AS xep_lich_ten   -- VAI-0 (N77): CVXL đã nhận lớp (cùng câu)
          FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
-         LEFT JOIN branches br ON br.id = c.branch_id LEFT JOIN lop_xep_lich xl ON xl.class_id = c.id LEFT JOIN users xu ON xu.id = xl.user_id
+         LEFT JOIN branches br ON br.id = c.branch_id LEFT JOIN lop_xep_lich xl ON xl.class_id = c.id AND ${CON_VAI_BPXL('xl.user_id')} LEFT JOIN users xu ON xu.id = xl.user_id
         WHERE ${where}
         ORDER BY c.code`,
     )

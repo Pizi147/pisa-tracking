@@ -505,12 +505,16 @@ export function xemLuotQuaLopDangHoc(p: Principal, studentId: number, date = dem
 }
 /** Phạm vi DANH SÁCH của đường chấm (Lịch Test, Test › Điểm theo lớp): `scopeFor(ATTEMPT_VIEW)` + lớp FT GV Speaking chấm S chéo. */
 export function scopeXemLuotCham(p: Principal, date = demoToday()): Scope {
-  const s0 = themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));
-  /* VAI-0 (N77): BPXL xem Lịch Test tuần mọi chi nhánh ("thấy HẾT LỊCH của các CN khác") — chỉ phạm vi danh sách lịch này. */
-  const s = p.grants.some((g) => g.roleKey === 'scheduler' && g.permissions.has(PERMISSIONS.TEST_VIEW)) ? { ...s0, all: true, none: false } : s0;
+  const s = themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));
   const lopS = s.all ? [] : lopFtChoGvSpeaking(p, date);
   /* OV-14c: GV Speaking không phân công lớp nào (`scopeFor` rỗng) vẫn có phạm vi chấm = các lớp FT này. */
   return lopS.length ? { ...s, none: false, classIds: [...new Set([...s.classIds, ...lopS])] } : s;
+}
+
+/** VAI-0 (N77): phạm vi danh sách Lịch Test tuần — BPXL xem mọi chi nhánh ("thấy HẾT LỊCH của các CN khác"); nơi khác (Điểm theo lớp…) giữ `scopeXemLuotCham`. */
+export function scopeLichTest(p: Principal, date = demoToday()): Scope {
+  const s = scopeXemLuotCham(p, date);
+  return p.grants.some((g) => g.roleKey === 'scheduler' && g.permissions.has(PERMISSIONS.TEST_VIEW)) ? { ...s, all: true, none: false } : s;
 }
 
 /** Chi nhánh mà ngữ cảnh đang nói tới. */
