@@ -2334,7 +2334,7 @@ export const TRAN_GHI_LO = {
    * thường L 61 → 54 · R 61 → 54 · W 84 → 69 · S 96 → 79 (183 → 113 dòng). Bản chép 12/11 (GV thật): R 80 → 76 · L 63 → 57 · W2 183 → 150 · thường 57–65 → 50–56.
    */
   luuDiemFt: 106, luuDiemFtDong: 289,
-  luuDiemFtChotLuot: 196, luuDiemFtChotLuotDong: 301,
+  luuDiemFtChotLuot: 197, luuDiemFtChotLuotDong: 301,   // VAI-0 (N76b) +1: chốt lượt sinh việc TVV → kiểm "có Lead TVV" (`coLeadTvv`, một câu, nhớ theo bảng vai)
   luuDiemThuong: 89, luuDiemThuongDong: 147,
   /** TD-HEAD-CX: ghi một vi phạm + POST /students/:id/y-thuc/xu-ly (sinh việc Báo PH + người theo dõi mặc định MỘT câu, gồm Head / CX); đo trong prGiaoViec TD-HEAD-CX. */
   /** TD-HEAD-CX (rà PTA (3)): sửa cả lớp bỏ TVV mọi em MB FT 101 (đồng bộ Head / CX một lần cuối lô) · lưu vai một tài khoản; đo trong prGiaoViec. */
