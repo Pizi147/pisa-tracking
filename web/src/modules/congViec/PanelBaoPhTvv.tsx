@@ -23,6 +23,8 @@ import { gioVnNay, lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { DaiChiXem, DongTheoDoi, HopNho, KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
 import { PhanMeeting, useMeeting } from './PanelMeeting.tsx';
+import { KhoiTuyen, guiCoNoiDung, type Tuyen } from '../yThuc/KhoiTuyen.tsx';
+import { MucViecCon } from './MucViecCon.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
 type ViecBaoPh = {
@@ -45,6 +47,8 @@ type ViecBaoPh = {
   lichSuHan: { cu: string | null; moi: string; macDinh: boolean; nguoi: string | null; luc: string }[];
   /** TL-1 / TL-2 (N61): "Chờ GV sửa" · yêu cầu trả lại đang mở (một vi phạm / cả lần) · người xem trả lại được (việc còn mở, phía TVV). */
   measureId: number | null; choGvSua?: boolean; traLai?: TraLaiMo[]; coTheTraLai?: boolean;
+  /** TUYEN-0: tuyến của việc (vi phạm · tình hình · Phối hợp). */
+  tuyen?: Tuyen | null;
 };
 
 /** "0912 345 678" — chỉ để đọc; `tel:` giữ số gốc. */
@@ -104,7 +108,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     ...(v?.coTheGhi && !bo ? [{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }] : []),
   ];
   const dau = {
-    ...dauViec({ em, lop: it.classCode, han: v && v.trangThai === 'mo' && !v.choGvSua ? <ChipHan chuThuong loai="viec-van-hanh" han={v.han} /> : null }),
+    /* TUYEN-1 (mockup v27 khung base): hạn chỉ ở khối Phụ trách · Hạn — đầu panel không lặp ngày (còn chip khi khối không tải được). */
+    ...dauViec({ em, lop: it.classCode, han: v && v.trangThai === 'mo' && !v.choGvSua && !gv.g ? <ChipHan chuThuong loai="viec-van-hanh" han={v.han} /> : null }),
     ghim: mucMenu.length ? <MenuDong nhan={t('Thao tác phụ')} muc={mucMenu} lopNut={NUT_DONG} /> : null,   // A3-16: ⋯ cạnh ✕, không rơi dòng · NHẸ HƠN: cùng ô 36 × 36 với ✕
   };
   if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
@@ -227,7 +232,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={(x) => meet.dat(phan.map((y) => (y.id === x.id ? x : y)))} reload={meet.reload} />)}
           <h3 className="m-0 -mb-1 flex items-center gap-2 text-[14px] font-bold">{t('Báo PH')}</h3>
           {khoi}
-        </> : khoi}
+        </> : <>{khoi}
+          {/* TUYEN-1 (mockup v27 T3): khối Tuyến ngay dưới khối việc — thay dòng tóm lần xử lý (`TomLanXuLy`). Meeting: TUYEN-2. */}
+          <KhoiTuyen tuyen={v.tuyen} moSan={guiCoNoiDung} />
+        </>}
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
             <span><b className="text-slate-100">{t('GVCN đang xin thu hồi {nhan}', { nhan: v.nhan })}</b> · {t('chờ Head duyệt.')}</span>
@@ -236,7 +244,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         )}
         {/* TINH-HINH (mockup v20 C2): GV báo tình hình — đọc nội dung GV gửi trước khi báo PH. */}
         {/* NHẸ HƠN PR-2b (PTA rà #1999): không có nội dung thì không vẽ (trước: Meeting hiện mỗi tên + giờ); Meeting có nhãn "Nội dung gửi TVV". */}
-        {(v.tinhHinhId != null || laMeeting) && v.boiCanh.noiDung && (
+        {/* TUYEN-1 (mockup v27 T7a): nội dung GV gửi nằm ở bước "GV gửi tình hình" của Tuyến (mở sẵn) — hộp riêng chỉ khi Tuyến không có phần đó. */}
+        {(v.tinhHinhId != null || laMeeting) && v.boiCanh.noiDung && (laMeeting || !v.tuyen?.buoc.some(guiCoNoiDung)) && (
           <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
             <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400">{laMeeting ? <span className="font-semibold">{t('Nội dung gửi TVV')}</span> : <TheLoai loai="th" />}
               {v.boiCanh.nguoiLuu && <b className="font-semibold text-slate-200">{v.boiCanh.nguoiLuu}</b>}{v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>}</span>
@@ -244,7 +253,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           </div>
         )}
         {/* NHẸ HƠN PR-6 (v23 P1): một dòng tóm in đậm chỗ chính, thay dải ①②③ (trạng thái / hạn đã ở đầu panel + khối Hạn). */}
-        {v.tinhHinhId == null && !laMeeting && <TomLanXuLy ngayVp={v.boiCanh.viPham.map((x) => x.ngay)} gvcn={v.boiCanh.nguoiLuu ?? null} nhan={bacNgan(v.nhan)}
+        {v.tinhHinhId == null && !laMeeting && !v.tuyen && <TomLanXuLy ngayVp={v.boiCanh.viPham.map((x) => x.ngay)} gvcn={v.boiCanh.nguoiLuu ?? null} nhan={bacNgan(v.nhan)}
           ngayXl={v.boiCanh.ngayLam ?? v.boiCanh.luuLuc ?? null} choHead={v.choQlDuyet ? { han: v.choQlDuyet.han ?? null } : undefined} />}
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
         {v.boiCanh.viPham.length > 0 && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
@@ -278,6 +287,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
             </Truong>
           </>
         )}
+        {gv.g && !laMeeting && <MucViecCon g={gv.g} onDoi={gv.reload} />}
         {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n"; chưa có lần ghi thì không vẽ (lời 40). Chủ SP 22/11 ý 12: luôn gập sẵn. */}
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />

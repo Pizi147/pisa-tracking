@@ -12,6 +12,11 @@ import { luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type
 import { NutDongPanel, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { lamMoiYThucCua, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { KhoiTuyen } from './KhoiTuyen.tsx';
+import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
+import { MucViecCon } from '../congViec/MucViecCon.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
+import { lucVn } from '../congViec/gioVn.ts';
 
 /**
  * ĐÃ THỰC HIỆN (V4-10) — QL đã duyệt đề xuất (WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác), GVCN ghi ngày đã làm (hạn 5 ngày từ ngày
@@ -27,6 +32,8 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: m, error: loiTai, reload } = useApi<XuLyView>(measureId ? `/y-thuc/xu-ly/${measureId}` : null, [measureId]);
+  /* TUYEN-1 (N72 ⑥, 4.6): khối Phụ trách · Hạn · Theo dõi của việc Đã thực hiện — một GET song song; tuyến đi cùng `/y-thuc/xu-ly/:id`. */
+  const gv = useGiaoViec('da_thuc_hien', measureId);
   const [ngayTh, setNgayTh] = useState(homNay);
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [ghiChu, setGhiChu] = useState('');
@@ -76,7 +83,8 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
   return (
     <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau} onDong={onClose}
       quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? bacDu(dich(m.nhan)) : null, laMeeting && phDu) : null}
-      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}{m.quyetLuc ? t(' · Head duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
+      /* TUYEN-1: ngày Head duyệt nay ở bước "Head duyệt" của Tuyến — đầu panel chỉ còn bậc. */
+      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
         trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
@@ -89,6 +97,9 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
         } : {
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || m.status !== 'da_duyet'} onClick={() => void luu()}>{t('Lưu · Đã thực hiện')}</button>,
         }) }}>
+      {/* TUYEN-1 (mockup v27 T2): khối việc → Tuyến → form → Việc con → Lịch sử. */}
+      {gv.g && <div className="pt-4"><KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDone} /></div>}
+      <div className="pt-4"><KhoiTuyen tuyen={m.tuyen} /></div>
       <Khoi tieuDe={t('Đã thực hiện')}>
         {m.status !== 'da_duyet' && <p className="m-0 text-sm text-slate-400">{t('Lần xử lý này không còn chờ "Đã thực hiện" ({statusLabel}).', { statusLabel: m.statusLabel })}</p>}
         <Hang2>
@@ -110,9 +121,13 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
           </label>
         )}
       </Khoi>
-      <Khoi tieuDe={t('{n} vi phạm được xử lý', { n: m.viPham.length })}>
+      {/* TUYEN-1: khối "n vi phạm được xử lý" bỏ khi Tuyến có bước "GV ghi n vi phạm" (mở xem từng vi phạm tại chỗ); không có Tuyến thì giữ. */}
+      {!m.tuyen && <Khoi tieuDe={t('{n} vi phạm được xử lý', { n: m.viPham.length })}>
         <p className="m-0 text-xs text-slate-400">{m.viPham.map((v) => `${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}`).join(' · ') || '—'}</p>
-      </Khoi>
+      </Khoi>}
+      {gv.g && <div className="flex flex-col gap-4 pt-4"><MucViecCon g={gv.g} onDoi={gv.reload} />
+        {(() => { const ls = dongLichSuGiao(gv.g, homNay ?? ''); return <LichSuGap so={ls.length}><DsLichSu dong={ls.reverse().map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} /></LichSuGap>; })()}
+      </div>}
     </KhungPanel>
   );
 }

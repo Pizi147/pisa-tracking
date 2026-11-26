@@ -10,7 +10,6 @@ import { LOP_DA_LUU, NutVaTiep, TrangThaiLuu, dauViec } from '../../ui/KhuonViec
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
 import { BoLocDoan, ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -22,6 +21,25 @@ import { chuMoc } from './BangLan.tsx';
 import { DongViPham } from './DongViPham.tsx';
 import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { KhoiTuyen } from './KhoiTuyen.tsx';
+import type { BuocTuyen, Tuyen } from './kieu.ts';
+import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
+import { MucViecCon } from '../congViec/MucViecCon.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
+import { lucVn } from '../congViec/gioVn.ts';
+
+/**
+ * TUYEN-1 (mockup v27 T1-375): GVCN chọn cách KHÁC mặc định (chưa lưu) → Tuyến xem trước thêm bước ○ "Head duyệt" (N1) sau bước Xử lý đang ở; các bước sau
+ * chờ "sau khi Head duyệt". Chỉ là bước chưa tới lượt (không việc, không số — N72 ③); người = vai "Head chi nhánh" (web không đoán tên).
+ */
+function quaHeadDuyet(tuyen: Tuyen | null | undefined, soNgay: number): Tuyen | null | undefined {
+  const i = tuyen?.buoc.findIndex((b) => b.khoa === 'xu_ly' && b.trangThai === 'dang') ?? -1;
+  if (!tuyen || i < 0) return tuyen;
+  const head: BuocTuyen = { khoa: 'duyet-du-kien', ten: t('Head duyệt'), trangThai: 'cho', chiTiet: t('{n} ngày sau khi gửi', { n: soNgay }), nguoi: t('Head chi nhánh'), laToi: false,
+    ngay: null, han: null, cha: null, cungLuc: false, coNoiDung: false, khongQuyen: false };
+  const sau = tuyen.buoc.slice(i + 1).map((b) => (b.trangThai === 'cho' && !b.cha ? { ...b, chiTiet: t('sau khi Head duyệt') } : b));
+  return { ...tuyen, buoc: [...tuyen.buoc.slice(0, i + 1), head, ...sau], tong: tuyen.tong + 1 };
+}
 
 /** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
 const MO_TA_MIN = CHU_TOI_THIEU;
@@ -66,6 +84,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: d, error: loiTai, reload } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
+  /* TUYEN-1 (N72 ⑥, 4.6): khối Phụ trách · Hạn · Theo dõi của việc Xử lý vi phạm (id = em) — một GET song song; tuyến đi cùng `/students/:id/y-thuc`. */
+  const gv = useGiaoViec('xu_ly', studentId);
   const lamMoi = () => lamMoiYThucTheo(DUONG_LAM_MOI_Y_THUC, { classId, studentIds: [studentId] });
   /* Một form (bỏ chế độ "Đề xuất QL duyệt" riêng): `cheDo` suy từ cách — Nâng 1 bậc = Xác nhận xử lý, cách khác = Đề xuất. */
   const [cach, setCach] = useState<Cach>(cheDoMo === 'de-xuat' ? 'ngoai' : 'nang');
@@ -111,7 +131,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   /* Mockup v20 D1: dòng loại "Việc · Ý thức & Phối hợp"; dòng 2 tên em · lớp · chip hạn (chỉ khi Xác nhận — việc có hạn). */
   const dau = (han: boolean) => {
     const x = dauViec({ em: { id: d.studentId, ten: d.ten }, lop });
-    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han && d.han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
+    /* TUYEN-1 (mockup v27 khung base): hạn chỉ ở khối Phụ trách · Hạn — đầu panel không lặp ngày (còn chip khi khối không tải được). */
+    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han && d.han && !gv.g ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
   };
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
@@ -341,7 +362,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   return (
     <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={yc.length ? t('Xử lý vi phạm') : tieuDe} hocVien={d.ten} onDong={onDong}
       dau={yc.length && nguoiYc ? { ...dau(true), dong2: [...dau(true).dong2, t('{x} yêu cầu', { x: nguoiYc })] } : dau(cheDo === 'xu-ly')}
-      quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl, qlAp: d.qlApThang })}
+      /* TUYEN-1: bước sau (TVV báo PH · Head duyệt) nay ở khối Tuyến — chỉ giữ câu hậu quả khi Head / Quản trị áp thẳng. */
+      quyChe={d.qlApThang && cach !== 'nang' ? quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl, qlAp: true }) : null}
       chan={{
         /* Mockup v20 D1 · ⑤ D1a: chân lưu chung — trái trạng thái lưu, phải "Đóng" (NutVaTiep) + nút việc + "Lưu · việc tiếp ›". `huy: null`: không vẽ "Đóng" thứ hai. */
         huy: null, chinh: nutChinh, daSua: !!moTa.trim(),
@@ -350,6 +372,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           : <span className="text-slate-400">{t('Chưa lưu')}</span>,
       }}>
       <div className="flex flex-col gap-4 pt-4">
+        {/* TUYEN-1 (mockup v27 T1): khối việc → Tuyến → nội dung → Việc con → Lịch sử. */}
+        {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDone} />}
+        <KhoiTuyen tuyen={cach !== 'nang' && !d.qlApThang ? quaHeadDuyet(d.tuyen, soNgayQl) : d.tuyen} />
         {khoiYc}
         {chonLoi && <div>{chonLoi}</div>}
         {/* GD-4d (⑤ D1a): khối bối cảnh nền lặng "Bậc hiện tại · Bậc kế · TVV" (viết đủ, viết hoa; TVV chỉ khi em có) + hàng "Thang xử lý" dạng vạch. */}
@@ -421,8 +446,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
               {/* Hậu quả đặt ngay dưới lựa chọn (chủ SP 12/11) — không chỉ bằng màu: có ⚠ + chữ. */}
               <p role="note" className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 rounded-lg border border-soon-line bg-soon-bg px-3 py-2.5 text-sm leading-snug text-slate-100">
                 <span aria-hidden className="font-bold text-soon">⚠</span>
-                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi Head duyệt.')}</b> {t('Head có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
-                  {' '}<NutLuat label={t('Sau khi chốt')}>{t('TVV nhận việc báo PH sau khi Head duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.')}</NutLuat></span>
+                {/* TUYEN-1: bỏ ⓘ "Sau khi chốt" — bước sau (○ Head duyệt · Đã thực hiện · Báo PH) hiện trong khối Tuyến. */}
+                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi Head duyệt.')}</b> {t('Head có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}</span>
               </p>
             </div>
           )}
@@ -457,7 +482,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           <Truong nhan={t('Bằng chứng')} batBuoc={cheDo === 'de-xuat' && canTep(loai)} tuyChon={!(cheDo === 'de-xuat' && canTep(loai))} as="div" loi={lf.loiCua(loi, 'tep')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} khoa={busy} /></div>
           </Truong>
-          {/* GD-4b: bước kế (TVV nhận việc báo PH · hạn) nay ở dòng quy chế Q45 trên chân — bỏ dòng trùng ở thân. */}
+          {gv.g && <MucViecCon g={gv.g} onDoi={gv.reload} />}
+          {gv.g && (() => { const ls = dongLichSuGiao(gv.g, homNay ?? ''); return (
+            <LichSuGap so={ls.length}><DsLichSu dong={ls.reverse().map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} /></LichSuGap>
+          ); })()}
       </div>
     </KhungPanel>
   );

@@ -23,6 +23,8 @@ export type TraLaiMo = { id: number; violationId: number | null; measureId: numb
 export type TraLaiView = {
   id: number; studentId: number; tenEm: string; violationId: number | null; measureId: number | null; nhanXuLy: string | null;
   lyDo: string; nguoiTra: { id: number; ten: string | null }; traLuc: string;
+  /** TUYEN-0: tuyến của lần xử lý có việc trả lại này. */
+  tuyen?: import('./kieu.ts').Tuyen | null;
   han: string; hanMacDinh: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut'; ketQua: string | null; nhanKetQua: string | null;
   traLoi: string | null; xongLuc: string | null; xongBoi: string | null; phuTrach: { id: number; ten: string | null }[];
   viPham: { id: number; ten: string; moTa: string; skill: string | null; occurredOn: string; classCode: string | null }[];

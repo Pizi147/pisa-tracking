@@ -18,6 +18,8 @@ import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
 import { LuaChonRadio } from './PanelBaoPhTvv.tsx';
 import { HOAN_TAC_MS, LichSuViPham, hoanTacTraLai, lamMoiTraLai, loiLyDo, type TraLaiView } from '../yThuc/TraLai.tsx';
 import { xoaViPham } from '../yThuc/DeleteViolationConfirm.tsx';
+import { KhoiTuyen, dangCoNoiDung } from '../yThuc/KhoiTuyen.tsx';
+import { MucViecCon } from './MucViecCon.tsx';
 
 type Cach = 'sua' | 'giu' | 'xoa' | 'thu_hoi';
 
@@ -51,7 +53,8 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
   const toast = useToast();
 
   const tieuDe = caLan && d ? t('Lần xử lý bị trả lại · {nhan}', { nhan: d.nhanXuLy ?? '' }) : t('Vi phạm bị trả lại');
-  const dau = dauViec({ han: d && d.trangThai === 'mo' ? <ChipHan chuThuong loai="viec-van-hanh" han={d.han} /> : null, em: d ? { id: d.studentId, ten: d.tenEm } : null, lop,
+  /* TUYEN-1: hạn chỉ ở khối Phụ trách · Hạn (đầu panel không lặp ngày; còn chip khi khối không tải được). */
+  const dau = dauViec({ han: d && d.trangThai === 'mo' && !gv.g ? <ChipHan chuThuong loai="viec-van-hanh" han={d.han} /> : null, em: d ? { id: d.studentId, ten: d.tenEm } : null, lop,
     ngCanh: caLan ? null : d?.lanXuLy ? bacDu(d.lanXuLy.nhan) : null });
   dau.loai = `${t('Việc')} · ${t('Ý thức')}`;
   if (error) return <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
@@ -128,13 +131,15 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
     <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan} quyChe={quyChe ? { chu: quyChe } : null}>
       <div className="flex flex-col gap-4 pt-4">
         {gv.g && <KhoiGiaoViec g={gv.g} mo={mo} dat={gv.dat} reload={gv.reload} anDoi onDaDoi={() => { reload(); onDaLam(); }} />}
+        {/* TUYEN-1 (mockup v27 T4): khối Tuyến dưới khối việc — bước "Vi phạm bị trả lại" mở sẵn lời TVV trả (thay hộp riêng khi Tuyến có nội dung đó). */}
+        <KhoiTuyen tuyen={d.tuyen} moSan={dangCoNoiDung} />
         {/* Lời TVV trả (mockup `.gui-gv`). */}
-        <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+        {!(mo && d.tuyen?.buoc.some(dangCoNoiDung)) && <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
           <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">
             <b className="font-semibold text-slate-200">{caLan ? t('{ten} trả lại cả lần xử lý', { ten: d.nguoiTra.ten ?? '—' }) : t('{ten} trả lại', { ten: d.nguoiTra.ten ?? '—' })}</b>
             <span className="tabular-nums">{lucVn(d.traLuc)}</span></span>
           <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">«{d.lyDo}»</span>
-        </div>
+        </div>}
         {!mo && (
           <div role="status" className="grid gap-1 rounded-lg border border-ok-line bg-ok-bg px-3.5 py-2.5 text-sm">
             <b>{d.trangThai === 'rut' ? t('TVV đã rút yêu cầu') : d.nhanKetQua}</b>
@@ -189,6 +194,7 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
             )}
           </>
         )}
+        {gv.g && <MucViecCon g={gv.g} onDoi={gv.reload} />}
         <LichSuGap so={lichSu.length}>
           <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
         </LichSuGap>

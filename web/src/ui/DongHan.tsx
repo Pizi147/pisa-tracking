@@ -65,7 +65,7 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
   };
   const moSua = () => { setNhap(han ?? hn); setLoi(null); setSua(true); };
   /* Chủ SP 24/11: hạn = NGÀY tô màu (không badge "quá hạn n ngày" / "còn n ngày"); chỉ "tạm dừng" giữ chữ. */
-  const tinh = tamDung && !xong ? <NhanChoGv>{t('tạm dừng')}</NhanChoGv> : null;
+  const tinh = tamDung && !xong && !khoi ? <NhanChoGv>{t('tạm dừng')}</NhanChoGv> : null;
   /* Mockup v22 G1: "mặc định" là thẻ viền nhỏ trong khối; dòng hạn cũ (Phối hợp) giữ chữ thường. */
   const nguon = tamDung ? null : tinhLai && hanChon ? <span className="text-xs text-slate-500">{t('tính lại sau khi GV gửi lại')}</span>
     : !han || (!hanMacDinh && !hanChon) ? null : hanChon && hanMacDinh && khoi
@@ -97,13 +97,17 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc: suaDuocGoc, o
     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
       {/* Chủ SP 26/11: không nút "Sửa hạn" — có quyền (`suaDuoc`, cờ máy chủ) thì chính ngày là nút mở ô sửa tại chỗ; việc không hạn: "Chưa có hạn" bấm để đặt. */}
       {han ? (() => {
+        /* TUYEN-1 (mockup v27 `.o-bam.khoa.tam`): hạn tạm dừng trong khối = "dừng · ngày" chữ vàng, không bấm. */
+        if (khoi && tamDung && !xong) return <span className="whitespace-nowrap text-sm font-semibold text-soon">{t('dừng · {ngay}', { ngay: ngay(han) })}</span>;
         /* Màu theo `mucHan` — việc đã xong / tạm dừng không tô. */
         const muc = xong || tamDung || !hn ? 'xa' : mucHan(han, hn);
         const ngayVe = <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]} ${khoi || gon ? 'text-sm' : 'text-base'}`}>{muc === 'qua' && <DauQuaHan />}{ngay(han)}</span>;
-        return suaDuoc && !xong ? <HanBam ref={nutSua} ten={ngay(han)} onClick={moSua}>{ngayVe}</HanBam> : ngayVe;
+        /* TUYEN-1 (C7): trong khối, ngày nằm trong ô bấm cùng kiểu ô Phụ trách. */
+        return suaDuoc && !xong ? <HanBam ref={nutSua} ten={ngay(han)} onClick={moSua} oBam={!!khoi}>{ngayVe}</HanBam> : ngayVe;
       })()
         : suaDuoc && !xong
-          ? <button ref={nutSua} type="button" aria-label={t('Đặt hạn')} title={t('Đặt hạn')} onClick={moSua}
+          ? khoi ? <button ref={nutSua} type="button" aria-label={t('Đặt hạn')} title={t('Đặt hạn')} onClick={moSua} className="o-bam" style={{ color: 'var(--text-faint)' }}>{t('Chưa có hạn')}</button>
+          : <button ref={nutSua} type="button" aria-label={t('Đặt hạn')} title={t('Đặt hạn')} onClick={moSua}
             className="inline-flex min-h-[44px] cursor-pointer items-center appearance-none border-0 bg-transparent p-0 text-sm text-faint underline decoration-dotted decoration-1 underline-offset-4 hover:decoration-solid sm:min-h-0">{t('Chưa có hạn')}</button>
           : <span className="text-sm text-faint">{t('Chưa có hạn')}</span>}
       {tinh && <span className="text-[13px] tabular-nums">{tinh}</span>}
