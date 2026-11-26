@@ -258,6 +258,7 @@ export function batBuocTu(ds: readonly ViPhamVao[]): Map<number, string> {
 
 export type TrangThaiViPhamKq = {
   t: TrangThaiVp; nhan: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
+  /** Lưu trữ (chủ SP 26/11): vi phạm Dừng — không vào số "đang mở / chờ xử lý" nào. */ dung?: true;
 };
 
 /**
@@ -273,7 +274,7 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
     .sort((a, b) => (a.performedOn ?? '').localeCompare(b.performedOn ?? '') || a.id - b.id).pop();
   if (xong) return { t: 'da_xu_ly', nhan: t('Đã xử lý · {nhanLoaiXuLy}', { nhanLoaiXuLy: nhanLoaiXuLy(xong.kind) }), han: null, quaHanNgay: null, lyDoQuaHan: null };
   /* Lưu trữ (chủ SP 26/11): chưa xử lý xong trước lần em vào Lưu trữ rồi quay lại — trung tính như "Không xử lý", không hạn, không việc. */
-  if (v.dungLuuTru) return { t: 'da_ghi_nhan', nhan: t('Dừng — em vào Lưu trữ'), han: null, quaHanNgay: null, lyDoQuaHan: null };
+  if (v.dungLuuTru) return { t: 'da_ghi_nhan', nhan: t('Dừng — em vào Lưu trữ'), han: null, quaHanNgay: null, lyDoQuaHan: null, dung: true };
   if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ Head duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
   if (duyet) {

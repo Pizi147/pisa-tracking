@@ -1940,7 +1940,8 @@ CREATE TABLE violations (
   -- Trạng thái (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý) vẫn SUY RA — trangThaiViPham(), không lưu.
   ghi_nhan_luc TEXT,
   ghi_nhan_boi INTEGER REFERENCES users(id),
-  -- PR-Pb2-b (Q14): hạn lúc vi phạm thành "Cần xử lý" lần đầu (chotHanXuLy); không ghi đè, trừ Quay lại học khi chưa phản hồi.
+  -- PR-Pb2-b (Q14): hạn lúc vi phạm thành "Cần xử lý" lần đầu (chotHanXuLy); không ghi đè, trừ chuyển lớp / Quay lại học khi chưa phản hồi.
+  -- Lưu trữ (26/11): vi phạm chưa xử lý ghi trước lần quay lại học thật thì Dừng — hết bắt buộc, hạn chốt bỏ.
   han_xu_ly TEXT,
   -- PR-Pb2-b (Q14): ngày nghiệp vụ lần đầu GVCN xác nhận xử lý hoặc gửi đề xuất có vi phạm này. Đúng hạn ⇔ phan_hoi_ngay ≤ han_xu_ly.
   phan_hoi_ngay TEXT,

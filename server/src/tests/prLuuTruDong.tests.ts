@@ -136,6 +136,51 @@ export async function runPrLuuTruDongTests(t: any) {
       xoaNho();
       assert(trangThaiYThuc([em.id]).get(em.id)!.soBatBuoc === 1, 'số bắt buộc phải chỉ còn vi phạm mới');
     });
+    thu('lt7c', () => {
+      /* Rà #2223 P2-7: Hoàn tác Quay lại (em về Tạm dừng, mốc quay lại xoá) → vi phạm hết "Dừng", về bắt buộc. */
+      const v = taoVp(ngay(-6));
+      studentsSvc.setStudentStatus(P.admin, em.id, 'inactive', ngay(-3), 'Tạm nghỉ');
+      studentsSvc.setStudentStatus(P.admin, em.id, 'active', TODAY, 'Quay lại');
+      studentsSvc.hoanTacQuayLai(P.admin, em.id);
+      assert(BAT_BUOC.has(vpT(v).t) && !vpT(v).dung, `Hoàn tác Quay lại: ${JSON.stringify(vpT(v))}`);
+    });
+    thu('lt7d', () => {
+      /* Học lại CÙNG NGÀY với Kết thúc (Lộ trình mới khi đang học) — không là quay lại sau dừng → vi phạm không Dừng. */
+      const v = taoVp(ngay(-6));
+      studentsSvc.setStudentStatus(P.admin, em.id, 'finished', TODAY, 'Lộ trình mới');
+      studentsSvc.hocLai(P.admin, em.id, { date: TODAY, lyDo: 'Lộ trình mới' });
+      assert(BAT_BUOC.has(vpT(v).t), `Học lại cùng ngày làm Dừng vi phạm: ${JSON.stringify(vpT(v))}`);
+    });
+    thu('lt7e', () => {
+      /* Rà #2223 P2-5: em Kết thúc học (đang Lưu trữ) — vi phạm chưa xử lý Dừng; Hoàn tác Kết thúc học trả lại. */
+      const v = taoVp(ngay(-6));
+      studentsSvc.setStudentStatus(P.admin, em.id, 'finished', TODAY, 'Thôi học');
+      assert(vpT(v).dung, `em Kết thúc học: ${JSON.stringify(vpT(v))}`);
+      studentsSvc.hoanTacKetThuc(P.admin, em.id);
+      assert(BAT_BUOC.has(vpT(v).t), `Hoàn tác Kết thúc học: ${JSON.stringify(vpT(v))}`);
+    });
+    thu('lt7f', () => {
+      /* Rà #2223 P2-2: vi phạm ghi trước lần quay lại nhưng GVCN đề xuất xử lý SAU khi quay lại → "Chờ Head duyệt", không Dừng. */
+      const v = taoVp(ngay(-6));
+      studentsSvc.setStudentStatus(P.admin, em.id, 'inactive', ngay(-3), 'Tạm nghỉ');
+      studentsSvc.setStudentStatus(P.admin, em.id, 'active', TODAY, 'Quay lại');
+      const m = Number(conn.prepare(`INSERT INTO discipline_measures (student_id, kind, status, created_at, created_by) VALUES (?, 'report_1', 'cho_duyet', ?, ?)`).run(em.id, now, P.admin.userId).lastInsertRowid);
+      conn.prepare('INSERT INTO measure_violations (measure_id, violation_id, added_at) VALUES (?, ?, ?)').run(m, v, now);
+      assert(vpT(v).t === 'cho_duyet' && !vpT(v).dung, `đề xuất sau mốc: ${JSON.stringify(vpT(v))}`);
+    });
+    thu('lt7g', () => {
+      /* Rà #2223 P2-3: đề xuất chờ duyệt TRƯỚC lần Tạm dừng → đóng (thu_hoi) + thẻ chờ đóng; Hoàn tác Tạm dừng mở lại cả hai. */
+      const v = taoVp(ngay(-6));
+      const m = Number(conn.prepare(`INSERT INTO discipline_measures (student_id, kind, status, created_at, created_by) VALUES (?, 'report_1', 'cho_duyet', ?, ?)`).run(em.id, now, P.admin.userId).lastInsertRowid);
+      conn.prepare('INSERT INTO measure_violations (measure_id, violation_id, added_at) VALUES (?, ?, ?)').run(m, v, now);
+      const the = Number(conn.prepare(`INSERT INTO yeu_cau_duyet (loai, phan_loai, doi_tuong_loai, doi_tuong_id, hoc_vien_id, trang_thai, tu_duyet, tao_luc)
+        VALUES ('y_thuc', 'y-thuc', 'discipline_measure', ?, ?, 'cho', 0, ?)`).run(m, em.id, now).lastInsertRowid);
+      const st = () => `${get('SELECT status FROM discipline_measures WHERE id = ?', m).status},${get('SELECT trang_thai AS t FROM yeu_cau_duyet WHERE id = ?', the).t}`;
+      studentsSvc.setStudentStatus(P.admin, em.id, 'inactive', TODAY, 'Tạm nghỉ');
+      assert(st() === 'thu_hoi,tu_dong', `Tạm dừng: ${st()}`);
+      studentsSvc.hoanTacTamDung(P.admin, em.id);
+      assert(st() === 'cho_duyet,cho', `Hoàn tác Tạm dừng: ${st()}`);
+    });
     thu('lt7b', () => {
       const v = taoVp(ngay(-6));
       studentsSvc.setStudentStatus(P.admin, em.id, 'inactive', ngay(-3), 'Tạm nghỉ');

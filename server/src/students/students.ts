@@ -371,8 +371,9 @@ export function setStudentStatus(
       title: status === 'inactive' ? 'Tạm dừng học' : status === 'active' ? 'Quay lại học' : 'Kết thúc học',
       detail: reason ?? null, createdBy: p.userId,
     });
-    /* PR-Pb2-b (Q14, T65): Quay lại học → hạn xử lý vi phạm chưa phản hồi chốt lại từ ngày quay lại (sau `addJourney` — mốc đọc sự kiện resume). */
-    if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId]);   // Lưu trữ (26/11): vi phạm cũ dừng hẳn — bỏ hạn chốt, không tính lại (thay T65)
+    /* PR-Pb2-b (Q14) + Lưu trữ (chủ SP 26/11): Quay lại học → vi phạm chưa xử lý TRƯỚC lần quay lại dừng hẳn (hết bắt buộc → hạn chốt bỏ); vi phạm còn bắt buộc
+       chốt lại hạn từ mốc mới (`ghiDe` — màn Ý thức và Phân tích GV cùng hạn). Sau `addJourney`: mốc đọc sự kiện resume. */
+    if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId], { ghiDe: true });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
       entityLabel: s.student_code, before: { status: s.status, archivedAt: s.archived_at ?? null }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu, ...(dongLuuTru ? { dongLuuTru } : {}), ...(ghiDanhDung ? { ghiDanhDung, journeyId } : {}), ...(status === 'active' ? { journeyId } : {}) } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
@@ -514,7 +515,7 @@ export function hocLai(p: Principal, studentId: number, o: {
       studentId, cycleId, eventType: 'resume', eventDate: date, title: 'Học lại',
       detail: [lyDo, lopMoi ? `sang lớp ${lopMoi.code}` : null].filter(Boolean).join(' — ') || null, createdBy: p.userId,
     });
-    chotHanXuLy([studentId]);   // sau `addJourney`: mốc quay lại — vi phạm cũ dừng hẳn, bỏ hạn chốt (Lưu trữ 26/11, thay ghi đè T65)
+    chotHanXuLy([studentId], { ghiDe: true });   // sau `addJourney`: mốc quay lại — vi phạm cũ dừng hẳn (hạn chốt bỏ), còn bắt buộc thì chốt lại (Lưu trữ 26/11)
     writeAudit({
       actorUserId: p.userId, action: 'student.rejoin', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at, branchId: s.branch_id, ...tgDoi.truoc },

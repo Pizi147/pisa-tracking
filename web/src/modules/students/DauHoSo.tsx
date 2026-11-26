@@ -232,7 +232,7 @@ export function viecSangPanel(x: Viec, em: { id: number; ten: string; lopId: num
 
 /**
  * DẢI TẠM DỪNG (T65, K3-41, mockup 24 D1) — ngay dưới khung thông tin, trên bốn ô: mọi hạn của em đang dừng. Nền vàng nhạt, biểu tượng
- * tạm dừng SVG; dòng phụ nói hạn tính lại thế nào khi quay lại. < 640 px chữ xuống dòng trọn, không dồn.
+ * tạm dừng SVG; dòng phụ: việc cũ dừng hẳn, Quay lại học không mở lại (Lưu trữ, chủ SP 26/11). < 640 px chữ xuống dòng trọn, không dồn.
  */
 export function DaiTamDung({ tamDung, onQuayLai }: {
   tamDung: { tu: string; lyDo: string | null; boi: string | null } | null | undefined;
@@ -248,7 +248,7 @@ export function DaiTamDung({ tamDung, onQuayLai }: {
         <b className="font-semibold text-soon">{chuTamDung(ngayDung)}</b> · {t('mọi hạn đang dừng')}
         {tamDung.lyDo && <> · {t('lý do:')} <span lang="vi">{tamDung.lyDo}</span></>}
         {tamDung.boi && <> · {t('người ghi:')} {tamDung.boi}</>}
-        <span className="block text-[12px] text-slate-400">{t('Quay lại học thì hạn tính lại từ ngày quay lại')}</span>
+        <span className="block text-[12px] text-slate-400">{t('Việc cũ dừng hẳn — Quay lại học không mở lại')}</span>
       </span>
       {onQuayLai && <button type="button" className="btn btn-sm ml-auto shrink-0 min-h-[44px] sm:min-h-0" onClick={onQuayLai}>{t('Quay lại học')}</button>}
     </section>

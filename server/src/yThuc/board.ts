@@ -130,7 +130,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
   return {
     studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind) },
-    soMo: viPham.filter(([, t]) => t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han').length,
+    soMo: viPham.filter(([, t]) => !t.dung && (t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han')).length,   // Lưu trữ (26/11): bỏ vi phạm Dừng
     soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, han: em.han, hanXem: em.hanXem,
     quaHanNgay: Math.max(0, ...viPham.map(([, t]) => t.quaHanNgay ?? 0)) || null,
     moiTuoi: moiNgay ? ngayCach(moiNgay, homNay) : null,
@@ -172,7 +172,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
       xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
-      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}), ...(v.khongXuLy ? { khongXuLy: v.khongXuLy } : {}),
+      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}), ...(v.khongXuLy ? { khongXuLy: v.khongXuLy } : {}), ...((v as any).dung ? { dung: true } : {}),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */

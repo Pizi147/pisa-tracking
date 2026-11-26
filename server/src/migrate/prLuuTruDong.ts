@@ -17,7 +17,8 @@ export function emLuuTruConViec(conn: any): { id: number; status: string }[] {
       OR EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.student_id = s.id AND x.status = 'pending')
       OR EXISTS (SELECT 1 FROM viec_bao_ph b WHERE b.student_id = s.id AND b.trang_thai = 'mo')
       OR EXISTS (SELECT 1 FROM tinh_hinh_hoc_tap t WHERE t.student_id = s.id AND t.trang_thai = 'mo')
-      OR EXISTS (SELECT 1 FROM vi_pham_tra_lai r WHERE r.student_id = s.id AND r.trang_thai = 'mo')) ORDER BY s.id`).all() as any[]);
+      OR EXISTS (SELECT 1 FROM vi_pham_tra_lai r WHERE r.student_id = s.id AND r.trang_thai = 'mo')
+      OR EXISTS (SELECT 1 FROM discipline_measures m WHERE m.student_id = s.id AND m.status IN ('cho_duyet', 'da_duyet'))) ORDER BY s.id`).all() as any[]);
 }
 
 /** Đóng — không khoá (phép kiểm gọi thẳng). Trả số việc đã đóng theo loại. */

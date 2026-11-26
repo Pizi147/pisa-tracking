@@ -115,6 +115,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const viol: any = await import('../yThuc/violations.ts');
   const xuLy: any = await import('../yThuc/xuLy.ts');
   const tt: any = await import('../yThuc/trangThai.ts');
+  const { xoaNho: xoaNhoPb } = await import('../platform/nguCanhRequest.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const attachments: any = await import('../platform/attachments.ts');
   const studentsSvc: any = await import('../students/students.ts');
@@ -174,6 +175,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     }
     /* Ghi trước ngày quay lại (D−2, D−1) → dừng hẳn, bỏ hạn chốt; ghi đúng ngày quay lại (D) là vi phạm sau lần dừng — còn một mình, hết bắt buộc → cũng bỏ hạn. */
     assert(hCu && va.every((v) => vp(v).han_xu_ly === null), va.map((v) => vp(v).han_xu_ly).join());
+    /* Rà #2223 P2-7: nhãn — ghi trước ngày quay lại (D−2, D−1) "Dừng", ghi đúng ngày quay lại (D) không. */
+    xoaNhoPb();
+    const nhan = (id: number) => tt.trangThaiYThuc([a]).get(a).viPham.get(id).nhan as string;
+    assert(nhan(va[0]) === 'Dừng — em vào Lưu trữ' && nhan(va[1]) === 'Dừng — em vào Lưu trữ' && nhan(va[2]) !== 'Dừng — em vào Lưu trữ', va.map(nhan).join(' | '));
     assert(vb.every((v) => vp(v).han_xu_ly === addDays(D, -20)), 'đã phản hồi phải giữ hạn');
   });
   check('Pb2b (1i) · phan_hoi_ngay: nháp → không đặt; gửi đề xuất → hôm nay; QL từ chối rồi gửi lại → giữ ngày đầu; xác nhận xử lý → hôm nay', () => {
