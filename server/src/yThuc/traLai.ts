@@ -111,7 +111,7 @@ export type TraLaiView = {
 
 /** Ai làm được việc GV: người đang phụ trách (người nhận / người được giao còn hiệu lực) · GVCN lớp em đang học / Head (`discipline.manage`). */
 /* rà #1927 (8): người đã trả (CX / Head) không tự trả lời phía GV cho chính yêu cầu đó — trừ khi chính họ là người giữ việc. */
-const coTheLam = (p: Principal, v: ReturnType<typeof docViec>) => v.phuTrach.includes(p.userId) || (canManageDiscipline(p, v.studentId) && v.row.nguoi_tra !== p.userId);
+const coTheLam = (p: Principal, v: ReturnType<typeof docViec>) => v.phuTrach.includes(p.userId) || (canManageDiscipline(p, v.studentId!) && v.row.nguoi_tra !== p.userId);
 
 export function xemTraLai(p: Principal, id: number): TraLaiView {
   const r = load(id);

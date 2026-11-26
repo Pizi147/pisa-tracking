@@ -1,4 +1,5 @@
 import { db, theoLo, tx } from '../db.ts';
+import { dongBoLienPhongLenh } from '../classes/lienPhongBan.ts';
 import {
   NORMAL_LADDER, PERMISSIONS, chuTyLeXetLai, ghepMucTieu, goiYCuoiKhoa, hanXetLai, kyHieuLop, lyDoXetLai, tenBacKe, tenMonNgan, tuanHopLe, type LyDoXetLai, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
@@ -417,6 +418,7 @@ function khoiPhucLenh(p: Principal, anh: any): void {
   if (anh.lenhSau && COT_XET_LAI.some((k) => hien[k] !== anh.lenhSau[k])) throw conflict('Quyết định đã đổi ở Chuyển lớp — dùng Chuyển lớp.');
   const ten = Object.keys(cot);
   conn.prepare(`UPDATE lenh_chuyen_lop SET ${ten.map((k) => `${k} = ?`).join(', ')} WHERE id = ? AND trang_thai = 'cho'`).run(...ten.map((k) => cot[k]), id);
+  dongBoLienPhongLenh([id], p.userId);   // LPB-0 (rà PTA #2266 P1-1): việc TVV / BPXL theo lệnh vừa trả về lớp cũ
   for (const b of anh.bg) conn.prepare('UPDATE ban_giao_mon SET lam_lai = ? WHERE id = ?').run(b.lam_lai, b.id);
   if (anh.ltt) {
     const { id: lid, ...l } = anh.ltt;

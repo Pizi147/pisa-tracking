@@ -142,7 +142,6 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
         huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, onClose, baoChuaLuu, true) },
         trai: docThoi ? <span className="text-xs text-slate-500">{t('Chỉ đọc')}</span> : (
           <span className="flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
-            <span>{t('Tự lưu khi rời ô')}</span>
             {cho && (thieu.length
               ? <button type="button" className="link border-0 bg-transparent p-0 text-xs font-semibold" onClick={denThieu}>{t('Còn {n} em thiếu góp ý ↑', { n: thieu.length })}</button>
               : <span className="font-semibold text-done">{t('✓ Đủ {a}/{b} em', { a: du, b: ds.length })}</span>)}

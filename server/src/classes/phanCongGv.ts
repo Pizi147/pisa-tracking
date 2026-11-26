@@ -23,6 +23,7 @@ import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo,
 import { theoGvcnCacLop } from '../worklist/giaoViec.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, monGopConCanMany, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
 import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi, viecBanGiaoGv } from './banGiaoGv.ts';
+import { dongBoNhanTinDoi, sinhNhanTinDoiGv } from './lienPhongBan.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 /** `viec` = số việc bàn giao mới (PR-B). */
@@ -186,6 +187,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     let viec = 0;
     const sanHn = homNay ? sanLo(lop, sau.active) : null;
     let bgDoc: ReturnType<typeof docBanGiaoLo> | undefined;
+    const ntLo: Parameters<typeof sinhNhanTinDoiGv>[1][number][] = []; const ntThay: number[] = [];
     const bgLo = () => (bgDoc ??= docBanGiaoLo(ids));   // đọc lười, một lần cho cả lô
     const kq = theoDoiMoi(g, ['ban_giao_gv_mon', 'ban_giao_gv', 'doi_phan_cong', 'teacher_assignments', 'sos_case_history', 'notifications'], () => lop.map((l) => {
       const khoa = [...new Set(l.doi.map((d) => d.khoa))].filter((k) => sau.cho.get(l.classId)!.some((c) => c.khoa === k));
@@ -211,6 +213,9 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
       viec += dongBoViecBanGiao(p, { classId: l.classId, ct: l.ct, slotsTruoc: sau.active.get(l.classId)!.map(slotCua), thay, duocXep: xepNho.get(l.branchId),
         san: { homNay: hom, cot: bg.cot.get(l.classId)!, viecMo: bg.viecMo.get(l.classId)! },
         doi: rows.map((r) => ({ id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: ngay, taoBanGiao: r.taoBanGiao === 1 })) }, g);
+      /* LPB-0 (N73 ②): cặp có tích "Tạo việc bàn giao · báo BPXL" → MỘT việc BPXL "Nhận thông tin · Đổi GV" của lớp (kể cả "Ngay hôm nay") · lịch chờ bị thay → việc cũ theo. */
+      ntLo.push({ lop: { id: l.classId, branch_id: l.branchId }, doi: rows.filter((r) => r.taoBanGiao === 1).map((r) => ({ id: r.id, hieuLuc: ngay })) });
+      ntThay.push(...thay);
       /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
       const r = homNay ? apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn', san: { lo: sanHn!, active: sau.active.get(l.classId)! },
         lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } }) : null;
@@ -226,6 +231,8 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
       }
       return { classId: l.classId, cho: !homNay && rows.length > 0, soO: rows.length };
     }));
+    sinhNhanTinDoiGv(p, ntLo);   // LPB-0: theo lô cả lần lưu
+    dongBoNhanTinDoi(ntThay, p.userId);
     const lo = moi[0] ?? null;
     if (lo !== null) {
       conn.prepare(`UPDATE doi_phan_cong SET lo = ? WHERE id = ?`).run(lo, lo);
@@ -436,6 +443,7 @@ export function doiMocCho(p: Principal, ids: unknown, hieuLuc: HieuLucVao | unde
     } else {
       conn.prepare(`UPDATE doi_phan_cong SET hieu_luc = ?, loi = NULL, thu_ngay = NULL WHERE ${dk}`).run(ngay, ...rid);
     }
+    dongBoNhanTinDoi(rid, p.userId);   // LPB-0: việc BPXL đã xác nhận → tin "Cập nhật" hiệu lực mới
     const dao = luuGhiDao(conn, { loai: 'phan_cong.doi_moc', bang: 'doi_phan_cong', id: rid[0], nguoi: p.userId, ghi: g });
     return { lo: rows[0].lo ?? null, dao };
   });
@@ -453,6 +461,7 @@ export function huyCho(p: Principal, ids: unknown): { dao: number } {
     g.sua('doi_phan_cong', dk, ...rid);
     conn.prepare(`UPDATE doi_phan_cong SET trang_thai = 'huy', huy_luc = ?, huy_boi = ?, ly_do_huy = 'Huỷ lịch đổi' WHERE ${dk}`).run(nowIso(), p.userId, ...rid);
     huyViecTheoDoi(rid, g);   // PR-B: huỷ cả việc bàn giao của lịch đó (góp ý đã viết giữ làm lịch sử)
+    dongBoNhanTinDoi(rid, p.userId);   // LPB-0: việc BPXL mở hết cặp → tự đóng · đã xác nhận → tin "Cập nhật"
     return { dao: luuGhiDao(conn, { loai: 'phan_cong.huy', bang: 'doi_phan_cong', id: rid[0], nguoi: p.userId, ghi: g }) };
   });
 }
@@ -484,6 +493,7 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
       throw conflict('Không hoàn tác được: việc bàn giao vừa tạo đã có góp ý — sửa trực tiếp ở bảng phân công.');
     }
     daoLai(conn, g, p.userId);
+    dongBoNhanTinDoi(dong.map((d) => d.id as number), p.userId);   // LPB-0: cặp vừa gỡ / trả về — việc BPXL Đổi GV theo (mở lại / tự đóng / tin Cập nhật)
     /* GV-1 (rà PTA E): người theo dõi `gvcn` không nằm trong bản ghi đảo (không chặn Hoàn tác) — tính lại theo GVCN sau khi đảo. */
     theoGvcnCacLop([...new Set(dong.map((d) => d.class_id as number))]);   // một lượt cho cả lô (2 câu)
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,

@@ -48,7 +48,7 @@ export function PanelBaoPhNhieu({ it, onDong, onDaLam, onTiep }: { it: WorkItem;
                     <span className="text-xs text-dim">{dau1 ?? c.statusLabel}{!dau1 && c.due ? <span className={`ml-1.5 tabular-nums ${LOP_MUC_HAN[muc]}`}>{ngay(c.due)}</span> : null}</span>
                   </span>
                   <span role="cell" className="max-sm:col-start-1 max-sm:row-start-2">{them?.chuoi?.length ? <ChuoiCham chuoi={them.chuoi} /> : null}</span>
-                  <span role="cell" className="min-w-0 text-[13px] text-dim max-sm:hidden" title={them?.mayDien ?? undefined}>{con ?? '—'}</span>
+                  <span role="cell" className="min-w-0 text-[13px] text-dim max-sm:hidden" title={them?.mayDien ?? undefined}>{con ?? (them ? null : c.reason?.split(' — ')[0]) ?? '—'}</span>
                   <span role="cell" className="justify-self-end max-sm:col-start-2 max-sm:row-start-1">
                     <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-[30px] ${dangMo ? '' : 'btn-primary'}`} aria-expanded={dangMo}
                       onClick={() => setMo(dangMo ? null : c.key)}>{dangMo ? t('Đóng') : t('Ghi')}</button>

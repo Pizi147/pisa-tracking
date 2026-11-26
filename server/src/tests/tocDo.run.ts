@@ -1601,17 +1601,20 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        chưa có TVV (Chốt ngày thi, Bổ sung hồ sơ, Bước tiếp, KQ thi thật) về Lead TVV, rời Head — bỏ 2 tài khoản đo thì 'QL toi' / 'QL tat-ca' về băm cũ; (2) Head lùi MỘT người
        (`headCua`) + phần Meeting chưa chốt (`nguoi_luat` NULL — seed tạo BPXL cuối seed) không nhảy sang BPXL → 'QT tat-ca' / 'QT tat-ca cn' đổi ownerId. Trước: QL toi
        b38fc43debef4461, QL tat-ca 8d8946c963a08012, QT tat-ca f1b6a1a61ac9fa54, QT tat-ca cn 05751b21042eb7cf */
+    /* LPB-0 (N73, 26/11): chụp lại 4 băm — đổi CÓ CHỦ Ý. Đã kiểm trên seed: 3 lô lệnh "Từ tuần" của seed (ctSeed / xetLaiSeed qua `raLenh`) giờ sinh 3 việc BPXL
+       Nhận thông tin (Head MB giữ — seed tạo BPXL cuối seed) + 13 việc TVV Báo PH · Chuyển lớp (1 gộp Kết quả Final) → dòng mới ở 'QL toi' / 'QL tat-ca' / 'QT tat-ca' /
+       'QT tat-ca cn'; 7 băm khác giữ. Trước: QL toi 3b5b2c5cc315bb67, QL tat-ca 6daa449480d10d2b, QT tat-ca 5b6062172b9e63fd, QT tat-ca cn c0b53eb771110380 */
     /* TUYEN-2 (N72 ⑤, mockup v27 T11c — 27/11): chụp lại 4 băm — đổi CÓ CHỦ Ý: việc TVV "Trao đổi gia đình" vào nhóm `bao_ph_yt` (trước `phoi_hop_tvv`),
        nhãn "Trao đổi gia đình · MT{n}" + trường `gopNguon` (gộp lớp × nguồn) ở mọi việc TVV báo PH từ nguồn. Việc / người / hạn không đổi. Trước: QL toi 3b5b2c5cc315bb67,
        QL tat-ca 6daa449480d10d2b, QT tat-ca 5b6062172b9e63fd, QT tat-ca cn c0b53eb771110380 */
-    'QL toi': 'e789e8456d37effc', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
+    'QL toi': 'b716cdf0509e9853', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': 'f2b858c2ea0e3618', 'QT tat-ca': 'f1120b76046b74af',
-    'QT tat-ca cn': 'e40fa2947255d7a4', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '16673cf5d9e3c76f', 'QT tat-ca': 'f51ee151b7d33334',
+    'QT tat-ca cn': 'fcdec41d090473ae', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
