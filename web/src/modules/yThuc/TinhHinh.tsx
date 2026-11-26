@@ -17,6 +17,8 @@ import { DUONG_LAM_MOI_Y_THUC, type TinhHinhView } from './kieu.ts';
 import { invalidate } from '../../lib/api.ts';
 import { hoanTacLo } from './hoanTacLo.ts';
 import { KhoiGiaoViec, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
+import { KhoiTuyen, guiCoNoiDung } from './KhoiTuyen.tsx';
+import { MucViecCon } from '../congViec/MucViecCon.tsx';
 
 /**
  * TÌNH HÌNH HỌC TẬP (chủ SP 12/11, mockup `thiet-ke/v20/tinh-hinh.html` A1 · C · F) — dòng trong khối em + hộp nhỏ neo nút.
@@ -310,7 +312,8 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, dau, onDong, onDaL
   /* F03: đang gửi thì ✕ / Esc chưa đóng — không hỏi "Bỏ chữ" cho câu trả lời máy chủ đang nhận. */
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} dau={dau} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
+    /* TUYEN-1: hạn chỉ ở khối Phụ trách · Hạn — đầu panel không lặp ngày khi khối đã có. */
+    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} dau={dau && gv.g ? { ...dau, han: null } : dau} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
       quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
       chan={{ conThieu: lf.conThieu(loiO),
         /* GD-18 (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · "Lưu · gửi TVV" · "Lưu · việc tiếp ›" (chính); mở lẻ → "Lưu · gửi TVV" (chính). */
@@ -321,10 +324,12 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, dau, onDong, onDaL
           } : { chinh: <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button> }) }}>
       <div className="flex flex-col gap-4 pt-4">
         {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDaLam} />}
-        <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+        {/* TUYEN-1 (mockup v27 T7b): Tuyến dưới khối việc — câu TVV hỏi mở sẵn ở bước "TVV hỏi tình hình" (hộp riêng chỉ khi Tuyến không có phần đó). */}
+        <KhoiTuyen tuyen={gv.g?.tuyen} moSan={guiCoNoiDung} />
+        {!gv.g?.tuyen?.buoc.some(guiCoNoiDung) && <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
           <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && !gv.g && !dau && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
           <NoiDungTinhHinh chu={cauHoi} />
-        </div>
+        </div>}
         {xong ? (
           <div className="grid gap-1.5 rounded-[10px] border border-ok-line bg-ok-bg px-4 py-3">
             <b role="status" className="text-sm font-semibold text-ok">✓ {t('Đã trả lời · Bạn')}</b>
@@ -339,6 +344,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, dau, onDong, onDaL
           </label>
         )}
         {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late">⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
+        {gv.g && <MucViecCon g={gv.g} onDoi={gv.reload} />}
       </div>
     </KhungPanel>
   );

@@ -11,9 +11,10 @@ import { ensurePeriod } from '../platform/week.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
-import { CN_VH, HOAT_DONG_O, baoTheoDoi, docLoai, docViec, ghiLan, laNguoiTheoDoi, themTheoDoiDong, xemGiaoViec, type SuKien } from './giaoViec.ts';
+import { CN_VH, HOAT_DONG_O, baoTheoDoi, damBaoDong, docLoai, docViec, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * TIẾN ĐỘ CÔNG VIỆC — công việc quản lý vận hành (mục 8).
@@ -105,6 +106,25 @@ function coQuyenViec(p: Principal, t: { branch_id: number | null }): boolean {
   /* Luật main: việc Toàn hệ thống — Head (và CX, N59) mọi chi nhánh sửa được (`anyScope`). PTA rà lần 2 rút quyết định "chỉ grant toàn hệ thống". */
   return quanLyVanHanh(p, { branchId: t.branch_id ?? null, anyScope: !t.branch_id });
 }
+/**
+ * TUYEN-1 (PTA chốt theo mockup v27, N72 ⑥): việc con của một việc Ý thức / Phối hợp / Báo PH (`cha_loai`, `cha_id`) — NGƯỜI ĐANG GIỮ việc cha (người phụ trách
+ * theo luật hoặc người được giao, `docViec().phuTrach`) tạo / tick / sửa việc con của việc mình trong DANH SÁCH TRẮNG (`TRUONG_GIU_CHA`). Chỉ khi việc cha CHƯA KẾT
+ * THÚC (`docViec().mo` — đã xong / bỏ / em tạm dừng hay Lưu trữ → không); Xử lý vi phạm (cha_id = id em) chỉ ĐỢT đang mở (`viec_xu_ly.trang_thai = 'mo'` — việc con
+ * đợt trước không dính sang người giữ đợt sau; đợt mới làm dòng mới thì `donViec` tách việc con cũ, `cha_id` 0). Cha kết thúc: người PHỤ TRÁCH việc con vẫn tick / sửa
+ * việc của chính mình (đường người được giao sẵn có). Người theo dõi việc cha chỉ xem. Nhớ theo request (cha × người) — một lần đọc việc cha.
+ */
+function giuViecCha(p: Principal, t: { cha_loai?: string | null; cha_id?: number | null }): boolean {
+  if (!t.cha_loai || !t.cha_id) return false;
+  const loai = t.cha_loai, id = t.cha_id;
+  return nho(`giu-cha:${loai}:${id}:${p.userId}`, () => {
+    try {
+      const v = docViec(docLoai(loai), id);
+      return v.mo && v.phuTrach.includes(p.userId) && (v.loai !== 'xu_ly' || v.row.trang_thai === 'mo');
+    } catch { return false; }
+  });
+}
+/** Trường người giữ việc cha (không quản lý Vận hành) được sửa ở việc con — trường khác 403 (P1 PTA: không đường vòng lặp / nhóm / hạng mục / chi nhánh). */
+const TRUONG_GIU_CHA = ['title', 'note', 'due', 'lyDoDoiHan', 'assigneeUserId', 'assigneeName', 'theoDoiIds', 'watcherUserId', 'phienBan', 'hoanTacGiao'];
 /** Xem như quản lý: việc của chi nhánh trong phạm vi, hoặc việc Toàn hệ thống (Head / CX mọi chi nhánh đọc được — bảng Vận hành vẫn liệt kê). */
 const xemQuanLy = coQuyenViec;
 
@@ -582,7 +602,7 @@ export const laHieuLuc = (uid: number, branchId: number | null) =>
 
 /** Người xem một việc: quản lý · người phụ trách · người tạo · người theo dõi (còn hiệu lực) · người phụ trách việc con. */
 function quyenXem(p: Principal, t: any) {
-  const quanLy = coQuyenViec(p, t);
+  const quanLy = coQuyenViec(p, t) || giuViecCha(p, t);
   /* PTA mục 7: người phụ trách / người tạo chỉ còn quyền theo việc khi còn hoạt động + còn vai ở chi nhánh của việc. */
   const conVai = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);
   const phuTrach = conVai && t.assignee_user_id === p.userId;
@@ -882,7 +902,8 @@ export function createMgmtTask(p: Principal, input: {
   /** BAOPH-0 (N72 ⑥, 4.6): việc con của một việc Ý thức / Phối hợp / Báo PH (`LOAI_GIAO` × id) — thay `parentTaskId`; chi nhánh = chi nhánh của em. */
   chaLoai?: unknown; chaId?: unknown;
 }) {
-  if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  /* TUYEN-1: việc con của việc Ý thức — người giữ việc cha tạo được (kiểm ở dưới, sau khi đọc việc cha). */
+  if (!canSeeBoard(p) && (input.chaLoai == null || input.chaLoai === '')) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
   chuTuDo(input.note, 'Mô tả việc', TRAN_MO_TA_VH);
@@ -895,11 +916,14 @@ export function createMgmtTask(p: Principal, input: {
   /* 4.6: việc cha là việc Ý thức (đọc + quyền xem theo khối giao việc); một tầng — không kèm việc cha Vận hành, không lặp. */
   const cha = input.chaLoai == null || input.chaLoai === '' ? null : (() => {
     if (input.parentTaskId) throw badRequest('Việc con chỉ có một tầng.');
+    if (input.unitReportId) throw badRequest('Việc con của việc Ý thức không gắn họp đơn vị.');   // PTA rà #2261 P2
     const loai = docLoai(input.chaLoai), id = Number(input.chaId);
-    xemGiaoViec(p, loai, id);
+    /* PTA rà #2261 P2: đọc việc cha một lần, kiểm quyền (người giữ · Head / QT / CX chi nhánh việc cha) TRƯỚC — không lộ trạng thái việc cha cho người ngoài. */
     const v = docViec(loai, id);
+    const giu = v.phuTrach.includes(p.userId);
+    if (!giu && !quanLyVanHanh(p, { branchId: v.branchId })) throw forbidden('Chỉ người đang giữ việc này, Head, Quản trị hoặc CX mới thêm được việc con.');
     if (!v.mo) throw badRequest('Việc cha đã kết thúc — không thêm việc con.');   // rà #2233 P2-2
-    return { loai, id, branchId: v.branchId };
+    return { loai, id, branchId: v.branchId, giu };
   })();
   if (input.parentTaskId) {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
@@ -916,7 +940,7 @@ export function createMgmtTask(p: Principal, input: {
    */
   const pv = phamVi(p);
   const taskBranchId = cha ? cha.branchId : input.branchId ?? parent?.branch_id ?? (!pv.all && pv.branchIds.length === 1 ? pv.branchIds[0] : null);
-  if (!quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  if (!cha?.giu && !quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden(cha ? 'Chỉ người đang giữ việc này, Head, Quản trị hoặc CX mới thêm được việc con.' : 'Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   kiemNguoiVh('Người phụ trách', input.assigneeUserId, taskBranchId);
   const theoDoi = [...(docTheoDoi(input.theoDoiIds, taskBranchId) ?? []), ...(input.watcherUserId ? [input.watcherUserId] : [])];
   kiemNguoiVh('Người theo dõi', input.watcherUserId, taskBranchId);
@@ -962,6 +986,8 @@ export function createMgmtTask(p: Principal, input: {
   const taoMoi = () => tx(() => {
     const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return mgmtTaskDetail(p, cu);
+    /* TUYEN-1: việc con của Xử lý vi phạm gắn ĐỢT đang mở — đợt chưa có dòng (hoặc dòng đợt trước) → làm dòng đợt này (tách việc con đợt trước). */
+    if (cha?.loai === 'xu_ly') damBaoDong('xu_ly', cha.id);
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_id, parent_task_id,
@@ -1027,7 +1053,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
 
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
   const isAssignee = t.assignee_user_id === p.userId && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
-  if (!coQuyenViec(p, t) && !isAssignee) {
+  if (!coQuyenViec(p, t) && !isAssignee && !giuViecCha(p, t)) {
     throw forbidden('Chỉ người được giao, Head, Quản trị hoặc CX mới cập nhật được công việc này.');
   }
   if (!(TASK_PROGRESS as readonly string[]).includes(input.progress)) {
@@ -1154,7 +1180,15 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const t = docTask(taskId);
   kiemPhienBan(t, patch.phienBan);
   if (patch.hoanTacGiao === true) return hoanTacGiaoVh(p, t);
-  const quanLy = coQuyenViec(p, t);
+  const quanLyVh = coQuyenViec(p, t);
+  /* TUYEN-1 (PTA rà #2261 P1): người giữ việc cha (không quản lý Vận hành) chỉ sửa trường trong danh sách trắng. */
+  const giuCha = !quanLyVh && giuViecCha(p, t);
+  if (giuCha) {
+    const ngoai = Object.keys(patch).filter((k) => !TRUONG_GIU_CHA.includes(k) && (patch as any)[k] !== undefined);
+    if (ngoai.length) throw forbidden('Việc con: người giữ việc chỉ sửa tên, mô tả, hạn, người phụ trách, người theo dõi.');
+  }
+  const quanLy = quanLyVh || giuCha;
+  const conViec = !!(t.parent_task_id || t.cha_loai);   // việc con (Vận hành hoặc của việc Ý thức): không loại / nhóm / hạng mục / chi nhánh / lặp riêng
   if (!quanLy) {
     const duoc = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
     const ngoai = Object.keys(patch).filter((k) => !['due', 'lyDoDoiHan', 'theoDoiIds', 'phienBan'].includes(k) && (patch as any)[k] !== undefined);
@@ -1166,7 +1200,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const put = (col: string, v: unknown) => { sets.push(`${col} = ?`); params.push(v); };
   const historyRows: { field: string; oldValue: string | null; newValue: string | null; reason: string | null }[] = [];
 
-  const loai = t.parent_task_id ? undefined : loaiViec(patch.taskType);
+  const loai = conViec ? undefined : loaiViec(patch.taskType);
   if (loai !== undefined && loai !== t.task_type) put('task_type', loai);
   if (patch.title !== undefined) {
     const v = chuTuDo(patch.title, 'Tên công việc', 200) ?? '';
@@ -1178,7 +1212,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const cnMoi: number | null = patch.branchId !== undefined ? patch.branchId ?? null : t.branch_id ?? null;
   const doiCn = cnMoi !== (t.branch_id ?? null);
   if (doiCn) {
-    if (t.parent_task_id) throw badRequest('Việc con theo chi nhánh của việc cha.');
+    if (conViec) throw badRequest('Việc con theo chi nhánh của việc cha.');
     if (cnMoi !== null && !conn.prepare('SELECT 1 FROM branches WHERE id = ?').get(cnMoi)) throw badRequest('Chi nhánh không hợp lệ.');
     if (!quanLyVanHanh(p, { branchId: cnMoi, anyScope: cnMoi === null })) throw forbidden('Bạn không quản lý chi nhánh mới của công việc.');
     put('branch_id', cnMoi);
@@ -1191,7 +1225,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
    */
   const khoaCu = t.group_id ? (conn.prepare('SELECT khoa, branch_id FROM task_groups WHERE id = ?').get(t.group_id) as any) : null;
   const nhomVao = patch.groupId === undefined && patch.group !== undefined && patch.group === (khoaCu?.khoa ?? 'curriculum') ? { ...patch, group: undefined } : patch;
-  let groupId = t.parent_task_id ? undefined : nhomChoViec(nhomVao, cnMoi, t.group_id ?? null);
+  let groupId = conViec ? undefined : nhomChoViec(nhomVao, cnMoi, t.group_id ?? null);
   if (doiCn && groupId === undefined && khoaCu?.branch_id != null && khoaCu.branch_id !== cnMoi) groupId = null;
   if (groupId !== undefined && groupId !== (t.group_id ?? null)) {
     historyRows.push({ field: 'group_id', oldValue: t.group_id ? String(t.group_id) : null, newValue: groupId ? String(groupId) : null, reason: null });
@@ -1240,7 +1274,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   if (t.kind !== 'branch_ops' && (patch.hangMuc !== undefined || patch.classId !== undefined || patch.studentIds !== undefined)) {
     throw badRequest('Chỉ việc Vận hành có hạng mục / lớp / học viên liên quan.');
   }
-  const hangMuc = t.parent_task_id ? undefined : docHangMuc(patch.hangMuc);
+  const hangMuc = conViec ? undefined : docHangMuc(patch.hangMuc);
   if (hangMuc !== undefined && hangMuc !== (t.hang_muc ?? null)) {
     put('hang_muc', hangMuc);
     historyRows.push({ field: 'hang_muc', oldValue: t.hang_muc ?? null, newValue: hangMuc, reason: null });
@@ -1266,7 +1300,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   }
   let lap: LapLai | null | undefined;
   if (patch.lap !== undefined) {
-    if (t.parent_task_id || t.lap_goc_id) throw badRequest('Chỉ đặt lặp lại ở việc gốc.');
+    if (conViec || t.lap_goc_id) throw badRequest('Chỉ đặt lặp lại ở việc gốc.');
     lap = docLap(patch.lap);
   }
   /* PATCH mang `lap` y như đang có → không đổi gì (không bỏ Dừng lặp, không ghi lịch sử). */
@@ -1369,7 +1403,7 @@ function hoanTacGiaoVh(p: Principal, t: any) {
   /* Rà PTA #1954 (4): chỉ lần đổi GẦN NHẤT (đã hoàn tác thì thôi — không đảo tiếp chuỗi lần cũ hơn), của chính người đổi còn hiệu lực, trong 60 giây. */
   const g = db().prepare(`SELECT * FROM ghi_dao WHERE loai = ? AND bang = 'tasks' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`).get(LOAI_DAO_GIAO, t.id) as BanGhiDao | undefined;
   if (!g || g.dao_luc) throw conflict('Không có lần đổi người phụ trách nào để hoàn tác.');
-  if (g.nguoi !== p.userId || !coQuyenViec(p, t) || !laHieuLuc(p.userId, t.branch_id ?? null)) throw forbidden('Chỉ người vừa đổi người phụ trách hoàn tác được.');
+  if (g.nguoi !== p.userId || !(coQuyenViec(p, t) || giuViecCha(p, t)) || !laHieuLuc(p.userId, t.branch_id ?? null)) throw forbidden('Chỉ người vừa đổi người phụ trách hoàn tác được.');
   if (Date.now() - Date.parse(g.luc) > HOAN_TAC_GIAO_MS) throw badRequest('Quá thời gian Hoàn tác — đổi lại người phụ trách bằng nút Đổi.');
   return tx(() => {
     daoLai(db(), g, p.userId);

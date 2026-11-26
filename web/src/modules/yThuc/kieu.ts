@@ -82,8 +82,22 @@ export type BaoPhLan = {
   soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
 };
 
+/** TUYEN-0 (`server/src/yThuc/tuyen.ts`) — chỉ phần web đọc (khối Tuyến `KhoiTuyen.tsx`). */
+export type TrangThaiBuoc = 'xong' | 'dang' | 'cho' | 'bo' | 'tam_dung';
+export type BuocTuyen = {
+  khoa: string; ten: string; trangThai: TrangThaiBuoc; chiTiet: string | null; nguoi: string | null; laToi: boolean;
+  ngay: string | null; han: string | null; cha: string | null; cungLuc: boolean; coNoiDung: boolean; khongQuyen: boolean; noiDung?: string;
+};
+export type Tuyen = {
+  loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
+  buoc: BuocTuyen[]; xong: number; tong: number; soDang: number; ketThuc: boolean;
+  /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
+};
+
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
+  /** TUYEN-0: tuyến "đang chờ xử lý" của em (panel Xử lý vi phạm). */
+  tuyen?: Tuyen | null;
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
   /** MA-QL-VIEC: QL / Quản trị áp thẳng cách khác Nâng 1 bậc (máy chủ `yThucHocVien`). */
   qlApThang?: boolean;
@@ -124,6 +138,8 @@ export type TinhHinhView = {
 
 export type XuLyView = {
   id: number; studentId: number; ten: string; kind: string; nhan: string; customName: string | null;
+  /** TUYEN-0: tuyến của lần xử lý này. */
+  tuyen?: Tuyen | null;
   status: string; statusLabel: string; bac: number; note: string | null;
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
   nguoiId: number | null; nguoiNgoai: string | null;

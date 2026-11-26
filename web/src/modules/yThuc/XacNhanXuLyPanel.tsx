@@ -10,7 +10,6 @@ import { LOP_DA_LUU, NutVaTiep, TrangThaiLuu, dauViec } from '../../ui/KhuonViec
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
 import { BoLocDoan, ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -20,8 +19,30 @@ import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, lamMoiYThucTheo, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { chuMoc } from './BangLan.tsx';
 import { DongViPham } from './DongViPham.tsx';
-import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { KhoiTuyen } from './KhoiTuyen.tsx';
+import { ChipRadio } from '../../ui/ChipRadio.tsx';
+import type { BuocTuyen, Tuyen } from './kieu.ts';
+import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
+import { MucViecCon } from '../congViec/MucViecCon.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
+import { lucVn } from '../congViec/gioVn.ts';
+
+/**
+ * TUYEN-1 (mockup v27 T1-375): GVCN chọn cách KHÁC mặc định (chưa lưu) → Tuyến xem trước thêm bước ○ "Head duyệt" (N1) sau bước Xử lý đang ở; các bước sau
+ * chờ "sau khi duyệt". Chỉ là bước chưa tới lượt (không việc, không số — N72 ③); người = tên Head máy chủ trả (`tuyen.head`, `headCua` N74) — web không tự đoán.
+ */
+function quaHeadDuyet(tuyen: Tuyen | null | undefined, soNgay: number): Tuyen | null | undefined {
+  const i = tuyen?.buoc.findIndex((b) => b.khoa === 'xu_ly' && b.trangThai === 'dang') ?? -1;
+  if (!tuyen || i < 0) return tuyen;
+  const head: BuocTuyen = { khoa: 'duyet-du-kien', ten: t('Head duyệt'), trangThai: 'cho', chiTiet: t('{n} ngày sau khi gửi', { n: soNgay }), nguoi: tuyen.head ?? t('Head chi nhánh'), laToi: false,
+    ngay: null, han: null, cha: null, cungLuc: false, coNoiDung: false, khongQuyen: false };
+  /* Sau Head duyệt: "Đã thực hiện" (người đang giữ bước Xử lý) và "Báo PH" chạy cùng lúc — như máy chủ dựng khi đã gửi (mockup v27 T1-375 · T2). */
+  const xl = tuyen.buoc[i];
+  const thucHien: BuocTuyen = { ...head, khoa: 'thuc-hien-du-kien', ten: t('Đã thực hiện'), chiTiet: t('sau khi duyệt'), nguoi: xl.nguoi, laToi: xl.laToi, cungLuc: true };
+  const sau = tuyen.buoc.slice(i + 1).map((b) => (b.trangThai === 'cho' && !b.cha ? { ...b, chiTiet: t('sau khi duyệt'), cungLuc: true } : b));
+  return { ...tuyen, buoc: [...tuyen.buoc.slice(0, i + 1), head, thucHien, ...sau], tong: tuyen.tong + 2 };
+}
 
 /** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
 const MO_TA_MIN = CHU_TOI_THIEU;
@@ -66,6 +87,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: d, error: loiTai, reload } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
+  /* TUYEN-1 (N72 ⑥, 4.6): khối Phụ trách · Hạn · Theo dõi của việc Xử lý vi phạm (id = em) — một GET song song; tuyến đi cùng `/students/:id/y-thuc`. */
+  const gv = useGiaoViec('xu_ly', studentId);
   const lamMoi = () => lamMoiYThucTheo(DUONG_LAM_MOI_Y_THUC, { classId, studentIds: [studentId] });
   /* Một form (bỏ chế độ "Đề xuất QL duyệt" riêng): `cheDo` suy từ cách — Nâng 1 bậc = Xác nhận xử lý, cách khác = Đề xuất. */
   const [cach, setCach] = useState<Cach>(cheDoMo === 'de-xuat' ? 'ngoai' : 'nang');
@@ -105,13 +128,15 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   }, [d?.studentId]);
 
   if (!studentId) return null;
-  const tieuDe = t('Xác nhận xử lý');
+  /* TUYEN-1 (N72 · 4.4, mockup v27 T1): một khái niệm một tên — đầu panel = tên nhóm việc / tên bước trong Tuyến. */
+  const tieuDe = t('Xử lý vi phạm');
   if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} dau={dauTai} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
   /* Mockup v20 D1: dòng loại "Việc · Ý thức & Phối hợp"; dòng 2 tên em · lớp · chip hạn (chỉ khi Xác nhận — việc có hạn). */
   const dau = (han: boolean) => {
     const x = dauViec({ em: { id: d.studentId, ten: d.ten }, lop });
-    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han && d.han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
+    /* TUYEN-1 (mockup v27 khung base): hạn chỉ ở khối Phụ trách · Hạn — đầu panel không lặp ngày (còn chip khi khối không tải được). */
+    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han && d.han && !gv.g ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
   };
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
@@ -242,7 +267,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     const thuLai = async () => { setBusy(true); try { await xongTep(daLuu.id, daLuu.nhan, tep); } finally { setBusy(false); } };
     const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void thuLai()}>{t('Thử lại')}</button>;
     return (
-      <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={() => { toast.push('ok', cauXong(daLuu.nhan)); onClose(); }} dau={dau(false)}
+      <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={() => { toast.push('ok', cauXong(daLuu.nhan)); onClose(); }} dau={dau(false)}
         chan={{ v3: true, chinh: xong, dongTren: <span className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu')}</span> }}>
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
@@ -308,10 +333,13 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     <li key={v.id} className="min-h-[44px] px-3 py-2 text-sm text-slate-200">
       {/* VI-PHAM-MO: ô tick CHỈ chọn (vùng chạm ≥ 44px); bấm TÊN mở mô tả tại chỗ — cùng một kiểu mở với mọi danh sách vi phạm. */}
       <DongViPham v={v} ngay={ngay(v.occurredOn, homNay)}
-        truoc={<label className="-m-3 shrink-0 cursor-pointer p-3 max-sm:pt-6"><input type="checkbox" className="mt-0.5 block" checked={chon.has(v.id)} onChange={() => doi(v.id)}
+        truoc={<label className="-m-3 shrink-0 cursor-pointer p-3"><input type="checkbox" className="mt-0.5 block" checked={chon.has(v.id)} onChange={() => doi(v.id)}
           aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
-        duoi={<>{dich(v.categoryLabel)}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</>}
-        phu={<NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />} />
+        /* TUYEN-1 (mockup v27 T1): một dòng "Nhóm — tên" · "{người} ghi" sát phải; nhãn trạng thái chỉ khi khác "Cần xử lý" (mặc định của danh sách này). */
+        tienTo={dich(v.categoryLabel)}
+        phu={<span className="flex shrink-0 items-center gap-2 pt-px">{v.trangThai !== 'can_xu_ly' && <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />}
+          {v.reportedByName && <span className="whitespace-nowrap text-[13px] text-dim max-sm:hidden">{t('{ten} ghi', { ten: v.reportedByName })}</span>}</span>}
+        duoi={v.reportedByName ? <span className="sm:hidden">{t('{ten} ghi', { ten: v.reportedByName })}</span> : undefined} />
     </li>
   );
 
@@ -339,9 +367,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const onDong = () => void dong();
   const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
-    <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={yc.length ? t('Xử lý vi phạm') : tieuDe} hocVien={d.ten} onDong={onDong}
+    <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={tieuDe} hocVien={d.ten} onDong={onDong}
       dau={yc.length && nguoiYc ? { ...dau(true), dong2: [...dau(true).dong2, t('{x} yêu cầu', { x: nguoiYc })] } : dau(cheDo === 'xu-ly')}
-      quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl, qlAp: d.qlApThang })}
+      /* TUYEN-1: bước sau (TVV báo PH · Head duyệt) nay ở khối Tuyến — chỉ giữ câu hậu quả khi Head / Quản trị áp thẳng. */
+      quyChe={d.qlApThang && cach !== 'nang' ? quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl, qlAp: true }) : null}
       chan={{
         /* Mockup v20 D1 · ⑤ D1a: chân lưu chung — trái trạng thái lưu, phải "Đóng" (NutVaTiep) + nút việc + "Lưu · việc tiếp ›". `huy: null`: không vẽ "Đóng" thứ hai. */
         huy: null, chinh: nutChinh, daSua: !!moTa.trim(),
@@ -350,6 +379,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           : <span className="text-slate-400">{t('Chưa lưu')}</span>,
       }}>
       <div className="flex flex-col gap-4 pt-4">
+        {/* TUYEN-1 (mockup v27 T1): khối việc → Tuyến → nội dung → Việc con → Lịch sử. */}
+        {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDone} />}
+        <KhoiTuyen tuyen={cach !== 'nang' && !d.qlApThang ? quaHeadDuyet(d.tuyen, soNgayQl) : d.tuyen} />
         {khoiYc}
         {chonLoi && <div>{chonLoi}</div>}
         {/* GD-4d (⑤ D1a): khối bối cảnh nền lặng "Bậc hiện tại · Bậc kế · TVV" (viết đủ, viết hoa; TVV chỉ khi em có) + hàng "Thang xử lý" dạng vạch. */}
@@ -359,9 +391,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
             {bacKe && <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{bacDu(dich(bacKe.nhan))}</b></span>}
             {d.tvv && <span>{t('TVV')} <b className="font-semibold text-slate-100">{d.tvv}</b></span>}
           </p>
-          <p className="m-0 flex flex-wrap items-center gap-3 text-[13px] text-slate-400">
-            <span className="font-semibold">{t('Thang xử lý')}</span><ThangVach dong={d.dongThang} />
-          </p>
+          {/* TUYEN-1 (mockup v27 T1): bỏ dòng "Thang xử lý" (vạch) — bậc hiện tại · bậc kế ở dòng trên, thang đủ ở hồ sơ HV › Ý thức. */}
         </div>
           <div>
             {nhanO(t('{n} vi phạm đưa vào', { n: chon.size }))}
@@ -387,18 +417,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           {/* Mockup v20 D: cách xử lý chọn tại chỗ — 4 ô, "Nâng 1 bậc" mặc định. */}
           <div className="flex flex-col gap-2">
             {nhanO(t('Cách xử lý'))}
-            <div role="radiogroup" aria-label={t('Cách xử lý')} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {CACH.map((c) => (
-                <button key={c.k} type="button" role="radio" aria-checked={cach === c.k} disabled={c.tat || busy} onClick={() => chonCach(c.k)}
-                  className={`grid min-h-[68px] content-start gap-0.5 rounded-[10px] border px-3 pb-2.5 pt-2.5 text-left appearance-none disabled:cursor-not-allowed disabled:opacity-50 ${cach === c.k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] surface-2 hover:border-[color:var(--accent)]'}`}>
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                    <span aria-hidden className={`h-3.5 w-3.5 shrink-0 rounded-full border-[1.5px] ${cach === c.k ? 'border-[4px] border-[color:var(--accent)]' : 'border-[color:var(--o-vien,var(--line-strong))]'}`} />{c.ten}
-                  </span>
-                  <span className="pl-[22px] text-[13px] leading-snug text-slate-400">{bacKhongNgat(c.phu)}</span>
-                  {c.k === 'nang' && <span className="ml-[22px] mt-1 justify-self-start rounded border px-[5px] text-xs font-semibold leading-4 text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>{t('Mặc định')}</span>}
-                </button>
-              ))}
-            </div>
+            {/* TUYEN-1 (mockup v27 T1): bốn cách là một hàng CHIP tròn (thay 4 thẻ cao) — "Nâng 1 bậc · mặc định" trước; bậc hiện tại → kế đã ở dòng bối cảnh trên, chữ phụ của từng cách ở title. */}
+            <ChipRadio nhan={t('Cách xử lý')} value={cach} onChange={chonCach} disabled={busy}
+              muc={CACH.map((c) => ({ k: c.k, tat: c.tat, title: c.phu ? bacKhongNgat(c.phu) : undefined, chu: c.k === 'nang' ? t('{ten} · mặc định', { ten: c.ten }) : c.ten }))} />
             {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
               <p className="m-0 text-xs text-slate-300">
                 <button type="button" title={t('Đã có mức độ vi phạm từ trước?')} className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Khai cấp bậc')}</button>
@@ -421,8 +442,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
               {/* Hậu quả đặt ngay dưới lựa chọn (chủ SP 12/11) — không chỉ bằng màu: có ⚠ + chữ. */}
               <p role="note" className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 rounded-lg border border-soon-line bg-soon-bg px-3 py-2.5 text-sm leading-snug text-slate-100">
                 <span aria-hidden className="font-bold text-soon">⚠</span>
-                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi Head duyệt.')}</b> {t('Head có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
-                  {' '}<NutLuat label={t('Sau khi chốt')}>{t('TVV nhận việc báo PH sau khi Head duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.')}</NutLuat></span>
+                {/* TUYEN-1: bỏ ⓘ "Sau khi chốt" — bước sau (○ Head duyệt · Đã thực hiện · Báo PH) hiện trong khối Tuyến. */}
+                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi Head duyệt.')}</b> {t('Head có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}</span>
               </p>
             </div>
           )}
@@ -457,7 +478,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           <Truong nhan={t('Bằng chứng')} batBuoc={cheDo === 'de-xuat' && canTep(loai)} tuyChon={!(cheDo === 'de-xuat' && canTep(loai))} as="div" loi={lf.loiCua(loi, 'tep')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} khoa={busy} /></div>
           </Truong>
-          {/* GD-4b: bước kế (TVV nhận việc báo PH · hạn) nay ở dòng quy chế Q45 trên chân — bỏ dòng trùng ở thân. */}
+          {gv.g && <MucViecCon g={gv.g} onDoi={gv.reload} />}
+          {gv.g && (() => { const ls = dongLichSuGiao(gv.g, homNay ?? ''); return (
+            <LichSuGap so={ls.length}><DsLichSu dong={ls.reverse().map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} /></LichSuGap>
+          ); })()}
       </div>
     </KhungPanel>
   );

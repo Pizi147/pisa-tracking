@@ -1191,7 +1191,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Head duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{nhapDo\.current\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     /* TINH-HINH (mockup v20 D): không còn nút chữ "Đề xuất QL duyệt" — chọn cách xử lý tại chỗ (4 ô). */
-    assert(/role="radiogroup" aria-label=\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
+    assert(/(role="radiogroup" aria-label=|<ChipRadio nhan=)\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
   check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), ngày / tháng tuỳ chọn (N70), ghi chú tuỳ chọn; sửa bằng PUT', () => {

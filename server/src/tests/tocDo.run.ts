@@ -40,7 +40,7 @@ const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');  
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
-const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON } = await import('./tocDoDuong.ts');
 const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -2562,6 +2562,26 @@ await checkAsync(`AU-2111 P1-01 · TVV mở việc Vận hành được giao: GE
   } finally {
     gvSvc.donViec('van_hanh', [v.id, con.id]);
     conn.prepare('DELETE FROM tasks WHERE id IN (?, ?)').run(con.id, v.id);
+  }
+});
+
+/* TUYEN-1 (PTA rà #2261): TVV giữ việc Báo PH tạo việc con qua cổng khu Công việc (`chaLoai`) rồi mở việc con — xoá ngay sau đo. */
+await checkAsync(`TUYEN-1 · TVV giữ Báo PH: POST /mgmt-tasks (chaLoai) ≤ ${TRAN_VIEC_CON.tao.cau} câu · GET việc con ≤ ${TRAN_VIEC_CON.mo.cau} câu · ≤ ${TRAN_VIEC_CON.mo.dong} dòng`, async () => {
+  const gvSvc = await import('../worklist/giaoViec.ts');
+  const v = conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL
+      AND s.consultant_user_id = ? AND s.archived_at IS NULL ORDER BY v.id LIMIT 1`).get(USER.TVV) as any;
+  assert(v, 'seed: TVV đo cần một việc Báo PH đang mở của em mình');
+  const tao = await doGhi('TVV', '/mgmt-tasks', { title: 'Đo TUYEN-1 việc con', chaLoai: 'bao_ph', chaId: v.id, assigneeUserId: USER.TVV, due: demoToday15d(), idempotencyKey: 'do-tuyen1-viec-con' });
+  const id = (tao.json as any)?.id as number;
+  try {
+    assert(tao.status === 200 && id, `tạo: ${tao.status} ${JSON.stringify(tao.json).slice(0, 200)}`);
+    const d = await doSql('TVV', 'GET', `/mgmt-tasks/${id}`);
+    console.log(`      (đo: tạo ${tao.n} câu · mở ${d.status} ${d.n} câu ${d.dong} dòng)`);
+    assert(d.status === 200, `mở: ${d.status}`);
+    assert(tao.n <= TRAN_VIEC_CON.tao.cau, `tạo: ${tao.n} câu > ${TRAN_VIEC_CON.tao.cau}`);
+    assert(d.n <= TRAN_VIEC_CON.mo.cau && d.dong <= TRAN_VIEC_CON.mo.dong, `mở: ${d.n} câu ${d.dong} dòng > ${TRAN_VIEC_CON.mo.cau} · ${TRAN_VIEC_CON.mo.dong}`);
+  } finally {
+    if (id) { gvSvc.donViec('van_hanh', [id]); conn.prepare('DELETE FROM tasks WHERE id = ?').run(id); }
   }
 });
 
