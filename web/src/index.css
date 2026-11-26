@@ -2318,10 +2318,6 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 /* #8: cột Kết quả cuối bảng căn phải (thắng luật cột số căn giữa `th.th.text-right`) — đầu cột thẳng ô, sát mép phải. */
 th.th.th-phai, td.td.td-phai { text-align: right; }
 
-/* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
-   `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
-.ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
-
 /* MT-QUA-THI (PTA 26/11): bảng Lịch MT (panel) dưới 640 px — mỗi MT MỘT khối dọc, không cuộn ngang, không ẩn thông tin: tầng 1 lượt (+ kỳ vọng, "Sau ngày thi") ·
    tầng 2 tuần đề xuất (mã tuần · tuần n · ngày) · tầng 3 hiện tại · tầng 4 nút căn phải. Tiêu đề cột ẩn (mỗi tầng tự nói). Ngoài @layer để thắng `block` / `whitespace-nowrap`. */
 @media (max-width: 639px) {
@@ -2335,3 +2331,7 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
   .bang-lich-mt tr[data-hang-mt] > td:nth-child(4) { justify-content: flex-end; }
   .bang-lich-mt tr[data-hang-mt] > td:nth-child(4) > span { display: flex; }
 }
+
+/* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
+   `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
+.ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
