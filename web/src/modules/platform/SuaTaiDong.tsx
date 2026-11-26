@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { HopNeo } from '../../ui/HopNeo.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -93,6 +94,9 @@ export function OVaiTaiDong({ u, branches, loiCn, laMinh, mat, onDaLuu }: {
   loiCn?: ReactNode;
 }) {
   const toast = useToast();
+  const { reload: taiPhien } = useSession();
+  /* Đổi vai của chính mình → tải lại phiên (menu, Góc nhìn theo vai mới) — không đợi F5. */
+  const daLuu = () => { onDaLuu(); if (laMinh) void taiPhien(); };
   const [ds, setDs] = useState<CapVai[]>([]);
   const goc = capTuTaiKhoan(u.roles);
   const loi = loiThieuChiNhanh(ds);
@@ -103,14 +107,14 @@ export function OVaiTaiDong({ u, branches, loiCn, laMinh, mat, onDaLuu }: {
       onMo={() => setDs(capTuTaiKhoan(u.roles))}
       onLuu={async () => {
         const kq = await api.put<{ nhatKyId?: number; chuyen?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(ds) });
-        onDaLuu();
+        daLuu();
         const daChuyen = nhanDaChuyen(kq?.chuyen);   // E-5: gỡ hết vai → báo số Case / PA đã tự chuyển
         /* E-4: có `nhatKyId` → Hoàn tác phía máy chủ: cấp lại vai cũ VÀ trả việc đã chuyển mà chưa ai sửa tiếp (≤ 15 phút). Nếu chính lần hoàn tác lại chuyển việc
            (vd lần đổi đó đã THÊM chi nhánh) → nêu số đã chuyển và cho Hoàn tác tiếp. */
         const hoanTac = (id: number): void => {
           api.post<{ nhatKyIdMoi?: number | null; chuyenMoi?: Parameters<typeof nhanDaChuyen>[0] }>(`/admin/accounts/${u.id}/roles/hoan-tac`, { nhatKyId: id })
             .then((r) => {
-              onDaLuu();
+              daLuu();
               const moi = nhanDaChuyen(r?.chuyenMoi), nd = t('Đã hoàn tác vai {ten}', { ten: u.fullName });
               if (moi && r?.nhatKyIdMoi) toast.hoanTac(`${nd} · ${moi}`, () => hoanTac(r.nhatKyIdMoi!), { key: `vai-${u.id}-${r.nhatKyIdMoi}` });
               else toast.push('ok', moi ? `${nd} · ${moi}` : nd);
@@ -120,7 +124,7 @@ export function OVaiTaiDong({ u, branches, loiCn, laMinh, mat, onDaLuu }: {
         toast.hoanTac(`${t('Đã đổi vai {ten}: {vai}', { ten: u.fullName, vai: moTa(ds) })}${daChuyen ? ` · ${daChuyen}` : ''}`, () => {
           if (kq?.nhatKyId) hoanTac(kq.nhatKyId);
           else api.put(`/admin/accounts/${u.id}/roles`, { roles: payloadVai(goc) })
-            .then(() => { onDaLuu(); toast.push('ok', t('Đã hoàn tác vai {ten}', { ten: u.fullName })); })
+            .then(() => { daLuu(); toast.push('ok', t('Đã hoàn tác vai {ten}', { ten: u.fullName })); })
             .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
         }, { key: `vai-${u.id}` });
       }}>
