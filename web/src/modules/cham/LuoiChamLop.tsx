@@ -74,7 +74,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang, luoiGon = false, conCho = '',
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang, luoiGon = false, conCho = '', lanCuon = 0,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -102,6 +102,8 @@ export function LuoiChamLop({
   onHet?: OnHet;
   /** DON-HINH A1: báo đang ở dạng một kỹ năng (đã có hàng chip riêng) — nơi gọi ẩn hàng chọn môn của mình. */
   onMotKyNang?: (co: boolean) => void;
+  /** Hồ sơ lớp: mỗi lần bấm "Nhập điểm" tăng số này → đặt lại con trỏ vào ô trống đầu (khoá cuộn đổi). */
+  lanCuon?: number;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -137,7 +139,7 @@ export function LuoiChamLop({
   /* Cuộn tới ô cần chấm MỘT LẦN cho mỗi ngữ cảnh mở lưới. `data-trong` chỉ gắn cho ô còn trống VÀ mình được sửa. */
   const khung = useRef<HTMLDivElement>(null);
   const daCuon = useRef<string | null>(null);
-  const khoaCuon = `${data.classId}|${data.ft?.period?.id ?? ''}|${kind}|${kn}|${hv}`;
+  const khoaCuon = `${data.classId}|${data.ft?.period?.id ?? ''}|${kind}|${kn}|${hv}|${lanCuon}`;
   useEffect(() => {
     if (!datConTro || daCuon.current === khoaCuon) return;
     const id = requestAnimationFrame(() => {

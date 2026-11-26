@@ -23,6 +23,7 @@
  "web/src/modules/cham/NganLichSuBai.tsx",
  "web/src/modules/cham/PanelNhapDiemLop.tsx",
  "web/src/modules/cham/huyDiem.ts",
+ "web/src/modules/cham/moLuoiDiemLop.ts",
  "web/src/modules/cham/phienCham.ts",
  "web/src/modules/cham/thaoTacO.tsx",
  "web/src/modules/cham/thongBaoVang.ts",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { lazyHop } from '../../ui/lazyHop.tsx';
+import { moLuoiDiemLop } from '../cham/moLuoiDiemLop.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { DemViecPanel } from '../../ui/KhungPanel.tsx';
@@ -10,8 +10,6 @@ import { NHAN_LOAI_VIEC, laViecChamCheo, viecLopTuDong } from '@shared/domain/in
 import { useSession } from '../../lib/session.tsx';
 import { moCaDong } from '../congViec/lamTaiCho.ts';
 import { t } from '@shared/i18n/index.ts';
-/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
-const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
  * P1 G2-03: `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (dòng gộp "Cả lớp" = 1, không kèm `con`) — dải vẽ ô + đếm từ đây, cùng số `demDongViec`.
@@ -46,11 +44,10 @@ export function useViecLop(classId: number | null, bat = true): { data: ViecLop 
  * đầu panel "i / n", chân "Việc tiếp ›" đi hết việc cùng loại ở lớp ([XM-1]); chip Nhập điểm mở panel nhập điểm của lớp (K2a). Bỏ lối tắt sang trang Công việc (R2.3).
  * Dữ liệu: `viec-theo-em?chi=toi` đã tải ([XM-11]) — không request thêm. Không có việc → không vẽ dải.
  */
-export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; classCode: string; onDoi: () => void }) {
+export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () => void }) {
   const { data, reload } = useViecLop(classId);
   /* `ds` chụp lúc bấm chip: việc vừa xong rời danh sách vẫn đếm đúng "i / n" và tìm được việc kế (R1-LUU-TIEP). */
   const [mo, setMo] = useState<{ ds: WorkItem[]; i: number; nhan: string } | null>(null);
-  const [nhapDiem, setNhapDiem] = useState(false);
   /* AUDIT-1611 P1-01: chip đếm trên DÒNG (`dongToi`, giữ `con`) như "Lớp của tôi" — cùng số ở Công việc, hồ sơ lớp, HV & Lớp. */
   /* AUDIT-2111 B2-03 / D-04: chip Nhập điểm đếm BÀI — rê chuột "n bài · m việc" lấy từ CHÍNH `chipViecLop` (rà 25/11 PR 2: bỏ đếm lại ở đây). */
   const chip = chipViecLop(data?.dongToi ?? [], classId, moCaDong);
@@ -72,7 +69,7 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
           </span>
           {chip.map((c) => (
             <NutChipViec key={c.tab} c={c}
-              onBam={() => (c.tab === 'cham-diem' ? setNhapDiem(true) : setMo({ ds: c.ds, i: 0, nhan: t('Việc {loai} của bạn ở lớp này', { loai: c.nhan }) }))} />
+              onBam={() => (c.tab === 'cham-diem' ? moLuoiDiemLop(classId) : setMo({ ds: c.ds, i: 0, nhan: t('Việc {loai} của bạn ở lớp này', { loai: c.nhan }) }))} />
           ))}
         </section>
       )}
@@ -83,7 +80,6 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
             tenTiep={keTiep >= 0 && mo.ds[keTiep].studentId !== null ? mo.ds[keTiep].studentName : null} />
         </DemViecPanel.Provider>
       )}
-      {nhapDiem && <PanelNhapDiemLop classId={classId} classCode={classCode} onDong={() => { setNhapDiem(false); daLam(); }} />}
     </>
   );
 }

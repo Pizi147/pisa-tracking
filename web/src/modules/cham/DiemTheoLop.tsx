@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type MutableRefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { OHaiTang } from '../../ui/LuoiTrongPanel.tsx';
 import { BaoDangLuuContext } from '../../ui/SaveState.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import {
@@ -43,7 +44,7 @@ export type CongRoi = { roi: (lam: () => void) => void; giu: (e: MouseEvent) => 
 /** Mã đích "ra ngoài bảng" trong luồng hỏi đổi lượt — không bao giờ trùng mã lượt (`docMaLuot`). */
 const DICH_NGOAI = 'ngoai';
 
-export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congRoi, onDaLuu, onLuot, chonMon = false }: {
+export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congRoi, onDaLuu, onLuot, chonMon = false, yeuCau = null }: {
   classId: number; luotBanDau?: string; gon?: boolean; congRoi?: MutableRefObject<CongRoi | null>;
   /** OV-15b (mục 5, mockup 2 khung 4): panel Nhập điểm lớp — hàng chọn môn "Tất cả · L · R · W1 · W2 · S" lọc cột lưới. */
   chonMon?: boolean;
@@ -53,6 +54,8 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   onDaLuu?: () => void;
   /** PR-OV5b: lượt đang xem đổi — Test › Điểm theo lớp ghi `?luot=` để Quay lại từ hồ sơ về đúng lượt. */
   onLuot?: (ma: string, nhan: string) => void;
+  /** Hồ sơ lớp: "Nhập điểm" cuộn tới lưới này — mỗi lần bấm `seq` đổi: sang `luot` (không có → lượt mở sẵn), bật "Chỉ ô còn trống" nếu `loc`, đặt con trỏ vào ô trống đầu. */
+  yeuCau?: { seq: number; luot: string | null; loc?: 'trong' | 'cu' } | null;
 }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const [chon, setChon] = useState<string | null>(luotBanDau ?? null);
@@ -125,6 +128,16 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
   useEffect(() => {
     if (congRoi) congRoi.current = { roi: (lam) => { dichNgoai.current = lam; doiLuot(DICH_NGOAI); }, giu: giuHopLyDo };
   });
+
+  /* Lần mở đầu (`seq` lúc gắn) đã đi qua `luotBanDau` / `locBanDau`; chỉ các lần bấm sau mới đổi lượt tại chỗ (qua đường chặn ô chưa lưu). */
+  const seqDau = useRef(yeuCau?.seq);
+  useEffect(() => {
+    if (!yeuCau || yeuCau.seq === seqDau.current || !ds.data) return;
+    if (yeuCau.loc) { setChiOTrong(true); setChiCu(yeuCau.loc === 'cu'); }
+    const toi = yeuCau.luot ?? ds.data.macDinh;
+    if (toi) doiLuot(toi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ theo lần bấm
+  }, [yeuCau?.seq]);
 
   const hep = useManHinhHep();
   const vi = dsLuot.findIndex((l) => l.ma === luot);
@@ -240,8 +253,11 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                   <div className="rounded-lg border overflow-clip" style={{ borderColor: 'var(--line)' }}>
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <DongThiContext.Provider value>
-                        <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
-                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} onMotKyNang={setMotKyNang} />
+                        <OHaiTang.Provider value>
+                        <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon
+                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} onMotKyNang={setMotKyNang}
+                          datConTro={!!yeuCau} lanCuon={yeuCau?.seq} />
+                        </OHaiTang.Provider>
                       </DongThiContext.Provider>
                     </BaoDangLuuContext.Provider>
                   </div>

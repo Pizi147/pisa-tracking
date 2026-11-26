@@ -23,7 +23,7 @@ import { lazyHop } from '../../ui/lazyHop.tsx';
 import { OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipDaHuy } from '../../ui/Nhan.tsx';
 import { useContext, useState, type ReactNode } from 'react';
-import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
+import { OHaiTang, OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { CHU_O_THIEU, chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, type NguoiChon } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -201,6 +201,8 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
   const trongPanel = useContext(OTrongPanel);
+  const haiTangNgoai = useContext(OHaiTang);
+  const haiTang = trongPanel || haiTangNgoai;
   const vangGoc = oVangCua(cell, hop.tuanXem);
   if (cell.khongHoc) return <OKhongHoc nhan={skillLabel(cell.skill)} />;   // P8: môn em không học — không phải nút
   const h = hienO(cell, vangGoc);
@@ -232,7 +234,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   }
   const nhanO = `${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`;
   const tieuDeO = h.kieu === 'huy' ? h.doc : cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
-  if (trongPanel) {
+  if (haiTang) {
     /* Chủ SP 26/11 (#2196, ảnh mẫu = mockup v24 P2 `.lc .od`): ô 68 × 44 HAI TẦNG — band 14 / 700 (✓ / ✗ khi lưới có Kỳ vọng) trên, MỘT dòng phụ 12
        dưới: vắng / "→ W4 SEP" nếu có, không thì "21 câu". Dạng ngang "6.5 · 29/40" (#2173) chỉ ở Lịch Test tuần (nhánh dưới). */
     const cau = !h.kieu && cell.rawScore !== null && cell.band !== null
@@ -240,7 +242,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     return (
       <span className="inline-flex max-w-full">
         <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={nhanO} title={tieuDeO} onClick={() => onMo(!mo)}
-          className={`o-sua grid h-11 w-[68px] max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
+          className={`o-sua grid h-11 ${trongPanel ? 'w-[68px] max-w-full' : 'min-w-[68px] max-w-full px-1.5 [&_[data-phu-odiem]]:whitespace-nowrap'} place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
           {/* Chủ SP 14/11: số CĂN GIỮA ô — không chừa chỗ ký hiệu khi ô không có ✓ / ✗. */}
           <span className="inline-flex items-baseline whitespace-nowrap">{kq && kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span>
             : <span className={h.kieu ? '' : `text-[14px] font-bold ${lopKq(kq)}`}>{h.chu}</span>}</span>

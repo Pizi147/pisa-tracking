@@ -16,6 +16,7 @@ import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
 import { NganXuatTest } from '../test/NganXuatTest.tsx';
 import { TabHocVienLop, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
+import { ngheMoLuoiDiem } from '../cham/moLuoiDiemLop.ts';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -153,6 +154,35 @@ export default function ClassOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
+  /*
+   * "NHẬP ĐIỂM" = CUỘN TỚI LƯỚI (chủ SP 26/11, bỏ panel Nhập điểm lớp ở hồ sơ lớp): nút đầu trang, chip Việc cần làm, ⋯ dòng em (`moLuoiDiemLop`)
+   * và link `?nhap-diem=<lượt|1>[&trong=1|cu]` đều vào đây — mở khối điểm, sang đúng lượt (không có → lượt mở sẵn), con trỏ vào ô trống đầu.
+   * Tab Ý thức / Báo cáo PH không có khối điểm → về tab mặc định.
+   */
+  const [yeuCauDiem, setYeuCauDiem] = useState<{ seq: number; luot: string | null; loc?: 'trong' | 'cu' } | null>(null);
+  const moLuoi = useRef<(luot: string | null, loc?: 'trong' | 'cu') => boolean>(() => false);
+  moLuoi.current = (luot, loc) => {
+    if (!data?.viewer.coTheXemDiem || (params.get('xem') === 'cuoi-khoa' && data.programme?.scoringMode === 'ratio' && !data.lienTuc)) return false;
+    const t0 = params.get('tab');
+    if (t0 === 'y-thuc' || t0 === 'bao-cao-ph') doiThamSo({ tab: null, 'che-do': null, dot: null });
+    setMoDiem(true);
+    setYeuCauDiem((x) => ({ seq: (x?.seq ?? 0) + 1, luot, loc }));
+    return true;
+  };
+  useEffect(() => ngheMoLuoiDiem(Number(classId), (d) => moLuoi.current(d.luot, d.loc)), [classId]);
+  useEffect(() => {
+    if (!yeuCauDiem) return undefined;
+    const id = requestAnimationFrame(() => document.getElementById('khoi-diem-lop-nut')?.scrollIntoView({ block: 'start' }));
+    return () => cancelAnimationFrame(id);
+  }, [yeuCauDiem?.seq]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const nd = params.get('nhap-diem');
+    if (!data || !nd) return;
+    const tr = params.get('trong');
+    if (moLuoi.current(nd === '1' ? null : nd, tr === 'cu' ? 'cu' : tr ? 'trong' : undefined)) doiThamSo({ 'nhap-diem': null, trong: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, params.get('nhap-diem')]);
+
   const doiThamSo = (patch: Record<string, string | null>, moi = false) => {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(patch)) { if (v === null) next.delete(k); else next.set(k, v); }
@@ -219,7 +249,7 @@ export default function ClassOverviewPage() {
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3 max-sm:pb-[100px]">
-      <DauTrangLop data={data} onViec={moViec} onDoiGv={(k) => { setOPc(k); moViec('phan-cong'); }} thanhViec={/* N71: lớp đã kết thúc vẫn hiện việc còn của người xem */ <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
+      <DauTrangLop data={data} onViec={moViec} onDoiGv={(k) => { setOPc(k); moViec('phan-cong'); }} thanhViec={/* N71: lớp đã kết thúc vẫn hiện việc còn của người xem */ <ThanhViecLop classId={data.id} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
@@ -238,7 +268,7 @@ export default function ClassOverviewPage() {
         onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} onDoiDot={() => { invalidate('/classes'); reload(); }} />}
       </div>
 
-      {tab !== 'y-thuc' && tab !== 'bao-cao-ph' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
+      {tab !== 'y-thuc' && tab !== 'bao-cao-ph' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} yeuCau={yeuCauDiem} />}
 
       {panelXetLai}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
@@ -279,7 +309,7 @@ export default function ClassOverviewPage() {
  * KHỐI "ĐIỂM MOCK TEST CỦA LỚP" (PR-DL, mockup `mockup-diem-theo-lop-2026-10-04.html` #v-lop) — cuối hồ sơ lớp, GẬP SẴN + nhớ trạng thái (chủ SP 23/10; trước: mở sẵn PR-OV3a):
  * hàng tiêu đề + MỘT chip "MT2 còn 3 ô trống" (lượt mở sẵn của `danhSachLuot`); bấm hàng tiêu đề thu gọn (CA2-10: không ghi chữ "bấm để…"). Bảng `DiemTheoLop gon` tải khi khối mở.
  */
-function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void }) {
+function KhoiDiemLop({ classId, thuong, mo, onDoi, yeuCau }: { classId: number; thuong: boolean; mo: boolean; onDoi: () => void; yeuCau: { seq: number; luot: string | null; loc?: 'trong' | 'cu' } | null }) {
   const ds = useApi<DanhSachLuot>(duongDiemTheoLuot(classId), [classId]);
   const l = ds.data?.luot.find((x) => x.ma === ds.data?.macDinh);
   /* OV-10b: TVV / CX không nhập điểm — điểm vẫn hiện (chỉ đọc), bỏ chip "còn n ô trống". */
@@ -298,7 +328,7 @@ function KhoiDiemLop({ classId, thuong, mo, onDoi }: { classId: number; thuong: 
         </button>
       </h2>
       <div id="khoi-diem-lop-bang" hidden={!mo} className="px-3 pb-3 sm:px-4 sm:pb-4">
-        {daMo && <DiemTheoLop classId={classId} gon />}
+        {daMo && <DiemTheoLop classId={classId} gon chonMon luotBanDau={yeuCau?.luot ?? undefined} locBanDau={yeuCau?.loc} yeuCau={yeuCau} />}
       </div>
     </section>
   );
