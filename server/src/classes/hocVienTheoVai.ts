@@ -4,6 +4,7 @@
  * Tập em và chip = `chipHocVien` (OV-10c, cùng số ô Tổng quan) — không hàm đếm thứ hai; em Tạm dừng / Kết thúc học (chưa lưu trữ) vẫn có dòng.
  * QL / Quản trị / GV / Admin dùng bảng cũ (`danhSachHocVienLop`) — đường này 403.
  */
+import { chuKhung } from '../worklist/khungViec.ts';
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, kyThiCuaChuongTrinh, trangThaiSauThi, vaiXemHocVien, type ExamPlan, type GiaiDoanSauThi, type LienHe } from '../../../shared/domain/index.ts';
 import { forbidden } from '../util.ts';
@@ -117,9 +118,13 @@ export function hocVienTheoVai(p: Principal, f: { phamVi?: string | null; branch
   const coEm = new Set(ids.filter((id) => tvvEm.get(id) === p.userId));
   const buocTiep: TrangHocVienVai['viec']['buocTiep'] = {};
   /* Chỉ TVV có góc Cần làm — CX không chạy hai câu này. */
-  if (vai === 'tvv') for (const c of choBuocTiep()) if (coEm.has(c.student_id)) buocTiep[c.student_id] = { cycleId: c.id, han: hanBuocTiep(c, homNay) };
+  /* LPB-1 (rà PTA #2280): người giữ + hạn như Công việc — việc đã giao đi rời góc của TVV, việc giao cho tôi vào; hạn đặt tay thắng (`chuKhung`). */
+  const trongTrang = new Set(ids);
+  const giu = (loai: 'buoc_tiep' | 'thi_that', cy: number, sid: number) =>
+    trongTrang.has(sid) ? chuKhung(p, false, loai, cy, coEm.has(sid) ? { ownerId: p.userId, mine: true } : null) : null;
+  if (vai === 'tvv') for (const c of choBuocTiep()) { const g = giu('buoc_tiep', c.id, c.student_id); if (g?.mine) buocTiep[c.student_id] = { cycleId: c.id, han: g.han ?? hanBuocTiep(c, homNay) }; }
   const ketQuaThi: TrangHocVienVai['viec']['ketQuaThi'] = {};
-  if (vai === 'tvv') for (const { c, s } of loTrinhChoKetQuaThi(homNay)) if (coEm.has(c.student_id)) ketQuaThi[c.student_id] = { han: s.han, thi: s.ngayThi };
+  if (vai === 'tvv') for (const { c, s } of loTrinhChoKetQuaThi(homNay)) { const g = giu('thi_that', c.id, c.student_id); if (g?.mine) ketQuaThi[c.student_id] = { han: g.han ?? s.han, thi: s.ngayThi }; }
   return {
     vai, phamVi: { coThe: vai === 'tvv' ? ['cua-toi', 'chi-nhanh'] : ['tat-ca', 'chi-nhanh'], dangDung, chiNhanh },
     ids: chip.ids, rows, viec: { buocTiep, ketQuaThi },

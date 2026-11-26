@@ -1,3 +1,4 @@
+import { chuKhung } from '../worklist/khungViec.ts';
 import { db } from '../db.ts';
 import { CHU_DA_XONG, CHU_THEM_PA, HAN_GAN_NGAY, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { bangLop, boVaiCx, can, coVaiCx, isCoreTeacherOf, type Principal } from '../permissions.ts';
@@ -96,9 +97,13 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* SV-TVV-VIEC: việc của người giữ (TVV của em / QL khi em chưa có TVV) — GVCN vẫn nhập được ở panel nhưng không còn là việc của GVCN. */
   /* rà #1960 vòng 2: chi nhánh em từ lớp đang học (`bangLop`, nhớ tiến trình — 0 câu) → `chuViecTvv` không đọc chi nhánh em. */
   const cnEm = n.lopId ? bangLop().get(n.lopId)?.branchId ?? undefined : undefined;
-  if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap && chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null, false, cnEm)) {
-    const quaHanNgay = st.quaHan && st.han ? diffDays(today, st.han) : null;
-    bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay, gap: gapCua(st.han, today),
+  /* LPB-1 (rà PTA #2280 P1-1): việc đã giao đi rời hồ sơ người mặc định, vào người được giao; hạn đặt tay thắng — cùng `chuKhung` với Công việc. */
+  const chuTt = st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap
+    ? chuKhung(p, false, 'thi_that', st.cycleId, chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null, false, cnEm)) : null;
+  if (st && chuTt?.mine) {
+    const hanTt = chuTt.han ?? st.han;
+    const quaHanNgay = hanTt && hanTt < today ? diffDays(today, hanTt) : null;
+    bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: hanTt, quaHanNgay, gap: gapCua(hanTt, today),
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Cập nhật kết quả thi thật ›',
       mo: { loai: 'duong', href: duongHoSoHocVien(sid, { loTrinh: st.cycleId, viec: 'thi-that' }) } });
   }
@@ -193,10 +198,10 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       mo: { loai: 'tab', tab: 'y-thuc', ...(tvv ? { sub: 'phoi-hop' as const } : {}) } });
   }
   /* P1-04 (B2-07): Bổ sung hồ sơ thiếu — người giữ như Công việc (`chuViecTvv`: TVV của em, chưa có TVV → QL), khoá dòng tổng của người giữ (`bo-sung-ho-so:{người}`). */
-  const chuBs = n.boSung?.thieu.length ? chuViecTvv(p, sid, n.boSung.tvv, true, cnEm) : null;
+  const chuBs = n.boSung?.thieu.length ? chuKhung(p, true, 'bo_sung_ho_so', sid, chuViecTvv(p, sid, n.boSung.tvv, true, cnEm)) : null;   // LPB-1 (rà #2280 P1-1)
   if (chuBs) {
     ds.push({ key: `bo-sung-ho-so:${chuBs.ownerId ?? 'ql'}`, loai: 'bo-sung', chu: 'Bổ sung hồ sơ', the: n.boSung!.thieu.map((chu) => ({ chu })), kyNang: null, caseId: null, paId: null,
-      han: null, tone: 'info', nguoiId: chuBs.ownerId, nut: 'Bổ sung hồ sơ', mo: { loai: 'duong', href: duongHoSoHocVien(sid) } });
+      han: chuBs.han ?? null, tone: 'info', nguoiId: chuBs.ownerId, nut: 'Bổ sung hồ sơ', mo: { loai: 'duong', href: duongHoSoHocVien(sid) } });
   }
   /* Mini Test — người giữ việc (`emConMiniTest().gv` = `nguoiGiuMiniTest`, cùng `mywork.ts`), không có thì GVCN. */
   const mt = n.miniTest;

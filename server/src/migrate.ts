@@ -151,6 +151,7 @@ import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
 import { migratePrTuyen0 } from './migrate/prTuyen0.ts';
 import { migratePrVaiMoi, themCotPrVaiMoi } from './migrate/prVaiMoi.ts';
 import { migratePrLpb0 } from './migrate/prLpb0.ts';
+import { migratePrLpb1 } from './migrate/prLpb1.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -588,6 +589,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
      khôi phục `khoiPhucVeLopLucThi` (đổi dữ liệu MỘT lần, khoá demo_config). Sau đó chạy `npm run nap-so`. */
   buoc(() => migratePrVeLopLucThi(conn, applied));
   /* LUU-TRU-DONG (chủ SP 26/11): em đang Lưu trữ còn việc mở → đóng như lúc vào Lưu trữ; nhật ký `student.luu_tru_dong`, khôi phục `khoiPhucLuuTruDong` (một lần, khoá demo_config). */
+  /* LPB-1 (N73 ⑤): bảng phụ khung việc (TVV · Bàn giao · việc Head) + cột giao trên ban_giao_gv (chỉ thêm) — TRƯỚC Lưu trữ: `dongViecLuuTru` đọc các bảng này. */
+  buoc(() => migratePrLpb1(conn, applied));
   buoc(() => themCotPrBaoPh0(conn, applied));   // BAOPH-0: TRƯỚC Lưu trữ — `dongViecLuuTru` đọc `viec_xu_ly`
   buoc(() => migratePrLuuTruDong(conn, applied));
   /* VAI-0: cột viec_bao_ph.nguoi_luat / meeting_phan.nguoi_luat + lop_xep_lich TRƯỚC BAOPH-0 — `dongBoViecTvvLuot` (sinh việc TVV) chốt Lead TVV vào cột này. */

@@ -288,7 +288,10 @@ function DaiVuaGiao({ chu, het, onHet, onHoanTac }: { chu: string; het: number; 
  * Nguồn ô chọn người (N45, mockup G3a): "Liên quan" (người theo luật · đang phụ trách · người giao · người theo dõi — đã có trong khối) trước, rồi người có vai
  * ở chi nhánh của việc (`/ref/nguoi`, có LIMIT). Không request khi chỉ mở hộp ngoài lần tìm đầu (ô `ChonNguoi` trễ 250 ms).
  */
-function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: ReadonlySet<number> = new Set()): (q: string) => Promise<NguoiTrongDs[]> {
+/** LPB-1 (rà PTA #2280): ô ĐỔI NGƯỜI chỉ liệt kê người nhận được — cùng luật máy chủ (`khungNhanDuoc`): Chốt / Xét lại → quyền chốt; Xếp lịch MT → xếp lịch; việc TVV / Bàn giao → không BPXL. */
+const QUYEN_NHAN: Record<string, string> = { chot_lo_trinh: 'chot', xet_lai: 'chot', xep_lich_mt: 'xep_lich', chot_ngay_thi: 'khong_bpxl', buoc_tiep: 'khong_bpxl', thi_that: 'khong_bpxl',
+  bo_sung_ho_so: 'khong_bpxl', ban_giao: 'khong_bpxl', ban_giao_mon: 'khong_bpxl', ban_giao_gv: 'khong_bpxl' };
+function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: ReadonlySet<number> = new Set(), quyen: string | null = null): (q: string) => Promise<NguoiTrongDs[]> {
   const lq = new Map<number, NguoiTrongDs>();
   const them = (n: Nguoi | null, phu: string) => { if (n?.ten && !lq.has(n.id) && !bo.has(n.id)) lq.set(n.id, { id: n.id, ten: n.ten, phu, nhom: t('Liên quan') }); };
   for (const x of g) {
@@ -301,6 +304,7 @@ function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: R
   return async (q) => {
     const qs = new URLSearchParams({ q: q.trim(), nhom: 'giao_viec' });
     if (cn) qs.set('chiNhanh', String(cn));
+    if (quyen) qs.set('quyen', quyen);
     const ds = await api.get<{ id: number; name: string; role: string | null; branches: string[] }[]>(`/ref/nguoi?${qs}`);
     const dau = locNguoiChon([...lq.values()], q);
     return [...dau, ...ds.filter((r) => !lq.has(r.id) && !bo.has(r.id)).map((r) => ({ id: r.id, ten: r.name, phu: [r.role, r.branches.join('/')].filter(Boolean).join(' · '),
@@ -359,7 +363,7 @@ function HopDoiNguoi({ g, thaoTac, onDong, onXong, onXungDot }: { g: KhoiGv; tha
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<Loi | null>(null);
   const tenCn = useTenCn();
-  const [tim] = useState(() => ({ goi: nguonNguoi([g], tenCn), toiThieu: 0 }));
+  const [tim] = useState(() => ({ goi: nguonNguoi([g], tenCn, new Set(), QUYEN_NHAN[g.loai] ?? null), toiThieu: 0 }));
   const lechMacDinh = g.duocGiao;
   const tenMd = g.macDinh.map((x) => x.ten).filter(Boolean).join(', ') || t('Head chi nhánh');
   const gui = async (userId: number | null, ten: string) => {

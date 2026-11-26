@@ -25,6 +25,7 @@ import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
 import { luatMeeting } from '../worklist/giaoViec.ts';
 import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
 import { conVaiO as giuVaiO, headCua } from '../worklist/nguoiNhan.ts';
+import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
 
 /* LPB-0 (N73 ④, 4.7): + `chuyen_lop` khoá = id lệnh chuyển lớp (một em) · `doi_gv` khoá = id việc Nhận thông tin · Đổi GV (một lần lưu × lớp — không em). */
 export const LOAI_TUYEN = ['vi_pham', 'phoi_hop', 'tinh_hinh', 'cap_bac', 'chuyen_lop', 'doi_gv'] as const;
@@ -493,7 +494,10 @@ function dungChuyenLop(ids: number[], homNay: string): TuyenNoi[] {
   const rows = db().prepare(
     `SELECT l.id, l.lop_nguon_id, l.lop_dich_id, l.tuan_bat_dau, l.trang_thai, l.nguoi_ra_lenh, l.ngay_ra_lenh, l.tao_luc, l.han_gvcn, l.xac_nhan_boi, l.xac_nhan_luc,
             nu.full_name AS ra_ten, xu.full_name AS xn_ten, cn.code AS nguon, cn.branch_id AS nguon_cn, cd.code AS dich, ${GV_CHINH_SQL('l.lop_nguon_id')} AS gv_nguon,
-            ${EM_COT}, ${BAO_PH_JSON('b.lenh_chuyen_id = l.id')} AS bp, ${NHAN_TIN_JSON('d.lenh_id = l.id')} AS nt
+            ${EM_COT}, ${BAO_PH_JSON('b.lenh_chuyen_id = l.id')} AS bp, ${NHAN_TIN_JSON('d.lenh_id = l.id')} AS nt,
+            /* LPB-1 (N73 ⑤): khung Bàn giao (GVCN, lớp nguồn) đã giao — người được giao (còn hiệu lực) + hạn đặt tay; cùng câu. */
+            (SELECT json_array(CASE WHEN ${HOAT_DONG_O('k.phu_trach_id', 'cn.branch_id')} THEN k.phu_trach_id END, ku.full_name, k.han_chon) FROM viec_ban_giao k
+              LEFT JOIN users ku ON ku.id = k.phu_trach_id WHERE k.id = l.lop_nguon_id AND k.trang_thai = 'mo') AS kbg
        FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id LEFT JOIN users nu ON nu.id = l.nguoi_ra_lenh
        LEFT JOIN users xu ON xu.id = l.xac_nhan_boi JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id
       WHERE l.id IN (SELECT value FROM json_each(?1))`,
@@ -506,10 +510,11 @@ function dungChuyenLop(ids: number[], homNay: string): TuyenNoi[] {
     t.buoc.push(buoc({ khoa: 'lenh', ten: 'Quyết định chuyển lớp', trangThai: huy ? 'bo' : 'xong', chiTiet: huy ? 'Đã huỷ' : null, nguoi: r.ra_ten ?? null, ngay: r.ngay_ra_lenh,
       ids: [r.nguoi_ra_lenh], lam: [r.nguoi_ra_lenh] }));
     if (r.han_gvcn && !huy) {
-      const gv = chinh ? [chinh.id] : [];
+      const kb = r.kbg ? (JSON.parse(r.kbg) as [number | null, string | null, string | null]) : null;
+      const gv = kb?.[0] ? [kb[0]] : chinh ? [chinh.id] : [];
       t.buoc.push(r.xac_nhan_boi
         ? buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'xong', nguoi: r.xn_ten ?? null, ngay: ngay10(r.xac_nhan_luc), ids: [r.xac_nhan_boi], lam: [r.xac_nhan_boi], cungLuc: true })
-        : buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'dang', nguoi: chinh?.ten ?? null, ids: gv, han: r.han_gvcn, cungLuc: true }));
+        : buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'dang', nguoi: kb?.[0] ? kb[1] ?? null : chinh?.ten ?? null, ids: gv, han: kb?.[2] ?? r.han_gvcn, cungLuc: true }));
     }
     ds(r.bp).forEach((b, i) => t.buoc.push(...buocBaoPh(t, b, { khoa: `bao_ph:${b.id}`, ten: i ? 'Báo lại PH' : 'Báo PH', tvvTen: r.tvv_ten ?? null }).map((x) => Object.assign(x, { cungLuc: true }))));
     for (const n of ds(r.nt)) t.buoc.push(buocNhanTin(n, `nhan_tin:${n.id}`));
@@ -527,8 +532,10 @@ function dungDoiGv(ids: number[], homNay: string): TuyenNoi[] {
   if (!ids.length) return [];
   const rows = db().prepare(
     `SELECT v.id, v.class_id, c.code, c.branch_id AS cn, v.tao_boi, tu.full_name AS tao_ten, v.tao_luc, ${GV_CHINH_SQL('v.class_id')} AS gv, ${NHAN_TIN_JSON('d.viec_id = v.id')} AS nt,
-            json((SELECT json_group_array(json_object('id', bg.id, 'tt', bg.trang_thai, 'lam', bg.nguoi_lam, 'lamTen', lu.full_name, 'han', bg.han, 'xongBoi', bg.xong_boi, 'xongTen', bx.full_name,
-              'xongLuc', bg.xong_luc)) FROM ban_giao_gv bg LEFT JOIN users lu ON lu.id = bg.nguoi_lam LEFT JOIN users bx ON bx.id = bg.xong_boi
+            json((SELECT json_group_array(json_object('id', bg.id, 'tt', bg.trang_thai, 'lam', COALESCE(CASE WHEN ${HOAT_DONG_O('bg.phu_trach_id', 'c.branch_id')} THEN bg.phu_trach_id END, bg.nguoi_lam),
+              'lamTen', lu.full_name, 'han', COALESCE(bg.han_chon, bg.han), 'xongBoi', bg.xong_boi, 'xongTen', bx.full_name,
+              'xongLuc', bg.xong_luc)) FROM ban_giao_gv bg   -- LPB-1 (N73 ⑤): người được giao (còn hiệu lực) thắng người viết theo luật; hạn đặt tay
+              LEFT JOIN users lu ON lu.id = COALESCE(CASE WHEN ${HOAT_DONG_O('bg.phu_trach_id', 'c.branch_id')} THEN bg.phu_trach_id END, bg.nguoi_lam) LEFT JOIN users bx ON bx.id = bg.xong_boi
               WHERE bg.id IN (SELECT m.ban_giao_id FROM ban_giao_gv_mon m JOIN viec_nhan_tin_dong d ON d.doi_id = m.doi_id WHERE d.viec_id = v.id))) AS bg
        FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id LEFT JOIN users tu ON tu.id = v.tao_boi
       WHERE v.id IN (SELECT value FROM json_each(?1)) AND v.loai = 'doi_gv'`,

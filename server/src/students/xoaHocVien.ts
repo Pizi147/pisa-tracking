@@ -59,11 +59,19 @@ const Q = 'SELECT id FROM yeu_cau_duyet WHERE hoc_vien_id = ?1';
 /** LPB-0: lệnh chuyển lớp của em (dòng em trong việc BPXL Nhận thông tin). */
 const LE = `SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})`;
 
+/** LPB-1 (N73 ⑤): việc khung của em (id = lộ trình · em · mốc PA) theo khoá mềm (loại, id) — dọn TRƯỚC khi xoá lộ trình / Case (tập id đọc từ chúng). */
+const VIEC_KHUNG_EM = (loai: string, id: string) => `((${loai} IN ('chot_ngay_thi', 'buoc_tiep', 'thi_that') AND ${id} IN (${Y}))
+      OR (${loai} = 'bo_sung_ho_so' AND ${id} = ?1) OR (${loai} = 'xep_lich_mt' AND ${id} IN (${I})))`;
+/** Nhánh `CASE bang` (bảng phụ → loại) cho bản ghi đảo giao việc của khung việc. */
+const BANG_KHUNG_EM = `WHEN 'viec_chot_ngay_thi' THEN 'chot_ngay_thi' WHEN 'viec_buoc_tiep' THEN 'buoc_tiep' WHEN 'viec_thi_that' THEN 'thi_that'
+      WHEN 'viec_bo_sung_ho_so' THEN 'bo_sung_ho_so' WHEN 'viec_xep_lich_mt' THEN 'xep_lich_mt'`;
+
 /** GV-1: việc của em theo khoá mềm (loại, id) — người theo dõi, lịch sử giao, lịch sử hạn, bản ghi đảo giao việc. */
 const VIEC_CUA_EM = (loai: string, id: string) => `((${loai} = 'bao_ph' AND ${id} IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
       OR (${loai} = 'phoi_hop' AND ${id} IN (${X})) OR (${loai} = 'tinh_hinh' AND ${id} IN (SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ?1))
       OR (${loai} = 'meeting' AND ${id} IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X})))
-      OR (${loai} = 'tra_lai' AND ${id} IN (SELECT id FROM vi_pham_tra_lai WHERE student_id = ?1 OR violation_id IN (${V}) OR measure_id IN (${M}))))`;
+      OR (${loai} = 'tra_lai' AND ${id} IN (SELECT id FROM vi_pham_tra_lai WHERE student_id = ?1 OR violation_id IN (${V}) OR measure_id IN (${M})))
+      OR ${VIEC_KHUNG_EM(loai, id)})`;   // LPB-1
 
 /** Tệp đính kèm theo liên kết mềm `owner_type/owner_id` (không có FK). `unit_report` không thuộc học viên. */
 const DK_TEP = `(owner_type = 'sos_case' AND owner_id IN (${C}))
@@ -100,6 +108,18 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'attachments', sql: `DELETE FROM attachments WHERE ${DK_TEP}` },
   { bang: 'notifications', sql: `DELETE FROM notifications WHERE ${DK_THONG_BAO}` },
   /* PR-CT: quyết định chuyển lớp + dòng bàn giao của em (lệnh trỏ thẻ Chờ duyệt nên xoá TRƯỚC thẻ) */
+  /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). LPB-1: trước lộ trình / Case (khung việc đọc id từ chúng). */
+  /* VH-1b (N62): + mô tả của việc (khoá mềm loai / ref_id) — id việc dùng lại không thừa hưởng mô tả của em đã xoá. */
+  ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id'], ['viec_mo_ta', 'ref_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
+  /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
+  { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' WHEN 'vi_pham_tra_lai' THEN 'tra_lai' ${BANG_KHUNG_EM} END`, 'doi_tuong_id')}` },
+  /* Rà PTA #2280: việc con của khung việc của em — cha_id NULL (giữ cha_loai: không lên bảng Vận hành), id lộ trình / em dùng lại không thừa hưởng. */
+  { bang: 'tasks', sql: `UPDATE tasks SET cha_id = NULL WHERE ${VIEC_KHUNG_EM('cha_loai', 'cha_id')}` },
+  { bang: 'viec_chot_ngay_thi', sql: `DELETE FROM viec_chot_ngay_thi WHERE id IN (${Y})` },
+  { bang: 'viec_buoc_tiep', sql: `DELETE FROM viec_buoc_tiep WHERE id IN (${Y})` },
+  { bang: 'viec_thi_that', sql: `DELETE FROM viec_thi_that WHERE id IN (${Y})` },
+  { bang: 'viec_bo_sung_ho_so', sql: 'DELETE FROM viec_bo_sung_ho_so WHERE id = ?1' },
+  { bang: 'viec_xep_lich_mt', sql: `DELETE FROM viec_xep_lich_mt WHERE id IN (${I})` },
   { bang: 'xet_lai_lo_trinh', sql: `DELETE FROM xet_lai_lo_trinh WHERE student_id = ?1 OR lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})) OR lenh_moi_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },   // P9a XET-LAI
   { bang: 'ban_giao_gv_em', sql: 'DELETE FROM ban_giao_gv_em WHERE student_id = ?1' },   // PR-B: góp ý bàn giao đổi GV (việc của lớp giữ)
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
@@ -126,11 +146,6 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'case_signals', sql: `DELETE FROM case_signals WHERE id IN (${G})` },
   { bang: 'sos_cases', sql: `DELETE FROM sos_cases WHERE id IN (${C})` },
   /* Ý thức: vi phạm ↔ PA xử lý (Q4 — PA của em khác lỡ nối vi phạm của em: chỉ mất dòng nối) */
-  /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). */
-  /* VH-1b (N62): + mô tả của việc (khoá mềm loai / ref_id) — id việc dùng lại không thừa hưởng mô tả của em đã xoá. */
-  ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id'], ['viec_mo_ta', 'ref_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
-  /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
-  { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' WHEN 'vi_pham_tra_lai' THEN 'tra_lai' END`, 'doi_tuong_id')}` },
   { bang: 'meeting_phan', sql: `DELETE FROM meeting_phan WHERE phoi_hop_id IN (${X})` },   // GV-1: trước sos_coordination_actions
   { bang: 'viec_xu_ly', sql: `DELETE FROM viec_xu_ly WHERE id = ?1 OR student_id = ?1` },   // BAOPH-0 (4.6)
   { bang: 'vi_pham_tra_lai', sql: `DELETE FROM vi_pham_tra_lai WHERE student_id = ?1 OR violation_id IN (${V}) OR measure_id IN (${M})` },   // TL-1: trước vi phạm / lần xử lý
