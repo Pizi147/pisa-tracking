@@ -15,7 +15,6 @@ export const EN_TUYEN_1 = {
   'Bấm một bước đã xong để xem nội dung, nếu bạn được xem phần đó.': 'Click a done step to see its content, if you may view that part.',
   'Đổi người phụ trách: {ten}': 'Change owner: {ten}',
   'dừng · {ngay}': 'paused · {ngay}',
-  'Người làm': 'Assignee',
   'Head duyệt': 'Head approval',
   'sau khi duyệt': 'after approval',
   '{n} ngày sau khi gửi': '{n} days after sending',

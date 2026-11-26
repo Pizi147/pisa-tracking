@@ -6,7 +6,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { LOP_MUC_HAN } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { mucHan, ngay, type NguoiChon } from '@shared/domain/index.ts';
+import { moiKhoaGui, mucHan, ngay, type NguoiChon } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { KhoiGv } from './KhoiGiaoViec.tsx';
 
@@ -69,7 +69,7 @@ function ThemViecCon({ g, onHuy, onXong }: { g: KhoiGv; onHuy: () => void; onXon
   const [han, setHan] = useState('');
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  const khoa = useRef(`vc-${g.loai}-${g.id}-${Date.now()}`);
+  const khoa = useRef(moiKhoaGui('viec-con'));
   const id = useId();
   const gui = async () => {
     if (!ten.trim() || busy) return;
@@ -88,7 +88,7 @@ function ThemViecCon({ g, onHuy, onXong }: { g: KhoiGv; onHuy: () => void; onXon
       <input id={id} name="ten-viec-con" className="field w-full" autoFocus maxLength={200} autoComplete="off" value={ten} readOnly={busy} onChange={(e) => setTen(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void gui(); } }} />
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_200px]">
-        <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} choNgoai={false} ariaLabel={t('Người làm')} placeholder={t('Người làm')} />
+        <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} choNgoai={false} ariaLabel={t('Người phụ trách')} placeholder={t('Người phụ trách')} />
         <ONgay kieu="ngay" value={han} onChange={setHan} ariaLabel={t('Hạn')} />
       </div>
       {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
