@@ -12,7 +12,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, laHeadHoacQt, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, laHeadHoacQt, lopXemTam, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { lichMtCua, missingForStudent } from './schedule.ts';
@@ -240,7 +240,12 @@ export function danhSachHocVienLop(
    * thành đúng MỘT lời gọi — y hệt hành vi cũ.
    */
   const chiNhanhCuaLops = [...new Set(lops.map((r) => r.branchId))];
-  const allCases = chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows);   // D-01 (N46)
+  /* RA-2711: nhiều chi nhánh (CX / Admin / BPXL / QT) → MỘT lần `branchIds` (trước một lần mỗi chi nhánh: ×3 câu); xếp lại theo chi nhánh như gọi lần lượt. */
+  const thuTuCn = new Map(chiNhanhCuaLops.map((b, i) => [b, i]));
+  const allCases = chiNhanhCuaLops.length > 1 && chiNhanhCuaLops.every((b) => b != null)
+    ? listCases(p, { branchIds: chiNhanhCuaLops as number[], anSauThi: true }).rows.map((c, i) => ({ c, i }))
+      .sort((x, y) => thuTuCn.get(x.c.branchId!)! - thuTuCn.get(y.c.branchId!)! || x.i - y.i).map((x) => x.c)
+    : chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows);   // D-01 (N46)
 
   /* Số Case đang mở của mỗi lớp — tra lớp HIỆN TẠI của học viên qua `lopCuaHv`, chỉ tính em đang học. */
   const soCaseByClass = new Map<number, number>();
@@ -317,6 +322,8 @@ export function danhSachHocVienLop(
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
   const daThi = new Map(loTrinhChoKetQuaThi(today).map((x) => [x.c.student_id as number, x.c]));
   const hang = hangHvFt(hvKhop.filter((h) => laFt.get(h.class_id)), standing, allCases, vl);
+  /* RA-2711: `coTheNhapThiThat` hỏi chi nhánh của từng em chờ KQ — nạp một câu cho cả lô (trước 2 câu mỗi em). */
+  napTruocPhamVi(hvKhop.filter((h) => daThi.has(h.id)).map((h) => h.id as number));
   const hocVien: TrangHocVienLop['hocVien'] = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
     const ft = !!laFt.get(h.class_id);
@@ -386,7 +393,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     for (const r of db().prepare(`SELECT v.student_id, v.nhan, v.trang_thai,
         (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay
         FROM viec_bao_ph v WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN x.trang_thai = 'mo' THEN x.id END), MAX(x.id)) FROM viec_bao_ph x
-          WHERE x.student_id IN (${DS_JSON}) AND x.phoi_hop_id IS NULL AND x.tinh_hinh_id IS NULL GROUP BY x.student_id)`).all(json) as any[]) {
+          WHERE x.student_id IN (${DS_JSON}) AND x.phoi_hop_id IS NULL AND x.tinh_hinh_id IS NULL AND x.lenh_chuyen_id IS NULL GROUP BY x.student_id)`).all(json) as any[]) {
       /* Rà 25/11 PR 2: CÙNG việc với hàng em tab Ý thức (`baoPhMoiNhat`, board.ts) — việc mở cũ nhất, hết việc mở thì mới nhất; việc bị bỏ không có chip. */
       if (r.trang_thai !== 'bo') baoPh.set(r.student_id, { lan: r.nhan, xong: r.trang_thai === 'xong', ngay: r.ngay ?? null });
     }

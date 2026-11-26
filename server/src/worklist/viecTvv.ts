@@ -7,13 +7,15 @@
 import { db, theoLo } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS, nhanLichThi, soSanhLop, trangThaiLichThi } from '../../../shared/domain/index.ts';
-import { can, laTvvCuaEm, scopeFor, type Principal } from '../permissions.ts';
+import { can, laTvvCuaEm, laVaiThat, scopeFor, type Principal } from '../permissions.ts';
+import { headCua } from './nguoiNhan.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { missingForStudent } from '../classes/schedule.ts';
 import type { WorkItem } from './mywork.ts';
+import { chuKhung, giaoChoNguoi } from './khungViec.ts';
 
 /**
- * AUDIT-2111 (rà #1960): TVV của em CÒN vai TVV phủ chi nhánh em? Vai TVV đang hiệu lực của MỌI người — MỘT câu mỗi request (bảng vai nhỏ, như `chiNhanhCoQl`),
+ * AUDIT-2111 (rà #1960): TVV của em CÒN vai TVV phủ chi nhánh em? Vai TVV đang hiệu lực của MỌI người — MỘT câu mỗi request (bảng vai nhỏ),
  * chỉ đọc khi có em mà TVV không phải người xem. TVV hết hiệu lực = "chưa có TVV" → Head chi nhánh giữ việc (không mồ côi).
  */
 const vaiTvvConHieuLuc = (): Set<string> => nho('tvv-con-vai', () => new Set((db().prepare(
@@ -42,8 +44,12 @@ export const tvvHieuLuc = (p: Principal, tvv: number | null, studentId: number, 
 export function chuViecTvv(p: Principal, studentId: number, tvvGoc: number | null, tatCa = false, branchId?: number | null): { ownerId: number | null; mine: boolean } | null {
   const chiNhanh = () => chiNhanhCuaEm(studentId);
   if (tvvGoc === p.userId && tvvHieuLuc(p, tvvGoc, studentId, branchId, chiNhanh) !== null) return { ownerId: p.userId, mine: true };
+  /* VAI-0 (N76b): em chưa có TVV, chi nhánh em có Lead TVV → Lead TVV giữ (Head không). */
+  const lead = laLeadTvv(p) || laQlNhanh(p) ? leadTvvCua(branchId !== undefined ? branchId : chiNhanh()) : null;
+  if (lead === p.userId && !tvvHieuLuc(p, tvvGoc === p.userId ? null : tvvGoc, studentId, branchId, chiNhanh)) return { ownerId: p.userId, mine: true };
   if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return null;
   const tvv = tvvGoc === p.userId ? null : tvvHieuLuc(p, tvvGoc, studentId, branchId, chiNhanh);
+  if (!tvv && lead) return tatCa ? { ownerId: lead, mine: false } : null;
   if (!tvv) return giuViecQl(p)(branchId !== undefined ? branchId : () => chiNhanhCuaEm(studentId)) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
   return tatCa ? { ownerId: tvv, mine: false } : null;
 }
@@ -56,12 +62,17 @@ export function nguoiGiuTvv(p: Principal, today: string): (branchId: number | nu
   const pv = scopeFor(p, PERMISSIONS.CYCLE_EDIT, today);
   const ql = (b: number | null) => pv.all || (b !== null && pv.branchIds.includes(b));
   const giu = giuViecQl(p);
+  const coLead = laLeadTvv(p) || !pv.none;
   return (branchId, tvvGoc, tatCa = false, studentId) => {
     /* chi nhánh em đã biết (null + có id em → lùi về `grantCovers` theo em); TVV hết hiệu lực → như chưa có TVV. */
     const hieuLuc = () => tvvHieuLuc(p, tvvGoc, studentId ?? 0, branchId === null && studentId ? undefined : branchId, () => branchId);
     if (tvvGoc === p.userId && hieuLuc() !== null) return { ownerId: p.userId, mine: true };
+    /* VAI-0 (N76b): em chưa có TVV (hoặc TVV hết hiệu lực), chi nhánh em có Lead TVV → Lead TVV giữ; Head chỉ thấy ở "Tất cả". */
+    const lead = coLead ? leadTvvCua(branchId) : null;
+    if (lead === p.userId && (tvvGoc === p.userId || !hieuLuc())) return { ownerId: p.userId, mine: true };
     if (!ql(branchId)) return null;
     const tvv = tvvGoc === p.userId ? null : hieuLuc();
+    if (!tvv && lead) return tatCa ? { ownerId: lead, mine: false } : null;
     if (!tvv) return giu(branchId) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
     return tatCa ? { ownerId: tvv, mine: false } : null;
   };
@@ -73,21 +84,15 @@ export function nguoiGiuTvv(p: Principal, today: string): (branchId: number | nu
  * không có QL nào — có QL thì Quản trị chỉ làm thay ("Tất cả"), không vào "Của tôi", badge, ô Tổng quan. Góc nhìn đang chọn quyết vai (`apGocNhin` lọc grant).
  */
 export function giuViecQl(p: Principal): (branchId: number | null | (() => number | null)) => boolean {
-  const ql = p.grants.filter((g) => g.roleKey === 'manager').map((g) => g.branchId);
-  const qt = p.grants.some((g) => g.roleKey === 'system_admin');
+  /* VAI-0 (N74, rà PTA 26/11): MỘT người giữ — Head gán chi nhánh sớm nhất → Head toàn hệ thống → Quản trị (`headCua`, ổn định: Head mới vào không làm việc nhảy).
+     GĐCN (roleKey Head, vai thật khác) không giữ; góc nhìn không phải Head / Quản trị không giữ. Người giữ vai đọc một câu mỗi request. */
+  const co = p.grants.some((g) => laVaiThat(g, 'manager') || g.roleKey === 'system_admin');
   return (cn) => {
-    if (ql.includes(null)) return true;
-    if (!ql.length && !qt) return false;
-    const b = typeof cn === 'function' ? cn() : cn;   // chi nhánh đọc lười — QL toàn hệ thống / người không giữ: 0 câu
-    return (b !== null && ql.includes(b)) || (qt && (b === null || !chiNhanhCoQl().has(b)));
+    if (!co) return false;
+    const b = typeof cn === 'function' ? cn() : cn;
+    return headCua(b) === p.userId;
   };
 }
-/** Chi nhánh có ít nhất một QL còn hoạt động (QL toàn hệ thống → mọi chi nhánh, khoá 0). Một câu mỗi request, chỉ khi người xem là Quản trị. */
-const chiNhanhCoQl = (): { has(b: number): boolean } => nho('chi-nhanh-co-ql', () => {
-  const ds = new Set((db().prepare(`SELECT DISTINCT COALESCE(ur.branch_id, 0) AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-      WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL`).all() as any[]).map((r) => r.b as number));
-  return { has: (b: number) => ds.has(0) || ds.has(b) };
-});
 /** Chi nhánh của một em (lớp đang học, không có → hồ sơ) — chỉ `chuViecTvv` một em (hồ sơ HV) khi em chưa có TVV. */
 /* rà #1960 vòng 2: nhớ theo request — hồ sơ HV gọi `chuViecTvv` hai lần (Sau thi, Bổ sung hồ sơ) cho cùng em → một câu. */
 const chiNhanhCuaEm = (studentId: number): number | null => nho(`cn-em:${studentId}`, () => (db().prepare(
@@ -107,8 +112,51 @@ export function tvvCuaEm(ids: readonly number[]): Map<number, number | null> {
 export const viecTvvCuKhiKiem = { bat: false };
 
 const laQl = (p: Principal) => can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true });
-/** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. */
-export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laQl(p);
+const laQlNhanh = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.CYCLE_EDIT));
+/** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. VAI-0: + Lead TVV (giữ việc em chưa có TVV ở chi nhánh mình — N76b). */
+export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laLeadTvv(p) || laQl(p);
+
+/**
+ * VAI-0 (N76b, chủ SP 26/11): em chưa có TVV → việc TVV về Lead TVV gán ĐÚNG chi nhánh em (người được gán sớm nhất — tính lúc đọc, ổn định; em có TVV thì việc tự về
+ * TVV đó), không có → Head như cũ. Lead TVV toàn hệ thống không giữ (lead chỉ theo dõi). MỘT câu mỗi request.
+ */
+const leadTvvTheoCn = (): Map<number, number> => nho('vai0:lead-tvv-cn', () => {
+  const m = new Map<number, number>();
+  for (const r of db().prepare(`SELECT ur.branch_id AS b, ur.user_id AS u FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = 'lead_consultant' AND ur.branch_id IS NOT NULL AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL ORDER BY ur.created_at, ur.id`).all() as any[]) {
+    if (!m.has(r.b)) m.set(r.b, r.u);
+  }
+  return m;
+});
+export const leadTvvCua = (cn: number | null | undefined): number | null => (cn ? leadTvvTheoCn().get(cn) ?? null : null);
+/** Người xem có grant Lead TVV gán chi nhánh (vai thật). */
+export const laLeadTvv = (p: Principal): boolean => p.grants.some((g) => laVaiThat(g, 'lead_consultant') && g.branchId !== null);
+/** Chi nhánh mà người xem là Lead TVV giữ việc (N76b) — 0 câu khi không phải Lead TVV. */
+export const cnLeadTvvCuaToi = (p: Principal): number[] =>
+  laLeadTvv(p) ? [...new Set(p.grants.filter((g) => laVaiThat(g, 'lead_consultant') && g.branchId !== null).map((g) => g.branchId as number))].filter((b) => leadTvvCua(b) === p.userId) : [];
+
+/** Cột hồ sơ em đang học cho hai việc TVV (Chốt ngày thi · Bổ sung hồ sơ) — CÙNG câu cho Công việc (cả tập) và khung việc một em (`khungDoc`). */
+export const SQL_HO_SO_TVV = `SELECT s.id, s.full_name, s.dob, s.email, s.status, s.archived_at, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,
+            cy.id AS cycle_id, cy.route, cy.start_period_id, cy.target_score, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
+            cy.thi_that_khong_thi, cy.outcome_score, cy.outcome, rp.week_start AS exam_week_start, rp.code AS exam_week_code
+       FROM students s
+       /* rà #517: ghi danh mở ở lớp ĐANG HOẠT ĐỘNG — cùng tập với danh sách Học viên & Lớp (lopTrongPhamVi), số trên việc = số dòng */
+       JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x JOIN classes cx ON cx.id = x.class_id WHERE x.student_id = s.id AND x.status = 'active' AND cx.status = 'active')
+       JOIN classes c ON c.id = e.class_id
+       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id`;
+/** "Chốt ngày thi" còn là việc của dòng `SQL_HO_SO_TVV` — lịch thi khi còn, null khi không (một nguồn: Công việc + khung). */
+export function lichChotNgayThi(r: any, today: string): ReturnType<typeof trangThaiLichThi> | null {
+  if (r.archived_at || !(r.status === 'active' && r.is_fast_track && r.cycle_id && r.route && !r.exam_date && !r.thi_that_ngay && (r.exam_month || r.exam_period_id)
+      && !r.thi_that_khong_thi && r.outcome_score === null && (r.outcome ?? 'unknown') === 'unknown')) return null;
+  const lich = trangThaiLichThi(r, examPlanOf(r), today);
+  return lich.trangThai === 'chua-chot-ngay' ? lich : null;
+}
+/** Trường hồ sơ còn thiếu của dòng `SQL_HO_SO_TVV` (Ngày sinh · Email · Tuần bắt đầu · Target FT) — rỗng = không còn việc "Bổ sung hồ sơ thiếu". */
+export const thieuHoSoEm = (r: any) => (r.archived_at ? [] : missingForStudent({
+  cycle: r.cycle_id ? { start_period_id: r.start_period_id, target_score: r.target_score } : null,
+  student: { dob: r.dob, email: r.email }, isFastTrack: !!r.is_fast_track,
+}));
 
 /**
  * Hai việc không hạn từ hồ sơ em đang học — MỘT câu cho cả hai (TD4-b):
@@ -118,15 +166,25 @@ export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant
  *    Target FT). Tập em = tập chip "Thiếu thông tin" (`danhSachHocVienLop`: em có lớp đang học) — số trên việc = số dòng danh sách khi mở link.
  */
 export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null; chot: boolean; boSung: boolean; /** TD-VIEC: chỉ em đang học lớp này */ lop?: number | null }): WorkItem[] {
-  if ((!o.chot && !o.boSung) || !coTheGiuViecTvv(p)) return [];
+  if (!o.chot && !o.boSung) return [];
+  /* LPB-1 (N73 ⑤): em có việc khung giao cho tôi (Chốt ngày thi · Bổ sung hồ sơ) vào tập dù tôi không phải người mặc định — người giữ xét ở `chuKhung`. */
+  const emToi = giaoChoNguoi(p.userId, 'chot_ngay_thi', 'bo_sung_ho_so').map((g) => g.sid).filter((x): x is number => !!x);
+  if (!coTheGiuViecTvv(p) && !emToi.length) return [];
   const ql = laQl(p);
   const giu = nguoiGiuTvv(p, o.today);
   /* S3: điều kiện dựng theo nhánh — `(x = ? OR ? = 1)` làm SQLite quét cả bảng students; TVV đi chỉ mục idx_student_consultant. */
   const dk = ['s.archived_at IS NULL'];
   const thamSo: unknown[] = [];
+  /* LPB-1: lọc chi nhánh / lớp (không phải điều kiện người giữ) — tách để em được giao cho tôi vẫn qua điều kiện người giữ. */
+  const dkLoc: string[] = [];
+  const thamSoLoc: unknown[] = [];
   if (viecTvvCuKhiKiem.bat) { dk.push('(s.consultant_user_id = ? OR ? = 1)', '(? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)'); thamSo.push(p.userId, ql ? 1 : 0, o.branchId, o.branchId); }
   else {
-    if (!ql) { dk.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
+    const cnLead = cnLeadTvvCuaToi(p);
+    if (!ql && cnLead.length) {
+      /* VAI-0 (N76b): Lead TVV — em mình là TVV + em ở chi nhánh mình giữ (lọc chưa có TVV ở `giu`). */
+      dk.push(`(s.consultant_user_id = ? OR COALESCE(c.branch_id, s.branch_id) IN (${cnLead.map(() => '?').join(',')}))`); thamSo.push(p.userId, ...cnLead);
+    } else if (!ql) { dk.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
     else {
       /*
        * DOC-IT-6: QL không toàn hệ thống — `giu` chỉ giữ em mình là TVV hoặc thuộc chi nhánh mình quản lý (`nguoiGiuTvv`, CYCLE_EDIT). Trước SCAN cả `students`
@@ -134,47 +192,41 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
        */
       const pv = scopeFor(p, PERMISSIONS.CYCLE_EDIT, o.today);
       if (!pv.all) {
-        const cn = o.branchId != null ? pv.branchIds.filter((b) => b === o.branchId) : pv.branchIds;
+        const goc = [...new Set([...pv.branchIds, ...cnLeadTvvCuaToi(p)])];   // VAI-0 (N76b): + chi nhánh tôi là Lead TVV giữ việc
+        const cn = o.branchId != null ? goc.filter((b) => b === o.branchId) : goc;
         dk.push(`(s.consultant_user_id = ? OR s.id IN (SELECT x.student_id FROM classes cx JOIN enrollments x ON x.class_id = cx.id AND x.status = 'active'
                    WHERE cx.status = 'active' AND cx.branch_id IN (${cn.map(() => '?').join(',')})))`);
         thamSo.push(p.userId, ...cn);
       }
     }
-    if (o.branchId != null) { dk.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSo.push(o.branchId); }
-    if (o.lop) { dk.push('e.class_id = ?'); thamSo.push(o.lop); }
+    if (o.branchId != null) { dkLoc.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSoLoc.push(o.branchId); }
+    if (o.lop) { dkLoc.push('e.class_id = ?'); thamSoLoc.push(o.lop); }
     /* AUDIT-1611 PR 5: QL "Của tôi" — `giu` chỉ nhận em mình là TVV hoặc em CHƯA có TVV (`nguoiGiuTvv`, không `tatCa`) → lọc ngay trong SQL, không đọc
        mọi em của các chi nhánh (QL 5 chi nhánh: ~820 dòng / lần). Kết quả không đổi. */
     /* AUDIT-2111 (rà #1960): + em có TVV HẾT hiệu lực ở chi nhánh em (như chưa có TVV → Head giữ) — so với vai TVV còn hiệu lực đã đọc (`tvvConVai`, 1 câu nhỏ / request). */
-    if (ql && !o.tatCa) {
+    if ((ql || cnLead.length) && !o.tatCa) {   // VAI-0: Lead TVV — chỉ em mình là TVV / chưa có TVV / TVV hết hiệu lực
       const vai = JSON.stringify([...vaiTvvConHieuLuc()]);
       dk.push(`(s.consultant_user_id = ? OR s.consultant_user_id IS NULL OR s.consultant_user_id = 0
         OR ((s.consultant_user_id || ':' || COALESCE(c.branch_id, s.branch_id)) NOT IN (SELECT value FROM json_each(?)) AND (s.consultant_user_id || ':0') NOT IN (SELECT value FROM json_each(?))))`);
       thamSo.push(p.userId, vai, vai);
     }
   }
-  const ds = db().prepare(
-    `SELECT s.id, s.full_name, s.dob, s.email, s.status, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,
-            cy.id AS cycle_id, cy.route, cy.start_period_id, cy.target_score, cy.exam_month, cy.exam_date, cy.thi_that_ngay, cy.exam_period_id,
-            cy.thi_that_khong_thi, cy.outcome_score, cy.outcome, rp.week_start AS exam_week_start, rp.code AS exam_week_code
-       FROM students s
-       /* rà #517: ghi danh mở ở lớp ĐANG HOẠT ĐỘNG — cùng tập với danh sách Học viên & Lớp (lopTrongPhamVi), số trên việc = số dòng */
-       JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x JOIN classes cx ON cx.id = x.class_id WHERE x.student_id = s.id AND x.status = 'active' AND cx.status = 'active')
-       JOIN classes c ON c.id = e.class_id
-       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
-      WHERE ${dk.join(' AND ')}`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
-  ).all(...thamSo) as any[];
+  const dkGiu = dk.slice(1);
+  const dkChung = [dk[0], ...dkLoc];
+  const dieuKien = [...dkChung, ...(dkGiu.length ? [emToi.length ? `((${dkGiu.join(' AND ')}) OR s.id IN (SELECT value FROM json_each(?)))` : dkGiu.join(' AND ')] : [])];
+  const ds = db().prepare(`${SQL_HO_SO_TVV} WHERE ${dieuKien.join(' AND ')}`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
+  ).all(...thamSoLoc, ...thamSo, ...(dkGiu.length && emToi.length ? [JSON.stringify(emToi)] : [])) as any[];
   const out: WorkItem[] = [];
   /* [XM7] #2070 (Việc để sau 25/11): giữ từng em (lớp · tên · thiếu gì) để dòng gộp mở ra "lớp · em · Thiếu: …" — cùng câu đọc, 0 câu thêm. */
-  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number>; con: { r: any; thieu: string[] }[] }>();
+  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number>; con: { r: any; thieu: string[] }[]; han: string | null; giaoBoi: string | null }>();
   const daChot = new Set<number>();
   for (const r of ds.sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
-    const chu = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
-    if (!chu) continue;
-    if (o.chot && r.status === 'active' && r.is_fast_track && r.cycle_id && r.route && !daChot.has(r.cycle_id) && !r.exam_date && !r.thi_that_ngay && (r.exam_month || r.exam_period_id)
-        && !r.thi_that_khong_thi && r.outcome_score === null && (r.outcome ?? 'unknown') === 'unknown') {
-      const lich = trangThaiLichThi(r, examPlanOf(r), o.today);
-      if (lich.trangThai === 'chua-chot-ngay') {
+    const goc = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
+    const lich = o.chot && !daChot.has(r.cycle_id) ? lichChotNgayThi(r, o.today) : null;
+    const chuChot = lich ? chuKhung(p, o.tatCa, 'chot_ngay_thi', r.cycle_id, goc) : null;
+    if (lich && chuChot) {
+      const chu = chuChot;
+      {
         daChot.add(r.cycle_id);
         out.push({
           key: `chot-ngay-thi:${r.cycle_id}`, group: 'missing_data', urgency: 'normal',
@@ -182,18 +234,22 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
           attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nhanLichThi(lich, o.today), count: null,
           reason: 'Đã tới tháng thi mà chưa có ngày thi',
           tieuDe: 'Chốt ngày thi', phu: 'Chốt ngày thi', actionLabel: 'Chốt ngày', href: `/hoc-vien?view=lich-thi&thang=${lich.thang}`,
-          ownerId: chu.ownerId, owner: null, mine: chu.mine, due: null, statusLabel: 'Không tính hạn',
+          ownerId: chu.ownerId, owner: null, mine: chu.mine, due: chu.han ?? null, statusLabel: chu.han ? `hạn ${chu.han.slice(8, 10)}/${chu.han.slice(5, 7)}` : 'Không tính hạn',
+          ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'chot_ngay_thi', id: r.cycle_id },
+          ...(chu.han ? { urgency: chu.han < o.today ? 'overdue' : chu.han === o.today ? 'today' : 'normal' } : {}),
         });
       }
     }
     if (!o.boSung) continue;
-    const thieu = missingForStudent({
-      cycle: r.cycle_id ? { start_period_id: r.start_period_id, target_score: r.target_score } : null,
-      student: { dob: r.dob, email: r.email }, isFastTrack: !!r.is_fast_track,
-    });
+    const thieu = thieuHoSoEm(r);
     if (!thieu.length) continue;
-    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>(), con: [] };
+    /* LPB-1: em đã giao (Bổ sung hồ sơ) rời nhóm của người mặc định, vào nhóm người được giao. */
+    const chu = chuKhung(p, o.tatCa, 'bo_sung_ho_so', r.id, goc);
+    if (!chu) continue;
+    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>(), con: [], han: null, giaoBoi: null };
     if (g.em.has(r.id)) continue;
+    if (chu.han && (!g.han || chu.han < g.han)) g.han = chu.han;   // LPB-1: hạn đặt tay của em sớm nhất = hạn của dòng gộp
+    g.giaoBoi ??= chu.giaoBoi ?? null;
     g.em.add(r.id);
     g.con.push({ r, thieu: thieu.map((m) => m.label) });
     for (const m of thieu) g.truong.set(m.label, (g.truong.get(m.label) ?? 0) + 1);
@@ -209,7 +265,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: g.em.size, emIds: [...g.em],
       reason: [...g.truong].map(([ten, n]) => `${ten} ${n}`).join(' · '),
       tieuDe: `Bổ sung hồ sơ thiếu · ${g.em.size} em`, actionLabel: 'Bổ sung',
-      href, ownerId, owner: null, mine: g.mine, due: null, statusLabel: 'Không tính hạn',
+      href, ownerId, owner: null, mine: g.mine, due: g.han, statusLabel: g.han ? `hạn ${g.han.slice(8, 10)}/${g.han.slice(5, 7)}` : 'Không tính hạn',
+      ...(g.han ? { urgency: g.han < o.today ? 'overdue' : g.han === o.today ? 'today' : 'normal' } : {}), ...(g.giaoBoi ? { giaoBoi: g.giaoBoi } : {}),
       /* Từng em: lớp · tên · thiếu gì — dòng một em ghi thẳng lớp · tên; panel ghi tên + lớp từng em. Chỉ hiển thị: việc vẫn MỘT dòng mỗi người giữ
          (không `con` — `con` là việc thật, các đường đếm / gán việc theo em đọc nó). */
       emBoSung: g.con.map(({ r, thieu }) => ({ id: r.id, ten: r.full_name, lop: r.class_code ?? null, thieu: thieu.join(' · ') })),

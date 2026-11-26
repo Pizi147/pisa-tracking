@@ -149,7 +149,7 @@ export function highlights(p: Principal, f: { branchId?: number | null; program?
         `SELECT a.class_id, a.attempt_no, rp.week_start, COUNT(DISTINCT a.student_id) AS n
            FROM assessment_attempts a
            JOIN report_periods rp ON rp.id = a.planned_period_id
-           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', false, true)}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại (N71: em đã dừng không vào số thi)
+           JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại (em Lưu trữ không vào số thi)
           WHERE a.status != 'cancelled' AND a.kind = 'mock'
             AND rp.week_start IN (${mondays.map(() => '?').join(',')})
             AND a.class_id IN (${classIds.map(() => '?').join(',')})

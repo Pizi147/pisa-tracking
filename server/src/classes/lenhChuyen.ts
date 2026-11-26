@@ -21,6 +21,7 @@ import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { quetLopTrong } from './xoaKetThucLop.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
 import { quetDoiDenHan } from './phanCongGv.ts';
+import { dongBoLienPhongLenh, lenhVuaLuu } from './lienPhongBan.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -250,6 +251,8 @@ export function raLenh(p: Principal, v: {
       const ngayEm = hang.filter((h) => h[5] === homNay).map((h) => h[0] as number);
       if (ngayEm.length) daChuyen.push(...thiHanhNgay(v.lopNguonId, v.boiCanh, homNay, ngayEm));
       thongBaoSapNhan(p, nguon, [...new Set(hang.map((h) => h[2]).filter(Boolean))] as number[], dich, homNay);
+      /* LPB-0 (N73 ①): việc TVV Báo PH · Chuyển lớp + việc BPXL Nhận thông tin theo lệnh vừa lưu — SAU thi hành ngay (lệnh "Ngay hôm nay" không sinh việc). Theo lô. */
+      dongBoLienPhongLenh(lenhVuaLuu(v.lopNguonId, hang.map((h) => h[0] as number)), p.userId);
     }
     return { ok: hang.map((h) => h[0] as number), failed, daChuyen };
   });
@@ -406,6 +409,7 @@ export function huyLenh(p: Principal, id: number, lyDo?: string | null): void {
   tx(() => {
     const conn = db();
     huyMotLenh(p, l, why);
+    dongBoLienPhongLenh([l.id], p.userId);   // LPB-0: việc mở tự đóng / đã báo → Báo lại PH · đã xác nhận → tin Cập nhật
     const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
     const ma = new Map((conn.prepare('SELECT id, code FROM classes WHERE id IN (?, ?)').all(l.lop_nguon_id, l.lop_dich_id ?? l.lop_nguon_id) as any[]).map((r) => [r.id as number, r.code as string]));
     const nhan = nguoiNhanCuaLop([l.lop_nguon_id, ...(l.lop_dich_id ? [l.lop_dich_id] : [])]);
@@ -448,7 +452,7 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
       l = docLenh(id);
       if (!quyenLenh(p, l)) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }   // N63 ①: lệnh Cuối khoá — CX không
       kiemConSuaDuoc(l);
-      tx(() => huyMotLenh(p, l, why));
+      tx(() => { huyMotLenh(p, l, why); dongBoLienPhongLenh([l.id], p.userId); });   // LPB-0 (rà PTA #2266): đồng bộ CÙNG giao dịch huỷ
       kq.ok.push(id); daHuy.push(l);
     } catch (e) {
       if (!(e instanceof HttpError)) throw e;
@@ -517,6 +521,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
               tuan_bat_dau = COALESCE(?, tuan_bat_dau) WHERE id = ? AND trang_thai = 'huy'`,
         ).run(nowIso(), doiTuan, id);
         if (doiTuan) l.tuan_bat_dau = doiTuan;
+        dongBoLienPhongLenh([id], p.userId);   // LPB-0: việc đã tự đóng theo lệnh huỷ mở lại
         /*
          * PR-LCa (I1): quyết định Cuối khoá lớp thường chờ lại → Lộ trình tiếp theo + MT0 theo quyết định như `raLenh` (bất biến lệnh chờ ⇒
          * LTT cùng Hướng). Hướng LTT khác là do ghi SAU khi huỷ — của GVCN (`cuLaQl: false`). Mỗi lệnh một giao dịch nên đọc theo lệnh.
@@ -680,6 +685,7 @@ function huyHeThong(mat: any[], lyDo: string) {
   const ids = mat.map((l) => l.id as number);
   db().prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE trang_thai = 'cho' AND id IN (${inHang(ids)})`)
     .run(nowIso(), lyDo, nowIso(), ...ids);
+  dongBoLienPhongLenh(ids, null);   // LPB-0
 }
 
 /** Đánh dấu TRƯỚC khi chuyển; `AND trang_thai = 'cho'` để lượt song song không đánh dấu lần hai. */
@@ -861,7 +867,11 @@ export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: 
   return nho(`chot-lo-trinh:${p.userId}:${branchId ?? ''}:${today}:${lopId ?? ''}`, () => tinhLopChoChotLoTrinh(p, branchId, today, lopId));
 }
 
-function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
+/** LPB-1 (N73 ⑤): lớp còn việc "Chốt lộ trình" (không xét quyền người xem) — khung việc đọc CÙNG luật với Công việc. */
+/* Rà PTA #2280 (tốc độ): tính MỌI lớp một lần mỗi request rồi lọc (Đang theo dõi / quét ngày nhiều lớp không lặp câu theo lớp). */
+export const lopChotLoTrinhMo = (lopId: number, today: string, caTap = false): ChotLoTrinh | null =>
+  (caTap ? nho(`chot-lo-trinh-mo:${today}`, () => tinhLopChoChotLoTrinh(null, null, today)) : tinhLopChoChotLoTrinh(null, null, today, lopId)).find((x) => x.classId === lopId) ?? null;
+function tinhLopChoChotLoTrinh(p: Principal | null, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   const lop = [...lopDayDu().values()].filter((c) => c.status === 'active' && c.is_fast_track === 0 && (!branchId || c.branch_id === branchId) && (!lopId || c.id === lopId));
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
@@ -872,7 +882,7 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
     const moc = pr.finalWeekStart ? mocLoTrinh(pr.finalWeekStart) : null;
     const han = moc?.hanChot ?? null;
     const den = moc ? today >= moc.nhacTu : mocKetKhoa(pr, today).hetKhoa;
-    return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
+    return den && (!p || can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];
   const dem = demChotTheoLop(toi.map((x) => x.classId));

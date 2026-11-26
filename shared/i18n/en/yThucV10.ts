@@ -72,7 +72,6 @@ export const EN_Y_THUC_V10 = {
   'Đã xử lý {ngay}': (b) => `Actioned ${b.ngay}`,
   'Đã xử lý · 7 ngày': 'Actioned · 7 days',
   'đã bỏ theo thu hồi': 'dropped with the withdrawal',
-  'đã chỉnh': 'edited',
   'đã gửi Head — Head quyết': 'sent to Head — Head decides',
   'Bỏ lọc em': 'Clear student filter',
   '≥ 3 vi phạm trong tuần này + tuần trước → phải xử lý; "Đã xem" không còn.': '≥ 3 incidents this week + last week → action required; "Seen" is not available.',

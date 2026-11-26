@@ -9,6 +9,7 @@ import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import { KhungPanel } from '../../../ui/KhungPanel.tsx';
 import { PhanLichTest } from '../../classes/ClassProgressPanel.tsx';
+import { XepLichLop } from '../../classes/XepLichLop.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData, SoLoc } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -69,6 +70,8 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, loc = null, hvChon =
           )}
           {nutXep}
         </span>
+        {/* VAI-1 (N77, mockup v29 K1): BPXL nhận / bỏ / nhận lại lớp — vai khác: tên chữ trơn. */}
+        <XepLichLop classId={lop.id} code={lop.code} xepLich={lop.xepLich ?? null} dong onDoi={() => invalidate('/ke-hoach-test/lop')} />
       </div>
       {mo && <NoiDungLop lop={lop} onHienDien={onHienDien} loc={loc} hvChon={hvChon} />}
     </section>
@@ -91,7 +94,7 @@ function NoiDungLop({ lop, onHienDien, loc, hvChon }: { lop: LopKH; onHienDien: 
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setSuaLich(true)}>{t('Sửa lịch lớp')}</button>
         </div>
       )}
-      <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} loc={loc} hvChon={hvChon} />
+      <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} loc={loc} hvChon={hvChon} chiLich={lop.xemHoSo === false} />
       {coSua && suaLich && (
         <KhungPanel tieuDe={t('Lịch Test của lớp')} lop={lop.code} onDong={() => setSuaLich(false)}>
           <PhanLichTest classId={lop.id} tieuDe={t('Lịch Test của lớp')} suaDuoc onDone={() => { invalidate('/ke-hoach-test'); s.reload(); }} />

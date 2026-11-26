@@ -6,6 +6,7 @@ import { addDays, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { dongBoViecTvvLuot } from '../yThuc/baoPhTvv.ts';
 import { coXetLaiMiniTest } from './xetLai.ts';
 import { mondayOf } from '../platform/week.ts';
 import { addMilestone } from '../cases/sos.ts';
@@ -340,6 +341,8 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     const pb = cauHinh('moc_sos').id || null;
     chenNhieuDong('INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at, pb_moc)',
       [...baoPh].flatMap(([attemptId, x]) => x.viec.filter((k) => !co.has(`${attemptId}|${k}`)).map((k) => [attemptId, x.sid, k, null, 1, 'pending', nowIso(), pb])));
+    /* BAOPH-0 (N72 ⑤): Báo PH kết quả Final là việc TVV (không TVV → Head), người chốt theo dõi — Head thôi giữ việc này. */
+    dongBoViecTvvLuot([...baoPh.keys()], p.userId);
   }
 }
 

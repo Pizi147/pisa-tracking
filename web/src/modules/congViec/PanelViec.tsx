@@ -34,6 +34,7 @@ import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
 import { PanelTraLai } from './PanelTraLai.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
+import type { TomTuyen } from '../yThuc/kieu.ts';
 import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
@@ -43,6 +44,7 @@ import { dauTuViec } from './dauPanelViec.tsx';
 const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
 const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelSauThi));
 const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
+const PanelBaoPhNhieu = lazyHop(() => import('./PanelBaoPhNhieu.tsx').then((x) => x.PanelBaoPhNhieu));
 const PanelMeeting = lazyHop(() => import('./PanelMeeting.tsx').then((x) => x.PanelMeeting));
 const KhaiBacLoPanel = lazyHop(() => import('../yThuc/KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) => x.KhaiBacPanel));
@@ -196,6 +198,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'buoc_tiep': case 'thi_that':
       return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} han={dauTuViec(it).han} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'bao_ph_yt':
+      /* TUYEN-2 (mockup v27 T11a): dòng lớp × nguồn "n em" → panel nhiều em, khay từng em. */
+      if (it.con?.length) return <PanelBaoPhNhieu key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelBaoPhTvv key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'phoi_hop_tvv':
       /* GV-2 (mockup v22 G8b): một việc "Báo PH · Meeting CX/GĐCN" → panel Báo PH (+ hai phần Meeting, khối giao việc); dòng gộp nhiều em giữ lưới lớp. */
@@ -210,7 +214,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'missing_data':
       /* R3-W2 (rà 24/11): mốc PA chưa có lịch — Nhập dự kiến thi = panel Chốt ngày thi của lộ trình · Xếp lịch MTn = panel Lịch MT (hàng chưa xếp có nút Xếp lịch). */
-      if (it.key.startsWith('moc:') && it.cycleId) {
+      /* MT-QUA-THI: MT sau ngày thi — cùng panel Lịch MT (dời tuần / xoá MT tại chỗ). */
+      if ((it.key.startsWith('moc:') || it.key.startsWith('mt-thi:')) && it.cycleId) {
         if (it.kind === 'thi') {
           return <PanelChotNgayThi key={it.key} cycleId={it.cycleId} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} duKien={null}
             onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
@@ -447,7 +452,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
   /* GV-2 (N58): một việc Phối hợp (`phoi_hop_viec:<id>` — việc đã giao / một em) → khối giao việc đầu thân + thẻ Phối hợp CỦA EM (người được giao không cần quyền xem cả lớp). */
   const mot = it.key.startsWith('phoi_hop_viec:') && it.viecId ? it.viecId : null;
   const gv = useGiaoViec('phoi_hop', mot);
-  const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(mot && it.studentId ? `/students/${it.studentId}/phoi-hop-sos` : `/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId, mot]);
+  const { data, error, reload } = useApi<{ rows: CoordTurn[]; chuoiTuyen?: Record<number, TomTuyen> }>(mot && it.studentId ? `/students/${it.studentId}/phoi-hop-sos` : `/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId, mot]);
   const ten = tvv ? t('Báo PH · Meeting CX/GĐCN') : dich(it.tieuDe.split(' · ')[0]);
   const { homNay } = useNgayNghiepVu();
   /* GD-4b Q53 / Q54 / Q62: dòng Meeting CX/GĐCN → câu Meeting (TVV nhận việc báo PH); dòng khác → câu Xác nhận. "Bỏ" chọn ở từng em → vào ⓘ. */
@@ -471,7 +476,8 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
         {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDaLam} />}
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : !data ? <Skeleton rows={4} />
-          : <BangPhoiHop anHan={!!mot} turns={data.rows} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId} lop={it.classCode ?? undefined}
+          /* TUYEN-2 (mockup v27 T5): cột Tuyến (chuỗi chấm + Đang ở) + khay em — chuỗi đi cùng GET Phối hợp lớp (0 request thêm). */
+          : <BangPhoiHop anHan={!!mot} turns={data.rows} chuoi={mot ? null : data.chuoiTuyen ?? null} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId} lop={it.classCode ?? undefined}
               onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>

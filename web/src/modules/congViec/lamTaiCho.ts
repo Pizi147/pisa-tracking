@@ -33,7 +33,7 @@ export function lamTaiCho(it: WorkItem): boolean {
        Thiếu thông tin khác (Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'phoi_hop': return it.studentId !== null;
     case 'bo_sung_ho_so': return !!it.emIds?.length;   // 06/11: sửa thông tin từng em tại chỗ, "Lưu · em tiếp ›"
-    case 'missing_data': return it.studentId !== null && (it.key.startsWith('chot-ngay-thi:') || (it.key.startsWith('moc:') && !!it.cycleId));   // UI-CV-TVV: Chốt ngày thi · R3-W2: mốc PA
+    case 'missing_data': return it.studentId !== null && (it.key.startsWith('chot-ngay-thi:') || ((it.key.startsWith('moc:') || it.key.startsWith('mt-thi:')) && !!it.cycleId));   // UI-CV-TVV: Chốt ngày thi · R3-W2: mốc PA · MT-QUA-THI: Lịch MT
     case 'bao_ph_yt': return !!it.viecId && it.studentId !== null;   // UI-CV-TVV: Báo PH (TVV / QL khi em chưa có TVV)
     /* CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ · R1-NO-CU: "Chọn người phụ trách" (lớp đủ người) — hộp đổi người tại chỗ.
        Em không có lớp → hồ sơ em như cũ (không có ai để chọn). */
@@ -54,4 +54,6 @@ export const moCaDong = (it: WorkItem): boolean => !!it.con?.length && !laViecCh
   && (it.group === 'xac_nhan_pa' ? it.con.every((c) => !!c.paId)
     /* GD-20c (mockup ⑫ C1–C2): Ghi kết quả PA cùng lớp + cùng kỳ — bấm dòng mở LƯỚI (mỗi dòng một PA), thay khay "n em ▾". */
     : it.group === 'ghi_ket_qua_pa' ? it.con.every((c) => !!c.paId && c.caseId !== null)
-    : it.group === 'score' && it.con.every((c) => !!c.periodId && c.classId !== null));
+    : it.group === 'score' ? it.con.every((c) => !!c.periodId && c.classId !== null)
+    /* TUYEN-2 (mockup v27 T11a): Báo PH lớp × nguồn "n em" — bấm dòng mở panel nhiều em (khay từng em), như Phối hợp SOS cả lớp. */
+    : it.group === 'bao_ph_yt' && it.con.every((c) => !!c.viecId && !!c.gopNguon));

@@ -111,8 +111,8 @@ export async function runPrS6fATests(t: YThucTestKit) {
     return { conBai: r.lop.find((l: any) => l.classId === MB_FT)?.conBai ?? 0, quaHan: r.tongQuan.no.bai };
   };
 
-  /* N71 (chủ SP 25/11): Tạm dừng TRƯỚC tuần thi → ô không còn là việc; Tạm dừng SAU tuần thi → ô đã thi chưa chấm vẫn là việc (GV lớp lúc thi). */
-  check('S6F-a (2a) · em Tạm dừng trước tuần thi → badge "n bài chờ chấm" và Lịch Test tuần cũ (conBai, tongQuan.quaHan) cùng giảm đúng số ô của em; Quay lại học → tăng lại; Tạm dừng sau tuần thi → giữ', () => {
+  /* Lưu trữ (chủ SP 26/11, thay N71): Tạm dừng (trước hay sau tuần thi) → ô không còn là việc; Quay lại học KHÔNG mở lại ô cũ; bỏ Lưu trữ (không mốc quay lại) → trả lại. */
+  check('S6F-a (2a) · em Tạm dừng → badge "n bài chờ chấm" và Lịch Test tuần cũ (conBai, tongQuan.quaHan) cùng giảm đúng số ô của em; bỏ Lưu trữ → tăng lại; Quay lại học → không mở lại', () => {
     const aRow = get('SELECT * FROM assessment_attempts WHERE id = ?', aX.id);
     const oCho = (svc.skillCells(P.admin, aRow, svc.scoresOf(aX.id), [], TODAY,
       svc.loadBundle([aX.id]).skillRows.get(aX.id)) as any[]).filter((c) => c.required && c.band === null);
@@ -120,10 +120,16 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const soKhoi1 = oCho.length;   // rà 11/11 #2: S chéo quá hạn vào khối 1
     assert(soO >= 4, `em X chỉ có ${soO} ô chưa nhập`);
     const b0 = badge(); const l0 = lt();
-    studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', TODAY, 'Tạm nghỉ');
-    const b3 = badge(); const l3 = lt();
-    studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'active', TODAY, 'Đi học lại');
-    assert(b3 === b0 && l3.conBai === l0.conBai && l3.quaHan === l0.quaHan, `Tạm dừng sau tuần thi: badge ${b0} → ${b3}, conBai ${l0.conBai} → ${l3.conBai}, quá hạn ${l0.quaHan} → ${l3.quaHan}`);
+    conn.exec('SAVEPOINT s6f2a');
+    try {
+      /* Dừng hôm qua, quay lại hôm nay — lần dừng thật (dừng + quay lại cùng ngày không tính là quay lại, rà #2217 P2-3). */
+      studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', t.addDays(TODAY, -1), 'Tạm nghỉ');
+      const b3 = badge(); const l3 = lt();
+      studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'active', TODAY, 'Đi học lại');
+      const b4 = badge(); const l4 = lt();
+      assert(b0 - b3 === soO && l0.conBai - l3.conBai === soO, `Tạm dừng sau tuần thi: badge ${b0} → ${b3}, conBai ${l0.conBai} → ${l3.conBai} (ô của em: ${soO})`);
+      assert(b4 === b3 && l4.conBai === l3.conBai && l4.quaHan === l3.quaHan, `Quay lại học mở lại ô cũ: badge ${b3} → ${b4}, conBai ${l3.conBai} → ${l4.conBai}`);
+    } finally { conn.exec('ROLLBACK TO s6f2a'); conn.exec('RELEASE s6f2a'); }
     /* Tạm dừng (Lưu trữ) từ TRƯỚC tuần thi — ghi thẳng trạng thái (không để khoảng tạm dừng trong nhật ký cho phép kiểm sau). */
     conn.prepare(`UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?`).run(t.addDays(tuanW1, -1), eX.sid);
     const b1 = badge(); const l1 = lt();

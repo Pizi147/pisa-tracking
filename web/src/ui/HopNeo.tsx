@@ -8,16 +8,18 @@ import { useBamNgoai } from './useBamNgoai.ts';
  * ô neo ở mép phải (⋯ cuối dòng) thì đặt CẠNH trái ô neo; không thì hộp thấp lại và cuộn bên trong (không kẹp sát mép trên đè thanh đầu trang / chính ô neo). Cuộn / đổi cỡ màn thì đặt lại vị trí (không đóng — đang gõ dở).
  * Bấm ngoài / Esc → `onNgoai` (nơi gọi quyết: chưa đổi thì đóng, đã đổi thì hỏi). Mở xong focus phần tử bấm được đầu tiên; đóng trả focus về ô neo.
  */
+type ViTriHop = { top: number; left: number; xuong: boolean; muiX: number; maxH: number | null; canh: boolean };
+
 export function HopNeo({ neo, nhan, rong = 420, onNgoai, lop = 'grid gap-3 p-4', mui = false, children }: {
   neo: RefObject<HTMLElement | null>; nhan: string; rong?: number; onNgoai: () => void;
   /** Lớp thân hộp (mặc định lưới đệm 16 px) — hộp Tuần dạy tự kẻ vạch sát mép (`hop-tuan-day`). */ lop?: string;
   /** Mũi nhỏ chỉ vào giữa ô neo (mockup v20) — lật theo hướng mở. */ mui?: boolean; children: ReactNode;
 }) {
   const hop = useRef<HTMLDivElement>(null);
-  const viTriDang = useRef<{ maxH: number | null } | null>(null);
+  const viTriDang = useRef<ViTriHop | null>(null);
   const ngoai = useRef(onNgoai);
   ngoai.current = onNgoai;   // Esc nghe một lần lúc mở — luôn gọi bản mới nhất (biết "đã đổi" chưa)
-  const [viTri, setViTri] = useState<{ top: number; left: number; xuong: boolean; muiX: number; maxH: number | null; canh: boolean } | null>(null);
+  const [viTri, setViTri] = useState<ViTriHop | null>(null);
   const datViTri = () => {
     const r = neo.current?.getBoundingClientRect();
     /* Cao THẬT của nội dung. Chưa bị kẹp `maxHeight` → `offsetHeight`: `scrollHeight` tính cả MŨI (`mui`, nhô ra ngoài hộp ~10 px) nên cao đổi theo việc mũi
@@ -42,7 +44,12 @@ export function HopNeo({ neo, nhan, rong = 420, onNgoai, lop = 'grid gap-3 p-4',
     const phai = vua ? Math.min(window.innerWidth, the.right) - 8 : window.innerWidth - 8;
     const left = canh ? r.left - cach - rong : Math.max(trai, Math.min(mui ? r.left + r.width / 2 - 70 : r.left, phai - rong));
     const muiX = r.left + r.width / 2 - left - 6;
-    setViTri((v) => (v && v.top === top && v.left === left && v.xuong === xuong && v.muiX === muiX && v.maxH === maxH && v.canh === canh ? v : { top, left, xuong, muiX, maxH, canh }));   // không đổi thì giữ object cũ — không vẽ lại vô tận
+    /* So với vị trí ĐÃ VẼ, không đặt state khi không đổi. Không dùng `setViTri(v => …)`: còn một cập nhật treo ở làn ưu tiên thấp (ResizeObserver / cuộn)
+     * thì React tính lại hàng đợi từ trạng thái cũ, hàm luôn trả object MỚI → vẽ lại → effect này gọi lại → "Maximum update depth", trang sập
+     * (đổi vai tại dòng tài khoản cuối bảng, 26/11). */
+    const cu = viTriDang.current;
+    if (cu && cu.top === top && cu.left === left && cu.xuong === xuong && cu.muiX === muiX && cu.maxH === maxH && cu.canh === canh) return;
+    setViTri({ top, left, xuong, muiX, maxH, canh });
   };
   viTriDang.current = viTri;
   useLayoutEffect(datViTri);   // mỗi lần vẽ: nội dung đổi cao (thêm hàng, hiện lỗi) thì hộp vẫn nằm trong màn

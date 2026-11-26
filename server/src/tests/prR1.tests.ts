@@ -115,7 +115,7 @@ export async function runPrR1Tests(t: any) {
   }));
 
   check('L3 · Xác nhận Phối hợp: việc hệ thống bỏ → 400 (như Khôi phục); việc người dùng bỏ xác nhận thẳng (RKC-3a); câu so-và-đổi (updated_at NULL) ghi đúng', () => thu(() => {
-    const x = one("SELECT id FROM sos_coordination_actions WHERE kind = 'talk_family' ORDER BY id LIMIT 1");
+    const x = one("SELECT id FROM sos_coordination_actions WHERE kind = 'gvcn_meeting' ORDER BY id LIMIT 1");   // BAOPH-0: talk_family là nguồn việc TVV
     assert(x, 'seed thiếu việc phối hợp');
     const dat = (tt: string, ly: string | null) => conn.prepare(`UPDATE sos_coordination_actions SET status = ?, remove_reason_code = ?, updated_at = NULL, performed_on = NULL WHERE id = ?`).run(tt, ly, x.id);
     const xn = () => ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note: 'Đã gọi gia đình, em hứa đi học đều — thử L3 ghi đủ dài.' });

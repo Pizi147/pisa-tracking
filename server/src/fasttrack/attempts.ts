@@ -8,7 +8,7 @@ import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  CHU_CHAN_NHAP_DIEM, bangLop, can, giuOCu, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  CHU_CHAN_NHAP_DIEM, bangLop, can, giuOCu, themLopCu, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, qlDiem, require_, requireXemLuotCham, scopeFor, scopeLichTest, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { chanBpxlCoDiem, choHuyKhoiPhucLichTest, choKhoiPhucLuot, choSuaLichTest, laBpxlXepLich, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -39,7 +39,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -47,6 +47,7 @@ import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 import { MT0_THEO_EM_SQL } from './mt0.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
+import { dongBoViecTvvLuot } from '../yThuc/baoPhTvv.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -718,6 +719,8 @@ export type AttemptFilters = {
   /** PR-LT3 (rà #218 I2): CHỈ ĐỌC cho Lịch Test — phạm vi `scopeXemLuotCham` (thêm lớp FT cùng chi nhánh của GV Speaking chấm chéo),
    *  cùng phạm vi khối 2/3. Đường ghi vẫn kiểm quyền riêng (`scoreEditPath`). */
   phamViCham?: boolean;
+  /** VAI-0 (N77): khối "Test quá hạn chấm" của Lịch Test — phạm vi như hàng lớp (`scopeLichTest`: BPXL mọi chi nhánh). */
+  phamViLich?: boolean;
   /**
    * TURSO-LOG-1311: kèm `phamViCham` — lớp CHỈ vào nhờ chấm S chéo (ngoài `scopeFor`) chỉ đọc lượt Mock / MT0 mà ô Speaking chưa có band (tập cha của ô S
    * chéo còn chờ). Nơi gọi chỉ dùng ô S chéo ở các lớp đó (Công việc `vaoChamS`); log 10–11/11: GV Speaking đọc mọi lượt còn ô chờ của cả chi nhánh.
@@ -772,7 +775,7 @@ export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[
 export const listAttemptsOrKhiKiem = { bat: false };
 
 const ATTEMPT_SELECT = `
-  SELECT a.*,  s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
+  SELECT a.*,  s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.programme_code AS cy_programme_code, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -784,7 +787,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
-  const scope = f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
+  const scope = f.phamViLich ? scopeLichTest(p) : f.phamViCham ? scopeXemLuotCham(p) : themLopCu(p, scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));   // VAI-0: khối quá hạn Lịch Test cùng phạm vi hàng lớp   // N71 · Q2: + lớp GV cũ còn bài chưa chấm
   /* LOP-THUONG-QUYEN: đường chấm còn đọc lượt MT0 của lớp thường mà GV Speaking chấm S chéo — chỉ lượt `mt0`, không Progress / Final. */
   const lopMt0 = f.phamViCham && !scope.all ? lopMt0ChoGvSpeaking(p).filter((id) => !scope.classIds.includes(id)) : [];
   if (scope.none && !lopMt0.length) return { rows: [], scopeEmpty: true };
@@ -865,8 +868,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
-    /* N71: em ngừng học chỉ còn việc ở ô thi trước ngày dừng (cùng luật nợ điểm `scoreDebt.ts`). */
-    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan);
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (cùng luật nợ điểm `scoreDebt.ts`). */
+    const conNo = (tuan: string | null | undefined) => oConNoKhiDung(a.student_archived_at, tuan, a.hv_quay_lai);
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
     /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
     const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
@@ -974,7 +977,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* TD-QUET: `chiDem` — dòng chỉ đọc band / noShow / mine / lịch / hạn; cờ nhắc nhận xét (`nenCoNhanXet`, `thieuNhanXet`) không vào dòng trả về. */
     const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const active = cells.filter((c) => c.required);
-    /* N71: em ngừng học — ô thi từ ngày dừng không còn là việc (`oConNoKhiDung`); ô thi trước ngày dừng vẫn chờ chấm. */
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (`oConNoKhiDung`). */
     const cellsNo = cells.map((c) => (!c.required || conNo(c.weekStart) ? c : { ...c, required: false, mine: false }));
     const pending = pendingSkillsOf(pendingInputOf(cellsNo), workScope);
     return {
@@ -1980,6 +1983,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     const soViec = conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
         WHERE trang_thai = 'bo' AND bo_ly_do = 'system_luot_huy'
           AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'done')`).run(attemptId).changes;
+    dongBoViecTvvLuot([attemptId]);   // BAOPH-0 (rà #2233 P1-1): nguồn TVV đã mở lại → việc TVV mở lại (hạn mới)
     const doiVuot = traBanDoiVuot(p, attemptId, lyDo);
     soDiem += doiVuot;
     if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');
@@ -2788,7 +2792,9 @@ export function classScoreSheet(
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
       const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat, vangCu);
       /* MT0-THEO-EM: MT0 hiện ở lớp FT không là việc / trễ của lớp FT (vẫn ở lớp thường cũ); sửa được hay không giữ theo quyền lớp cũ. */
-      const cells = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
+      const cells1 = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
+      /* Lưu trữ (chủ SP 26/11, rà #2217 P2-1): em đã quay lại học — ô thi trước tuần quay lại không còn là việc / quá hạn (cùng `oConNoKhiDung` của nợ điểm). */
+      const cells = cells1.map((c) => (oConNoKhiDung(null, c.weekStart, a.hv_quay_lai) ? c : { ...c, viec: false, overdue: false }));
       return {
         attemptId: a.id,
         studentId: a.student_id,

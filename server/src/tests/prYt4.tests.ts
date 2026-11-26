@@ -174,12 +174,16 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
   const { migratePrTinhHinh } = await import('../migrate/prTinhHinh.ts');
   const { migratePrYeuCauXuLy: migLg12 } = await import('../migrate/prYeuCauXuLy.ts');
+  const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
   /* DB thời trước YT4: cắt phần YT4 khỏi CHỮ schema.sql (libsql lỗi "incomplete input" khi DROP COLUMN trên bảng có chú thích). */
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
+      /* BAOPH-0 (4.6): cột giao việc "Đã thực hiện" thêm SAU quyet_luc + chỉ mục của nó — cắt trước nhất; so cột chạy lại themCotPrBaoPh0 sau cùng. */
+      .replace(/,\n  -- BAOPH-0 \(N72 ⑥, 4\.6\): giao việc[^\n]*\n  phu_trach_id[^\n]*\n\);/, '\n);')
+      .replace(/CREATE INDEX IF NOT EXISTS idx_dm_giao [^\n]*\n/, '')
       /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; so cột chạy lại migratePrYeuCauXuLy sau cùng. */
       .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')   // + DUONG-LUI-2 khong_xu_ly_vuot (cùng migratePrYeuCauXuLy)
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
@@ -209,6 +213,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     migratePrPb2b(m, []);
     migratePrTinhHinh(m, []);
     migLg12(m, []);
+    themCotPrBaoPh0(m, []);   // BAOPH-0: bước cuối thêm cột discipline_measures
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['violations', 'discipline_measures', 'y_thuc_khai_bac']) {
@@ -316,7 +321,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(can(moi.gvcn, 'discipline.manage', { studentId: sid }), 'GVCN mới có quyền');
     assert(!can(loadPrincipal(P.coreTeacher.userId), 'student.edit', { studentId: sid }), 'GVCN cũ không sửa hồ sơ (Q17)');
   });
-  check('YT4 (3) · Tạm dừng (T65): không Quá hạn, không hạn; Quay lại học → hạn tính từ ngày quay lại', () => {
+  /* Lưu trữ (chủ SP 26/11, thay T65 "Quay lại → hạn tính lại"): vi phạm chưa xử lý trước lần quay lại thật dừng hẳn — không việc, không hạn. */
+  check('YT4 (3) · Tạm dừng (T65): không Quá hạn, không hạn; Quay lại học → vi phạm cũ dừng hẳn (Lưu trữ 26/11)', () => {
     const sid = hv();
     ba3(sid, addDays(TODAY, -14));
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
@@ -325,10 +331,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(dung.tamDung && dung.nhom === 'bat_buoc' && dung.han === null, JSON.stringify({ n: dung.nhom, h: dung.han }));
     conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
     conn.prepare(`UPDATE enrollments SET status = 'active' WHERE student_id = ? AND status = 'paused'`).run(sid);
-    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'resume', ?, 'Quay lại học', ?)`)
-      .run(sid, addDays(TODAY, -2), new Date().toISOString());
+    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'pause', ?, 'Tạm dừng học', ?), (?, 'resume', ?, 'Quay lại học', ?)`)
+      .run(sid, addDays(TODAY, -5), new Date().toISOString(), sid, addDays(TODAY, -2), new Date().toISOString());
     const lai = em(sid);
-    assert(!lai.tamDung && lai.nhom === 'bat_buoc' && lai.han === addDays(TODAY, 2), JSON.stringify({ n: lai.nhom, h: lai.han }));
+    assert(!lai.tamDung && lai.soBatBuoc === 0 && lai.han === null && [...lai.viPham.values()].every((x: any) => x.nhan === 'Dừng — em vào Lưu trữ'),
+      JSON.stringify({ n: lai.nhom, h: lai.han, t: [...lai.viPham.values()].map((x: any) => x.nhan) }));
   });
   check('YT4 (3) · 30 em → cửa trạng thái nạp ≤ 3 câu SQL (kế hoạch ≤ 6; không N+1)', () => {
     const ids = (conn.prepare(`SELECT id FROM students ORDER BY id LIMIT 30`).all() as any[]).map((r) => r.id as number);
@@ -1184,7 +1191,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Head duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{nhapDo\.current\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     /* TINH-HINH (mockup v20 D): không còn nút chữ "Đề xuất QL duyệt" — chọn cách xử lý tại chỗ (4 ô). */
-    assert(/role="radiogroup" aria-label=\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
+    assert(/(role="radiogroup" aria-label=|<ChipRadio nhan=)\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
   check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), ngày / tháng tuỳ chọn (N70), ghi chú tuỳ chọn; sửa bằng PUT', () => {

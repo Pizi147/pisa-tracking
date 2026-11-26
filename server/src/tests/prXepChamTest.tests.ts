@@ -42,7 +42,7 @@ export async function runPrXepChamTestTests(t: YThucTestKit) {
 
   check('XCT-5 · web: Công việc truyền homNay vào chiaMucTab (vạch hạn khớp DanhSachViec)', () => {
     const f = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
-    assert((f.match(/chiaMucTab\(dongCuaTab\([^)]*\), laTvv, homNay\)/g) ?? []).length === 2, 'chiaMucTab thiếu homNay');
+    assert((f.match(/chiaMucTab\(dongCuaTab\([^)]*\), tabTvv, homNay\)/g) ?? []).length === 2, 'chiaMucTab thiếu homNay');
   });
 
   check('XCT-4 · Test › Chấm Test: ba danh sách (nợ chấm, bảng lớp, chấm tuần này) dùng xepLopCham (soSanhLopCham + khungDong)', () => {

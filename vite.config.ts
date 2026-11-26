@@ -11,7 +11,12 @@ const apiPort = Number(process.env.PORT ?? 4000);
 const webPort = Number(process.env.WEB_PORT ?? 5173);
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    /* RA-2711: `shared/domain/*` không có lệnh chạy cấp đầu tệp (chỉ khai báo) — báo Rollup bỏ module không dùng khỏi gói đầu (qua barrel
+       `index.ts`): gói vào trang 518 → 440 KB (gzip 175 → 147 KB). Thêm lệnh chạy cấp đầu tệp vào shared/domain thì gỡ khỏi đây. */
+    name: 'shared-domain-khong-side-effect',
+    transform: (code, id) => (id.replace(/\\/g, '/').includes('/shared/domain/') ? { code, map: null, moduleSideEffects: false } : null),
+  }],
   root: projectRoot,
   resolve: {
     alias: [

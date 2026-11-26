@@ -14,6 +14,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
   const doc = (rel: string) => fsMod.readFileSync(pathMod.join(REPO, rel), 'utf8');
   const ph: any = await import('../yThuc/phoiHop.ts');
+  const baoPhSvc: any = await import('../yThuc/baoPhTvv.ts');   // BAOPH-0
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const mig: any = await import('../migrate/prPhh.ts');
   const { default: Database } = await import('libsql');
@@ -45,7 +46,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
     assert(bai, 'seed không có việc Báo PH chờ có Case chưa đóng');
     const truoc = doc1(bai.sid, bai.id, bai.vid);
     assert(truoc.noiDung?.length === 4 && truoc.noiDungLaHienTai === false, `trước xác nhận: ${JSON.stringify(truoc)}`);
-    ph.confirmCoordination(P.admin, bai.vid, { performedOn: TODAY, note: 'Đã làm' });
+    baoPhSvc.baoXongNguonTvv(bai.vid, TODAY, 'Đã gọi phụ huynh, báo 4 nội dung.');   // BAOPH-0: TVV báo xong → nguồn chụp 4 nội dung
     const cot = viec(bai.vid).noi_dung_luc_bao;
     assert(typeof cot === 'string' && JSON.stringify(JSON.parse(cot)) === JSON.stringify(truoc.noiDung), `cột ≠ nội dung lúc xác nhận: ${cot}`);
     /* Sửa sau xác nhận: rút tín hiệu (môn hết trượt), đổi nguyên nhân, QL duyệt "Không cần theo dõi" một Case. */
@@ -66,7 +67,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
 
   check('PHH-1e · việc loại khác: cột NULL, noiDung null, không cờ', () => {
     const v = conn.prepare(`SELECT co.id, co.student_id sid, co.attempt_id aid FROM sos_coordination_actions co JOIN assessment_attempts a ON a.id = co.attempt_id
-      WHERE co.kind != 'bao_ph_tvv' AND co.status = 'pending' AND a.status != 'cancelled' ORDER BY co.id LIMIT 1`).get() as any;   // GIAM-DOC-0611c: idx_sca_cho đổi thứ tự khi không ORDER BY
+      WHERE co.kind NOT IN ('bao_ph_tvv', 'talk_family') AND co.status = 'pending' AND a.status != 'cancelled' ORDER BY co.id LIMIT 1`).get() as any;   // GIAM-DOC-0611c: idx_sca_cho đổi thứ tự khi không ORDER BY
     assert(v, 'seed không có việc phối hợp loại khác đang chờ');
     ph.confirmCoordination(P.admin, v.id, { performedOn: TODAY, note: 'Đã làm' });
     const x = doc1(v.sid, v.aid, v.id);

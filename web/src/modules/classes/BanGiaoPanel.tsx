@@ -37,7 +37,8 @@ export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, q
   quayLai?: { nhan: string; onClick: () => void };
 }) {
   const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(
-    docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [docLenh, classId, mon]);
+    /* BAN-GIAO-DOT: `lenh` — em mở thẳng (Cuối khoá, hồ sơ HV) thuộc đợt đã xong vẫn có trong panel (máy chủ thêm đúng đợt đó). */
+    docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}${lenhId ? `&lenh=${lenhId}` : ''}`, [docLenh, classId, mon, lenhId]);
   if (error) {
     return (
       <KhungPanel hd="ban-giao" quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
@@ -215,12 +216,13 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
           <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>{t('Sửa')}</button>
         ) : undefined,
         conThieu: daBam && thieu && em && (ghi || suaPhieu) ? [{ nhan: t('Nhận xét chung'), oId: 'o-nhan-xet' }] : undefined,
-        trai: ghi && em && !em.xacNhan ? <span className="text-xs text-slate-500">{t('Tự lưu khi rời ô')}</span> : undefined,
       }}>
       {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">{t('Không có em nào cần bàn giao.')}</p>}
       {em && (
         <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[236px_minmax(0,1fr)]'}`}>
           {!chiDoc && <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
+            /* BAN-GIAO-DOT (PTA rà #2249): nhiều đợt còn chờ → mỗi đợt một khối theo mã tuần chuyển, đợt mới trên cùng, "a/b đã xác nhận" từng đợt. */
+            nhom={dto.dot.length > 1 ? { khoa: (e) => e.dot, nhan: (k) => { const d = dto.dot.find((x) => x.tuan === k); return d ? <>{tuanLich(d.tuan, homNay)} · {t('{a}/{b} đã xác nhận', { a: d.daXacNhan, b: d.tong })}</> : null; } } : undefined}
             dau={loNx.vua ? <DaiChenLo n={loNx.vua.length} onHoanTac={() => { void loNx.hoanTac(); setDaChenEm(new Set()); }} />
               : choChenNx.length >= 2 ? <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:min-h-0"
                 onClick={() => { void loNx.chenLo(choChenNx); setDaChenEm(new Set(choChenNx.map((c) => c.e.lenhId))); }}>{t('Chèn cho {n} em', { n: choChenNx.length })}</button> : undefined}
@@ -489,7 +491,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
         chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
         trai: (
           <span className="flex flex-wrap items-center gap-x-3 text-[13px] text-slate-400">
-            <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>
+            <span className="tabular-nums">{hai ? null : t('{a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>
             {conThieu.length > 0 && (
               <button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold text-soon hover:underline sm:min-h-0" onClick={denThieu}
                 title={t('Tới em còn thiếu')}>

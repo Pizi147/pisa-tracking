@@ -3,7 +3,7 @@
  * Hạn = 23:59 giờ VN ngày (lưu + 4) — ngày lưu là ngày 1, quá hạn từ 00:00 ngày (lưu + 5). Lưu ngày, so ngày: quá hạn khi hôm nay > hạn.
  */
 import { cacBanHan, hanTai } from './hanMacDinh.ts';
-import { addDaysIso } from './sos.ts';
+import { addDaysIso, laViecTvvBaoPh } from './sos.ts';
 import { ngayTheoGioVN } from './display.ts';
 
 
@@ -12,7 +12,30 @@ import { ngayTheoGioVN } from './display.ts';
 export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', moc).ngay - 1;
 /** Cửa sổ SQL "quay lại": N lớn nhất qua mọi bản (giảm hạn không làm sót việc cũ); `hanBaoPhHieuLuc` lọc lại đúng bản. */
 export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay)) - 1;
+/**
+ * TUYEN-2 (mockup v27 T11c, N72 ⑤ — rà PTA #2273 P2-1): MỘT nguồn cho dòng Báo PH theo nguồn × đợt ở MỌI đường (/my-work theo luật · việc được giao · Tất cả):
+ * nhãn nguồn + khoá gộp lớp × nguồn (`gopNguon`) + lớp của dòng (Chuyển lớp: lớp NGUỒN của lệnh). Việc không theo nguồn (vi phạm, tình hình, Meeting) → null.
+ * Nguồn TVV (Trao đổi gia đình · Kết quả Progress / Final) trước Chuyển lớp (dòng gộp Final + Chuyển lớp mang nguồn Final).
+ */
+export function nguonBaoPh(r: { phKind?: string | null; phLuot?: number | null; nhan: string; lenh?: boolean; lopNguon?: { id: number; code: string } | null }):
+  { nguon: string; gopNguon: string; lop: { id: number; code: string } | null } | null {
+  if (r.phKind && laViecTvvBaoPh(r.phKind)) {
+    const nguon = r.phKind === 'talk_family' ? `Trao đổi gia đình${r.phLuot ? ` · MT${r.phLuot}` : ''}` : r.nhan;
+    return { nguon, gopNguon: `${r.phKind}:${r.phLuot ?? ''}:${nguon}`, lop: null };
+  }
+  if (r.lenh) return { nguon: r.nhan, gopNguon: `chuyen_lop:${r.nhan}`, lop: r.lopNguon ?? null };
+  return null;
+}
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
+/**
+ * LPB-0 (N73 ③, chủ SP 26/11): hạn "Chủ nhật gần nhất" của việc liên phòng ban (Báo PH · Chuyển lớp, Nhận thông tin · Chuyển lớp / Đổi GV) —
+ * sinh T2–T5 → Chủ nhật tuần đó; cách Chủ nhật ≤ 2 ngày thì 3 ngày: T6 → T2, T7 → T3, CN → T4 tuần sau. Ngày giờ VN.
+ */
+export const hanChuNhat = (sinh: string): string => {
+  const d = ngayTheoGioVN(sinh) ?? sinh.slice(0, 10);
+  const thu = new Date(`${d}T00:00:00Z`).getUTCDay();   // 0 = Chủ nhật
+  return addDaysIso(d, thu >= 1 && thu <= 4 ? 7 - thu : 3);
+};
 /**
  * TL-1 (rà #1927 (3)): MỘT luật quá hạn cho việc Báo PH ở mọi nơi đọc (Công việc, panel, tab lớp, hồ sơ HV, Đang theo dõi): đang "Chờ GV sửa" (`viec_bao_ph.tra_lai_id`
  * / `WorkItem.choGvSua`) → hạn tạm dừng, không quá hạn. `han` = hạn hiệu lực (`hanBaoPhHieuLuc`).

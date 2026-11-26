@@ -37,7 +37,6 @@ export const EN_TRA_LAI_2 = {
   'Về {ten}': 'To {ten}',
   'buổi {mon}': '{mon} lesson',
   'hạn sửa {ngay}': 'fix by {ngay}',
-  'tính lại sau khi GV gửi lại': 'recalculated after the teacher sent back',
   'về GVCN {ten}': 'to homeroom teacher {ten}',
   '{ten} trả': 'returned by {ten}',
   '{ten} trả lại': '{ten} returned',

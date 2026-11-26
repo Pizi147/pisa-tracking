@@ -17,6 +17,8 @@ export type ViPhamV4 = {
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
   /** LG-12 / GD-19: người ghi yêu cầu GVCN xử lý · GVCN "Không xử lý" (null = chưa / đã Hoàn tác). Máy chủ cũ không trả → undefined. */
   yeuCauXuLy?: boolean; khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
+  /** Lưu trữ (26/11): vi phạm Dừng (trước lần quay lại học) — không đếm "Trong 2 tuần", khớp `soBatBuoc` máy chủ. */
+  dung?: boolean;
   /** UI-3: số tệp bằng chứng (chỉ tab HV — `yThucHocVien`). */
   soTep?: number;
 };
@@ -60,6 +62,7 @@ export type DongThoiGianYt =
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
       /** LG-12 / GD-19: "Không xử lý" (ngày, lý do, người). */
       khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
+      /** Lưu trữ (26/11): vi phạm Dừng. */ dung?: boolean;
       /** Y-THUC-V2: mã môn (chip) + mô tả cắt ngắn (hộp rê). */
       skill: string | null; moTa: string;
       /** TINH-HINH: "Chỉ nhắc nhở" (ngoài luật, không việc). */
@@ -79,8 +82,26 @@ export type BaoPhLan = {
   soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
 };
 
+/** TUYEN-0 (`server/src/yThuc/tuyen.ts`) — chỉ phần web đọc (khối Tuyến `KhoiTuyen.tsx`). */
+export type TrangThaiBuoc = 'xong' | 'dang' | 'cho' | 'bo' | 'tam_dung';
+export type BuocTuyen = {
+  khoa: string; ten: string; trangThai: TrangThaiBuoc; chiTiet: string | null; nguoi: string | null; laToi: boolean;
+  ngay: string | null; han: string | null; cha: string | null; cungLuc: boolean; coNoiDung: boolean; khongQuyen: boolean; noiDung?: string;
+};
+export type Tuyen = {
+  loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
+  buoc: BuocTuyen[]; xong: number; tong: number; soDang: number; ketThuc: boolean;
+  /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
+};
+
+/** TUYEN-0 `tomTat` — chuỗi chấm một tuyến (bảng nhiều em, hồ sơ). */
+export type TomTuyen = { loai: string; khoa: string; tieuDe: string; em: number; xong: number; tong: number; soDang: number;
+  dangO: { ten: string; nguoi: string | null; han: string | null } | null; ketThuc: boolean; chuoi: TrangThaiBuoc[] };
+
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
+  /** TUYEN-0: tuyến "đang chờ xử lý" của em (panel Xử lý vi phạm). */
+  tuyen?: Tuyen | null;
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
   /** MA-QL-VIEC: QL / Quản trị áp thẳng cách khác Nâng 1 bậc (máy chủ `yThucHocVien`). */
   qlApThang?: boolean;
@@ -121,6 +142,8 @@ export type TinhHinhView = {
 
 export type XuLyView = {
   id: number; studentId: number; ten: string; kind: string; nhan: string; customName: string | null;
+  /** TUYEN-0: tuyến của lần xử lý này. */
+  tuyen?: Tuyen | null;
   status: string; statusLabel: string; bac: number; note: string | null;
   performedOn: string | null; nguoi: string | null; quyetLuc: string | null; createdAt: string;
   nguoiId: number | null; nguoiNgoai: string | null;

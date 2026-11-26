@@ -535,7 +535,7 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
   account?: Account; branches: Branch[]; loiCn: ReactNode; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
+  const { session, reload: taiPhien } = useSession();
   const editing = !!account;
   /* OV-11b (QT-2): dòng vai Quản trị của chính mình khoá "Gỡ" + ô chọn vai (máy chủ cũng chặn). */
   const qtCuaMinh = !!account && account.id === session?.user?.id && account.roles.some((g) => g.role === 'system_admin');
@@ -561,7 +561,9 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
   /* K1-51, Q9: Quản trị sửa kỹ năng phụ trách được (5 ô L R W1 W2 S) — lưu qua `PUT /admin/accounts/:id/skills` khi đổi. */
   const [kyNang, setKyNang] = useState<Set<string>>(() => new Set(account?.skills ?? []));
   const doiKyNang = (k: string) => setKyNang((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const kyNangDoi = !!account && [...kyNang].sort().join() !== [...account.skills].sort().join();
+  /* Kỹ năng phụ trách chỉ có nghĩa với GV: khối hiện khi danh sách vai đang sửa có vai GV. Ẩn thì không ghi — dữ liệu đã lưu giữ nguyên, thêm lại vai GV là thấy lại. */
+  const coGV = grants.some((g) => g.role === 'teacher');
+  const kyNangDoi = coGV && !!account && [...kyNang].sort().join() !== [...account.skills].sort().join();
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<unknown>, msg: string) => {
@@ -580,7 +582,7 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
   const [vaiGoc] = useState(() => khoaVai(grants));
   const daDoi = editing
     ? khoaVai(grants) !== vaiGoc || quyenDoi || !!newPassword || kyNangDoi
-    : Object.values(form).some((v) => v.trim()) || kyNang.size > 0;
+    : Object.values(form).some((v) => v.trim()) || (coGV && kyNang.size > 0);
 
   /* Báo sớm dưới ô — máy chủ vẫn kiểm đủ (`checkEmail`, `checkPassword`, "Cấp ít nhất một vai trò"). */
   const lf = useLoiForm();
@@ -610,10 +612,11 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
         if (quyenDoi) await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra, lyDo: lyDoQuyen.trim() });
         if (newPassword) await api.post(`/admin/accounts/${account!.id}/password`, { password: newPassword });
         if (kyNangDoi) await api.put(`/admin/accounts/${account!.id}/skills`, { skills: [...kyNang] });
+        if (account!.id === session?.user?.id) void taiPhien();   // sửa tài khoản của chính mình → menu, Góc nhìn theo vai / quyền mới
       }, t('Đã lưu tài khoản'));
     }
     return run(() => api.post('/admin/accounts', {
-      ...form, roles: payloadRoles(), skills: [...kyNang],
+      ...form, roles: payloadRoles(), skills: coGV ? [...kyNang] : [],
     }), t('Đã tạo tài khoản'));
   };
 
@@ -673,12 +676,14 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
         </div>
 
         {/* SUA-TK-GON (M4): "không phải quyền nhập điểm" vào ⓘ cạnh nhãn — không thêm dòng dưới ô. */}
-        <div role="group" aria-label={t('Kỹ năng phụ trách được')}>
-          <div className="label flex items-center gap-1.5">{t('Kỹ năng phụ trách được')}
-            <NutLuat label={t('Kỹ năng phụ trách được')}>{t('Năng lực để gợi ý khi phân công — không phải quyền nhập điểm.')}</NutLuat>
+        {coGV && (
+          <div role="group" aria-label={t('Kỹ năng phụ trách được')}>
+            <div className="label flex items-center gap-1.5">{t('Kỹ năng phụ trách được')}
+              <NutLuat label={t('Kỹ năng phụ trách được')}>{t('Năng lực để gợi ý khi phân công — không phải quyền nhập điểm.')}</NutLuat>
+            </div>
+            <ChonKyNang value={kyNang} onToggle={doiKyNang} />
           </div>
-          <ChonKyNang value={kyNang} onToggle={doiKyNang} />
-        </div>
+        )}
 
         {editing && (
           <>

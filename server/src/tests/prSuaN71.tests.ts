@@ -56,29 +56,68 @@ export async function runPrSuaN71Tests(t: any) {
     });
   });
 
-  check('② em Kết thúc học / Tạm dừng: ô thi TRƯỚC ngày dừng vẫn nợ (Công việc, badge, lưới); ô thi sau ngày dừng không nợ', () => {
+  /* LƯU TRỮ (chủ SP 26/11, THAY N71 "ô thi trước ngày dừng vẫn nợ"): em vào Lưu trữ → mọi ô chấm thôi là việc; quay lại học KHÔNG mở ô cũ; Hoàn tác trả đủ. */
+  check('② em Kết thúc học / Tạm dừng (Lưu trữ): ô thi trước ngày dừng HẾT là việc (nợ, Công việc, sổ); Quay lại học không mở lại; Hoàn tác Tạm dừng trả lại', () => {
     const a = luotNo(false, `AND a.kind != 'mt0' AND a.o_cho_tu < '${TODAY}'`);
     assert(a, 'seed: cần lượt lớp thường còn ô chờ, tuần thi trước hôm nay');
+    const soTinh = () => tinhBai(a.id).filter((d: any) => !d.xongLuc && d.khongTinh === null).length;
+    const ngayTruoc = conn.prepare(`SELECT date(?, '-3 day') d`).get(TODAY).d as string;   // dừng ở ngày trước — lần dừng thật
     for (const [ten, st] of [['n71b', 'finished'], ['n71c', 'inactive']] as const) {
       thu(ten, () => {
-        const truoc = coNo(a.id, a.class_id).length;
-        assert(truoc > 0, 'trước khi dừng: có nợ');
+        assert(coNo(a.id, a.class_id).length > 0 && soTinh() > 0, 'trước khi dừng: có nợ, sổ tính');
         studentsSvc.setStudentStatus(P.admin, a.sid, st, TODAY, 'Dừng');
         xoaNho();
-        assert(coNo(a.id, a.class_id).length === truoc, `${st}: nợ điểm mất (${coNo(a.id, a.class_id).length} / ${truoc})`);
-        const ds = listAttempts(P.admin, { classIds: [a.class_id], chiDangHoc: true, chiConO: true }).rows.map((r: any) => r.id);
-        assert(ds.includes(a.id), `${st}: Công việc (listAttempts chiDangHoc) mất lượt`);
-        const luoi = regularSheet(P.admin, a.class_id) as any;
-        const hang = JSON.stringify(luoi).includes(`"attemptId":${a.id}`) || JSON.stringify(luoi).includes(`"id":${a.id}`);
-        assert(hang, `${st}: lưới lớp thường mất hàng`);
+        assert(!coNo(a.id, a.class_id).length, `${st}: còn nợ điểm (${coNo(a.id, a.class_id).length})`);
+        assert(!listAttempts(P.admin, { classIds: [a.class_id], chiDangHoc: true, chiConO: true }).rows.some((r: any) => r.id === a.id), `${st}: Công việc còn lượt`);
+        assert(!soTinh(), `${st}: sổ nghĩa vụ còn tính ${soTinh()} ô chưa xong`);
       });
     }
+    /* Rà #2217 P2-5: lượt có ô thi TRƯỚC tuần này — quay lại học tuần này thì ô đó đúng là "trước tuần quay lại". */
+    const b = luotNo(false, `AND a.kind != 'mt0' AND a.o_cho_tu < '${mondayOf(TODAY)}'`);
+    assert(b, 'seed: cần lượt lớp thường còn ô chờ, tuần thi trước tuần này');
+    const soTinhB = () => tinhBai(b.id).filter((d: any) => !d.xongLuc && d.khongTinh === null).length;
     thu('n71d', () => {
-      /* Dừng TRƯỚC tuần thi của mọi ô chờ → không nợ. */
-      const ngay = conn.prepare(`SELECT date(?, '-1 day') d`).get(a.o_cho_tu).d as string;
-      conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE id = ?`).run(ngay, ngay, a.sid);
+      const truoc = coNo(b.id, b.class_id).length;
+      studentsSvc.setStudentStatus(P.admin, b.sid, 'inactive', ngayTruoc, 'Dừng');
+      studentsSvc.setStudentStatus(P.admin, b.sid, 'active', TODAY, 'Quay lại');
       xoaNho();
-      assert(!coNo(a.id, a.class_id).length, 'dừng trước tuần thi: không còn nợ');
+      assert(truoc > 0 && !coNo(b.id, b.class_id).length && !soTinhB(), `Quay lại học mở lại ô cũ: nợ ${coNo(b.id, b.class_id).length}, sổ ${soTinhB()}`);
+    });
+    thu('n71d3', () => {
+      /* Rà #2217 P1 ca A: Kết thúc → Học lại → Hoàn tác Học lại → Hoàn tác Kết thúc học = như chưa dừng → trả đủ. */
+      const truoc = coNo(b.id, b.class_id).length;
+      studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', ngayTruoc, 'Dừng');
+      studentsSvc.hocLai(P.admin, b.sid, { date: TODAY, lyDo: 'Học lại' });
+      xoaNho();
+      assert(!coNo(b.id, b.class_id).length, `Học lại mở lại ô cũ: ${coNo(b.id, b.class_id).length}`);
+      studentsSvc.hoanTacHocLai(P.admin, b.sid);
+      studentsSvc.hoanTacKetThuc(P.admin, b.sid);
+      xoaNho();
+      assert(coNo(b.id, b.class_id).length === truoc && soTinhB() > 0, `Hoàn tác Học lại + Kết thúc: ${coNo(b.id, b.class_id).length} / ${truoc}`);
+    });
+    thu('n71d4', () => {
+      /* Rà #2217 P2-3: Kết thúc + Học lại CÙNG NGÀY (Lộ trình mới khi em vẫn đang học) — không phải quay lại sau dừng → ô cũ giữ nguyên. */
+      const truoc = coNo(b.id, b.class_id).length;
+      studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', TODAY, 'Lộ trình mới');
+      studentsSvc.hocLai(P.admin, b.sid, { date: TODAY, lyDo: 'Lộ trình mới' });
+      xoaNho();
+      assert(coNo(b.id, b.class_id).length === truoc, `Học lại cùng ngày ẩn ô cũ: ${coNo(b.id, b.class_id).length} / ${truoc}`);
+    });
+    thu('n71d1', () => {
+      /* Hoàn tác Tạm dừng = như chưa từng dừng → trả đủ việc cũ. */
+      const truoc = coNo(a.id, a.class_id).length;
+      studentsSvc.setStudentStatus(P.admin, a.sid, 'inactive', TODAY, 'Dừng');
+      studentsSvc.hoanTacTamDung(P.admin, a.sid);
+      xoaNho();
+      assert(coNo(a.id, a.class_id).length === truoc && soTinh() > 0, `Hoàn tác Tạm dừng không trả việc: ${coNo(a.id, a.class_id).length} / ${truoc}`);
+    });
+    thu('n71d2', () => {
+      /* Hoàn tác Kết thúc học là hoàn tác, không phải quay lại: trả đủ việc. */
+      const truoc = coNo(a.id, a.class_id).length;
+      studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', TODAY, 'Dừng');
+      studentsSvc.hoanTacKetThuc(P.admin, a.sid);
+      xoaNho();
+      assert(coNo(a.id, a.class_id).length === truoc, `Hoàn tác Kết thúc học: ${coNo(a.id, a.class_id).length} / ${truoc}`);
     });
   });
 

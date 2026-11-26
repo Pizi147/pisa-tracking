@@ -8,7 +8,8 @@ import { tenMonNgan } from './normal.ts';
 const NHAN_NHAT_KY: Record<string, string> = {
   'attachment.add': 'Thêm bằng chứng', 'attachment.delete': 'Xoá bằng chứng',
   'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.absence_move_undo': 'Huỷ quyết định dời lịch Test', 'attempt.absence_auto_move': 'Hệ thống tự dời do vắng lần 1', 'attempt.cancel': 'Huỷ cả lượt MT',
-  'attempt.cancel_appointment': 'Huỷ lịch Test môn', 'attempt.doi_lop_tu_dong': 'Hệ thống chuyển bài sang lớp em đang học', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
+  'attempt.cancel_appointment': 'Huỷ lịch Test môn', 'attempt.doi_lop_tu_dong': 'Hệ thống chuyển bài sang lớp em đang học',
+  'attempt.ve_lop_luc_thi': 'Hệ thống trả bài về lớp lúc thi', 'attempt.ve_lop_luc_thi_khoi_phuc': 'Khôi phục lớp của bài (bỏ trả về lớp lúc thi)', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
   'attempt.unschedule': 'Huỷ lịch lượt (bỏ tuần, giữ lượt)',
   'attempt.huy_vang': 'Huỷ kỹ năng (vắng 2 lần)',
   'attempt.huy_tay': 'Huỷ điểm',   // GD-11c: một tên với ⋯ "Huỷ điểm" (NHAP-DIEM-a) — dòng nhật ký cũ cũng đọc tên mới
@@ -29,7 +30,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'class.assign': 'Phân công giáo viên', 'class.assign.hoan_tac': 'Hoàn tác phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.finish_scheduled': 'Hẹn kết thúc lớp', 'class.reopened': 'Mở lại lớp',
   'bao_cao_ph.luu': 'Viết báo cáo PH', 'bao_cao_ph.dat_nhanh': 'Đặt nhanh báo cáo PH', 'bao_cao_ph.hoan_dat_nhanh': 'Hoàn tác đặt nhanh báo cáo PH', 'bao_cao_ph.xuat': 'Xuất báo cáo PH',
   'bao_cao_ph.dot_bo': 'Bỏ đợt báo cáo PH', 'bao_cao_ph.dot_khoi_phuc': 'Khôi phục đợt báo cáo PH', 'bao_cao_ph.dot_them': 'Thêm đợt báo cáo PH',
-  'bao_cao_ph.dot_xoa': 'Xoá đợt báo cáo PH', 'bao_cao_ph.dot_hoan_xoa': 'Khôi phục đợt báo cáo PH đã xoá', 'bao_cao_ph.dot_sua': 'Sửa đợt báo cáo PH', 'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
+  'bao_cao_ph.dot_xoa': 'Xoá đợt báo cáo PH', 'bao_cao_ph.dot_hoan_xoa': 'Khôi phục đợt báo cáo PH đã xoá', 'bao_cao_ph.dot_sua': 'Sửa đợt báo cáo PH', 'bao_cao_ph.bo_em': 'Bỏ báo cáo PH của học viên', 'bao_cao_ph.bo_em_khoi_phuc': 'Khôi phục báo cáo PH của học viên', 'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận', 'ban_giao.go_chen': 'Hoàn tác chèn bàn giao môn',
   'ban_giao_gv.gop_y': 'Góp ý bàn giao đổi GV', 'ban_giao_gv.nhan_xet': 'Nhận xét chung bàn giao đổi GV', 'ban_giao_gv.xac_nhan': 'Xác nhận bàn giao đổi GV', 'ban_giao_gv.go_chen': 'Hoàn tác chèn góp ý bàn giao đổi GV',
@@ -56,6 +57,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'tra_lai.hoan_tac_gv': 'Hoàn tác GV gửi lại / giữ nguyên vi phạm bị trả lại',   // AUDIT-2111 B1-11
   /* GV-1 (N58): giao việc liên phòng ban + phần Meeting CX / GĐCN. */
   'giao_viec.giao': 'Giao việc cho người khác', 'giao_viec.mac_dinh': 'Trả việc về người theo luật', 'giao_viec.hoan_tac': 'Hoàn tác đổi người phụ trách',
+  'xep_lich_lop.nhan': 'Nhận xếp lịch lớp', 'xep_lich_lop.bo': 'Bỏ nhận xếp lịch lớp', 'xep_lich_lop.hoan_tac': 'Hoàn tác nhận xếp lịch lớp',   // VAI-0 (N77)
+  'nhan_tin.xac_nhan': 'Xác nhận đã nhận thông tin (BPXL)', 'nhan_tin.mo_lai': 'Mở lại việc Nhận thông tin',   // LPB-0 (N73)
   'giao_viec.han': 'Sửa hạn việc', 'giao_viec.mo_ta': 'Sửa mô tả việc', 'meeting_phan.xong': 'Hoàn thành phần Meeting', 'meeting_phan.sua': 'Sửa phần Meeting', 'meeting_phan.mo_lai': 'Hoàn tác phần Meeting',
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
   'discipline.bao_ph_han': 'Sửa hạn báo phụ huynh', 'sos_coordination.han': 'Sửa hạn việc phối hợp SOS',   // HAN-BAO-PH
@@ -95,7 +98,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'sos_coordination.add': 'Thêm việc phối hợp SOS', 'sos_coordination.confirm': 'Xác nhận việc phối hợp SOS',
   'sos_coordination.remove': 'Bỏ việc phối hợp SOS', 'sos_coordination.reopen': 'Đưa lại / khôi phục việc phối hợp', 'sos_coordination.sync': 'Cập nhật việc phối hợp SOS',
   'student.archive': 'Lưu trữ học viên', 'student.create': 'Thêm học viên', 'student.bulk_add': 'Thêm học viên hàng loạt', 'student.delete': 'Xoá học viên',
-  'student.hang_loat': 'Làm nhiều học viên một lần', 'student.next_step': 'Ghi lộ trình tiếp theo', 'student.rejoin': 'Học lại', 'student.rejoin_undo': 'Hoàn tác Học lại', 'student.finish_undo': 'Hoàn tác Kết thúc học', 'student.pause_undo': 'Hoàn tác Tạm dừng', 'student.resume_undo': 'Hoàn tác Quay lại học', 'student.status': 'Đổi trạng thái học', 'student.transfer': 'Chuyển lớp',
+  'student.hang_loat': 'Làm nhiều học viên một lần', 'student.next_step': 'Ghi lộ trình tiếp theo', 'student.rejoin': 'Học lại', 'student.luu_tru_dong': 'Hệ thống đóng việc của em đang Lưu trữ', 'student.luu_tru_dong_khoi_phuc': 'Khôi phục việc đã đóng khi em vào Lưu trữ', 'student.rejoin_undo': 'Hoàn tác Học lại', 'student.finish_undo': 'Hoàn tác Kết thúc học', 'student.pause_undo': 'Hoàn tác Tạm dừng', 'student.resume_undo': 'Hoàn tác Quay lại học', 'student.status': 'Đổi trạng thái học', 'student.transfer': 'Chuyển lớp',
   'student.unarchive': 'Bỏ lưu trữ học viên', 'student.update': 'Sửa thông tin học viên',
   'task.create': 'Tạo công việc', 'task.update': 'Cập nhật công việc',
   'unit_report.link_task': 'Nối công việc vào báo cáo', 'unit_report.save': 'Lưu họp đơn vị', 'unit_report.unlink_task': 'Bỏ công việc khỏi báo cáo',

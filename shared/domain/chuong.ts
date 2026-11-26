@@ -22,6 +22,7 @@ export const NHAN_LOAI_VIEC: Record<string, string> = {
   bao_ph_yt: t('Báo PH vi phạm'), yt_hoi_tinh_hinh: t('Tình hình học tập'), yt_tra_lai: t('Vi phạm bị trả lại'), yt_thuc_hien: t('Ghi "Đã thực hiện"'), ban_giao: t('Bàn giao'),
   xuat_bc_ph: t('Xuất báo cáo PH'), bao_cao_ph: t('Viết Báo cáo PH'), bc_ph_qua_han: t('Báo cáo PH quá hạn'), mgmt: t('Việc được giao'),
   meeting_xep_lich: t('Xếp lịch họp'), meeting_ket_qua: t('Kết quả meeting'),   // GV-1 (N58)
+  nhan_tin: t('Nhận thông tin'),   // LPB-0 (N73)
 };
 
 export type DongViecChuong = DongDem & { group: string; mine: boolean; cn?: number | null };

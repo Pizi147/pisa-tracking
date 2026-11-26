@@ -1,7 +1,7 @@
 import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
-import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan, xemDen } from '../../../shared/domain/index.ts';
+import { dotBanGiao, kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan, xemDen } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { lopXemTam, type Principal } from '../permissions.ts';
@@ -63,7 +63,9 @@ function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolea
     classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
 
-  const nguon = rows.filter((r) => r.k === 'nguon' && r.b !== 'dung_hoc');
+  const nguonHet = rows.filter((r) => r.k === 'nguon' && r.b !== 'dung_hoc').map((r) => ({ ...r, id: r.a as number, tuan_bat_dau: r.d as string, xac_nhan_luc: r.e as string | null }));
+  /* BAN-GIAO-DOT (chủ SP 26/11; PTA rà #2249): dải "a/b đã xác nhận" = các đợt (tuần chuyển) còn em chờ; hết chờ → đợt mới nhất — cùng hàm với panel và Công việc. */
+  const nguon = dotBanGiao(nguonHet);
   const chuaXn = nguon.filter((r) => !r.e);
   const coGvcn = (rows.find((r) => r.k === 'gvcn')?.a ?? 0) > 0;
   const hanGvcn = min(chuaXn.map((r) => r.f));
@@ -110,6 +112,7 @@ function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolea
   const sapNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'cho'));
   const daNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'da_chuyen'));
   /* BAN-GIAO-2: lớp nguồn — lệnh đã chuyển ≤ 14 ngày khi dải Bàn giao đã hết (xác nhận đủ): người viết vẫn có chỗ mở / sửa phiếu. */
+  /* Dải "Đã chuyển" (hết đợt chờ): đợt mới nhất (cùng hàm) — panel mở không chọn em cũng ra đúng đợt này. */
   const daDi = banGiao ? [] : nguon.filter((r) => r.c === 'da_chuyen' && r.d >= addDays(homNay, -14));
   const daChuyen = daDi.length ? { daXacNhan: daDi.filter((r) => !!r.e).length, tong: daDi.length } : null;
 

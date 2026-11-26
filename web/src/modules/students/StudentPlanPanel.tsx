@@ -6,8 +6,9 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
+import { HangLichMt, sauNgayThi, type BangLichMt } from './HangLichMt.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { ngay } from '@shared/domain/index.ts';
 import { baoXepCoHoanTac } from '../test/keHoach/hoanTacXep.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
@@ -57,6 +58,9 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   const rows = bang?.hang ?? [];
   /* Có gì để áp không — cờ `apDuoc` của máy chủ (cùng luật với lúc Áp lịch): chỉ lượt chưa có lịch; lượt đã có lịch giữ nguyên (chủ SP 10/11). */
   const actionable = rows.filter((r) => r.apDuoc).length;
+  /* MT-QUA-THI (PTA 26/11): ngày thi cụ thể (thi thật đã nhập, không thì dự kiến — như `ngayThiSauThi`) ở đầu panel; Head dời MT về trước ngày này. */
+  const ngayThi: string | null = (cycle.data?.thi_that_ngay ?? cycle.data?.exam_date ?? null)?.slice(0, 10) ?? null;
+  const soSauThi = rows.filter((r) => sauNgayThi(r.luot, ngayThi)).length;
 
   return (
     <KhungPanel tieuDe={t('Lịch MT')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
@@ -70,6 +74,12 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
             </SectionNote>
           ) : (
             <div>
+              {ngayThi && (
+                <p className="mb-3 text-sm text-slate-300">
+                  {t('Ngày thi')}: <span className="font-semibold tabular-nums text-slate-100">{ngay(ngayThi, homNay)}</span>
+                  {soSauThi > 0 && <span className="font-semibold text-late"> · {t('{n} MT xếp sau ngày thi — dời về trước hoặc xoá', { n: soSauThi })}</span>}
+                </p>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <span className="label">{t('Lịch MT hệ thống đề xuất')}</span>
                 {/* OV-11d (HV-22): không áp được thì nói lý do bằng chữ (không nút mờ). */}
@@ -85,19 +95,18 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                 sugg.error ? <ErrorState message={sugg.error.message} hint={sugg.error.hint} status={sugg.error.status} onRetry={sugg.reload} /> : <Skeleton rows={3} />
               ) : (
                 <div className="surface-2 rounded-lg overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="bang-lich-mt w-full text-sm">
                     <thead>
                       <tr>
                         <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.')}>{t('Lượt')}</Th>
-                        <Th hint={t('Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.')}>{t('Tuần học')}</Th>
-                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học. Áp lịch chỉ xếp lượt chưa có lịch.')}>{t('Tuần đề xuất')}</Th>
+                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học (tuần thứ mấy — mốc mặc định Fast Track tuần 6 · 12 · 16 · 20 · 24). Áp lịch chỉ xếp lượt chưa có lịch.')}>{t('Tuần đề xuất')}</Th>
                         <Th hint={t('Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt đã có lịch (kể cả sau chuyển lớp) giữ nguyên.')}>{t('Hiện tại')}</Th>
                         <Th align="right">{t('Thao tác')}</Th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((r) => (
-                        <HangLichMt key={r.attemptNo} h={r} bang={bang!} hocVien={studentName} homNay={homNay}
+                        <HangLichMt key={r.attemptNo} h={r} bang={bang!} hocVien={studentName} homNay={homNay} ngayThi={ngayThi}
                           moDiem={moDiem === r.attemptNo} onMoDiem={(mo) => setMoDiem(mo ? r.attemptNo : null)}
                           onHienDien={setHopMo} onDoi={doiLich} />
                       ))}

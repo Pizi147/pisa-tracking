@@ -19,6 +19,7 @@ import { demoToday } from '../demoConfig.ts';
 import { LOI_LENH_HEAD, boiCanhTheoLop, dongTuBody, khoaLenhNguoiKhac, raLenh } from './lenhChuyen.ts';
 import { luuKyVong } from '../normal/kyVong.ts';
 import { coTheChotLoTrinh } from './quyenChuyenLop.ts';
+import { theoGvcnHienTai } from '../worklist/giaoViec.ts';
 
 const LOAI = 'lenh.chuyen_ngay';
 const q = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -50,6 +51,14 @@ export function dongDaoChuyenNgay(sidVao: number | readonly number[], lopIds: re
     { bang: 'case_signals', dk: `student_id ${em}`, args: sids, k: 'ca' },
     /* B-1 (N24 ③): Lộ trình mới / Cuối khoá đóng việc Phối hợp SOS chờ (`dongPhoiHopLoTrinh`) — Hoàn tác trả việc về như cũ. */
     { bang: 'sos_coordination_actions', dk: `student_id ${em}`, args: sids, k: 'ca' },
+    /* BAOPH-0 (rà #2233 P1-3): việc TVV đóng / sinh theo nguồn ở trên — chụp cùng (+ người theo dõi việc mới) để Hoàn tác không để việc mồ côi. */
+    { bang: 'viec_bao_ph', dk: `student_id ${em}`, args: sids, k: 'ca' },
+    { bang: 'viec_bao_ph_lan', dk: `viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id ${em})`, args: sids, k: 'them' },   // rà vòng 2 P2 (1): lần ghi của việc sinh trong lần chuyển
+    { bang: 'viec_theo_doi', dk: `loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE student_id ${em})`, args: sids, k: 'them' },
+    /* LPB-0 (N73): việc BPXL Nhận thông tin của lớp (nguồn / đích) + dòng em của các lệnh + người theo dõi — sinh / đổi theo lệnh, Hoàn tác trả như trước. */
+    { bang: 'viec_nhan_tin', dk: `class_id ${lop}`, args: [...lopIds], k: 'ca' },
+    { bang: 'viec_nhan_tin_dong', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
+    { bang: 'viec_theo_doi', dk: `loai = 'nhan_tin' AND ref_id IN (SELECT id FROM viec_nhan_tin WHERE class_id ${lop})`, args: [...lopIds], k: 'them' },
     { bang: 'lenh_chuyen_lop', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'ban_giao_mon', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
     { bang: 'ban_chup_lo_trinh', dk: `student_id ${em}`, args: sids, k: 'them' },
@@ -146,6 +155,8 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
         writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: em, after: { classId: x.lopNguon, _hoan: true, _nguon: 'Hoàn tác chuyển ngay' } });
       }
     }
+    /* BAOPH-0 (lộ ra khi em có việc Báo PH mới): người theo dõi nguồn `gvcn` của việc còn mở về GVCN lớp cũ — tính lại sau khi đảo (như Hoàn tác phân công). */
+    theoGvcnHienTai([...new Set(ds.flatMap((x) => x.ghiDanh.map((e) => e.student_id as number)))]);
     return { lopId: ds[0].lopNguon };
   });
 }

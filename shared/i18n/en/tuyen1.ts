@@ -1,0 +1,27 @@
+/** TUYEN-1 (N72 ②–⑥) — khối Tuyến, ô bấm Phụ trách / Hạn, Việc con ở panel Ý thức. Khoá = chữ Việt trên web. */
+export const EN_TUYEN_1 = {
+  'Tuyến': 'Flow',
+  'Tuyến · {ten}': 'Flow · {ten}',
+  'Đang ở bước này': 'Current step',
+  'Chưa tới lượt': 'Not yet',
+  'Xem {n} bước đã xong': 'Show {n} done steps',
+  'Cùng lúc · {n} bước': 'In parallel · {n} steps',
+  'Không xem được nội dung': 'You cannot view this content',
+  'Xem nội dung {ten}': 'Show content of {ten}',
+  'Về tuyến': 'About the flow',
+  'Cả tuyến việc của em: bước đã xong ✓, bước đang ở ●, bước chưa tới lượt ○ (chưa thành việc của ai), đã bỏ ×, tạm dừng ⏸.':
+    "The student's whole flow: done ✓, current ●, not yet ○ (not anyone's task yet), removed ×, paused ⏸.",
+  'Bấm một bước đã xong để xem nội dung, nếu bạn được xem phần đó.': 'Click a done step to see its content, if you may view that part.',
+  'Đổi người phụ trách: {ten}': 'Change owner: {ten}',
+  'dừng · {ngay}': 'paused · {ngay}',
+  'Head duyệt': 'Head approval',
+  'sau khi duyệt': 'after approval',
+  '{n} ngày sau khi gửi': '{n} days after sending',
+  '{ten} · mặc định': '{ten} · default',
+  'Đã đưa về Chưa thực hiện': 'Set back to not done',
+  'Việc vẫn mở': 'Task stays open',
+  'Lưu · Chưa thực hiện': 'Save · not done',
+  'Việc con của việc Ý thức không gắn họp đơn vị.': 'A sub-task of a conduct task cannot be linked to a unit meeting.',
+  'Chỉ người đang giữ việc này, Head, Quản trị hoặc CX mới thêm được việc con.': 'Only the person holding this task, the Head, an administrator or CX can add sub-tasks.',
+  'Việc con: người giữ việc chỉ sửa tên, mô tả, hạn, người phụ trách, người theo dõi.': 'Sub-task: the task holder can only change the name, description, due date, owner and followers.',
+} as const;

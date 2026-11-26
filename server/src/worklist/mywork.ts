@@ -4,8 +4,8 @@ import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, KHONG_CHU_SQL, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, docNho, tx } from '../db.ts';
-import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
+import { CASE_SAU_THI_SQL, CO_KET_QUA_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt, shortDate } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
@@ -37,11 +37,13 @@ import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { giuViecQl, viecHoSoTvv } from './viecTvv.ts';
+import { giuViecQl, laLeadTvv, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
-import { dongViecGiao, viecGiaoChoToi } from './giaoViec.ts';
+import { dongViecGiao, dongXuLyHetDot, viecGiaoChoToi } from './giaoViec.ts';
+import { chuKhung, giaoChoNguoi, type LoaiKhung } from './khungViec.ts';
+import { SQL_MOC, viecMoc } from './mocQuyChe.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -156,6 +158,8 @@ export type WorkItem = {
   pa?: { kind: string; moTa: string | null; nguoiId: number | null; nguoi: string | null; soBuoi: number | null };
   /** SV-YT-TVV: id việc Báo PH (`viec_bao_ph`) — form ghi kết quả gửi đúng việc. */
   viecId?: number;
+  /** TUYEN-2: việc TVV báo PH sinh từ một nguồn theo đợt (Trao đổi gia đình · Progress · Final) — gộp "n em" theo lớp × nguồn (`khoaGopCua`). */
+  gopNguon?: string;
   /** UI-CV-TVV: số lần đã ghi "Chưa liên hệ được" của việc Báo PH đang mở — dòng "⚠ Chưa liên hệ được · lần n". */
   soLanThu?: number;
   /** TL-1 (N61): việc Báo PH có yêu cầu trả lại đang mở — "Chờ GV sửa", hạn tạm dừng (urgency luôn normal). Chỉ có khi đúng. */
@@ -173,6 +177,8 @@ export type WorkItem = {
   emTen?: string[];
   /** GV-1 (N58): việc người khác giao cho người xem — tên người giao (dòng "{tên} giao"). Không có = việc theo luật. */
   giaoBoi?: string | null;
+  /** LPB-1 (N73 ⑤): việc có khung (Phụ trách · Hạn · Theo dõi · Việc con) — `/giao-viec/{loai}/{id}`; Bàn giao môn chưa có dòng → id null (`POST /giao-viec/ban_giao_mon/mo`). */
+  khungViec?: { loai: LoaiKhung; id: number | null };
   /** GV-2: dòng Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) — id hành động Meeting, panel đọc `/phoi-hop-sos/:id/meeting`. */
   phoiHopId?: number;
   /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
@@ -183,6 +189,8 @@ export type WorkItem = {
   /** B2-06: việc Vận hành có HV liên quan — tên các em (dòng phụ). */
   hocVienLienQuan?: string;
   hangMuc?: string | null;
+  /** LPB-0 (N73 ①): việc Báo PH · Chuyển lớp — lớp NGUỒN của lệnh; web gom một dòng "Chuyển lớp · {lớp cũ} · n em". */
+  nhomChuyenLop?: { lopId: number; ma: string } | null;
 };
 
 /**
@@ -230,7 +238,9 @@ export type WorkGroupKey =
   /* N49 (chủ SP 16/11): Báo cáo PH quá hạn > 7 ngày (đã rời việc GV) mà lớp còn thiếu em — một việc mỗi lớp × đợt cho QL (tab "Việc quản lý"). */
   | 'bc_ph_qua_han'
   /* GV-1 (N58, B2): Meeting CX / GĐCN — Xếp lịch họp (BPXL; không có → TVV của em) · Kết quả meeting (CX; không có → Head). Bảng `meeting_phan`. */
-  | 'meeting_xep_lich' | 'meeting_ket_qua';
+  | 'meeting_xep_lich' | 'meeting_ket_qua'
+  /* LPB-0 (N73 ⑥): BPXL "Nhận thông tin · Chuyển lớp / Đổi GV" — một việc mỗi lớp đích còn mở / mỗi lần lưu × lớp; một nút Xác nhận. Bảng `viec_nhan_tin`. */
+  | 'nhan_tin';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -269,10 +279,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     label: 'Xác nhận Case Speaking',
     hint: 'Người chấm chéo đã ghi nhận xét bài Speaking của em có Case. Dùng nhận xét đó làm mô tả Case, giữ mô tả đang có hoặc viết mô tả khác — hạn = hạn SOS.',
   },
-  /* PR-LT2a (N3, T45): GVCN báo PH kết quả Test — không hạn (M-05). */
+  /* BAOPH-0 (N72 ⑤): Báo PH kết quả Test là việc TVV (nhóm Báo PH) — nhóm GVCN cũ không còn dòng. */
   phoi_hop: {
     label: 'Báo PH kết quả Test',
-    hint: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
+    hint: 'Việc này TVV báo phụ huynh.',
   },
 
   /* PR-VAI-a (K5-10, Q14): Phối hợp SOS của GVCN là VIỆC THẬT. PHOI-HOP-V2: một dòng mỗi (lớp × việc); chỉ Meeting CX có hạn. */
@@ -292,6 +302,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   meeting_ket_qua: {
     label: 'Kết quả meeting',
     hint: 'Meeting CX/GĐCN — ghi kết quả buổi họp rồi bấm Hoàn thành. TVV nhập hộ được. Chi nhánh chưa có CX thì Head ghi.',
+  },
+  nhan_tin: {
+    label: 'Nhận thông tin',
+    hint: 'Học viên chuyển lớp / đổi GV — xem thông tin để xếp lịch rồi bấm Xác nhận đã nhận.',
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
@@ -587,39 +601,50 @@ function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boo
  * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC — nguồn việc `moc:` (một câu cho cả phạm vi). BO-QUA-XEP-MT: kèm cột bỏ qua + tên
  * người bỏ qua (JOIN, không thêm câu). `boQuaViec` đọc lại đúng một PA bằng câu này + `AND iv.id = ?`.
  */
-const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
-              COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, a.cycle_id, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
-              cc.lich_mt AS lop_lich_mt, cc.route AS lop_route, lc.route,   -- XEP-MT-NHAC: thieuMt (lịch lớp đang học, như danhSachLop)
-              (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co,
-              ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi   -- N46: không thành việc; vẫn điền mốc (dienMocQuyChe đọc cùng câu)
-         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-         LEFT JOIN users ub ON ub.id = iv.bo_qua_boi
-         LEFT JOIN learning_cycles lc ON lc.id = a.cycle_id   -- cùng lộ trình với điều kiện MT sau (nx.cycle_id = a.cycle_id)
-        WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
-          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc Head xếp lại; Head vẫn tự xếp được.
-             XEP-MT-NHAC (chủ SP 07/11): MT sau Head chủ động xoá cũng vậy — xoá rồi thì thôi (LUOT_HUY_HET_SQL gồm cả MT đã xoá). */
-          AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
-                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})
-`;
+/**
+ * MT-QUA-THI (chủ SP 26/11): lộ trình có NGÀY THI cụ thể (thi thật đã nhập ngày, không thì ngày dự kiến — như `ngayThiSauThi`; chỉ tuần / tháng = chưa có ngày)
+ * mà còn MT chưa thi xếp ở tuần bắt đầu SAU ngày thi → việc của Head CN để tự chỉnh. Không tính: em không đang học (Lưu trữ / Tạm dừng), lộ trình đã có KQ thi
+ * thật, MT đã huỷ / xoá hết môn, MT lịch sử. Tính lúc đọc (một câu cho cả phạm vi, đi từ chỉ mục lộ trình chờ KQ) — dời MT / huỷ / đổi ngày thi là tự hết.
+ * `boQuaViec` đọc lại một lộ trình bằng `sqlMtThi('AND lc.id = ?')` — theo khoá, không ghim chỉ mục (rà PTA P2-3).
+ * Lớp / chi nhánh của việc = lớp của MT SỚM NHẤT sau ngày thi (`MIN(a.attempt_no)`: SQLite lấy cột trần từ đúng dòng đó — rà PTA P2-2).
+ */
+const sqlMtThi = (them = '') => `SELECT lc.id, lc.student_id AS sid, s.full_name, MIN(a.attempt_no) AS mt_dau, a.class_id, cc.code AS class_code, cc.branch_id,
+              substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AS ngay_thi, GROUP_CONCAT(a.attempt_no || '@' || rp.week_start) AS mts,
+              lc.mt_thi_bo_qua, lc.mt_thi_bo_qua_luc, ub.full_name AS bo_qua_ten
+         FROM learning_cycles lc ${them ? '' : 'INDEXED BY idx_cycle_cho_kq_ngay'}
+        CROSS JOIN assessment_attempts a ON a.cycle_id = lc.id AND a.kind = 'mock' AND a.status = 'planned' AND a.lich_su = 0
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         JOIN students s ON s.id = lc.student_id
+         LEFT JOIN classes cc ON cc.id = a.class_id
+         LEFT JOIN users ub ON ub.id = lc.mt_thi_bo_qua_boi
+        WHERE lc.route IS NOT NULL AND lc.thi_that_khong_thi = 0 AND lc.outcome_score IS NULL AND COALESCE(lc.thi_that_ngay, lc.exam_date, lc.ended_at) > ''
+          AND lc.status = 'active' AND COALESCE(lc.thi_that_ngay, lc.exam_date) IS NOT NULL AND NOT ${CO_KET_QUA_THI_SQL('lc')} AND ${HV_DANG_HOC_SQL('s')}
+          AND rp.week_start > substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AND NOT ${LUOT_HUY_HET_SQL('a')} ${them}
+        GROUP BY lc.id`;
 
-/** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
-function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name: string | null }) {
-  const thi = r.moc_quy_che === 'until_exam';
-  const n = (r.attempt_no ?? 0) + 1;
+/** Chữ của việc `mt-thi:` + `dau` = ngày thi + số các MT (`2026-10-02|2,3`) — bỏ qua ghi dấu này (`daBoQuaMtThi`). */
+function viecMtThi(r: { full_name: string | null; ngay_thi: string; mts: string }) {
+  const mts = r.mts.split(',').map((x) => { const [n, w] = x.split('@'); return { n: Number(n), w }; }).sort((a, b) => a.n - b.n);
+  const ds = mts.map((m) => `MT${m.n} ${tuanLich(m.w)}`).join(', ');   // không "·": biến của mẫu dịch EN
   const ten = r.full_name ?? 'Học viên';
   return {
-    thi, dau: thi ? 'thi' : `mt${n}`,
-    reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${n}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
-    tieuDe: thi ? `Nhập dự kiến thi · ${ten}` : `Xếp lịch MT${n} cho ${ten}`,
-    phu: thi ? 'Nhập dự kiến thi' : `Xếp lịch MT${n}`,
+    dau: `${r.ngay_thi}|${mts.map((m) => m.n).join(',')}`, soBai: mts.length,
+    /* Tên không mã tuần (khuôn dòng Công việc bỏ phần có mã tuần, tách tuần lên đầu) — tuần từng MT ở lý do + panel Lịch MT; không `phu` (dòng gộp lớp chép `phu` của em đầu). */
+    /* PTA 26/11: một dòng cả khi panel mở (ô chi tiết ~167 px ở 1440) — "MT2, 3 sau ngày thi"; ngày thi (`statusLabel` "Thi dd/mm/yyyy") ở cột ngày của dòng. */
+    tieuDe: `MT${mts.map((m) => m.n).join(', ')} sau ngày thi · ${ten}`,
+    reason: `${ds} xếp sau ngày thi ${shortDate(r.ngay_thi)} — dời về trước ngày thi hoặc xoá MT`,
+    thi: `Thi ${shortDate(r.ngay_thi)}`,
   };
+}
+
+/** MT-QUA-THI (rà PTA P2-1): còn ẩn khi CÙNG ngày thi và các MT đang sau ngày thi ⊆ các MT lúc bỏ qua (dời bớt / dời trong khoảng sau thi vẫn ẩn);
+ *  đổi ngày thi hoặc có MT MỚI sau ngày thi → hiện lại. */
+export function daBoQuaMtThi(luu: string | null | undefined, dau: string): boolean {
+  if (!luu) return false;
+  const [ngayLuu, dsLuu = ''] = luu.split('|');
+  const [ngayMoi, dsMoi = ''] = dau.split('|');
+  const co = new Set(dsLuu.split(','));
+  return ngayLuu === ngayMoi && dsMoi.split(',').every((n) => co.has(n));
 }
 
 /** BO-QUA-XEP-MT: việc QL đã bỏ qua (danh sách "Đã bỏ qua" ở Công việc — khôi phục được). */
@@ -630,11 +655,28 @@ export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; stud
  * Một người bỏ qua là cả phạm vi QL không thấy (cờ trên PA). Quyền = người thấy việc đó (QL / Quản trị có `case.approve` với em). Nhật ký `audit_logs`.
  */
 export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
-  const m = /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
-  if (!m) throw badRequest('Việc này không bỏ qua được.');
+  const mt = /^mt-thi:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
+  const m = mt ? null : /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
+  if (!m && !mt) throw badRequest('Việc này không bỏ qua được.');
   if (phamViXemViec(p) !== 'het') throw forbidden('Chỉ Head trong phạm vi bỏ qua được việc này.');
   const conn = db();
-  const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m[1])) as any;
+  if (mt) {
+    /* MT-QUA-THI: cùng luật bỏ qua — cờ trên lộ trình, dấu = ngày thi + các MT đang sau ngày thi. */
+    const r = conn.prepare(sqlMtThi('AND lc.id = ?')).get(Number(mt[1])) as any;
+    if (!r?.id) throw notFound('Việc này không còn — có thể lịch MT đã được dời.');
+    if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) throw forbidden('Học viên này ngoài phạm vi của bạn.');
+    const v = viecMtThi(r);
+    const moi = boQua ? v.dau : null;
+    if ((r.mt_thi_bo_qua ?? null) === moi) return { ok: true };
+    tx(() => {
+      conn.prepare('UPDATE learning_cycles SET mt_thi_bo_qua = ?, mt_thi_bo_qua_boi = ?, mt_thi_bo_qua_luc = ? WHERE id = ?')
+        .run(moi, boQua ? p.userId : null, boQua ? nowIso() : null, r.id);
+      writeAudit({ actorUserId: p.userId, action: boQua ? 'viec.bo_qua' : 'viec.khoi_phuc', entityType: 'learning_cycle', entityId: r.id,
+        entityLabel: v.tieuDe, before: { mtThiBoQua: r.mt_thi_bo_qua ?? null }, after: { mtThiBoQua: moi } });
+    });
+    return { ok: true };
+  }
+  const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m![1])) as any;
   if (!r) throw notFound('Việc này không còn — có thể đã xếp lịch.');
   if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) throw forbidden('Học viên này ngoài phạm vi của bạn.');
   const v = viecMoc(r);
@@ -839,6 +881,12 @@ function lopNhapDiemDuoc(p: Principal): number[] {
 }
 const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'office_admin'), grants: p.grants.filter((g) => g.roleKey !== 'office_admin') });
 
+/** VAI-0 (N76b): việc TVV Lead TVV đang giữ (em chưa có TVV, chi nhánh mình) — cùng các hàm nhóm TVV, chỉ dòng của tôi. */
+function viecLeadTvv(p: Principal, branchId: number | null): WorkItem[] {
+  const o = { today: demoToday(), tatCa: false, branchId };
+  return ([...viecHoSoTvv(p, { ...o, chot: true, boSung: true }), ...viecThiThat(p, o), ...viecBuocTiep(p, o), ...viecBaoPhCuaToi(p, o)] as WorkItem[]).filter((it) => it.mine);
+}
+
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
   /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
@@ -861,6 +909,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const coVanHanh = !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has('mgmt');
   const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca', vanHanh: coVanHanh })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
+  /* VAI-0 (N76b): Lead TVV giữ việc TVV của em chưa có TVV ở chi nhánh mình — grant "như CX" bị bỏ khỏi lượt chính (N52), nên đọc riêng bằng principal gốc và
+     ghép như việc giao (trùng khoá giữ một; "Tất cả" của CX tính là của tôi qua `giao`). Chỉ khi có grant Lead TVV gán chi nhánh — vai khác: 0 câu. */
+  if (!f.boGiao && laLeadTvv(p)) giao.push(...viecLeadTvv(p, f.branchId ?? null).filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group)));
   const chiGiao = () => {
     const dong = dungDong(giao);
     const groups = [...new Set(giao.map((i) => i.group))].map((g) => {
@@ -1072,7 +1123,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   /* ponytail: dựng một phần (`chiNhom`) bỏ hai lời quét ghi này — GET đầy đủ kế tiếp quét. */
   if (!f.chiNhom) {
-    quetTheoMoc('quet:doi-qua-han', today, () => { sweepExpiredMoves(); });   // TL-NEN: theo mốc DB toàn hệ thống (60 s, sau ghi, sang ngày)
+    quetTheoMoc('quet:doi-qua-han', today, () => { sweepExpiredMoves(); dongXuLyHetDot(today); });   // RA-2711: + đợt Xử lý vi phạm đã hết   // TL-NEN: theo mốc DB toàn hệ thống (60 s, sau ghi, sang ngày)
   }
 
   // ------------------------------------------- 2b. GHI KẾT QUẢ PA (K5-02, T75, §5.6; OV-12a: kỳ hai tuần) — một PA một dòng
@@ -1161,20 +1212,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
        JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')} AND NOT ${CASE_SAU_THI_SQL('sc', 'st.id')}   /* N46 */
       WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${locNxS.map((x) => ` AND ${x}`).join('')}`,
   ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
-  const baoPh = !co('phoi_hop') ? [] : conn
-    .prepare(
-      `SELECT x.id, x.attempt_id, x.student_id, x.phu_trach_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
-              (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
-         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
-         JOIN assessment_attempts a ON a.id = x.attempt_id
-         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending'${f.branchId ? ' AND c.branch_id = ?' : ''}${tatCa ? '' : `
-          /* GIAM-COMPUTE-2: ngoài "Tất cả" mục 3c chỉ giữ dòng chưa giao người, lớp em đang học do tôi chủ nhiệm (tập cha của isCoreTeacherOf) hoặc Final (việc QL). */
-          AND x.phu_trach_id IS NULL AND (a.kind = 'final' OR cur.class_id IN (SELECT ta.class_id FROM teacher_assignments ta WHERE ta.user_id = ? AND ta.is_core = 1))`} ORDER BY x.id`,   /* DOC-THUA: chi nhánh lọc trong SQL như X05 */
-    )
-    .all(...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId])) as any[];
-  const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
-  henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
   const miniTest = !co('mini_test') ? [] : docNho(   // TOC-DO-2511: Tổng quan kèm Tất cả + Của tôi đọc một lần
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
@@ -1187,6 +1224,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
         WHERE m.ty_le IS NULL
           AND NOT EXISTS (SELECT 1 FROM case_interventions ivs JOIN sos_cases sc ON sc.id = ivs.case_id WHERE ivs.nhom_bo_tro = m.nhom_bo_tro AND ${CASE_SAU_THI_SQL('sc', 's.id')})   -- N46
+          /* Lưu trữ (chủ SP 26/11, rà #2219): Case của nhóm bổ trợ đã đóng vì em vào Lưu trữ / kết thúc khoá (không còn Case mở) → Mini Test không hiện lại khi Quay lại / Học lại. */
+          AND NOT (EXISTS (SELECT 1 FROM case_interventions ivl JOIN sos_cases scl ON scl.id = ivl.case_id WHERE ivl.nhom_bo_tro = m.nhom_bo_tro AND scl.status = 'done' AND scl.system_close_reason IN ('luu_tru', 'course_ended'))
+            AND NOT EXISTS (SELECT 1 FROM case_interventions ivo JOIN sos_cases sco ON sco.id = ivo.case_id WHERE ivo.nhom_bo_tro = m.nhom_bo_tro AND sco.status != 'done'))
         ORDER BY m.han, m.id`,
     p.userId).map((r) => ({ ...r }));   // chép dòng — dưới gán `m.gv`
   /*
@@ -1202,7 +1242,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const gvcnLa = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ? { nguoi: p.userId, homNay: today } : undefined;
   const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null, lopIds: lopYt, gvcnLa }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
-    .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
+    .concat(miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
   const giu = nguoiGiuKetQua([...ghiKetQua, ...paGvCu].map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
   /* N71 2b': trong hạn GV cũ (Người dạy ≠ người giữ việc — cùng `gvCu` của bảng kỹ năng) → dòng thuộc GV cũ, không thành việc của chủ Case mới cùng lúc. */
@@ -1300,26 +1340,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
     const minh = giuQl(cnLop(x.classId));
-    if (!minh && !tatCa) continue;
+    /* LPB-1 (N73 ⑤): việc đã giao (người có quyền chốt) rời dòng Head; hạn đặt tay thắng hạn N20. */
+    const giao = chuKhung(p, tatCa, 'chot_lo_trinh', x.classId, minh || tatCa ? { ownerId: null, mine: minh } : null);
+    if (!giao) continue;
     const chu = chuViecChotLoTrinh(x);
+    const hanCl = giao.han ?? x.han;
     items.push({
-      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
+      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(hanCl, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.chuaLenh, emIds: x.emIds,
       reason: chu,
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
       href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
-      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa chốt',
+      ownerId: giao.ownerId, owner: null, mine: giao.mine, due: hanCl, statusLabel: 'Chưa chốt',
+      ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}), khungViec: { loai: 'chot_lo_trinh', id: x.classId },
     });
   }
 
   // ------------------------------------------------- 2d'. P9a (N21): Xét lại lộ trình — một việc mỗi lớp em ĐANG học (QL chi nhánh lớp đó), hạn sớm nhất, hết hạn tự giữ (cùng hàm với GET /classes/:id/xet-lai)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
     const minh = giuQl(cnLop(x.lopId));
-    if (!minh && !tatCa) continue;
+    const giao = chuKhung(p, tatCa, 'xet_lai', x.lopId, minh || tatCa ? { ownerId: null, mine: minh } : null);   // LPB-1 (N73 ⑤)
+    if (!giao) continue;
+    const hanXl = giao.han ?? x.han;
     const ten = x.em.map((e) => (e.lyDo.ma === 'd' ? `${e.ten} · ${e.lyDo.chu}` : e.final.tyLe !== null ? `${e.ten} ${chuTyLeXetLai(e.final.tyLe)}` : e.ten));
     items.push({
-      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(x.han, today),
+      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(hanXl, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length, emIds: x.em.map((e) => e.studentId),
@@ -1327,12 +1373,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại',   // R3-T2: panel tại chỗ ở Công việc (không đổi trang → không "›")
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
       /* P9a: việc của chính QL đang xem (chỉ người quyết được mới có dòng) — thanh Việc cần làm hồ sơ lớp lấy dòng `mine`. */
-      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa quyết',
+      ownerId: giao.ownerId, owner: null, mine: giao.mine, due: hanXl, statusLabel: 'Chưa quyết',
+      ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}), khungViec: { loai: 'xet_lai', id: x.lopId },
     });
   }
 
   // ------------------------------------------------- 2e. bàn giao (PR-CT, Q30-2): GVCN một việc mỗi lớp nguồn, GVBM một việc mỗi (lớp, môn)
   /* OV-11c (CV-8, Q6): "Của GV" có Bàn giao của MỌI GV trong phạm vi — cùng hàm với "Của một GV" (`viecBanGiao` một lần cho mọi người). */
+  /* LPB-1 (N73 ⑤): việc đã giao (GVCN theo lớp · GVBM theo lớp × môn) đứng tên người được giao — `viecBanGiao` tính sẵn (`userId`, `giaoBoi`, `han`). */
   for (const v of !co('ban_giao') ? [] : tatCa
     ? viecBanGiao(null, f.branchId, f.chiLop).filter((v) => v.userId === p.userId || can(p, PERMISSIONS.CASE_APPROVE, { classId: v.lopId }))
     : viecBanGiao(p.userId, f.branchId, f.chiLop)) {
@@ -1340,6 +1388,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const chung = {
       group: 'ban_giao' as const, urgency: urgencyOf(han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: v.userId, owner: null, mine: v.userId === p.userId, due: han, emIds: v.emIds,
+      ...(v.giaoBoi ? { giaoBoi: v.giaoBoi } : {}),
+      khungViec: v.loai === 'gvcn' ? { loai: 'ban_giao' as const, id: v.lopId } : { loai: 'ban_giao_mon' as const, id: v.khungId ?? null },
     };
     if (v.loai === 'gvcn') {
       items.push({
@@ -1366,7 +1416,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     items.push({
       group: 'ban_giao' as const, urgency: urgencyOf(v.han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: v.userId, owner: null, mine: v.userId === p.userId, due: v.han, emIds: v.emIds,
-      key: `ban_giao_gv:${v.id}`, count: v.tong - v.du,
+      key: `ban_giao_gv:${v.id}`, count: v.tong - v.du, ...(v.giaoBoi ? { giaoBoi: v.giaoBoi } : {}), khungViec: { loai: 'ban_giao_gv' as const, id: v.id },
       contextLabel: `cho ${v.nguoiMoi} · ${v.du}/${v.tong} em`, reason: `${v.tong - v.du} em chưa đủ góp ý bàn giao`,
       tieuDe: `Bàn giao ${v.code} · ${v.monNgan.join(', ')}`, actionLabel: 'Bàn giao',
       href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao-gv&id=${v.id}`, statusLabel: 'Chờ bàn giao',
@@ -1565,35 +1615,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].group === 'ghi_nhan_xet' && caseXnS.has(items[i].caseId as number)) items.splice(i, 1);
   }
 
-  // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)
-  /* Báo PH kết quả Test: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
-  /* PR-S5F-a: Báo PH Giữa khoá là việc của GVCN lớp em ĐANG học (`gvcn_id` đọc cùng câu) — Quản lý xem "Tất cả" thấy người đó, không "chưa ai phụ trách". */
-  const phanTramCuoi = new Map<number, string>();
-  for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
-  for (const r of baoPh) {
-    /* GV-1 (N58): việc đã giao — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" (Head, sổ nghĩa vụ) thấy, đứng tên người được giao. */
-    if (r.phu_trach_id != null && (!tatCa || r.phu_trach_id === p.userId)) continue;
-    const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
-    const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
-    const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
-    const qlGiu = laCuoiKhoa && cuaGv && giuQl(cnLop(r.cur_class_id));
-    if (!gvcn && !cuaGv) continue;
-    if (laCuoiKhoa && !gvcn && !qlGiu && !tatCa) continue;
-    items.push({
-      key: `baoph:${r.id}`, group: 'phoi_hop', urgency: 'normal',
-      studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
-      classId: r.cur_class_id, classCode: r.class_code ?? null,
-      attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
-      contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
-      reason: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
-      phu: laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress'),
-      tieuDe: `Báo PH kết quả Test · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
-      actionLabel: 'Mở Phối hợp SOS',
-      href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: r.phu_trach_id ?? (gvcn || qlGiu ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null), owner: null, mine: r.phu_trach_id == null && (gvcn || qlGiu),
-      due: null, statusLabel: 'Chưa làm',
-    });
-  }
+  /* 3c. Báo PH kết quả Test lớp thường: BAOPH-0 (N72 ⑤) — việc TVV (`viecBaoPhCuaToi`), GVCN / Head thôi giữ. */
   /*
    * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật. Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
    * dòng mang hạn sớm nhất, quá hạn tô như việc khác.
@@ -1739,23 +1761,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC (chưa có lịch MT kế / ngày thi) → việc của Quản lý: Nhập ngày thi dự
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
-  if (xemNguoiKhac && co('missing_data')) {
-    const truoc = docNho(SQL_MOC);
+  /* LPB-1 (N73 ⑤): "Xếp lịch MT" giao cho tôi (người xếp lịch được — BPXL / Head) — vào nhánh này dù tôi không xem người khác. */
+  const mocToi = co('missing_data') && !xemNguoiKhac ? giaoChoNguoi(p.userId, 'xep_lich_mt').map((g) => g.id) : [];
+  /* Rà PTA #2280 (tốc độ): người chỉ có việc được giao (BPXL) — đọc đúng các mốc được giao, không điền mốc cả phạm vi. */
+  const docMoc = () => (xemNguoiKhac ? docNho(SQL_MOC) : conn.prepare(`${SQL_MOC} AND iv.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(mocToi)) as any[]);
+  if ((xemNguoiKhac || mocToi.length) && co('missing_data')) {
+    const truoc = docMoc();
     if (truoc.length) {
-      dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      const sau = docNho(SQL_MOC);
+      dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });   // rà #2280: cả mốc được giao (BPXL) — chỉ các mốc đó
+      const sau = docMoc();
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
-        if (r.sau_thi || !can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;   // N46: lộ trình đã có KQ thi thật
-        const minh = giuQl(r.branch_id ?? null);
-        if (!minh && !tatCa) continue;
+        if (r.sau_thi) continue;   // N46: lộ trình đã có KQ thi thật
         const v = viecMoc(r);
+        /* LPB-1: chỉ "Xếp lịch MT" có khung (không "Nhập dự kiến thi"); việc đã giao rời dòng Head. */
+        const quyen = xemNguoiKhac && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid });
+        const minhQl = quyen && giuQl(r.branch_id ?? null);
+        const goc = quyen && (minhQl || tatCa) ? { ownerId: minhQl ? p.userId : null, mine: minhQl } : null;
+        const giao: ReturnType<typeof chuKhung> = v.thi ? goc : chuKhung(p, tatCa, 'xep_lich_mt', r.id, goc);
+        if (!giao) continue;
+        const minh = giao.mine;
         /* XEP-MT-NHAC (chủ SP 07/11): "Xếp lịch MTn" chỉ khi lộ trình thiếu MT — đủ 3 (RF 2) MT đã có thì không nhắc. */
         if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
         /* BO-QUA-XEP-MT: QL đã bỏ qua đúng mốc này → không là việc, chỉ ở "Đã bỏ qua" (khôi phục được). Mốc khác (MT kế khác) → hiện lại. */
         if (r.bo_qua_moc === v.dau) {
-          daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+          if (quyen) daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
             boi: r.bo_qua_ten ?? null, luc: r.bo_qua_luc });
           continue;
         }
@@ -1767,9 +1798,36 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           /* R3-W2 (rà 24/11): lộ trình của mốc — Công việc mở tại chỗ panel Chốt ngày thi / Lịch MT (trước sang hồ sơ trơn, tự tìm chỗ). */
           ...(r.cycle_id ? { cycleId: r.cycle_id as number } : {}), ...(v.thi ? { kind: 'thi' } : {}),
           actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
-          ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
+          ownerId: giao.ownerId, owner: null, mine: minh, due: giao.han ?? null, statusLabel: 'Chưa có lịch', boQuaDuoc: quyen,
+          ...(giao.han ? { urgency: urgencyOf(giao.han, today) } : {}), ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}),
+          ...(v.thi ? {} : { khungViec: { loai: 'xep_lich_mt' as const, id: r.id as number } }),
         });
       }
+    }
+  }
+  /* MT-QUA-THI (chủ SP 26/11): MT chưa thi xếp sau ngày thi — việc Head CN của em (cùng quyền / người giữ như `moc:`), mỗi em một dòng, mở Lịch MT tại chỗ. */
+  if (xemNguoiKhac && co('missing_data')) {
+    const ds = docNho(sqlMtThi());
+    napTruocPhamVi(ds.map((r) => r.sid));
+    for (const r of ds) {
+      if (f.branchId && r.branch_id !== f.branchId) continue;
+      if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
+      const minh = giuQl(r.branch_id ?? null);
+      if (!minh && !tatCa) continue;
+      const v = viecMtThi(r);
+      if (daBoQuaMtThi(r.mt_thi_bo_qua, v.dau)) {
+        daBoQua.push({ key: `mt-thi:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+          boi: r.bo_qua_ten ?? null, luc: r.mt_thi_bo_qua_luc });
+        continue;
+      }
+      items.push({
+        key: `mt-thi:${r.id}`, group: 'missing_data', urgency: 'normal',
+        studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
+        reason: v.reason, tieuDe: v.tieuDe, ...{ cycleId: r.id as number },   // như `moc:` (R3-W2) — web đọc `cycleId`
+        actionLabel: 'Sửa lịch MT', href: `/hoc-vien/${r.sid}`,
+        ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: v.thi, boQuaDuoc: true,
+      });
     }
   }
 
@@ -1853,6 +1911,24 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
     /* GD-19 (mockup ⑪ K2a): việc bắt buộc CHỈ vì được yêu cầu → thẻ phụ "{người ghi} yêu cầu". Một câu, chỉ khi có việc loại này (thường 0). */
     const yeuCauCan: { it: WorkItem; sid: number; ke: string }[] = [];
+    /* BAOPH-0 (N72 ⑥, 4.6): Xử lý vi phạm / Đã thực hiện ĐÃ GIAO rời dòng GVCN (người được giao thấy qua `viecGiaoChoToi`; "Tất cả" đứng tên người đó) · hạn đặt tay
+       thắng hạn luật. MỘT câu, chỉ khi có em ứng viên (chỉ mục khoá chính / `idx_measure_student`). */
+    const giaoYt = new Map<string, { pt: number | null; han: string | null }>();
+    if (uv.length) {
+      const ds = JSON.stringify(uv.map((r) => r.id));
+      for (const g of conn.prepare(`SELECT 'xu_ly' AS l, id AS id, phu_trach_id AS pt, han_chon AS han FROM viec_xu_ly WHERE trang_thai = 'mo' AND id IN (SELECT value FROM json_each(?1))
+          UNION ALL SELECT 'dth', id, phu_trach_id, han_chon FROM discipline_measures WHERE student_id IN (SELECT value FROM json_each(?1)) AND status = 'da_duyet'
+            AND (phu_trach_id IS NOT NULL OR han_chon IS NOT NULL)`).all(ds) as any[]) giaoYt.set(`${g.l}:${g.id}`, { pt: g.pt ?? null, han: g.han ?? null });
+    }
+    /* Việc đã giao cho người khác: bỏ (thường) / đứng tên người đó ("Tất cả"); giao cho tôi: `viecGiaoChoToi` dựng. */
+    const theoGiao = (k: string, it: WorkItem): WorkItem | null => {
+      const g = giaoYt.get(k);
+      if (!g) return it;
+      const due = g.han ?? it.due;
+      if (!g.pt) return { ...it, due, urgency: urgencyOf(due, today) };
+      if (!tatCa || g.pt === p.userId) return null;
+      return { ...it, due, urgency: urgencyOf(due, today), ownerId: g.pt, mine: false };
+    };
     for (const r of uv) {
       const em = trang.get(r.id);
       if (!em || em.tamDung) continue;
@@ -1869,20 +1945,21 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       const quaHan = [...em.viPham.values()];
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = nhanLoaiXuLy(em.keTiep.kind);
-        items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
+        const xl = theoGiao(`xu_ly:${r.id}`, { ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
           /* LG-12: bắt buộc chỉ vì được yêu cầu → nói rõ "được yêu cầu" (luật 3 thì giữ chữ cũ). */
           reason: em.theoLuat ? `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý` : `${em.soBatBuoc} vi phạm được yêu cầu xử lý`,   // một số với tiêu đề (rà #1735 P2)
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
-        if (!em.theoLuat) yeuCauCan.push({ it: items[items.length - 1], sid: r.id, ke });
+        if (xl) { items.push(xl); if (!em.theoLuat) yeuCauCan.push({ it: xl, sid: r.id, ke }); }
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
       for (const x of em.daDuyet) {
         const nhan = nhanLoaiXuLy(x.kind, x.customName);
-        items.push({ ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
+        const it = theoGiao(`dth:${x.id}`, { ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
           reason: `Head đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
           href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
+        if (it) items.push(it);
       }
     }
     if (yeuCauCan.length) {

@@ -19,7 +19,7 @@ import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { LA_CASE_MT, LA_CASE_SOS } from '../cases/sosState.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from '../loTrinh/cotSauThi.ts';
 import { nguoiGiuMiniTest } from '../normal/cuoiKhoa.ts';
-import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
+import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, laViecTvvBaoPh, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
 
 export type ViecXong = ViecGopDuoc & { xong: string; dung: boolean };
 type Ky = { cns: readonly number[]; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay: string };
@@ -89,27 +89,32 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
 
   /* 3. Báo PH (TVV của em) — lần "đã báo" đầu. PHOI-HOP-V2: việc sau Meeting CX là loại việc riêng (`phoi_hop_tvv`, khớp Công việc). */
   for (const r of conn.prepare(
-    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
+    `SELECT v.id, v.phoi_hop_id, v.nhan, (SELECT x.kind FROM sos_coordination_actions x WHERE x.id = v.phoi_hop_id) AS ph_kind, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
             (SELECT MIN(x.ngay) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id AND x.ket_qua = 'da_bao') AS xong,
             CASE WHEN v.han_chon IS NULL THEN ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} END AS dung   -- R1-L2: hạn như panel (Tạm dừng → Quay lại)
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN classes l ON l.id = ${lopEm('v.student_id', 'NULL')}
       WHERE s.branch_id ${CN_IN} AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
   ).all(json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon), xong: r.xong ? String(r.xong).slice(0, 10) : null },
-      r.phoi_hop_id != null
+      /* rà #2233 vòng 2 P2 (3): nhãn theo nguồn thật — Meeting CX · Trao đổi gia đình (Phối hợp SOS) · kết quả Progress / Final (Báo PH). */
+      /* TUYEN-2 (rà PTA #2273 P2-1): Trao đổi gia đình cùng nhóm Báo PH như Công việc (`laViecTvvBaoPh`) — chỉ Báo PH Meeting còn nhóm riêng. */
+      r.phoi_hop_id != null && !laViecTvvBaoPh(r.ph_kind ?? '')
         ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
+        : r.phoi_hop_id != null ? { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: r.ph_kind === 'talk_family' ? 'Báo PH · Trao đổi gia đình' : `Báo PH · ${r.nhan}`, href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
         : { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: 'Báo PH', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc' }) });
   }
 
   /* 4. Chọn bước tiếp (TVV của em) — hạn tính lại như lúc chờ (`buoc_tiep` = NULL). */
   for (const r of conn.prepare(
-    `SELECT c.id, c.student_id AS hv, s.full_name AS ten, s.consultant_user_id AS owner, ${COT_SAU_THI}, ${NGAY_CO_KQ} AS ngay_kq_dau, c.buoc_tiep_luc,
+    /* LPB-1 (rà PTA #2280 P1-2): như Báo PH — người được giao (khung `viec_buoc_tiep`) thắng TVV, hạn đặt tay thắng hạn sau thi. */
+    `SELECT c.id, c.student_id AS hv, s.full_name AS ten, COALESCE(kb.phu_trach_id, s.consultant_user_id) AS owner, kb.han_chon, ${COT_SAU_THI}, ${NGAY_CO_KQ} AS ngay_kq_dau, c.buoc_tiep_luc,
             l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+       LEFT JOIN viec_buoc_tiep kb ON kb.id = c.id AND kb.trang_thai != 'bo' AND substr(c.buoc_tiep_luc, 1, 10) >= date(kb.tao_luc, '+7 hours') AND (kb.xong_luc IS NULL OR substr(c.buoc_tiep_luc, 1, 10) <= date(kb.xong_luc, '+7 hours'))   -- rà #2280 P1-B: đúng đợt
        LEFT JOIN classes l ON l.id = ${lopEm('c.student_id', 'NULL')}
       WHERE s.branch_id ${CN_IN} AND c.buoc_tiep IS NOT NULL AND c.buoc_tiep_luc >= date(?, '-60 day')`,
   ).all(json, c.tu) as any[]) {
-    const han = trangThaiSauThi({ ...r, buoc_tiep: null, ngay_kq: r.ngay_kq_dau }, c.homNay).han;
+    const han = r.han_chon ?? trangThaiSauThi({ ...r, buoc_tiep: null, ngay_kq: r.ngay_kq_dau }, c.homNay).han;
     them({ ...lopCua(r), owner: r.owner, han, xong: r.buoc_tiep_luc ? String(r.buoc_tiep_luc).slice(0, 10) : null },
       { key: `buoc_tiep:${r.id}`, group: 'buoc_tiep', tieuDe: 'Chọn bước tiếp', href: duongHoSoHocVien(r.hv, { buocTiep: r.id }) });
   }
@@ -117,17 +122,23 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
   /* 5. Bàn giao — GVCN (lệnh) · GVBM (lệnh × môn) · đổi GV; lớp nguồn, người giữ theo phân công lúc hạn (như `viecBanGiao`).
    *    Câu Writing chung cũ (`mon = 'writing'`, trước tách W1 / W2) do GV tự ghi → tính cho người ghi, không cho GV W phân công sau cùng (chủ SP 07/11). */
   for (const r of conn.prepare(
-    `SELECT 'gvcn' AS loai, k.id AS id, k.han_gvcn AS han, k.xac_nhan_luc AS xong, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)} AS owner, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, NULL AS mon, l.branch_id AS cn_
-       FROM lenh_chuyen_lop k JOIN classes l ON l.id = k.lop_nguon_id
-      WHERE l.branch_id ${CN_IN} AND k.xac_nhan_luc IS NOT NULL AND k.han_gvcn BETWEEN ? AND ?
+    /* LPB-1 (rà PTA #2280 P1-2): khung Bàn giao (lớp nguồn · lớp × môn · đổi GV) — người được giao thắng người theo phân công, hạn đặt tay thắng hạn luật. */
+    `SELECT 'gvcn' AS loai, k.id AS id, COALESCE(kg.han_chon, k.han_gvcn) AS han, k.xac_nhan_luc AS xong, COALESCE(kg.phu_trach_id, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)}) AS owner,
+            l.id AS lop, l.code AS ma, l.is_fast_track AS ft, NULL AS mon, l.branch_id AS cn_
+       FROM lenh_chuyen_lop k JOIN classes l ON l.id = k.lop_nguon_id LEFT JOIN viec_ban_giao kg ON kg.id = k.lop_nguon_id AND kg.trang_thai != 'bo'
+         AND k.xac_nhan_luc >= kg.tao_luc AND (kg.xong_luc IS NULL OR k.xac_nhan_luc <= kg.xong_luc)   -- rà #2280 P1-B (cùng mốc nghiệp vụ mocNghiepVu, so tới giờ): dòng khung dùng lại cho đợt sau — chỉ quyết định chuyển lớp xác nhận trong đợt của dòng
+      WHERE l.branch_id ${CN_IN} AND k.xac_nhan_luc IS NOT NULL AND COALESCE(kg.han_chon, k.han_gvcn) BETWEEN ? AND ?
      UNION ALL
-     SELECT 'gvbm', b.id, k.han_gvbm, b.ghi_luc, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END, l.id, l.code, l.is_fast_track, b.mon, l.branch_id
+     SELECT 'gvbm', b.id, COALESCE(km.han_chon, k.han_gvbm), b.ghi_luc,
+            COALESCE(km.phu_trach_id, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END), l.id, l.code, l.is_fast_track, b.mon, l.branch_id
        FROM ban_giao_mon b JOIN lenh_chuyen_lop k ON k.id = b.lenh_id JOIN classes l ON l.id = k.lop_nguon_id
-      WHERE l.branch_id ${CN_IN} AND b.lam_lai = 0 AND k.han_gvbm BETWEEN ? AND ?
+       LEFT JOIN viec_ban_giao_mon km ON km.lop_id = k.lop_nguon_id AND km.mon = b.mon AND km.trang_thai != 'bo'
+         AND b.ghi_luc >= km.tao_luc AND (km.xong_luc IS NULL OR b.ghi_luc <= km.xong_luc)
+      WHERE l.branch_id ${CN_IN} AND b.lam_lai = 0 AND COALESCE(km.han_chon, k.han_gvbm) BETWEEN ? AND ?
      UNION ALL
-     SELECT 'gv', g.id, g.han, g.xong_luc, g.nguoi_lam, l.id, l.code, l.is_fast_track, NULL, l.branch_id
+     SELECT 'gv', g.id, COALESCE(g.han_chon, g.han), g.xong_luc, COALESCE(g.phu_trach_id, g.nguoi_lam), l.id, l.code, l.is_fast_track, NULL, l.branch_id
        FROM ban_giao_gv g JOIN classes l ON l.id = g.class_id
-      WHERE l.branch_id ${CN_IN} AND g.trang_thai = 'xong' AND g.han BETWEEN ? AND ?`,
+      WHERE l.branch_id ${CN_IN} AND g.trang_thai = 'xong' AND COALESCE(g.han_chon, g.han) BETWEEN ? AND ?`,
   ).all(json, c.tu, c.cuoi, json, c.tu, c.cuoi, json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), hv: null, ten: null, owner: r.owner, han: r.han, xong: ngayTheoGioVN(r.xong) },
       { key: `ban-giao-xong:${r.loai}:${r.id}${r.mon ? `:${r.mon}` : ''}`, group: 'ban_giao', tieuDe: 'Bàn giao', href: `/hoc-vien/lop/${r.lop}` });

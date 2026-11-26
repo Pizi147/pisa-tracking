@@ -2,7 +2,7 @@ import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, dotBanGiao, tuanDotBanGiao, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { boVaiBpxl, boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
@@ -18,6 +18,7 @@ import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
+import { duocGiao, ghiNguoiLam, giaoChoNguoi, giaoCua, giaoKhung } from '../worklist/khungViec.ts';
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2): có quyết định chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (cùng hạn với GVCN), GVCN lớp cũ gom lại, viết nhận xét
@@ -36,11 +37,19 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number }, mon?: st
   /* RKC-4b → N64 (chủ SP 22/11 "cứ làm luôn"): QL lớp nguồn làm thay mọi lúc, không hỏi, không xét hạn — panel hiện dải "Đang giao cho … — bạn làm thay". */
   const qlThay = ql;
   const dungMon = !!mon && kyNangPhuTrach(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
+  /* LPB-1 (N73 ⑤): người được giao làm được ĐÚNG việc đó — khung GVCN (lớp nguồn): như GVCN của phiếu (ghi mọi môn, xác nhận); khung môn (lớp × môn): ghi môn đó. */
+  /* GVCN / QL lớp nguồn đã làm được mọi phần — không hỏi (0 câu). */
+  const hoi = !pc.gvcn && !ql;
+  const giaoGvcn = hoi && duocGiao(p, 'ban_giao', l.lop_nguon_id);
+  const giaoMon = hoi && !!mon && duocGiao(p, 'ban_giao_mon', `${l.lop_nguon_id}:${mon}`);
+  const giaoMotMon = giaoMon || (hoi && giaoChoNguoi(p.userId, 'ban_giao_mon').some((g) => g.lop === l.lop_nguon_id && duocGiao(p, 'ban_giao_mon', `${l.lop_nguon_id}:${g.mon}`)));
   return {
-    ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,
-    xacNhan: pc.gvcn || qlThay, xacNhanThay: !pc.gvcn && qlThay,
-    doNguon: pc.gvcn || pc.kyNang.size > 0 || can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),   // RA-2511 (N57): BPXL không đọc phiếu bàn giao (Case / PA / Ý thức)
-    laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay,
+    ghiMon: !!mon && (pc.gvcn || dungMon || qlThay || giaoGvcn || giaoMon), gvbmDungMon: dungMon || giaoMon,
+    xacNhan: pc.gvcn || qlThay || giaoGvcn, xacNhanThay: !pc.gvcn && !giaoGvcn && qlThay,
+    doNguon: pc.gvcn || pc.kyNang.size > 0 || giaoGvcn || giaoMotMon || can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),   // RA-2511 (N57): BPXL không đọc phiếu bàn giao (Case / PA / Ý thức)
+    laGvcn: pc.gvcn || giaoGvcn, kyNang: pc.kyNang, qlThay,
+    /** Rà #2280 P1-A: quyền đến từ việc được giao (không từ vai) — đường ghi ghi người đã làm. */
+    quaGiaoGvcn: giaoGvcn && !pc.gvcn && !qlThay, quaGiaoMon: giaoMon && !pc.gvcn && !dungMon && !qlThay,
   };
 }
 
@@ -151,7 +160,7 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
   const baiChuaLam = new Map<number, number>();
   theoLo(sids, (lo, ph) => {
     for (const r of conn.prepare(
-      `SELECT a.student_id, COUNT(*) AS n FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', false, true)}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
+      `SELECT a.student_id, COUNT(*) AS n FROM assessment_attempts a JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
         WHERE a.status = 'planned' AND a.student_id IN (${ph}) GROUP BY a.student_id`,
     ).all(...lo) as any[]) baiChuaLam.set(r.student_id, r.n);
   });
@@ -196,8 +205,9 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
  * Người đọc: GV/QL lớp nguồn; GV/QL lớp chuyển đến chỉ khi phiếu đã xác nhận hoặc lệnh đã chuyển (Q15). Còn lại 403.
  */
 /** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
-export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto { return trongBoNho(() => phieuBanGiaoGoc(p, f)); }
-function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto {
+/** `chon` (BAN-GIAO-DOT): lệnh người dùng mở thẳng trong panel cả lớp — panel hiện thêm đúng đợt của lệnh đó (Sửa phiếu đã xác nhận của em đợt cũ). */
+export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string; chon?: number | null }): PhieuBanGiaoDto { return trongBoNho(() => phieuBanGiaoGoc(p, f)); }
+function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string; chon?: number | null }): PhieuBanGiaoDto {
   const conn = db();
   let lopId = f.lopNguonId ?? 0;
   if (f.lenhId) {
@@ -241,6 +251,13 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
     if (!thay.length) throw forbidden('Bạn không có quyền đọc bàn giao của lớp này.');
   }
   if (f.lenhId && !thay.length) throw forbidden('Bạn không có quyền đọc bàn giao này.');
+  /*
+   * BAN-GIAO-DOT (chủ SP 26/11; PTA rà #2249): phía NGUỒN mở cả lớp = các đợt (tuần chuyển) còn em chờ + đợt của lệnh mở thẳng (`chon`); đợt đã xác nhận hết không
+   * hiện, không đếm. Phía ĐÍCH lọc theo quyền như cũ, KHÔNG lọc đợt (GV lớp mới vẫn đọc phiếu em đợt cũ sau khi lớp nguồn ra đợt mới). Một phiếu (`lenhId`) đọc thẳng.
+   * Đợt mới trên cùng; trong đợt giữ thứ tự tên (sort ổn định).
+   */
+  if (q.doNguon && !f.lenhId) thay = dotBanGiao(thay, f.chon);
+  thay = [...thay].sort((a, b) => tuanDotBanGiao(b.tuan_bat_dau).localeCompare(tuanDotBanGiao(a.tuan_bat_dau)));
 
   const dongMon = new Map<number, Map<string, any>>();
   if (thay.length) {
@@ -301,7 +318,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
     const chup = r.tu_dien ? (JSON.parse(r.tu_dien) as { tuDien: TuDien; gvbmChuaBanGiao: string[] }) : null;
     return {
       lenhId: r.id, studentId: r.student_id, ten: r.full_name, maHv: r.student_code, huong: r.huong, trangThaiLenh: r.trang_thai,
-      lopDich: r.lop_dich_id ? { id: r.lop_dich_id, code: r.dich_code } : null, tuan: r.tuan_bat_dau, ngayXemLai: r.ngay_xem_lai ?? null,
+      lopDich: r.lop_dich_id ? { id: r.lop_dich_id, code: r.dich_code } : null, tuan: r.tuan_bat_dau, ngayXemLai: r.ngay_xem_lai ?? null, dot: tuanDotBanGiao(r.tuan_bat_dau),
       hanGvbm: r.han_gvbm, hanGvcn: r.han_gvcn,
       phieu: trangThaiPhieu({ soMonDaGhi: daGhi, soMon: mon.length, daXacNhan: !!r.xac_nhan_luc }), soMonDaGhi: daGhi, soMon: mon.length,
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
@@ -329,6 +346,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
       /* N64: Head làm thay GVCN — panel hiện dải "Đang giao cho …" (tên GVCN đã có trong `gv`, không thêm câu). Lớp không GVCN: việc của Head, không dải. */
       lamThay: q.qlThay && !q.laGvcn && coGvcnLop ? { ten: gv.find((r) => !!r.is_core)?.full_name ?? null } : null },
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
+    dot: [...new Set(ds.map((e) => e.dot))].map((tuan) => { const cua = ds.filter((e) => e.dot === tuan); return { tuan, tong: cua.length, daXacNhan: cua.filter((e) => e.xacNhan).length }; }),
     hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
       ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return (!!x?.noiDung && !x.lamLai) || !!x?.cungGv; }).length,
@@ -373,6 +391,9 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (!text) throw badRequest('Viết một câu bàn giao.');
   if (text.length > 500) throw badRequest('Câu bàn giao tối đa 500 ký tự.');
   tx(() => {
+    /* Rà #2280 P1-A: người được giao (không vai) đã làm → giữ quyền sửa lại / Hoàn tác. */
+    if (q.quaGiaoMon) ghiNguoiLam(p, 'ban_giao_mon', `${l.lop_nguon_id}:${mon}`);
+    else if (q.quaGiaoGvcn) ghiNguoiLam(p, 'ban_giao', l.lop_nguon_id);
     const cu = db().prepare('SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?').get(lenhId, mon) as any;
     db().prepare(
       `INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?,?,?,?,?,?)
@@ -432,6 +453,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
         WHERE id = ? AND xac_nhan_luc IS NULL`,
     ).run(nx || null, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiao }), p.userId, luc, q.xacNhanThay ? 1 : 0, luc, lenhId);
     if (!r.changes) throw conflict('Phiếu vừa được xác nhận.');
+    if (q.quaGiaoGvcn) ghiNguoiLam(p, 'ban_giao', l.lop_nguon_id);   // rà #2280 P1-A
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.xac_nhan', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, thay: q.xacNhanThay, gvbmChuaBanGiao: chuaBanGiao } });
     baoBanGiao(p, l, nx);
   });
@@ -506,8 +528,10 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
 // ==================================================================== VIỆC (Công việc › Vận hành) — gộp theo lớp, đọc theo lô
 
 export type ViecBanGiao =
-  | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[] }
+  | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[];
+      /** LPB-1 (N73 ⑤): việc đã giao — tên người giao. */ giaoBoi?: string | null }
   | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[];
+      /** LPB-1: id khung Bàn giao môn (lớp × môn) — null khi chưa có dòng; việc gộp nhiều môn: của môn đầu. */ khungId?: number | null; giaoBoi?: string | null;
       /** AUDIT-1611 B3-09: còn đúng một em → tên em + lớp đến (như dòng GVCN). */
       motEm: { ten: string; lopDich: string | null } | null;
       /** Việc gộp nhiều môn của cùng GV (W1 · W2, L · R…): số em từng môn. */
@@ -520,8 +544,31 @@ export type ViecBanGiao =
  */
 /** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
 /** `lopId` (TD-VIEC, hồ sơ lớp): chỉ việc của lớp nguồn này — việc tính theo từng (người, lớp), lớp khác không ảnh hưởng. */
-export function viecBanGiao(userId: number | null, branchId?: number | null, lopId?: number | null): ViecBanGiao[] { return trongBoNho(() => viecBanGiaoGoc(userId, branchId, lopId)); }
-function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?: number | null): ViecBanGiao[] {
+export function viecBanGiao(userId: number | null, branchId?: number | null, lopVao?: number | readonly number[] | null): ViecBanGiao[] {
+  /* Rà #2280: nhiều lớp một lượt (khung Bàn giao môn theo lô). */
+  const lopDs = Array.isArray(lopVao) ? lopVao : lopVao ? [lopVao as number] : null;
+  const lopId = lopDs?.length === 1 ? lopDs[0] : null;
+  return trongBoNho(() => {
+    /* LPB-1 (N73 ⑤): khung Bàn giao (GVCN theo lớp nguồn · GVBM theo lớp × môn) — việc đã giao đứng tên người được giao, rời dòng người mặc định; hạn đặt tay thắng.
+       Một người: + lớp có việc giao cho người đó (tính như "mọi người" ở các lớp đó rồi lọc). Không có dòng giao → 0 câu thêm. */
+    if (!giaoCoBanGiao()) return gopViecMon(viecBanGiaoGoc(userId, branchId, lopDs));
+    const ganGiao = (ds: ViecBanGiao[]) => ds.map((v) => {
+      const g = v.loai === 'gvcn' ? giaoCua('ban_giao', v.lopId) : giaoCua('ban_giao_mon', `${v.lopId}:${v.mon}`);
+      if (!g) return v;
+      return { ...v, ...(g.pt ? { userId: g.pt, giaoBoi: g.giaoTen } : {}), ...(g.han ? { han: g.han } : {}), ...(v.loai === 'gvbm' ? { khungId: g.id } : {}) } as ViecBanGiao;
+    });
+    let ds = ganGiao(viecBanGiaoGoc(userId, branchId, lopDs));
+    if (userId !== null) {
+      const them = [...new Set(giaoChoNguoi(userId, 'ban_giao', 'ban_giao_mon').map((g) => (g.loai === 'ban_giao' ? g.id : g.lop!)))].filter((l) => !lopDs || lopDs.includes(l));
+      ds = [...ds, ...(them.length ? ganGiao(viecBanGiaoGoc(null, branchId, them)) : [])].filter((v) => v.userId === userId);
+    }
+    const da = new Set<string>();
+    return gopViecMon(ds.filter((v) => { const k = `${v.loai}:${v.userId}:${v.lopId}:${v.loai === 'gvbm' ? v.mon : ''}`; return da.has(k) ? false : (da.add(k), true); }));
+  });
+}
+/** Có dòng khung Bàn giao (giao / hạn) nào đang mở — bỏ phần tính thêm khi không có (thường). */
+const giaoCoBanGiao = () => [...giaoKhung().values()].some((g) => g.loai === 'ban_giao' || g.loai === 'ban_giao_mon');
+function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopIds?: readonly number[] | null): ViecBanGiao[] {
   const conn = db();
   const dk = [`ta.status = 'active'`, ...(userId !== null ? ['ta.user_id = ?'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
   const da = phanCongDaNap();   // TL-VIEC: Công việc đã nạp mọi phân công một câu — lọc đúng WHERE dưới
@@ -532,22 +579,39 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
       `SELECT ta.user_id, ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
         WHERE ${dk.join(' AND ')}`,
     ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
-  if (lopId) pc = pc.filter((r) => r.class_id === lopId);
+  if (lopIds) pc = pc.filter((r) => lopIds.includes(r.class_id));
+  /* LPB-1: lớp có khung Bàn giao giao cho một người KHÔNG phân công ở lớp (vd. GV khác, Head) → dòng giả cho người đó: GVCN (xác nhận) hoặc đúng môn được giao. */
+  const gia: { user_id: number; class_id: number; gvcn: boolean; mon: string | null }[] = [];
+  for (const g of giaoKhung().values()) {
+    if (!g.pt || (g.loai !== 'ban_giao' && g.loai !== 'ban_giao_mon')) continue;
+    const lop = g.loai === 'ban_giao' ? g.id : g.lop!;
+    if ((lopIds && !lopIds.includes(lop)) || (userId !== null && g.pt !== userId)) continue;
+    gia.push({ user_id: g.pt, class_id: lop, gvcn: g.loai === 'ban_giao', mon: g.mon });
+  }
+  if (gia.length) {
+    const lopGia = conn.prepare(`SELECT id, code, programme_code AS ct, branch_id FROM classes WHERE id IN (${DS_JSON})`).all(JSON.stringify([...new Set(gia.map((x) => x.class_id))])) as any[];
+    for (const x of gia) {
+      const l = lopGia.find((c) => c.id === x.class_id);
+      if (!l || (branchId && l.branch_id !== branchId)) continue;
+      pc = [...(pc as any[]), { user_id: x.user_id, class_id: x.class_id, is_core: x.gvcn ? 1 : 0, skill: null, code: l.code, ct: l.ct ?? null, chiMon: x.mon }];
+    }
+  }
   if (!pc.length) return [];
   /* Khoá (người, lớp). */
-  const lop = new Map<string, { userId: number; lopId: number; code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();
+  const lop = new Map<string, { userId: number; lopId: number; code: string; ct: string | null; gvcn: boolean; kyNang: Set<string>; chiMon: Set<string> }>();
   for (const r of pc) {
     const k = `${r.user_id}|${r.class_id}`;
-    const x = lop.get(k) ?? { userId: r.user_id as number, lopId: r.class_id as number, code: r.code as string, ct: (r.ct ?? null) as string | null, gvcn: false, kyNang: new Set<string>() };
+    const x = lop.get(k) ?? { userId: r.user_id as number, lopId: r.class_id as number, code: r.code as string, ct: (r.ct ?? null) as string | null, gvcn: false, kyNang: new Set<string>(), chiMon: new Set<string>() };
     if (r.is_core) x.gvcn = true;
     if (r.skill) x.kyNang.add(r.skill);
+    if (r.chiMon) x.chiMon.add(r.chiMon);   // LPB-1: môn được giao (không phân công)
     lop.set(k, x);
   }
   const ids = [...new Set(pc.map((r) => r.class_id as number))];
   const lenh: any[] = [];
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
-      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich,
+      `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, l.tuan_bat_dau, s.full_name, d.code AS dich,
               n.programme_code AS ct_nguon, d.programme_code AS ct_dich, ${MDK_SQL('l')} AS mdk,
               CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
                 FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
@@ -571,13 +635,17 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
     }
   }
   const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
+  /* BAN-GIAO-DOT (chủ SP 26/11): mỗi lớp nguồn chỉ các đợt còn em chờ (cùng hàm với panel) — "a/n đã xác nhận" của việc = của panel. */
+  const theoLop = new Map<number, any[]>();
+  for (const l of lenh) (theoLop.get(l.lop_nguon_id) ?? theoLop.set(l.lop_nguon_id, []).get(l.lop_nguon_id)!).push(l);
+  const dot = new Map([...theoLop].map(([id, ds]) => [id, dotBanGiao(ds)]));
   /* Em không học môn (N13) không thành việc của GV môn đó. */
   const hoc = (l: any, m: string) => boMonBanGiaoCt(l.ct_nguon ?? null, l.mdk).includes(m);
   const canMon = (l: any, m: string) => hoc(l, m) && !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {
     const { lopId } = x;
-    const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
+    const cua = dot.get(lopId) ?? [];
     const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
     if (!chuaXn.length) continue;
     const mons = boMonBanGiaoCt(x.ct);
@@ -593,7 +661,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
       continue;
     }
     for (const m of mons) {
-      if (!kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
+      if (!x.chiMon.has(m) && !kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
       const chua = chuaXn.filter((l) => canMon(l, m));
       if (!chua.length) continue;
       const canGhi = chuaXn.filter((l) => hoc(l, m) && !cung.get(l.id)?.mon.has(m));   // em cùng GV / không học môn không tính vào việc của GVBM
@@ -605,7 +673,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?:
       });
     }
   }
-  return gopViecMon(out);
+  return out;
 }
 
 /**

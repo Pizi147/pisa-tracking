@@ -433,6 +433,10 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
     conn.prepare("UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND status = 'active'").run(userId);
     for (const r of roles) grantRole(conn, userId, r.role, r.branches ?? []);
     if ([...cu.map((g) => g.key), ...roles.map((r) => r.role)].some((k) => VAI_THEO_DOI.has(k))) theoDoiVaiBaoPh({ userId });   // TD-HEAD-CX: thôi / thành Head · CX → dòng theo dõi chuyển theo; không có vai này cả trước lẫn sau → bỏ qua
+    /* RA-2711 (rà #2290 (7)): TVV thôi / thêm vai TVV → người giữ Báo PH các em của họ đổi (TVV ↔ Lead TVV / Head) → đồng bộ lại theo dõi Head / CX của các em đó. */
+    if (cu.some((g) => g.key === 'consultant') || roles.some((r) => r.role === 'consultant')) {
+      theoDoiVaiBaoPh({ studentIds: (conn.prepare('SELECT id FROM students WHERE consultant_user_id = ?').all(userId) as { id: number }[]).map((r) => r.id) });
+    }
     donGiaoHetHieuLuc({ userId }, p.userId);   // GV-1 (N58, 2): hết vai ở chi nhánh của việc được giao → việc về người theo luật (có lịch sử)
     const chuyen = roles.length ? (chiNhanhMat.length ? chuyenViecNguoiNghi(userId, p.userId, undefined, { chiNhanhIds: chiNhanhMat.map((b) => b.id) }) : null) : chuyenViecNguoiNghi(userId, p.userId);
     const nhatKyId = writeAudit({

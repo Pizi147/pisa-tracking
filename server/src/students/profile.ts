@@ -408,7 +408,7 @@ function boOVaCau(i: {
   const vi = em?.viPham ? [...em.viPham.values()] as any[] : [];
   const quaHanYt = Math.max(0, ...vi.map((t) => t.quaHanNgay ?? 0)) || null;
   /* PR-UXF-b (Q14): MỘT số vi phạm còn mở — ô Ý thức (`soMo`) và panel Tạm dừng ("n vi phạm Ý thức đang chờ xử lý") cùng đọc nó. */
-  const soViPhamMo = vi.filter((t) => t.t !== 'da_xu_ly').length;
+  const soViPhamMo = vi.filter((t) => t.t !== 'da_xu_ly' && !t.dung).length;   // Lưu trữ (26/11): vi phạm Dừng không còn mở
   const deXuatCho = em?.deXuat?.status === 'cho_duyet' ? nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName) : null;
   const keTiep = em?.keTiep ? nhanLoaiXuLy(em.keTiep.kind) : null;
 

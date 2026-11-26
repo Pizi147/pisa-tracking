@@ -1,0 +1,72 @@
+/* v29 · Vai mới (GĐCN · Lead TVV · BPXL theo lớp) — CHỈ thêm: ô Chi nhánh ở hàng lọc Kế hoạch Test, cụm "Xếp lịch" ở hàng lớp / đầu hồ sơ lớp,
+   ô lượt "chỉ lịch" (lớp chi nhánh khác), hàng vai trong hộp Sửa tài khoản. Không màu / cỡ chữ mới: biến của nền (v21 · v23). */
+
+/* Ô Chi nhánh (dáng ô chọn của hàng lọc) */
+.o-cn { display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 10px 0 12px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); font:500 14px var(--phong); color:var(--text); white-space:nowrap; }
+.o-cn .lb { font-weight:500; color:var(--text-dim); }
+.o-cn b { font-weight:600; }
+.o-cn .ic { width:14px; height:14px; color:var(--text-dim); }
+
+/* Cụm "Xếp lịch" cuối hàng lớp: nhãn xám · tên · một nút */
+.xl { display:inline-flex; align-items:center; gap:10px; white-space:nowrap; font-size:13px; color:var(--text-dim); }
+.xl b { font-weight:600; color:var(--text); }
+.xl .ban { font-weight:600; color:var(--accent); }
+.xl .chua { color:var(--text-faint); }
+.xl .nut { min-width:92px; justify-content:center; }
+
+/* Ô lượt "chỉ lịch" — lớp chi nhánh khác, máy chủ không trả điểm: trạng thái bằng chữ, không band */
+.omt .st.lich { color:var(--text-dim); }
+.sex.lich { color:var(--text-dim); }
+.chi-lich { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); }
+
+/* 375: hàng lớp xuống dòng cụm Xếp lịch */
+.dt .kh-lop .xl { grid-column:2 / -1; justify-content:space-between; width:100%; }
+.dt .o-cn { width:100%; justify-content:space-between; height:44px; }
+
+/* Đầu hồ sơ lớp (nền v27): dòng phụ có cụm Xếp lịch */
+.dau-lop { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; }
+.dau-lop .phu { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; font-size:var(--c14, 14px); color:var(--text-dim); }
+.dau-lop .phu b { color:var(--text); font-weight:600; }
+.dau-lop .xl { font-size:var(--c14, 14px); }
+
+/* Hộp Sửa tài khoản: hàng vai (ô vai · chip chi nhánh · Gỡ) */
+.hang-vai { display:grid; grid-template-columns:200px minmax(0,1fr) auto; gap:12px; align-items:start; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--surface-2); }
+.hang-vai .o-vai { display:flex; align-items:center; justify-content:space-between; height:40px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); font:600 14px var(--phong); }
+.hang-vai .cn { display:flex; flex-wrap:wrap; gap:8px; }
+.hang-vai .cn button { height:36px; padding:0 12px; border:1px solid var(--line-strong); border-radius:6px; background:transparent; font:600 13px var(--phong); color:var(--text-dim); }
+.hang-vai .cn button.on { border-color:var(--accent); color:var(--text); background:var(--accent-soft); }
+.hang-vai .phu { grid-column:2 / -1; font-size:var(--c13, 13px); color:var(--text-dim); }
+.hang-vai .go { align-self:center; font:600 13px var(--phong); color:var(--text-dim); background:none; border:0; min-height:36px; }
+.ds-vai { position:absolute; z-index:8; top:44px; left:0; width:240px; display:grid; padding:6px; border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); box-shadow:0 16px 40px rgb(0 0 0 / .35); }
+.ds-vai button { display:grid; grid-template-columns:minmax(0,1fr); justify-items:start; gap:2px; min-height:40px; padding:6px 10px; border:0; border-radius:6px; background:transparent; text-align:left; font:600 14px var(--phong); color:var(--text); }
+.ds-vai button small { font:500 12px var(--phong); color:var(--text-dim); }
+.ds-vai button.on { background:var(--accent-soft); }
+.ds-vai button.moi::after { content:"mới"; justify-self:start; margin-top:2px; padding:0 6px; border:1px solid var(--accent); border-radius:4px; font:600 11px/18px var(--phong); color:var(--accent); }
+.neo-vai { position:relative; }
+.dt .hang-vai { grid-template-columns:minmax(0,1fr) auto; }
+.dt .hang-vai .o-vai { grid-column:1; }
+.dt .hang-vai .cn, .dt .hang-vai .phu { grid-column:1 / -1; }
+.dt .hang-vai .go { grid-column:2; grid-row:1; }
+.dt .hang-loc { flex-wrap:wrap; }
+.dt .hang-loc > .doan { flex:1 1 100%; }
+.dt .o-cn b { margin-right:auto; margin-left:8px; }
+.dt .kh-lop .xl { justify-content:flex-start; } .dt .kh-lop .xl .nut { margin-left:auto; height:44px; }
+
+/* rà critique vòng 1 */
+.kh-lop .phai .xl { display:grid; grid-template-columns:250px 100px; column-gap:12px; align-items:center; }
+.xl .ai { justify-self:end; white-space:nowrap; }
+.xl .ban, .xl b { color:var(--text); font-weight:700; }
+.toast.loi { background:var(--bad); color:#fff; }
+.toast.loi .nut { color:#fff; }
+.dt .toast { flex-wrap:wrap; }
+.dt .kh-lop .xl { display:flex; } .dt .xl .ai { justify-self:auto; }
+.ds-vai { width:300px; }
+.kh-lop .phai .xl { grid-template-columns:200px 100px; }
+.toast.loi, .toast.loi * { color:#fff !important; }
+.kh-lop .phai .xl { grid-template-columns:auto 100px; }
+.kh-lop .oso { white-space:nowrap; }
+.kh-lop > span:nth-child(6) { flex-wrap:wrap; row-gap:2px; }
+/* rà critique vòng 2 */
+.toast:not(.loi) { background:var(--surface-2); border:1px solid var(--line-strong); color:var(--text); }
+.toast:not(.loi) b { color:var(--ok); } .toast:not(.loi) .nut { color:var(--accent); }
+.hang-vai .cn button[aria-pressed="false"] { background:transparent; }

@@ -58,13 +58,8 @@ export async function runPrOv11fTests(t: YThucTestKit) {
       if (st.status !== 'pending') assert(n.con_viec === 0 && d.nhomThongBao(n) === 'de-biet', `tín hiệu ${n.entity_id} (${st.status}) còn ở Cần làm`);
       if (st.case_id) assert(new RegExp(`case=${st.case_id}`).test(d.duongThongBao(n) ?? ''), `tín hiệu ${n.entity_id} không mở Case ${st.case_id}: ${d.duongThongBao(n)}`);
     }
-    const ph = ds.filter((n) => n.kind === 'phoi_hop');
-    assert(ph.length, 'demo phải có chuông Báo PH kết quả Test');
-    for (const n of ph) assert(/tab=y-thuc/.test(d.duongThongBao(n) ?? '') && /sub=phoi-hop/.test(d.duongThongBao(n) ?? ''), `phoi_hop không có đường: ${d.duongThongBao(n)}`);
-    /* Đánh dấu xong việc phối hợp → chuông rời Cần làm. */
-    conn.prepare(`UPDATE sos_coordination_actions SET status = 'done' WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).run(ph[0].entity_id);
-    const sau = (thongBao.thongBaoCua(gv.userId) as any[]).find((n) => n.id === ph[0].id);
-    assert(sau.con_viec === 0 && d.nhomThongBao(sau) === 'de-biet', 'Báo PH đã làm vẫn ở Cần làm');
+    /* BAOPH-0 (N72 ⑤, thay N6): Báo PH kết quả Test là việc TVV — GVCN không còn chuông "nhờ TVV" (chuông TVV đọc từ /my-work như mọi việc Báo PH). */
+    assert(!ds.some((n) => n.kind === 'phoi_hop' && /Báo PH kết quả Test/.test(n.title ?? '')), 'GVCN còn chuông Báo PH kết quả Test');
   }));
 
   check('OV11f-4 · SOS khung Fast Track chỉ tính lượt của lộ trình FT đang chạy — em vừa lên FT (Final lớp thường cũ) không vào', () => thu(() => {

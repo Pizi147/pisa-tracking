@@ -234,7 +234,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     const yc = docNguon('server/src/duyet/yeuCau.ts');
     for (const mau of ["'Chờ duyệt'} · ${meta.nhan}", 'Bổ sung · ${meta.nhan}', 'Quá hạn duyệt · ${metaCua', 'Yêu cầu ${meta.nhan}']) assert(yc.includes(mau), mau);
     assert(/Vi phạm mới · \$\{hv\.full_name\}/.test(docNguon('server/src/yThuc/xuLy.ts')), 'xuLy');
-    assert(/Báo PH kết quả Test · \$\{hv\?\.full_name/.test(docNguon('server/src/yThuc/phoiHop.ts')), 'phoiHop');
+    /* BAOPH-0 (N72 ⑤): tin "Báo PH kết quả Test" cho GVCN đã bỏ (việc TVV) — tiêu đề việc TVV theo mẫu "Báo PH · {nguồn} · em". */
+    assert(/Báo PH · \$\{traoDoi \? 'Trao đổi gia đình' : r\.nhan\} · \$\{r\.full_name\}/.test(docNguon('server/src/yThuc/baoPhTvv.ts')), 'baoPhTvv');
     assert(/Bị từ chối · Không cần theo dõi/.test(docNguon('server/src/cases/sosAuto.ts')), 'sosAuto');
   });
   // ------------------------------------------------------------------ Task 7 · Ý thức & vi phạm (nhóm G)

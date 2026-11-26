@@ -693,6 +693,8 @@ function doiViecTheoMoc(classId: number, kind: 'progress' | 'final', tuCu: strin
   conn.prepare('UPDATE OR IGNORE bao_cao_ph SET dot = ? WHERE class_id = ? AND dot = ?').run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
   /* BC-DOT-QL: đợt QL / Admin đã bỏ đi theo tuần thi mới (không thì đợt mới "sống lại"). */
   conn.prepare("UPDATE OR IGNORE bao_cao_ph_dot SET ma = ? WHERE class_id = ? AND loai = 'bo' AND ma = ?").run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
+  /* BO-BAO-CAO-PH: em đã bỏ báo cáo đợt cũ vẫn bỏ ở đợt mới (cùng đợt, chỉ dời tuần). */
+  conn.prepare('UPDATE OR IGNORE bao_cao_ph_bo_em SET dot = ? WHERE class_id = ? AND dot = ?').run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
   if (kind !== 'final') return;
   for (const l of conn.prepare(
     `SELECT id, ngay_ra_lenh FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho' AND boi_canh = 'cuoi-khoa' AND han_gvcn IS NOT NULL AND xac_nhan_luc IS NULL`,

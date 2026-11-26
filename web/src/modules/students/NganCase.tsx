@@ -138,7 +138,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     : luu?.tt === 'dang' ? <span className="tt-luu dang">{t('Đang lưu…')}</span>
     : luu?.tt === 'loi' ? <span className="tt-luu loi">⚠ {t('Không lưu được')}</span>
     : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu')} {luu.luc}</span>
-    : canDong && (vw.canEdit || vw.coTheSua) ? <span className="text-faint">{t('Tự lưu')}</span> : null;
+    : null;
   const nutTiep = onTiep
     ? <button type="button" className={`btn ${formMo || choXn ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu) cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
     : tiepCase?.di ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={tiepCase.di}>{t('Case tiếp ›')}</button>
@@ -215,7 +215,7 @@ function SuaTenCase({ data, onDoi, onDong }: { data: CaseDetail; onDoi: (d: Case
       <dl className="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
         <dt className="font-semibold text-dim">{t('Kỹ năng')}</dt>
         <dd className="m-0 flex flex-wrap items-center gap-2">{data.viewer.khoaKyNang
-          ? <><span>{topic ? tenMon(ct, topic) : '—'}</span><span className="text-[13px] text-faint">{t('Case từ kết quả Test — không đổi')}</span></>
+          ? <><span>{topic ? tenMon(ct, topic) : '—'}</span></>
           : topics.map((k) => <NutChon key={k} nho chon={topic === k} title={tenMon(ct, k)} onClick={() => setTopic(k)}>{tenMonNgan(ct, k)}</NutChon>)}</dd>
         <dt className="font-semibold text-dim">{t('Mức độ')}</dt>
         <dd className="m-0 flex flex-wrap items-center gap-2">{caseTay

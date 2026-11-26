@@ -2,6 +2,8 @@ import { createContext, useEffect, useRef, type ReactNode } from 'react';
 
 /** GD-3 (mockup v21 K2 `.luoi` / `.od`): lưới đang nằm trong panel việc — ô điểm 96 × 44 (số + "n câu" trong ô), tên cột đủ chữ, cột Kết quả ghi "Chờ …". */
 export const OTrongPanel = createContext(false);
+/** Ô điểm FT HAI TẦNG (band to + "n câu" nhỏ) ngoài panel việc — khối điểm của hồ sơ lớp (chủ SP 26/11, #2196). Ngoài hai nơi này (Lịch Test tuần) ô vẫn một dòng "6.5 · 29/40". */
+export const OHaiTang = createContext(false);
 
 /**
  * LƯỚI NHẬP ĐIỂM TRONG PANEL VIỆC (chủ SP 08/11 duyệt #1246: "ô điểm ở panel bị clipped"). Lưới rộng hơn panel vẫn cuộn ngang

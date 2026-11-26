@@ -326,7 +326,7 @@ function keTiepFt(classIds: number[], today: string) {
   for (const r of db().prepare(
     `SELECT j.value AS class_id, (SELECT json_array(a.attempt_no, rp.week_start) FROM report_periods rp CROSS JOIN assessment_attempts a
          ON a.class_id = j.value AND a.planned_period_id = rp.id
-       JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's', false, true)}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
+       JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
       WHERE a.kind = 'mock' AND ${MOC_KE_TIEP_SQL('a', 'rp').replace(/\?$/, '?1')}
       ORDER BY rp.week_start, a.attempt_no LIMIT 1) AS dau FROM json_each(?2) j`,
   ).all(mondayOf(today), JSON.stringify(classIds)) as any[]) {

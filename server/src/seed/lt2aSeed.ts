@@ -17,7 +17,7 @@ import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { updateResult } from '../cases/cases.ts';
 import { guiKhongTheoDoi, xacNhanCase } from '../cases/sosAuto.ts';
-import { confirmCoordination } from '../yThuc/phoiHop.ts';
+import { baoXongNguonTvv } from '../yThuc/baoPhTvv.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
@@ -65,7 +65,7 @@ export function buildLt2aDemo(ctx: BuildCtx): { em: number } {
     outcome: 'improved', note: 'Em đọc lướt tốt hơn, còn chậm ở phần Not Given.', decision: 'keep',
   } as any);
   const bao = conn.prepare(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`).get(b) as any;
-  if (bao) confirmCoordination(gv(fou15, null), bao.id, { performedOn: DEMO_DATE, note: 'Đã gửi task cho TVV trên Base.' });
+  if (bao) baoXongNguonTvv(bao.id, DEMO_DATE, 'TVV đã gọi phụ huynh, báo 4 nội dung.');   // BAOPH-0: việc TVV
 
   // G3 · BE 03 — trượt W: Khoa xác nhận → PA 1 buổi/tuần chạy
   const c = dung(be03, 'Hoàng Quốc Bình', { ...dat, writing: 11 });

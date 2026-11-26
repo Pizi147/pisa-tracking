@@ -15,8 +15,8 @@ import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { activeClassOf, canManageDiscipline, gvcnCuaEm, requireRecordViolation } from './access.ts';
-import { coTheGhi } from './baoPhTvv.ts';
-import { baoTheoDoi, conHieuLuc, donViec } from '../worklist/giaoViec.ts';
+import { chotLeadBaoPh, coTheGhi } from './baoPhTvv.ts';
+import { baoTheoDoi, conHieuLuc, donViec, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 
@@ -83,6 +83,7 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
   const daCo = (sid: number) => (db().prepare(
     `SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ? AND nguoi_gui = ? AND chieu = ? AND noi_dung = ? AND tao_luc >= ? AND trang_thai <> 'rut' ORDER BY id DESC LIMIT 1`,
   ).get(sid, p.userId, chieu, noiDung, tu) as { id: number } | undefined)?.id;
+  const emViec: number[] = [];
   tx(() => {
     for (const s of em) {
       const cu = daCo(s.id);
@@ -97,8 +98,12 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
       out.push(id);
       if (chieu === 'gv_tvv') {
         /* Việc TVV — người giữ suy khi đọc (TVV của em; không có → QL), chuông từ /my-work như Báo PH. */
-        db().prepare(`INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc, tinh_hinh_id) VALUES (NULL, ?, ?, ?, 'mo', ?, ?)`)
-          .run(s.id, NHAN_VIEC_TINH_HINH, hanBaoPh(homNay), nowIso(), id);
+        const viec = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc, tinh_hinh_id) VALUES (NULL, ?, ?, ?, 'mo', ?, ?)`)
+          .run(s.id, NHAN_VIEC_TINH_HINH, hanBaoPh(homNay), nowIso(), id).lastInsertRowid);
+        chotLeadBaoPh([viec]);   // VAI-0 (N76b)
+        /* BAOPH-0 (N72 ⑤): theo dõi mặc định — người gửi + Head + CX (như Báo PH vi phạm). */
+        themTheoDoiDong('bao_ph', viec, [p.userId], 'tay', p.userId, g.branchId ?? s.branch_id ?? null);
+        emViec.push(s.id);
       } else {
         const nhan = g.gvcn ? [g.gvcn] : quanLyCuaChiNhanh(g.branchId ?? s.branch_id);
         for (const uid of nhan) {
@@ -111,6 +116,7 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
       writeAudit({ actorUserId: p.userId, action: 'tinh_hinh.gui', entityType: 'tinh_hinh_hoc_tap', entityId: id,
         entityLabel: `${s.student_code} · ${chieu === 'gv_tvv' ? 'Báo tình hình' : 'Hỏi tình hình'}`, after: { chieu, noiDung } });
     }
+    theoDoiVaiBaoPh({ studentIds: emViec });   // rà #2233 P2-3: Head + CX MỘT lượt cho cả lô
   });
   return { ids: out };
 }

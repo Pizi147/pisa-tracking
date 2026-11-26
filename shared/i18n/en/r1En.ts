@@ -58,10 +58,8 @@ export const EN_R1_EN = {
   'Điền Tuần bắt đầu ở Sửa thông tin — lịch MT đề xuất hiện ngay ở đây.': 'Set the start week in Edit details — the suggested MT schedule appears here right away.',
   'Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.':
     'Mock Test attempt number in this pathway, with its expected band. A new pathway starts again from 1.',
-  'Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.':
-    'Week number counted from the student\'s start week. Fast Track defaults are weeks 6 · 12 · 16 · 20 · 24.',
-  'Tuần hệ thống tính ra từ tuần bắt đầu học. Áp lịch chỉ xếp lượt chưa có lịch.':
-    'Week calculated from the start week. Apply schedule only places attempts that have no week yet.',
+  'Tuần hệ thống tính ra từ tuần bắt đầu học (tuần thứ mấy — mốc mặc định Fast Track tuần 6 · 12 · 16 · 20 · 24). Áp lịch chỉ xếp lượt chưa có lịch.':
+    'Week calculated from the start week (week number — Fast Track defaults are weeks 6 · 12 · 16 · 20 · 24). Apply schedule only places attempts that have no week yet.',
   'Tuần đề xuất': 'Suggested week',
   'Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt đã có lịch (kể cả sau chuyển lớp) giữ nguyên.':
     'Which week the attempt is in now, and what Apply schedule does to it. Attempts that already have a week (including after a class transfer) stay put.',
@@ -493,7 +491,6 @@ export const EN_R1_EN = {
   'Final Test': 'Final Test',
   'Progress Test': 'Progress Test',
   /* CHU-GIAI (chủ SP 07/11): lưu ý cần thiết viết lại ngắn. */
-  'Để trống phần không đánh giá · không đổi điểm Test, mức SOS': 'Leave unassessed parts blank · does not change Test scores or SOS level',
   'Đổi tuần khai giảng không dời lịch MT của em đã có.': "Changing the start week does not move existing students' MT schedules.",
   'Hiện ở hồ sơ {n} em lớp {lop} · em chưa có Case kỹ năng này được mở Case mới': (b) => `Shows on the profiles of ${so(b.n, 'student', 'students')} in ${b.lop} · students without a case in this skill get a new one`,
 } satisfies Record<string, Dich>;

@@ -13,7 +13,7 @@ import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKet
 import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
-import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
+import { duongDotTest, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
@@ -36,6 +36,16 @@ export type HangMt = {
 };
 export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean; /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — không Vắng / Huỷ điểm / thi lại / xoá MT có điểm (cờ theo lớp, không theo vai). */ diem: boolean };
 
+/** dd/mm — dòng phụ tuần (mã tuần ở dòng trên đã nói tháng / năm). */
+const ngayNgan = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+/** MT-QUA-THI: cùng luật việc Head (`mt-thi:`) — lượt chưa thi (chưa / đã xếp, không lịch sử), tuần bắt đầu sau ngày thi (yyyy-mm-dd). */
+export function sauNgayThi(l: HangMt['luot'], ngayThi: string | null): boolean {
+  if (!l || !ngayThi || l.lichSu || (l.trangThai !== 'da-xep' && l.trangThai !== 'chua-xep')) return false;
+  const dau = l.kyNang.filter((k) => k.batBuoc && k.weekStart).map((k) => k.weekStart!.slice(0, 10)).sort()[0];
+  return !!dau && dau > ngayThi;
+}
+
 /** Tuần thật của lượt: một tuần, hoặc "W2 OCT – W3 OCT" khi R/L/W và Speaking tách tuần. */
 function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null {
   const tuan = l.kyNang.filter((k) => k.batBuoc && k.weekStart).map((k) => k.weekStart!.slice(0, 10)).sort();
@@ -49,8 +59,10 @@ function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null
  * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Xoá (bỏ tuần, giữ lượt — Q-0310-1, OV-15c), nhập điểm ngay dưới hàng
  * (`DaiODiemLon`, như hồ sơ MT). Không phải vào hồ sơ MT cho các việc lịch thường ngày.
  */
-export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienDien, onDoi }: {
+export function HangLichMt({ h, bang, hocVien, homNay, ngayThi = null, moDiem, onMoDiem, onHienDien, onDoi }: {
   h: HangMt; bang: BangLichMt; hocVien: string; homNay: string;
+  /** MT-QUA-THI: ngày thi của lộ trình (yyyy-mm-dd) — lượt chưa thi có tuần sau ngày đó ghi chữ "Sau ngày thi" (không chỉ màu). */
+  ngayThi?: string | null;
   /** Dải nhập điểm của hàng này đang mở (một hàng một lúc — nơi gọi giữ). */
   moDiem: boolean; onMoDiem: (mo: boolean) => void;
   /** Hộp xếp lịch đang mở → panel không đóng theo Esc (Esc chỉ đóng hộp). */
@@ -65,6 +77,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   const l = h.luot;
   const coDeXuat = h.studyWeek !== null;
   const that = l ? tuanThat(l, homNay) : null;
+  const sauThi = sauNgayThi(l, ngayThi);
 
   const moHop = (el: HTMLElement) => setHop(el);
   const idHoSo = l?.attemptId ?? h.huy?.attemptId ?? null;
@@ -93,17 +106,21 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   const tuanHien = h.weekStart ?? (h.attemptNo === 0 ? Object.values(l?.kn ?? {}).map((o) => o?.tuan ?? null).filter((x): x is string => !!x).sort()[0] ?? null : null);
   return (
     <>
-      <tr className="row-hover">
+      <tr className="row-hover" data-hang-mt>
         <td className="td whitespace-nowrap">
           <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} huy={!l && !!h.huy} />
           {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">{t('kỳ vọng {band}', { band: fmtBand(l.kyVong) })}</span>}
+          {/* MT-QUA-THI: cột đầu — luôn thấy cả khi bảng cuộn ngang (375). */}
+          {sauThi && <span className="block text-xs font-semibold text-late">{t('Sau ngày thi')}</span>}
         </td>
-        <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? t('tuần {n}', { n: h.studyWeek }) : '—'}</td>
+        {/* MT-QUA-THI (PTA 26/11, "xấu thì sửa luôn"): "Tuần học" gộp vào dòng phụ của Tuần đề xuất, ngày rút dd/mm — bảng vừa bề ngang panel, không cuộn ngang ở 1280 / 1440. */}
         <td className="td whitespace-nowrap">
           {tuanHien ? (
             <>
               <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
-              <span className="block text-xs text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
+              <span className="block text-xs tabular-nums text-slate-500">
+                {h.studyWeek !== null && <>{t('tuần {n}', { n: h.studyWeek })} · </>}{ngayNgan(tuanHien)} – {ngayNgan(addDaysStr(tuanHien, 6))}
+              </span>
             </>
           ) : <span className="text-xs text-slate-500" title={t('Ngoài lịch mặc định — Head xếp tay')}>{t('xếp tay')}</span>}
         </td>

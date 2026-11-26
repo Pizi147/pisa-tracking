@@ -32,6 +32,7 @@ import { xepCoHoanTac } from './hoanTacLich.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
+import { CON_VAI_BPXL } from '../worklist/nguoiNhan.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
@@ -62,6 +63,16 @@ function lopMt0CoLuot(p: Principal): Set<number> {
 }
 /** Người xem chỉ vào lớp thường qua MT0 S chéo: Giữa / Cuối khoá không lộ (chủ SP 08/11 "Final / progress thì vẫn là GV lớp đó thấy thôi"). */
 const chiMt0Lop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId }) && !teachesClass(p, classId);
+/**
+ * VAI-0 (N77, chủ SP 26/11 "Ẩn điểm, chỉ lịch"): BPXL xem / xếp Kế hoạch Test lớp chi nhánh KHÁC (không quyền xem lượt `attempt.view`) — máy chủ bỏ mọi trường điểm
+ * (band từng kỹ năng, Overall, kỳ vọng, nhận xét — cả trong lượt S Ex) khỏi các dòng; chỉ còn lịch (tuần, lượt, trạng thái). Người xem được lượt: trả nguyên.
+ */
+const KHOA_DIEM: ReadonlySet<string> = new Set(['diem', 'ovr', 'kyVong', 'nhanXet', 'band', 'overall']);   // S Ex: giữ lịch (tuần / ngày / trạng thái), bỏ điểm (PTA 26/11)
+const boDiem = (x: unknown): unknown => (Array.isArray(x) ? x.map(boDiem)
+  : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).filter(([k]) => !KHOA_DIEM.has(k)).map(([k, v]) => [k, boDiem(v)])) : x);
+export function chiLich<T extends { hang: unknown }>(p: Principal, classId: number, kq: T): T {
+  return can(p, PERMISSIONS.ATTEMPT_VIEW, { classId }) ? kq : { ...kq, diem: false, hang: boDiem(kq.hang) };
+}
 export const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
 /** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`, và không phải GVCN lớp đó khi công tắc "Mở sửa lịch Test" BẬT). */
 const chiXemLop = (p: Principal, classId: number) => !choSuaLichTest(p, { classId });
@@ -92,9 +103,10 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       `SELECT c.id, c.code, c.branch_id, pg.scoring_mode AS mode, br.name AS chi_nhanh,
               (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id   -- U05: ô GVCN của hàng lớp (cùng câu, như lopTrongPhamVi)
-                WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn
+                WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn,
+              xl.user_id AS xep_lich_id, xu.full_name AS xep_lich_ten   -- VAI-0 (N77): CVXL đã nhận lớp (cùng câu)
          FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
-         LEFT JOIN branches br ON br.id = c.branch_id
+         LEFT JOIN branches br ON br.id = c.branch_id LEFT JOIN lop_xep_lich xl ON xl.class_id = c.id AND ${CON_VAI_BPXL('xl.user_id')} LEFT JOIN users xu ON xu.id = xl.user_id
         WHERE ${where}
         ORDER BY c.code`,
     )
@@ -234,6 +246,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         canXepLai: canXepLai.get(r.id) ?? 0,
         tomTat: loai === 'ft' ? tomTatFT(r.id) : tomTatThuong(r.id),
         gvcn: (r.gvcn ?? null) as string | null,
+        xepLich: r.xep_lich_id ? { userId: r.xep_lich_id as number, ten: r.xep_lich_ten as string } : null,   // VAI-0 (N77): CVXL đã nhận lớp
         dotChay: loai === 'ft' ? dotChay(r.id) : tomTatThuong(r.id),
         chiXem: chiXemLop(p, r.id),
         /* KIEM-TAY-1011 (2): mã lớp là link chỉ khi người xem mở được hồ sơ lớp (cùng quyền `classOverview`; bảng lớp đã nhớ trong request GET — không thêm câu). */

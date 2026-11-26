@@ -61,10 +61,11 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       migratePrOv13p(conn, lan1);
       const vai = (k: string) => all(`SELECT r.key FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE p.key = ?`, k)
         .map((x) => x.key).sort().join(',');
-      assert(vai('student.add') === 'consultant,cx,manager,system_admin,teacher', `student.add: ${vai('student.add')}`);
-      assert(vai('class.create') === 'consultant,cx,manager,system_admin', `class.create: ${vai('class.create')}`);
+      /* VAI-0: + GĐCN (quyền Head, có student.edit) · Lead TVV giữ class.create (bộ cắt chỉ bỏ ở TVV / CX). */
+      assert(vai('student.add') === 'branch_director,consultant,cx,manager,system_admin,teacher', `student.add: ${vai('student.add')}`);
+      assert(vai('class.create') === 'branch_director,consultant,cx,lead_consultant,manager,system_admin', `class.create: ${vai('class.create')}`);
       const sau = all('SELECT role_id, permission_id FROM role_permissions').length;
-      assert(lan1.length === 1 && sau - truoc === 7, `lần 1: ${lan1.join(' | ')} · thêm ${sau - truoc}`);
+      assert(lan1.length === 1 && sau - truoc === 8, `lần 1: ${lan1.join(' | ')} · thêm ${sau - truoc}`);
       const lan2: string[] = [];
       migratePrOv13p(conn, lan2);
       assert(!lan2.length && all('SELECT 1 FROM role_permissions').length === sau, `lần 2 vẫn đổi: ${lan2.join(' | ')}`);

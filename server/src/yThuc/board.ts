@@ -130,7 +130,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
   return {
     studentId: em.studentId, ten, maHv, bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind) },
-    soMo: viPham.filter(([, t]) => t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han').length,
+    soMo: viPham.filter(([, t]) => !t.dung && (t.t === 'moi' || t.t === 'da_ghi_nhan' || t.t === 'can_xu_ly' || t.t === 'qua_han')).length,   // Lưu trữ (26/11): bỏ vi phạm Dừng
     soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, han: em.han, hanXem: em.hanXem,
     quaHanNgay: Math.max(0, ...viPham.map(([, t]) => t.quaHanNgay ?? 0)) || null,
     moiTuoi: moiNgay ? ngayCach(moiNgay, homNay) : null,
@@ -172,7 +172,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
       xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
-      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}), ...(v.khongXuLy ? { khongXuLy: v.khongXuLy } : {}),
+      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}), ...(v.khongXuLy ? { khongXuLy: v.khongXuLy } : {}), ...((v as any).dung ? { dung: true } : {}),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
@@ -348,7 +348,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string, giao
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay_xong   -- rà 25/11 PR 2: lần "đã báo" ĐẦU như sổ đúng hạn
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
-        WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
+        WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL AND lenh_chuyen_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       if (r.trang_thai === 'mo' && r.phu_trach_id != null) giaoCho?.set(r.student_id, r.phu_trach_id);

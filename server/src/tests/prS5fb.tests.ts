@@ -95,7 +95,8 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     assert(act, 'Progress Test trượt phải có việc Báo PH kết quả Test');
     let loi: any = null;
     try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' }); } catch (e) { loi = e; }
-    assert(loi?.status === 403 && !/SOS/.test(loi.message), `403 không nói SOS: ${loi?.status} ${loi?.message}`);
+    /* BAOPH-0 (N72 ⑤): việc TVV — GVCN / GVBM không đánh dấu; câu chặn nói bước tiếp, không nói SOS. */
+    assert(loi?.status === 400 && /TVV báo phụ huynh/.test(loi.message) && !/SOS/.test(loi.message), `400 không nói SOS: ${loi?.status} ${loi?.message}`);
     const web = doc('yThuc/PhoiHopSosSection.tsx');
     assert(/luot\.canAct && !adding && !luot\.nhanDot/.test(web), 'ẩn "+ Thêm việc" ở lượt có nhanDot (lớp thường)');
     assert(!/Empty title="[^"]*SOS/.test(web), 'màn rỗng không nói SOS');

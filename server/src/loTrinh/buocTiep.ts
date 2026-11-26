@@ -41,6 +41,8 @@ import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { CO_KET_QUA_THI_SQL } from '../students/tamDung.ts';
+import { chuKhung, duocGiao, ghiNguoiLam, giaoChoNguoi } from '../worklist/khungViec.ts';
+import { CN_EM } from '../worklist/hieuLuc.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
 const CO_KET_QUA = CO_KET_QUA_THI_SQL('c');
@@ -107,7 +109,7 @@ const tgChu = (c: any) => chuTargetKck(c.target_score == null ? null : fmtBand(c
 const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
-  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean;
+  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean; luuTru: boolean;
   /** OV-13m: "Đã xong · OVR 6.5 · Đạt Target" · hạn chọn (ngày có kết quả + 7) · Thứ Hai hẹn bắt đầu + lớp hẹn · lớp đang giữ ("Lớp này") · Target giữ. */
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
   studentId: number; cycleId: number;
@@ -140,12 +142,13 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
   if (!coMuc(c0)) return null;
   const c = kemKqHocTiep(c0);   // N51: Học tiếp — nhãn "Đã xong", gợi ý, Target gợi ý theo KQ lần thi đã chọn
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
-  const coTheChon = coQuyenBuocTiep(p, c.student_id);
+  /* Chủ SP 26/11 (rà #2219 P2-7): em trong Lưu trữ không còn Chọn bước tiếp — dùng Quay lại học. */
+  const coTheChon = chonDuoc(p, c) && !c.em_archived;
   const daChuyen = (c.buoc_tiep === 'lo_trinh_moi' || c.buoc_tiep === 'hoc_tiep') && !!g.lenhId && (db().prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any)?.trang_thai === 'da_chuyen';
   return {
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
-    coTheChon, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
+    coTheChon, luuTru: !!c.em_archived, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
     coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
     daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? c.bc_class_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
@@ -260,13 +263,21 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
  * TVV (đã qua `coQuyenBuocTiep`): cấp TẠM đúng các quyền đó, phạm vi chi nhánh của vai TVV, CHỈ trong lần gọi Bước tiếp này — TVV không có đường Học lại / chuyển lớp / xếp lớp /
  * Case chung (các đường đó vẫn kiểm quyền thật của người gọi). Nhật ký ghi đúng người bấm.
  */
-function nguoiLam(p: Principal, studentId: number): Principal {
+function nguoiLam(p: Principal, studentId: number, cycleId: number, o: { heThong?: boolean } = {}): Principal {
   if (can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return p;
   const g = p.grants.find((x) => grantPhiaTvv(x) && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));   // N52: CX như TVV
-  if (!g) throw forbidden(CHI_QL);
   const quyen = new Set<string>([PERMISSIONS.CYCLE_EDIT, PERMISSIONS.CLASS_EDIT, PERMISSIONS.STUDENT_EDIT, PERMISSIONS.STUDENT_EDIT_MORE]);
-  return { ...p, grants: [...p.grants, { ...g, id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', permissions: quyen }] };
+  if (g) return { ...p, grants: [...p.grants, { ...g, id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', permissions: quyen }] };
+  /* LPB-1 (N73 ⑤): người được giao "Chọn bước tiếp" của ĐÚNG lộ trình này — cấp tạm như TVV, phạm vi chi nhánh em, chỉ lần gọi này. `heThong`: lượt quét
+     thi hành Hẹn mà người chọn (người được giao, việc đã xong nên hết giao) — lựa chọn đã kiểm lúc chọn. */
+  if (o.heThong || duocGiao(p, 'buoc_tiep', cycleId)) {
+    const cn = (db().prepare(`SELECT ${CN_EM('?')} AS b`).get(studentId, studentId) as any)?.b ?? null;
+    if (cn !== null) return { ...p, grants: [...p.grants, { id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', branchId: cn, branchName: null, permissions: quyen }] };
+  }
+  throw forbidden(CHI_QL);
 }
+/** LPB-1: chọn / đổi / hoàn tác Bước tiếp — QL / TVV chi nhánh (`coQuyenBuocTiep`) hoặc người được giao đúng lộ trình này. */
+const chonDuoc = (p: Principal, c: { id: number; student_id: number }) => coQuyenBuocTiep(p, c.student_id) || duocGiao(p, 'buoc_tiep', c.id);
 type GhiBuocTiep = {
   ketThucHoc?: boolean; luuTru?: boolean; dongHan?: boolean; huongCu?: string | null;
   /** OV-13m: Tạm dừng — lộ trình đóng lần này · em Tạm dừng lần này. */
@@ -413,7 +424,7 @@ function batDauBangHocLai(q: Principal, c: any, o: { date: string; lopMoiId: num
     if (ph.length) ghi.dongPhoiHop = ph;
   }
   if ((conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status !== 'finished') {
-    setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI);
+    setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI, undefined, { giuViec: true });   // rà #2219 P1-1: em vẫn học (Học lại ngay dưới) — không đóng việc Lưu trữ
     ghi.ketThucHoc = true;
   }
   /* Về lớp cũ: lộ trình đã thi KHÔNG chạy tiếp → đóng hẳn trước, `hocLai` thấy không còn lộ trình để chạy tiếp thì mở lộ trình mới ở lớp cũ. */
@@ -436,8 +447,8 @@ function datHuong(cycleId: number, chon: LuaChonSauThi, routeMoi: string | null,
 export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepVao, o: { truoc?: TruocDoi | null; kq?: string; hoanTac?: boolean } = {}) {
   const c0 = docLoTrinh(cycleId);
   if (!c0) throw notFound('Không tìm thấy lộ trình');
-  if (!coQuyenBuocTiep(p, c0.student_id)) throw forbidden(CHI_QL);
-  const q = nguoiLam(p, c0.student_id);
+  if (!chonDuoc(p, c0)) throw forbidden(CHI_QL);
+  const q = nguoiLam(p, c0.student_id, c0.id);
   const chon = input.chon as LuaChonSauThi;
   if (![...LUA_CHON_SAU_THI, ...LUA_CHON_SAU_THI_CU].includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
   if (!coMuc(c0) || !(c0.co_kq || dongHocTiep(c0))) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
@@ -463,6 +474,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   return tx(() => {
     /* Đọc lại TRONG giao dịch: hai người bấm cùng lúc thì người sau hoàn tác đúng lựa chọn người trước vừa ghi. */
     const cu = docLoTrinh(cycleId);
+    if (!coQuyenBuocTiep(p, c0.student_id)) ghiNguoiLam(p, 'buoc_tiep', cycleId);   // rà #2280 P1-A: người được giao đã làm → giữ quyền Hoàn tác
     /* Lưu lại ĐÚNG lựa chọn đang có (bấm đúp, gửi lại) → không làm lại gì. */
     if (cu.buoc_tiep === chon && (JSON.parse(cu.buoc_tiep_json ?? '{}') as GhiBuocTiep).thamSo === thamSo) return trangThaiBuocTiep(p, cycleId);
     /* SUA-LUU-TRU (Đổi): nhớ đầu vào đã kiểm của lần này + lựa chọn trước (Hoàn tác về đúng nó). Lựa chọn ghi trước PR không có `vao` → Hoàn tác về chờ chọn như cũ. */
@@ -577,7 +589,7 @@ export function chonBuocTiepCoHoanTac(p: Principal, cycleId: number, input: Chon
 export function hoanTacHocTiepDoiLop(p: Principal, cycleId: number, daoVao: unknown) {
   const c = docLoTrinh(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coQuyenBuocTiep(p, c.student_id)) throw forbidden(CHI_QL);
+  if (!chonDuoc(p, c)) throw forbidden(CHI_QL);
   const conn = db();
   const g = conn.prepare('SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?').get(Number(daoVao), LOAI_HOC_TIEP_DOI_LOP, 'learning_cycles', cycleId) as BanGhiDao | undefined;
   if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
@@ -596,7 +608,7 @@ export function hoanTacHocTiepDoiLop(p: Principal, cycleId: number, daoVao: unkn
 export function boChonBuocTiep(p: Principal, cycleId: number) {
   const c = docLoTrinh(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coQuyenBuocTiep(p, c.student_id)) throw forbidden(CHI_QL);
+  if (!chonDuoc(p, c)) throw forbidden(CHI_QL);
   if (!c.buoc_tiep) return trangThaiBuocTiep(p, cycleId);
   /* SUA-LUU-TRU: lựa chọn này là một lần ĐỔI → Hoàn tác = chọn lại lựa chọn trước (một giao dịch: gỡ cái mới, làm lại cái cũ), giữ chuỗi lùi phía trước. */
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
@@ -605,7 +617,7 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
     catch (e) { if (e instanceof HttpError && (e.status === 400 || e.status === 409)) throw conflict(KHONG_HOAN_TAC); throw e; }   // vd Hẹn cũ đã qua tuần
   }
   return tx(() => {
-    hoanTac(nguoiLam(p, c.student_id), c);
+    hoanTac(nguoiLam(p, c.student_id, c.id), c);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: demoToday(), title: `Sau thi: ${c.buoc_tiep_hen ? 'huỷ hẹn' : 'hoàn tác'} ${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId, dedupKey: `buoc_tiep:${cycleId}:${nowIso()}`,
@@ -632,7 +644,7 @@ export function batDauHenDenHan(homNay = demoToday()): number {
         if (!c || c.buoc_tiep !== 'lo_trinh_moi' || !c.buoc_tiep_hen || c.buoc_tiep_hen > homNay) return;
         const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
         if (!g.lenhId) {
-          batDauBangHocLai(nguoiLam(loadPrincipal(c.buoc_tiep_boi), c.student_id), c, { date: c.buoc_tiep_hen, lopMoiId: g.lopMoiId ?? null, mucTieu: g.mucTieu ?? null }, g);   // P7: `g.loTrinhMoi` đi theo
+          batDauBangHocLai(nguoiLam(loadPrincipal(c.buoc_tiep_boi), c.student_id, c.id, { heThong: true }), c, { date: c.buoc_tiep_hen, lopMoiId: g.lopMoiId ?? null, mucTieu: g.mucTieu ?? null }, g);   // P7: `g.loTrinhMoi` đi theo
           datHuong(id, 'lo_trinh_moi', g.loTrinhMoi?.route ?? (g.lopMoiId ? (db().prepare('SELECT route FROM classes WHERE id = ?').get(g.lopMoiId) as any)?.route ?? null : null), g);
           n++;
         }
@@ -688,7 +700,7 @@ export const SQL_CHO_BUOC_TIEP = `SELECT c.id, c.student_id, s.full_name AS ten,
        COALESCE(b.class_id, e.class_id) AS class_id, COALESCE(b.class_code, l.code) AS class_code, COALESCE(b.branch_id, l.branch_id) AS branch_id
   FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN ban_chup_lo_trinh b ON ${BAN_CHUP_CUOI} LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
   LEFT JOIN enrollments e ON e.id = ${GHI_DANH} LEFT JOIN classes l ON l.id = e.class_id
- WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND (s.archived_at IS NULL OR s.status = 'inactive')   -- P7: em Tạm dừng (Lưu trữ) vẫn có việc
+ WHERE c.route IS NOT NULL AND c.buoc_tiep IS NULL AND s.archived_at IS NULL   -- chủ SP 26/11: em trong Lưu trữ không còn việc Chọn bước tiếp (đã có Quay lại học; thay P7)
    AND (c.status = 'active' OR COALESCE(b.ly_do, '') != 'chuyen_lop') AND ${CO_KET_QUA}
    AND c.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = c.student_id)`;
 /** TD7: cả hệ thống nhớ trong request GET (Công việc, Học viên & Lớp gọi nhiều lần). Người gọi không sửa kết quả. */
@@ -702,17 +714,18 @@ export function choBuocTiep(studentId?: number): any[] {
  * quyền hỏi theo em (tập nhỏ: em có kết quả, chưa chọn). Dòng: "Chọn bước tiếp" · em · lớp · "đã thi T7 10/10 · OVR 6.5 · Đạt Target" (mockup OV-13 bước tiếp §3).
  */
 export function viecBuocTiep(p: Principal, f: { today: string; branchId: number | null; studentId?: number; tatCa?: boolean }): any[] {
-  if (!coTheGiuViecTvv(p)) return [];
+  if (!coTheGiuViecTvv(p) && !giaoChoNguoi(p.userId, 'buoc_tiep').length) return [];   // LPB-1: việc giao cho tôi
   const ds = choBuocTiep(f.studentId);
   napTruocPhamVi(ds.map((c) => c.student_id));   // quyền theo em đọc phạm vi một câu cho cả tập — không N+1
   const out: any[] = [];
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     /* SV-TVV-VIEC: MỘT người giữ = TVV của em (không có → QL chi nhánh) — QL / TVV khác của chi nhánh vẫn chọn được (`coQuyenBuocTiep`) nhưng không là việc của họ. */
-    const chu = chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa, c.branch_id ?? null);
+    /* LPB-1 (N73 ⑤): việc đã giao rời dòng TVV / Head; hạn đặt tay thắng hạn sau thi. */
+    const chu = chuKhung(p, !!f.tatCa, 'buoc_tiep', c.id, coTheGiuViecTvv(p) ? chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa, c.branch_id ?? null) : null);
     if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
-    const han = st.han ?? f.today;
+    const han = chu.han ?? st.han ?? f.today;
     /* SAU-THI-GON A3-13: phụ dòng việc "OVR 7.0 · Đạt Target" — không "Đã xong · …" (đọc như việc đã xong). */
     const kq = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua({ ...c, bc_ket_luan: c.ket_luan }) }, true);
     const ketQua = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: c.ket_luan ?? c.outcome ?? null }, true);
@@ -725,6 +738,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
       reason: [c.class_code ?? null, thi, ketQua].filter(Boolean).join(' · '),
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chốt bước tiếp',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
+      ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'buoc_tiep', id: c.id },
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });
   }

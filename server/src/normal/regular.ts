@@ -1,6 +1,6 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { HV_CON_NO_SQL, HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
@@ -1210,12 +1210,12 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
 
   const attempts = conn
     .prepare(
-      `SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status,
+      `SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS hv_archived, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai,
               rp.code AS period_code, rp.week_start
          FROM assessment_attempts a
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive' OR ${HV_CON_NO_SQL('s', 'a.o_cho_tu')})` :` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
+        WHERE ${where}${chiLuot ? '' : cls.status === 'finished' ? ` AND (s.archived_at IS NULL OR s.status = 'inactive')` :` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`}   -- lỗi chủ SP 28/10: lớp đang học chỉ lượt hiện tại (em Tạm dừng giữ như P7); lớp đã kết thúc giữ như cũ
         ORDER BY a.kind DESC, s.full_name`,
     )
     .all(...params) as any[];
@@ -1365,7 +1365,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** Thứ Hai của tuần thi môn này — lưới viết tuần bằng `tuanLich` (G-6), không hiện mã tuần có năm. */
             weekStart: v.weekStart,
             deadline: v.deadline, progress: v.progress, sitStatus: v.sitStatus,
-            overdue: !scored && v.overdue,
+            overdue: !scored && v.overdue && oConNoKhiDung(a.hv_archived, v.weekStart, a.hv_quay_lai),   // Lưu trữ (26/11): em Lưu trữ / ô trước tuần quay lại không quá hạn
             /** C08: ô mang dấu "-" — môn đã tự dời khỏi tuần `movedFrom`. Dấu "-" không phải điểm 0. */
             noShow: !!row?.no_show_period_id,
             /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi, không dời, không nợ (`regularSkillViews` đã bỏ khỏi việc). */
@@ -1396,7 +1396,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         overdue: mon.some((k) => {
           const row = rows.find((r: any) => r.skill === k);
           const scored = row?.raw_score !== null && row?.raw_score !== undefined;
-          return !scored && !!views.get(k)?.overdue;
+          return !scored && !!views.get(k)?.overdue && oConNoKhiDung(a.hv_archived, views.get(k)!.weekStart, a.hv_quay_lai);
         }),
         /** Khoá bài (`khoaBai`): Progress / Final theo loại, Checkpoint kèm số (`checkpoint:2`) — lưới gom dòng theo khoá này. */
         kind: khoaBai(a.kind, a.attempt_no),

@@ -13,12 +13,12 @@ import { notFound } from '../util.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, laHeadHoacQt, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
+  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, laHeadHoacQt, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeLichTest, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
-import { LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
@@ -279,7 +279,7 @@ export function noQuaHan(
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
   /* Rà #218 I2: cùng phạm vi khối 2/3 (`scopeXemLuotCham`) — GV Speaking chấm chéo thấy S Mock quá hạn của lớp FT cùng chi nhánh. */
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true, chiConO: true,
+  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true, phamViLich: true, chiConO: true,
     /* TD7c: khối 1 + ô hạn riêng chỉ lấy ô thi trước tuần trước (`khoiCham`: tuần trước / tuần này → khối 2, đã có `hangLopTuan`) — lượt khác không nạp. */
     chiTruocTuan: tuanTruoc });
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
@@ -615,7 +615,7 @@ function hangLopTuan(
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
-              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task, s.archived_at AS hv_archived
+              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task, s.archived_at AS hv_archived, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
          JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: cùng tập khối Nợ / badge
@@ -668,8 +668,8 @@ function hangLopTuan(
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
-    /* N71: em ngừng học — tuần thi sau ngày dừng không còn "còn chờ" (cùng `scoreDebt.ts`). */
-    if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start))) continue;
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (cùng `scoreDebt.ts`). */
+    if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start), r.hv_quay_lai)) continue;
     if (!giuLop(r.class_id)) continue;
     /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */
     const mt0 = r.kind === 'mt0';
@@ -820,7 +820,7 @@ export function lichTest(
   o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
 ): LichTest {
   /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
-  const scope = scopeXemLuotCham(p, today);
+  const scope = scopeLichTest(p, today);   // VAI-0 (N77): BPXL thấy lịch mọi chi nhánh
   const coPhanCong = defaultWorkScope(p) === 'mine' && !laHeadHoacQt(p);
   /* Không có phân công thì "Lớp tôi dạy" là tập rỗng — luôn xem Tất cả. */
   const phamVi: PhamViLichTest = coPhanCong ? o.phamVi ?? 'cua-toi' : 'tat-ca';

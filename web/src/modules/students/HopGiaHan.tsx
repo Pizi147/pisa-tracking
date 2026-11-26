@@ -75,7 +75,7 @@ export function NhanSauThi({ s, gon, onHan }: { s: { giaiDoan: GiaiDoanSauThi; h
   const chu = chuSauThi(s);
   if (!chu) return null;
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
-  const chuHan = s.han ? [ngay(s.han, homNay), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ') : '';
+  const chuHan = s.han ? ngay(s.han, homNay) : '';
   const han = !s.han ? null : (
     <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
       {s.quaHan && <span className="sr-only">{t('quá hạn')} </span>}{onHan ? <HanBam ten={ngay(s.han, homNay)} onClick={onHan}>{chuHan}</HanBam> : chuHan}

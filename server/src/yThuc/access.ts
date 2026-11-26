@@ -1,8 +1,9 @@
 import { db } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
-import { boVaiBpxl, can, require_, type Principal } from '../permissions.ts';
+import { boVaiBpxl, can, laTvvCuaEm, require_, type Principal } from '../permissions.ts';
 import { forbidden, notFound } from '../util.ts';
+import { conHieuLuc } from '../worklist/hieuLuc.ts';
 
 /**
  * QUYỀN CỦA MODULE Ý THỨC — MỘT nơi (thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6).
@@ -59,6 +60,15 @@ export function requireViewStudent(p: Principal, studentId: number) {
 
 /** N63 ⑤: người xem thấy Ý thức của em (hồ sơ HV gửi khối Ý thức chỉ khi có) — cùng cổng `requireViewStudent`. */
 export const xemYThucHv = (p: Principal, studentId: number): boolean => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, studentCtx(studentId));
+
+/**
+ * Chủ SP 27/11 (rà #2273 P1): MỘT luật liên hệ phụ huynh (tên · quan hệ · SĐT + ghi chú GVCN) của Meeting CX/GĐCN — panel Meeting (`xemMeeting` boiCanh) VÀ bước
+ * GVCN xác nhận của Tuyến: người xử lý Ý thức em (GVCN, Head, QT) · Head / CX / QT chi nhánh em · TVV của em · người ĐANG GIỮ một phần Meeting còn mở (`giuPhanMo`
+ * — BPXL giữ Xếp lịch họp, CX giữ Kết quả). BPXL khác / theo dõi / đã giao đi / phần đã xong · GV bộ môn chỉ xem → không.
+ */
+export const xemLienHePh = (p: Principal, em: { id: number; tvv: number | null; cn: number | null }, giuPhanMo: boolean): boolean =>
+  giuPhanMo || canManageDiscipline(p, em.id) || laTvvCuaEm(p, { consultant_user_id: em.tvv, student_id: em.id, em_branch: em.cn })
+  || p.grants.some((g) => ['manager', 'system_admin', 'cx'].includes(g.roleKey) && (g.branchId === null || g.branchId === em.cn));
 
 export function requireRecordViolation(p: Principal, studentId: number) {
   require_(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopGanNhat(studentId), studentId },   // RKC-3b: GV lớp ghi danh gần nhất của em Tạm dừng / đã học xong
@@ -122,15 +132,31 @@ export function coordinationOwner(actionId: number) {
 
 /** Kho tệp: quyền của biện pháp làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền xử lý Ý thức (B10: vẫn bổ sung được khi đã thực hiện). */
 export function measureOwner(measureId: number) {
-  const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  const m = db().prepare('SELECT student_id, status, created_by, phu_trach_id, confirmed_by FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
   return {
-    requireView: (p: Principal) => requireViewStudent(p, m.student_id),
+    requireView: (p: Principal) => { if (!lamXuLyDuocGiao(p, m)) requireViewStudent(p, m.student_id); },
     requireEdit: (p: Principal) => {
+      if (lamXuLyDuocGiao(p, m)) return;   // BAOPH-0 (rà #2233 P1-6): người được giao đính kèm bằng chứng của lần xử lý mình lập / được giao
       requireViewStudent(p, m.student_id);
       requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của lần xử lý này.');
     },
   };
+}
+
+/**
+ * BAOPH-0 (N72 ⑥, rà #2233 P1-6): người được giao việc Ý thức (Xử lý vi phạm / Đã thực hiện) KHÔNG quản lý Ý thức của em vẫn làm trọn việc của mình — lần xử lý do
+ * chính họ lập (nháp, tệp bằng chứng, Hoàn tác, xem lại) hoặc lần được giao "Đã thực hiện". Chỉ khi còn hoạt động + còn vai ở chi nhánh em (như N58).
+ */
+export function lamXuLyDuocGiao(p: Principal, m: { student_id: number; status?: string; created_by?: number | null; phu_trach_id?: number | null; confirmed_by?: number | null }): boolean {
+  if (canManageDiscipline(p, m.student_id)) return false;
+  /* Rà #2233 vòng 2 P1-B: không mở theo "người lập" mãi mãi (GVCN cũ rời lớp không còn đụng bằng chứng — SUA-NO-RA). Chỉ:
+     · "Đã thực hiện" được giao (`phu_trach_id`): lúc chờ thực hiện, hoặc lần chính mình đã ghi thực hiện;
+     · lần xử lý mình lập: còn NHÁP, hoặc mình đang là người được giao Xử lý vi phạm của em ở đợt này (`viec_xu_ly` mo / xong — xong = vừa lưu, Hoàn tác / xem lại). */
+  const giaoDth = m.phu_trach_id === p.userId && (m.status === 'da_duyet' || (m.status === 'done' && m.confirmed_by === p.userId));
+  const tao = m.created_by === p.userId && (m.status === 'nhap'
+    || !!db().prepare(`SELECT 1 FROM viec_xu_ly WHERE id = ? AND phu_trach_id = ? AND trang_thai IN ('mo', 'xong')`).get(m.student_id, p.userId));
+  return (giaoDth || tao) && conHieuLuc(p.userId, m.student_id);
 }
 
 /** GVCN đang hiệu lực của lớp em đang học (không có → null). */

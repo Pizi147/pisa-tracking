@@ -101,6 +101,7 @@ export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
     reportedBy: r.reported_by, reportedByName: r.reported_by_name ?? null,
     ten: tm.ten, moTa: tm.moTa, description: r.description,
     trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null, lyDoQuaHan: tt?.lyDoQuaHan ?? null,
+    ...(tt?.dung ? { dung: true } : {}),   // Lưu trữ (26/11): vi phạm Dừng — web không đếm vào "Trong 2 tuần"
     ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
     chiNhac,

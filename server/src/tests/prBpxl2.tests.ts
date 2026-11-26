@@ -60,8 +60,10 @@ export async function runPrBpxl2Tests(t: any) {
     assert(h.filter((x) => x.vangTuan).length === truoc + 1, `cờ lưới ${h.filter((x) => x.vangTuan).length} ≠ ${truoc + 1}`);
   }));
 
-  check('B2-2 · tin "n em vắng" gộp lớp × tuần: BPXL MB + toàn hệ thống nhận MỘT tin, cập nhật số em, hiện lại là mới; BPXL chi nhánh khác / GV không; không là việc', () => thu(() => {
+  check('B2-2 · tin "n em vắng" gộp lớp × tuần: MỘT BPXL (CVXL nhận lớp) nhận MỘT tin, cập nhật số em, hiện lại là mới; lead toàn hệ thống / BPXL chi nhánh khác / GV không; không là việc', () => thu(() => {
     const mb = taoBpxl(['MB']); const tat = taoBpxl([]); const cp = taoBpxl(['CP']);
+    /* VAI-0 (N74 / N77, rà PTA): tin vắng về MỘT người — CVXL đã nhận lớp (bộ demo MB đã có BPXL khác); lead toàn hệ thống không nhận. */
+    conn.prepare('INSERT OR REPLACE INTO lop_xep_lich (class_id, user_id, gan_luc) VALUES (?, ?, ?)').run(lop, mb, '2026-01-01');
     const em = choThi();
     absence.baoVang(QL, em[0].id, em[0].skill, null, today);
     const t1 = tin(mb);
@@ -72,7 +74,7 @@ export async function runPrBpxl2Tests(t: any) {
     assert(t2.length === 1 && /^2 em vắng/.test(t2[0].title) && t2[0].read_at === null, `gộp: ${JSON.stringify(t2.map((x: any) => [x.title, x.read_at]))}`);
     const body = JSON.parse(t2[0].body);
     assert(body.soEm === 2 && body.em.length === 2 && body.em.every((e: any) => !e.huy && e.tuanMoi > tuan), t2[0].body);
-    assert(tin(tat).length === 1 && tin(cp).length === 0, `toàn hệ thống ${tin(tat).length} · CP ${tin(cp).length}`);
+    assert(tin(tat).length === 0 && tin(cp).length === 0, `toàn hệ thống ${tin(tat).length} · CP ${tin(cp).length}`);
     assert(one(`SELECT COUNT(*) n FROM notifications n WHERE n.kind = 'vang_lop' AND NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
         WHERE ur.user_id = n.user_id AND r.key = 'scheduler' AND ur.status = 'active')`).n === 0, 'chỉ BPXL nhận tin vắng');
     assert(!d.laTinViec(t2[0]) && !d.laViecTuTin({ ...t2[0], con_viec: 1 }), 'tin vắng không vào Việc cần làm');
@@ -88,6 +90,7 @@ export async function runPrBpxl2Tests(t: any) {
 
   check('B2-3 · Bỏ vắng: tin bớt em, không hiện lại là mới; hết em → xoá tin; số "Vắng · n em" giảm theo', () => thu(() => {
     const mb = taoBpxl(['MB']);
+    conn.prepare('INSERT OR REPLACE INTO lop_xep_lich (class_id, user_id, gan_luc) VALUES (?, ?, ?)').run(lop, mb, '2026-01-01');   // VAI-0: một người nhận
     const em = choThi();
     const truoc = soVang();
     absence.baoVang(QL, em[0].id, em[0].skill, null, today);

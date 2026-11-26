@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, coVaiCx, cnMacDinhBpxl, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -28,6 +28,8 @@ import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as giaoViecSvc from '../worklist/giaoViec.ts';
 import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as traLaiSvc from '../yThuc/traLai.ts';
+import * as tuyenSvc from '../yThuc/tuyen.ts';
+import * as lienPhongSvc from '../classes/lienPhongBan.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -51,6 +53,7 @@ import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as thiThatSvc from '../loTrinh/thiThat.ts';
 import * as buocTiepSvc from '../loTrinh/buocTiep.ts';
+import * as khungSvc from '../worklist/khungViec.ts';
 import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
@@ -110,6 +113,7 @@ import {
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow,
 } from '../platform/week.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
+import * as xepLichLopSvc from '../classes/xepLichLop.ts';
 import * as hoanTacLichSvc from '../keHoach/hoanTacLich.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
@@ -140,7 +144,7 @@ import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../workl
 import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
-import { phamViXemViec } from '../worklist/xemViec.ts';
+import { nhinNhuQl, phamViXemViec } from '../worklist/xemViec.ts';
 import { emCuaTvv, soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
@@ -174,7 +178,9 @@ const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
  * chi tiết (GET), cập nhật tiến độ (POST …/update), sửa hạn / theo dõi (PATCH) — khi là người phụ trách / phụ trách việc con / người theo dõi đúng việc đó
  * (`coQuyenTheoViec`). Danh sách, nhóm, Dừng lặp, tạo việc: vẫn chặn. Tệp đi `/attachments` (quyền của việc, không qua cổng này).
  */
-const laViecVhCuaToi = (p: Principal, duong: string, method: string) => {
+const laViecVhCuaToi = (p: Principal, duong: string, method: string, body?: any) => {
+  /* TUYEN-1 (PTA chốt theo mockup v27): tạo VIỆC CON của việc Ý thức / Phối hợp / Báo PH (`chaLoai`) — người giữ việc cha (TVV, GV…) qua cổng; `createMgmtTask` kiểm người giữ. */
+  if (method === 'POST' && /^\/mgmt-tasks\/?$/.test(duong) && body?.chaLoai != null && body.chaLoai !== '') return true;
   const m = (method === 'GET' || method === 'PATCH' ? /^\/mgmt-tasks\/(\d+)\/?$/ : method === 'POST' ? /^\/mgmt-tasks\/(\d+)\/update\/?$/ : null)?.exec(duong);
   return !!m && mgmtSvc.coQuyenTheoViec(p, Number(m[1]));
 };
@@ -186,7 +192,7 @@ api.use((req, _res, next) => {
   const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
   if (KHU_PHAN_TICH.test(duong) && !can(p, PERMISSIONS.ANALYSIS_VIEW, { anyScope: true })) { next(forbidden('Vai trò của bạn không có khu Phân tích.')); return; }
   const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
-  if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method))) {
+  if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method, req.body))) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
@@ -277,7 +283,7 @@ api.get('/demo/session', wrap((req) => {
     /* QTV2-BAND: Kỳ vọng MT FT + Ngưỡng lớp thường — cùng cách (nhớ đệm, 0 câu khi không ai sửa). */
     kyVongFt: cauHinhSvc.dsBanKyVong(), nguongThuong: cauHinhSvc.dsBanNguong(),
     roles: p.roleKeys,
-    roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
+    roleLabels: p.roleKeys.map((r) => nhanVai(p, r)),
     grants: permissionSummary(p),
     assignments: p.assignments.map((a) => (
       { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore,
@@ -322,6 +328,15 @@ api.get('/demo/session', wrap((req) => {
  * PR-OV2a: dữ liệu menu Góc nhìn + dải "Góc nhìn: {vai} · {phạm vi} · Về {vai gốc}". Phạm vi đọc từ MỌI grant / phân công của tài khoản
  * (principal của phiên đã lọc theo góc nhìn) — một lần đọc lại, chỉ cho người đổi được góc nhìn.
  */
+/** VAI-0 (N77): BPXL xếp lịch mọi chi nhánh — không gửi `branchId` thì mở chi nhánh gán (`cnMacDinhBpxl`); gửi `branchId=all` = mọi chi nhánh. */
+const cnBpxl = (req: Request, cn: number | null | undefined): number | null | undefined =>
+  req.query?.branchId === undefined ? cnMacDinhBpxl(principalOf(req)) ?? cn : cn;
+/** VAI-0: nhãn vai theo vai THẬT của grant (GĐCN mang `roleKey` Head, Lead TVV mang CX — `VAI_NHU`). */
+const nhanVai = (p: Principal, r: string) => {
+  const k = p.grants.some((x) => x.roleKey === r && !x.vaiThat) ? r : p.grants.find((x) => x.roleKey === r)?.vaiThat ?? r;
+  return ROLE_LABEL[k as Role] ?? k;
+};
+
 function gocNhinCua(p: Principal) {
   const vaiGoc = p.vaiGoc ?? p.roleKeys;
   if (!coTheDoiGocNhin(vaiGoc)) return null;
@@ -338,7 +353,7 @@ function gocNhinCua(p: Principal) {
   return {
     dangChon: p.gocNhin ?? null,
     vaiGoc: goc,
-    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role),
+    coThe: vaiGoc.map((role) => ({ role, nhan: nhanVai(du, role), phamVi: phamVi(role),
       ...(role === 'teacher' ? { chiNhanh: chiNhanhGv, soLop } : {}),
       soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
   };
@@ -409,7 +424,7 @@ api.get('/ref/branches', requireAuth, wrap((req) => {
     return all.filter((b) => duoc.has(b.id)).map((b) => ({ ...b, phanCong: can(p, PERMISSIONS.CLASS_ASSIGN, { branchId: b.id }) }));
   }
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.all) return all;
+  if (scope.all || p.grants.some((g) => g.roleKey === 'scheduler')) return all;   // VAI-1 (N77): BPXL xếp lịch mọi chi nhánh — ô Chi nhánh của Test liệt kê đủ
   const viaClass = scope.classIds.length
     ? (db().prepare(`SELECT DISTINCT branch_id AS id FROM classes WHERE id IN (${scope.classIds.map(() => '?').join(',')})`)
         .all(...scope.classIds) as any[]).map((r) => r.id)
@@ -528,6 +543,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
     chiNhanh: qInt(req, 'chiNhanh'),
     moiVai: nhom === 'giao_viec',   // GV-2 (N58): ô giao việc liên phòng ban — mọi vai ở chi nhánh của việc
+    quyen: ['chot', 'xep_lich', 'khong_bpxl', 'nhan_tin'].includes(qStr(req, 'quyen') ?? '') ? qStr(req, 'quyen') as 'chot' | 'xep_lich' | 'khong_bpxl' | 'nhan_tin' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT · việc TVV / Bàn giao
   });
 }));
 
@@ -644,7 +660,9 @@ api.get('/my-work', requireAuth, wrap((req) => {
 /** GV-1 (N58): tab "Đang theo dõi" — việc tôi theo dõi còn mở + vừa xong 7 ngày, chia theo loại. Chỉ gọi khi mở tab (không vào /my-work, không số đếm). */
 api.get('/my-work/theo-doi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.viecTheoDoi(principalOf(req));
+  const p = principalOf(req);
+  /* TUYEN-0 (N72 ①): `tuyen` = một dòng một tuyến Ý thức & Phối hợp (gom việc N58 của tuyến — dòng `viec`); `nhom` cho web hiện tại, bỏ việc của tuyến đã "Bỏ theo dõi". */
+  return tuyenSvc.voiTuyen(p, giaoViecSvc.viecTheoDoi(p));
 }));
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
 api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req), req.body?.key, req.body?.boQua !== false)));
@@ -695,10 +713,10 @@ api.get('/attempts/:id', requireAuth, wrap((req) => {
 // -------------------------------------------------------------- PR-Rc2: Kế hoạch Test
 
 api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
-  keHoachSvc.danhSachLop(principalOf(req), { branchId: toInt(req.query?.branchId) })));
+  keHoachSvc.danhSachLop(principalOf(req), { branchId: cnBpxl(req, toInt(req.query?.branchId)) })));
 
 api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
-  keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
+  keHoachSvc.chiLich(principalOf(req), pInt(req, 'classId'), keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId')))));
 
 /** Đọc object tuần `{ listening: periodId, … }` — từng giá trị qua `toInt`, kỹ năng lạ bị bỏ. */
 function tuanTheoKyNang(v: any): Record<string, number> {
@@ -817,7 +835,7 @@ api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   keHoachSvc.requireXem(principalOf(req), pInt(req, 'classId'));   // PTA rà #1987: kiểm quyền xem TRƯỚC khi quét (quét có ghi)
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
-  return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
+  return keHoachSvc.chiLich(principalOf(req), pInt(req, 'classId'), keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId')));
 }));
 
 /**
@@ -1185,6 +1203,8 @@ api.post('/classes/:classId/bao-cao-ph/dat-nhanh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.datNhanhBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
+/* BO-BAO-CAO-PH (chủ SP 26/11): Head / Quản trị / Admin bỏ / khôi phục Báo cáo PH của một em trong một đợt. */
+api.post('/classes/:classId/bao-cao-ph/bo-em', requireAuth, wrap((req) => baoCaoPhSvc.boEmBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {})));
 
 
 /**
@@ -1195,7 +1215,7 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
   const pv = qStr(req, 'phamVi');
-  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'), demoToday(), {
+  return chamSvc.lichTest(principalOf(req), periodId, cnBpxl(req, qInt(req, 'branchId')), demoToday(), {
     phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
   });
 }));
@@ -1427,7 +1447,9 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
 /** Tab Ý thức của học viên (K3 §4f) + khung phải của tab lớp khi chọn em: thang, thanh việc, vi phạm, dòng thời gian trộn. */
 api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return xuLySvc.yThucHocVien(principalOf(req), pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
+  const p = principalOf(req);
+  const v = xuLySvc.yThucHocVien(p, pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
+  return { ...v, ...tuyenSvc.tuyenCuaEm(p, v.studentId) };   // TUYEN-0: tuyến "đang chờ xử lý" (panel Xử lý) + chuỗi chấm mọi tuyến của em
 }));
 
 /** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
@@ -1440,6 +1462,19 @@ api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return loYThucSvc.loYThucLop(principalOf(req), pInt(req, 'id'));
 }));
+/* VAI-0 (N77): CVXL nhận lớp — xem (ai xem được lịch lớp) · nhận / bỏ / gán hộ (`{ userId | null, cu }`) · Hoàn tác. */
+api.get('/classes/:id/xep-lich', requireAuth, wrap((req) => {
+  const id = pInt(req, 'id');
+  if (!xepLichLopSvc.xemDuocXepLich(principalOf(req), id)) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
+  /* VAI-1: `ganHo` (Head / GĐCN / Quản trị / lead BPXL) → web hiện ô đổi người + danh sách BPXL (một câu, chỉ khi gán hộ được). */
+  const ganHo = xepLichLopSvc.ganHoDuoc(principalOf(req), id);
+  return { xepLich: xepLichLopSvc.xemXepLich(id), ganHo, ...(ganHo ? { ungVien: xepLichLopSvc.dsBpxl() } : {}) };
+}));
+api.post('/classes/:id/xep-lich', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xepLichLopSvc.ganXepLich(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/classes/:id/xep-lich/hoan-tac', requireAuth, wrap((req) => xepLichLopSvc.hoanTacXepLich(principalOf(req), pInt(req, 'id'))));
 /** OV-13d: ba hành động theo lô — mỗi em một giao dịch, kết quả từng em (`em[].ok` / `loi`). */
 api.post('/classes/:id/y-thuc/lo/xu-ly', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1594,8 +1629,9 @@ api.post('/students/:id/y-thuc/khai-bac/hoan-tac', requireAuth, wrap((req) => {
 api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
-  const v = xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
-  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(principalOf(req), 'discipline_measure', v.id) } : v;
+  const p = principalOf(req);
+  const v = { ...xuLySvc.xemXuLy(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenTheoKhoa(p, { loai: 'vi_pham', khoa: String(pInt(req, 'id')) }) };   // TUYEN-0
+  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(p, 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
 api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
@@ -1668,7 +1704,8 @@ api.post('/y-thuc/tra-lai', requireAuth, wrap((req) => {   // { violationId | me
 }));
 api.get('/y-thuc/tra-lai/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return traLaiSvc.xemTraLai(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  return { ...traLaiSvc.xemTraLai(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'tra_lai', pInt(req, 'id')) };   // TUYEN-0
 }));
 api.post('/y-thuc/tra-lai/:id/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1687,9 +1724,32 @@ api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { t
   return traLaiSvc.giuNguyenTraLai(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
 }));
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
+/**
+ * TUYEN-2 (mockup v27 T11a, PTA chốt): bảng Báo PH nhiều em — mỗi việc (`?ids=`) chuỗi chấm tuyến (em × lượt) + "Máy điền sẵn". Gọi KHI MỞ panel (không ở `/my-work`):
+ * chỉ việc nằm trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`, câu đã nhớ theo request) · MỘT câu tìm nguồn · tuyến theo LÔ · nội dung theo LÔ.
+ */
+api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const xin = [...new Set(String(req.query.ids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50);
+  if (!xin.length) return {};
+  /* Rà PTA #2273 P2-2: việc trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`) HOẶC việc được giao cho người xem (`phu_trach_id`) — như /my-work. */
+  /* RA-2711: CX / Lead TVV xem "Tất cả" như QL (`nhinNhuQl`, như /my-work) — trước tập rỗng (CX) / chỉ việc mình chốt (Lead TVV): panel nhiều em trả {}. */
+  const pXem = coVaiCx(p) && phamViXemViec(p) ? nhinNhuQl(p) : p;
+  const cua = new Set(baoPhSvc.viecBaoPhCuaToi(pXem, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
+  const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
+      WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
+    .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number; luot: number }[];
+  if (!nguon.length) return {};
+  const chuoi = tuyenSvc.chuoiPhoiHop(p, nguon.map((r) => r.luot));
+  const nd = phoiHopSvc.noiDungNguonTvvLo(p, nguon.map((r) => r.ph));
+  return Object.fromEntries(nguon.map((r) => [r.id, { chuoi: chuoi[r.luot]?.chuoi ?? null, mayDien: nd.get(r.ph) ?? null }]));
+}));
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return baoPhSvc.xemViecBaoPh(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  const v = baoPhSvc.xemViecBaoPh(p, pInt(req, 'id'));
+  return { ...v, tuyen: tuyenSvc.tuyenTheoKhoa(p, tuyenSvc.khoaBaoPh(v)) };   // TUYEN-0: khoá tuyến đọc từ panel (không câu tìm khoá)
 }));
 api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2102,7 +2162,7 @@ api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const c = cycleSvc.cycleById(pInt(req, 'id'));
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }) && !khungSvc.duocGiao(p, 'buoc_tiep', c.id)) throw forbidden('Học viên này nằm ngoài phạm vi bạn được xem.');   // LPB-1: người được giao
   lenhSvc.quetLenhDenHan();   // hẹn bắt đầu tới tuần → bắt đầu trước khi đọc
   return buocTiepSvc.trangThaiBuocTiep(p, c.id);
 }));
@@ -2111,7 +2171,7 @@ api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const c = cycleSvc.cycleById(pInt(req, 'id'));
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }) && !khungSvc.duocGiao(p, 'buoc_tiep', c.id)) throw forbidden('Học viên này nằm ngoài phạm vi bạn được xem.');   // LPB-1
   return buocTiepSvc.xemTruocLoTrinhMoi(p, c.id, {
     route: qStr(req, 'route') || undefined, routeTen: qStr(req, 'routeTen') ?? undefined, boTarget: qStr(req, 'boTarget') === '1',
     lopMoiId: qStr(req, 'lopMoiId') || undefined, batDau: qStr(req, 'batDau') || undefined, mucTieu: qStr(req, 'mucTieu') || undefined,
@@ -2239,7 +2299,7 @@ api.get('/lenh-chuyen/ban-giao', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const lop = qInt(req, 'lop');
   if (!lop) throw badRequest('Cần lớp (lop).');
-  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined });
+  return banGiaoSvc.phieuBanGiao(principalOf(req), { lopNguonId: lop, mon: qStr(req, 'mon') ?? undefined, chon: qInt(req, 'lenh') });   // BAN-GIAO-DOT: thêm đợt của em mở thẳng
 }));
 api.get('/lenh-chuyen/:id/ban-giao', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2452,7 +2512,7 @@ api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
 /* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return tongQuanMt(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+  return tongQuanMt(principalOf(req), { branchId: cnBpxl(req, qInt(req, 'branchId')) ?? null });
 }));
 /* M6 6b-4: panel "GV chấm quá hạn" — không `gv`: Admin (cùng tập khối Mock Test); `gv` (id · 0 · -1): QL, cùng tập Trễ chấm của GV đó (Q8). */
 api.get('/tong-quan/gv-tre', requireAuth, wrap((req) => {
@@ -2614,11 +2674,15 @@ api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
  */
 api.get('/classes/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return phoiHopSvc.coordinationOfClass(principalOf(req), pInt(req, 'id'), { includeDone: qStr(req, 'includeDone') === '1' });
+  const p = principalOf(req);
+  const r = phoiHopSvc.coordinationOfClass(p, pInt(req, 'id'), { includeDone: qStr(req, 'includeDone') === '1' });
+  return { ...r, chuoiTuyen: tuyenSvc.chuoiPhoiHop(p, r.rows.map((t) => t.attemptId)) };   // TUYEN-0: chuỗi chấm từng em × lượt
 }));
 api.get('/students/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return phoiHopSvc.coordinationOfStudent(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  const r = phoiHopSvc.coordinationOfStudent(p, pInt(req, 'id'));
+  return { ...r, chuoiTuyen: tuyenSvc.chuoiPhoiHop(p, r.rows.map((t) => t.attemptId)) };   // TUYEN-0
 }));
 api.post('/attempts/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2651,7 +2715,8 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
 /* GV-1 (N58): Meeting CX / GĐCN — ba phần (Xếp lịch họp · Kết quả meeting · Báo PH của TVV) cho panel. */
 api.get('/phoi-hop-sos/:id/meeting', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.xemMeeting(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  return { ...giaoViecSvc.xemMeeting(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'phoi_hop', pInt(req, 'id')) };   // TUYEN-0
 }));
 
 /*
@@ -2660,7 +2725,46 @@ api.get('/phoi-hop-sos/:id/meeting', requireAuth, wrap((req) => {
  */
 api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.xemGiaoViec(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'));
+  const p = principalOf(req);
+  const loai = giaoViecSvc.docLoai(req.params.loai);
+  const g = giaoViecSvc.xemGiaoViec(p, loai, pInt(req, 'id'));
+  /* LPB-0 (N73): việc BPXL Nhận thông tin — bảng em / cặp GV + tuyến (Đổi GV: một tuyến · Chuyển lớp: chuỗi chấm từng em). */
+  if (loai === 'nhan_tin') {
+    const nhanTin = lienPhongSvc.xemNhanTin(p, g.id);
+    return { ...g, nhanTin, ...(nhanTin.loai === 'doi_gv' ? { tuyen: tuyenSvc.tuyenCuaViec(p, 'nhan_tin', g.id) } : { chuoiTuyen: tuyenSvc.tuyenNhanTin(p, g.id) }) };
+  }
+  /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng · BAOPH-0 Xử lý vi phạm / Đã thực hiện — tuyến đi cùng khối giao việc. */
+  return loai === 'tinh_hinh' || loai === 'xu_ly' || loai === 'da_thuc_hien' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, loai, g.id) } : g;
+}));
+/* LPB-1 (N73 ⑤): Bàn giao môn (lớp × môn) — id khung (tạo dòng lần đầu) { lopId, mon } → { id }. */
+api.post('/giao-viec/ban_giao_mon/mo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.moBanGiaoMon(principalOf(req), (req.body ?? {}) as Record<string, unknown>);
+}));
+/* LPB-0 (N73): Nhận thông tin — "Xác nhận đã nhận" (không ô nhập) · mo-lai = Hoàn tác / Mở lại. Người giữ · lead BPXL · Head / Quản trị / CX của chi nhánh lớp. */
+api.post('/giao-viec/nhan_tin/:id/xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lienPhongSvc.xacNhanNhanTin(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/giao-viec/nhan_tin/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lienPhongSvc.moLaiNhanTin(principalOf(req), pInt(req, 'id'));
+}));
+/**
+ * TUYEN-0 (N72 ②–④): một tuyến Ý thức & Phối hợp — `:loai` vi_pham | phoi_hop | tinh_hinh | cap_bac, `:khoa` id (vi_pham: id lần xử lý hoặc `em{id}`).
+ * Đang theo dõi + Chờ duyệt mở dòng. Khung cho người có mặt trong tuyến / xem được em; nội dung theo quyền sẵn có (C3). Theo dõi: DELETE = bỏ cả tuyến · POST = theo dõi lại.
+ */
+api.get('/tuyen/:loai/:khoa', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tuyenSvc.dungTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
+}));
+api.delete('/tuyen/:loai/:khoa/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tuyenSvc.boTheoDoiTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
+}));
+api.post('/tuyen/:loai/:khoa/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tuyenSvc.theoDoiLaiTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
 }));
 /* { userId: số | null (về mặc định), phuTrachCu? } → khối + `hoanTac` (id bản ghi đảo; null = không đổi gì). */
 api.post('/giao-viec/:loai/:id/phu-trach', requireAuth, wrap((req) => {
@@ -3321,6 +3425,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
+    chaLoai: b.chaLoai, chaId: b.chaId,   // BAOPH-0 (4.6): việc con của việc Ý thức / Phối hợp / Báo PH
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
     unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
     idempotencyKey: b.idempotencyKey,   // PR-GVa: chuẩn hoá ở `chuanKhoaGui` (chuỗi lạ → không khoá)

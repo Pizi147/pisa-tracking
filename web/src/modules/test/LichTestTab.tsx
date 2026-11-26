@@ -69,7 +69,11 @@ export function LichTestTab() {
   const so = (k: string) => (params.get(k) ? Number(params.get(k)) : null);
   const periodParam = so('periodId');
   const macDinh = useChiNhanhMacDinh();
-  const branchId = so('cn') ?? so('branchId') ?? macDinh;
+  /* VAI-1 (N77): BPXL xem lịch mọi chi nhánh — ô Chi nhánh luôn hiện, mặc định chi nhánh gán, "Tất cả" = `cn=all` (như Kế hoạch Test). */
+  const bpxl = !!session?.nav?.trangDauTest;
+  const tatCaCn = bpxl && params.get('cn') === 'all';
+  const cnGan = bpxl ? session?.grants?.find((g) => g.role === 'scheduler' && g.branchId !== null)?.branchId ?? null : null;
+  const branchId = tatCaCn ? null : so('cn') ?? so('branchId') ?? macDinh ?? cnGan;
   const urlClassId = so('classId');
   const urlKn = params.get('kn');
   const phamViParam = params.get('phamVi');
@@ -80,6 +84,7 @@ export function LichTestTab() {
   const qs = new URLSearchParams();
   if (periodParam) qs.set('periodId', String(periodParam));
   if (branchId) qs.set('branchId', String(branchId));
+  else if (tatCaCn) qs.set('branchId', 'all');
   if (phamViParam === 'cua-toi' || phamViParam === 'tat-ca') qs.set('phamVi', phamViParam);
   if (urlClassId) qs.set('classId', String(urlClassId));
   const { data, error, reload } = useApi<LichTest>(`/cham/lich-test?${qs}`);
@@ -314,10 +319,10 @@ export function LichTestTab() {
     ...(session?.nav?.students ? [{ key: 'lich-thi', nhan: t('Lịch thi thật ›'), onChon: () => navigate(duongLichThi) }] : []),
   ];
   const nutBaCham = mucBaCham.length > 0 && <MenuDong muc={mucBaCham} nhan={t('Thao tác khác · Test')} lopNut={NUT_BA_CHAM} />;
-  const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
+  const locChiNhanh = <BranchFilter luon={bpxl} branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : bpxl ? 'all' : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
-  const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
-  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong;
+  const soLoc = (branchId && branchId !== cnGan ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
+  const coGiTrongLoc = branchCount > 1 || bpxl || !!data.coPhamViRong;
 
   /* PR-MT (K2-32): nhắc — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. U06 (mockup V11): dòng cuối TRONG thẻ nhóm, chữ nhấn. */
   const nhacMtCu = data && data.nhacLichSu.length > 0 && (

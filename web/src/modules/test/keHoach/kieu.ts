@@ -17,6 +17,8 @@ export type LopKH = {
   chiXem?: boolean;
   /** KIEM-TAY-1011: người xem mở được hồ sơ lớp (máy chủ `attempt.view` theo lớp) — không thì mã lớp là chữ thường. */
   xemHoSo?: boolean;
+  /** VAI-0 / VAI-1 (N77): CVXL đã nhận lớp (null = chưa ai). */
+  xepLich?: { userId: number; ten: string } | null;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 /** BPXL-2: số đang lọc danh sách lớp (`?so=`) — dải số lặng của BPXL; "chua-xep" cũng là chip của vai khác. */

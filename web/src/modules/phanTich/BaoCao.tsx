@@ -302,7 +302,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; 
   };
   return (
     <section className="card overflow-clip">
-      <DauThe ten={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')} />
+      <DauThe ten={t('Tiến bộ theo kỹ năng')} />
       {!hang.length ? <RongDau chu={t('Chưa có lượt nào có mốc MT trước trong kỳ')} nut={<NutXemToanBo />} />
         : <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu khung={false}
             phuCua={dienThoai ? (h, c) => (c.key === 'kn' ? t('{n} lượt', { n: h.tong }) : null) : undefined} />}

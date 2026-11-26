@@ -31,6 +31,8 @@ export const ROLES = [
   { key: 'cx', name: 'CX' },
   { key: 'head_tutor', name: 'Head tutor' },
   { key: 'scheduler', name: 'Chuyên viên Xếp lịch' },
+  { key: 'branch_director', name: 'GĐCN' },
+  { key: 'lead_consultant', name: 'Lead TVV' },
 ] as const;
 
 /**
@@ -119,6 +121,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    */
   scheduler: ['attempt.view', 'test.view', 'plan.week', 'schedule.move', 'student.view', 'work.view'],
 };
+/* VAI-0 (N75 / N76, chủ SP 26/11): GĐCN = đúng quyền Head; Lead TVV = đúng quyền CX. Không nhận việc tự động (việc tự giao tra vai bằng `r.key` ở SQL; Principal mang
+   `roleKey` Head / CX + `vaiThat`). Migrate DB cũ: `migrate/prVaiMoi.ts`. */
+ROLE_PERMISSIONS.branch_director = [...ROLE_PERMISSIONS.manager];
+ROLE_PERMISSIONS.lead_consultant = [...ROLE_PERMISSIONS.cx];
 
 /*
  * CLASSES, MT_OUTCOMES, CASE_PATTERNS, TARGET_SCORES và bộ tên giả ĐÃ BỎ Ở VÒNG 6.

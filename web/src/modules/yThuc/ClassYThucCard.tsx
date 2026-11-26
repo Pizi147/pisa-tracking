@@ -450,14 +450,14 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   const tuHaiTuan = addDaysIso(mondayOfDate(homNay), -7);
   const vpKhongViec = new Map<number, Extract<DongThoiGianYt, { loai: 'vi-pham' }>[]>();
   for (const x of d.dongThoiGian) {
-    if (x.loai !== 'vi-pham' || x.chiNhac || x.ngay < tuHaiTuan || !(x.trangThai === 'moi' || x.khongXuLy)) continue;
+    if (x.loai !== 'vi-pham' || x.chiNhac || x.dung || x.ngay < tuHaiTuan || !(x.trangThai === 'moi' || x.khongXuLy)) continue;
     vpKhongViec.set(x.studentId, [...(vpKhongViec.get(x.studentId) ?? []), x]);
   }
   const dongKhongViec = (sid: number) => {
     const ds = vpKhongViec.get(sid);
     if (!ds?.length) return null;
     const kx = ds.find((x) => x.khongXuLy)?.khongXuLy ?? null;
-    const soHai = d.dongThoiGian.filter((x) => x.loai === 'vi-pham' && x.studentId === sid && !x.chiNhac && x.ngay >= tuHaiTuan && x.trangThai !== 'da_xu_ly' && x.trangThai !== 'cho_duyet').length;
+    const soHai = d.dongThoiGian.filter((x) => x.loai === 'vi-pham' && x.studentId === sid && !x.chiNhac && !x.dung && x.ngay >= tuHaiTuan && x.trangThai !== 'da_xu_ly' && x.trangThai !== 'cho_duyet').length;
     return dongLan({
       key: `kv${sid}`, sid, ten: emLop.get(sid)?.ten ?? '', vp: vpCua(ds.map((x) => x.id)), ph: null,
       gv: kx ? <OBuoc badge={<BadgeViec tong="xam" duong="dut">{t('Không xử lý · {ngay}', { ngay: ngay(kx.luc.slice(0, 10), homNay) })}</BadgeViec>} phu={[`«${kx.lyDo}»`]} /> : null,

@@ -167,6 +167,12 @@ export const toiThieuGhiChu = (kind: string, pb?: number | null): number => {
 export const HAN_MEETING_CX_NGAY = 5;
 export const GHI_CHU_MEETING_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
+/**
+ * BAOPH-0 (N72 ⑤, chủ SP 26/11): việc phối hợp mà người làm là TVV báo PH — dòng `sos_coordination_actions` chỉ là NGUỒN; việc thật là `viec_bao_ph.phoi_hop_id`
+ * (TVV của em, không TVV → Head, hạn 5 ngày N2). GVCN / Head thôi bước này: không xác nhận / bỏ ở Phối hợp SOS, trạng thái dòng theo việc TVV.
+ */
+export const VIEC_TVV_BAO_PH = ['talk_family', 'bao_ph_tvv'] as const;
+export const laViecTvvBaoPh = (kind: string): boolean => (VIEC_TVV_BAO_PH as readonly string[]).includes(kind);
 /** HAN-BAO-PH (chủ SP 03/11, 17.2): `hanChon` (cột `han_chon`) thắng hạn mặc định — chỉ việc meeting CX (việc khác không hạn, P10). */
 export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null, pb?: number | null): string | null => {
   /* CAU-HINH-CASE-SOS: hạn n ngày của việc theo bản chụp của dòng; mã không có trong cấu hình → luật cũ (chỉ Meeting CX, 5 ngày). */
@@ -187,7 +193,7 @@ export const COORDINATION_STATUS_LABEL: Record<CoordinationStatus, string> = {
 /** BỐN lý do người dùng chọn nhanh khi bỏ một việc (P06) — chỉ `Khác` hiện ô chữ. */
 export const COORDINATION_USER_REMOVE_REASONS = ['not_needed', 'handled_otherwise', 'duplicate_measure', 'other'] as const;
 /** Mã chỉ HỆ THỐNG ghi: sửa điểm làm mức SOS đổi (P03) · lượt bị "Huỷ cả lượt" (PR-MT, T67) · kết quả MT huỷ do dời vượt (PR-MTa T2) · bảng §5.3 đổi (migrate OV-13n). */
-export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi', 'system_ket_thuc_lo_trinh'] as const;
+export const COORDINATION_REMOVE_REASONS = [...COORDINATION_USER_REMOVE_REASONS, 'system_sos_changed', 'system_luot_huy', 'system_ket_qua_huy', 'system_bang_doi', 'system_ket_thuc_lo_trinh', 'system_luu_tru'] as const;
 /** Lý do hệ thống mà `syncSosCoordination` được HỒI LẠI khi bảng lại cần việc đó (mức SOS đổi). */
 export const COORDINATION_SYNC_REVIVE_REASONS: readonly string[] = ['system_sos_changed', 'system_bang_doi'];
 export type CoordinationRemoveReason = (typeof COORDINATION_REMOVE_REASONS)[number];
@@ -201,6 +207,7 @@ export const COORDINATION_REMOVE_REASON_LABEL: Record<CoordinationRemoveReason, 
   system_ket_qua_huy: t('Kết quả MT đã huỷ'),
   system_bang_doi: t('Luật mới: SOS 2–3 không còn việc này'),
   system_ket_thuc_lo_trinh: t('Kết thúc lộ trình'),   // Q-RL3
+  system_luu_tru: t('Học viên vào Lưu trữ'),   // chủ SP 26/11
 };
 
 /** BA lý do chọn nhanh khi GVBM bấm `Không cần theo dõi` (S05). */

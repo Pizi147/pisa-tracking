@@ -2,7 +2,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { mocThuong, cauHinh, maViecCoHan, tenViec, toiThieuGhiChu,
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
-  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, buocTvvViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU,
+  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, buocTvvViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU, VIEC_TVV_BAO_PH, laViecTvvBaoPh,
 } from '../../../shared/domain/index.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { boVaiBpxl, can, lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -17,8 +17,8 @@ import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
-import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon } from './baoPhTvv.ts';
-import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, tenVaiTai } from '../worklist/giaoViec.ts';
+import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot, chotLeadBaoPh } from './baoPhTvv.ts';
+import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, luatMeeting } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -100,6 +100,8 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
       removed += 1;
     }
   }
+  /* BAOPH-0 (N72 ⑤): Trao đổi gia đình → việc TVV sinh / đóng / mở lại theo dòng nguồn — chỉ khi lượt có loại việc này (0 câu cho lượt khác). */
+  if (want.some(laViecTvvBaoPh) || existing.some((r) => laViecTvvBaoPh(r.kind))) dongBoViecTvvLuot([attempt.id]);
   if (added || revived || removed) {
     writeAudit({
       actorUserId: null, action: 'sos_coordination.sync', entityType: 'assessment_attempt', entityId: attempt.id,
@@ -115,6 +117,11 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
  * `monTruot`: mã kỹ năng đang trượt của bài (từ `regularResultOf`).
  */
 export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null; cycle_id?: number | null }, monTruot: string[]) {
+  dongBoNguonBaoPh(attempt, monTruot);
+  /* BAOPH-0 (N72 ⑤, thay N6 phần GVCN): việc Báo PH kết quả Progress là việc TVV — sinh / đóng / mở lại theo dòng nguồn (thay tin "nhờ TVV" cho GVCN). */
+  dongBoViecTvvLuot([attempt.id]);
+}
+function dongBoNguonBaoPh(attempt: { id: number; student_id: number; class_id?: number | null; cycle_id?: number | null }, monTruot: string[]) {
   const conn = db();
   if (kckCuaLuot(attempt)) monTruot = [];   // OV-9: em KCK — Case nhẹ, không Báo PH (việc chưa làm tự rút như hết môn trượt)
   /* CAU-HINH-CASE-SOS: việc của mốc Progress Test theo bản của bài (bản gốc chỉ Báo PH kết quả Test) — việc khác cùng luật sinh / rút / hồi. */
@@ -141,17 +148,6 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
   }
   conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at, pb_moc) VALUES (?,?,'bao_ph_tvv', NULL, 1, 'pending', ?, ?)`)
     .run(attempt.id, attempt.student_id, now, pbGhi(pb));
-  if (!attempt.class_id) return;
-  const ct = (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(attempt.class_id) as any)?.programme_code ?? null;
-  const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(attempt.student_id) as any;
-  const mon = monTruot.map((s) => tenMonNgan(ct, s)).join(', ');
-  for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
-    notify({
-      userId: g.user_id, kind: 'phoi_hop', title: `Báo PH kết quả Test · ${hv?.full_name ?? ''} · Progress Test không đạt ${mon}`,
-      body: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
-      entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
-    });
-  }
 }
 
 /**
@@ -239,22 +235,23 @@ export type PhanMeetingTom = { trangThai: string; ngayGio: string | null; xongLu
 
 /**
  * NHẸ HƠN PR-6: hai phần Meeting của một tập hành động — MỘT câu (meeting_phan + tên). Người phụ trách được giao chỉ hiệu lực khi còn hoạt động + còn vai ở
- * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `tenVaiTai` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
+ * chi nhánh của phần (N58, `HOAT_DONG_O` như `docViec`) — không thì về người theo luật. Người theo luật = `luatMeeting` (bộ nhớ `nguoiGiuVai` của giaoViec.ts,
  * một câu mỗi request, dùng chung với `/my-work`): Xếp lịch = BPXL chi nhánh, không có → TVV của em, không có → Head; Kết quả = CX chi nhánh, không có → Head.
  */
 export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }> {
   const out = new Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }>();
   if (!ids.length) return out;
   for (const r of db().prepare(
-    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
+    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.nguoi_luat, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
             CASE WHEN mp.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('mp.phu_trach_id', 'mp.branch_id')} THEN pt.full_name END AS pt_ten
        FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
        LEFT JOIN users xb ON xb.id = mp.xong_boi LEFT JOIN users pt ON pt.id = mp.phu_trach_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
       WHERE mp.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
     const xep = r.phan === 'xep_lich';
-    const vaiTen = tenVaiTai(r.phan, r.branch_id ?? null);
-    const vai = vaiTen ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
+    const luat = luatMeeting(r.phan, r.branch_id ?? null, r.nguoi_luat);   // VAI-0 (N74): một người — GĐCN / CX / BPXL
+    const vaiTen = luat?.ten ?? null;
+    const vai = luat ? (xep ? 'BPXL' : luat.vai === 'branch_director' ? 'GĐCN' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
     const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,
       nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? vaiTen ?? (xep ? r.tvv_ten ?? null : null), vai };
     const m = out.get(r.phoi_hop_id) ?? { xepLich: null, ketQua: null };
@@ -391,7 +388,7 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
       tvv: v.tvv_ten ?? null,
       lan: v.ket_qua ? { ketQua: v.ket_qua, nhan: NHAN_KET_QUA_BAO_PH[v.ket_qua as KetQuaBaoPh] ?? v.ket_qua, ngay: v.ngay, ghiChu: v.ghi_chu ?? null, nguoi: v.l_nguoi ?? null } : null,
       soLan: v.so_lan, coTheGhi: coTheGhi(p, goc), coTheSuaHan: v.trang_thai === 'mo' && coTheSuaHan(p, goc),
-      toiThieu: buocTvvViec({ kind: v.ph_kind, pb_moc: v.ph_pb ?? null })?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU,
+      toiThieu: laMeetingCx(v.ph_kind) ? buocTvvViec({ kind: v.ph_kind, pb_moc: v.ph_pb ?? null })?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU : 0,
     });
   }
   return out;
@@ -404,9 +401,12 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
  */
 function dongBoViecTvv(id: number, truoc: string): void {
   const r = loadAction(id);
+  if (laViecTvvBaoPh(r.kind)) return;   // BAOPH-0: việc TVV của nguồn theo `dongBoViecTvvLuot` / `nguonTheoViecTvv`, không theo luồng Meeting
   const v = db().prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as { id: number; trang_thai: string; bo_ly_do: string | null } | undefined;
-  /* CAU-HINH-CASE-SOS: bước TVV theo bản chụp của dòng (`pb_moc`); không có bước TVV → không sinh việc. */
-  const buoc = buocTvvViec(r);
+  /* CAU-HINH-CASE-SOS: bước TVV theo bản chụp của dòng (`pb_moc`); không có bước TVV → không sinh việc.
+     BAOPH-0 C8 (chủ SP 26/11): lượt đã có Trao đổi gia đình (việc TVV báo PH, nói luôn việc họp) → Meeting KHÔNG sinh việc Báo PH thứ hai — còn hai phần Xếp lịch → Kết quả. */
+  const buoc = laMeetingCx(r.kind) && db().prepare(`SELECT 1 FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'talk_family' AND status != 'removed'`).get(r.attempt_id)
+    ? null : buocTvvViec(r);
   const hanTvv = () => addDaysIso(demoToday(), (buoc?.hanNgay ?? HAN_MEETING_CX_NGAY) - 1);   // n ngày lịch = hôm nay + (n − 1), như Báo PH
   if (r.status === 'done') {
     /* Rà PTA (4): "Sửa" việc đã xong (ngày, chữ) không sinh lại việc TVV / chuông — chỉ lần chuyển sang Xong. */
@@ -415,6 +415,7 @@ function dongBoViecTvv(id: number, truoc: string): void {
     if (buoc && !v) {
       bp = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(id, r.student_id, tenViec(r.kind, r.pb_moc ?? null), hanTvv(), nowIso()).lastInsertRowid);
+      chotLeadBaoPh([bp]);   // VAI-0 (N76b)
     } else if (buoc && v && v.trang_thai === 'bo' && v.bo_ly_do === LY_DO_MEETING_MO_LAI) {
       /* (10) mở lại = hạn mới từ hôm nay, bỏ hạn người dùng chọn của lần trước. */
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`)
@@ -438,7 +439,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   const conn = db();
   const attachments = countAttachments('sos_coordination_action', rows.map((r) => r.id));
   napTruocPhamVi([...new Set(rows.map((r) => r.student_id as number))]);   // `canManageDiscipline` từng em đọc bộ nhớ, không N+1
-  const meetingIds = rows.filter((r) => laMeetingCx(r.kind) && r.status === 'done').map((r) => r.id as number);
+  const meetingIds = rows.filter((r) => (laMeetingCx(r.kind) && r.status === 'done') || laViecTvvBaoPh(r.kind)).map((r) => r.id as number);   // BAOPH-0: + việc TVV của nguồn
   const tvv = tvvCuaHanhDong(p, meetingIds);   // sau nạp phạm vi: quyền ghi không thêm câu
   const phanMt = phanMeetingCuaHanhDong(meetingIds);   // NHẸ HƠN PR-6: +1 câu khi có Meeting đã xác nhận
   const byAttempt = new Map<number, any[]>();
@@ -515,7 +516,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
         /* GV-2 (N58): cờ theo TỪNG việc — người được giao (còn hiệu lực) làm đúng việc của mình, không thấy nút việc khác của lượt. */
-        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, meeting: phanMt.get(r.id) ?? null, lamDuoc: quanLy || (r.phu_trach_id === p.userId && duocGiao()) };
+        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, meeting: phanMt.get(r.id) ?? null, lamDuoc: !laViecTvvBaoPh(r.kind) && (quanLy || (r.phu_trach_id === p.userId && duocGiao())) };
         if (r.kind !== 'bao_ph_tvv' || !noiDungCua) return x;
         /* PR-PHH: việc đã xong → bản chụp lúc xác nhận; dòng cũ (chưa có bản chụp) → nội dung hiện tại + cờ. */
         const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;
@@ -582,6 +583,7 @@ export function dongPhoiHopLop(classIds: number[]) {
   ).all(json) as any[];
   const luot = new Map<number, { lop: number; trangThai: string[]; han: string[] }>();
   for (const r of rows) {
+    if (r.status === 'pending' && laViecTvvBaoPh(r.kind)) continue;   // BAOPH-0: việc TVV — không còn là việc GVCN cần xử lý
     const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [], han: [] }).get(r.attempt_id)!;
     l.trangThai.push(r.status);
     const h = r.status === 'pending' ? hanPhoiHop(r.kind, r.created_at, r.han_chon, r.pb_moc ?? null) : null;
@@ -628,8 +630,8 @@ export function dongPhoiHopTheoViec(classIds: number[], emId?: number, giao?: an
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${DS_JSON}) AND e.status = 'active'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND NOT ${LUOT_SAU_THI_SQL('a')}   -- N46
        JOIN students s ON s.id = x.student_id LEFT JOIN users gu ON gu.id = x.giao_boi
-      WHERE x.status = 'pending'${emId ? ' AND x.student_id = ?' : ''} ORDER BY s.full_name, x.id`,
-  ).all(JSON.stringify(classIds), ...(emId ? [emId] : [])) as any[];
+      WHERE x.status = 'pending' AND x.kind NOT IN (SELECT value FROM json_each(?))${emId ? ' AND x.student_id = ?' : ''} ORDER BY s.full_name, x.id`,   // BAOPH-0: việc TVV ở viec_bao_ph
+  ).all(JSON.stringify(classIds), JSON.stringify(VIEC_TVV_BAO_PH), ...(emId ? [emId] : [])) as any[];
   const lop = lopDayDu();
   const theoKhoa = new Map<string, DongPhoiHopViec>();
   for (const r of rows) {
@@ -736,6 +738,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
       )
       .run(attemptId, a.student_id, kind, name || null, nowNghiepVu());
     const newId = Number(info.lastInsertRowid);
+    if (laViecTvvBaoPh(kind)) dongBoViecTvvLuot([attemptId], p.userId);   // BAOPH-0: GVCN thêm Trao đổi gia đình → việc TVV, GVCN theo dõi
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.add', entityType: 'sos_coordination_action', entityId: newId,
       entityLabel: `MT${a.attempt_no} · ${name || COORDINATION_KIND_LABEL[kind as CoordinationKind]}`, after: { kind, name: name || null },
@@ -753,6 +756,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
 export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null;
   /** L3-web: `updatedAt` của bản panel đã thấy (null = việc chưa từng sửa). Không gửi (web cũ) → chỉ so-và-đổi trong giao dịch như R1. */ updatedAt?: string | null }): CoordinationAction {
   const r = loadAction(id);
+  if (laViecTvvBaoPh(r.kind)) throw badRequest(NGUON_TVV);
   requireLam(p, r);
   if (input.updatedAt !== undefined && (input.updatedAt ?? null) !== (r.updated_at ?? null)) throw conflict('Việc vừa được người khác cập nhật — tải lại.');
   /* RKC-3a: việc NGƯỜI DÙNG bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước.
@@ -801,6 +805,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
  */
 export function removeCoordination(p: Principal, id: number, input: { reasonCode?: string | null; reasonText?: string | null }): CoordinationAction {
   const r = loadAction(id);
+  if (laViecTvvBaoPh(r.kind) && !themNham(r)) throw badRequest(NGUON_TVV);
   requireLam(p, r);
   /* RKC-3a: việc ĐÃ XONG cũng bỏ được (khỏi "Đưa lại" trước) — bản ghi đảo chụp nguyên dòng xong, Khôi phục trả về xong. Việc đã bỏ: không làm gì thêm. */
   if (r.status === 'removed') throw badRequest('Việc này đã bỏ rồi — bấm Khôi phục nếu cần làm lại.');
@@ -822,6 +827,11 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
       )
       .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
+    if (laViecTvvBaoPh(r.kind)) {   // rà #2233 P2-4: GVCN gỡ việc mình thêm nhầm → việc TVV (chưa ghi lần nào) bỏ cùng — bản ghi đảo chụp cả hai
+      g.sua('viec_bao_ph', 'phoi_hop_id = ?', id);
+      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_ly_do_chu = ?, bo_boi = ?, bo_luc = ? WHERE phoi_hop_id = ? AND trang_thai = 'mo'`)
+        .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), id);
+    }
     luuGhiDao(db(), { loai: LOAI_BO_PHOI_HOP, bang: 'sos_coordination_actions', id, nguoi: p.userId, ghi: g });
     baoTheoDoi('phoi_hop', id, p.userId, { suKien: 'bo', tieuDe: tieuDeViec(r), chiTiet: COORDINATION_REMOVE_REASON_LABEL[code as CoordinationRemoveReason] ?? code, khoa: nowIso(), studentId: r.student_id });   // GV-1
     writeAudit({
@@ -833,7 +843,45 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
   return viewOf(id, p);
 }
 
+/** PR-PHH → BAOPH-0: bản chụp 4 nội dung Báo PH kết quả Test lúc báo xong (ngày `ngay`) — cùng `turnsOf` đang hiển thị. TRONG tx, trước khi đổi dòng. */
+export function banChupBaoPh(p: Principal, id: number, ngay: string): string[] | null {
+  return turnsOf(p, [{ ...loadAction(id), status: 'done', performed_on: ngay, noi_dung_luc_bao: null }])[0]?.actions[0]?.noiDung ?? null;
+}
+
+/**
+ * BAOPH-0 (N72 ⑤): nội dung MÁY điền cho panel việc TVV — kết quả Test lớp thường: 4 nội dung (bản chụp khi đã báo); Trao đổi gia đình: lượt · Overall so kỳ vọng ·
+ * kỹ năng trượt. Cùng `turnsOf` của Phối hợp SOS (một số liệu một nguồn). ponytail: Case / PA của em chưa ghép vào — thêm khi TUYEN-2 vẽ mục này.
+ */
+export function noiDungNguonTvv(p: Principal, id: number): string | null {
+  const t = turnsOf(p, [loadAction(id)])[0];
+  if (!t) return null;
+  const a = t.actions[0];
+  if (a?.noiDung) return a.noiDung.join('\n');
+  const s = t.the;
+  return [`${s.luot} · Overall ${s.ovr ?? '—'}${s.moc != null ? ` / kỳ vọng ${s.moc}` : ''}${s.tam ? ' (tạm)' : ''}`, s.truot.length ? `Kỹ năng trượt: ${s.truot.join(', ')}` : null]
+    .filter(Boolean).join('\n');
+}
+
+/** TUYEN-2 (mockup v27 T11a): `noiDungNguonTvv` theo LÔ — MỘT câu đọc các việc nguồn + `turnsOf` một lần (bảng Báo PH nhiều em). */
+export function noiDungNguonTvvLo(p: Principal, ids: readonly number[]): Map<number, string | null> {
+  const ra = new Map<number, string | null>();
+  if (!ids.length) return ra;
+  const rows = db().prepare(`SELECT * FROM sos_coordination_actions WHERE id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(ids)])) as any[];
+  for (const t of turnsOf(p, rows)) {
+    const s = t.the;
+    const chung = [`${s.luot} · Overall ${s.ovr ?? '—'}${s.moc != null ? ` / kỳ vọng ${s.moc}` : ''}${s.tam ? ' (tạm)' : ''}`, s.truot.length ? `Kỹ năng trượt: ${s.truot.join(', ')}` : null]
+      .filter(Boolean).join('\n');
+    for (const a of t.actions) ra.set(a.id, a.noiDung ? a.noiDung.join('\n') : chung);
+  }
+  return ra;
+}
+
 const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
+/** BAOPH-0 (N72 ⑤): GVCN / Head thôi bước báo PH — nói lý do + bước tiếp. */
+const NGUON_TVV = 'Việc này TVV báo phụ huynh — ghi kết quả, bỏ hay khôi phục ở việc Báo PH của TVV (GVCN theo dõi).';
+/** Rà #2233 P2-4 (không khoá cứng): việc TVV do GVCN THÊM TAY (`preset = 0`) mà TVV chưa ghi lần nào — GVCN tự gỡ / khôi phục được (thêm nhầm). */
+const themNham = (r: { id: number; preset: number }): boolean =>
+  r.preset === 0 && !db().prepare('SELECT 1 FROM viec_bao_ph_lan l JOIN viec_bao_ph v ON v.id = l.viec_id WHERE v.phoi_hop_id = ?').get(r.id);
 
 /**
  * OV-7a: việc "Đã xong" bấm nhầm → "Đưa lại Cần xử lý" (bỏ ngày / người / bản chụp Báo PH; ghi chú giữ để lưu lại); việc người dùng đã Bỏ → "Khôi phục".
@@ -841,6 +889,7 @@ const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
  */
 export function moLaiCoordination(p: Principal, id: number): CoordinationAction {
   const r = loadAction(id);
+  if (laViecTvvBaoPh(r.kind) && !(themNham(r) && r.status === 'removed')) throw badRequest(NGUON_TVV);
   requireLam(p, r);
   if (r.status === 'pending') throw conflict('Việc này đang ở trạng thái Cần xử lý.');   // Q-RL2c: bấm lần hai / đã có người mở lại → 409
   if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
@@ -849,7 +898,7 @@ export function moLaiCoordination(p: Principal, id: number): CoordinationAction 
   tx(() => {
     /* Q-RL2c: việc người dùng bỏ có bản ghi đảo → trả NGUYÊN dòng trước khi bỏ (409 nếu đã có thay đổi sau); việc bỏ trước Q-RL2c → cách cũ. */
     const g = r.status === 'removed' ? timGhiDao(db(), LOAI_BO_PHOI_HOP, 'sos_coordination_actions', id) : null;
-    if (g) daoLai(db(), g, p.userId);
+    if (g) daoLai(db(), g, p.userId);   // P2-4: bản chụp có cả việc TVV (nếu là việc GVCN thêm nhầm)
     else db().prepare(
       `UPDATE sos_coordination_actions SET status = 'pending', performed_on = NULL, performed_by = NULL, performer_name = NULL, noi_dung_luc_bao = NULL,
               remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,

@@ -22,8 +22,7 @@ import { commitIntake, createClass } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
-import { confirmCoordination } from '../yThuc/phoiHop.ts';
-import { ghiKetQuaBaoPh } from '../yThuc/baoPhTvv.ts';
+import { baoXongNguonTvv, ghiKetQuaBaoPh } from '../yThuc/baoPhTvv.ts';
 import { recordViolation } from '../yThuc/violations.ts';
 import { xacNhanXuLy } from '../yThuc/xuLy.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
@@ -232,7 +231,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     return sid;
   });
   const bao = conn.prepare(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`).get(emFou[5]) as any;
-  if (bao) confirmCoordination(loadPrincipal(gvLinh), bao.id, { performedOn: '2026-09-11', note: 'Đã gửi việc cho TVV, TVV đã gọi phụ huynh.' });
+  if (bao) baoXongNguonTvv(bao.id, '2026-09-11', 'TVV đã gọi phụ huynh.');   // BAOPH-0: việc TVV
   /* Lần xử lý vi phạm: em đã Báo PH (Giang Hải Nam — TVV ghi 12/09) và em chưa Báo PH (Khúc Thảo My). */
   baoPh(tvvCn.HD[0], viPham(emFou[5], ['2026-09-08', '2026-09-09', '2026-09-10'], '2026-09-11'), 'da_bao', '2026-09-12', '03:00:00', 'Đã gọi mẹ em, mẹ hứa nhắc em làm bài.');
   viPham(emFou[4], ['2026-09-08', '2026-09-09', '2026-09-10'], '2026-09-12');

@@ -75,7 +75,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'tam-dung-ket-thuc': return (
       <HopTamDungKetThuc em={[{ id: student.id, ten: student.name }]} lop={lop} tamDungDuoc={coTheTamDungKetThuc(lopHoc?.quyen, student.status).tamDung}
         onClose={onClose} onDone={onDone} onChuyenLop={lopHoc?.quyen.chuyenLop && onDoiViec ? () => onDoiViec('chuyen-lop') : undefined}
-        dongTamDung={soViPhamMo > 0 ? [t('{n} vi phạm Ý thức đang chờ xử lý — dừng hạn, Quay lại học thì tính lại', { n: soViPhamMo })] : []} />
+        dongTamDung={soViPhamMo > 0 ? [t('{n} vi phạm Ý thức đang chờ xử lý — Tạm dừng thì dừng hẳn, Quay lại học không mở lại', { n: soViPhamMo })] : []} />
     );
     /* P7: Quay lại học — máy chủ chọn hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại), cùng đường nút ở Lưu trữ. */
     case 'quay-lai': return <QuayLaiTuMenu em={{ id: student.id, ten: student.name, lop }} onClose={onClose} onDone={onDone} />;

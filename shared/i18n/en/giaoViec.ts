@@ -1,6 +1,23 @@
 /** GV-1 (N58, chủ SP 20/11) — giao việc liên phòng ban: tên nhóm việc Meeting + câu báo của máy chủ. Khoá = chữ Việt. */
 export const EN_GIAO_VIEC = {
   'Xếp lịch họp': 'Schedule meeting',
+  /* LPB-1 (N73 ⑤): khung việc chung — việc TVV · Bàn giao · việc Head. */
+  'Bàn giao môn': 'Subject handover', 'Cập nhật KQ thi thật': 'Update real exam result', 'Xếp lịch MT': 'Schedule MT',
+  'Bạn chỉ bổ sung được trường hồ sơ còn thiếu của em này (Ngày sinh · Email).': 'You can only fill in this student’s missing profile fields (Date of birth · Email).',
+  'Bàn giao của lớp này ngoài phạm vi của bạn.': 'This class’s handover is outside your scope.',
+  'Lớp không còn việc bàn giao môn này.': 'The class no longer has a handover task for this subject.',
+  'Thiếu lớp hoặc môn.': 'Missing class or subject.',
+  'Việc này không giao cho BPXL (BPXL không xem hồ sơ học thuật / bàn giao của em) — chọn người khác.': 'This task cannot go to a scheduler (schedulers do not see academic records / handovers) — choose someone else.',
+  'Học viên này nằm ngoài phạm vi bạn được xem.': 'This student is outside the scope you can view.',
+  'Người này không xếp lịch MT được ở lớp của em — chọn Head, Quản trị hoặc BPXL.': 'This person cannot schedule MTs for the student’s class — choose a Head, Admin or scheduler.',
+  'Chốt / Xét lại lộ trình chỉ giao cho người có quyền chốt lộ trình lớp này (Head, Quản trị) — chọn người khác.': 'Finalising / reviewing pathways can only go to someone who can finalise this class (Head, Admin) — choose someone else.',
+  /* LPB-0 (N73): việc BPXL Nhận thông tin. */
+  'Nhận thông tin': 'Info handover',
+  'Xác nhận đã nhận thông tin (BPXL)': 'Confirmed info received (scheduling)', 'Mở lại việc Nhận thông tin': 'Reopened the Info handover task',
+  'Chỉ người phụ trách, lead BPXL hoặc Head chi nhánh xác nhận được việc này.': 'Only the owner, the scheduling lead or the branch Head can confirm this task.',
+  'Việc đã tự đóng (không còn em / lịch đổi đã huỷ).': 'The task closed itself (no students left / the change was cancelled).',
+  'Chỉ người phụ trách, lead BPXL hoặc Head chi nhánh mở lại được việc này.': 'Only the owner, the scheduling lead or the branch Head can reopen this task.',
+  'Việc chưa xác nhận — không có gì để mở lại.': 'The task is not confirmed — nothing to reopen.',
   'Kết quả meeting': 'Meeting result',
   'Loại việc không hợp lệ.': 'Invalid task type.',
   'Không tìm thấy việc.': 'Task not found.',
@@ -30,6 +47,8 @@ export const EN_GIAO_VIEC = {
   'Chỉ CX, TVV của em hoặc Head ghi được kết quả meeting.': 'Only CX, the student\'s counsellor or Head can record the meeting result.',
   'Chỉ BPXL, người được giao hoặc Head xếp được lịch họp.': 'Only the scheduler, the assignee or Head can schedule the meeting.',
   'Việc của tình hình này là Báo PH của TVV — giao ở việc Báo PH.': 'This update\'s task is the counsellor\'s parent call — assign it there.',
+  'Việc cha đã kết thúc — không thêm việc con.': 'The parent task is closed — no sub-tasks can be added.',
+  'Việc này là Báo PH của TVV — giao ở việc Báo PH.':'This is the counsellor\'s parent call — assign it there.',
   'Ngày hạn không hợp lệ.': 'Invalid deadline.',
   'Xếp lịch họp, Kết quả meeting': 'Schedule meeting, Meeting result',
   'Bấm <b>Hoàn thành</b> ở dòng <b>Xếp lịch họp</b> (ghi ngày giờ họp nếu muốn).': 'Click <b>Done</b> on the <b>Schedule meeting</b> row (add the meeting date and time if you like).',
@@ -39,4 +58,15 @@ export const EN_GIAO_VIEC = {
   'Chi nhánh chưa có BPXL: TVV của em xếp lịch; chưa có CX: Head ghi kết quả.': 'No scheduler at the branch: the counsellor schedules; no CX: Head records the result.',
   'Giao việc cho người khác': 'Assign task to someone else', 'Trả việc về người theo luật': 'Return task to the default owner', 'Hoàn tác đổi người phụ trách': 'Undo owner change',
   'Sửa hạn việc': 'Edit task deadline', 'Hoàn thành phần Meeting': 'Complete meeting part', 'Sửa phần Meeting': 'Edit meeting part', 'Hoàn tác phần Meeting': 'Undo meeting part',
+  /* VAI-0 (N77): CVXL nhận lớp. */
+  'Thiếu người đang nhận lớp — mở lại rồi thử lại.': 'Missing the current scheduler of the class — reopen and try again.',
+  'Người nhận không hợp lệ.': 'Invalid assignee.',
+  'Lớp vừa được người khác nhận — mở lại để xem.': 'Someone just took this class — reopen to see it.',
+  'Chỉ BPXL tự nhận lớp; Head, GĐCN, Quản trị hoặc lead BPXL gán hộ được.': 'Only schedulers take a class themselves; Head, Branch director, Admin or the scheduling lead can assign one.',
+  'Người được gán không có vai BPXL đang hoạt động.': 'The assignee has no active scheduler role.',
+  'Lớp đã kết thúc — không nhận lớp mới.': 'The class has ended — it cannot be taken.',
+  'Không có lần nhận lớp nào để hoàn tác.': 'There is no class assignment to undo.',
+  'Quá thời gian hoàn tác — nhận / gán lại trực tiếp.': 'The undo window has passed — take or assign the class again directly.',
+  'Chỉ người đã đổi, Head, GĐCN, Quản trị hoặc lead BPXL hoàn tác được.': 'Only the person who changed it, Head, Branch director, Admin or the scheduling lead can undo.',
+  'Nhận xếp lịch lớp': 'Take class scheduling', 'Bỏ nhận xếp lịch lớp': 'Release class scheduling', 'Hoàn tác nhận xếp lịch lớp': 'Undo class scheduling change',
 } as const;
