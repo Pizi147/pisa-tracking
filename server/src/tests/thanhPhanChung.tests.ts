@@ -400,7 +400,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/<NutChipViec /.test(s) && /d\.chip = chipViecLop\(/.test(doc('web/src/modules/congViec/LopCuaToi.tsx')), 'chip không dùng chung hàm đếm');
     assert(doc('web/src/modules/congViec/LopCuaToi.tsx').includes("t('{n} bài · {m} việc', { n: so, m: soViec })"), 'D-04: title chip Nhập điểm phải nói cả số bài và số việc');
     assert(/<DemViecPanel\.Provider value=\{\{ i: mo\.i \+ 1, n: mo\.ds\.length/.test(s), 'thiếu "i / n" ở đầu panel');
-    assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
+    assert(/c\.tab === 'cham-diem' \? moLuoiDiemLop\(classId\)/.test(s) && !/<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải cuộn tới lưới điểm của lớp (không panel — chủ SP 26/11)');
     assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
     const k = doc('web/src/ui/KhungPanel.tsx');
     assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}(?:\{dau\?\.ghim(?: \?\? cvNgoai\?\.ghim)?\})?\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
