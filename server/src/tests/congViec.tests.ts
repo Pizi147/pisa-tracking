@@ -116,7 +116,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
     /* PR-DUYET thêm `tasks.assignee_name`, PR-GVa thêm `tasks.idempotency_key` ở bước migrate của mình (sau PR-Ra) — so PR-Ra trên phần schema của đúng bước này. */
-    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && (c.startsWith('assignee_name:') || c.startsWith('idempotency_key:') || /^(group_id|lap_\w+|hang_muc):/.test(c))));
+    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && (c.startsWith('assignee_name:') || c.startsWith('idempotency_key:') || /^(group_id|lap_\w+|hang_muc|cha_loai|cha_id):/.test(c))));   // BAOPH-0: cha_loai / cha_id của bước sau
     for (const tb of ['tasks', 'task_history', 'unit_reports', 'unit_report_history', 'unit_report_task_links']) {
       assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(sauPrRa(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);

@@ -115,7 +115,7 @@ export async function runPrNghiHocLuuTruTests(t: { check: any; assert: any; conn
 
   check('NH-6 · KPI TVV "Báo PH đúng hạn" bỏ việc của em đã nghỉ học', () => thu(() => {
     const v = get(`SELECT v.id, v.student_id, s.consultant_user_id AS tvv FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
-       WHERE v.trang_thai != 'bo' AND s.consultant_user_id IS NOT NULL AND s.status = 'active' AND s.archived_at IS NULL ORDER BY v.id LIMIT 1`);
+       WHERE v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL AND s.consultant_user_id IS NOT NULL AND s.status = 'active' AND s.archived_at IS NULL ORDER BY v.id LIMIT 1`);   // BAOPH-0: KPI chỉ đếm Báo PH không nguồn Phối hợp (PHOI-HOP-V2)
     assert(v, 'seed cần việc Báo PH có TVV');
     conn.prepare(`UPDATE viec_bao_ph SET tao_luc = ? WHERE id = ?`).run(`${d.khoangMacDinh(TODAY).tu}T08:00:00.000Z`, v.id);   // kỳ mặc định = 2 tuần trước
     const p = loadPrincipal(v.tvv);

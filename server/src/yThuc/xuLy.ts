@@ -26,6 +26,20 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { KEY_TAKEN_MESSAGE, canManageDiscipline, requireManageDiscipline, requireViewStudent } from './access.ts';
+import { conHieuLuc, xongViecXuLy } from '../worklist/giaoViec.ts';
+
+/**
+ * BAOPH-0 (N72 ⑥, 4.6): như `requireManageDiscipline` + người ĐƯỢC GIAO đúng việc này (còn hoạt động + còn vai ở chi nhánh em — như N58) — `pt` đọc người được giao
+ * (chỉ khi cửa thường đóng: GVCN / Head không tốn câu). Việc Xử lý vi phạm: `ptXuLy(em)` · Đã thực hiện: `phu_trach_id` của lần xử lý.
+ */
+function requireLamViecYThuc(p: Principal, studentId: number, message: string, pt: () => number | null | undefined): void {
+  if (canManageDiscipline(p, studentId)) return;
+  const u = pt();
+  if (u != null && u === p.userId && conHieuLuc(p.userId, studentId)) return;
+  requireManageDiscipline(p, studentId, message);
+}
+const ptXuLy = (studentId: number) => () =>
+  (db().prepare(`SELECT phu_trach_id AS pt FROM viec_xu_ly WHERE id = ? AND trang_thai = 'mo'`).get(studentId) as { pt: number | null } | undefined)?.pt;
 import { chotHanXuLy, ghiPhanHoi, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { addHistory, noteMeasureChange, violationsByIds, type ViolationView } from './violations.ts';
 import { dongThoiGian, hangCuaEm, type DongEm, type DongThoiGianYt } from './board.ts';
@@ -180,7 +194,7 @@ const BAC_BAO_QL: ReadonlySet<string> = new Set(['wl_1', 'report_4_meeting', 'wl
 
 export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyView {
   const hv = hocVien(studentId);
-  requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
+  requireLamViecYThuc(p, studentId, MANAGE_MESSAGE, ptXuLy(studentId));   // BAOPH-0 (4.6): + người được giao việc Xử lý vi phạm
   const key = v.idempotencyKey?.trim() || null;
   if (key) {
     const seen = db().prepare('SELECT id, student_id, created_by FROM discipline_measures WHERE idempotency_key = ?').get(key) as any;
@@ -192,7 +206,9 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
   const note = moTaTuyChon(v.note);
   const performedOn = ngayThucHien(v.performedOn);
   const nguoi = nguoiThucHien(p, v);
-  return xemXuLy(p, luuXuLy(p, hv, studentId, { violationIds: v.violationIds, performedOn, nguoi, note, key, bacDaThay: v.bacDaThay }, demoToday()).id);
+  /* BAOPH-0 (4.6): khối giao việc của đợt chờ xử lý kết thúc (lô: `lo.ts` một câu cho cả lô). */
+  const m = tx(() => { const r = luuXuLy(p, hv, studentId, { violationIds: v.violationIds, performedOn, nguoi, note, key, bacDaThay: v.bacDaThay }, demoToday()); xongViecXuLy([studentId]); return r; });
+  return xemXuLy(p, m.id);
 }
 
 /**
@@ -415,7 +431,7 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
   const m = db().prepare('SELECT * FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
   const hv = hocVien(m.student_id);
-  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  requireLamViecYThuc(p, m.student_id, MANAGE_MESSAGE, () => m.phu_trach_id);   // BAOPH-0 (4.6): + người được giao "Đã thực hiện"
   if (m.status !== 'da_duyet') throw badRequest('Chỉ lần xử lý Head đã duyệt mới bấm "Đã thực hiện".');
   const performedOn = ngayThucHien(v.performedOn);
   hoiNgayTruocDuyet(m, performedOn);
@@ -780,7 +796,7 @@ export function laGvcnDangHoc(p: Principal, studentId: number, em: EmYThuc = emC
  */
 export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; customName?: unknown; violationIds?: unknown; note?: unknown }) {
   const hv = hocVien(studentId);
-  requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
+  requireLamViecYThuc(p, studentId, MANAGE_MESSAGE, ptXuLy(studentId));   // BAOPH-0 (4.6)
   const kind = String(v.kind ?? '') as MeasureKind;
   const em = emCua(studentId);
   if (!deXuatHopLe(kind, em.bac)) {
@@ -838,7 +854,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
   const m = db().prepare('SELECT * FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy đề xuất');
   const hv = hocVien(m.student_id);
-  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  requireLamViecYThuc(p, m.student_id, MANAGE_MESSAGE, ptXuLy(m.student_id));   // BAOPH-0 (4.6)
   if (m.status !== 'nhap') throw badRequest('Đề xuất này đã gửi rồi.');
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
   if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi Head.');
@@ -855,6 +871,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
       if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
       ghiPhanHoi(vIds);
       chotDeXuatYThuc(measureId, demoToday(), p.userId);
+      xongViecXuLy([m.student_id]);   // BAOPH-0 (4.6)
       writeAudit({ actorUserId: p.userId, action: 'discipline.apply', entityType: 'discipline_measure', entityId: measureId,
         entityLabel: `${hv.student_code} · Head áp ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
         after: { kind: m.kind, cach: cachDeXuat(m.kind, em.bac), violations: vIds, bangChung: tep } });
@@ -869,6 +886,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
     if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
     ghiPhanHoi(vIds);
     if (!deXuatHopLe(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
+    xongViecXuLy([m.student_id]);   // BAOPH-0 (4.6): Xử lý vi phạm rời việc cần làm khi chờ Head — khối giao việc của đợt này kết thúc
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,

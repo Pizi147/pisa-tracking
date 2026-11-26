@@ -16,7 +16,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { activeClassOf, canManageDiscipline, gvcnCuaEm, requireRecordViolation } from './access.ts';
 import { coTheGhi } from './baoPhTvv.ts';
-import { baoTheoDoi, conHieuLuc, donViec } from '../worklist/giaoViec.ts';
+import { baoTheoDoi, conHieuLuc, donViec, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 
@@ -97,8 +97,11 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
       out.push(id);
       if (chieu === 'gv_tvv') {
         /* Việc TVV — người giữ suy khi đọc (TVV của em; không có → QL), chuông từ /my-work như Báo PH. */
-        db().prepare(`INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc, tinh_hinh_id) VALUES (NULL, ?, ?, ?, 'mo', ?, ?)`)
-          .run(s.id, NHAN_VIEC_TINH_HINH, hanBaoPh(homNay), nowIso(), id);
+        const viec = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc, tinh_hinh_id) VALUES (NULL, ?, ?, ?, 'mo', ?, ?)`)
+          .run(s.id, NHAN_VIEC_TINH_HINH, hanBaoPh(homNay), nowIso(), id).lastInsertRowid);
+        /* BAOPH-0 (N72 ⑤): theo dõi mặc định — người gửi + Head + CX (như Báo PH vi phạm). */
+        themTheoDoiDong('bao_ph', viec, [p.userId], 'tay', p.userId, g.branchId ?? s.branch_id ?? null);
+        theoDoiVaiBaoPh({ studentIds: [s.id] });
       } else {
         const nhan = g.gvcn ? [g.gvcn] : quanLyCuaChiNhanh(g.branchId ?? s.branch_id);
         for (const uid of nhan) {

@@ -226,7 +226,7 @@ export async function runPrOv12hTests(t: any) {
     assert(viecTvv(id).trang_thai === 'mo', 'xác nhận lại: việc TVV mở lại');
   }));
 
-  check('PHV2-3 · Hoàn tác khi TVV chưa ghi → việc TVV "Đã bỏ" lý do hệ thống (không xoá dòng); em chưa có TVV → GVCN giữ việc, ghi được', () => thu(() => {
+  check('PHV2-3 · Hoàn tác khi TVV chưa ghi → việc TVV "Đã bỏ" lý do hệ thống (không xoá dòng); em chưa có TVV → Head giữ việc (BAOPH-0), ghi được; GVCN không', () => thu(() => {
     const { id, studentId } = meeting(addDays(TODAY, -1));
     conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(studentId);
     phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
@@ -237,10 +237,16 @@ export async function runPrOv12hTests(t: any) {
     const v = viecTvv(id);
     assert(v.id === id0 && v.trang_thai === 'mo', 'xác nhận lại: mở lại CHÍNH dòng cũ');
     xoaNho();
-    const cua = mywork.myWork(gvcn(), {}).items.flatMap((x: any) => [x, ...(x.con ?? [])]).find((x: any) => x.key === `bao-ph:${v.id}`);
-    assert(cua?.group === 'phoi_hop_tvv' && cua.mine, `GVCN giữ việc báo PH khi em chưa có TVV: ${JSON.stringify(cua && cua.group)}`);
-    bp.ghiKetQuaBaoPh(gvcn(), { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã họp bố mẹ với GĐCN ngày 12/09' });
-    assert(viecTvv(id).trang_thai === 'xong', 'GVCN ghi xong');
+    /* BAOPH-0 (N72 ⑤): em chưa có TVV → Head (đồng bộ N6), GVCN thôi giữ / thôi ghi. */
+    const tim = (p: any) => mywork.myWork(p, {}).items.flatMap((x: any) => [x, ...(x.con ?? [])]).find((x: any) => x.key === `bao-ph:${v.id}`);
+    assert(!tim(gvcn()), 'GVCN không còn giữ việc báo PH khi em chưa có TVV');
+    const head = loadPrincipal(bp.nguoiGiuBaoPh(studentId)[0]);
+    xoaNho();
+    const cua = tim(head);
+    assert(cua?.group === 'phoi_hop_tvv' && cua.mine, `Head giữ việc báo PH khi em chưa có TVV: ${JSON.stringify(cua && cua.group)}`);
+    assert(!bp.coTheGhi(gvcn(), { consultant_user_id: null, student_id: studentId, phoi_hop_id: id }), 'GVCN không ghi được');
+    bp.ghiKetQuaBaoPh(head, { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã họp bố mẹ với GĐCN ngày 12/09' });
+    assert(viecTvv(id).trang_thai === 'xong', 'Head ghi xong');
   }));
 
   check('PHV2-4 · rà PTA (1–2): Hoàn tác (= Đưa lại) chỉ sau lần chuyển Cần xử lý → Xong; Sửa việc đã xong / TVV ghi kết quả không Hoàn tác', () => {

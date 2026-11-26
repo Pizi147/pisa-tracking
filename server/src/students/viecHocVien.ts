@@ -166,18 +166,6 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     }
   }
 
-  /* Báo PH kết quả Test — Giữa khoá: GVCN lớp em đang học · Cuối khoá < 50%: Quản lý (`mywork.ts` 3c). Không hạn (M-05). */
-  const baoPh = conn.prepare(
-    `SELECT x.id, a.kind, x.phu_trach_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
-      WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' AND x.student_id = ? ORDER BY x.id`,
-  ).all(sid) as any[];
-  for (const x of baoPh) {
-    const cuoi = x.kind === 'final';
-    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo PH kết quả Test · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
-      han: null, tone: 'info', nguoiId: x.phu_trach_id ?? (cuoi ? null : -1), vaiChu: cuoi && !x.phu_trach_id ? 'Head' : undefined,   // GV-1: việc đã giao đứng tên người được giao
-      cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
-      nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
-  }
   /* P1-04 (B2-06): Phối hợp SOS của em — CÙNG hàm, khoá với dòng Công việc (`phoi_hop_sos:{lớp}:{việc}`), GVCN lớp em đang học giữ. Lượt của lộ trình đã thi
      thật không vào (N46, trong câu). +1 câu. */
   /* Rà #1788: chỉ người giữ được (GVCN hiệu lực của lớp · QL lớp — "Của GV" / nhận thay khi lớp chưa có GVCN) mới đọc — vai khác 0 câu. Người giữ như Công việc:

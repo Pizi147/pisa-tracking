@@ -19,6 +19,7 @@ import { demoToday } from '../demoConfig.ts';
 import { LOI_LENH_HEAD, boiCanhTheoLop, dongTuBody, khoaLenhNguoiKhac, raLenh } from './lenhChuyen.ts';
 import { luuKyVong } from '../normal/kyVong.ts';
 import { coTheChotLoTrinh } from './quyenChuyenLop.ts';
+import { theoGvcnHienTai } from '../worklist/giaoViec.ts';
 
 const LOAI = 'lenh.chuyen_ngay';
 const q = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -146,6 +147,8 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
         writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: em, after: { classId: x.lopNguon, _hoan: true, _nguon: 'Hoàn tác chuyển ngay' } });
       }
     }
+    /* BAOPH-0 (lộ ra khi em có việc Báo PH mới): người theo dõi nguồn `gvcn` của việc còn mở về GVCN lớp cũ — tính lại sau khi đảo (như Hoàn tác phân công). */
+    theoGvcnHienTai([...new Set(ds.flatMap((x) => x.ghiDanh.map((e) => e.student_id as number)))]);
     return { lopId: ds[0].lopNguon };
   });
 }

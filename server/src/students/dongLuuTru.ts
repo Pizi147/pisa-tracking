@@ -11,7 +11,9 @@ import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../
 
 export type DongLuuTru = { lyDoCase?: 'luu_tru' | 'course_ended'; case: ChupCaseDong[]; tinHieu: number[]; phoiHop: number[]; meeting: number[]; baoPh: number[]; tinhHinh: number[]; traLai: number[];
   /** Rà #2223 P2-3: đề xuất xử lý Ý thức chờ duyệt / đã duyệt chờ thực hiện → `thu_hoi` (không vào số nào, giữ dòng) + thẻ duyệt chờ đóng. */
-  xuLy?: { id: number; status: string }[]; theDuyet?: number[] };
+  xuLy?: { id: number; status: string }[]; theDuyet?: number[];
+  /** BAOPH-0 (4.6): khối giao việc "Xử lý vi phạm" của em (`viec_xu_ly`, id = em) → `bo`; Hoàn tác trả `mo`. */
+  giaoXuLy?: number[] };
 const MA = 'system_luu_tru';
 const LY_DO_THE = 'Học viên vào Lưu trữ';
 
@@ -28,6 +30,7 @@ export function dongViecLuuTru(actorUserId: number | null, studentId: number, ng
   const baoPh = idCua(`SELECT id FROM viec_bao_ph WHERE student_id = ? AND trang_thai = 'mo'`, studentId);
   const tinhHinh = idCua(`SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ? AND trang_thai = 'mo'`, studentId);
   const traLai = idCua(`SELECT id FROM vi_pham_tra_lai WHERE student_id = ? AND trang_thai = 'mo'`, studentId);
+  const giaoXuLy = idCua(`SELECT id FROM viec_xu_ly WHERE id = ? AND trang_thai = 'mo'`, studentId);
   const xuLy = db().prepare(`SELECT id, status FROM discipline_measures WHERE student_id = ? AND status IN ('cho_duyet', 'da_duyet')`).all(studentId) as { id: number; status: string }[];
   const theDuyet = xuLy.length ? idCua(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND trang_thai = 'cho' AND doi_tuong_loai = 'discipline_measure'
       AND doi_tuong_id IN (SELECT value FROM json_each(?))`, JSON.stringify(xuLy.map((m) => m.id))) : [];
@@ -37,10 +40,11 @@ export function dongViecLuuTru(actorUserId: number | null, studentId: number, ng
   /* Tình hình / Trả lại không có cột lý do: "rút" với người rút / người xong trống = hệ thống (người dùng rút luôn ghi người). */
   capNhat(tinhHinh, (ph) => `UPDATE tinh_hinh_hoc_tap SET trang_thai = 'rut', rut_boi = NULL, rut_luc = ? WHERE id IN (${ph})`, luc);
   capNhat(traLai, (ph) => `UPDATE vi_pham_tra_lai SET trang_thai = 'rut', xong_boi = NULL, xong_luc = ? WHERE id IN (${ph})`, luc);
+  capNhat(giaoXuLy, (ph) => `UPDATE viec_xu_ly SET trang_thai = 'bo' WHERE id IN (${ph})`);
   capNhat(xuLy.map((m) => m.id), (ph) => `UPDATE discipline_measures SET status = 'thu_hoi', updated_at = ? WHERE id IN (${ph})`, luc);
   capNhat(theDuyet, (ph) => `UPDATE yeu_cau_duyet SET trang_thai = 'tu_dong', ly_do_dong = '${LY_DO_THE}', xu_ly_luc = ? WHERE id IN (${ph}) AND trang_thai = 'cho'`, luc);
   return { ...(lyDoCase ? { lyDoCase } : {}), case: cs?.chup ?? [], tinHieu: cs?.withdrawnSignalIds ?? [], phoiHop, meeting, baoPh, tinhHinh, traLai,
-    ...(xuLy.length ? { xuLy, theDuyet } : {}) };
+    ...(xuLy.length ? { xuLy, theDuyet } : {}), ...(giaoXuLy.length ? { giaoXuLy } : {}) };
 }
 
 /** Hoàn tác: trả đúng các dòng lần đóng đó — chỉ dòng còn mang dấu hệ thống (người đã sửa sau thì giữ). */
@@ -54,6 +58,7 @@ export function moLaiViecLuuTru(actorUserId: number | null, studentId: number, d
   capNhat(d.baoPh ?? [], (ph) => `UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_boi = NULL, bo_luc = NULL WHERE id IN (${ph}) AND trang_thai = 'bo' AND bo_ly_do = '${MA}'`);
   capNhat(d.tinhHinh ?? [], (ph) => `UPDATE tinh_hinh_hoc_tap SET trang_thai = 'mo', rut_luc = NULL WHERE id IN (${ph}) AND trang_thai = 'rut' AND rut_boi IS NULL`);
   capNhat(d.traLai ?? [], (ph) => `UPDATE vi_pham_tra_lai SET trang_thai = 'mo', xong_luc = NULL WHERE id IN (${ph}) AND trang_thai = 'rut' AND xong_boi IS NULL`);
+  capNhat(d.giaoXuLy ?? [], (ph) => `UPDATE viec_xu_ly SET trang_thai = 'mo' WHERE id IN (${ph}) AND trang_thai = 'bo'`);
   for (const m of d.xuLy ?? []) db().prepare(`UPDATE discipline_measures SET status = ?, updated_at = ? WHERE id = ? AND status = 'thu_hoi'`).run(m.status, luc, m.id);
   capNhat(d.theDuyet ?? [], (ph) => `UPDATE yeu_cau_duyet SET trang_thai = 'cho', ly_do_dong = NULL, xu_ly_luc = NULL WHERE id IN (${ph}) AND trang_thai = 'tu_dong' AND ly_do_dong = '${LY_DO_THE}'`);
 }

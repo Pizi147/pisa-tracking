@@ -3321,6 +3321,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
+    chaLoai: b.chaLoai, chaId: b.chaId,   // BAOPH-0 (4.6): việc con của việc Ý thức / Phối hợp / Báo PH
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
     unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
     idempotencyKey: b.idempotencyKey,   // PR-GVa: chuẩn hoá ở `chuanKhoaGui` (chuỗi lạ → không khoá)
