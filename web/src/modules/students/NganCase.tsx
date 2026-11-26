@@ -138,7 +138,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     : luu?.tt === 'dang' ? <span className="tt-luu dang">{t('Đang lưu…')}</span>
     : luu?.tt === 'loi' ? <span className="tt-luu loi">⚠ {t('Không lưu được')}</span>
     : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu')} {luu.luc}</span>
-    : canDong && (vw.canEdit || vw.coTheSua) ? <span className="text-faint">{t('Tự lưu')}</span> : null;
+    : null;
   const nutTiep = onTiep
     ? <button type="button" className={`btn ${formMo || choXn ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu) cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
     : tiepCase?.di ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={tiepCase.di}>{t('Case tiếp ›')}</button>

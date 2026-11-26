@@ -638,7 +638,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
 
   const chan = xong || !em ? { huy: { nhan: t('Đóng'), onClick: dongNut } } : {
     huy: null, daSua: chuaLuu, tuHoi: false,
-    trai: <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">{t('Tự lưu khi rời ô')}{tt && <ChuLuu tt={tt} loi={b?.loi} luc={gio} gon />}</span>,
+    trai: <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">{tt && <ChuLuu tt={tt} loi={b?.loi} luc={gio} gon />}</span>,
     dongTren: keTiep && dt ? <span className="block px-4 text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
     /* GD-20a (mockup A1, lời 36): chân chuẩn — "Tiếp: {em chưa đủ}" · Đóng · Lưu · em tiếp ›. */
     phu: <>
