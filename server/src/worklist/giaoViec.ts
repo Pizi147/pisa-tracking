@@ -61,12 +61,8 @@ export type PhanMeeting = (typeof PHAN_MEETING)[number];
 const TEN_PHAN: Record<PhanMeeting, string> = { xep_lich: 'Xếp lịch họp', ket_qua: 'Kết quả meeting' };
 export type Nguon = 'gvcn' | 'tvv' | 'gv_ghi' | 'head' | 'cx' | 'tay';
 
-/** Câu SQL: tài khoản `uid` đang hoạt động + có vai đang hiệu lực ở chi nhánh `cn` (hoặc vai toàn hệ thống). */
-export const HOAT_DONG_O = (uid: string, cn: string) => `EXISTS (SELECT 1 FROM users u_ JOIN user_roles ur_ ON ur_.user_id = u_.id WHERE u_.id = ${uid}
-  AND u_.status = 'active' AND u_.deleted_at IS NULL AND ur_.status = 'active' AND (ur_.branch_id IS NULL OR ur_.branch_id = ${cn}))`;
-/** Câu SQL: chi nhánh HIỆN TẠI của em `sid` (lớp đang học, không có → hồ sơ) — như `CHI_NHANH_EM`, theo biểu thức id em. */
-const CN_EM = (sid: string) => `COALESCE((SELECT c_.branch_id FROM enrollments e_ JOIN classes c_ ON c_.id = e_.class_id WHERE e_.student_id = ${sid} AND e_.status = 'active'
-  ORDER BY e_.id DESC LIMIT 1), (SELECT s_.branch_id FROM students s_ WHERE s_.id = ${sid}))`;
+import { CN_EM, HOAT_DONG_O, conHieuLuc } from './hieuLuc.ts';
+export { HOAT_DONG_O, conHieuLuc };   // rà #2233 P1-6: định nghĩa ở tệp lá hieuLuc.ts
 /** Câu SQL: id em của một dòng việc (`v` = bí danh bảng việc). */
 const SID_VIEC: Record<LoaiGiao, (v: string) => string> = {
   bao_ph: (v) => `${v}.student_id`, phoi_hop: (v) => `${v}.student_id`, tinh_hinh: (v) => `${v}.student_id`, tra_lai: (v) => `${v}.student_id`,
@@ -105,8 +101,6 @@ export const ql = (branchId: number | null): number[] => {
   return h.length ? h : nguoiVaiCuaChiNhanh(branchId ?? 0, 'system_admin');
 };
 const hoatDongO = (uid: number, branchId: number | null) => (db().prepare(`SELECT ${HOAT_DONG_O('?', '?')} AS ok`).get(uid, branchId) as any).ok === 1;
-/** (2) Người được giao `uid` của việc của em `studentId` còn hiệu lực (còn hoạt động + còn vai ở chi nhánh hiện tại của em) — quyền ghi theo việc ở baoPhTvv / phoiHop / tinhHinh. */
-export const conHieuLuc = (uid: number, studentId: number) => (db().prepare(`SELECT ${HOAT_DONG_O('?', CN_EM('?'))} AS ok`).get(uid, studentId, studentId) as any).ok === 1;
 /** AU-2111 P0-01: người giao (`giao_boi`; Hoàn tác: người đã đổi) chỉ có quyền theo việc khi còn hoạt động + còn vai ở chi nhánh hiện tại của em — như người được giao. */
 export const laNguoiGiao = (p: Principal, v: { giao_boi?: number | null; student_id: number }) =>
   v.giao_boi != null && v.giao_boi === p.userId && nho(`gv:hieu-luc:${p.userId}:${v.student_id}`, () => conHieuLuc(p.userId, v.student_id));   // GET: một câu cho cả panel
@@ -125,7 +119,10 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
         JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id WHERE mp.id = ?`).get(id);
   } else if (loai === 'xu_ly') {
     /* 4.6: việc tính theo em — chưa ai giao / đặt hạn thì chưa có dòng (đọc như dòng rỗng, `id` = em). */
-    r = db().prepare(`SELECT s.id AS id, s.id AS student_id, x.trang_thai, x.han_chon, x.phu_trach_id, x.giao_boi, x.giao_luc, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS em_branch
+    /* Dòng của đợt trước (`xong` / `bo`) không còn hiệu lực — đọc như chưa giao (đợt mới, `damBaoDong` làm lại dòng khi ghi). */
+    r = db().prepare(`SELECT s.id AS id, s.id AS student_id, x.trang_thai, CASE WHEN x.trang_thai = 'mo' THEN x.han_chon END AS han_chon,
+          CASE WHEN x.trang_thai = 'mo' THEN x.phu_trach_id END AS phu_trach_id, CASE WHEN x.trang_thai = 'mo' THEN x.giao_boi END AS giao_boi,
+          CASE WHEN x.trang_thai = 'mo' THEN x.giao_luc END AS giao_luc, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS em_branch
         FROM students s LEFT JOIN viec_xu_ly x ON x.id = s.id WHERE s.id = ?`).get(id);
   } else if (loai === 'bao_ph') {
     r = db().prepare(`SELECT v.*, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS em_branch, m.status AS xu_ly_status FROM viec_bao_ph v
@@ -157,7 +154,7 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
     /* 4.6: người theo luật = GVCN lớp em đang học, không có → Head (N1). Việc còn khi luật Ý thức còn đòi (một nguồn với /my-work — `trangThaiYThuc`). */
     const em = trangThaiYThuc([r.student_id], homNay).get(r.student_id);
     macDinh = gvcn ? [gvcn] : ql(branchId);
-    mo = loai === 'xu_ly' ? (r.trang_thai ?? 'mo') === 'mo' && !!em && !em.tamDung && em.soBatBuoc > 0 && !em.coChoDuyet : r.status === 'da_duyet';
+    mo = loai === 'xu_ly' ? !!em && !em.tamDung && em.soBatBuoc > 0 && !em.coChoDuyet : r.status === 'da_duyet';
     r.han_luat = loai === 'xu_ly' ? em?.han ?? null : em?.daDuyet.find((x) => x.id === id)?.han ?? null;
     tieuDe = loai === 'xu_ly' ? `Xử lý vi phạm · ${ten(r)}` : `Đã thực hiện · ${nhanLoaiXuLy(r.kind, r.custom_name ?? null)} · ${ten(r)}`;
   } else if (loai === 'tra_lai') {
@@ -179,15 +176,20 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
 
 /** 4.6: việc Xử lý vi phạm chưa có dòng (tính theo em) — tạo dòng rỗng trước lần ghi đầu (giao / hạn). TRONG tx. */
 function damBaoDong(loai: LoaiGiao, id: number): void {
-  /* Dòng đã đóng vì em vào Lưu trữ mà nay việc tính lại (Quay lại học) → dòng mới (không mang người giao / hạn của đợt trước). */
-  if (loai === 'xu_ly') db().prepare(`INSERT INTO viec_xu_ly (id, student_id, trang_thai, tao_luc) VALUES (?1, ?1, 'mo', ?2) ON CONFLICT(id) DO UPDATE
-      SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?2 WHERE trang_thai = 'bo'`).run(id, nowIso());
+  if (loai !== 'xu_ly') return;
+  /* Dòng của đợt TRƯỚC (`xong` — đã xử lý; `bo` — em vào Lưu trữ) mà nay việc tính lại → dòng mới: không mang người giao / hạn / người theo dõi / lịch sử của đợt trước. */
+  const cu = db().prepare('SELECT trang_thai FROM viec_xu_ly WHERE id = ?').get(id) as { trang_thai: string } | undefined;
+  if (cu?.trang_thai === 'mo') return;
+  if (cu) donViec('xu_ly', [id]);
+  db().prepare(`INSERT INTO viec_xu_ly (id, student_id, trang_thai, tao_luc) VALUES (?1, ?1, 'mo', ?2) ON CONFLICT(id) DO UPDATE
+      SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?2`).run(id, nowIso());
 }
-/** 4.6: TRONG tx — em vừa được xử lý (lưu xử lý / gửi đề xuất) → khối giao việc "Xử lý vi phạm" của đợt này kết thúc (người theo dõi, lịch sử dọn — đợt sau tính lại). Một câu. */
+/**
+ * 4.6: TRONG tx — em vừa được xử lý (lưu xử lý / gửi đề xuất) → khối giao việc "Xử lý vi phạm" của đợt này `xong` (rà #2233 P2-1: giữ dòng để Hoàn tác xử lý trả lại
+ * người được giao / hạn; đợt sau `damBaoDong` làm dòng mới). Một câu cho cả lô.
+ */
 export function xongViecXuLy(studentIds: readonly number[]): void {
-  if (!studentIds.length) return;
-  const ds = (db().prepare(`DELETE FROM viec_xu_ly WHERE id IN (${DS_JSON}) RETURNING id`).all(JSON.stringify(studentIds)) as { id: number }[]).map((r) => r.id);
-  donViec('xu_ly', ds);
+  if (studentIds.length) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'xong' WHERE trang_thai = 'mo' AND id IN (${DS_JSON})`).run(JSON.stringify(studentIds));
 }
 
 /** Head / Quản trị / CX có grant ở chi nhánh của việc (hoặc toàn hệ thống). */
@@ -273,7 +275,8 @@ export function donViec(loai: LoaiTheoDoi, ids: readonly number[]): void {
   db().prepare(`DELETE FROM viec_mo_ta WHERE loai = ? AND ref_id IN (${DS_JSON})`).run(loai, json);   // VH-1b: mô tả của id cũ
   db().prepare(`DELETE FROM ghi_dao WHERE loai = ? AND bang = ? AND doi_tuong_id IN (${DS_JSON})`).run(LOAI_GHI_DAO, BANG[loai], json);
   db().prepare(`DELETE FROM ghi_dao WHERE loai = 'bo_theo_doi' AND bang LIKE ? AND doi_tuong_id IN (${DS_JSON})`).run(`viec_theo_doi:${loai}:%`, json);   // PTA rà #2166: bản chụp bỏ theo dõi của id cũ
-  if (loai !== 'van_hanh') db().prepare(`UPDATE tasks SET cha_loai = NULL, cha_id = NULL WHERE cha_loai = ? AND cha_id IN (${DS_JSON})`).run(loai, json);   // 4.6: việc con không theo id dùng lại
+  /* 4.6: việc con không theo id dùng lại — `cha_id` 0 (giữ `cha_loai`: không lọt lên bảng Vận hành; người được giao vẫn thấy ở Việc được giao). */
+  if (loai !== 'van_hanh') db().prepare(`UPDATE tasks SET cha_id = 0 WHERE cha_loai = ? AND cha_id IN (${DS_JSON})`).run(loai, json);
   if (loai === 'van_hanh') {
     /* VH-1: việc Vận hành — lịch sử / cập nhật / liên kết / tệp của id cũ + bản lặp trỏ việc gốc cũ (id dùng lại không thừa hưởng). ponytail: dòng tệp xoá, tệp trong kho để dọn kho. */
     for (const b of ['task_history', 'task_updates', 'task_case_links', 'task_followers']) db().prepare(`DELETE FROM ${b} WHERE task_id IN (${DS_JSON})`).run(json);

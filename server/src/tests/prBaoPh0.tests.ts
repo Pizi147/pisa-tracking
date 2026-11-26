@@ -14,6 +14,10 @@ export async function runPrBaoPh0Tests(t: any) {
   const mig: any = await import('../migrate/prBaoPh0.ts');
   const luu: any = await import('../students/dongLuuTru.ts');
   const mg: any = await import('../worklist/mgmttasks.ts');
+  const tq: any = await import('../worklist/tongQuanV5.ts');
+  const sc: any = await import('../cases/systemClose.ts');
+  t.attempts = await import('../fasttrack/attempts.ts');
+  const hz: any = await import('../classes/hoanTacChuyenNgay.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = (ten: string, fn: () => void) => {
@@ -67,9 +71,13 @@ export async function runPrBaoPh0Tests(t: any) {
     const luot = l?.gvcn ? l : { id: tf.attempt_id, student_id: tf.student_id, tvv: tf.tvv, gvcn: tf.gvcn };
     const pG = loadPrincipal(luot.gvcn), pT = loadPrincipal(luot.tvv);
     const g0 = khoa(pG).size, t0 = khoa(pT).size;
+    xoaNho(); const tq0 = tq.tongQuanTvv(pT), kpi0 = tq0.baoPh.tong;
     const a = ph.addCoordination(pG, luot.id, { kind: 'talk_family' });
     const v = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', a.id);
     assert(v, 'thêm tay Trao đổi gia đình không sinh việc TVV');
+    /* [XM] 1 (PTA rà #2233): KPI "Báo PH đúng hạn" của TVV đếm cả việc TVV nguồn Phối hợp. */
+    conn.prepare('UPDATE viec_bao_ph SET tao_luc = ? WHERE id = ?').run(`${tq0.ky.den}T03:00:00.000Z`, v.id);
+    xoaNho(); assert(tq.tongQuanTvv(pT).baoPh.tong === kpi0 + 1, `KPI Báo PH đúng hạn không đếm việc nguồn Phối hợp: ${kpi0} → ${tq.tongQuanTvv(pT).baoPh.tong}`);
     assert(get(`SELECT 1 AS c FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`, v.id, luot.gvcn), 'GVCN thêm → theo dõi');
     assert(khoa(pG).size === g0 && khoa(pT).size === t0 + 1, `số việc GVCN ${g0}→${khoa(pG).size}, TVV ${t0}→${khoa(pT).size}`);
     bp.boViecBaoPh(pT, v.id, { lyDo: 'not_needed' });
@@ -118,10 +126,19 @@ export async function runPrBaoPh0Tests(t: any) {
     mig.khoiPhucBaoPh0(conn);
     assert(get('SELECT trang_thai AS t FROM viec_bao_ph WHERE id = ?', bm).t === 'mo', 'khôi phục: Báo PH Meeting mở lại');
     assert(!get('SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ?', tf.id), 'khôi phục: việc TVV migrate tạo (chưa ghi) gỡ');
-    /* Lượt có Trao đổi gia đình đã xác nhận (không việc TVV) → Báo PH Meeting đổi thành Trao đổi gia đình. */
-    conn.prepare(`UPDATE sos_coordination_actions SET status = 'done' WHERE id = ?`).run(tf.id);
+    /* Rà #2233 P1-5: Trao đổi gia đình GVCN đã xác nhận (không việc TVV) → Báo PH Meeting GỘP, nguồn GVCN giữ nguyên kết quả. */
+    conn.prepare(`UPDATE sos_coordination_actions SET status = 'done', note = 'GVCN đã gọi' WHERE id = ?`).run(tf.id);
     const k3 = mig.doiBaoPh0(conn);
-    assert(k3.chuyen.some((c: any) => c.viec === bm && c.moi === tf.id) && get('SELECT phoi_hop_id AS p FROM viec_bao_ph WHERE id = ?', bm).p === tf.id, `đổi thành Trao đổi gia đình: ${JSON.stringify(k3.chuyen)}`);
+    assert(k3.gop.includes(bm) && !k3.chuyen.length && get('SELECT note FROM sos_coordination_actions WHERE id = ?', tf.id).note === 'GVCN đã gọi', `nguồn đã xong phải gộp: ${JSON.stringify(k3)}`);
+    /* Trao đổi gia đình còn chờ, chưa có việc (lượt chưa đồng bộ) → việc Meeting đổi thành Trao đổi gia đình; việc Meeting thứ hai cùng lượt gộp. */
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL WHERE id = ?`).run(bm);
+    conn.prepare(`UPDATE sos_coordination_actions SET status = 'pending' WHERE id = ?`).run(tf.id);
+    const m2 = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, status, created_at, updated_at) VALUES (?, ?, 'cx_meeting_family', 'done', ?, ?)`)
+      .run(tf.attempt_id, tf.student_id, now, now).lastInsertRowid);
+    const bm2 = Number(conn.prepare(`INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc, phoi_hop_id) VALUES (?, 'Meeting 2', ?, 'mo', ?, ?)`).run(tf.student_id, TODAY, now, m2).lastInsertRowid);
+    conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(tf.attempt_id);   // không cho ① sinh việc (N46 / lượt huỷ) — giữ "chưa có việc"
+    const k4 = mig.doiBaoPh0(conn);
+    assert(k4.chuyen.length === 1 && k4.chuyen[0].moi === tf.id && k4.gop.length === 1 && [bm, bm2].includes(k4.gop[0]), `đổi một, gộp một: ${JSON.stringify(k4)}`);
   }));
 
   /* Em đang có việc Xử lý vi phạm của GVCN (luật Ý thức). */
@@ -149,7 +166,67 @@ export async function runPrBaoPh0Tests(t: any) {
     xoaNho();
     assert((myWork(pG, {} as any).items as any[]).find((i: any) => i.key === `yt_xu_ly:${xl.sid}`)?.due === han, 'hạn đặt tay chưa lên dòng GVCN');
     gv.xongViecXuLy([xl.sid]);
-    assert(!get('SELECT 1 AS c FROM viec_xu_ly WHERE id = ?', xl.sid), 'lưu xử lý: khối giao việc còn');
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'xong', 'lưu xử lý: khối giao việc chưa xong');
+    /* Rà #2233 P2-1: đợt sau giao lại → dòng mới, không mang hạn / người của đợt trước. */
+    gv.doiPhuTrach(pG, 'xu_ly', xl.sid, { userId: nhan, phuTrachCu: null });
+    assert(get('SELECT han_chon AS h, trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).h === null, 'đợt sau còn hạn cũ');
+  }));
+
+  const nguonTvv = (kind: string) => get(`SELECT x.id, x.attempt_id, v.id AS viec FROM sos_coordination_actions x JOIN viec_bao_ph v ON v.phoi_hop_id = x.id AND v.trang_thai = 'mo'
+      WHERE x.kind = ? AND x.status = 'pending' ORDER BY x.id LIMIT 1`, kind);
+  const tt = (viec: number) => get('SELECT trang_thai AS t, bo_ly_do AS l FROM viec_bao_ph WHERE id = ?', viec);
+
+  check('BP0-8 · rà #2233 P1-1: huỷ lượt → việc TVV đóng (lý do huỷ lượt); Khôi phục lượt → việc TVV mở lại (không mất khỏi ai)', () => thu('bp8', () => {
+    const n = nguonTvv('talk_family');
+    assert(n, 'seed: cần Trao đổi gia đình có việc TVV');
+    const att: any = t.attempts;
+    att.huyLuot(P.admin, n.attempt_id, {});
+    assert(tt(n.viec).t === 'bo' && tt(n.viec).l === 'system_luot_huy', `huỷ lượt: ${JSON.stringify(tt(n.viec))}`);
+    att.reopenAttempt(P.admin, n.attempt_id);
+    assert(tt(n.viec).t === 'mo', `khôi phục lượt: ${JSON.stringify(tt(n.viec))}`);
+  }));
+
+  check('BP0-9 · rà #2233 P1-2: Lộ trình mới gỡ nguồn → việc TVV đóng; Hoàn tác (mở lại nguồn) → việc TVV mở lại', () => thu('bp9', () => {
+    const n = nguonTvv('bao_ph_tvv') ?? nguonTvv('talk_family');
+    assert(n, 'seed: cần nguồn TVV có việc');
+    const cy = get('SELECT cycle_id AS c FROM assessment_attempts WHERE id = ?', n.attempt_id).c;
+    const ids = sc.dongPhoiHopLoTrinh([cy], TODAY);
+    assert(tt(n.viec).t === 'bo' && tt(n.viec).l === 'system_ket_thuc_lo_trinh', `Lộ trình mới: ${JSON.stringify(tt(n.viec))}`);
+    sc.moLaiPhoiHopLoTrinh(ids);
+    assert(tt(n.viec).t === 'mo', 'Hoàn tác Lộ trình mới: việc TVV chưa mở lại');
+  }));
+
+  check('BP0-10 · rà #2233 P1-4 (N46): lượt thuộc lộ trình đã có KQ thi thật → không sinh việc TVV, không hiện ở Công việc TVV', () => thu('bp10', () => {
+    const n = nguonTvv('talk_family');
+    assert(n, 'seed');
+    const em = get('SELECT student_id AS s FROM sos_coordination_actions WHERE id = ?', n.id).s;
+    const pT = loadPrincipal(get('SELECT consultant_user_id AS u FROM students WHERE id = ?', em).u ?? P.mbManager.userId);
+    const cy = get('SELECT cycle_id AS c FROM assessment_attempts WHERE id = ?', n.attempt_id).c;
+    conn.prepare(`UPDATE learning_cycles SET route = COALESCE(route, 'ielts'), thi_that_khong_thi = 1, buoc_tiep = NULL WHERE id = ?`).run(cy);   // lộ trình "đã thi thật" (DA_THI_THAT_SQL)
+    assert(!khoa(pT).has(`bao-ph:${n.viec}`), 'việc của lượt sau thi thật còn ở Công việc TVV');
+    gv.donViec('bao_ph', [n.viec]); conn.prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(n.viec);
+    bp.dongBoViecTvvLuot([n.attempt_id]);
+    assert(!get('SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ?', n.id), 'lượt sau thi thật vẫn sinh việc TVV');
+  }));
+
+  check('BP0-11 · rà #2233 P1-3: Hoàn tác chuyển lớp ngay / chốt Cuối khoá — bản chụp có viec_bao_ph + người theo dõi việc Báo PH (không để việc TVV mồ côi)', () => {
+    const bang = new Set((hz.dongDaoChuyenNgay([tf.student_id], []) as any[]).map((d) => d.bang));
+    assert(bang.has('viec_bao_ph') && bang.has('viec_theo_doi') && bang.has('sos_coordination_actions'), `bản chụp: ${[...bang].join(', ')}`);
+  });
+
+  check('BP0-12 · rà #2233 P2-4: GVCN gỡ Trao đổi gia đình mình thêm nhầm (TVV chưa ghi) → việc TVV bỏ cùng; Khôi phục → cả hai mở; nguồn điền sẵn vẫn chặn', () => thu('bp12', () => {
+    assert(tf?.gvcn, 'seed');
+    const pG = loadPrincipal(tf.gvcn);
+    const cu = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', tf.id).id;   // nhường chỗ (lượt, loại) cho việc thêm tay
+    gv.donViec('bao_ph', [cu]); conn.prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(cu); conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(tf.id);
+    const a = ph.addCoordination(pG, tf.attempt_id, { kind: 'talk_family' });
+    const v = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', a.id).id;
+    ph.removeCoordination(pG, a.id, { reasonCode: 'duplicate_measure' });
+    assert(tt(v).t === 'bo' && nguon(a.id).status === 'removed', `gỡ: ${JSON.stringify(tt(v))}`);
+    ph.moLaiCoordination(pG, a.id);
+    assert(tt(v).t === 'mo' && nguon(a.id).status === 'pending', `khôi phục: ${JSON.stringify(tt(v))}`);
+    const dien = nguonTvv('talk_family');
+    if (dien) assert(/TVV báo phụ huynh/.test(loi(() => ph.removeCoordination(P.admin, dien.id, { reasonCode: 'not_needed' }))), 'nguồn điền sẵn bỏ được');
   }));
 
   check('BP0-6 · việc con (N59) gắn việc Ý thức: Head tạo → khối giao việc có việc con; không lên bảng Vận hành; người được giao thấy ở Việc được giao', () => thu('bp6', () => {

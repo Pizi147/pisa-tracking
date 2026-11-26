@@ -19,12 +19,13 @@ import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso }
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { HV_DANG_HOC_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { banChupBaoPh, noiDungNguonTvv } from './phoiHop.ts';
+import { CN_EM } from '../worklist/hieuLuc.ts';
 import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
 /** A3-09 (AUDIT-2111): ngày giờ họp đã xếp của Meeting CX/GĐCN (phần Xếp lịch họp đã xong) — dòng Báo PH · Meeting của TVV ghi như dòng của CX.
@@ -169,32 +170,41 @@ const nhanViecTvvNguon = (kind: string, pb: number | null, aKind: string | null)
  *  · nguồn Cần xử lý, việc đã đóng vì nguồn gỡ → mở lại, hạn mới · nguồn do HỆ THỐNG bỏ (điểm sửa, mức SOS đổi) → việc còn mở "Đã bỏ" lý do hệ thống.
  * Nguồn người dùng bỏ / xong / Lưu trữ: việc đã theo cùng lúc (`nguonTheoViecTvv`, `dongViecLuuTru`) — không đụng.
  */
+/** Lý do đóng việc TVV vì nguồn bị HỆ THỐNG gỡ (điểm sửa / mức SOS · huỷ lượt · Lộ trình mới / chốt Cuối khoá) — nguồn hồi thì việc mở lại. */
+const NGUON_GO = new Set(['system_nguon_go', 'system_luot_huy', 'system_ket_thuc_lo_trinh']);
 export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: number | null = null): number[] {
   if (!attemptIds.length) return [];
   const rows = db().prepare(
-    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, v.id AS viec, v.trang_thai, v.bo_ly_do
+    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, v.id AS viec, v.trang_thai, v.bo_ly_do,
+            (a.status = 'cancelled' OR ${LUOT_SAU_THI_SQL('a')}) AS ngoai   -- N46 (rà #2233 P1-4): lượt huỷ / lộ trình đã thi thật không sinh việc
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = x.id
       WHERE x.attempt_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`,
   ).all(JSON.stringify(attemptIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[];
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
   for (const r of rows) {
-    if (r.status === 'pending' && !r.viec) {
+    if (r.status === 'pending' && !r.viec && !r.ngoai) {
       const k = db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(r.id, r.student_id, nhanViecTvvNguon(r.kind, r.pb_moc ?? null, r.a_kind ?? null), hanBaoPh(homNay), luc);
       moi.push({ id: Number(k.lastInsertRowid), sid: r.student_id });
-    } else if (r.status === 'pending' && r.trang_thai === 'bo' && r.bo_ly_do === 'system_nguon_go') {
+    } else if (r.status === 'pending' && r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do)) {   // rà #2233 P1-1 / P1-2: cả huỷ lượt, kết thúc lộ trình
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`).run(hanBaoPh(homNay), r.viec);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do)) {
-      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_nguon_go', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(luc, r.viec);
+      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
+        .run(NGUON_GO.has(r.ly_do) ? r.ly_do : 'system_nguon_go', luc, r.viec);
     }
   }
   if (moi.length) {
-    for (const m of moi) {
-      const g = gvcnCuaEm(m.sid, homNay);
-      themTheoDoiDong('bao_ph', m.id, [g.gvcn], 'gvcn', null, g.branchId ?? null);
-      if (nguoiTao) themTheoDoiDong('bao_ph', m.id, [nguoiTao], 'tay', nguoiTao, g.branchId ?? null);
-    }
+    /* Rà #2233 P2-3: theo dõi theo LÔ — GVCN hiệu lực lớp em đang học (nguồn `gvcn`) · người tạo (còn hoạt động ở chi nhánh em) · Head + CX — ba câu cho cả lô. */
+    const ids = JSON.stringify(moi.map((m) => m.id));
+    db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
+        SELECT 'bao_ph', v.id, g.uid, 'gvcn', NULL, ?2 FROM viec_bao_ph v JOIN (SELECT v2.id AS vid, (SELECT ta.user_id FROM enrollments e JOIN teacher_assignments ta ON ta.class_id = e.class_id
+            AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?3 AND (ta.effective_to IS NULL OR ta.effective_to >= ?3)
+          WHERE e.student_id = v2.student_id AND e.status = 'active' ORDER BY e.id DESC, ta.id LIMIT 1) AS uid FROM viec_bao_ph v2 WHERE v2.id IN (SELECT value FROM json_each(?1))) g ON g.vid = v.id
+        WHERE g.uid IS NOT NULL ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(ids, luc, homNay);
+    if (nguoiTao) db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'bao_ph', v.id, ?2, 'tay', ?2, ?3 FROM viec_bao_ph v
+        WHERE v.id IN (SELECT value FROM json_each(?1)) AND ${HOAT_DONG_O('?2', CN_EM('v.student_id'))}
+        ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(ids, nguoiTao, luc);
     theoDoiVaiBaoPh({ studentIds: [...new Set(moi.map((m) => m.sid))] });
   }
   return moi.map((m) => m.id);
@@ -587,7 +597,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
        LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
-      WHERE v.trang_thai = 'mo'${o.studentId ? ' AND v.student_id = ?' : ''}`;
+      WHERE v.trang_thai = 'mo'${o.studentId ? ' AND v.student_id = ?' : ''}
+        AND (pa.id IS NULL OR (pa.status != 'cancelled' AND NOT ${LUOT_SAU_THI_SQL('pa')}))`;   // N46 (rà #2233 P1-4): việc theo lượt sau thi thật / lượt huỷ không còn là việc
   const em = o.studentId ? [o.studentId] : [];
   const rows = docNho(   // TOC-DO-2511: nhớ trong request; chép dòng — dưới còn push + gán `r.nhan`
     `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'

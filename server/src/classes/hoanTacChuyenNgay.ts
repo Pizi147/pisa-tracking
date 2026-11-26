@@ -51,6 +51,9 @@ export function dongDaoChuyenNgay(sidVao: number | readonly number[], lopIds: re
     { bang: 'case_signals', dk: `student_id ${em}`, args: sids, k: 'ca' },
     /* B-1 (N24 ③): Lộ trình mới / Cuối khoá đóng việc Phối hợp SOS chờ (`dongPhoiHopLoTrinh`) — Hoàn tác trả việc về như cũ. */
     { bang: 'sos_coordination_actions', dk: `student_id ${em}`, args: sids, k: 'ca' },
+    /* BAOPH-0 (rà #2233 P1-3): việc TVV đóng / sinh theo nguồn ở trên — chụp cùng (+ người theo dõi việc mới) để Hoàn tác không để việc mồ côi. */
+    { bang: 'viec_bao_ph', dk: `student_id ${em}`, args: sids, k: 'ca' },
+    { bang: 'viec_theo_doi', dk: `loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE student_id ${em})`, args: sids, k: 'them' },
     { bang: 'lenh_chuyen_lop', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'ban_giao_mon', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
     { bang: 'ban_chup_lo_trinh', dk: `student_id ${em}`, args: sids, k: 'them' },

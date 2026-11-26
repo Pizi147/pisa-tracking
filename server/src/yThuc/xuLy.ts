@@ -25,7 +25,7 @@ import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFou
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
-import { KEY_TAKEN_MESSAGE, canManageDiscipline, requireManageDiscipline, requireViewStudent } from './access.ts';
+import { KEY_TAKEN_MESSAGE, canManageDiscipline, lamXuLyDuocGiao, requireManageDiscipline, requireViewStudent } from './access.ts';
 import { conHieuLuc, xongViecXuLy } from '../worklist/giaoViec.ts';
 
 /**
@@ -539,7 +539,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
        FROM discipline_measures m JOIN students s ON s.id = m.student_id LEFT JOIN users pu ON pu.id = m.performed_by WHERE m.id = ?`,
   ).get(id) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
-  requireViewStudent(p, m.student_id);
+  if (!lamXuLyDuocGiao(p, m)) requireViewStudent(p, m.student_id);   // rà #2233 P1-6: người được giao xem lại lần xử lý của mình
   const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ? ORDER BY violation_id').all(id) as any[]).map((r) => r.violation_id);
   const cacThe = theCuaDoiTuong('discipline_measure', [id]);
   const the = cacThe.find((c) => c.loai === 'y_thuc') ?? null;
@@ -1161,9 +1161,9 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
 
 /** Đóng panel giữa chừng: xoá NHÁP (chỉ `nhap`). Tệp trong kho xoá SAU khi giao dịch chốt. Nháp bỏ dở (đóng tab) dọn ở lần `deXuat` sau của cùng người · cùng em (#6). */
 export function xoaNhap(p: Principal, measureId: number): { ok: true } {
-  const m = db().prepare('SELECT id, student_id, status FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  const m = db().prepare('SELECT id, student_id, status, created_by FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy đề xuất');
-  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  if (!lamXuLyDuocGiao(p, m)) requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);   // rà #2233 P1-6
   if (m.status !== 'nhap') throw badRequest('Chỉ xoá được đề xuất chưa gửi.');
   const khoaTep: string[] = [];
   tx(() => {
@@ -1188,7 +1188,7 @@ const HOAN_TAC_XU_LY_GIAY = 60;
 export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
   const m = loadXuLy(measureId);
   const hv = hocVien(m.student_id);
-  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  if (!lamXuLyDuocGiao(p, m)) requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);   // rà #2233 P1-6 (Hoàn tác chỉ lần của chính mình — kiểm dưới)
   const chuaXong = 'Quá thời gian Hoàn tác — dùng Thu hồi… ở lần xử lý.';
   if (m.status !== 'done' || m.quyet_luc || m.created_by !== p.userId) throw badRequest(chuaXong);
   if (Date.now() - Date.parse(m.created_at) > HOAN_TAC_XU_LY_GIAY * 1000) throw badRequest(chuaXong);
@@ -1213,6 +1213,7 @@ export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
         AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = violations.id)`).run(...vIds, demoToday());
     }
     chotHanXuLy([m.student_id]);
+    db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo' WHERE id = ? AND trang_thai = 'xong'`).run(m.student_id);   // rà #2233 P2-1: Hoàn tác → người được giao / hạn về như trước
     writeAudit({ actorUserId: p.userId, action: 'discipline.measure_undo', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · hoàn tác ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
       before: { studentId: m.student_id, kind: m.kind, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null, violations: vIds } });

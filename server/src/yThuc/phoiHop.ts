@@ -400,6 +400,7 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
  */
 function dongBoViecTvv(id: number, truoc: string): void {
   const r = loadAction(id);
+  if (laViecTvvBaoPh(r.kind)) return;   // BAOPH-0: việc TVV của nguồn theo `dongBoViecTvvLuot` / `nguonTheoViecTvv`, không theo luồng Meeting
   const v = db().prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as { id: number; trang_thai: string; bo_ly_do: string | null } | undefined;
   /* CAU-HINH-CASE-SOS: bước TVV theo bản chụp của dòng (`pb_moc`); không có bước TVV → không sinh việc.
      BAOPH-0 C8 (chủ SP 26/11): lượt đã có Trao đổi gia đình (việc TVV báo PH, nói luôn việc họp) → Meeting KHÔNG sinh việc Báo PH thứ hai — còn hai phần Xếp lịch → Kết quả. */
@@ -802,7 +803,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
  */
 export function removeCoordination(p: Principal, id: number, input: { reasonCode?: string | null; reasonText?: string | null }): CoordinationAction {
   const r = loadAction(id);
-  if (laViecTvvBaoPh(r.kind)) throw badRequest(NGUON_TVV);
+  if (laViecTvvBaoPh(r.kind) && !themNham(r)) throw badRequest(NGUON_TVV);
   requireLam(p, r);
   /* RKC-3a: việc ĐÃ XONG cũng bỏ được (khỏi "Đưa lại" trước) — bản ghi đảo chụp nguyên dòng xong, Khôi phục trả về xong. Việc đã bỏ: không làm gì thêm. */
   if (r.status === 'removed') throw badRequest('Việc này đã bỏ rồi — bấm Khôi phục nếu cần làm lại.');
@@ -824,6 +825,11 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
       )
       .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
+    if (laViecTvvBaoPh(r.kind)) {   // rà #2233 P2-4: GVCN gỡ việc mình thêm nhầm → việc TVV (chưa ghi lần nào) bỏ cùng — bản ghi đảo chụp cả hai
+      g.sua('viec_bao_ph', 'phoi_hop_id = ?', id);
+      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_ly_do_chu = ?, bo_boi = ?, bo_luc = ? WHERE phoi_hop_id = ? AND trang_thai = 'mo'`)
+        .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), id);
+    }
     luuGhiDao(db(), { loai: LOAI_BO_PHOI_HOP, bang: 'sos_coordination_actions', id, nguoi: p.userId, ghi: g });
     baoTheoDoi('phoi_hop', id, p.userId, { suKien: 'bo', tieuDe: tieuDeViec(r), chiTiet: COORDINATION_REMOVE_REASON_LABEL[code as CoordinationRemoveReason] ?? code, khoa: nowIso(), studentId: r.student_id });   // GV-1
     writeAudit({
@@ -857,6 +863,9 @@ export function noiDungNguonTvv(p: Principal, id: number): string | null {
 const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
 /** BAOPH-0 (N72 ⑤): GVCN / Head thôi bước báo PH — nói lý do + bước tiếp. */
 const NGUON_TVV = 'Việc này TVV báo phụ huynh — ghi kết quả, bỏ hay khôi phục ở việc Báo PH của TVV (GVCN theo dõi).';
+/** Rà #2233 P2-4 (không khoá cứng): việc TVV do GVCN THÊM TAY (`preset = 0`) mà TVV chưa ghi lần nào — GVCN tự gỡ / khôi phục được (thêm nhầm). */
+const themNham = (r: { id: number; preset: number }): boolean =>
+  r.preset === 0 && !db().prepare('SELECT 1 FROM viec_bao_ph_lan l JOIN viec_bao_ph v ON v.id = l.viec_id WHERE v.phoi_hop_id = ?').get(r.id);
 
 /**
  * OV-7a: việc "Đã xong" bấm nhầm → "Đưa lại Cần xử lý" (bỏ ngày / người / bản chụp Báo PH; ghi chú giữ để lưu lại); việc người dùng đã Bỏ → "Khôi phục".
@@ -864,7 +873,7 @@ const NGUON_TVV = 'Việc này TVV báo phụ huynh — ghi kết quả, bỏ ha
  */
 export function moLaiCoordination(p: Principal, id: number): CoordinationAction {
   const r = loadAction(id);
-  if (laViecTvvBaoPh(r.kind)) throw badRequest(NGUON_TVV);
+  if (laViecTvvBaoPh(r.kind) && !(themNham(r) && r.status === 'removed')) throw badRequest(NGUON_TVV);
   requireLam(p, r);
   if (r.status === 'pending') throw conflict('Việc này đang ở trạng thái Cần xử lý.');   // Q-RL2c: bấm lần hai / đã có người mở lại → 409
   if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
@@ -873,7 +882,7 @@ export function moLaiCoordination(p: Principal, id: number): CoordinationAction 
   tx(() => {
     /* Q-RL2c: việc người dùng bỏ có bản ghi đảo → trả NGUYÊN dòng trước khi bỏ (409 nếu đã có thay đổi sau); việc bỏ trước Q-RL2c → cách cũ. */
     const g = r.status === 'removed' ? timGhiDao(db(), LOAI_BO_PHOI_HOP, 'sos_coordination_actions', id) : null;
-    if (g) daoLai(db(), g, p.userId);
+    if (g) daoLai(db(), g, p.userId);   // P2-4: bản chụp có cả việc TVV (nếu là việc GVCN thêm nhầm)
     else db().prepare(
       `UPDATE sos_coordination_actions SET status = 'pending', performed_on = NULL, performed_by = NULL, performer_name = NULL, noi_dung_luc_bao = NULL,
               remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,

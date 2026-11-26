@@ -3,6 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { boVaiBpxl, can, require_, type Principal } from '../permissions.ts';
 import { forbidden, notFound } from '../util.ts';
+import { conHieuLuc } from '../worklist/hieuLuc.ts';
 
 /**
  * QUYỀN CỦA MODULE Ý THỨC — MỘT nơi (thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6).
@@ -122,16 +123,24 @@ export function coordinationOwner(actionId: number) {
 
 /** Kho tệp: quyền của biện pháp làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền xử lý Ý thức (B10: vẫn bổ sung được khi đã thực hiện). */
 export function measureOwner(measureId: number) {
-  const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  const m = db().prepare('SELECT student_id, created_by, phu_trach_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
   return {
-    requireView: (p: Principal) => requireViewStudent(p, m.student_id),
+    requireView: (p: Principal) => { if (!lamXuLyDuocGiao(p, m)) requireViewStudent(p, m.student_id); },
     requireEdit: (p: Principal) => {
+      if (lamXuLyDuocGiao(p, m)) return;   // BAOPH-0 (rà #2233 P1-6): người được giao đính kèm bằng chứng của lần xử lý mình lập / được giao
       requireViewStudent(p, m.student_id);
       requireManageDiscipline(p, m.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của lần xử lý này.');
     },
   };
 }
+
+/**
+ * BAOPH-0 (N72 ⑥, rà #2233 P1-6): người được giao việc Ý thức (Xử lý vi phạm / Đã thực hiện) KHÔNG quản lý Ý thức của em vẫn làm trọn việc của mình — lần xử lý do
+ * chính họ lập (nháp, tệp bằng chứng, Hoàn tác, xem lại) hoặc lần được giao "Đã thực hiện". Chỉ khi còn hoạt động + còn vai ở chi nhánh em (như N58).
+ */
+export const lamXuLyDuocGiao = (p: Principal, m: { student_id: number; created_by?: number | null; phu_trach_id?: number | null }): boolean =>
+  !canManageDiscipline(p, m.student_id) && (m.created_by === p.userId || m.phu_trach_id === p.userId) && conHieuLuc(p.userId, m.student_id);
 
 /** GVCN đang hiệu lực của lớp em đang học (không có → null). */
 export function gvcnCuaEm(sid: number, homNay: string): { lopId: number | null; gvcn: number | null; branchId: number | null } {

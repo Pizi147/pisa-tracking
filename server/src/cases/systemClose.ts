@@ -2,6 +2,7 @@ import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, type SystemCloseReason } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
+import { dongBoViecTvvLuot } from '../yThuc/baoPhTvv.ts';
 
 /**
  * HỆ THỐNG TỰ ĐÓNG CASE — nơi DUY NHẤT (S16, S17; bảng luật lộ trình §3.9).
@@ -56,12 +57,14 @@ export function programmeOfCase(c: { cycle_id?: number | null; category?: string
 export function dongPhoiHopLoTrinh(cycleIds: readonly number[], on: string): number[] {
   if (!cycleIds.length) return [];
   const conn = db();
-  const ids = (conn.prepare(`SELECT x.id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
-      WHERE x.status = 'pending' AND a.cycle_id IN (${cycleIds.map(() => '?').join(',')})`).all(...cycleIds) as any[]).map((r) => r.id as number);
+  const rows = conn.prepare(`SELECT x.id, x.attempt_id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
+      WHERE x.status = 'pending' AND a.cycle_id IN (${cycleIds.map(() => '?').join(',')})`).all(...cycleIds) as any[];
+  const ids = rows.map((r) => r.id as number);
   theoLo(ids, (lo, ph) => {
     conn.prepare(`UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_ket_thuc_lo_trinh', removed_by = NULL, removed_at = ?, updated_at = ?
       WHERE id IN (${ph})`).run(on, nowIso(), ...lo);
   });
+  dongBoViecTvvLuot([...new Set(rows.map((r) => r.attempt_id as number))]);   // BAOPH-0 (rà #2233 P1-2): việc TVV của nguồn đóng theo
   return ids;
 }
 export function moLaiPhoiHopLoTrinh(ids: readonly number[]): void {
@@ -69,6 +72,8 @@ export function moLaiPhoiHopLoTrinh(ids: readonly number[]): void {
     db().prepare(`UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, removed_by = NULL, removed_at = NULL, updated_at = ?
       WHERE id IN (${ph}) AND status = 'removed' AND remove_reason_code = 'system_ket_thuc_lo_trinh'`).run(nowIso(), ...lo);
   });
+  if (ids.length) dongBoViecTvvLuot((db().prepare(`SELECT DISTINCT attempt_id AS id FROM sos_coordination_actions WHERE id IN (SELECT value FROM json_each(?))`)
+    .all(JSON.stringify(ids)) as any[]).map((r) => r.id as number));   // BAOPH-0 (P1-2): mở lại việc TVV
 }
 
 export function closeCasesBySystem(input: {

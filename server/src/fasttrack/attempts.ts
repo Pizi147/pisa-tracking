@@ -47,6 +47,7 @@ import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 import { MT0_THEO_EM_SQL } from './mt0.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
+import { dongBoViecTvvLuot } from '../yThuc/baoPhTvv.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1980,6 +1981,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     const soViec = conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
         WHERE trang_thai = 'bo' AND bo_ly_do = 'system_luot_huy'
           AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'done')`).run(attemptId).changes;
+    dongBoViecTvvLuot([attemptId]);   // BAOPH-0 (rà #2233 P1-1): nguồn TVV đã mở lại → việc TVV mở lại (hạn mới)
     const doiVuot = traBanDoiVuot(p, attemptId, lyDo);
     soDiem += doiVuot;
     if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');

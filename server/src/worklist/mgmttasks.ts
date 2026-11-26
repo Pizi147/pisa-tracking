@@ -897,7 +897,9 @@ export function createMgmtTask(p: Principal, input: {
     if (input.parentTaskId) throw badRequest('Việc con chỉ có một tầng.');
     const loai = docLoai(input.chaLoai), id = Number(input.chaId);
     xemGiaoViec(p, loai, id);
-    return { loai, id, branchId: docViec(loai, id).branchId };
+    const v = docViec(loai, id);
+    if (!v.mo) throw badRequest('Việc cha đã kết thúc — không thêm việc con.');   // rà #2233 P2-2
+    return { loai, id, branchId: v.branchId };
   })();
   if (input.parentTaskId) {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
