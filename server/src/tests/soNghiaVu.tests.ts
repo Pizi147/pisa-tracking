@@ -200,7 +200,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
       JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
     attempts.saveScore(P.admin, a.id, 'speaking', { band: 6, gvCham: { performerUserId: gv } }, so(ks).han);
     assert(so(ks).nguoi === gv && so(ks).xong_luc, `GV chấm S: ${JSON.stringify(so(ks))}`);
-    /* N71: em dừng SAU tuần thi vẫn nợ ô đó (việc GV lớp lúc thi) — chỉ dừng TRƯỚC tuần thi mới không tính. */
+    /* Lưu trữ (chủ SP 26/11): em dừng — ô chưa xong không tính, dù dừng trước hay sau tuần thi. */
     studentsSvc.setStudentStatus(P.admin, a.student_id, 'finished', get(`SELECT date(?, '-1 day') d`, so(khoa).tuan).d, 'thử');
     assert(so(khoa).khong_tinh === 'nghi-truoc-han', `nghỉ: ${JSON.stringify(so(khoa))}`);
     attempts.huyLuot(P.admin, a.id, { lyDo: 'thử huỷ' });

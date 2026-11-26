@@ -18,7 +18,7 @@ import {
 import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
-import { LUOT_HIEN_TAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
+import { LUOT_HIEN_TAI_SQL, QUAY_LAI_SQL, oConNoKhiDung } from '../students/tamDung.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { tuanTheoId } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
@@ -615,7 +615,7 @@ function hangLopTuan(
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
               c.code AS class_code, b.name AS branch_name, c.programme_code,
-              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task, s.archived_at AS hv_archived
+              ask.skill, ask.sit_status, ask.deadline_override AS han_mon, ask.bo_task, s.archived_at AS hv_archived, ${QUAY_LAI_SQL('s.id')} AS hv_quay_lai
          FROM assessment_attempts a
          JOIN attempt_skills ask ON ask.attempt_id = a.id
          JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- PR-S6F-a Q2 + lỗi chủ SP 28/10: cùng tập khối Nợ / badge
@@ -669,7 +669,7 @@ function hangLopTuan(
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
     /* N71: em ngừng học — tuần thi sau ngày dừng không còn "còn chờ" (cùng `scoreDebt.ts`). */
-    if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start))) continue;
+    if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start), r.hv_quay_lai)) continue;
     if (!giuLop(r.class_id)) continue;
     /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */
     const mt0 = r.kind === 'mt0';
