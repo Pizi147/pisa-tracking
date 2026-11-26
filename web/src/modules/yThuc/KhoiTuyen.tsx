@@ -73,16 +73,16 @@ function ThanTuyen({ tuyen, className, moSan }: PropTuyen & { tuyen: Tuyen }) {
         : b.ngay ? ngay(b.ngay) : cho ? b.chiTiet : null;
     const chiTiet = cho || b.trangThai === 'tam_dung' ? null : b.chiTiet;
     dong.push(
-      <li key={b.khoa} className={`tb ${LOP[b.trangThai]}${con ? ' con' : ''}`} title={b.khongQuyen ? t('Không xem được nội dung') : undefined}
-        onClick={b.coNoiDung ? () => doi(b.khoa) : undefined}>
+      /* Cả dòng bấm được nhờ lớp phủ `::after` của nút ˅ (`.tb-mo`) — không gắn click lên <li>. */
+      <li key={b.khoa} className={`tb ${LOP[b.trangThai]}${con ? ' con' : ''}`} title={b.khongQuyen ? t('Không xem được nội dung') : undefined}>
         <Dau tt={b.trangThai} />
         <span className="tb-ten"><span className="sr-only">{DOC[b.trangThai]}: </span>{b.ten}</span>
-        <span className="tb-ct">{chiTiet}</span>
+        <span className="tb-ct" title={chiTiet ?? undefined}>{chiTiet}</span>
         <span className="tb-ng">{nguoi}</span>
         <span className={`tb-ngay${muc === 'sap' ? ' gan' : muc === 'qua' ? ' qua' : ''}`}>{ngayVe}</span>
         {b.coNoiDung
           ? <button type="button" className="tb-mo" aria-expanded={moNd} aria-label={moNd ? t('Thu gọn {ten}', { ten: b.ten }) : t('Xem nội dung {ten}', { ten: b.ten })}
-            onClick={(e) => { e.stopPropagation(); doi(b.khoa); }}>
+            onClick={() => doi(b.khoa)}>
             <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={moNd ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>
           : <span />}
         {/* 375 (khung ≤ 560 px): tầng hai — người · chi tiết. */}

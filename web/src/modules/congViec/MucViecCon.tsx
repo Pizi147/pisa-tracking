@@ -85,7 +85,7 @@ function ThemViecCon({ g, onHuy, onXong }: { g: KhoiGv; onHuy: () => void; onXon
     <div className="grid gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }} role="group" aria-label={t('Thêm việc con')}
       onKeyDown={(e) => { if (e.key === 'Escape' && !busy) { e.preventDefault(); onHuy(); } }}>
       <label htmlFor={id} className="text-[13px] font-semibold">{t('Tên việc con')}</label>
-      <input id={id} className="field w-full" autoFocus maxLength={200} autoComplete="off" value={ten} readOnly={busy} onChange={(e) => setTen(e.target.value)}
+      <input id={id} name="ten-viec-con" className="field w-full" autoFocus maxLength={200} autoComplete="off" value={ten} readOnly={busy} onChange={(e) => setTen(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void gui(); } }} />
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_200px]">
         <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} choNgoai={false} ariaLabel={t('Người làm')} placeholder={t('Người làm')} />

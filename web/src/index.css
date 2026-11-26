@@ -2338,7 +2338,7 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
 .tn { container-type: inline-size; }
 .tn-dau { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 0 4px; }
 .tn-dau h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
-.tn-dau .ten-tn { font-size: 13px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tn-dau .ten-tn { font-size: 13px; color: var(--text-faint); min-width: 0; overflow-wrap: anywhere; }
 .tn-dau .phai { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }
 .tn-dau .tien { font-size: 13px; font-weight: 500; color: var(--text-dim); white-space: nowrap; margin-right: 2px; }
 .tn-dau .tien b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
