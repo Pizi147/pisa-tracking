@@ -36,7 +36,7 @@
   </section>
   <section class="khu" id="l3">
     <h2>L3 · BPXL · Nhận thông tin · Chuyển lớp</h2>
-    <p class="ghi">Tab mới <b>"Nhận thông tin"</b> của BPXL. Một việc mỗi lô (lớp nguồn), thuộc <b>mọi BPXL chi nhánh</b> — ai bấm trước thì xong. Bảng em nói đúng điều máy sẽ làm với lịch đã xếp (đi theo em · ở lại lớp cũ · huỷ). Chân: <b>một nút "Xác nhận đã nhận"</b>, không ô bắt buộc. Xong có Hoàn tác.</p>
+    <p class="ghi">Tab mới <b>"Nhận thông tin"</b> của BPXL. Một việc mỗi lô (lớp nguồn), giao <b>một CVXL được gán chi nhánh</b> (chủ SP 26/11: mỗi việc một người; lead chỉ theo dõi). Bảng em nói đúng điều máy sẽ làm với lịch đã xếp (đi theo em · ở lại lớp cũ · huỷ). Chân: <b>một nút "Xác nhận đã nhận"</b>, không ô bắt buộc. Xong có Hoàn tác.</p>
     <div class="hang-khung" data-khu="L3"></div>
   </section>
   <section class="khu" id="l4">
@@ -46,7 +46,7 @@
   </section>
   <section class="khu" id="l5">
     <h2>L5 · Chuyển người làm · đổi hạn (N73 ④)</h2>
-    <p class="ghi">Bấm thẳng ô Phụ trách → hộp chọn người → lưu ngay, có Hoàn tác, không bắt lý do. Việc <b>rời danh sách</b> người chuyển, người đó <b>tự vào Đang theo dõi</b>; người nhận có <b>chuông</b> + dòng kèm nhãn "{tên} giao". Việc của cả nhóm BPXL chuyển cho một người thì thuộc hẳn người đó. Đổi được: người đang giữ · người đã giao · Head · Quản trị · CX; <b>người theo dõi chỉ xem</b> (d: người đã giao vẫn đổi được · f: người theo dõi ô chữ trơn).</p>
+    <p class="ghi">Bấm thẳng ô Phụ trách → hộp chọn người → lưu ngay, có Hoàn tác, không bắt lý do. Việc <b>rời danh sách</b> người chuyển, người đó <b>tự vào Đang theo dõi</b>; người nhận có <b>chuông</b> + dòng kèm nhãn "{tên} giao". Mỗi việc luôn chỉ một người giữ. Đổi được: người đang giữ · người đã giao · Head · Quản trị · CX; <b>người theo dõi chỉ xem</b> (d: người đã giao vẫn đổi được · f: người theo dõi ô chữ trơn).</p>
     <div class="hang-khung" data-khu="L5"></div>
   </section>
   <section class="khu" id="l6">
@@ -81,16 +81,15 @@ const tnCl = (vai, o = {}) => [
   { nhom: 'Cùng lúc · 3 việc' },
   { tt: o.bg ?? 'dang', con: 1, ten: 'Bàn giao', ...(vai === 'gvcn' ? { ban: 1 } : { ng: 'Trần Ngọc Hà' }), ngay: o.bg === 'xong' ? '17/09/2026' : ['hạn 22/09/2026', ''], khoa: vai === 'bpxl' },
   { tt: o.ph ?? 'dang', con: 1, ten: 'Báo PH', ct: o.ph === 'xong' ? 'Đã báo PH' : '', ...(vai === 'tvv' ? { ban: 1 } : { ng: 'Phan Mai' }), ngay: o.ph === 'xong' ? '17/09/2026' : ['hạn 20/09/2026', ''], khoa: vai === 'bpxl', nd: o.ph === 'xong' && vai !== 'bpxl' ? '<span class="k">Nội dung</span><span>Đã báo mẹ em chuyển sang MB FT 105 từ 21/09; mẹ hỏi lịch học mới, đã gửi.</span>' : undefined },
-  { tt: o.nt ?? 'dang', con: 1, ten: 'Nhận thông tin', ...(vai === 'bpxl' ? (o.nt === 'xong' ? { ban: 1 } : { ng: 'BPXL chi nhánh' }) : { ng: o.nt === 'xong' ? 'Lương Thu Trang' : 'BPXL chi nhánh' }), ngay: o.nt === 'xong' ? '16/09/2026' : ['hạn 20/09/2026', ''] },
+  { tt: o.nt ?? 'dang', con: 1, ten: 'Nhận thông tin', ...(vai === 'bpxl' ? { ban: 1 } : { ng: 'Lương Thu Trang' }), ngay: o.nt === 'xong' ? '16/09/2026' : ['hạn 20/09/2026', ''] },
   { tt: 'cho', ten: 'Vào lớp mới', ct: 'máy tự chuyển', ngay: 'W3 SEP' },
 ];
 const tnGv = (vai, o = {}) => [
   { tt: 'xong', ten: 'Lưu phân công', ct: '2 cặp · từ W3 SEP', ...(vai === 'head' ? { ban: 1 } : { ng: 'Nguyễn Khánh Vy' }), ngay: '16/09/2026' },
   { nhom: 'Cùng lúc · 2 việc' },
   { tt: 'dang', con: 1, ten: 'Bàn giao', ng: 'Cao Khánh Linh, Lê Minh Khoa', ngay: ['hạn 25/09/2026', ''], khoa: vai === 'bpxl' },
-  { tt: o.nt ?? 'dang', con: 1, ten: 'Nhận thông tin', ...(vai === 'bpxl' && o.nt !== 'xong' ? { ng: 'BPXL chi nhánh' } : vai === 'bpxl' ? { ban: 1 } : { ng: 'BPXL chi nhánh' }), ngay: o.nt === 'xong' ? '16/09/2026' : ['hạn 20/09/2026', ''] },
+  { tt: o.nt ?? 'dang', con: 1, ten: 'Nhận thông tin', ...(vai === 'bpxl' ? { ban: 1 } : { ng: 'Lương Thu Trang' }), ngay: o.nt === 'xong' ? '16/09/2026' : ['hạn 20/09/2026', ''] },
 ];
-const PT_BP = 'BPXL Mỹ Đình · 2 người';
 const TD_HEAD = ['Head Nguyễn Khánh Vy'];
 
 /* Hộp chọn người */
@@ -109,7 +108,7 @@ const seGiao = (ngay) => ngay
   : `<section class="se-giao" aria-label="Sau khi lưu"><h4>Sau khi lưu · việc tự giao</h4>
     <div class="hang"><span>Bàn giao</span><span>GVCN Trần Ngọc Hà + GV bộ môn</span><span>hạn 22/09/2026</span></div>
     <div class="hang"><span>Báo PH</span><span>TVV Phan Mai</span><span>hạn 20/09/2026</span></div>
-    <div class="hang"><span>Nhận thông tin</span><span>BPXL chi nhánh</span><span>hạn 20/09/2026</span></div></section>`;
+    <div class="hang"><span>Nhận thông tin</span><span>BPXL Lương Thu Trang</span><span>hạn 20/09/2026</span></div></section>`;
 const pnChuyenLop = (dt, ngay) => panel({ dt, ten: 'Chuyển lớp', meta: '<a href="#">Trịnh Ngọc Ánh</a><a href="#">MB FT 101</a>',
   than: `<div class="truong"><span class="lb">Lớp mới <span class="sao">*</span></span><span class="o go">MB FT 105 <span class="dim">· GVCN Đinh Thu Hằng · 14 em</span></span></div>
     <div class="truong"><span class="lb">Bắt đầu <span class="sao">*</span></span><div class="doan"><button class="${ngay ? 'on' : ''}">Ngay hôm nay</button><button class="${ngay ? '' : 'on'}">Từ tuần W3 SEP</button></div></div>
@@ -163,7 +162,7 @@ const EM_NT = [
 const bangNt = (xong, moEm = -1, vai = 'bpxl') => `<div class="bnt" role="table" aria-label="Học viên chuyển lớp"><div class="h dau" role="row"><span role="columnheader">Học viên</span><span role="columnheader">Lớp mới</span><span role="columnheader">Lịch Mock đã xếp</span><span role="columnheader">Tuyến</span></div>
   ${EM_NT.map(([t, l, lich, c], i) => `<div class="h${i === moEm ? ' mo' : ''}" role="row"><span role="cell"><button class="mo-e" aria-expanded="${i === moEm}"><a href="#">${t}</a>${chev('xo')}</button><small>MB FT 101</small></span><span role="cell"><a href="#" class="ma">${l}</a><small>từ W3 SEP</small></span><span role="cell" class="lich">${lich}</span><span role="cell">${cc(xong ? c : c.replace(/x(?=c$)/, 'd'))}</span></div>${i === moEm ? `<div class="khay">${tuyen({ ten: `Chuyển lớp · ${t}`, buoc: tnCl(vai, { nt: xong ? 'xong' : 'dang' }), mo: true })}</div>` : ''}`).join('')}</div>`;
 const pnNhanCl = (dt, o = {}) => panel({ dt, ten: 'Nhận thông tin', meta: '<span>Chuyển lớp</span><a href="#">MB FT 101</a><span>3 em · vào W3 SEP</span>',
-  ph: o.ph ?? pht(PT_BP, TD_HEAD, { han: HAN }),
+  ph: o.ph ?? pht('Bạn', TD_HEAD, { toi: 'Lương Thu Trang', han: HAN }),
   dai: o.dai ?? '', con: 'con' in o ? o.con : [],
   than: `${bangNt(o.xong, o.moEm ?? (dt ? -1 : 0))}${lichSu(o.xong ? 2 : 1, o.xong ? 'Xác nhận 16/09/2026' : 'Máy tạo 16/09/2026')}${o.toast ?? ''}`,
   chan: o.chan ?? chanPn(o.loi ? '<span class="luu loi nw">Mất mạng · bấm lại</span>' : '', `<button class="nut nut-chinh">Xác nhận đã nhận</button>`) });
@@ -176,18 +175,18 @@ const bangGv = () => `<div class="bnt ba" role="table" aria-label="Giáo viên �
   <div class="h" role="row"><span role="cell"><b>Speaking</b></span><span role="cell">Lê Minh Khoa ${mui} <a href="#">Phạm Quốc Anh</a></span><span role="cell" class="ma">W3 SEP</span></div></div>`;
 const pnNhanGv = (dt, dong) => panel({ dt, ten: 'Nhận thông tin', meta: '<span>Đổi GV</span><a href="#">MB FT 98</a><span>2 môn · từ W3 SEP</span>',
   dai: dong ? `<div class="dai-td"><span><b>Việc đã đóng</b> · lịch đổi GV đã huỷ 17/09/2026</span></div>` : '',
-  ph: dong ? khoaKgv(pht(PT_BP, TD_HEAD, { han: HAN })) : pht(PT_BP, TD_HEAD, { han: HAN }), con: dong ? undefined : [['Dời buổi Speaking thứ 5 sang phòng 204', 'Hoàng Minh Đức', ['19/09/2026', ''], 0]],
-  than: `${tuyen({ ten: 'Đổi GV · MB FT 98', buoc: dong ? [{ tt: 'bo', ten: 'Lưu phân công', ct: 'đã huỷ lịch đổi', ng: 'Nguyễn Khánh Vy', ngay: '17/09/2026' }, { tt: 'bo', ten: 'Nhận thông tin', ct: 'tự đóng', ng: 'BPXL chi nhánh', ngay: '17/09/2026' }] : tnGv('bpxl'), mo: true })}${bangGv()}${lichSu(dong ? 2 : 1, dong ? 'Tự đóng 17/09/2026' : 'Máy tạo 16/09/2026')}`,
+  ph: dong ? khoaKgv(pht('Bạn', TD_HEAD, { toi: 'Lương Thu Trang', han: HAN })) : pht('Bạn', TD_HEAD, { toi: 'Lương Thu Trang', han: HAN }), con: dong ? undefined : [['Dời buổi Speaking thứ 5 sang phòng 204', 'Hoàng Minh Đức', ['19/09/2026', ''], 0]],
+  than: `${tuyen({ ten: 'Đổi GV · MB FT 98', buoc: dong ? [{ tt: 'bo', ten: 'Lưu phân công', ct: 'đã huỷ lịch đổi', ng: 'Nguyễn Khánh Vy', ngay: '17/09/2026' }, { tt: 'bo', ten: 'Nhận thông tin', ct: 'tự đóng', ban: 1, ngay: '17/09/2026' }] : tnGv('bpxl'), mo: true })}${bangGv()}${lichSu(dong ? 2 : 1, dong ? 'Tự đóng 17/09/2026' : 'Máy tạo 16/09/2026')}`,
   chan: dong ? '' : chanPn('', '<button class="nut nut-chinh">Xác nhận đã nhận</button>') });
 
 /* ================= L5 · Chuyển người ================= */
-const pnDangChuyen = () => pnNhanCl(false, { moEm: -1, ph: phtMo(PT_BP, TD_HEAD, { han: HAN }, hcn()) });
+const pnDangChuyen = () => pnNhanCl(false, { moEm: -1, ph: phtMo('Bạn', TD_HEAD, { toi: 'Lương Thu Trang', han: HAN }, hcn()) });
 const TOAST_CH = `<div class="toast duoi" role="status" style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%)"><span><b>✓ Đã chuyển cho Hoàng Minh Đức</b> · Nhận thông tin · MB FT 101 · theo dõi ở <a href="#">Đang theo dõi</a></span><button class="nut nut-ma">Hoàn tác</button></div>`;
 const tinChuong = `<div class="tin-chuong" role="dialog" aria-label="Thông báo"><h5>Cần làm</h5><a href="#" class="moi"><span><b>Lương Thu Trang</b> chuyển việc cho bạn: Nhận thông tin · Chuyển lớp · MB FT 101 · 3 em</span><small>16/09/2026 10:42 · hạn 20/09/2026</small></a><h5>Để biết</h5><a href="#"><span>Lệnh chuyển lớp đã đổi · MB BE 04 · Đào Hải Nam → <b>MB BE 07</b> (đã xác nhận 15/09)</span><small>16/09/2026 09:10</small></a><a href="#"><span>MB FT 98 · 2 em vắng W2 SEP</span><small>15/09/2026</small></a></div>`;
 const pnDuocGiao = () => pnNhanCl(false, { moEm: -1, ph: pht('Bạn', ['Lương Thu Trang', 'Head Nguyễn Khánh Vy'], { toi: 'Hoàng Minh Đức', han: HAN, giao: 'Lương Thu Trang giao' }) });
 const PT_DUC = () => pht('Hoàng Minh Đức', ['Lương Thu Trang', 'Head Nguyễn Khánh Vy'], { han: HAN, giao: 'bạn giao' });
 const pnNguoiGiao = (dt) => pnNhanCl(dt, { moEm: -1, dai: `<div class="dai-td"><span><b>Bạn đã giao việc này</b></span><span class="phai"><button class="nut nut-ma">Bỏ theo dõi</button></span></div>`,
-  ph: PT_DUC() + hcn({ veMd: 'BPXL chi nhánh' }), chan: '' });
+  ph: PT_DUC() + hcn({ veMd: 'Lương Thu Trang' }), chan: '' });
 const pnChiXem = (dt) => pnNhanCl(dt, { moEm: -1, dai: `<div class="dai-td"><span><b>Bạn đang theo dõi</b> · chỉ xem</span><span class="phai"><button class="nut nut-ma">Bỏ theo dõi</button></span></div>`,
   ph: khoaKgv(pht('Hoàng Minh Đức', ['Lương Thu Trang', 'GVCN Trần Ngọc Hà'], { han: HAN, giao: 'Lương Thu Trang giao' })),
   con: undefined, chan: '' });

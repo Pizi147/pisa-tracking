@@ -5,6 +5,14 @@ Mockup: `viec-lien-phong-ban.html` (mục lục L1–L7, nút Gốc / Tối / S�
 Nền: v27 nguyên vẹn — `../v23/v23.css`, `../v27/v24-chep.css`, `../v27/v27.css`; `chung-v27.js` **chép nguyên** cách vẽ của v27 (khuôn A, panel 720, khối việc ô bấm, Việc con, khối Tuyến, chuỗi chấm, bảng em). `v28.css` chỉ thêm 7 thành phần dưới đây. Không màu / cỡ chữ mới.
 Dữ liệu bịa: thứ Tư 16/09/2026 (W2 SEP) — Head Nguyễn Khánh Vy · TVV Phan Mai · BPXL Lương Thu Trang, Hoàng Minh Đức · GVCN Trần Ngọc Hà. Lệnh ra thứ Tư → hạn CN 20/09/2026; em vào lớp mới W3 SEP (21/09).
 
+## 0. Chủ SP duyệt 26/11 — kèm điều kiện
+
+> "tạm được nhưng nhớ là chỉ giao việc cho một người thôi nhé, không cần mockup nữa, duyệt"
+
+- **Mỗi việc chỉ MỘT người phụ trách.** Việc BPXL "Nhận thông tin" giao một CVXL được gán chi nhánh (nhiều CVXL → người ít việc mở nhất; không có → Head; lead chỉ theo dõi) — đặc tả 4.2, 4.4. Mockup đã đổi chữ cho khớp: ô Phụ trách ghi **"Lương Thu Trang · bạn"** (bản trước ghi "BPXL Mỹ Đình · 2 người"), bước Nhận thông tin trong Tuyến ghi tên một người.
+- **Phụ trách chính của tuyến** (Chuyển lớp: GVCN lớp cũ · Đổi GV: GVCN lớp · không GVCN → Head) — đặc tả 4.7. **Chưa vẽ** (chủ SP: không cần mockup nữa): người làm web ghi "Phụ trách chính {tên}" ở đầu khối Tuyến, cạnh "Xong a/b", theo kiểu chữ nhãn sẵn có.
+- Sau lần đổi chữ này **không chấm critique lại**.
+
 ## 1. Thành phần mới (v28.css)
 
 | Thành phần | Dùng ở | Vẽ thế nào |
@@ -32,7 +40,7 @@ Dữ liệu bịa: thứ Tư 16/09/2026 (W2 SEP) — Head Nguyễn Khánh Vy · 
 | 4.1 · nội dung máy điền, form Báo PH như cũ | L2a (lớp cũ → mới · tuần · GVCN mới · hướng · lý do) |
 | 4.1 · em không TVV → Head | L2d |
 | 4.1 · lệnh huỷ sau khi đã báo → Báo lại PH | L2a / L2c (dòng "Báo lại · Huỷ chuyển lớp") · L7a (d) |
-| 4.2 · mọi BPXL chi nhánh, ai bấm trước thì xong | L3a (Phụ trách "BPXL Mỹ Đình · 2 người" · mặc định) |
+| 4.2 · một CVXL được gán chi nhánh giữ việc | L3a (Phụ trách "Lương Thu Trang · bạn" · mặc định) |
 | 4.2 · bảng em nói điều máy làm với lịch | L3a (đi theo em · ở lại lớp cũ (chờ điểm S)) |
 | 4.2 · xong có Hoàn tác; lỗi lưu; rỗng | L3c · L3d · L3e |
 | 4.2 · lệnh đổi sau khi BPXL đã xác nhận → chỉ tin "Cập nhật" | L5c (chuông, mục Để biết) · L7a (d) |
@@ -41,7 +49,7 @@ Dữ liệu bịa: thứ Tư 16/09/2026 (W2 SEP) — Head Nguyễn Khánh Vy · 
 | 4.3 · ô tích một, chữ "Tạo việc bàn giao · báo BPXL" | L1c, L1d (2 cặp tích, 1 cặp bỏ tích) |
 | 4.4 · việc rời danh sách, người cũ vào Đang theo dõi, Hoàn tác | L5b |
 | 4.4 · người mới có chuông + dòng "{tên} giao" | L5c, L5e |
-| 4.4 · việc cả nhóm chuyển cho một người thuộc hẳn người đó; "Về mặc định" | L5a (hộp chọn) · L5e · L5d ("Về mặc định · BPXL chi nhánh") |
+| 4.4 · mỗi việc một người; "Về mặc định" | L5a (hộp chọn) · L5e · L5d ("Về mặc định · BPXL chi nhánh") |
 | 4.4 · Chốt lộ trình chỉ giao người có quyền chốt | L6c (hộp chọn chỉ liệt kê người có quyền chốt; không có CX) |
 | 4.5 · Việc con mọi việc có khung | L3a, L4a (có việc con), L6a, L6c |
 | 4.7 · Tuyến: ba việc cùng lúc, "Vào lớp mới · máy tự chuyển" không chờ | L7a, L3a, L2a |
