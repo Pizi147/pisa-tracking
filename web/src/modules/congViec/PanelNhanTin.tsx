@@ -127,7 +127,7 @@ function BangEm({ em, chuoi, hn }: { em: DongEm[]; chuoi: TomTuyen[]; hn: string
             <div role="row" className={`grid min-h-[52px] grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 gap-y-0.5 px-3.5 py-1.5 ${luoi} ${dangMo ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''} ${e.trangThai === 'huy' || e.trangThai === 'roi' ? 'opacity-60' : ''}`}>
               <span role="cell" className="grid min-w-0 gap-0.5">
                 <span className="flex min-w-0 items-center gap-1">
-                  <Link to={duongHoSoHocVien(e.studentId)} className="ten-hv truncate font-semibold text-[color:var(--text)] no-underline hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{e.ten}</Link>
+                  <Link to={duongHoSoHocVien(e.studentId)} className="ten-hv min-w-0 break-words font-semibold text-[color:var(--text)] no-underline hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{e.ten}</Link>
                   <button type="button" className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-dim hover:text-[color:var(--text)] max-sm:h-11 max-sm:w-11" aria-expanded={dangMo}
                     aria-label={dangMo ? t('Đóng tuyến của {ten}', { ten: e.ten }) : t('Mở tuyến của {ten}', { ten: e.ten })} onClick={() => setMo(dangMo ? null : e.lenhId)}>
                     <MuiChev mo={false} cl={dangMo ? '-rotate-90' : 'rotate-90'} />
