@@ -43,6 +43,7 @@ import { dauTuViec } from './dauPanelViec.tsx';
 const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
 const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelSauThi));
 const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
+const PanelBaoPhNhieu = lazyHop(() => import('./PanelBaoPhNhieu.tsx').then((x) => x.PanelBaoPhNhieu));
 const PanelMeeting = lazyHop(() => import('./PanelMeeting.tsx').then((x) => x.PanelMeeting));
 const KhaiBacLoPanel = lazyHop(() => import('../yThuc/KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) => x.KhaiBacPanel));
@@ -196,6 +197,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'buoc_tiep': case 'thi_that':
       return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} han={dauTuViec(it).han} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'bao_ph_yt':
+      /* TUYEN-2 (mockup v27 T11a): dòng lớp × nguồn "n em" → panel nhiều em, khay từng em. */
+      if (it.con?.length) return <PanelBaoPhNhieu key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelBaoPhTvv key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'phoi_hop_tvv':
       /* GV-2 (mockup v22 G8b): một việc "Báo PH · Meeting CX/GĐCN" → panel Báo PH (+ hai phần Meeting, khối giao việc); dòng gộp nhiều em giữ lưới lớp. */

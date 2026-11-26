@@ -316,6 +316,8 @@ export type ViecBaoPhView = {
   id: number; measureId: number | null; studentId: number; ten: string; nhan: string; tieuDe: string;
   /** PHOI-HOP-V2: việc sau Meeting CX/GĐCN (id hành động phối hợp); null = Báo PH ý thức. */
   phoiHopId: number | null;
+  /** TUYEN-2: việc TVV báo PH sinh thẳng từ nguồn (Trao đổi gia đình · kết quả Progress / Final — `laViecTvvBaoPh`), KHÔNG phải Báo PH Meeting — panel không vẽ hai phần Meeting. */
+  nguonTvv: boolean;
   /** TINH-HINH: việc "Báo PH · Tình hình học tập" (id `tinh_hinh_hoc_tap`, GV gửi). */
   tinhHinhId: number | null;
   han: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string;
@@ -398,6 +400,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     : null;
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`, phoiHopId: v.phoi_hop_id ?? null, tinhHinhId: v.tinh_hinh_id ?? null,
+    nguonTvv: v.phoi_hop_id != null && laViecTvvBaoPh(v.ph_kind),
     han, quaHan: v.trang_thai === 'mo' && quaHanBaoPh(han, homNay, v.tra_lai_id), trangThai: v.trang_thai, nhanTrangThai: v.trang_thai === 'mo' && v.tra_lai_id ? CHO_GV_SUA : nhanTrangThai,
     hanMacDinh, hanChon: v.han_chon ?? null, coTheSuaHan: v.trang_thai === 'mo' && xl === 'con' && coTheSuaHan(p, v), lichSuHan: lichSuHan('bao_ph', id),
     xuLy: xl, nhanXuLy: xl === 'con' ? null : LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong],
@@ -666,10 +669,12 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     if (r.phoi_hop_id != null && laViecTvvBaoPh(r.ph_kind ?? '')) {
       /* BAOPH-0 (N72 ⑤): Trao đổi gia đình (Phối hợp SOS — một lần báo PH mỗi em × lượt, nói luôn việc họp CX) · kết quả Progress / Final (Báo PH). */
       const traoDoi = r.ph_kind === 'talk_family';
+      /* TUYEN-2 (mockup v27 T11c, N72 ⑤): mọi nguồn báo PH là MỘT nhóm "Báo PH" — dòng lớp × nguồn × đợt, "n em" mở tại chỗ (`gopNguon`, khuôn A). */
+      const nguon = traoDoi ? `Trao đổi gia đình${r.ph_luot ? ` · MT${r.ph_luot}` : ''}` : r.nhan;
       items.push({
-        key: `bao-ph:${r.id}`, group: traoDoi ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency,
+        key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency,
         studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: r.nhan, count: null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nguon, count: null, gopNguon: `${r.ph_kind}:${r.ph_luot ?? ''}:${nguon}`,
         reason: traoDoi ? `Phối hợp SOS sau MT${r.ph_luot ?? ''} — báo gia đình (cả việc họp CX / GĐCN nếu có) và ghi kết quả` : `${r.nhan} lớp thường — báo phụ huynh và ghi kết quả`,
         tieuDe: `Báo PH · ${traoDoi ? 'Trao đổi gia đình' : r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: traoDoi && r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
