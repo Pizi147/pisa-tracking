@@ -39,8 +39,10 @@ const HANG_GON = 10;
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT: chưa có đợt = `OMt` (`MT3 · chưa xếp`),
  * đã có đợt = `ChipDotFT` (chip theo nhóm kỹ năng, PR-OMT C6); ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
-export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvChon = null }: {
+export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvChon = null, chiLich = false }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
+  /** VAI-1 (N77, chủ SP 26/11 "Ẩn điểm, chỉ lịch"): lớp chi nhánh khác của BPXL — máy chủ không trả điểm; ô xong ghi "Đã có điểm", tên em không link. */
+  chiLich?: boolean;
   /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
   hvChon?: number | null;
   /** Số đang lọc: "chua-xep" chỉ còn em lộ trình thiếu MT (`thieuMt`) · "vang" em vắng tuần này (`vangTuan`); "bai" / "luot" chỉ lọc lớp. */
@@ -152,7 +154,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
               {/* Q-d (chủ SP 03/11): bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô. Tên đủ, xuống dòng (ý 7). */}
               <td className="kh-td kh-td-giua sticky-col">
-                <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>
+                {chiLich ? <span className="ten-ho-so">{h.ten}</span> : <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>}
               </td>
               {cots.map((c, ci) => {
                 const dot = o(h, c);
@@ -183,7 +185,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, loc = null, hvCh
                       const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong, kyVong: d.kyVong ?? null } : null;
                       const tuanChinh = Object.values(dot.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort()[0] ?? null;
                       return (
-                        <ODotGon o={g} kn={dot.kn} ct={ct} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop} href={trangLuot}
+                        <ODotGon o={g} kn={dot.kn} ct={ct} nhan={nhanDot(c.dot)} ketQua={kq} anDiem={chiLich} onMo={moHop} href={trangLuot}
                           khoa={loai === 'thuong' ? { khaiGiang, tongTuan, tuan: tuanChinh } : null}
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
                       );

@@ -235,14 +235,16 @@ const khoangTuan = (t2: string) => { const cn = addDaysStr(t2, 6); return `${t2.
  * Chỉ chọn chi nhánh, không có tuần — dùng ở những màn nói về TÌNH TRẠNG HIỆN TẠI
  * chứ không phải kết quả của một tuần. Vẫn tự ẩn khi tài khoản chỉ có một chi nhánh.
  */
-export function BranchFilter({ branchId, onBranch, hetHang = false }: {
+export function BranchFilter({ branchId, onBranch, hetHang = false, luon = false }: {
   branchId: number | null; onBranch: (id: number | null) => void;
+  /** VAI-1 (N77): BPXL xếp lịch mọi chi nhánh — hiện ô dù tài khoản chỉ gán một chi nhánh. */
+  luon?: boolean;
   /** Tổng quan (PTA rà #1710, mockup ⑧ T7): 375 ô rộng cả hàng, mũi tên nét mảnh như ô chọn chung (`OChonThuong`). */
   hetHang?: boolean;
 }) {
   const branches = useApi<Branch[]>('/ref/branches');
   const { session, branchCount } = useSession();
-  if ((branches.data?.length ?? 0) <= 1 || branchCount <= 1) return null;
+  if ((branches.data?.length ?? 0) <= 1 || (branchCount <= 1 && !luon)) return null;
   return <OChiNhanh branches={branches.data ?? []} branchId={branchId} hetHang={hetHang}
     onBranch={(id) => { nhoChiNhanh(session?.user?.id, id); onBranch(id); }} />;
 }

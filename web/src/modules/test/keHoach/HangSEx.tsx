@@ -25,10 +25,10 @@ export function OSEx({ x, so, onMo, onThem, soKe }: {
       : null;
   }
   const tuan = tuanLich(x.tuan);
-  const doc = [`${t('S Ex')} ${so}`, tuan, x.diem !== null ? fmtBand(x.diem) : t('chờ chấm')].join(' · ');
+  const doc = [`${t('S Ex')} ${so}`, tuan, x.diem != null ? fmtBand(x.diem) : x.diem === null ? t('chờ chấm') : null].filter(Boolean).join(' · ');
   const title = [x.ngay && ngay(x.ngay), x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet]
     .filter(Boolean).join('\n') || undefined;
-  const chu = <><b className="o-sex-nhan">{t('S Ex {n}', { n: so })}</b><span className="o-sex-tuan">{tuan}</span>{x.diem !== null && <b className="tabular-nums">{fmtBand(x.diem)}</b>}</>;
+  const chu = <><b className="o-sex-nhan">{t('S Ex {n}', { n: so })}</b><span className="o-sex-tuan">{tuan}</span>{x.diem != null && <b className="tabular-nums">{fmtBand(x.diem)}</b>}</>;
   return onMo && (x.sua || x.cham)
     ? <button type="button" className="o-sex" aria-label={doc} title={title} onClick={() => onMo(x)}>{chu}</button>
     : <span className="o-sex" aria-label={doc} title={title}>{chu}</span>;

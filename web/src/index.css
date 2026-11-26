@@ -573,13 +573,18 @@
    */
   .bang-kh { overflow: clip; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   /* RA-GD-0711: mã lớp 112 → 128 ("MB Pre FOU 03" một dòng), GVCN 230 → 214 — các cột sau giữ nguyên vị trí. */
-  .hl-kh { display: grid; grid-template-columns: 28px 128px 70px 214px 220px minmax(0, 1fr); align-items: center; gap: 0 12px; min-height: 52px;
+  .hl-kh { display: grid; grid-template-columns: 28px 128px 70px 214px 220px minmax(0, 1fr) auto; align-items: center; gap: 0 12px; min-height: 52px;
     padding: 0 12px 0 10px; border-top: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
   .bang-kh > section:first-child > .hl-kh { border-top: 0; }
   .hl-kh > :first-child { justify-self: center; }
   .hl-kh.mo-lop { box-shadow: inset 3px 0 0 var(--accent); }
   .hl-kh-phu { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-dim); }
   .hl-kh-phu b { font-weight: 600; color: var(--text); }
+  /* VAI-1 (N77, mockup v29 K1): cụm "Xếp lịch" cuối hàng lớp — nhãn căn phải · nút rộng cố định, mọi hàng thẳng cột. */
+  .xl-dong { display: grid; grid-template-columns: auto 100px; column-gap: 12px; align-items: center; justify-items: end; }
+  .xl-dong > .btn { width: 100%; }
+  /* VAI-1: 1280 — thêm cụm Xếp lịch thì thu cột cố định để ô số "Chưa đủ lịch MT · n em  Vắng · n em" vẫn một dòng (mockup K1b). */
+  @media (min-width: 640px) and (max-width: 1400px) { .hl-kh { grid-template-columns: 28px 112px 64px 196px 150px minmax(0, 1fr) auto; } }
   .kh-th { height: 36px; padding: 0 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface);
     color: var(--text-dim); font-size: 13px; font-weight: 600; text-align: left; vertical-align: middle; }
   .kh-td { padding: 6px 8px; border-bottom: 1px solid var(--line); background: var(--surface); vertical-align: top; }
@@ -648,6 +653,8 @@
   @media (max-width: 639.98px) {
     .hl-kh { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 6px 8px 36px; position: relative; }
     .hl-kh > :first-child { position: absolute; left: 12px; top: 18px; }
+    .hl-kh > .xl-dong { display: flex; flex-basis: 100%; gap: 10px; }
+    .hl-kh > .xl-dong > .btn { width: auto; min-width: 100px; margin-left: auto; }
     .o-xep, .nut-them { min-height: 44px; }
   }
 
