@@ -41,7 +41,7 @@ import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { CO_KET_QUA_THI_SQL } from '../students/tamDung.ts';
-import { chuKhung, duocGiao, giaoChoNguoi } from '../worklist/khungViec.ts';
+import { chuKhung, duocGiao, ghiNguoiLam, giaoChoNguoi } from '../worklist/khungViec.ts';
 import { CN_EM } from '../worklist/hieuLuc.ts';
 
 /** Lộ trình FT có kết quả thi thật (cùng nghĩa `!canChoThiThat`): đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay). */
@@ -474,6 +474,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   return tx(() => {
     /* Đọc lại TRONG giao dịch: hai người bấm cùng lúc thì người sau hoàn tác đúng lựa chọn người trước vừa ghi. */
     const cu = docLoTrinh(cycleId);
+    if (!coQuyenBuocTiep(p, c0.student_id)) ghiNguoiLam(p, 'buoc_tiep', cycleId);   // rà #2280 P1-A: người được giao đã làm → giữ quyền Hoàn tác
     /* Lưu lại ĐÚNG lựa chọn đang có (bấm đúp, gửi lại) → không làm lại gì. */
     if (cu.buoc_tiep === chon && (JSON.parse(cu.buoc_tiep_json ?? '{}') as GhiBuocTiep).thamSo === thamSo) return trangThaiBuocTiep(p, cycleId);
     /* SUA-LUU-TRU (Đổi): nhớ đầu vào đã kiểm của lần này + lựa chọn trước (Hoàn tác về đúng nó). Lựa chọn ghi trước PR không có `vao` → Hoàn tác về chờ chọn như cũ. */

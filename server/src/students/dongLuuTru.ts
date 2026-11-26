@@ -14,7 +14,8 @@ export type DongLuuTru = { lyDoCase?: 'luu_tru' | 'course_ended'; case: ChupCase
   xuLy?: { id: number; status: string }[]; theDuyet?: number[];
   /** BAOPH-0 (4.6): khối giao việc "Xử lý vi phạm" của em (`viec_xu_ly`, id = em) → `bo`; Hoàn tác trả `mo`. */
   giaoXuLy?: number[];
-  /** LPB-1 (N73 ⑤): khung việc của em (Chốt ngày thi · Chọn bước tiếp · Bổ sung hồ sơ · Xếp lịch MT) → `bo`; Hoàn tác trả `mo`. KQ thi thật giữ (chủ SP). */
+  /** LPB-1 (N73 ⑤): khung việc của em (Chốt ngày thi · Bổ sung hồ sơ · Xếp lịch MT) → `bo`; Hoàn tác trả `mo`. KQ thi thật giữ (chủ SP); Bước tiếp giữ — Tạm dừng / Kết thúc
+   *  thường CHÍNH LÀ lựa chọn Bước tiếp: người được giao đã chọn giữ quyền Hoàn tác (rà #2280 P1-A); việc tự hết, lượt quét ngày đóng `xong`. */
   khung?: { bang: string; id: number }[] };
 const MA = 'system_luu_tru';
 const LY_DO_THE = 'Học viên vào Lưu trữ';
@@ -34,7 +35,6 @@ export function dongViecLuuTru(actorUserId: number | null, studentId: number, ng
   const traLai = idCua(`SELECT id FROM vi_pham_tra_lai WHERE student_id = ? AND trang_thai = 'mo'`, studentId);
   const giaoXuLy = idCua(`SELECT id FROM viec_xu_ly WHERE id = ? AND trang_thai = 'mo'`, studentId);
   const khung = db().prepare(`SELECT 'viec_chot_ngay_thi' AS bang, id AS id FROM viec_chot_ngay_thi WHERE trang_thai = 'mo' AND id IN (SELECT id FROM learning_cycles WHERE student_id = ?1)
-      UNION ALL SELECT 'viec_buoc_tiep', id FROM viec_buoc_tiep WHERE trang_thai = 'mo' AND id IN (SELECT id FROM learning_cycles WHERE student_id = ?1)
       UNION ALL SELECT 'viec_bo_sung_ho_so', id FROM viec_bo_sung_ho_so WHERE trang_thai = 'mo' AND id = ?1
       UNION ALL SELECT 'viec_xep_lich_mt', id FROM viec_xep_lich_mt WHERE trang_thai = 'mo' AND id IN (SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.student_id = ?1)`).all(studentId) as { bang: string; id: number }[];

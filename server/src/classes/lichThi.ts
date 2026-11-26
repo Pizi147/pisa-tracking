@@ -27,7 +27,7 @@ import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { LUOT_CON_KE_HOACH_SQL } from '../students/tamDung.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
-import { duocGiao } from '../worklist/khungViec.ts';
+import { duocGiao, ghiNguoiLam } from '../worklist/khungViec.ts';
 
 const GHI_CHU_TOI_DA = 500;
 /** LICH-THI-NOI-THI: nơi thi là chữ NGẮN (IDP · BC · British Council Hà Nội…) — đủ cho tên trung tâm thi, không thành ô ghi chú thứ hai. */
@@ -315,7 +315,8 @@ export function luuLichThi(
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* LPB-1 (N73 ⑤): người được giao "Chốt ngày thi" của lộ trình này làm được đúng việc đó (lịch thi của lộ trình — `updateCycle` mở đúng ba trường dự kiến thi). */
-  if (!coTheSua(p, c.student_id) && !duocGiao(p, 'chot_ngay_thi', cycleId)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
+  const quaGiao = !coTheSua(p, c.student_id);
+  if (quaGiao && !duocGiao(p, 'chot_ngay_thi', cycleId)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
   const doc = () => db().prepare(`SELECT cy.*, rp.week_start AS exam_week_start, ${cotSauThi('cy', 'rp')}, ${COT_LICH_THI_SQL} FROM learning_cycles cy
       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;
   const cu = luuTuCot(doc());
@@ -363,6 +364,7 @@ export function luuLichThi(
     before: cu || doiNoiThi ? { ketLuan: cu?.ketLuan ?? null, thang: cu?.thang ?? null, ghiChu: cu?.ghiChu ?? null, ...(doiNoiThi ? { noiThi: noiThiCu } : {}) } : null,
     after: { ...moi, ...(boLich ? { boLich: true } : {}), ...(doiNoiThi ? { noiThi: noiThiGui || null } : {}) },
   });
+  if (quaGiao) ghiNguoiLam(p, 'chot_ngay_thi', cycleId);   // rà #2280 P1-A: người được giao đã làm → giữ quyền sửa lại / Hoàn tác
   const sau = doc();
   return tinhLich(sau, luuTuCot(sau), homNay, chotNgayCua([{ id: cycleId, exam_date: sau.exam_date ?? null }]).get(cycleId) ?? null);
 }

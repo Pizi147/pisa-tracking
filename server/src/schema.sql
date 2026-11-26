@@ -2517,49 +2517,49 @@ CREATE INDEX IF NOT EXISTS idx_vnt_dong_doi ON viec_nhan_tin_dong(doi_id) WHERE 
 CREATE TABLE IF NOT EXISTS viec_chot_ngay_thi (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_buoc_tiep (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_thi_that (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_bo_sung_ho_so (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_ban_giao (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_chot_lo_trinh (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_xet_lai (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE TABLE IF NOT EXISTS viec_xep_lich_mt (
   id INTEGER PRIMARY KEY,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 -- Bàn giao môn (GVBM, chuyển lớp): đơn vị = (lớp nguồn, môn) → id riêng (AUTOINCREMENT — không dùng lại).
 CREATE TABLE IF NOT EXISTS viec_ban_giao_mon (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   lop_id INTEGER NOT NULL REFERENCES classes(id), mon TEXT NOT NULL,
   trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_ban_giao_mon ON viec_ban_giao_mon(lop_id, mon);
 CREATE INDEX IF NOT EXISTS idx_viec_chot_ngay_thi_giao ON viec_chot_ngay_thi(phu_trach_id) WHERE phu_trach_id IS NOT NULL;

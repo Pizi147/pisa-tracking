@@ -16,7 +16,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
-import { chuKhung, duocGiao, giaoChoNguoi } from '../worklist/khungViec.ts';
+import { chuKhung, duocGiao, ghiNguoiLam, giaoChoNguoi } from '../worklist/khungViec.ts';
 
 const DIEM = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof DIEM)[number], number | null>;
@@ -53,12 +53,14 @@ export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
  * GVCN của lớp cuối của lộ trình (kể cả lớp đã kết thúc, em đã Kết thúc học / Lưu trữ) và Quản lý chi nhánh.
  */
 export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: number }): boolean {
+  return coTheNhapThiThatVai(p, c) || duocGiao(p, 'thi_that', c.id);   // LPB-1 (N73 ⑤): người được giao đúng lộ trình này (hỏi SAU quyền vai)
+}
+function coTheNhapThiThatVai(p: Principal, c: { id: number; student_id: number }): boolean {
   /* OV-13h (chủ SP 15/10): em đã Lưu trữ vẫn nhập kết quả thi thật (bỏ chặn OV-11d) — mọi thứ khác của hồ sơ Lưu trữ vẫn khoá. */
   /* OV-8b: TVV / CX (`student.edit_more`) nhập kết quả thi thật của HV chi nhánh mình (CX: mọi chi nhánh). */
   if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
   /* RA-2511 Q4 (chủ SP 25/11): Admin chi nhánh của em cũng nhập (việc vẫn ở TVV theo N6 — `sauThiCuaEm` không đổi). */
   if (laAdminCua(p, { studentId: c.student_id })) return true;
-  if (duocGiao(p, 'thi_that', c.id)) return true;   // LPB-1 (N73 ⑤): người được giao "Cập nhật KQ thi thật" của đúng lộ trình này
   return laGvcnLopCuoi(p, c.id);
 }
 function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
@@ -90,6 +92,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head, TVV, CX hoặc Admin của chi nhánh nhập được kết quả thi thật.');
+  const quaGiao = !coTheNhapThiThatVai(p, c);
   /* P13 KET-PET: lộ trình KET / PET có kết quả thi thật theo điểm Cambridge — chỉ 4 cột + Target lúc nhập; KHÔNG kết luận / Overall band (`outcome*`),
      không bản chụp, không Bước tiếp (luồng FT lọc `route IS NOT NULL`). Overall · Grade · CEFR tính khi hiện (`ketQuaKyThi`). */
   const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
@@ -122,6 +125,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   const ngayLuu = khongThi ? null : ngayThi;
   const conn = db();
   return tx(() => {
+    if (quaGiao) ghiNguoiLam(p, 'thi_that', c.id);   // rà #2280 P1-A: người được giao đã làm → giữ quyền Hoàn tác / sửa lại
     /* SUA-LUU-TRU: bản trước đủ cột, đọc lại TRONG giao dịch (lần lưu xen giữa không bị bỏ qua); bản chụp chỉ khi lần này đổi nó. */
     const hoan = banHoan(cycleById(cycleId), !kt && c.status !== 'active');
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, thi_that_khong_thi = ?,

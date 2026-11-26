@@ -170,10 +170,10 @@ export function hoanTacViecDuoc(bgIds: readonly number[], cotIds: readonly numbe
 function docViec(id: number): any {
   const b = db().prepare(
     /* LPB-1 (N73 ⑤): người được giao (còn hiệu lực ở chi nhánh lớp) là người viết của việc — `nguoi_lam` đọc ra đã thay; người viết theo luật ở `nguoi_lam_luat`. */
-    `SELECT b.*, b.nguoi_lam AS nguoi_lam_luat, COALESCE(CASE WHEN b.trang_thai = 'mo' AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) AS nguoi_lam,   -- rà #2280: hết quyền khi xong
+    `SELECT b.*, b.nguoi_lam AS nguoi_lam_luat, COALESCE(CASE WHEN (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_boi = b.phu_trach_id)) AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) AS nguoi_lam,   -- rà #2280: xong → chỉ khi chính người được giao xác nhận (P1-A)
             c.code, c.programme_code AS ct, c.branch_id, uc.full_name AS ten_cu, ux.full_name AS ten_xong, ul.full_name AS ten_lam
        FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id JOIN users uc ON uc.id = b.nguoi_cu LEFT JOIN users ux ON ux.id = b.xong_boi
-       LEFT JOIN users ul ON ul.id = COALESCE(CASE WHEN b.trang_thai = 'mo' AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) WHERE b.id = ?`,
+       LEFT JOIN users ul ON ul.id = COALESCE(CASE WHEN (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_boi = b.phu_trach_id)) AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) WHERE b.id = ?`,
   ).get(id) as any;
   if (!b) throw notFound('Không tìm thấy việc bàn giao');
   return b;

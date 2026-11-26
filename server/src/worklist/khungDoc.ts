@@ -31,6 +31,8 @@ const macDinhTvv = (tvv: number | null, cn: number | null): number[] => {
   return lead ? [lead] : ql(cn);
 };
 const ds = (sql: string, ids: readonly number[]) => db().prepare(sql).all(JSON.stringify(ids)) as any[];
+/** Rà PTA #2280: lô NHỎ (panel, đường ghi) lọc theo id / em / chi nhánh như cũ; lô lớn (Đang theo dõi, quét ngày) mới đọc cả tập một lần. */
+const LO_NHO = 3;
 const theoId = <T extends { id: number }>(rs: T[]) => new Map(rs.map((r) => [r.id, r]));
 
 /** Dòng bảng phụ (không có / đợt trước — không 'mo' — đọc như chưa giao: người giao / hạn rỗng). */
@@ -59,7 +61,8 @@ export function docViecKhungLo(loai: LoaiKhung, ids: readonly number[]): Map<num
           FROM learning_cycles lc JOIN students s ON s.id = lc.student_id WHERE lc.id IN (${DS_JSON})`, ids));
     const hs = loai === 'chot_ngay_thi' || loai === 'bo_sung_ho_so'
       ? new Map(ds(`${SQL_HO_SO_TVV} WHERE s.id IN (${DS_JSON})`, [...new Set([...em.values()].map((e) => e.student_id as number))]).map((r) => [r.id as number, r])) : null;
-    const bt = loai === 'buoc_tiep' ? theoId(choBuocTiep()) : null;
+    const bt = loai !== 'buoc_tiep' ? null : ids.length <= LO_NHO
+      ? theoId([...new Set([...em.values()].map((e) => e.student_id as number))].flatMap((sid) => choBuocTiep(sid))) : theoId(choBuocTiep());
     const tt = loai === 'thi_that' ? new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.id as number)) : null;
     for (const [id, e] of em) {
       const sid = e.student_id as number;
@@ -74,7 +77,7 @@ export function docViecKhungLo(loai: LoaiKhung, ids: readonly number[]): Map<num
     return out;
   }
   if (loai === 'xep_lich_mt') {
-    const moc = new Map(docNho(SQL_MOC).filter((r: any) => ids.includes(r.id)).map((r: any) => [r.id as number, r]));
+    const moc = new Map((ids.length <= LO_NHO ? ds(`${SQL_MOC} AND iv.id IN (${DS_JSON})`, ids) : docNho(SQL_MOC)).filter((r: any) => ids.includes(r.id)).map((r: any) => [r.id as number, r]));
     const co = new Set(ds(`SELECT id FROM case_interventions WHERE id IN (${DS_JSON})`, ids).map((r) => r.id as number));
     for (const id of ids) {
       if (!co.has(id)) continue;
@@ -95,7 +98,12 @@ export function docViecKhungLo(loai: LoaiKhung, ids: readonly number[]): Map<num
       AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) ORDER BY id`).all(JSON.stringify(lopIds), h, h) as any[]) if (!gv.has(r.class_id)) gv.set(r.class_id, r.user_id);
   const bg = loai === 'ban_giao' ? new Map(ds(`SELECT lop_nguon_id AS id, MIN(han_gvcn) AS han, COUNT(*) AS n FROM lenh_chuyen_lop WHERE lop_nguon_id IN (${DS_JSON})
       AND trang_thai != 'huy' AND huong != 'dung_hoc' AND xac_nhan_luc IS NULL GROUP BY lop_nguon_id`, lopIds).map((r) => [r.id as number, r])) : null;
-  const xl = loai === 'xet_lai' ? tapXetLai(today, null).filter((e) => !e.quyetDinh) : null;
+  const xl = loai === 'xet_lai' ? tapXetLai(today, [...new Set([...lop.values()].map((l) => l.branch_id as number).filter(Boolean))]).filter((e) => !e.quyetDinh) : null;
+  /* Bàn giao môn: GV dạy môn từng lớp (một câu) + việc GVBM của các lớp (một lượt `viecBanGiao`). */
+  const gvMon = new Map<number, { skill: string; user_id: number }[]>();
+  const vbg = loai === 'ban_giao_mon' ? viecBanGiao(null, null, lopIds) : [];
+  if (loai === 'ban_giao_mon') for (const r of ds(`SELECT class_id AS id, skill, user_id FROM teacher_assignments WHERE class_id IN (${DS_JSON}) AND status = 'active' AND skill IS NOT NULL ORDER BY id`, lopIds))
+    (gvMon.get(r.id) ?? gvMon.set(r.id, []).get(r.id)!).push(r);
   for (const id of ids) {
     const lopId = lopCua(id);
     const l = lopId ? lop.get(lopId) : null;
@@ -106,7 +114,7 @@ export function docViecKhungLo(loai: LoaiKhung, ids: readonly number[]): Map<num
       out.set(id, { studentId: null, tenEm: l.code, tvv: null, branchId: cn, gvcn, mo, tieuDe, macDinh,
         row: { ...(phu.get(id) ?? { id }), class_id: lopId, han_luat: hanLuat, branch_id: cn, khung: true } });
     if (loai === 'ban_giao_gv') { const b = phu.get(id); hang(b.trang_thai === 'mo', b.han, b.nguoi_lam ? [b.nguoi_lam] : ql(cn), `${NHAN_KHUNG[loai]} · ${l.code}`); continue; }
-    if (loai === 'chot_lo_trinh') { const x = lopChotLoTrinhMo(lopId!, today); hang(!!x, x?.han ?? null, ql(cn), `${NHAN_KHUNG[loai]} · ${l.code}`); continue; }
+    if (loai === 'chot_lo_trinh') { const x = lopChotLoTrinhMo(lopId!, today, ids.length > LO_NHO); hang(!!x, x?.han ?? null, ql(cn), `${NHAN_KHUNG[loai]} · ${l.code}`); continue; }
     if (loai === 'xet_lai') {
       const em = xl!.filter((e) => e.lopHienTai.id === lopId);
       hang(em.length > 0, em.map((e) => e.han).sort()[0] ?? null, ql(cn), `${NHAN_KHUNG[loai]} · ${l.code}`); continue;
@@ -114,10 +122,10 @@ export function docViecKhungLo(loai: LoaiKhung, ids: readonly number[]): Map<num
     if (loai === 'ban_giao') { const v = bg!.get(lopId!); hang(Number(v?.n) > 0, v?.han ?? null, g ? [g] : ql(cn), `${NHAN_KHUNG[loai]} · ${l.code}`, g); continue; }
     /* ban_giao_mon: còn việc khi Công việc còn dòng GVBM của môn đó ở lớp (cùng hàm). Người mặc định: GV dạy môn → GVCN → Head. */
     const mon = phu.get(id).mon as string;
-    const it = viecBanGiao(null, null, lopId).find((v) => v.loai === 'gvbm' && v.mon.split(',').includes(mon));
-    const gvMon = (db().prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND skill IN (SELECT value FROM json_each(?)) ORDER BY id LIMIT 1`)
-      .get(lopId, JSON.stringify(kyNangPhuTrach(l.ct ?? null, mon))) as any)?.user_id ?? null;
-    hang(!!it, it?.han || null, gvMon ? [gvMon] : g ? [g] : ql(cn), `${NHAN_KHUNG[loai]} ${tenMonNgan(l.ct ?? null, mon)} · ${l.code}`, g);
+    const it = vbg.find((v) => v.lopId === lopId && v.loai === 'gvbm' && v.mon.split(',').includes(mon));
+    const kn = kyNangPhuTrach(l.ct ?? null, mon);
+    const gm = gvMon.get(lopId!)?.find((r) => kn.includes(r.skill))?.user_id ?? null;
+    hang(!!it, it?.han || null, gm ? [gm] : g ? [g] : ql(cn), `${NHAN_KHUNG[loai]} ${tenMonNgan(l.ct ?? null, mon)} · ${l.code}`, g);
   }
   return out;
 }

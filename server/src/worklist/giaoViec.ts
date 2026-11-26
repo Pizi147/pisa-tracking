@@ -621,12 +621,13 @@ export function donGiaoHetHieuLuc(o: { userId?: number; studentIds?: readonly nu
  * (`donGiaoHetHieuLuc`); một câu đọc (ba chỉ mục một phần), docViec chỉ khi người đó có việc như vậy.
  */
 function khungHetQuyen(userId: number, boi: number | null): void {
-  const ds = db().prepare([...KHUNG_CO_QUYEN].map((l) => `SELECT '${l}' AS loai, id AS id FROM ${BANG_KHUNG[l]} WHERE phu_trach_id = ?1 AND trang_thai = 'mo'`).join(' UNION ALL '))
+  /* Rà #2280: + việc TVV / Bàn giao — người nhận chỉ còn vai BPXL ở chi nhánh việc (N57). */
+  const ds = db().prepare([...KHUNG_CO_QUYEN, ...KHUNG_KHONG_BPXL].map((l) => `SELECT '${l}' AS loai, id AS id FROM ${BANG_KHUNG[l]} WHERE phu_trach_id = ?1 AND trang_thai = 'mo'`).join(' UNION ALL '))
     .all(userId) as { loai: LoaiKhung; id: number }[];
   for (const r of ds) {
-    let lop: number | null = null;
-    try { lop = docViec(r.loai, r.id).row.class_id ?? null; } catch { /* việc không còn */ }
-    if (khungNhanDuoc(r.loai, lop, userId)) continue;
+    let lop: number | null = null; let cn: number | null = null;
+    try { const v = docViec(r.loai, r.id); lop = v.row.class_id ?? null; cn = v.branchId; } catch { /* việc không còn */ }
+    if (khungNhanDuoc(r.loai, lop, userId, cn)) continue;
     db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL WHERE id = ? AND phu_trach_id = ?`).run(r.id, userId);
     ghiLan(r.loai, r.id, 'phu_trach', userId, null, boi);
   }
@@ -1452,18 +1453,23 @@ export function dongKhungHetViec(): number {
     .all() as { loai: LoaiKhung; id: number }[];
   let n = 0;
   const lo = new Map<string, Viec>();
+  const loi = new Set<string>();
   for (const l of LOAI_KHUNG) {
     const ids = ds.filter((r) => r.loai === l).map((r) => r.id);
-    if (ids.length) for (const [id, v] of docViecLo(l, ids)) lo.set(`${l}:${id}`, v);
+    /* Rà #2280: một loại lỗi không chặn loại khác (dòng của loại lỗi giữ nguyên, lượt sau thử lại). */
+    try { if (ids.length) for (const [id, v] of docViecLo(l, ids)) lo.set(`${l}:${id}`, v); } catch (e) { loi.add(l); console.error('[khung] đọc', l, e); }
   }
   for (const r of ds) {
+    if (loi.has(r.loai)) continue;
     const v = lo.get(`${r.loai}:${r.id}`) ?? null;   // không có = đơn vị việc đã xoá
     if (v?.mo) continue;
-    tx(() => {
-      if (!db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET trang_thai = 'xong', xong_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id).changes) return;
-      n++;
-      if (v) baoTheoDoi(r.loai, r.id, 0, { suKien: 'xong', tieuDe: v.tieuDe, khoa: nowIso().slice(0, 10), studentId: v.studentId });
-    });
+    try {
+      tx(() => {
+        if (!db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET trang_thai = 'xong', xong_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id).changes) return;
+        n++;
+        if (v) baoTheoDoi(r.loai, r.id, 0, { suKien: 'xong', tieuDe: v.tieuDe, khoa: nowIso().slice(0, 10), studentId: v.studentId });
+      });
+    } catch (e) { console.error('[khung] đóng', r.loai, r.id, e); }
   }
   return n;
 }

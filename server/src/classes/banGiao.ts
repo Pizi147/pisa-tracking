@@ -18,7 +18,7 @@ import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
-import { duocGiao, giaoChoNguoi, giaoCua, giaoKhung } from '../worklist/khungViec.ts';
+import { duocGiao, ghiNguoiLam, giaoChoNguoi, giaoCua, giaoKhung } from '../worklist/khungViec.ts';
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2): có quyết định chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (cùng hạn với GVCN), GVCN lớp cũ gom lại, viết nhận xét
@@ -42,12 +42,14 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number }, mon?: st
   const hoi = !pc.gvcn && !ql;
   const giaoGvcn = hoi && duocGiao(p, 'ban_giao', l.lop_nguon_id);
   const giaoMon = hoi && !!mon && duocGiao(p, 'ban_giao_mon', `${l.lop_nguon_id}:${mon}`);
-  const giaoMotMon = giaoMon || (hoi && giaoChoNguoi(p.userId, 'ban_giao_mon').some((g) => g.lop === l.lop_nguon_id));
+  const giaoMotMon = giaoMon || (hoi && giaoChoNguoi(p.userId, 'ban_giao_mon').some((g) => g.lop === l.lop_nguon_id && duocGiao(p, 'ban_giao_mon', `${l.lop_nguon_id}:${g.mon}`)));
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay || giaoGvcn || giaoMon), gvbmDungMon: dungMon || giaoMon,
     xacNhan: pc.gvcn || qlThay || giaoGvcn, xacNhanThay: !pc.gvcn && !giaoGvcn && qlThay,
     doNguon: pc.gvcn || pc.kyNang.size > 0 || giaoGvcn || giaoMotMon || can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),   // RA-2511 (N57): BPXL không đọc phiếu bàn giao (Case / PA / Ý thức)
     laGvcn: pc.gvcn || giaoGvcn, kyNang: pc.kyNang, qlThay,
+    /** Rà #2280 P1-A: quyền đến từ việc được giao (không từ vai) — đường ghi ghi người đã làm. */
+    quaGiaoGvcn: giaoGvcn && !pc.gvcn && !qlThay, quaGiaoMon: giaoMon && !pc.gvcn && !dungMon && !qlThay,
   };
 }
 
@@ -389,6 +391,9 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (!text) throw badRequest('Viết một câu bàn giao.');
   if (text.length > 500) throw badRequest('Câu bàn giao tối đa 500 ký tự.');
   tx(() => {
+    /* Rà #2280 P1-A: người được giao (không vai) đã làm → giữ quyền sửa lại / Hoàn tác. */
+    if (q.quaGiaoMon) ghiNguoiLam(p, 'ban_giao_mon', `${l.lop_nguon_id}:${mon}`);
+    else if (q.quaGiaoGvcn) ghiNguoiLam(p, 'ban_giao', l.lop_nguon_id);
     const cu = db().prepare('SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?').get(lenhId, mon) as any;
     db().prepare(
       `INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?,?,?,?,?,?)
@@ -448,6 +453,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
         WHERE id = ? AND xac_nhan_luc IS NULL`,
     ).run(nx || null, JSON.stringify({ tuDien, gvbmChuaBanGiao: chuaBanGiao }), p.userId, luc, q.xacNhanThay ? 1 : 0, luc, lenhId);
     if (!r.changes) throw conflict('Phiếu vừa được xác nhận.');
+    if (q.quaGiaoGvcn) ghiNguoiLam(p, 'ban_giao', l.lop_nguon_id);   // rà #2280 P1-A
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.xac_nhan', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, after: { lenhId, thay: q.xacNhanThay, gvbmChuaBanGiao: chuaBanGiao } });
     baoBanGiao(p, l, nx);
   });
@@ -538,19 +544,22 @@ export type ViecBanGiao =
  */
 /** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
 /** `lopId` (TD-VIEC, hồ sơ lớp): chỉ việc của lớp nguồn này — việc tính theo từng (người, lớp), lớp khác không ảnh hưởng. */
-export function viecBanGiao(userId: number | null, branchId?: number | null, lopId?: number | null): ViecBanGiao[] {
+export function viecBanGiao(userId: number | null, branchId?: number | null, lopVao?: number | readonly number[] | null): ViecBanGiao[] {
+  /* Rà #2280: nhiều lớp một lượt (khung Bàn giao môn theo lô). */
+  const lopDs = Array.isArray(lopVao) ? lopVao : lopVao ? [lopVao as number] : null;
+  const lopId = lopDs?.length === 1 ? lopDs[0] : null;
   return trongBoNho(() => {
     /* LPB-1 (N73 ⑤): khung Bàn giao (GVCN theo lớp nguồn · GVBM theo lớp × môn) — việc đã giao đứng tên người được giao, rời dòng người mặc định; hạn đặt tay thắng.
        Một người: + lớp có việc giao cho người đó (tính như "mọi người" ở các lớp đó rồi lọc). Không có dòng giao → 0 câu thêm. */
-    if (!giaoCoBanGiao()) return gopViecMon(viecBanGiaoGoc(userId, branchId, lopId ? [lopId] : null));
+    if (!giaoCoBanGiao()) return gopViecMon(viecBanGiaoGoc(userId, branchId, lopDs));
     const ganGiao = (ds: ViecBanGiao[]) => ds.map((v) => {
       const g = v.loai === 'gvcn' ? giaoCua('ban_giao', v.lopId) : giaoCua('ban_giao_mon', `${v.lopId}:${v.mon}`);
       if (!g) return v;
       return { ...v, ...(g.pt ? { userId: g.pt, giaoBoi: g.giaoTen } : {}), ...(g.han ? { han: g.han } : {}), ...(v.loai === 'gvbm' ? { khungId: g.id } : {}) } as ViecBanGiao;
     });
-    let ds = ganGiao(viecBanGiaoGoc(userId, branchId, lopId ? [lopId] : null));
+    let ds = ganGiao(viecBanGiaoGoc(userId, branchId, lopDs));
     if (userId !== null) {
-      const them = [...new Set(giaoChoNguoi(userId, 'ban_giao', 'ban_giao_mon').map((g) => (g.loai === 'ban_giao' ? g.id : g.lop!)))].filter((l) => !lopId || l === lopId);
+      const them = [...new Set(giaoChoNguoi(userId, 'ban_giao', 'ban_giao_mon').map((g) => (g.loai === 'ban_giao' ? g.id : g.lop!)))].filter((l) => !lopDs || lopDs.includes(l));
       ds = [...ds, ...(them.length ? ganGiao(viecBanGiaoGoc(null, branchId, them)) : [])].filter((v) => v.userId === userId);
     }
     const da = new Set<string>();

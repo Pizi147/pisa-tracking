@@ -91,9 +91,27 @@ export function chuKhung(p: Principal, tatCa: boolean, loai: LoaiKhung, id: numb
  */
 export function duocGiao(p: Principal, loai: LoaiKhung, id: number | string): boolean {
   const g = giaoCua(loai, id);
-  if (g?.pt !== p.userId) return false;
-  /* Rà PTA #2280 (bảo mật 1): quyền theo việc đóng NGAY khi việc xong (không chờ lượt quét ngày) — "còn việc" cùng hàm Công việc (`khungDoc`, đăng ký lúc nạp). */
-  return !conMo || nho(`lpb1:con-mo:${loai}:${g.id}`, () => conMo!(loai, g.id));
+  /* Rà PTA #2280 (bảo mật 1): quyền theo việc đóng khi việc xong (không chờ lượt quét ngày) — "còn việc" cùng hàm Công việc (`khungDoc`, đăng ký lúc nạp;
+     chưa nạp → chặn). P1-A (luật "không khoá cứng"): người được giao ĐÃ LÀM việc (`lam_boi`) giữ quyền Hoàn tác / sửa lại như người giữ mặc định; người được giao
+     mà việc hết do người khác làm / giao đi / Lưu trữ thì không. */
+  if (g?.pt === p.userId && conMo && nho(`lpb1:con-mo:${loai}:${g.id}`, () => conMo!(loai, g.id))) return true;
+  return daLam(p, loai, g?.id ?? id);
+}
+/** Câu điều kiện một dòng bảng phụ theo id (Bàn giao môn: `{lớp}:{môn}`). */
+const dongTheo = (loai: LoaiKhung, id: number | string): [string, unknown[]] =>
+  loai === 'ban_giao_mon' && typeof id === 'string' ? ['v.lop_id = ? AND v.mon = ?', [Number(id.split(':')[0]), id.split(':').slice(1).join(':')]] : ['v.id = ?', [Number(id)]];
+/** Người xem là người được giao (còn hiệu lực) và ĐÃ LÀM việc này (dòng đợt này: 'mo' / 'xong', không 'bo'). Bàn giao đổi GV xét `xong_boi` ở `banGiaoGv`. */
+export function daLam(p: Principal, loai: LoaiKhung, id: number | string): boolean {
+  if (loai === 'ban_giao_gv') return false;
+  const [dk, ts] = dongTheo(loai, id);
+  return nho(`lpb1:da-lam:${p.userId}:${loai}:${id}`, () => !!db().prepare(`SELECT 1 FROM ${BANG_KHUNG[loai]} v WHERE ${dk} AND v.trang_thai IN ('mo', 'xong')
+      AND v.phu_trach_id = ? AND v.lam_boi = ? AND ${HOAT_DONG_O('v.phu_trach_id', CN_KHUNG(loai, 'v'))}`).get(...ts, p.userId, p.userId));
+}
+/** Đường ghi mở bằng `duocGiao`: ghi người được giao là người đã làm (một câu theo khoá chính; dòng không giao cho người này → không đổi). Gọi SAU khi lưu thành công. */
+export function ghiNguoiLam(p: Principal, loai: LoaiKhung, id: number | string): void {
+  if (loai === 'ban_giao_gv') return;
+  const [dk, ts] = dongTheo(loai, id);
+  db().prepare(`UPDATE ${BANG_KHUNG[loai]} AS v SET lam_boi = ? WHERE ${dk} AND v.trang_thai = 'mo' AND v.phu_trach_id = ?`).run(p.userId, ...ts, p.userId);
 }
 /** `khungDoc.ts` đăng ký hàm "việc còn mở" (tệp này là tệp lá — không import ngược). */
 let conMo: ((loai: LoaiKhung, id: number) => boolean) | null = null;

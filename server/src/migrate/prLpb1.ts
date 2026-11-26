@@ -10,7 +10,7 @@ const coCot = (conn: any, bang: string, cot: string) => (conn.prepare(`PRAGMA ta
 /** Bảng phụ id = đơn vị việc (`viec_ban_giao_mon`: id riêng + lớp, môn). */
 export const BANG_KHUNG = ['viec_chot_ngay_thi', 'viec_buoc_tiep', 'viec_thi_that', 'viec_bo_sung_ho_so', 'viec_ban_giao', 'viec_chot_lo_trinh', 'viec_xet_lai', 'viec_xep_lich_mt'] as const;
 const COT = `trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
-  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT`;
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT, lam_boi INTEGER`;
 export const bangKhung = (ten: string) => `CREATE TABLE IF NOT EXISTS ${ten} (
   id INTEGER PRIMARY KEY,
   ${COT}
@@ -29,6 +29,8 @@ export function migratePrLpb1(conn: any, applied: string[]) {
   if (!co(conn, 'viec_ban_giao_mon')) { conn.exec(BANG_BAN_GIAO_MON); them.push('viec_ban_giao_mon'); }
   if (!co(conn, 'uq_viec_ban_giao_mon')) conn.exec('CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_ban_giao_mon ON viec_ban_giao_mon(lop_id, mon)');
   for (const b of [...BANG_KHUNG, 'viec_ban_giao_mon']) if (!co(conn, `idx_${b}_giao`)) conn.exec(chiMuc(b));
+  /* Rà PTA #2280 (P1-A): người được giao ĐÃ LÀM việc (giữ quyền Hoàn tác / sửa lại sau khi xong) — bảng tạo trước cột này. */
+  for (const b of [...BANG_KHUNG, 'viec_ban_giao_mon']) if (!coCot(conn, b, 'lam_boi')) { conn.exec(`ALTER TABLE ${b} ADD COLUMN lam_boi INTEGER`); them.push(`cột ${b}.lam_boi`); }
   for (const cot of ['phu_trach_id INTEGER REFERENCES users(id)', 'giao_boi INTEGER REFERENCES users(id)', 'giao_luc TEXT', 'han_chon TEXT']) {
     const ten = cot.split(' ')[0];
     if (!coCot(conn, 'ban_giao_gv', ten)) { conn.exec(`ALTER TABLE ban_giao_gv ADD COLUMN ${cot}`); them.push(`cột ban_giao_gv.${ten}`); }

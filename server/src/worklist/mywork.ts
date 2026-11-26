@@ -1768,8 +1768,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if ((xemNguoiKhac || mocToi.length) && co('missing_data')) {
     const truoc = docMoc();
     if (truoc.length) {
-      if (xemNguoiKhac) dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      const sau = xemNguoiKhac ? docNho(SQL_MOC) : truoc;
+      dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });   // rà #2280: cả mốc được giao (BPXL) — chỉ các mốc đó
+      const sau = docMoc();
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;

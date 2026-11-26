@@ -869,8 +869,8 @@ export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: 
 
 /** LPB-1 (N73 ⑤): lớp còn việc "Chốt lộ trình" (không xét quyền người xem) — khung việc đọc CÙNG luật với Công việc. */
 /* Rà PTA #2280 (tốc độ): tính MỌI lớp một lần mỗi request rồi lọc (Đang theo dõi / quét ngày nhiều lớp không lặp câu theo lớp). */
-export const lopChotLoTrinhMo = (lopId: number, today: string): ChotLoTrinh | null =>
-  nho(`chot-lo-trinh-mo:${today}`, () => tinhLopChoChotLoTrinh(null, null, today)).find((x) => x.classId === lopId) ?? null;
+export const lopChotLoTrinhMo = (lopId: number, today: string, caTap = false): ChotLoTrinh | null =>
+  (caTap ? nho(`chot-lo-trinh-mo:${today}`, () => tinhLopChoChotLoTrinh(null, null, today)) : tinhLopChoChotLoTrinh(null, null, today, lopId)).find((x) => x.classId === lopId) ?? null;
 function tinhLopChoChotLoTrinh(p: Principal | null, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   const lop = [...lopDayDu().values()].filter((c) => c.status === 'active' && c.is_fast_track === 0 && (!branchId || c.branch_id === branchId) && (!lopId || c.id === lopId));
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
