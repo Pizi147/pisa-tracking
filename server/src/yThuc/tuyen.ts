@@ -14,6 +14,7 @@ import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
   COORDINATION_KINDS, PERMISSIONS, addDaysIso, buocTvvViec, tuanLich, laViecTvvBaoPh, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, hanTai, hanTheoNgay, laMeetingCx, ngayTheoGioVN, nhanLoaiXuLy, tenViec,
+  buocNgan,
 } from '../../../shared/domain/index.ts';
 import { can, laTvvCuaEm, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -865,7 +866,7 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
     ra.push({ loai: t.loai, khoa: t.khoa, tieuDe: t.tieuDe, studentId: t.em?.id ?? null, studentName: t.em?.ten ?? null, classCode: t.em?.lop ?? t.lop?.code ?? null,
       nhan: x.ketThuc ? `Xong${x.ketThucLuc ? ` ${x.ketThucLuc.slice(8, 10)}/${x.ketThucLuc.slice(5, 7)}/${x.ketThucLuc.slice(0, 4)}` : ''}`
                 /* TUYEN-3 (rà PTA #2281, mockup v27 T8a): tên bước NGẮN ("Báo PH · Kết quả Progress" → "Báo PH" — nguồn đã ở tên mục) để dòng một tầng. */
-        : x.dangO ? `Đang ở ${x.dangO.ten.split(' · ')[0].replace(/^Nhận thông tin$/, 'Nhận tin')}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
+        : x.dangO ? `Đang ở ${buocNgan(x.dangO.ten)}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
       han, quaHan: !!han && han < homNay, ketThuc: x.ketThuc, ketThucLuc: x.ketThucLuc, chuoi: x.buoc.map((b) => b.trangThai), viec: d.viec,
       ...(t.lo ? { lo: t.lo, chuaBaoPh: t.buoc.some((b) => b.khoa.startsWith('bao_ph:') && (b.trangThai === 'dang' || b.trangThai === 'tam_dung')) } : {}) });
   }

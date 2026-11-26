@@ -5,6 +5,7 @@ export const EN_TUYEN_3 = {
   '{n} tuyến': '{n} flows',
   'Đã bỏ theo dõi tuyến': 'Stopped following the flow',
   'Bạn đang theo dõi': 'You are following',
+  'Nhận tin': 'Receive info',
   'Sau khi bạn duyệt · cùng lúc': 'After you approve · in parallel',
   'Sau bước của bạn · cùng lúc': 'After your step · in parallel',
 };

@@ -11,7 +11,7 @@ import { DauQuaHan } from '../../ui/Nhan.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { mucHan, shortDate } from '@shared/domain/index.ts';
+import { buocNgan, mucHan, shortDate } from '@shared/domain/index.ts';
 import { DaiNhom, docGap, ghiGap } from './DanhSachViec.tsx';
 import { DaiChiXem, KhoiGiaoViec, dongLichSuGiao, useGiaoViec, useHn, type LoaiGiao } from './KhoiGiaoViec.tsx';
 import { PhanMeeting } from './PanelMeeting.tsx';
@@ -124,7 +124,7 @@ const tenDong = (d: DongTd) => d.tieuDe.split(' · ').filter((x) => x !== d.clas
  * việc theo dõi tay (N58) còn mở: "Đang ở {tên việc ngắn} · {người phụ trách}" (nguồn đã ở tên mục); đã xong: trạng thái.
  */
 const chuDong = (d: DongTd) => (d.tuyen || d.trangThai !== 'mo' ? dich(d.nhanTrangThai)
-  : [`${t('Đang ở')} ${dich(tenDong(d).split(' · ')[0].replace(/^Nhận thông tin$/, 'Nhận tin'))}`, d.phuTrach ? dich(d.phuTrach) : null].filter(Boolean).join(' · '));
+  : [`${t('Đang ở')} ${dich(buocNgan(tenDong(d)))}`, d.phuTrach ? dich(d.phuTrach) : null].filter(Boolean).join(' · '));
 /** Khoá gộp lớp × nguồn (mục Báo PH): tuyến — tên tuyến; việc N58 — tên việc đầy đủ ("Báo PH · Trao đổi với gia đình"). */
 const khoaGop = (d: DongTd) => `${d.classCode ?? ''}|${d.tuyen ? tenTuyen(d.tuyen) : tenDong(d)}`;
 
