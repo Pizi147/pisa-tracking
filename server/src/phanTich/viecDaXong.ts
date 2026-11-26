@@ -110,7 +110,7 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
     `SELECT c.id, c.student_id AS hv, s.full_name AS ten, COALESCE(kb.phu_trach_id, s.consultant_user_id) AS owner, kb.han_chon, ${COT_SAU_THI}, ${NGAY_CO_KQ} AS ngay_kq_dau, c.buoc_tiep_luc,
             l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
-       LEFT JOIN viec_buoc_tiep kb ON kb.id = c.id AND kb.trang_thai != 'bo' AND substr(c.buoc_tiep_luc, 1, 10) >= substr(kb.tao_luc, 1, 10) AND (kb.xong_luc IS NULL OR substr(c.buoc_tiep_luc, 1, 10) <= substr(kb.xong_luc, 1, 10))   -- rà #2280 P1-B: đúng đợt
+       LEFT JOIN viec_buoc_tiep kb ON kb.id = c.id AND kb.trang_thai != 'bo' AND substr(c.buoc_tiep_luc, 1, 10) >= date(kb.tao_luc, '+7 hours') AND (kb.xong_luc IS NULL OR substr(c.buoc_tiep_luc, 1, 10) <= date(kb.xong_luc, '+7 hours'))   -- rà #2280 P1-B: đúng đợt
        LEFT JOIN classes l ON l.id = ${lopEm('c.student_id', 'NULL')}
       WHERE s.branch_id ${CN_IN} AND c.buoc_tiep IS NOT NULL AND c.buoc_tiep_luc >= date(?, '-60 day')`,
   ).all(json, c.tu) as any[]) {
@@ -126,14 +126,14 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
     `SELECT 'gvcn' AS loai, k.id AS id, COALESCE(kg.han_chon, k.han_gvcn) AS han, k.xac_nhan_luc AS xong, COALESCE(kg.phu_trach_id, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)}) AS owner,
             l.id AS lop, l.code AS ma, l.is_fast_track AS ft, NULL AS mon, l.branch_id AS cn_
        FROM lenh_chuyen_lop k JOIN classes l ON l.id = k.lop_nguon_id LEFT JOIN viec_ban_giao kg ON kg.id = k.lop_nguon_id AND kg.trang_thai != 'bo'
-         AND substr(k.xac_nhan_luc, 1, 10) >= substr(kg.tao_luc, 1, 10) AND (kg.xong_luc IS NULL OR substr(k.xac_nhan_luc, 1, 10) <= substr(kg.xong_luc, 1, 10))   -- rà #2280 P1-B: dòng khung dùng lại cho đợt sau — chỉ quyết định chuyển lớp xác nhận trong đợt của dòng
+         AND k.xac_nhan_luc >= kg.tao_luc AND (kg.xong_luc IS NULL OR k.xac_nhan_luc <= kg.xong_luc)   -- rà #2280 P1-B (cùng mốc nghiệp vụ mocNghiepVu, so tới giờ): dòng khung dùng lại cho đợt sau — chỉ quyết định chuyển lớp xác nhận trong đợt của dòng
       WHERE l.branch_id ${CN_IN} AND k.xac_nhan_luc IS NOT NULL AND COALESCE(kg.han_chon, k.han_gvcn) BETWEEN ? AND ?
      UNION ALL
      SELECT 'gvbm', b.id, COALESCE(km.han_chon, k.han_gvbm), b.ghi_luc,
             COALESCE(km.phu_trach_id, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END), l.id, l.code, l.is_fast_track, b.mon, l.branch_id
        FROM ban_giao_mon b JOIN lenh_chuyen_lop k ON k.id = b.lenh_id JOIN classes l ON l.id = k.lop_nguon_id
        LEFT JOIN viec_ban_giao_mon km ON km.lop_id = k.lop_nguon_id AND km.mon = b.mon AND km.trang_thai != 'bo'
-         AND substr(b.ghi_luc, 1, 10) >= substr(km.tao_luc, 1, 10) AND (km.xong_luc IS NULL OR substr(b.ghi_luc, 1, 10) <= substr(km.xong_luc, 1, 10))
+         AND b.ghi_luc >= km.tao_luc AND (km.xong_luc IS NULL OR b.ghi_luc <= km.xong_luc)
       WHERE l.branch_id ${CN_IN} AND b.lam_lai = 0 AND COALESCE(km.han_chon, k.han_gvbm) BETWEEN ? AND ?
      UNION ALL
      SELECT 'gv', g.id, COALESCE(g.han_chon, g.han), g.xong_luc, COALESCE(g.phu_trach_id, g.nguoi_lam), l.id, l.code, l.is_fast_track, NULL, l.branch_id

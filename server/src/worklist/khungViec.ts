@@ -42,7 +42,8 @@ const CN_LOP = (lop: string) => `(SELECT cl_.branch_id FROM classes cl_ WHERE cl
 export const CN_KHUNG = (loai: LoaiKhung, v: string): string =>
   loai === 'ban_giao_mon' ? CN_LOP(`${v}.lop_id`) : loai === 'ban_giao_gv' ? CN_LOP(`${v}.class_id`) : KHUNG_LOP.has(loai) ? CN_LOP(`${v}.id`) : CN_EM(SID_KHUNG[loai](v));
 
-export type GiaoKhung = { loai: LoaiKhung; id: number; pt: number | null; han: string | null; giaoTen: string | null; sid: number | null; lop: number | null; mon: string | null };
+export type GiaoKhung = { loai: LoaiKhung; id: number; pt: number | null; han: string | null; giaoTen: string | null; sid: number | null; lop: number | null; mon: string | null;
+  /** Rà #2280 vòng 3: người được giao đã làm (dòng còn 'mo' — Hoàn tác ngắn) + trường đã lưu (Bổ sung hồ sơ). */ lamBoi: number | null; lamTruong: string[] };
 const khoa = (loai: LoaiKhung, id: number | string) => `${loai}:${id}`;
 
 /**
@@ -55,12 +56,14 @@ export function giaoKhung(): Map<string, GiaoKhung> {
     const ve = LOAI_KHUNG.map((l) => {
       const b = BANG_KHUNG[l];
       return `SELECT '${l}' AS loai, v.id AS id, CASE WHEN v.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('v.phu_trach_id', CN_KHUNG(l, 'v'))} THEN v.phu_trach_id END AS pt,
-          v.han_chon AS han, v.giao_boi, ${SID_KHUNG[l]('v')} AS sid, ${l === 'ban_giao_mon' ? 'v.lop_id' : 'NULL'} AS lop, ${l === 'ban_giao_mon' ? 'v.mon' : 'NULL'} AS mon
+          v.han_chon AS han, v.giao_boi, ${SID_KHUNG[l]('v')} AS sid, ${l === 'ban_giao_mon' ? 'v.lop_id' : 'NULL'} AS lop, ${l === 'ban_giao_mon' ? 'v.mon' : 'NULL'} AS mon,
+          ${l === 'ban_giao_gv' ? 'NULL AS lam_boi, NULL AS lam_truong' : 'v.lam_boi AS lam_boi, v.lam_truong AS lam_truong'}
         FROM ${b} v WHERE v.trang_thai = 'mo' AND (v.phu_trach_id IS NOT NULL OR v.han_chon IS NOT NULL)`;
     });
     const m = new Map<string, GiaoKhung>();
     for (const r of db().prepare(`SELECT x.*, g.full_name AS giao_ten FROM (${ve.join(' UNION ALL ')}) x LEFT JOIN users g ON g.id = x.giao_boi`).all() as any[]) {
-      const g: GiaoKhung = { loai: r.loai, id: r.id, pt: r.pt ?? null, han: r.han ?? null, giaoTen: r.pt ? r.giao_ten ?? null : null, sid: r.sid ?? null, lop: r.lop ?? null, mon: r.mon ?? null };
+      const g: GiaoKhung = { loai: r.loai, id: r.id, pt: r.pt ?? null, han: r.han ?? null, giaoTen: r.pt ? r.giao_ten ?? null : null, sid: r.sid ?? null, lop: r.lop ?? null, mon: r.mon ?? null,
+        lamBoi: r.pt && r.lam_boi === r.pt ? r.lam_boi : null, lamTruong: r.lam_truong ? JSON.parse(r.lam_truong) : [] };
       m.set(khoa(g.loai, g.id), g);
       if (g.loai === 'ban_giao_mon') m.set(khoa('ban_giao_mon', `${g.lop}:${g.mon}`), g);
     }
@@ -94,24 +97,28 @@ export function duocGiao(p: Principal, loai: LoaiKhung, id: number | string): bo
   /* Rà PTA #2280 (bảo mật 1): quyền theo việc đóng khi việc xong (không chờ lượt quét ngày) — "còn việc" cùng hàm Công việc (`khungDoc`, đăng ký lúc nạp;
      chưa nạp → chặn). P1-A (luật "không khoá cứng"): người được giao ĐÃ LÀM việc (`lam_boi`) giữ quyền Hoàn tác / sửa lại như người giữ mặc định; người được giao
      mà việc hết do người khác làm / giao đi / Lưu trữ thì không. */
-  if (g?.pt === p.userId && conMo && nho(`lpb1:con-mo:${loai}:${g.id}`, () => conMo!(loai, g.id))) return true;
-  return daLam(p, loai, g?.id ?? id);
+  /* Rà #2280 vòng 3: "người đã làm" = Hoàn tác NGẮN — chỉ khi dòng còn 'mo' (trước lượt quét ngày đóng dòng); dòng 'xong' / 'bo' không mở quyền. */
+  if (g?.pt !== p.userId) return false;
+  return g.lamBoi === p.userId || (!!conMo && nho(`lpb1:con-mo:${loai}:${g.id}`, () => conMo!(loai, g.id)));
 }
 /** Câu điều kiện một dòng bảng phụ theo id (Bàn giao môn: `{lớp}:{môn}`). */
 const dongTheo = (loai: LoaiKhung, id: number | string): [string, unknown[]] =>
   loai === 'ban_giao_mon' && typeof id === 'string' ? ['v.lop_id = ? AND v.mon = ?', [Number(id.split(':')[0]), id.split(':').slice(1).join(':')]] : ['v.id = ?', [Number(id)]];
-/** Người xem là người được giao (còn hiệu lực) và ĐÃ LÀM việc này (dòng đợt này: 'mo' / 'xong', không 'bo'). Bàn giao đổi GV xét `xong_boi` ở `banGiaoGv`. */
-export function daLam(p: Principal, loai: LoaiKhung, id: number | string): boolean {
-  if (loai === 'ban_giao_gv') return false;
-  const [dk, ts] = dongTheo(loai, id);
-  return nho(`lpb1:da-lam:${p.userId}:${loai}:${id}`, () => !!db().prepare(`SELECT 1 FROM ${BANG_KHUNG[loai]} v WHERE ${dk} AND v.trang_thai IN ('mo', 'xong')
-      AND v.phu_trach_id = ? AND v.lam_boi = ? AND ${HOAT_DONG_O('v.phu_trach_id', CN_KHUNG(loai, 'v'))}`).get(...ts, p.userId, p.userId));
+/** Trường người xem đã lưu cho việc này (người được giao đã làm, dòng còn 'mo') — Bổ sung hồ sơ chỉ sửa lại được đúng các trường đó. Đọc `giaoKhung` (0 câu thêm). */
+export function truongDaLam(p: Principal, loai: LoaiKhung, id: number | string): string[] {
+  const g = giaoCua(loai, id);
+  return g?.pt === p.userId && g.lamBoi === p.userId ? g.lamTruong : [];
 }
-/** Đường ghi mở bằng `duocGiao`: ghi người được giao là người đã làm (một câu theo khoá chính; dòng không giao cho người này → không đổi). Gọi SAU khi lưu thành công. */
-export function ghiNguoiLam(p: Principal, loai: LoaiKhung, id: number | string): void {
+/**
+ * Đường ghi mở bằng `duocGiao`: ghi người được giao là người đã làm (+ trường vừa lưu, gộp với lần trước) — một câu theo khoá chính; dòng không giao cho người này
+ * → không đổi. Gọi TRONG giao dịch lưu, sau câu ghi chính.
+ */
+export function ghiNguoiLam(p: Principal, loai: LoaiKhung, id: number | string, truong: readonly string[] = []): void {
   if (loai === 'ban_giao_gv') return;
   const [dk, ts] = dongTheo(loai, id);
-  db().prepare(`UPDATE ${BANG_KHUNG[loai]} AS v SET lam_boi = ? WHERE ${dk} AND v.trang_thai = 'mo' AND v.phu_trach_id = ?`).run(p.userId, ...ts, p.userId);
+  const cu = truong.length ? truongDaLam(p, loai, id) : [];
+  db().prepare(`UPDATE ${BANG_KHUNG[loai]} AS v SET lam_boi = ?, lam_truong = ? WHERE ${dk} AND v.trang_thai = 'mo' AND v.phu_trach_id = ?`)
+    .run(p.userId, truong.length ? JSON.stringify([...new Set([...cu, ...truong])]) : null, ...ts, p.userId);
 }
 /** `khungDoc.ts` đăng ký hàm "việc còn mở" (tệp này là tệp lá — không import ngược). */
 let conMo: ((loai: LoaiKhung, id: number) => boolean) | null = null;

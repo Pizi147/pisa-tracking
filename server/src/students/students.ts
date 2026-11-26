@@ -726,7 +726,7 @@ export function hoanTacQuayLai(p: Principal, studentId: number) {
 /* OV-13q: `coQuyenBuocTiep` chuyển sang permissions.ts (thiThat.ts dùng — tránh vòng import thiThat → students → buocTiep → thiThat). */
 import { coQuyenBuocTiep, grantPhiaTvv } from '../permissions.ts';
 import { dongViecLuuTru, moLaiViecLuuTru, type DongLuuTru } from './dongLuuTru.ts';
-import { daLam, duocGiao, ghiNguoiLam } from '../worklist/khungViec.ts';
+import { duocGiao, ghiNguoiLam, truongDaLam } from '../worklist/khungViec.ts';
 export { coQuyenBuocTiep };
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
@@ -929,7 +929,8 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }) && duocGiao(p, 'bo_sung_ho_so', studentId)) {
     const s0 = db().prepare('SELECT dob, email FROM students WHERE id = ?').get(studentId) as any;
     /* Rà #2280 P1-A: người được giao đã làm việc này giữ quyền sửa lại đúng hai trường của việc. */
-    const duoc = new Set(daLam(p, 'bo_sung_ho_so', studentId) ? ['dob', 'email'] : [...(s0?.dob ? [] : ['dob']), ...(s0?.email ? [] : ['email'])]);
+    /* Rà #2280 vòng 3: trường còn thiếu + trường CHÍNH người này vừa bổ sung (dòng việc còn mở — Hoàn tác ngắn). */
+    const duoc = new Set([...(s0?.dob ? [] : ['dob']), ...(s0?.email ? [] : ['email']), ...truongDaLam(p, 'bo_sung_ho_so', studentId).filter((k) => k === 'dob' || k === 'email')]);
     giaoHs = true;
     if (!Object.keys(patch ?? {}).length || Object.keys(patch ?? {}).some((k) => !duoc.has(k))) throw forbidden('Bạn chỉ bổ sung được trường hồ sơ còn thiếu của em này (Ngày sinh · Email).');
   } else if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
@@ -982,7 +983,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   tx(() => {
     kiemEmail();
     conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-    if (giaoHs) ghiNguoiLam(p, 'bo_sung_ho_so', studentId);   // rà #2280 P1-A
+    if (giaoHs) ghiNguoiLam(p, 'bo_sung_ho_so', studentId, Object.keys(patch).filter((k) => k === 'dob' || k === 'email'));   // rà #2280: đúng trường vừa lưu
     /* GV-1 (N58): đổi TVV → người theo dõi mặc định (TVV cũ) của việc còn mở chuyển sang TVV mới. */
     if (patch.consultantUserId !== undefined && (patch.consultantUserId ?? null) !== (s.consultant_user_id ?? null)) theoTvvHienTai(studentId);
   });

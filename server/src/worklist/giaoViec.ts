@@ -38,6 +38,7 @@ import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHA
 import { docViecKhung, docViecKhungLo, type ViecKhung } from './khungDoc.ts';
 import { coTheChotLoTrinh } from '../classes/quyenChuyenLop.ts';
 import { quyenBanGiao, viecBanGiao } from '../classes/banGiao.ts';
+import { mocNghiepVu } from '../duyet/yeuCau.ts';
 
 /* TL-1 (N61): `tra_lai` = vi_pham_tra_lai — GV xử lý vi phạm / lần xử lý TVV trả lại (người theo luật = `nguoi_nhan`, hết vai → GVCN → Head). */
 /* BAOPH-0 (N72 ⑥, 4.6 — chủ SP 26/11 "Cho mọi việc"): + `xu_ly` (Xử lý vi phạm — việc tính theo em, dòng `viec_xu_ly` id = em) · `da_thuc_hien` (discipline_measures da_duyet). */
@@ -237,11 +238,12 @@ export function damBaoDong(loai: LoaiGiao, id: number): void {
     if (cuK) donViec(loai, [id]);
     if (loai === 'ban_giao_mon') {
       if (!cuK) throw notFound('Không tìm thấy việc.');
-      db().prepare(`UPDATE viec_ban_giao_mon SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?, xong_luc = NULL WHERE id = ?`).run(nowIso(), id);
+      db().prepare(`UPDATE viec_ban_giao_mon SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?, xong_luc = NULL,
+          lam_boi = NULL, lam_truong = NULL WHERE id = ?`).run(mocNghiepVu(), id);
       return;
     }
     db().prepare(`INSERT INTO ${b} (id, trang_thai, tao_luc) VALUES (?1, 'mo', ?2) ON CONFLICT(id) DO UPDATE
-        SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?2, xong_luc = NULL`).run(id, nowIso());
+        SET trang_thai = 'mo', han_chon = NULL, phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL, tao_luc = ?2, xong_luc = NULL, lam_boi = NULL, lam_truong = NULL`).run(id, mocNghiepVu());   // rà #2280: mốc nghiệp vụ (đợt so với ngày nghiệp vụ ở Việc đã xong)
     return;
   }
   if (loai !== 'xu_ly') return;
@@ -273,7 +275,7 @@ export function moBanGiaoMon(p: Principal, body: { lopId?: unknown; mon?: unknow
   if (!viecBanGiao(null, null, lop).some((v) => v.loai === 'gvbm' && v.mon.split(',').includes(mon))) throw badRequest('Lớp không còn việc bàn giao môn này.');
   return tx(() => {
     if (cu) { damBaoDong('ban_giao_mon', cu.id); return { id: cu.id }; }
-    const r = db().prepare(`INSERT INTO viec_ban_giao_mon (lop_id, mon, trang_thai, tao_luc) VALUES (?, ?, 'mo', ?) ON CONFLICT(lop_id, mon) DO NOTHING RETURNING id`).get(lop, mon, nowIso()) as { id: number } | undefined;
+    const r = db().prepare(`INSERT INTO viec_ban_giao_mon (lop_id, mon, trang_thai, tao_luc) VALUES (?, ?, 'mo', ?) ON CONFLICT(lop_id, mon) DO NOTHING RETURNING id`).get(lop, mon, mocNghiepVu()) as { id: number } | undefined;
     return { id: r?.id ?? (db().prepare('SELECT id FROM viec_ban_giao_mon WHERE lop_id = ? AND mon = ?').get(lop, mon) as { id: number }).id };
   });
 }
@@ -545,7 +547,8 @@ export function doiPhuTrach(p: Principal, loai: LoaiGiao, id: number, body: { us
     const g = new GhiDao(db());
     g.sua(bang, 'id = ?', id);
     g.theoDoi('viec_theo_doi', 'loai = ? AND ref_id = ?', [loai, id], () => {
-      if (!db().prepare(`UPDATE ${bang} SET phu_trach_id = ?, giao_boi = ?, giao_luc = ? WHERE id = ? AND phu_trach_id IS ? AND ${MO[loai]}`)
+      /* Rà #2280 vòng 3: đổi người → bỏ dấu "người đã làm" của người trước (Hoàn tác ngắn không theo người cũ). */
+      if (!db().prepare(`UPDATE ${bang} SET phu_trach_id = ?, giao_boi = ?, giao_luc = ?${laKhung(loai) && loai !== 'ban_giao_gv' ? ', lam_boi = NULL, lam_truong = NULL' : ''} WHERE id = ? AND phu_trach_id IS ? AND ${MO[loai]}`)
         .run(moi, moi === null ? null : p.userId, moi === null ? null : nowIso(), id, v.row.phu_trach_id ?? null).changes) throw conflict(CHAM);
       if (moi !== null) {
         /* Người phụ trách trước (một người) theo dõi tiếp: theo luật → nguồn theo vai (đổi TVV / GVCN thì chuyển theo), người được giao trước → `tay`.
@@ -1465,7 +1468,7 @@ export function dongKhungHetViec(): number {
     if (v?.mo) continue;
     try {
       tx(() => {
-        if (!db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET trang_thai = 'xong', xong_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id).changes) return;
+        if (!db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET trang_thai = 'xong', xong_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(mocNghiepVu(), r.id).changes) return;
         n++;
         if (v) baoTheoDoi(r.loai, r.id, 0, { suKien: 'xong', tieuDe: v.tieuDe, khoa: nowIso().slice(0, 10), studentId: v.studentId });
       });

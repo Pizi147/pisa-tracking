@@ -18,7 +18,7 @@ import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { apDoiLoTrinh } from './doiLoTrinh.ts';
 import { duocDoiLoTrinh, duocDoiMon } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
-import { daLam, duocGiao, ghiNguoiLam } from '../worklist/khungViec.ts';
+import { duocGiao, ghiNguoiLam, truongDaLam } from '../worklist/khungViec.ts';
 import { SQL_HO_SO_TVV, thieuHoSoEm } from '../worklist/viecTvv.ts';
 
 /**
@@ -234,19 +234,21 @@ export function docDiemXuatPhat(v: unknown): number {
 export function truongGiaoLoTrinh(p: Principal, c: { id: number; student_id: number; status?: string; start_period_id?: number | null; target_score?: number | null }): string[] {
   return [
     ...(duocGiao(p, 'chot_ngay_thi', c.id) ? ['examDate', 'examMonth', 'examPeriodId'] : []),
-    ...(c.status === 'active' && duocGiao(p, 'bo_sung_ho_so', c.student_id) ? truongThieuLoTrinh(c.student_id, c.id, daLam(p, 'bo_sung_ho_so', c.student_id)) : []),
+    ...(c.status === 'active' && duocGiao(p, 'bo_sung_ho_so', c.student_id) ? truongThieuLoTrinh(c.student_id, c.id, truongDaLam(p, 'bo_sung_ho_so', c.student_id)) : []),
   ];
 }
 /** Rà PTA #2280 (bảo mật 4): trường lộ trình còn thiếu theo CÙNG hàm việc "Bổ sung hồ sơ thiếu" (`thieuHoSoEm` — Target chỉ lớp FT). */
-function truongThieuLoTrinh(sid: number, cycleId: number, daLamViec: boolean): string[] {
+function truongThieuLoTrinh(sid: number, cycleId: number, daLam: readonly string[]): string[] {
   const r = db().prepare(`${SQL_HO_SO_TVV} WHERE s.id = ?`).get(sid) as any;
   if (!r || r.cycle_id !== cycleId) return [];
   /* Rà #2280 P1-A: người được giao đã làm việc → sửa lại đúng các trường của việc (Target chỉ lớp FT). */
-  const k = new Set(daLamViec ? ['start_week', ...(r.is_fast_track ? ['target'] : [])] : thieuHoSoEm(r).map((m: any) => m.key));
+  /* Rà #2280 vòng 3: trường còn thiếu (luật thieuHoSoEm) + trường CHÍNH người này vừa bổ sung (dòng việc còn mở). */
+  const k = new Set([...thieuHoSoEm(r).map((m: any) => m.key), ...daLam.filter((x) => x === 'start_week' || (x === 'target' && r.is_fast_track))]);
   return [...(k.has('start_week') ? ['startWeek', 'startPeriodId'] : []), ...(k.has('target') ? ['targetScore', 'lyDo'] : [])];
 }
 
 export function updateCycle(p: Principal, cycleId: number, patch: any) {
+  const patchVao = patch;   // rà #2280: trường người gọi gửi (trước khi suy tuần / tháng)
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* LPB-1 (N73 ⑤): người được giao làm được ĐÚNG việc đó — "Chốt ngày thi" (lộ trình này): ba trường dự kiến thi; "Bổ sung hồ sơ thiếu" (em này, lộ trình đang mở):
@@ -355,7 +357,13 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   params.push(cycleId);
   tx(() => {
     if (sets.length) db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-    if (giaoMo.length && !coSua) { ghiNguoiLam(p, 'chot_ngay_thi', cycleId); ghiNguoiLam(p, 'bo_sung_ho_so', c.student_id); }   // rà #2280 P1-A (chỉ đổi dòng giao cho người này)
+    if (giaoMo.length && !coSua) {
+      /* Rà #2280 vòng 3: ghi người làm theo ĐÚNG việc + trường vừa lưu — đổi ngày thi không đánh dấu Bổ sung hồ sơ (và ngược lại). */
+      const k = Object.keys(patchVao ?? {});
+      if (k.some((x) => x === 'examDate' || x === 'examMonth' || x === 'examPeriodId')) ghiNguoiLam(p, 'chot_ngay_thi', cycleId);
+      const hs = [...(k.some((x) => x === 'startWeek' || x === 'startPeriodId') ? ['start_week'] : []), ...(k.includes('targetScore') ? ['target'] : [])];
+      if (hs.length) ghiNguoiLam(p, 'bo_sung_ho_so', c.student_id, hs);
+    }
     if (doiLoTrinh) apDoiLoTrinh(p.userId, cycleId, patch.route, { lyDo: typeof patch.lyDo === 'string' ? patch.lyDo : null, nhatKy: false });
     if (doiTarget) reviseTarget(p, cycleId, { newTarget: targetGui, reason: patch.lyDo });
   });
