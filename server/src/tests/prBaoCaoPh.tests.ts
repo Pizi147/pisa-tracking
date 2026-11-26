@@ -571,4 +571,78 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const nk = conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action IN ('bao_cao_ph.dat_nhanh', 'bao_cao_ph.hoan_dat_nhanh')").get() as any;
     assert(nk.n >= r.o.length + h.o.length, 'nhật ký từng em');
   }));
+  check('BC-24 · BO-BAO-CAO-PH: Head bỏ báo cáo MỘT em một đợt → rời việc GV / chip / việc Admin / nhắc QL / "n/N" / tệp xuất; bài đã viết giữ; Hoàn tác trả lại; GV, TVV 403; đợt sau vẫn có; trần câu', () => thu(() => {
+    const { soCauSql } = nc;
+    const han = d.addDaysIso(TODAY, 6);
+    const ma = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt bỏ em', mo: TODAY, han }).ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const [e0] = tr.em;
+    const n = tr.em.length;
+    assert(n > 1 && tr.em.every((e: any) => e.bo === null), 'tiền đề: lớp có ≥ 2 em, chưa em nào bỏ');
+    const cuaS = (homNay = TODAY) => xbc.viecBaoCaoPhGv([P.sTeacher], homNay).filter((v: any) => v.classId === lop && v.dot === ma);
+    assert(cuaS()[0]?.soEm === n && cuaS()[0]?.thieu === n, 'trước: GV S thiếu n em');
+    /* GV viết dở em 0 trước khi bị bỏ — bài phải giữ */
+    bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: { c1: 'tot' }, chu: 'Đang viết dở' });
+    const soBai = () => (conn.prepare('SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND student_id = ?').get(ma, e0.id) as any).n;
+    const bai0 = soBai();
+    /* quyền: GV (kể cả GVCN), TVV, Head chi nhánh khác → 403 */
+    const tvv = nguoi('consultant', 'MB');
+    for (const x of [P.lrTeacher, P.coreTeacher, tvv, P.cpManager].filter(Boolean)) {
+      let ma403 = 0;
+      try { bc.boEmBaoCaoPh(x, lop, { dot: ma, studentId: e0.id }); } catch (err: any) { ma403 = err?.status ?? -1; }
+      assert(ma403 === 403, `${x.fullName}: phải 403, được ${ma403}`);
+    }
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, ma).quyetDot === false, 'GV không thấy ⋯ Không báo cáo');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: 'thang:2099-01', studentId: e0.id }), /./, 'đợt chưa mở');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: 99999999 }), /./, 'em lạ');
+
+    /* Head bỏ — đo câu */
+    xoaNho();
+    const c0 = soCauSql();
+    const r = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: e0.id });
+    const cau = soCauSql() - c0;
+    console.log(`    đo bỏ báo cáo một em: ${cau} câu`);
+    assert(r.doi === true && cau <= 14, `trần câu bỏ một em: ${cau}`);   // lớp + đợt (tiến độ, tuỳ chỉnh) + em + ghi + nhật ký + đếm lớp đủ / tin Admin
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: e0.id }).doi === false, 'bỏ lặp: không lỗi, không ghi thêm');
+    xoaNho();
+    const sau = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const s0 = sau.em.find((e: any) => e.id === e0.id);
+    assert(sau.em.length === n && s0?.bo?.luc && s0.bo.ten, 'tab: em bỏ vẫn hiện (mờ) kèm ai / lúc nào: ' + JSON.stringify(s0?.bo));
+    assert(cuaS()[0]?.soEm === n - 1 && cuaS()[0]?.thieu === n - 1, 'việc GV: n − 1 em');
+    assert(cuaS(d.addDaysIso(han, 30))[0]?.soEm === n - 1, 'quá hạn: em bỏ không tính quá hạn');
+    assert(!bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening').em.some((e: any) => e.id === e0.id), 'panel viết không có em bỏ');
+    assert(soBai() === bai0, 'bài đã viết của em bỏ giữ nguyên');
+    assert(bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: { c1: 'tot' }, chu: 'Gõ nốt' }).suaLuc, 'panel đang mở: lưu vẫn nhận (chữ không mất)');
+    const xl = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null);
+    assert(xl.dem.hocVien === n - 1 && !xl.sheets[0].aoa[0].includes(e0.ten), 'Excel lớp: không có em bỏ');
+    assertThrows(() => xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id), /./, 'xuất riêng em bỏ: không có trong đợt');
+    /* viết đủ mọi em CÒN LẠI → lớp đủ: việc Admin "đủ", chip không còn, QL không nhắc — em bỏ không chặn */
+    viet(lop, ma, sau.em.filter((e: any) => e.id !== e0.id), sau.phan);
+    xoaNho();
+    assert(!cuaS().length, 'GV đủ phần mình (trừ em bỏ) → việc rời');
+    if (admin) assert(xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu === 0 && v.soEm === n - 1), 'Admin: việc Xuất "đủ" n − 1 em');
+    const chip = bc.chipBaoCaoPh(P.mbManager, lop);
+    assert(!chip || chip.dot !== ma || chip.quaHan === 0, 'chip không báo quá hạn vì em bỏ');
+    try {
+      cfg.setConfig('demo_date', d.addDaysIso(han, 9)); xoaNho();
+      assert(!xbc.viecBcPhQuaHanQl(P.mbManager, null).some((v: any) => v.classId === lop && v.dot === ma), 'QL: không nhắc quá hạn vì em bỏ');
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
+    const nk = conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'bao_cao_ph.bo_em' AND entity_id = ?").get(e0.id) as any;
+    assert(nk.n === 1, 'nhật ký một dòng theo em');
+
+    /* Hoàn tác (= Khôi phục) → em trở lại mọi nơi */
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: e0.id, khoiPhuc: true }).doi === true, 'khôi phục');
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id)?.bo === null, 'tab: em trở lại bình thường');
+    assert(cuaS()[0]?.soEm === n && cuaS()[0]?.thieu === 1, 'việc GV S trở lại, thiếu đúng em vừa khôi phục');
+    assert(bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening').em.find((e: any) => e.id === e0.id)?.banGhi?.chu === 'Gõ nốt', 'chữ đã gõ còn');
+    if (admin) assert(dq && bc.boEmBaoCaoPh(admin, lop, { dot: ma, studentId: e0.id }).doi === true, 'Admin bỏ được');
+
+    /* chỉ đúng đợt đó: đợt sau em vẫn báo cáo */
+    const ma2 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt sau', mo: TODAY, han }).ma[0].ma;
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma2).em.find((e: any) => e.id === e0.id)?.bo === null, 'đợt sau: em vẫn báo cáo');
+    assert(xbc.viecBaoCaoPhGv([P.sTeacher], TODAY).find((v: any) => v.classId === lop && v.dot === ma2)?.soEm === n, 'đợt sau: việc GV đủ n em');
+  }));
 }

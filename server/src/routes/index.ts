@@ -1185,6 +1185,8 @@ api.post('/classes/:classId/bao-cao-ph/dat-nhanh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.datNhanhBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
+/* BO-BAO-CAO-PH (chủ SP 26/11): Head / Quản trị / Admin bỏ / khôi phục Báo cáo PH của một em trong một đợt. */
+api.post('/classes/:classId/bao-cao-ph/bo-em', requireAuth, wrap((req) => baoCaoPhSvc.boEmBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {})));
 
 
 /**

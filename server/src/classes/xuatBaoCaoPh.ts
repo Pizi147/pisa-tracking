@@ -13,7 +13,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { nhoTheoGhi } from '../platform/mocHeThong.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { COT_BAI_ROI, diemGoc, docTuyChinhDot, dotCuaLop, emTrongDot, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { COT_BAI_ROI, COT_BO_EM, diemGoc, docTuyChinhDot, dotCuaLop, emTrongDot, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
   addDaysIso, boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
@@ -87,14 +87,14 @@ function tenSheet(goc: string, daDung: Set<string>): string {
 
 type Viec = { c: LopBc; d: DotBc; bo: readonly PhanBc[]; em: Em[]; tenSheet: string };
 
-/** Em của nhiều (lớp, đợt) — MỘT câu ghi danh; cùng luật `emCuaDot` (phủ ngày mốc, em đang học). */
+/** Em của nhiều (lớp, đợt) — MỘT câu ghi danh; cùng luật `emCuaDot` (phủ ngày mốc, em đang học; BO-BAO-CAO-PH: em đã bỏ đợt đó không có). */
 function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<string, Em[]> {
   const out = new Map<string, Em[]>();
   const rows: any[] = [];
   theoLoJson([...new Set(ds.map((x) => x.c.id))], (json) => {
     /* TOC-DO-2511c: `docNho` — Tổng quan kèm "Của tôi" (Admin) gọi hai lượt Công việc cùng câu (dòng chỉ đọc). */
     rows.push(...docNho(
-      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, s.id, s.full_name
+      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s')} AS bo, s.id, s.full_name
          FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`, json));
   });

@@ -2705,6 +2705,17 @@ CREATE TABLE bao_cao_ph_dot (
   UNIQUE (class_id, ma)
 );
 CREATE INDEX idx_bcph_dot_lop ON bao_cao_ph_dot(class_id);
+/* BO-BAO-CAO-PH (chủ SP 26/11): Head / Quản trị / Admin bỏ Báo cáo PH của TỪNG EM trong một đợt — em không cần báo cáo đợt đó (không chờ / quá hạn ở đâu, không vào tệp xuất);
+ * xoá dòng = khôi phục. `dot` = mã đợt (như bao_cao_ph.dot), `class_id` = lớp lúc bỏ (đổi tuần thi dời mã đợt theo lớp). Bài đã viết giữ nguyên. Lịch sử ở audit_logs
+ * ('bao_cao_ph.bo_em*'). migrate/prBaoCaoPhBoEm.ts. */
+CREATE TABLE bao_cao_ph_bo_em (
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  dot TEXT NOT NULL,
+  class_id INTEGER NOT NULL,
+  nguoi INTEGER REFERENCES users(id),
+  luc TEXT NOT NULL,
+  PRIMARY KEY (student_id, dot)
+);
 -- SỔ NGHĨA VỤ (chủ SP 09/11, spec 2026-11-09-so-nghia-vu-design mục 2.1): mỗi bài phải chấm / việc có hạn một dòng — ghiSo (phanTich/soNghiaVu.ts). migrate/prNghiaVu.ts chép y.
 CREATE TABLE IF NOT EXISTS nghia_vu (
   id INTEGER PRIMARY KEY,
