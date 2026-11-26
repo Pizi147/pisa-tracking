@@ -741,6 +741,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/students/': 'PanelViec (OV-13b) — panel Báo PH kết quả Test, chỉ khi bấm việc ở Tổng quan GV',
     /* OV-13b: Tổng quan GV mở việc tại chỗ (`PanelViec`) — cây panel việc chỉ gọi khi bấm một việc, không lúc mở trang. */
     '/attachments': 'PanelViec (OV-13b) — chỉ khi bấm việc',
+    '/tuyen/phoi_hop/': 'BangPhoiHop (TUYEN-2) — khay một em, chỉ khi bấm mở tuyến của em',
     '/lich-su': 'LichSuYeuCau (panel Chờ duyệt Tổng quan = HopChoDuyet của tab Công việc) — chỉ khi mở một dòng yêu cầu rồi mở Lịch sử',
     '/interventions/luoi-ket-qua': 'PanelViec (GD-20c) — lưới Ghi kết quả PA, chỉ khi bấm dòng gộp',
     '/ke-hoach-test/ghi-chu/lich-su': 'HopKyNang (OV-15c) — chỉ khi bấm Lịch sử của ghi chú lịch thi',
