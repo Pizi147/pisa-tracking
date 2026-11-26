@@ -225,6 +225,7 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
   ).all(JSON.stringify(attemptIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[];
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
+  const chotLead: number[] = [];
   /* LPB-0 (rà PTA #2266 P1-4): dòng gộp Kết quả Final + Chuyển lớp mà nguồn Final bị HỆ THỐNG gỡ (huỷ lượt / sau thi thật / gỡ theo điểm) → tách phần Final, việc
      Chuyển lớp còn nguyên (không đóng cả dòng). Nguồn hồi → `gopFinalVaoChuyenLop` nhập lại. */
   const tachFinal = (viec: number) => db().prepare(`UPDATE viec_bao_ph SET phoi_hop_id = NULL, nhan = ? WHERE id = ? AND trang_thai = 'mo'`).run(NHAN_CHUYEN_LOP, viec);
@@ -245,7 +246,7 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
       const k = db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(r.id, r.student_id, nhanViecTvvNguon(r.kind, r.pb_moc ?? null, r.a_kind ?? null), hanBaoPh(homNay), luc);
       moi.push({ id: Number(k.lastInsertRowid), sid: r.student_id });
-      chotLeadBaoPh([Number(k.lastInsertRowid)]);   // VAI-0 (N76b)
+      chotLead.push(Number(k.lastInsertRowid));   // VAI-0 (N76b) — chốt theo lô sau vòng lặp (RA-2711: trước một câu mỗi việc)
     } else if (r.status === 'pending' && r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do)) {   // rà #2233 P1-1 / P1-2: cả huỷ lượt, kết thúc lộ trình
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`).run(hanBaoPh(homNay), r.viec);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do) && r.lenh) {
@@ -255,6 +256,7 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
         .run(NGUON_GO.has(r.ly_do) ? r.ly_do : 'system_nguon_go', luc, r.viec);
     }
   }
+  chotLeadBaoPh(chotLead);
   if (moi.length) {
     /* Rà #2233 P2-3: theo dõi theo LÔ — GVCN hiệu lực lớp em đang học (nguồn `gvcn`) · người tạo (còn hoạt động ở chi nhánh em) · Head + CX — ba câu cho cả lô. */
     const ids = JSON.stringify(moi.map((m) => m.id));

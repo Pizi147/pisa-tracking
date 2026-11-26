@@ -67,7 +67,7 @@ export function dongBoLienPhongLenh(lenhIds: readonly number[], boi: number | nu
 /** Id lệnh MỚI NHẤT của các em ở lớp nguồn — sau upsert / thi hành ngay của `raLenh` (một câu). */
 export function lenhVuaLuu(lopNguonId: number, sids: readonly number[]): number[] {
   if (!sids.length) return [];
-  return (db().prepare(`SELECT MAX(id) AS id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND student_id IN (${DS_JSON}) GROUP BY student_id`)
+  return (db().prepare(`SELECT MAX(id) AS id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai != 'huy' AND student_id IN (${DS_JSON}) GROUP BY student_id`)
     .all(lopNguonId, J(sids)) as { id: number }[]).map((r) => r.id);
 }
 

@@ -1154,6 +1154,8 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
   if (!db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'cho_duyet'`).run(measureId).changes) throw conflict('Đề xuất này không còn chờ Head duyệt — mở lại.');
   chotYeuCau(db(), { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId }, 'tu_dong', { lyDo: lyDoDong });
   chotHanXuLy([m.student_id]);
+  /* RA-2711: rút đề xuất → việc "Xử lý vi phạm" về người được giao / hạn như trước (như Hoàn tác) — trước dòng còn 'xong': người được giao mất việc, lập lại bị 403. */
+  db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo' WHERE id = ? AND trang_thai = 'xong'`).run(m.student_id);
   writeAudit({ actorUserId: p.userId, action: 'discipline.delete', entityType: 'discipline_measure', entityId: measureId,
     entityLabel: `${hv.student_code} · xoá ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
     before: { studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null,
