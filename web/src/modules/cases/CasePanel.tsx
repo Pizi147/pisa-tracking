@@ -638,7 +638,6 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
               onClick={() => void vietS()}>{busy ? t('Đang lưu…') : t('Xác nhận với mô tả này')}</button>}
             {s.nhanXet && <button type="button" className={`btn btn-sm ${go ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
             {chinh?.observation && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('giu')}>{t('Giữ mô tả đang có')}</button>}
-            {go ? null : <span className="text-[13px] text-faint">{t('hoặc gõ mô tả của bạn ở ô trên')}</span>}
           </span>
           {chinh?.observation && <span className="text-[13px] text-slate-300">{t('Mô tả đang có')}: “{chinh.observation}”</span>}
           {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
