@@ -33,7 +33,8 @@ export type GhiDanh = { lop: number; tu: string; den: string | null };
  */
 export function lopLucThi(ghiDanh: readonly GhiDanh[], tuan: string, lopLuot: number): number {
   const cuoi = addDays(tuan, 6);
-  if (ghiDanh.some((e) => e.lop === lopLuot && e.tu && e.tu <= cuoi)) return lopLuot;
+  /* Em vào lại lớp của lượt SAU tuần thi (L1 → L2 → L1): lượt bị kéo về L1 — ô thi lúc ở L2 theo ghi danh (rà #2210 P2). */
+  if (ghiDanh.some((e) => e.lop === lopLuot && e.tu && e.tu <= cuoi) && !ghiDanh.some((e) => e.lop === lopLuot && e.tu > cuoi)) return lopLuot;
   const ds = ghiDanh.filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
   return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
 }

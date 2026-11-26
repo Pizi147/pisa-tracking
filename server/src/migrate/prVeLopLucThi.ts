@@ -16,10 +16,12 @@ const VIEC = 'attempt.ve_lop_luc_thi';
 
 type Doi = { id: number; cu: number; moi: number };
 
-/** Lượt cần đổi — CHỈ ĐỌC. Ứng viên: lượt `planned` còn ô chờ của em từng chuyển khỏi một lớp khác lớp của lượt. */
+/** Lượt cần đổi — CHỈ ĐỌC. Ứng viên như `veLopDangHoc` / `luatLoTrinh` giữ khoá: lượt `planned` (không MT0, không lịch sử) còn ô chờ, lộ trình đang chạy, của em từng
+ *  chuyển khỏi một lớp khác lớp của lượt; lớp lúc thi cùng chương trình với lớp của lượt. */
 export function luotVeLopLucThi(conn: any): Doi[] {
   const ds = conn.prepare(`SELECT a.id, a.class_id, a.student_id, a.o_cho_tu FROM assessment_attempts a
-     WHERE a.status = 'planned' AND a.class_id IS NOT NULL AND a.o_cho_tu IS NOT NULL AND a.o_cho_tu != ''
+     WHERE a.status = 'planned' AND a.kind != 'mt0' AND a.lich_su = 0 AND a.class_id IS NOT NULL AND a.o_cho_tu IS NOT NULL AND a.o_cho_tu != ''
+       AND EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.id = a.cycle_id AND cy.status = 'active')
        AND EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = a.student_id AND e.class_id != a.class_id AND e.status = 'transferred')
      ORDER BY a.id`).all() as { id: number; class_id: number; student_id: number; o_cho_tu: string }[];
   if (!ds.length) return [];
@@ -28,10 +30,15 @@ export function luotVeLopLucThi(conn: any): Doi[] {
     for (const e of conn.prepare(`SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${ph})`).all(...lo) as any[])
       (gd.get(e.student_id) ?? gd.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den ?? null });
   });
-  return ds.flatMap((r) => {
+  const doi = ds.flatMap((r) => {
     const moi = lopLucThi(gd.get(r.student_id) ?? [], r.o_cho_tu.slice(0, 10), r.class_id);
     return moi !== r.class_id ? [{ id: r.id, cu: r.class_id, moi }] : [];
   });
+  const ct = new Map<number, string | null>();
+  theoLo([...new Set(doi.flatMap((d) => [d.cu, d.moi]))], (lo, ph) => {
+    for (const c of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) ct.set(c.id, c.programme_code ?? null);
+  });
+  return doi.filter((d) => ct.get(d.cu) === ct.get(d.moi));
 }
 
 /** Đổi — không khoá (phép kiểm gọi thẳng). Trả lượt đã đổi. */

@@ -339,6 +339,8 @@ export const EN_SOT_QUAN_TRI = {
   'Dời lịch Test vì vắng': 'Reschedule Test for absence',
   'Hệ thống tự dời do vắng lần 1': 'System moved after first absence',
   'Hệ thống chuyển bài sang lớp em đang học': 'System moved the test to the student’s current class',
+  'Hệ thống trả bài về lớp lúc thi': 'System returned the test to the class at test time',
+  'Khôi phục lớp của bài (bỏ trả về lớp lúc thi)': 'Restored the test’s class (undid return to class at test time)',
   'Huỷ lịch Test môn': 'Cancel a skill’s Test',
   'Huỷ phần còn lại của lượt': 'Cancel the rest of the attempt',
   'Huỷ lịch lượt (bỏ tuần, giữ lượt)': 'Unschedule attempt (clear week, keep attempt)',

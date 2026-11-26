@@ -23,6 +23,7 @@ export async function runPrLopCuTests(t: YThucTestKit) {
   const so: any = await import('../phanTich/soNghiaVu.ts');
   const dtl: any = await import('../cham/diemTheoLuot.ts');
   const mig: any = await import('../migrate/prVeLopLucThi.ts');
+  const { lopLucThi } = await import('../phanTich/luatBai.ts');
   const studentsSvc: any = await import('../students/students.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const QL = P.mbManager;
@@ -205,8 +206,12 @@ export async function runPrLopCuTests(t: YThucTestKit) {
     const doi = mig.doiVeLopLucThi(conn);
     assert(doi.some((d: any) => d.id === fH && d.cu === L2.id && d.moi === L3.id), `đổi: ${JSON.stringify(doi)}`);
     assert(get('SELECT class_id FROM assessment_attempts WHERE id = ?', fH).class_id === L3.id && noCuaGv(L3.id).has(fH), 'Final của H chưa về việc GV lớp cũ');
-    assert(!doi.some((d: any) => [fA, fB, fF, fG, m0A, m0G].includes(d.id)), 'đổi lượt đang đúng lớp');
+    assert(!doi.some((d: any) => [fA, fB, fD, fE, fF, fG, m0A, m0G].includes(d.id)), 'đổi lượt đang đúng lớp');
     assert(!mig.doiVeLopLucThi(conn).length, 'chạy lại còn đổi');
+    /* Em quay lại lớp cũ (L1 → L2 → L1, lượt mang L1): ô thi lúc ở L2 theo ghi danh — không ghi công cho L1; lượt thi ở L1 trước khi đi vẫn của L1. */
+    const gd = [{ lop: 1, tu: '2026-01-05', den: '2026-03-02' }, { lop: 2, tu: '2026-03-02', den: '2026-05-04' }, { lop: 1, tu: '2026-05-04', den: null }];
+    assert(lopLucThi(gd, '2026-03-16', 1) === 2 && lopLucThi(gd, '2026-02-09', 1) === 1 && lopLucThi(gd, '2026-05-11', 1) === 1 && lopLucThi(gd, '2026-03-16', 2) === 2,
+      'lopLucThi khi em quay lại lớp cũ');
     const tra = mig.khoiPhucVeLopLucThi(conn);
     assert(tra.includes(fH) && get('SELECT class_id FROM assessment_attempts WHERE id = ?', fH).class_id === L2.id && !mig.khoiPhucVeLopLucThi(conn).length, 'khôi phục');
   });
