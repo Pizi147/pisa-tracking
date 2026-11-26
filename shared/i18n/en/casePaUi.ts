@@ -70,7 +70,7 @@ export const EN_CASE_PA_UI = {
   '{da}/{tong} buổi': '{da}/{tong} sessions',
   '{form} chưa lưu · nháp giữ trên máy': '{form} not saved · draft kept on this device',
   '{form} chưa chốt': '{form} not final',
-  '{kn} · chọn một hoặc nhiều (chọn trước = chính)': '{kn} · pick one or more (first pick = main)',
+  'Chọn một hoặc nhiều; chọn trước = chính.': 'Pick one or more; the first pick is the main one.',
   '{n} PA chưa có kết quả cuối': (b) => `${soNhieu(b.n, 'plan', 'plans')} without a final result`,
   '{n} PA chờ Head duyệt': (b) => `${soNhieu(b.n, 'plan', 'plans')} awaiting Head approval`,
   'Đang chạy · KQ hạn {ngay}': 'Running · result due {ngay}',

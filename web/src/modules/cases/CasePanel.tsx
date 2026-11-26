@@ -547,7 +547,7 @@ function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean
       {chinh?.observation && !laMt && laKhac(chinh.code) && !moHop && <span className="basis-full text-[13px] text-slate-300">{t('Khác')}: {chinh.observation}</span>}
       {moHop && (
         <div className="w-full basis-full"><div className="flex flex-col gap-2 rounded-[10px] border p-3 sm:max-w-[420px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
-          <span className="text-xs font-semibold text-faint">{t('{kn} · chọn một hoặc nhiều (chọn trước = chính)', { kn: data.categoryLabel ?? '' })}</span>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-faint">{data.categoryLabel ?? ''}<NutLuat label={t('Chọn nhóm nguyên nhân')}>{t('Chọn một hoặc nhiều; chọn trước = chính.')}</NutLuat></span>
           <ChonNhom skill={data.topic ?? ''} ct={data.chuongTrinh ?? null} value={v} onChange={(x) => { setV(x); if (!(!laMt && x[0] && laKhac(x[0]))) void luu(x, ghiRo); }} />
           <OKhac hien={canGhiRo} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')} onBlur={() => void luu(v, ghiRo)} />
           {canGhiRo && ghiRo.trim().length < KHAC_TOI_THIEU && <span className="text-[13px] text-soon">{t('Ghi rõ ít nhất {n} ký tự để lưu', { n: KHAC_TOI_THIEU })}</span>}
