@@ -13,6 +13,7 @@ export const EN_LPB2A = {
   'Không còn em nào trong việc này.': 'No students left in this task.',
   'Học viên chuyển lớp': 'Students changing class',
   'Lịch Mock đã xếp': 'Mock tests scheduled',
+  'Lịch đã xếp': 'Tests scheduled',
   'Mở tuyến của {ten}': (b) => `Open the track of ${b.ten}`,
   'Đóng tuyến của {ten}': (b) => `Close the track of ${b.ten}`,
   'đã huỷ chuyển': 'move cancelled',

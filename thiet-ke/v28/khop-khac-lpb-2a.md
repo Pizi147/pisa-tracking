@@ -8,9 +8,10 @@
 |---|---|---|---|
 | L3a đầu panel "Nhận thông tin · Chuyển lớp · lớp · n em · vào tuần" | `KhungPanel` + `dauViec` (lớp · "Chuyển lớp · n em · vào {tuần}") | cvxl-1440, head-1440 | KHỚP (một tuần chung mới ghi "vào …") |
 | L3a khối Phụ trách · Hạn · Theo dõi | `KhoiGiaoViec` sẵn có (ô bấm, HanBam, Theo dõi, Mô tả việc) | mọi ảnh | KHỚP (+ "Mô tả việc" của khối sẵn có — GIỮ) |
-| L3a bảng `.bnt` 4 cột cân hết bề ngang, cột Tuyến mép phải | `BangEm` (lưới `minmax` 4 cột; không lịch Mock → 3 cột như ghi chú mục 3) | cvxl-1440 / 1280, head-1280 | KHỚP |
+| L3a bảng `.bnt` 4 cột cân hết bề ngang, cột Tuyến mép phải | `BangEm` (lưới `minmax` 4 cột, cột lịch LUÔN có — PTA rà #2292) | cvxl-1440 / 1280, head-1440 / 1280 | KHỚP |
 | L3a tên em + ˅ mở Tuyến của em dưới dòng (máy tính mở em đầu) | `MuiChev` + `KhayTuyen` (`GET /tuyen/chuyen_lop/:lệnh`, `KhoiTuyen` "Xong a/b") | cvxl-1440 | KHỚP |
-| L3a lịch Mock "MTn · tuần · đi theo em / ở lại lớp cũ" | `lichMock` của máy chủ; "ở lại" màu `--soon` + chữ | cvxl-1440 | KHỚP |
+| L3a lịch Mock "MTn · tuần · đi theo em / ở lại lớp cũ" | `lichMock` của máy chủ — lớp FT "Lịch Mock đã xếp" (MTn), lớp thường "Lịch đã xếp" (Progress n / Final / Checkpoint, ghi chú v28 mục 3); "ở lại" màu cảnh báo + chữ | cvxl-1440, head-1440 | KHỚP |
+| L3a dòng danh sách "lớp · n em · Chuyển lớp · vào W3 SEP" (Đổi GV: "Đổi GV · môn · từ tuần") | `contextLabel` máy chủ (cùng câu `/my-work`), nhóm `nhan_tin` không lặp tên nhóm | head-1440 (hai tuần vào → chỉ "Chuyển lớp") | KHỚP |
 | L3a chuỗi chấm Tuyến từng em | `ChuoiCham` (`chuoiTuyen` của GET panel) | mọi ảnh | KHỚP |
 | L3a Việc con | `MucViecCon` sẵn có | mọi ảnh | KHỚP |
 | L3a Lịch sử "n mục · Máy tạo …" | `LichSuGap` + `dongLichSuGiao` | (demo: 0 mục → ẩn) | KHỚP khi có lịch sử |
@@ -23,7 +24,7 @@
 | L4b việc tự đóng (lịch đổi huỷ) | dải "Việc đã đóng · …" + khối chỉ đọc (`mo=false`) | — | KHỚP |
 | Đầu panel ⓘ · ⋯ | — | — | **BỎ** ở PR này: ⋯ "Mở lại" sau khi đóng toast → [XM] PR sau; ⓘ cần mục trợ giúp `hd` mới |
 
-Tỉ lệ khớp thuần (hàng có ảnh / mã): 13 KHỚP · 1 KHÁC nhỏ · 1 BỎ → **≈ 93 %**.
+Tỉ lệ khớp thuần (hàng có ảnh / mã): 14 KHỚP · 1 KHÁC nhỏ · 1 BỎ → **≈ 94 %**.
 
 ## Thao tác TRƯỚC → SAU PR
 

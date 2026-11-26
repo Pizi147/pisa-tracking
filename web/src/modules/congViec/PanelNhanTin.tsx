@@ -109,15 +109,16 @@ export function PanelNhanTin({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
 /** Bảng em chuyển vào lớp (mockup v28 `.bnt`, L3a / L3b / L3f): bấm tên mở Tuyến của em ngay dưới dòng (một em một lúc; máy tính mở em đầu). */
 function BangEm({ em, chuoi, hn }: { em: DongEm[]; chuoi: TomTuyen[]; hn: string }) {
   const [mo, setMo] = useState<number | null>(() => (typeof window !== 'undefined' && window.matchMedia?.('(min-width: 640px)').matches ? em[0]?.lenhId ?? null : null));
-  const coLich = em.some((e) => e.lichMock.length);
-  const luoi = coLich ? LUOI_4 : LUOI_3;
+  /* PTA rà #2292: cột lịch LUÔN có (thông tin BPXL cần để xếp lịch) — lớp FT "Lịch Mock đã xếp", lớp thường "Lịch đã xếp" (Progress / Final). */
+  const moc = em.some((e) => e.lichMock.some((m) => m.ten.startsWith('MT')));
+  const luoi = LUOI_4;
   const chuoiCua = new Map(chuoi.map((c) => [c.khoa, c.chuoi]));
   if (!em.length) return <p className="m-0 text-sm text-dim">{t('Không còn em nào trong việc này.')}</p>;
   return (
     <div role="table" aria-label={t('Học viên chuyển lớp')} className="overflow-hidden rounded-[10px] border text-sm" style={{ borderColor: 'var(--line)' }}>
       <div role="row" className={`grid h-9 items-center gap-x-4 px-3.5 text-xs font-semibold text-faint max-sm:hidden ${luoi}`}>
         <span role="columnheader">{t('Học viên')}</span><span role="columnheader">{t('Lớp mới')}</span>
-        {coLich && <span role="columnheader">{t('Lịch Mock đã xếp')}</span>}<span role="columnheader" className="justify-self-end">{t('Tuyến')}</span>
+        <span role="columnheader">{moc ? t('Lịch Mock đã xếp') : t('Lịch đã xếp')}</span><span role="columnheader" className="justify-self-end">{t('Tuyến')}</span>
       </div>
       {em.map((e) => {
         const dangMo = mo === e.lenhId;
@@ -139,7 +140,7 @@ function BangEm({ em, chuoi, hn }: { em: DongEm[]; chuoi: TomTuyen[]; hn: string
                 {e.lopMoi ? <Link to={`/hoc-vien/lop/${e.lopMoi.id}`} className="font-semibold text-[color:var(--text)] no-underline hover:underline"><span className="sm:hidden">→ </span>{e.lopMoi.code}</Link> : <span className="text-dim">—</span>}
                 <small className="text-xs text-dim max-sm:text-[13px]"><span className="sm:hidden" aria-hidden>· </span>{e.trangThai === 'huy' ? t('đã huỷ chuyển') : e.trangThai === 'roi' ? t('đã đổi lớp chuyển đến') : t('từ {tuan}', { tuan: tuanLich(e.tuan, hn) })}</small>
               </span>
-              {coLich && (
+              {(
                 <span role="cell" className="grid min-w-0 gap-0.5 text-[13px] max-sm:col-span-2 max-sm:row-start-3">
                   {e.lichMock.length ? e.lichMock.map((m) => (
                     <span key={m.ten} className="whitespace-nowrap max-sm:whitespace-normal">

@@ -33,7 +33,7 @@ import type { WorkItem } from './mywork.ts';
 import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
 import { CON_VAI_BPXL, KHONG_TVV_SQL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
 import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
-import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
+import { VAI_GDCN, VAI_LEAD_TVV, tenMon, tuanLich } from '../../../shared/domain/index.ts';
 import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, laKhung, type LoaiKhung } from './khungViec.ts';
 import { docViecKhung, docViecKhungLo, type ViecKhung } from './khungDoc.ts';
 import { coTheChotLoTrinh } from '../classes/quyenChuyenLop.ts';
@@ -1325,7 +1325,11 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   /* LPB-0 (N73 ⑥): việc BPXL "Nhận thông tin" (việc của lớp — không ở dải một em): giao cho tôi · theo luật chốt cho tôi (còn hiệu lực) · "Tất cả" của Head / QT / CX /
      lead BPXL (lọc chi nhánh ở dưới). Chỉ mục một phần `idx_viec_nhan_tin_giao` / `idx_viec_nhan_tin_luat`; vế "Tất cả" quét việc đang mở (ít dòng). */
   if (!o.studentId) {
-    const COT_NT = `SELECT 'nhan_tin', v.id, NULL, v.phu_trach_id, v.giao_boi, v.han, v.han_chon, c.code, NULL, NULL, v.class_id, v.loai, NULL,
+    /* LPB-2a (PTA rà #2292): ô `ten` (NULL ở vế này) mang chi tiết dòng — Chuyển lớp: các tuần vào (lệnh còn hiệu lực, em không Lưu trữ) · Đổi GV: {"mon","tu"} — cùng câu. */
+    const COT_NT = `SELECT 'nhan_tin', v.id, NULL, v.phu_trach_id, v.giao_boi, v.han, v.han_chon, c.code, NULL, NULL, v.class_id, v.loai,
+        CASE v.loai WHEN 'doi_gv' THEN (SELECT json_object('mon', json_group_array(p.khoa), 'tu', MIN(p.hieu_luc)) FROM viec_nhan_tin_dong d JOIN doi_phan_cong p ON p.id = d.doi_id WHERE d.viec_id = v.id)
+          ELSE (SELECT group_concat(DISTINCT l.tuan_bat_dau) FROM viec_nhan_tin_dong d JOIN lenh_chuyen_lop l ON l.id = d.lenh_id AND l.trang_thai != 'huy' JOIN students s ON s.id = l.student_id AND s.archived_at IS NULL
+            WHERE d.viec_id = v.id AND COALESCE(d.mau, '') != 'x') END,
         (SELECT COUNT(*) FROM viec_nhan_tin_dong d LEFT JOIN lenh_chuyen_lop l ON l.id = d.lenh_id LEFT JOIN students s ON s.id = l.student_id   -- RA-2711: bỏ em Lưu trữ như panel xemNhanTin
           WHERE d.viec_id = v.id AND COALESCE(d.mau, '') != 'x' AND s.archived_at IS NULL), v.branch_id, v.tao_luc, NULL, v.nguoi_luat, NULL, NULL, NULL FROM viec_nhan_tin v JOIN classes c ON c.id = v.class_id`;
     const tatCaNt = !!o.tatCa && (laLeadBpxl(p) || p.grants.some((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin' || g.roleKey === 'cx'));
@@ -1419,8 +1423,15 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     /* LPB-0 (N73 ⑥): nhóm "Nhận thông tin" của BPXL — `nhan` = mã lớp, `bl` = id lớp, `kind` = loại, `so_lan` = số em / cặp, `pb` = chi nhánh lớp. */
     const ten = r.kind === 'doi_gv' ? 'Đổi GV' : 'Chuyển lớp';
     const han = r.han_chon ?? r.han;
+    /* LPB-2a (mockup v28 L3a): dòng "Chuyển lớp · vào W3 SEP" · "Đổi GV · Writing, Speaking · từ W3 SEP" (không lặp tên nhóm). */
+    const ct = (() => {
+      if (!r.ten) return null;
+      if (r.kind === 'doi_gv') { const d = JSON.parse(r.ten) as { mon: string[]; tu: string | null }; return [[...new Set(d.mon)].map((k) => (k === 'gvcn' ? 'GVCN' : tenMon(null, k))).join(', '), d.tu ? `từ ${tuanLich(d.tu, today)}` : null].filter(Boolean).join(' · '); }
+      const tuan = String(r.ten).split(',').filter(Boolean);
+      return tuan.length === 1 ? `vào ${tuanLich(tuan[0], today)}` : null;
+    })();
     return { ...chung, studentId: null, studentName: `${ten} · ${r.nhan}`, classId: r.bl, classCode: r.nhan, cn: r.pb ?? null, key: `nhan_tin:${r.id}`, group: 'nhan_tin',
-      urgency: urgencyOf(han, today), count: r.so_lan, contextLabel: `${ten} · ${r.so_lan} ${r.kind === 'doi_gv' ? 'cặp GV' : 'em'}`,
+      urgency: urgencyOf(han, today), count: r.so_lan, contextLabel: [ten, ct].filter(Boolean).join(' · '),
       reason: 'Xem thông tin để xếp lịch rồi bấm Xác nhận đã nhận', tieuDe: `Nhận thông tin · ${ten} · ${r.nhan}`, phu: ten, actionLabel: 'Xác nhận',
       href: `/cong-viec?viec=nhan_tin:${r.id}`, due: han, statusLabel: 'Chưa xác nhận', viecId: r.id };
   }

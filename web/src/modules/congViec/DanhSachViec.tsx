@@ -487,7 +487,7 @@ const dauGv = (chu: string) => (!chu ? '' : LA_MA_TUAN.test(chu) ? ' - ' : ' · 
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 /* Việc Ý thức & Phối hợp / TVV sau Meeting: tên việc ngắn thay chữ máy chủ (chữ qua `t` lúc vẽ — đổi ngôn ngữ không tải lại mô-đun). */
-const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'yt_tra_lai']);
+const LA_GON = new Set(['phoi_hop_sos', 'phoi_hop_tvv', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'khai_bac', 'yt_tra_lai', /* LPB-2a: chữ dòng từ máy chủ, không lặp tên nhóm */ 'nhan_tin']);
 
 /** Đoạn đầu tên việc là ĐỘNG TỪ ("Thêm PA học thuật", "Xác nhận Case", "Nhập điểm …") — tên nhóm đã nói; ở nhóm gộp nhiều loại thì ghi lại bản ngắn ở đầu chi tiết. */
 const DONG_TU_DAU = /^(Thêm PA(?: học thuật)?|Xác nhận PA|Chọn PA|Xác nhận Case|Mô tả Case|Ghi kết quả PA|Ghi Mini Test|Nhập điểm|Viết Báo cáo PH|Xử lý vi phạm|Bàn giao|Báo PH kết quả Test|Báo PH|Chốt lộ trình|Bổ sung hồ sơ thiếu)(?: |$)/;
