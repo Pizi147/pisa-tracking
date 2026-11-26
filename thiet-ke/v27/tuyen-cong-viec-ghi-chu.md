@@ -1,7 +1,7 @@
 # v27 · Tuyến công việc Ý thức & Phối hợp — ghi chú
 
 Mockup: `tuyen-cong-viec.html` (mục lục T0–T11, nút Gốc / Tối / Sáng). Ảnh: `anh/*.png` (31 khung).
-Đặc tả: `docs/superpowers/specs/2026-11-26-tuyen-cong-viec-yt-phoi-hop/thiet-ke.md` (chủ SP duyệt 26/11, #2206). Luật **N72** ①–⑤ (`plan.md` 1.6, #2208).
+Đặc tả: `docs/superpowers/specs/2026-11-26-tuyen-cong-viec-yt-phoi-hop/thiet-ke.md` (chủ SP duyệt 26/11, #2206). Luật **N72** ①–⑥ (`plan.md` 1.6, #2208; ⑥ thêm 26/11 sau góp ý mockup — đặc tả mục 2 C5 · C6, mục 4.6).
 Nền: `../v23/v23.css` + `v24-chep.css` (chép nguyên khuôn A, panel 720, Chờ duyệt của v24 — chủ SP duyệt 24/11). `v27.css` chỉ thêm khối Tuyến, chuỗi chấm, dải theo dõi, bảng em, hồ sơ rút gọn. Không màu / cỡ chữ mới.
 Dữ liệu bịa: thứ Hai 14/09/2026, MB FT 101 — GVCN Trần Ngọc Hà · TVV Phan Mai · BPXL Lương Thu Trang · CX Vũ Thanh Tâm · Head Nguyễn Khánh Vy.
 
@@ -9,7 +9,7 @@ Dữ liệu bịa: thứ Hai 14/09/2026, MB FT 101 — GVCN Trần Ngọc Hà ·
 
 | Phần | Vẽ thế nào |
 |---|---|
-| Đầu khối | "Tuyến" · tên tuyến (loại · em · lượt) · "Xong a/b" · ⓘ |
+| Đầu khối | nhãn mục "Tuyến · {loại · em · lượt}" + "Xong a/b · đang n" · ⓘ — **không khung viền / nền** (gọn, như nhãn "Việc con"); kẻ trên + dưới |
 | Một dòng một bước | dấu · tên bước (= tên nhóm việc ở Công việc) · chi tiết ngắn · người ("Bạn" đậm) · ngày làm / "hạn dd/mm/yyyy" · ▸ |
 | Dấu (khác HÌNH, không chỉ màu) | ✓ vòng xanh lá = xong · chấm đặc màu nhấn = đang ở · vòng đứt mờ = chưa tới lượt · × = bỏ / thu hồi · ⏸ vàng = tạm dừng. Tên đọc màn đọc trạng thái trước tên bước |
 | Đang ở | dòng nền nhấn nhạt + tên đậm |
@@ -17,9 +17,21 @@ Dữ liệu bịa: thứ Hai 14/09/2026, MB FT 101 — GVCN Trần Ngọc Hà ·
 | Song song | dòng nhỏ "… cùng lúc" + bước con thụt, nhánh ngang 20 px; cột người / ngày vẫn thẳng bước cha |
 | Vòng lặp | thêm dòng theo thời gian ("Báo PH · lần 1 / 2 / 3", "Vi phạm bị trả lại") — không ghi đè |
 | Nội dung | bấm ▸ → mở ngay dưới dòng (khung nền `surface-2`), không đổi panel, không panel lồng. Không quyền xem → không có ▸ (title "Không xem được nội dung") — N72 ④ |
-| Gập | tuyến > 4 bước: mặc định gập còn bước đang ở / tạm dừng + "Xem cả n bước" (T0 b). **Chủ SP chọn: (b) gập hay (c) mở sẵn** |
+| Gập | tuyến > 4 bước: gập **các bước đã xong** vào "Xem n bước đã xong"; bước đang ở, bước sau, bước cha còn con mở luôn hiện (T0 b). **Chủ SP chọn: (b) gập hay (c) mở sẵn** |
 | Cột | subgrid chung: dấu 34 · tên co giãn · chi tiết co giãn · người · ngày sát phải · ▸ 32 (lề 14 / 8 nằm trong cột đầu / cuối). 375 (≤ 560 px khung): hai tầng — tên + ngày · người + chi tiết |
 | Chuỗi chấm | 10 px, nối 6 px, cùng hình / màu với dấu; `role="img"` + nhãn "2 xong, 1 đang ở, 3 chưa tới lượt" |
+
+## 1b. Khung việc base (góp ý chủ SP 26/11 sau bản đầu #2214 — C5, C6)
+
+Mọi panel: **đầu** (tên việc · em · lớp · ⓘ ⋯ ✕ — không còn ngày hạn ở đầu) → **khối việc** `.kgv` = web `KhoiGiaoViec` (Phụ trách {tên} bạn · "mặc định" / "{tên} giao" · Đổi · **Hạn = ngày bấm được** như `HanBam` #2211 · Theo dõi chip + "+") → **Tuyến** gọn → nội dung / form → **Việc con** ("+ Việc con", tick xong, người · hạn bấm sửa) → Lịch sử gập → chân Lưu. Đúng thứ tự panel Vận hành.
+
+| Ý chủ SP 26/11 | Khung | Đạt? |
+|---|---|---|
+| "luật vẫn như cũ, không thêm việc head phải duyệt" | Rà mọi khung: bước "Head duyệt" chỉ ở Xử lý khác mặc định (N1 — T1-375, T2, T9) và Thu hồi (N5 — T0 e); thẻ Sửa cấp bậc (N70 — T9). Báo PH mọi nguồn: Head chỉ ở **Theo dõi**, không duyệt (T3, T6d, T7a, T11) | đạt |
+| "có hạn và bấm vào hạn sửa được" | Hạn ở khối việc mọi panel là ngày gạch chấm bấm được (T1–T11); hạn tạm dừng hiện "dừng · 16/09/2026" (T3) | đạt |
+| "chọn / đổi người thực hiện (mặc định theo đúng luật)" | Phụ trách + thẻ "mặc định" / "{tên} trả" + Đổi ở mọi panel, kể cả Xử lý vi phạm, Đã thực hiện (T1, T2), từng em trong khay Phối hợp / Trao đổi gia đình / Meeting nhiều em (T5, T6b, T11a). Vi phạm bị trả lại không Đổi (về đúng người ghi — giữ v22) | đạt ([XM] 10) |
+| "có thể tạo công việc con nếu muốn" | Mục Việc con + "+ Việc con" ở mọi panel một việc; có việc con mẫu ở T2 (1/2 xong), T3, T6a | đạt |
+| "gọn gàng, đơn giản, rõ ràng, đẹp hơn" | Tuyến bỏ khung viền + nền, dòng 36 px; hạn không lặp ở đầu panel; một thứ tự cho mọi panel | đạt (critique vòng 3) |
 
 ## 2. Bảng ý → khung (tự rà từng ý)
 
@@ -59,7 +71,9 @@ Dữ liệu bịa: thứ Hai 14/09/2026, MB FT 101 — GVCN Trần Ngọc Hà ·
 | Panel Meeting: phần người khác một dòng · dòng Báo PH · bối cảnh GVCN | 3 khối riêng | một khối Tuyến (ba phần cùng lúc, bối cảnh = nội dung bước GVCN) |
 | Phần Meeting của mình: Ngày giờ họp · Kết quả · Hoàn thành | có | GIỮ (dưới Tuyến) |
 | TVV Meeting nhiều em | bảng không có phần Meeting | bảng chuỗi chấm, mở Tuyến dưới em |
-| Đổi người · Sửa hạn (⋯) · Theo dõi + / ✕ | có | GIỮ (dải Phụ trách · Theo dõi v24) |
+| Đổi người · Theo dõi + / ✕ | có (Báo PH, Meeting, Tình hình…) | GIỮ, trong khối việc base; **thêm** cho Xử lý vi phạm, Đã thực hiện, Phối hợp SOS (N72 ⑥) |
+| Sửa hạn | nút "Sửa hạn" / ⋯ | **bấm vào ngày hạn** ở khối (#2211) |
+| Việc con | chỉ việc Vận hành | **+ Việc con** ở mọi việc Ý thức / Phối hợp / Báo PH (N72 ⑥) |
 | Trả lại · Rút · Bỏ việc · Hoàn tác 60 s | có | GIỮ |
 | Lưu · Lưu · việc tiếp › · Gửi Head duyệt · Gửi lại | có | GIỮ |
 | Lịch sử (đổi người, hạn, lần liên hệ) | có | GIỮ gập cuối panel |
@@ -72,13 +86,15 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 ## 4. [XM] — cần PTA / chủ SP xem
 
 1. **Gập hay mở sẵn** khối Tuyến dài (T0 b / c). Mockup đặt mặc định gập khi > 4 bước. Panel nào cũng có bước đang ở ngay đầu nên gập không mất việc cần làm.
-2. **Vị trí khối Tuyến:** đặc tả ghi "trên khối Phụ trách · Hạn · Theo dõi"; mockup để **dải Phụ trách · Theo dõi v24 (cố định, đã duyệt) trên, Tuyến đầu thân panel**. Lý do: dải v24 là một dòng cố định không cuộn, đổi chỗ sẽ phá khung panel 720 đã duyệt. Thứ tự đọc vẫn: ai giữ việc này → tuyến đi đâu → làm.
-3. **Xử lý vi phạm, Đã thực hiện** không có dải Phụ trách (việc GVCN ngoài N58, giữ luật) — chỉ có Tuyến.
+2. ~~Vị trí khối Tuyến~~ — đã theo khung base: khối việc trên, Tuyến dưới (đặc tả 4.1 sửa theo).
+3. ~~Xử lý vi phạm không có khối~~ — có khối base (N72 ⑥).
 4. **Lịch sử** vẫn giữ ở panel có giao việc (đổi người, đổi hạn) — trùng một phần với Tuyến (lần liên hệ). PR có thể chỉ để lại đổi người / hạn trong Lịch sử.
 5. **Phụ huynh (SĐT)** của Meeting nằm trong nội dung bước GVCN xác nhận (mở sẵn ở BPXL / TVV / CX). Muốn luôn hiện một dòng riêng thì báo.
 6. Tiền tố **"hạn"** trước ngày chỉ dùng TRONG khối Tuyến (một khối có cả ngày đã làm và hạn) — dòng việc ở danh sách giữ ngày trơn (NH4).
 7. Hồ sơ HV / lớp (T10) chỉ vẽ tab Ý thức & Phối hợp, đầu hồ sơ rút gọn — không đổi phần khác.
 8. Dải "Chờ GV sửa" (T3) giữ chữ nút "Rút" như web.
+10. **Đổi người cho Xử lý vi phạm / Đã thực hiện / Phối hợp SOS** (mở rộng N58 theo lời "chọn / đổi người thực hiện"): người nhận làm được đúng việc đó, lịch sử ghi tên. Trước đây chỉ GVCN / Head làm (N64 làm thay). Nếu chủ SP chỉ muốn đổi người ở việc TVV / Báo PH thì bỏ nút Đổi ở ba việc này.
+11. Việc con không vào số việc của việc cha và không chặn việc cha xong (như Vận hành N59).
 
 ## 5. Skill đã chạy
 - `superpowers:brainstorming` (đặc tả), `impeccable` critique (hai agent độc lập: A rà thiết kế bằng ảnh · B máy dò + đo Playwright) — kết quả và sửa ở mục 6.
@@ -89,6 +105,7 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 | Vòng | Điểm Nielsen | P0 / P1 | Đã sửa sau vòng |
 |---|---|---|---|
 | 1 | **27/40** | 2 P1 | ① Meeting hai tên / hai bộ đếm → mọi vai cùng tuyến "Phối hợp SOS · {em} · MT2" · ② gập giấu bước sau → chỉ gập bước ĐÃ XONG, giữ bước đang ở + bước sau + bước cha còn con mở · ③ "›" mở tại chỗ trái G6 → ˅ / ˄, cả dòng là vùng bấm · ④ "Đang ở" chọn một trong các bước song song → bước của người xem trước, không thì "Meeting · 3 phần cùng lúc"; bộ đếm "Xong a/b · đang n" · ⑤ danh sách vi phạm lặp ở T1 → bước "GV ghi" không mở trong panel Xử lý · ⑥ 375: khoảng ngày không gãy dòng, dòng ≥ 44 px · ⑦ dấu đang ở giống nút radio → chấm đặc + quầng; tạm dừng = ô vuông · ⑧ T5-375 tràn khung 157 px (máy dò B) → `contain:inline-size` khay + cột `minmax(0,1fr)` |
+| 3 (sau góp ý chủ SP: khung base) | **32/40** | 2 P1 → **0** | ⑫ khay nhiều em (T5, T6b, T11a) và panel "TVV hỏi" (T7b) thiếu Việc con → thêm · ⑬ Lịch sử gập ở mọi panel một việc · ⑭ ⓘ sát chữ "Xong a/b" → cách 6 px. Không còn bước Head duyệt mới (chỉ N1 / N5 / N70) — agent rà xác nhận |
 | 2 | **31/40** | **0** | ⑨ Meeting mỗi vai một mốc thời gian → một mốc chung (ba phần đều đang mở, không thứ tự — N58) · ⑩ Đang theo dõi của Head nhóm theo loại tuyến · ⑪ dòng xong có nội dung (phân biệt "không nội dung" với "không quyền"); T0 (d) mở sẵn để thấy dòng không ˅ |
 
 Máy dò (B): 16 mục tư vấn / cảnh báo — màu, phông của phần đọc mockup và Google Fonts (phông đã khoá), vạch trái 3 px (luật dự án G14 / v23), sọc chéo `.cc i.b` / `.od.huy` (trạng thái, không trang trí) → không sửa. Tương phản chữ < 18 px trong khối Tuyến: **0 lỗi** (thấp nhất 6,39 tối · 5,20 sáng). Sau sửa: 0 khung tràn ở 31 khung.

@@ -188,3 +188,52 @@
 .bang-tp .nhan-tp { font:600 var(--c13) var(--phong); color:var(--text-dim); }
 .bang-tp .vung-375 { width:375px; padding:0 16px; }
 .ghi-tp { font:500 12px 'Be Vietnam Pro'; color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; }
+
+/* ================= 26/11 (chủ SP qua PTA): KHUNG VIỆC BASE + TUYẾN GỌN =================
+   Khối việc = web `KhoiGiaoViec` (KHUNG_KHOI: viền 10 px, nền surface-2, cụm dàn ngang, xuống dòng khi chật) + `HanBam` (#2211: bấm ngày để sửa). */
+.kgv { display:flex; flex-wrap:wrap; align-items:center; gap:8px 28px; padding:10px 16px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); font-size:var(--c14); }
+.kgv .cum { display:inline-flex; align-items:center; gap:8px; min-width:0; white-space:nowrap; }
+.kgv .cum.rong { flex-basis:100%; white-space:normal; }
+.kgv .cum .gt { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.kgv .lb { font:600 var(--c12) var(--phong); color:var(--text-faint); }
+.kgv b { font-weight:600; }
+.kgv .nut-nho { height:28px; }
+.kgv .them { width:28px; height:28px; border-radius:50%; border:1px dashed var(--line-strong); background:none; color:var(--text-dim); display:inline-grid; place-items:center; padding:0; }
+.the-giao { display:inline-flex; align-items:center; height:20px; padding:0 6px; border:1px solid var(--line-strong); border-radius:4px; font-size:var(--c12); color:var(--text-dim); white-space:nowrap; }
+.han-bam { border:0; background:none; padding:2px 0; font:600 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; color:var(--text); text-decoration:underline dotted var(--text-faint); text-underline-offset:4px; cursor:pointer; }
+.han-bam:hover { color:var(--accent); text-decoration-color:var(--accent); }
+.han-bam.gan { color:var(--soon); } .han-bam.qua { color:var(--bad); }
+.han-tam { font:600 var(--c14) var(--phong); color:var(--soon); white-space:nowrap; }
+.dt .kgv { display:grid; grid-template-columns:64px minmax(0,1fr); gap:0 8px; padding:4px 12px; }
+.dt .kgv .cum { display:contents; }
+.dt .kgv .cum > * { min-height:44px; display:flex; align-items:center; }
+.dt .kgv .cum > .lb { grid-column:1; }
+.dt .kgv .cum > :not(.lb) { grid-column:2; }
+.dt .kgv .cum > b ~ * { min-height:0; }
+.dt .kgv .cum:first-child { display:grid; grid-column:1 / -1; grid-template-columns:64px minmax(0,1fr) auto auto auto; column-gap:8px; align-items:center; }
+.dt .kgv .cum:first-child > * { grid-column:auto; }
+.dt .kgv .nut-nho, .dt .kgv .them { min-height:40px; height:40px; }
+/* VIỆC CON (như Vận hành) */
+.vcon { display:grid; gap:4px; }
+.vcon > h4 { margin:0 0 2px; font:600 var(--c13) var(--phong); color:var(--text-dim); }
+.vc-dong { display:grid; grid-template-columns:18px minmax(0,1fr) max-content max-content; align-items:center; column-gap:12px; min-height:40px; padding:0 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); font-size:var(--c14); }
+.vc-dong.xong .vc-ten { color:var(--text-faint); text-decoration:line-through; }
+.vc-dong + .vc-dong { margin-top:4px; }
+.vc-them { justify-self:start; margin-top:2px; }
+.dt .vc-dong { grid-template-columns:18px minmax(0,1fr) max-content; grid-template-areas:"t ten han" "t ng ng"; row-gap:0; padding:6px 12px; min-height:52px; }
+.dt .vc-dong > :nth-child(1) { grid-area:t; } .dt .vc-dong .vc-ten { grid-area:ten; } .dt .vc-dong > .dim { grid-area:ng; font-size:var(--c13); } .dt .vc-dong > :last-child { grid-area:han; }
+.dt .vc-them { min-height:44px; }
+/* TUYẾN GỌN: bỏ khung viền + nền, đầu khối là một nhãn mục như "Việc con"; dòng 36 px */
+.tn { border:0; background:none; }
+.tn-dau { min-height:24px; padding:0 0 4px; border-bottom:0; gap:6px; }
+.tn-dau h3 { font:600 var(--c13) var(--phong); color:var(--text-dim); }
+.tn-dau .ten-tn { color:var(--text-faint); }
+.tn-dau .nut-i { width:22px; height:22px; }
+.tn-ds { padding:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.tn-ds > li { min-height:36px; }
+.tn-ds > li.tb.dang { background:color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+.bem > .khay .kgv, .yc-ct .kgv { background:var(--surface); }
+.dt .kgv .cum:first-child > .dim { display:none; }
+.dt .kgv .cum:first-child > b { white-space:normal; min-width:0; }
+.tn-dau .tien { margin-right:2px; }
+.tn-dau .phai { gap:6px; }

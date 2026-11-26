@@ -25,7 +25,7 @@
 
   <section class="khu" id="t0">
     <h2>T0 · Khối Tuyến — bảng thành phần (720 tối · 375 sáng)</h2>
-    <p class="ghi">Một kiểu cho mọi panel, Đang theo dõi, Chờ duyệt, hồ sơ. Đặt <b>đầu thân panel</b>, ngay dưới dải Phụ trách · Theo dõi (dải v24 cố định). Tuyến &gt; 4 bước: <b>gập</b> còn bước đang ở + "Xem cả n bước" (b) — chủ SP chọn giữa (b) gập và (c) mở sẵn. Dòng đang ở nền nhấn nhạt. Bước song song ghi "cùng lúc", thụt dưới bước cha. Vòng lặp (Chưa liên hệ được, Trả lại) thêm dòng theo thời gian, không ghi đè.</p>
+    <p class="ghi">Một kiểu cho mọi panel, Đang theo dõi, Chờ duyệt, hồ sơ. Đặt <b>đầu thân panel</b>, ngay dưới dải Phụ trách · Theo dõi (dải v24 cố định). Tuyến &gt; 4 bước: <b>gập</b> các bước đã xong vào "Xem n bước đã xong" (b); (c) là cùng tuyến mở sẵn. Dòng đang ở nền nhấn nhạt. Bước song song ghi "cùng lúc", thụt dưới bước cha. Vòng lặp (Chưa liên hệ được, Trả lại) thêm dòng theo thời gian, không ghi đè.</p>
     <div class="hang-khung" data-khu="T0"></div>
   </section>
   <section class="khu" id="t1">
@@ -108,8 +108,20 @@ const dauPn = (ten, meta, dt) => `<div class="pn-dau">${dt ? `<button class="vuo
 const chanPn = (luu, nut) => `<div class="pn-chan">${luu}<span class="phai">${nut}</span></div>`;
 const NUT_LUU = (dt, chinh = 'Lưu · việc tiếp ›') => `${dt ? '' : '<button class="nut">Lưu</button>'}<button class="nut nut-chinh">${chinh}</button>`;
 const ntd = (t, x = true) => `<span class="ntd">${t}${x ? `<button aria-label="Bỏ ${t}">✕</button>` : ''}</span>`;
-const pht = (phuTrach, theoDoi, { doi = true, them = 0 } = {}) => `<div class="pht1"><span><span class="lb">Phụ trách</span><b>${phuTrach}</b>${doi ? '<button class="nut nut-ma">Đổi</button>' : ''}</span><span><span class="lb">Theo dõi</span><span class="gt">${theoDoi.map((t) => ntd(t, false)).join('')}${them ? `<span class="dim">+${them} người</span>` : ''}<button class="them" aria-label="Thêm người theo dõi">+</button></span></span></div>`;
-const panel = ({ ten, meta, dt, dai = '', ph = '', than, chan = '' }) => `<section class="pn" aria-label="${ten}">${dauPn(ten, meta, dt)}${dai}${ph}<div class="pn-than">${than}</div>${chan}</section>`;
+/* KHỐI VIỆC BASE (= web `KhoiGiaoViec` + `HanBam` #2211, như panel Vận hành): Phụ trách · Hạn (bấm ngày để sửa) · Theo dõi — một khối nền phụ đầu thân panel.
+   pt: tên người phụ trách ('Bạn' = mình) · giao: 'mặc định' | '{tên} giao' · han: [dd/mm/yyyy, ''|'gan'|'qua'|'tam'] · td: người theo dõi · them: +n · doi: có nút Đổi */
+const pht = (pt, td, { doi = true, them = 0, han, giao = 'mặc định', toi } = {}) => {
+  const ban = pt === 'Bạn';
+  return `<div class="kgv" role="group" aria-label="Phụ trách, hạn, theo dõi"><span class="cum"><span class="lb">Phụ trách</span><b>${ban ? toi ?? 'Bạn' : pt}</b>${ban && toi ? '<span class="dim">bạn</span>' : ''}<span class="the-giao">${giao}</span>${doi ? '<button class="nut nut-nho">Đổi</button>' : ''}</span>`
+    + (han ? `<span class="cum"><span class="lb">Hạn</span>${han[1] === 'tam' ? `<span class="han-tam">dừng · ${han[0]}</span>` : `<button class="han-bam ${han[1] || ''}" aria-label="Sửa hạn ${han[0]}">${han[0]}</button>`}</span>` : '')
+    + `<span class="cum rong"><span class="lb">Theo dõi</span><span class="gt">${td.length ? td.map((x) => ntd(x, false)).join('') : '<span class="dim">Chưa có</span>'}${them ? `<span class="dim">+${them} người</span>` : ''}<button class="them" aria-label="Thêm người theo dõi">+</button></span></span></div>`;
+};
+/* VIỆC CON (như Vận hành N59): một cấp, mỗi việc con có người + hạn; "+ Việc con" luôn có */
+const viecCon = (ds = []) => `<section class="vcon" aria-label="Việc con"><h4>Việc con${ds.length ? ` <span class="dim">${ds.filter((x) => x[3]).length}/${ds.length}</span>` : ''}</h4>${ds.map(([ten, ng, han, xong]) => `<div class="vc-dong${xong ? ' xong' : ''}"><input type="checkbox" class="tick" aria-label="Xong: ${ten}"${xong ? ' checked' : ''}><span class="vc-ten">${ten}</span><span class="dim">${ng}</span>${xong ? `<span class="tb-ngay">${han}</span>` : `<button class="han-bam ${Array.isArray(han) ? han[1] : ''}" aria-label="Sửa hạn">${Array.isArray(han) ? han[0] : han}</button>`}</div>`).join('')}<button class="nut nut-nho vc-them">+ Việc con</button></section>`;
+/* Việc con đứng trước Lịch sử (thứ tự panel Vận hành: khối · nội dung · Việc con · Lịch sử) */
+const datCon = (than, con) => { if (con === undefined) return than; const i = than.lastIndexOf('<details class="gap">'); return i < 0 ? than + viecCon(con) : than.slice(0, i) + viecCon(con) + than.slice(i); };
+/* panel: khối việc base đầu thân; hạn chỉ ở khối (bỏ ngày ở đầu panel cho khỏi lặp) */
+const panel = ({ ten, meta, dt, dai = '', ph = '', than, con, chan = '' }) => `<section class="pn" aria-label="${ten}">${dauPn(ten, ph ? meta.replace(/<span class="hn[^"]*">[^<]*<\/span>/, '') : meta, dt)}${dai}<div class="pn-than">${ph}${datCon(than, con)}</div>${chan}</section>`;
 const lichSu = (n, tom) => `<details class="gap"><summary>${chev('')}<span class="ten-gap">Lịch sử</span><span class="tom"><span>${n} mục</span><span>${tom}</span></span></summary></details>`;
 const hinh = (nhan, anh, than) => `<figure><figcaption>${nhan}</figcaption>${than.replace('data-web', `data-web data-anh="${anh}"`)}</figure>`;
 /* màn 1440 có danh sách bên trái + panel 720 */
@@ -259,20 +271,23 @@ const DS_BPXL = [{ ten: 'Xếp lịch họp', viec: [
 
 /* ================= T1 · Xử lý vi phạm ================= */
 const vpBang = (ds) => `<div class="vp" role="table" aria-label="Vi phạm đưa vào">${ds.map(([ng, nd, ai]) => `<div role="row"><span role="cell">${ng}</span><span role="cell">${nd}</span><span role="cell">${ai}</span></div>`).join('')}</div>`;
-const pnXuLy = (dt, khac) => panel({ dt, ten: 'Xử lý vi phạm', meta: '<a href="#">Lương Gia Bảo</a><a href="#">MB FT 101</a><span class="hn qua">13/09/2026</span>',
+const pnXuLy = (dt, khac) => panel({ dt, ten: 'Xử lý vi phạm', meta: '<a href="#">Lương Gia Bảo</a><a href="#">MB FT 101</a><span class="hn qua">13/09/2026</span>', con: [],
+  ph: pht('Bạn', ['Lê Minh Khoa', 'Cao Khánh Linh'], { toi: 'Trần Ngọc Hà', han: ['13/09/2026', 'qua'] }),
   than: `${tuyen({ ten: 'Vi phạm · lần xử lý mới', buoc: (khac ? TN_XL_KHAC : TN_XL).map((b) => ({ ...b, nd: b.ten?.startsWith('GV ghi') ? undefined : b.nd, mo: false })) })}
     <div class="thang"><span><span class="lb">Bậc hiện tại</span><b>Report 1</b></span><span><span class="lb">Bậc kế</span><b>Report 2</b></span><span><span class="lb">TVV</span><b>Phan Mai</b></span></div>
     <div class="khoi"><h4>3 vi phạm đưa vào</h4>${vpBang(VP_GB.map(([a, b, c]) => [a, b, c]))}</div>
     <div class="truong"><span class="lb">Cách xử lý</span><div class="chon-hang"><button class="nut-chon${khac ? '' : ' on'}">Nâng 1 bậc · mặc định</button><button class="nut-chon${khac ? ' on' : ''}">Không nâng</button><button class="nut-chon">Vượt bậc</button><button class="nut-chon">Ngoài thang</button></div></div>
     <div class="form-hang"><div class="truong"><span class="lb">Ngày thực hiện</span><span class="o">14/09/2026 ${ic('lich')}</span></div><div class="truong"><span class="lb">Người thực hiện</span><span class="o">Trần Ngọc Hà</span></div></div>
     <div class="truong"><span class="lb">Mô tả${khac ? ' <span class="sao">*</span>' : ''}</span><span class="o lon${khac ? ' go' : ''}"><span class="mo3">${khac ? 'Em đã tiến bộ tuần này, xin giữ Report 1 thêm một tuần.' : 'Để trống: máy ghi "Report 2 · Chuyên cần, BTVN"'}</span></span></div>
-    <div class="truong"><span class="lb">Bằng chứng</span><span><button class="nut nut-nho">+ Tệp</button></span></div>`,
+    <div class="truong"><span class="lb">Bằng chứng</span><span><button class="nut nut-nho">+ Tệp</button></span></div>${lichSu(1, 'Mở 13/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt, khac ? 'Gửi Head duyệt' : 'Lưu · việc tiếp ›')) });
 const pnDaTh = (dt) => panel({ dt, ten: 'Đã thực hiện', meta: '<a href="#">Đỗ Minh Khôi</a><a href="#">MB FT 101</a><span>WL 3</span><span class="hn gan">14/09/2026</span>',
+  ph: pht('Bạn', ['Head Nguyễn Khánh Vy'], { toi: 'Trần Ngọc Hà', han: ['14/09/2026', 'gan'] }),
+  con: [['In thư WL 3, mời PH ký', 'Bạn', '13/09/2026', 1], ['Gửi bản chụp thư cho TVV', 'Bạn', ['14/09/2026', 'gan']]],
   than: `${tuyen({ ten: 'Vi phạm · WL 3', buoc: TN_DTH, mo: true })}
     <div class="truong"><span class="lb">Kết quả</span><div class="doan"><button class="on">Đã thực hiện</button><button>Chưa thực hiện</button></div></div>
     <div class="form-hang"><div class="truong"><span class="lb">Ngày</span><span class="o">14/09/2026 ${ic('lich')}</span></div><div class="truong"><span class="lb">Người thực hiện</span><span class="o">Trần Ngọc Hà</span></div></div>
-    <div class="truong"><span class="lb">Ghi chú</span><span class="o lon go"><span>Đã trao thư WL 3 cho em, em ký nhận.<span class="con"></span></span></span></div>`,
+    <div class="truong"><span class="lb">Ghi chú</span><span class="o lon go"><span>Đã trao thư WL 3 cho em, em ký nhận.<span class="con"></span></span></span></div>${lichSu(3, 'Head duyệt 10/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Nháp · chưa lưu</span>', NUT_LUU(dt)) });
 
 /* ================= T3 · Báo PH vi phạm (TVV) · T4 · Trả lại (GV) ================= */
@@ -281,13 +296,14 @@ const formBaoPh = (dt, nd = '') => `<div class="truong"><span class="lb">Kết q
     <div class="truong"><span class="lb">Nội dung <span class="sao">*</span></span><span class="o lon go"><span>${nd}<span class="con"></span></span></span></div>`;
 const pnBaoPhVp = (dt) => panel({ dt, ten: 'Báo PH · Vi phạm', meta: '<a href="#">Trịnh Bảo Ngọc</a><a href="#">MB FT 101</a><span class="hn">16/09/2026</span>',
   dai: '<div class="dai-td"><span><b>Chờ GV sửa</b> · hạn Báo PH dừng tới khi Lê Minh Khoa gửi lại</span><span class="phai"><button class="nut nut-nho">Rút</button></span></div>',
-  ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Lê Minh Khoa'], { them: 2 }),
+  ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Lê Minh Khoa'], { them: 2, toi: 'Phan Mai', han: ['16/09/2026', 'tam'] }),
+  con: [['Nhắn Zalo mẹ ảnh biên bản 05/09', 'Bạn', ['15/09/2026', 'gan']]],
   than: `${tuyen({ ten: 'Vi phạm · Report 2', buoc: tnBn(true), mo: true })}
     <div class="kv3"><span>Phụ huynh</span><span>Mẹ · Đặng Thu Phương · 0983 112 457</span><span>Ghi chú GVCN</span><span>Em hay quên bài khi đi học thêm buổi tối.</span></div>
     ${formBaoPh(dt)}${lichSu(4, 'Trả lại 12/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt)) });
 const pnTraLai = (dt) => panel({ dt, ten: 'Vi phạm bị trả lại', meta: '<a href="#">Trịnh Bảo Ngọc</a><a href="#">MB FT 101</a><span class="hn gan">14/09/2026</span>',
-  ph: pht('Bạn', ['Phan Mai', 'GVCN Trần Ngọc Hà'], { doi: false }),
+  ph: pht('Bạn', ['Phan Mai', 'GVCN Trần Ngọc Hà'], { doi: false, toi: 'Lê Minh Khoa', han: ['14/09/2026', 'gan'], giao: 'Phan Mai trả' }), con: [],
   than: `${tuyen({ ten: 'Vi phạm · Report 2', buoc: tnBn(false), mo: true })}
     <div class="truong"><span class="lb">Bạn chọn</span><div class="chon-hang"><button class="nut-chon on">Sửa rồi gửi lại</button><button class="nut-chon">Giữ nguyên + trả lời</button><button class="nut-chon">Xoá vi phạm</button></div></div>
     <div class="form-hang"><div class="truong"><span class="lb">Ngày vi phạm</span><span class="o go">06/09/2026 ${ic('lich')}</span></div><div class="truong"><span class="lb">Nhóm</span><span class="o">Chuyên cần — vắng không phép</span></div></div>
@@ -300,7 +316,7 @@ const bangEm = ({ dau, hang, mo, khay, dt }) => `<div class="bem" role="table" a
 const tenEm = (ten, phu, mo) => `<span class="ten-e"><button class="mo-e" aria-expanded="${!!mo}"><a href="#">${ten}</a>${chev('xo')}<span class="chip sos3">SOS 3</span></button><small>MT2 · Overall ✗ ${phu}</small></span>`;
 const pnPhoiHop = (dt) => panel({ dt, ten: 'Meeting CX/GĐCN', meta: '<a href="#">MB FT 101</a><span>MT2 · 4 em</span><span class="hn">19/09/2026</span>',
   than: `<div style="display:flex;justify-content:flex-end"><button class="nut nut-nho">Xác nhận 4 em ${chev('xo')}</button></div>
-    ${bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: tuyen({ ten: 'Phối hợp SOS · Lưu Bảo Anh · MT2', buoc: tnPh('Lưu Bảo Anh'), mo: true }),
+    ${bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: pht('Bạn', ['Head Nguyễn Khánh Vy'], { toi: 'Trần Ngọc Hà', han: ['19/09/2026', ''] }) + tuyen({ ten: 'Phối hợp SOS · Lưu Bảo Anh · MT2', buoc: tnPh('Lưu Bảo Anh'), mo: true }) + viecCon([]),
       hang: EM_MT.map(([t, p], i) => [tenEm(t, p, i === 0), cc('xddccc', 'Bạn · xác nhận Meeting'), '<span class="dang-o">Bạn · <b>xác nhận Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Xác nhận</button>']) })}
     <div class="toast duoi" role="status"><span><b>✓ Đã xác nhận</b> · Đặng Quốc Bảo · theo dõi ở <a href="#">Đang theo dõi</a></span><button class="nut nut-ma">Hoàn tác</button></div>`,
   chan: chanPn('<a href="#">Đã xác nhận · 2 em ›</a>', '<button class="nut nut-chinh">Việc tiếp ›</button>') });
@@ -310,32 +326,33 @@ const phanMinh = (vai) => vai === 'bpxl'
   ? `<div class="khoi"><h4>Xếp lịch họp · phần của bạn</h4><div class="form-hang"><div class="truong"><span class="lb">Ngày giờ họp</span><span class="o go">18/09/2026 · 15:00 ${ic('lich')}</span></div><div class="truong"><span class="lb">Phòng</span><span class="o"><span class="mo3">Tuỳ chọn</span></span></div></div><div class="truong"><span class="lb">Ghi chú</span><span class="o"><span class="mo3">Tuỳ chọn</span></span></div></div>`
   : `<div class="khoi"><h4>Kết quả meeting · phần của bạn</h4><div class="truong"><span class="lb">Kết quả</span><span class="o lon go"><span>Gia đình cam kết giữ điện thoại sau 21:00; em tự học Reading 3 buổi / tuần, CX gọi lại sau MT3.<span class="con"></span></span></span></div></div>`;
 const pnMeeting = (vai, dt) => panel({ dt, ten: vai === 'bpxl' ? 'Xếp lịch họp' : 'Kết quả meeting', meta: `<a href="#">Kiều Thảo Nhi</a><a href="#">MB FT 101</a><span class="hn ${vai === 'bpxl' ? 'qua' : ''}">${vai === 'bpxl' ? '12/09/2026' : '21/09/2026'}</span>`,
-  ph: pht('Bạn', ['TVV Phan Mai', 'GVCN Trần Ngọc Hà'], { them: 1 }),
+  ph: pht('Bạn', ['TVV Phan Mai', 'GVCN Trần Ngọc Hà'], { them: 1, toi: vai === 'bpxl' ? 'Lương Thu Trang' : 'Vũ Thanh Tâm', han: vai === 'bpxl' ? ['12/09/2026', 'qua'] : ['21/09/2026', ''] }),
+  con: vai === 'bpxl' ? [['Đặt phòng 203 chiều 18/09', 'Bạn', '11/09/2026', 1]] : [],
   than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting(vai, { moGvcn: true }) })}${phanMinh(vai)}${lichSu(5, 'Giao 08/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', `${dt ? '' : '<button class="nut">Lưu</button>'}<button class="nut nut-chinh">Hoàn thành</button>`) });
 const pnMeetingTvvNhieu = () => panel({ ten: 'Báo PH · Meeting CX/GĐCN', meta: '<a href="#">MB FT 101</a><span>2 em</span><span class="hn qua">12/09/2026</span>',
-  than: bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv') }),
+  than: bangEm({ dau: ['Học viên', 'Tuyến', 'Đang ở', ''], mo: 0, khay: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['12/09/2026', 'qua'] }) + tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv') }) + viecCon([]),
     hang: [[tenEm('Kiều Thảo Nhi', '5.5 / 6.0', true), cc('xxxddd', 'Bạn · Báo PH Meeting'), '<span class="dang-o">Bạn · <b>Báo PH Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Ghi</button>'],
       [tenEm('Đặng Quốc Bảo', '5.0 / 6.0'), cc('xxxddd', 'Bạn · Báo PH Meeting'), '<span class="dang-o">Bạn · <b>Báo PH Meeting</b></span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']] }),
   chan: chanPn('', '<button class="nut nut-chinh">Việc tiếp ›</button>') });
 const pnMeetingTvvMot = (dt) => panel({ dt, ten: 'Báo PH · Meeting CX/GĐCN', meta: '<a href="#">Kiều Thảo Nhi</a><a href="#">MB FT 101</a><span class="hn qua">12/09/2026</span>',
-  ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1 }),
-  than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv', { moGvcn: true }) })}${formBaoPh(dt, 'Đã báo mẹ kết quả MT2 và việc họp CX; lịch cụ thể sẽ báo khi BPXL xếp.')}`,
+  ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['12/09/2026', 'qua'] }), con: [],
+  than: `${tuyen({ ten: 'Phối hợp SOS · Kiều Thảo Nhi · MT2', buoc: tnMeeting('tvv', { moGvcn: true }) })}${formBaoPh(dt, 'Đã báo mẹ kết quả MT2 và việc họp CX; lịch cụ thể sẽ báo khi BPXL xếp.')}${lichSu(3, 'Giao 08/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt)) });
 
 /* ================= T7 · Tình hình học tập ================= */
 const pnTinhHinhTvv = (dt) => panel({ dt, ten: 'Báo PH · Tình hình học tập', meta: '<a href="#">Bùi Thảo Vy</a><a href="#">MB FT 101</a><span class="hn gan">15/09/2026</span>',
-  ph: pht('Bạn', ['Cao Khánh Linh', 'Head Nguyễn Khánh Vy'], { them: 1 }),
+  ph: pht('Bạn', ['Cao Khánh Linh', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['15/09/2026', 'gan'] }), con: [],
   than: `${tuyen({ ten: 'Tình hình học tập', buoc: [
     { tt: 'xong', ten: 'GV gửi tình hình', ct: 'Writing', ng: 'Cao Khánh Linh', ngay: '11/09/2026', nd: '<span class="k">Nội dung</span><span>Em nộp bài Writing muộn 3 buổi liền, bài ngắn dưới 150 từ. Nhờ gia đình nhắc em làm bài tối thứ 3.</span>', mo: true },
-    { tt: 'dang', ten: 'Báo PH', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}${formBaoPh(dt)}`,
+    { tt: 'dang', ten: 'Báo PH', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}${formBaoPh(dt)}${lichSu(1, 'Cao Khánh Linh gửi 11/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt)) });
-const pnHoiTinhHinh = (dt) => panel({ dt, ten: 'Tình hình học tập · TVV hỏi', meta: '<a href="#">Bùi Thảo Vy</a><a href="#">MB FT 101</a><span class="hn">16/09/2026</span>',
-  ph: pht('Bạn', ['TVV Phan Mai'], { doi: true }),
+const pnHoiTinhHinh = (dt) => panel({ dt, con: [], ten: 'Tình hình học tập · TVV hỏi', meta: '<a href="#">Bùi Thảo Vy</a><a href="#">MB FT 101</a><span class="hn">16/09/2026</span>',
+  ph: pht('Bạn', ['TVV Phan Mai'], { toi: 'Trần Ngọc Hà', han: ['16/09/2026', ''] }),
   than: `${tuyen({ ten: 'Tình hình học tập', buoc: [
     { tt: 'xong', ten: 'TVV hỏi', ng: 'Phan Mai', ngay: '13/09/2026', nd: '<span class="k">Câu hỏi</span><span>Mẹ hỏi dạo này em học Reading thế nào, có cần học thêm buổi không?</span>', mo: true },
     { tt: 'dang', ten: 'Trả lời TVV', ban: 1, ngay: ['hạn 16/09/2026', ''] }] })}
-    <div class="truong"><span class="lb">Kết quả <span class="sao">*</span></span><span class="o lon go"><span>Reading 6.0, ổn định; chưa cần học thêm, cần làm đủ bài luyện tuần.<span class="con"></span></span></span></div>`,
+    <div class="truong"><span class="lb">Kết quả <span class="sao">*</span></span><span class="o lon go"><span>Reading 6.0, ổn định; chưa cần học thêm, cần làm đủ bài luyện tuần.<span class="con"></span></span></span></div>${lichSu(1, 'Phan Mai hỏi 13/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', '<button class="nut nut-chinh">Lưu · gửi TVV</button>') });
 
 /* ================= T8 · Đang theo dõi ================= */
@@ -426,19 +443,18 @@ const hoSoLop = `<div class="noi-dung"><div class="hs-dau"><h1>MB FT 101</h1><sp
 /* ================= T11 · Báo PH thống nhất ================= */
 const EM_TDGD = [['Đỗ Minh Khôi', 'SOS 2', '5.5 / 6.0'], ['Vũ Gia Huy', 'SOS 3', '5.0 / 6.0'], ['Trịnh Bảo Ngọc', 'SOS 1', '5.5 / 6.0']];
 const pnTraoDoi = () => panel({ ten: 'Báo PH · Trao đổi gia đình', meta: '<a href="#">MB FT 101</a><span>MT2 · 3 em</span><span class="hn gan">15/09/2026</span>',
-  ph: pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1 }),
   than: bangEm({ dau: ['Học viên', 'Tuyến', 'Máy điền sẵn', ''], mo: 0,
-    khay: `${tuyen({ ten: 'Phối hợp SOS · Đỗ Minh Khôi · MT2', buoc: [{ nhom: 'MT2 · SOS 2 · các việc cùng lúc' }, { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '11/09/2026' }, { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}
-      <div class="kv3"><span>Máy điền sẵn</span><span>MT2 W1 SEP · Overall <b class="so">5.5</b> / kỳ vọng <b class="so">6.0</b> · trượt <b>R</b>, <b>W</b> · Case Writing: Bổ trợ 4 buổi (GV Cao Khánh Linh)</span></div>${formBaoPh(false, 'Đã báo mẹ kết quả MT2 và lịch bổ trợ Writing.')}`,
+    khay: `${pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['15/09/2026', 'gan'] })}${tuyen({ ten: 'Phối hợp SOS · Đỗ Minh Khôi · MT2', buoc: [{ nhom: 'MT2 · SOS 2 · các việc cùng lúc' }, { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '11/09/2026' }, { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}
+      <div class="kv3"><span>Máy điền sẵn</span><span>MT2 W1 SEP · Overall <b class="so">5.5</b> / kỳ vọng <b class="so">6.0</b> · trượt <b>R</b>, <b>W</b> · Case Writing: Bổ trợ 4 buổi (GV Cao Khánh Linh)</span></div>${formBaoPh(false, 'Đã báo mẹ kết quả MT2 và lịch bổ trợ Writing.')}${viecCon([])}`,
     hang: EM_TDGD.map(([t, s, p], i) => [`<span class="ten-e"><button class="mo-e" aria-expanded="${i === 0}"><a href="#">${t}</a>${chev('xo')}<span class="chip ${s === 'SOS 1' ? 'sos1' : s === 'SOS 2' ? 'sos2' : 'sos3'}">${s}</span></button><small>MT2 · Overall ✗ ${p}</small></span>`, cc(i === 1 ? 'xdd' : 'xd'), '<span class="dang-o">Điểm · môn trượt · Case</span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']) }),
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(false)) });
 const pnProgress = (dt) => panel({ dt, ten: 'Báo PH · Kết quả Progress', meta: '<a href="#">Hồ Diệu Linh</a><a href="#">MB FOU 15</a><span>W2 SEP</span><span class="hn">18/09/2026</span>',
-  ph: pht('Bạn', ['GVCN Đinh Thu Hằng', 'Head Nguyễn Khánh Vy'], { them: 1 }),
+  ph: pht('Bạn', ['GVCN Đinh Thu Hằng', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['18/09/2026', ''] }), con: [],
   than: `${tuyen({ ten: 'Báo PH kết quả Test · Progress W2 SEP', buoc: [
     { tt: 'xong', ten: 'Có kết quả Progress', ct: 'trượt W · S', ng: 'GV nhập điểm', ngay: '13/09/2026' },
     { tt: 'dang', ten: 'Báo PH', ban: 1, ngay: ['hạn 18/09/2026', ''] }] })}
     <div class="khoi"><h4>Máy điền sẵn</h4><div class="kv3"><span>Điểm</span><span>L <b class="so">7/10</b> · R <b class="so">6/10</b> · <span class="qua-chu">W ✗ 4/10</span> · <span class="qua-chu">S ✗ 4/10</span> · P <b class="so">16/25</b></span><span>Nhận xét GV</span><span>Writing: bài thiếu ý, chưa chia đoạn. Speaking: trả lời ngắn, cần luyện thêm Part 2.</span></div></div>
-    ${formBaoPh(dt)}`,
+    ${formBaoPh(dt)}${lichSu(1, 'Máy tạo 13/09/2026')}`,
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(dt)) });
 const DS_HEAD_YT = [{ ten: 'Báo PH', viec: [
   { id: 'e1', lop: 'MB BE 05', ten: 'Đoàn Minh Thư', ct: 'Kết quả Final · chưa có TVV', han: ['19/09/2026'] },
