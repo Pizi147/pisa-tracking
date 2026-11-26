@@ -147,6 +147,7 @@ import { migratePrTinhLuiPc } from './migrate/prTinhLuiPhanCong.ts';
 import { migratePrVeLopLucThi } from './migrate/prVeLopLucThi.ts';
 import { migratePrLuuTruDong } from './migrate/prLuuTruDong.ts';
 import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
+import { migratePrTuyen0 } from './migrate/prTuyen0.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -586,6 +587,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => themCotPrBaoPh0(conn, applied));   // BAOPH-0: TRƯỚC Lưu trữ — `dongViecLuuTru` đọc `viec_xu_ly`
   buoc(() => migratePrLuuTruDong(conn, applied));
   buoc(() => migratePrBaoPh0(conn, applied));   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
+  /* TUYEN-0 (N72 ①): bảng tuyen_bo_theo_doi + chỉ mục người làm bước (chỉ thêm, chạy lặp được). */
+  buoc(() => migratePrTuyen0(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

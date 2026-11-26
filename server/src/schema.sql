@@ -2507,6 +2507,22 @@ CREATE INDEX IF NOT EXISTS idx_tra_lai_hv ON vi_pham_tra_lai(student_id);
 CREATE INDEX IF NOT EXISTS idx_tra_lai_vp ON vi_pham_tra_lai(violation_id);
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_tra_lai ON viec_bao_ph(tra_lai_id) WHERE tra_lai_id IS NOT NULL;   -- Báo PH đang dừng vì một yêu cầu
 CREATE INDEX IF NOT EXISTS idx_tra_lai_xl ON vi_pham_tra_lai(measure_id);
+-- TUYEN-0 (N72 ①): "Bỏ theo dõi" cả tuyến (loai vi_pham | phoi_hop | tinh_hinh | cap_bac · khoa như GET /tuyen/:loai/:khoa). Theo dõi theo tuyến SUY RA khi đọc
+-- (người đã làm một bước + người theo dõi việc N58) — bảng chỉ giữ lần bỏ; làm thêm bước / theo dõi tay sau `luc` thì hiện lại. Chỉ mục người làm bước: tab
+-- Đang theo dõi tìm tuyến của người xem không quét cả bảng. Khớp migrate/prTuyen0.ts.
+CREATE TABLE IF NOT EXISTS tuyen_bo_theo_doi (
+  loai TEXT NOT NULL, khoa TEXT NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id), luc TEXT NOT NULL,
+  PRIMARY KEY (user_id, loai, khoa)
+);
+CREATE INDEX IF NOT EXISTS idx_dm_tao_boi ON discipline_measures(created_by);
+CREATE INDEX IF NOT EXISTS idx_sca_lam_boi ON sos_coordination_actions(performed_by);
+CREATE INDEX IF NOT EXISTS idx_meeting_phan_xong_boi ON meeting_phan(xong_boi);
+CREATE INDEX IF NOT EXISTS idx_tinh_hinh_gui ON tinh_hinh_hoc_tap(nguoi_gui);
+-- Hai nhánh thẻ (Head duyệt · GVCN xin thu hồi / sửa bậc) — chỉ mục MỘT PHẦN theo loai: câu `nguoi_xin = ?` không ORDER BY của Yêu cầu của tôi không đổi kế hoạch.
+CREATE INDEX IF NOT EXISTS idx_ycd_nguoi_duyet ON yeu_cau_duyet(nguoi_duyet) WHERE nguoi_duyet IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ycd_xin_thu_hoi ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'thu_hoi_y_thuc';
+CREATE INDEX IF NOT EXISTS idx_ycd_xin_khai ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'sua_khai_bac';
+CREATE INDEX IF NOT EXISTS idx_tra_lai_xong_boi ON vi_pham_tra_lai(xong_boi);
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
 -- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.
