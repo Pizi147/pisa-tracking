@@ -358,7 +358,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
               {!hep && (
                 <NutLuat label={t('Cách dùng')} phai>{chiXem
                   ? t('Bấm tên GV ở bảng tổng hợp để tô các ô của GV đó.')
-                  : t('Cách dùng: bấm một ô để đổi GV — đổi xong bấm Lưu cuối dòng (sửa nhiều lớp: Lưu cả n lớp ở chân bảng). Bấm tên GV ở bảng tổng hợp để tô các ô của GV đó. Bàn phím: mũi tên đi giữa ô, Enter mở danh sách, Esc đóng.')}</NutLuat>
+                  : t('Bấm một ô để đổi GV, rồi Lưu cuối dòng (nhiều lớp: Lưu cả n lớp ở chân bảng). Bàn phím: mũi tên, Enter mở, Esc đóng.')}</NutLuat>
               )}
             </span>
           </div>

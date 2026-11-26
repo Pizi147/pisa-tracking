@@ -140,7 +140,7 @@ export function KhoiGiaoViec({ g: gGoc, mo = true, dat, reload, gon, chiHan, anT
      `tieuDe` do máy chủ dựng (`tenViec('bao_ph_tvv')`), không dịch. */
   const headLam = !laToi && g.mo && g.loai === 'phoi_hop' && g.tieuDe.startsWith('Báo PH kết quả Test') && !!session?.nav?.workOps;
   /* TUYEN-1 (mockup v27, critique ⑮): "mặc định" / "{tên} giao" là chữ phụ không viền — khỏi lẫn với ô bấm. */
-  const theGiao = <span className="whitespace-nowrap text-[13px] text-faint">{g.duocGiao ? g.giaoBoi?.id === toi ? t('bạn giao') : t('{ten} giao', { ten: g.giaoBoi?.ten ?? '—' }) : t('mặc định')}</span>;
+  const theGiao = g.duocGiao ? <span className="whitespace-nowrap text-[13px] text-faint">{g.giaoBoi?.id === toi ? t('bạn giao') : t('{ten} giao', { ten: g.giaoBoi?.ten ?? '—' })}</span> : null;
   const suaHan = async (han: string | null) => {
     const moi = await thaoTac.suaHan(g, han);
     toast.push('ok', t('Đã lưu hạn'));

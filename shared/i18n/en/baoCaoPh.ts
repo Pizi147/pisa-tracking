@@ -43,8 +43,6 @@ export const EN_BAO_CAO_PH = {
     'This round is hidden from the tab, the Admin task "Export parent reports" and the branch Excel file. Reports already written are kept; you can restore it any time.',
   'Tên đợt': 'Round name',
   'Mở từ': 'Opens',
-  'Điểm tự điền: Mock gần nhất có điểm trước hạn.': 'Auto score: the latest Mock with a score before the due date.',
-  'Điểm tự điền: Progress / Final gần nhất có điểm trước hạn.': 'Auto score: the latest Progress / Final with a score before the due date.',
   'Áp cho lớp': 'Apply to classes',
   'Chỉ lớp cùng chi nhánh.': 'Same-branch classes only.',
   'Chọn ít nhất một lớp': 'Pick at least one class',
