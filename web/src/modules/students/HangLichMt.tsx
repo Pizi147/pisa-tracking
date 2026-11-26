@@ -106,7 +106,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, ngayThi = null, moDiem, o
   const tuanHien = h.weekStart ?? (h.attemptNo === 0 ? Object.values(l?.kn ?? {}).map((o) => o?.tuan ?? null).filter((x): x is string => !!x).sort()[0] ?? null : null);
   return (
     <>
-      <tr className="row-hover">
+      <tr className="row-hover" data-hang-mt>
         <td className="td whitespace-nowrap">
           <OMt v={{ so: h.attemptNo, attemptId: l?.attemptId ?? null, kn: l?.kn ?? {}, cu: !!l?.lichSu }} homNay={homNay} huy={!l && !!h.huy} />
           {l?.kyVong != null && <span className="block text-xs tabular-nums text-slate-500">{t('kỳ vọng {band}', { band: fmtBand(l.kyVong) })}</span>}

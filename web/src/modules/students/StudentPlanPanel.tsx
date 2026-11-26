@@ -95,7 +95,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                 sugg.error ? <ErrorState message={sugg.error.message} hint={sugg.error.hint} status={sugg.error.status} onRetry={sugg.reload} /> : <Skeleton rows={3} />
               ) : (
                 <div className="surface-2 rounded-lg overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="bang-lich-mt w-full text-sm">
                     <thead>
                       <tr>
                         <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.')}>{t('Lượt')}</Th>

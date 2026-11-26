@@ -2321,3 +2321,17 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
 /* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }
+
+/* MT-QUA-THI (PTA 26/11): bảng Lịch MT (panel) dưới 640 px — mỗi MT MỘT khối dọc, không cuộn ngang, không ẩn thông tin: tầng 1 lượt (+ kỳ vọng, "Sau ngày thi") ·
+   tầng 2 tuần đề xuất (mã tuần · tuần n · ngày) · tầng 3 hiện tại · tầng 4 nút căn phải. Tiêu đề cột ẩn (mỗi tầng tự nói). Ngoài @layer để thắng `block` / `whitespace-nowrap`. */
+@media (max-width: 639px) {
+  .bang-lich-mt, .bang-lich-mt tbody { display: block; }
+  .bang-lich-mt thead { display: none; }
+  .bang-lich-mt tr[data-hang-mt] { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  .bang-lich-mt tbody > tr[data-hang-mt]:first-child { border-top: 0; }
+  .bang-lich-mt tr[data-hang-mt] > td { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; padding: 0; border: 0; white-space: normal; text-align: left; }
+  .bang-lich-mt tr[data-hang-mt] > td > span.block { display: inline; margin: 0; }   /* chữ phụ cùng hàng; chip (lượt, trạng thái) giữ dáng */
+  .bang-lich-mt tr[data-hang-mt] > td:nth-child(2) > span + span::before { content: '· '; color: var(--text-faint); }
+  .bang-lich-mt tr[data-hang-mt] > td:nth-child(4) { justify-content: flex-end; }
+  .bang-lich-mt tr[data-hang-mt] > td:nth-child(4) > span { display: flex; }
+}
