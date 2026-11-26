@@ -16,6 +16,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
 import { thiThatCuaCycle } from './banChup.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
+import { chuKhung, duocGiao, giaoChoNguoi } from '../worklist/khungViec.ts';
 
 const DIEM = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof DIEM)[number], number | null>;
@@ -57,6 +58,7 @@ export function coTheNhapThiThat(p: Principal, c: { id: number; student_id: numb
   if ([PERMISSIONS.STUDENT_EDIT, PERMISSIONS.CYCLE_EDIT, PERMISSIONS.STUDENT_EDIT_MORE].some((q) => can(p, q, { studentId: c.student_id }))) return true;
   /* RA-2511 Q4 (chủ SP 25/11): Admin chi nhánh của em cũng nhập (việc vẫn ở TVV theo N6 — `sauThiCuaEm` không đổi). */
   if (laAdminCua(p, { studentId: c.student_id })) return true;
+  if (duocGiao(p, 'thi_that', c.id)) return true;   // LPB-1 (N73 ⑤): người được giao "Cập nhật KQ thi thật" của đúng lộ trình này
   return laGvcnLopCuoi(p, c.id);
 }
 function laGvcnLopCuoi(p: Principal, cycleId: number): boolean {
@@ -278,7 +280,7 @@ export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
  * (không quá hạn, không chuông). Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu TVV (không N+1).
  */
 export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
-  if (!coTheGiuViecTvv(p)) return [];
+  if (!coTheGiuViecTvv(p) && !giaoChoNguoi(p.userId, 'thi_that').length) return [];   // LPB-1: việc giao cho tôi
   const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
   const lop = lopDayDu();
@@ -287,7 +289,8 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
   for (const { c, s } of moc) {
     const l = c.class_id ? lop.get(c.class_id) : null;
     if (f.branchId && l && l.branch_id !== f.branchId) continue;
-    const chu = giu(l?.branch_id ?? null, c.tvv ?? null, f.tatCa, c.student_id);
+    /* LPB-1 (N73 ⑤): việc đã giao rời dòng TVV / Head; hạn đặt tay (việc không hạn → có hạn). */
+    const chu = chuKhung(p, f.tatCa, 'thi_that', c.id, giu(l?.branch_id ?? null, c.tvv ?? null, f.tatCa, c.student_id));
     if (!chu) continue;
     const ke = examPlanOf({ exam_period_id: null, exam_month: c.exam_month, exam_date: c.exam_date, ...(c.exam_week ? { exam_period_id: 1, exam_week_code: tuanLich(c.exam_week), exam_week_start: c.exam_week } : {}) });
     const thi = ke.confidence === 'none' ? null : ke.label;
@@ -297,7 +300,9 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chuDaThi(s, f.today), count: null,
       reason: [c.ten, l?.code ?? '—', thi ? `thi ${thi}` : null].filter(Boolean).join(' · '), tieuDe: 'Cập nhật kết quả thi thật', actionLabel: 'Nhập KQ thi',
       href: duongHoSoHocVien(c.student_id, { loTrinh: c.id, viec: 'thi-that' }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
-      due: null, statusLabel: 'Không tính hạn',
+      due: chu.han ?? null, statusLabel: chu.han ? `hạn ${chu.han.slice(8, 10)}/${chu.han.slice(5, 7)}` : 'Không tính hạn',
+      ...(chu.han ? { urgency: chu.han < f.today ? 'overdue' : chu.han === f.today ? 'today' : 'normal' } : {}),
+      ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'thi_that', id: c.id },
     });
   }
   return out;

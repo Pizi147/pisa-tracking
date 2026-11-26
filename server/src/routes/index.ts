@@ -53,6 +53,7 @@ import * as effectiveness from '../cases/effectiveness.ts';
 import * as cycleSvc from '../fasttrack/cycles.ts';
 import * as thiThatSvc from '../loTrinh/thiThat.ts';
 import * as buocTiepSvc from '../loTrinh/buocTiep.ts';
+import * as khungSvc from '../worklist/khungViec.ts';
 import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
@@ -542,6 +543,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
     chiNhanh: qInt(req, 'chiNhanh'),
     moiVai: nhom === 'giao_viec',   // GV-2 (N58): ô giao việc liên phòng ban — mọi vai ở chi nhánh của việc
+    quyen: qStr(req, 'quyen') === 'chot' || qStr(req, 'quyen') === 'xep_lich' ? qStr(req, 'quyen') as 'chot' | 'xep_lich' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT
   });
 }));
 
@@ -2139,7 +2141,7 @@ api.get('/cycles/:id/buoc-tiep', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const c = cycleSvc.cycleById(pInt(req, 'id'));
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }) && !khungSvc.duocGiao(p, 'buoc_tiep', c.id)) throw forbidden('Học viên này nằm ngoài phạm vi bạn được xem.');   // LPB-1: người được giao
   lenhSvc.quetLenhDenHan();   // hẹn bắt đầu tới tuần → bắt đầu trước khi đọc
   return buocTiepSvc.trangThaiBuocTiep(p, c.id);
 }));
@@ -2148,7 +2150,7 @@ api.get('/cycles/:id/lo-trinh-moi/xem-truoc', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const c = cycleSvc.cycleById(pInt(req, 'id'));
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }) && !khungSvc.duocGiao(p, 'buoc_tiep', c.id)) throw forbidden('Học viên này nằm ngoài phạm vi bạn được xem.');   // LPB-1
   return buocTiepSvc.xemTruocLoTrinhMoi(p, c.id, {
     route: qStr(req, 'route') || undefined, routeTen: qStr(req, 'routeTen') ?? undefined, boTarget: qStr(req, 'boTarget') === '1',
     lopMoiId: qStr(req, 'lopMoiId') || undefined, batDau: qStr(req, 'batDau') || undefined, mucTieu: qStr(req, 'mucTieu') || undefined,
@@ -2712,6 +2714,11 @@ api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
   }
   /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng · BAOPH-0 Xử lý vi phạm / Đã thực hiện — tuyến đi cùng khối giao việc. */
   return loai === 'tinh_hinh' || loai === 'xu_ly' || loai === 'da_thuc_hien' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, loai, g.id) } : g;
+}));
+/* LPB-1 (N73 ⑤): Bàn giao môn (lớp × môn) — id khung (tạo dòng lần đầu) { lopId, mon } → { id }. */
+api.post('/giao-viec/ban_giao_mon/mo', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return giaoViecSvc.moBanGiaoMon(principalOf(req), (req.body ?? {}) as Record<string, unknown>);
 }));
 /* LPB-0 (N73): Nhận thông tin — "Xác nhận đã nhận" (không ô nhập) · mo-lai = Hoàn tác / Mở lại. Người giữ · lead BPXL · Head / Quản trị / CX của chi nhánh lớp. */
 api.post('/giao-viec/nhan_tin/:id/xac-nhan', requireAuth, wrap((req) => {

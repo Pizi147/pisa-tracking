@@ -27,6 +27,7 @@ import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { LUOT_CON_KE_HOACH_SQL } from '../students/tamDung.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
+import { duocGiao } from '../worklist/khungViec.ts';
 
 const GHI_CHU_TOI_DA = 500;
 /** LICH-THI-NOI-THI: nơi thi là chữ NGẮN (IDP · BC · British Council Hà Nội…) — đủ cho tên trung tâm thi, không thành ô ghi chú thứ hai. */
@@ -299,7 +300,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
 export function lichSuLichThiMotEm(p: Principal, cycleId: number): DongLichSu[] {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id })) throw forbidden('Bạn không có quyền xem em này.');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id }) && !duocGiao(p, 'chot_ngay_thi', cycleId)) throw forbidden('Bạn không có quyền xem em này.');   // LPB-1
   return lichSuLichThi([cycleId], 50).get(cycleId) ?? [];
 }
 
@@ -313,7 +314,8 @@ export function luuLichThi(
 ): Pick<HangLichThi, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot' | 'buoc' | 'sauThi' | 'kq' | 'buocTiep' | 'noiThi'> {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheSua(p, c.student_id)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
+  /* LPB-1 (N73 ⑤): người được giao "Chốt ngày thi" của lộ trình này làm được đúng việc đó (lịch thi của lộ trình — `updateCycle` mở đúng ba trường dự kiến thi). */
+  if (!coTheSua(p, c.student_id) && !duocGiao(p, 'chot_ngay_thi', cycleId)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
   const doc = () => db().prepare(`SELECT cy.*, rp.week_start AS exam_week_start, ${cotSauThi('cy', 'rp')}, ${COT_LICH_THI_SQL} FROM learning_cycles cy
       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;
   const cu = luuTuCot(doc());

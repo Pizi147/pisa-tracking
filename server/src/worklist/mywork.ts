@@ -42,6 +42,8 @@ import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import { dongViecGiao, viecGiaoChoToi } from './giaoViec.ts';
+import { chuKhung, giaoChoNguoi, type LoaiKhung } from './khungViec.ts';
+import { SQL_MOC, viecMoc } from './mocQuyChe.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -173,6 +175,8 @@ export type WorkItem = {
   emTen?: string[];
   /** GV-1 (N58): việc người khác giao cho người xem — tên người giao (dòng "{tên} giao"). Không có = việc theo luật. */
   giaoBoi?: string | null;
+  /** LPB-1 (N73 ⑤): việc có khung (Phụ trách · Hạn · Theo dõi · Việc con) — `/giao-viec/{loai}/{id}`; Bàn giao môn chưa có dòng → id null (`POST /giao-viec/ban_giao_mon/mo`). */
+  khungViec?: { loai: LoaiKhung; id: number | null };
   /** GV-2: dòng Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) — id hành động Meeting, panel đọc `/phoi-hop-sos/:id/meeting`. */
   phoiHopId?: number;
   /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
@@ -595,41 +599,6 @@ function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boo
  * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC — nguồn việc `moc:` (một câu cho cả phạm vi). BO-QUA-XEP-MT: kèm cột bỏ qua + tên
  * người bỏ qua (JOIN, không thêm câu). `boQuaViec` đọc lại đúng một PA bằng câu này + `AND iv.id = ?`.
  */
-const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
-              COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, a.cycle_id, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
-              cc.lich_mt AS lop_lich_mt, cc.route AS lop_route, lc.route,   -- XEP-MT-NHAC: thieuMt (lịch lớp đang học, như danhSachLop)
-              (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co,
-              ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi   -- N46: không thành việc; vẫn điền mốc (dienMocQuyChe đọc cùng câu)
-         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-         LEFT JOIN users ub ON ub.id = iv.bo_qua_boi
-         LEFT JOIN learning_cycles lc ON lc.id = a.cycle_id   -- cùng lộ trình với điều kiện MT sau (nx.cycle_id = a.cycle_id)
-        WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
-          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc Head xếp lại; Head vẫn tự xếp được.
-             XEP-MT-NHAC (chủ SP 07/11): MT sau Head chủ động xoá cũng vậy — xoá rồi thì thôi (LUOT_HUY_HET_SQL gồm cả MT đã xoá). */
-          AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
-                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})
-`;
-
-/** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
-function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name: string | null }) {
-  const thi = r.moc_quy_che === 'until_exam';
-  const n = (r.attempt_no ?? 0) + 1;
-  const ten = r.full_name ?? 'Học viên';
-  return {
-    thi, dau: thi ? 'thi' : `mt${n}`,
-    reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${n}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
-    tieuDe: thi ? `Nhập dự kiến thi · ${ten}` : `Xếp lịch MT${n} cho ${ten}`,
-    phu: thi ? 'Nhập dự kiến thi' : `Xếp lịch MT${n}`,
-  };
-}
-
 /**
  * MT-QUA-THI (chủ SP 26/11): lộ trình có NGÀY THI cụ thể (thi thật đã nhập ngày, không thì ngày dự kiến — như `ngayThiSauThi`; chỉ tuần / tháng = chưa có ngày)
  * mà còn MT chưa thi xếp ở tuần bắt đầu SAU ngày thi → việc của Head CN để tự chỉnh. Không tính: em không đang học (Lưu trữ / Tạm dừng), lộ trình đã có KQ thi
@@ -1369,26 +1338,32 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
     const minh = giuQl(cnLop(x.classId));
-    if (!minh && !tatCa) continue;
+    /* LPB-1 (N73 ⑤): việc đã giao (người có quyền chốt) rời dòng Head; hạn đặt tay thắng hạn N20. */
+    const giao = chuKhung(p, tatCa, 'chot_lo_trinh', x.classId, minh || tatCa ? { ownerId: null, mine: minh } : null);
+    if (!giao) continue;
     const chu = chuViecChotLoTrinh(x);
+    const hanCl = giao.han ?? x.han;
     items.push({
-      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
+      key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(hanCl, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: x.chuaLenh, emIds: x.emIds,
       reason: chu,
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
       href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
-      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa chốt',
+      ownerId: giao.ownerId, owner: null, mine: giao.mine, due: hanCl, statusLabel: 'Chưa chốt',
+      ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}), khungViec: { loai: 'chot_lo_trinh', id: x.classId },
     });
   }
 
   // ------------------------------------------------- 2d'. P9a (N21): Xét lại lộ trình — một việc mỗi lớp em ĐANG học (QL chi nhánh lớp đó), hạn sớm nhất, hết hạn tự giữ (cùng hàm với GET /classes/:id/xet-lai)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
     const minh = giuQl(cnLop(x.lopId));
-    if (!minh && !tatCa) continue;
+    const giao = chuKhung(p, tatCa, 'xet_lai', x.lopId, minh || tatCa ? { ownerId: null, mine: minh } : null);   // LPB-1 (N73 ⑤)
+    if (!giao) continue;
+    const hanXl = giao.han ?? x.han;
     const ten = x.em.map((e) => (e.lyDo.ma === 'd' ? `${e.ten} · ${e.lyDo.chu}` : e.final.tyLe !== null ? `${e.ten} ${chuTyLeXetLai(e.final.tyLe)}` : e.ten));
     items.push({
-      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(x.han, today),
+      key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(hanXl, today),
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.lopId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null,
       contextLabel: ten.length > 3 ? `${ten.slice(0, 3).join(' · ')} · +${ten.length - 3}` : ten.join(' · '), count: x.em.length, emIds: x.em.map((e) => e.studentId),
@@ -1396,12 +1371,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại',   // R3-T2: panel tại chỗ ở Công việc (không đổi trang → không "›")
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
       /* P9a: việc của chính QL đang xem (chỉ người quyết được mới có dòng) — thanh Việc cần làm hồ sơ lớp lấy dòng `mine`. */
-      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa quyết',
+      ownerId: giao.ownerId, owner: null, mine: giao.mine, due: hanXl, statusLabel: 'Chưa quyết',
+      ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}), khungViec: { loai: 'xet_lai', id: x.lopId },
     });
   }
 
   // ------------------------------------------------- 2e. bàn giao (PR-CT, Q30-2): GVCN một việc mỗi lớp nguồn, GVBM một việc mỗi (lớp, môn)
   /* OV-11c (CV-8, Q6): "Của GV" có Bàn giao của MỌI GV trong phạm vi — cùng hàm với "Của một GV" (`viecBanGiao` một lần cho mọi người). */
+  /* LPB-1 (N73 ⑤): việc đã giao (GVCN theo lớp · GVBM theo lớp × môn) đứng tên người được giao — `viecBanGiao` tính sẵn (`userId`, `giaoBoi`, `han`). */
   for (const v of !co('ban_giao') ? [] : tatCa
     ? viecBanGiao(null, f.branchId, f.chiLop).filter((v) => v.userId === p.userId || can(p, PERMISSIONS.CASE_APPROVE, { classId: v.lopId }))
     : viecBanGiao(p.userId, f.branchId, f.chiLop)) {
@@ -1409,6 +1386,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const chung = {
       group: 'ban_giao' as const, urgency: urgencyOf(han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: v.userId, owner: null, mine: v.userId === p.userId, due: han, emIds: v.emIds,
+      ...(v.giaoBoi ? { giaoBoi: v.giaoBoi } : {}),
+      khungViec: v.loai === 'gvcn' ? { loai: 'ban_giao' as const, id: v.lopId } : { loai: 'ban_giao_mon' as const, id: v.khungId ?? null },
     };
     if (v.loai === 'gvcn') {
       items.push({
@@ -1435,7 +1414,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     items.push({
       group: 'ban_giao' as const, urgency: urgencyOf(v.han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, ownerId: v.userId, owner: null, mine: v.userId === p.userId, due: v.han, emIds: v.emIds,
-      key: `ban_giao_gv:${v.id}`, count: v.tong - v.du,
+      key: `ban_giao_gv:${v.id}`, count: v.tong - v.du, ...(v.giaoBoi ? { giaoBoi: v.giaoBoi } : {}), khungViec: { loai: 'ban_giao_gv' as const, id: v.id },
       contextLabel: `cho ${v.nguoiMoi} · ${v.du}/${v.tong} em`, reason: `${v.tong - v.du} em chưa đủ góp ý bàn giao`,
       tieuDe: `Bàn giao ${v.code} · ${v.monNgan.join(', ')}`, actionLabel: 'Bàn giao',
       href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao-gv&id=${v.id}`, statusLabel: 'Chờ bàn giao',
@@ -1780,7 +1759,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC (chưa có lịch MT kế / ngày thi) → việc của Quản lý: Nhập ngày thi dự
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
-  if (xemNguoiKhac && co('missing_data')) {
+  /* LPB-1 (N73 ⑤): "Xếp lịch MT" giao cho tôi (người xếp lịch được — BPXL / Head) — vào nhánh này dù tôi không xem người khác. */
+  const mocToi = co('missing_data') && giaoChoNguoi(p.userId, 'xep_lich_mt').length > 0;
+  if ((xemNguoiKhac || mocToi) && co('missing_data')) {
     const truoc = docNho(SQL_MOC);
     if (truoc.length) {
       dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
@@ -1788,15 +1769,20 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
-        if (r.sau_thi || !can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;   // N46: lộ trình đã có KQ thi thật
-        const minh = giuQl(r.branch_id ?? null);
-        if (!minh && !tatCa) continue;
+        if (r.sau_thi) continue;   // N46: lộ trình đã có KQ thi thật
         const v = viecMoc(r);
+        /* LPB-1: chỉ "Xếp lịch MT" có khung (không "Nhập dự kiến thi"); việc đã giao rời dòng Head. */
+        const quyen = xemNguoiKhac && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid });
+        const minhQl = quyen && giuQl(r.branch_id ?? null);
+        const goc = quyen && (minhQl || tatCa) ? { ownerId: minhQl ? p.userId : null, mine: minhQl } : null;
+        const giao: ReturnType<typeof chuKhung> = v.thi ? goc : chuKhung(p, tatCa, 'xep_lich_mt', r.id, goc);
+        if (!giao) continue;
+        const minh = giao.mine;
         /* XEP-MT-NHAC (chủ SP 07/11): "Xếp lịch MTn" chỉ khi lộ trình thiếu MT — đủ 3 (RF 2) MT đã có thì không nhắc. */
         if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
         /* BO-QUA-XEP-MT: QL đã bỏ qua đúng mốc này → không là việc, chỉ ở "Đã bỏ qua" (khôi phục được). Mốc khác (MT kế khác) → hiện lại. */
         if (r.bo_qua_moc === v.dau) {
-          daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+          if (quyen) daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
             boi: r.bo_qua_ten ?? null, luc: r.bo_qua_luc });
           continue;
         }
@@ -1808,7 +1794,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           /* R3-W2 (rà 24/11): lộ trình của mốc — Công việc mở tại chỗ panel Chốt ngày thi / Lịch MT (trước sang hồ sơ trơn, tự tìm chỗ). */
           ...(r.cycle_id ? { cycleId: r.cycle_id as number } : {}), ...(v.thi ? { kind: 'thi' } : {}),
           actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
-          ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
+          ownerId: giao.ownerId, owner: null, mine: minh, due: giao.han ?? null, statusLabel: 'Chưa có lịch', boQuaDuoc: quyen,
+          ...(giao.han ? { urgency: urgencyOf(giao.han, today) } : {}), ...(giao.giaoBoi ? { giaoBoi: giao.giaoBoi } : {}),
+          ...(v.thi ? {} : { khungViec: { loai: 'xep_lich_mt' as const, id: r.id as number } }),
         });
       }
     }

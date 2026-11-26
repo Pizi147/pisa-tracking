@@ -18,6 +18,7 @@ import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { apDoiLoTrinh } from './doiLoTrinh.ts';
 import { duocDoiLoTrinh, duocDoiMon } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
+import { duocGiao } from '../worklist/khungViec.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -225,14 +226,31 @@ export function docDiemXuatPhat(v: unknown): number {
   return n;
 }
 
+/**
+ * LPB-1 (N73 ⑤): trường lộ trình người xem sửa được VÌ đang được giao việc khung (không vì vai): "Chốt ngày thi" của lộ trình → dự kiến thi;
+ * "Bổ sung hồ sơ thiếu" của em (lộ trình đang mở) → Tuần bắt đầu khi chưa có, Target khi chưa có (+ lý do). Rỗng = không được giao.
+ */
+export function truongGiaoLoTrinh(p: Principal, c: { id: number; student_id: number; status?: string; start_period_id?: number | null; target_score?: number | null }): string[] {
+  return [
+    ...(duocGiao(p, 'chot_ngay_thi', c.id) ? ['examDate', 'examMonth', 'examPeriodId'] : []),
+    ...(c.status === 'active' && duocGiao(p, 'bo_sung_ho_so', c.student_id)
+      ? [...(c.start_period_id ? [] : ['startWeek', 'startPeriodId']), ...(c.target_score == null ? ['targetScore', 'lyDo'] : [])] : []),
+  ];
+}
+
 export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coQuyen(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id })) {
+  /* LPB-1 (N73 ⑤): người được giao làm được ĐÚNG việc đó — "Chốt ngày thi" (lộ trình này): ba trường dự kiến thi; "Bổ sung hồ sơ thiếu" (em này, lộ trình đang mở):
+     chỉ trường lộ trình CÒN THIẾU (Tuần bắt đầu · Target). */
+  const coSua = coQuyen(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id });
+  const giaoMo = coSua ? [] : truongGiaoLoTrinh(p, c);
+  if (!coSua) {
     /* PR-OV2a: Admin, TVV, CX chỉ sửa dự kiến thi ở lộ trình (Target, ghi chú, trạng thái: 403).
        [XM-C1] (chủ SP 13/11): TVV chi nhánh em sửa thêm Tuần bắt đầu — cùng phạm vi đổi Môn học (`duocDoiMon`); CX, Admin không. */
-    require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id });
-    const duoc = ['examDate', 'examMonth', 'examPeriodId', ...(duocDoiMon(p, { studentId: c.student_id }) ? ['startWeek', 'startPeriodId'] : [])];
+    const info = coQuyen(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id });
+    if (!info && !giaoMo.length) require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id });
+    const duoc = [...(info ? ['examDate', 'examMonth', 'examPeriodId', ...(duocDoiMon(p, { studentId: c.student_id }) ? ['startWeek', 'startPeriodId'] : [])] : []), ...giaoMo];
     if (Object.keys(patch ?? {}).some((k) => !duoc.includes(k))) throw forbidden(CHI_SUA_THONG_TIN);
   }
   kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', note: 'Ghi chú' })[k] ?? k);
@@ -287,7 +305,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   patch = { ...patch, targetScore: undefined, khongCamKetGhi: undefined };
   /* LO-TRINH-THEO-HV: đổi lộ trình đi lõi `apDoiLoTrinh` (lịch MT theo lộ trình mới, lượt có điểm giữ) — quyền như ô ở Sửa thông tin (`duocDoiLoTrinh`). */
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
-  if (doiTarget) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (doiTarget && !giaoMo.includes('targetScore')) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
   if (doiLoTrinh && !duocDoiLoTrinh(p, { studentId: c.student_id })) throw forbidden(CHI_QL_SUA);
   if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi Target.');
   /*
@@ -530,7 +548,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (!c) throw notFound('Không tìm thấy lộ trình');
   /* `daDuyet`: chỉ quyết định chuyển lớp lúc thi hành truyền — lệnh đã được kiểm quyền lúc ra (như `applyTransition`). */
   /* OV-8b: TVV / CX (`student.edit_more`) sửa thẳng như QL — cùng đường, cùng lý do bắt buộc, cùng nhật ký. */
-  if (!o?.daDuyet && !duocDoiTarget(p, { studentId: c.student_id })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (!o?.daDuyet && !duocDoiTarget(p, { studentId: c.student_id }) && !truongGiaoLoTrinh(p, c).includes('targetScore')) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);   // LPB-1
   /* OV-6b2: lộ trình của chương trình liên tục không có Target — trừ KET / PET (P13: Target Cambridge, số nguyên trong thang, không KCK). */
   if (lienTucKhongKyThi(c)) throw badRequest(CAU_LIEN_TUC.target);
   const { target, kck } = docTargetCua(c, input.newTarget);

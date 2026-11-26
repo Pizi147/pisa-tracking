@@ -19,7 +19,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
 import { doiTrangThai } from '../students/trangThaiHv.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
-import { donTheoDoiCu } from '../worklist/giaoViec.ts';
+import { dongKhungHetViec, donTheoDoiCu } from '../worklist/giaoViec.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
 const CHI_QL_LOP = 'Chỉ Head của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
@@ -116,6 +116,12 @@ export function xoaLop(p: Principal, classId: number) {
     chup.chay('DELETE FROM ban_giao_gv WHERE class_id = ?', classId);
     chup.chay('DELETE FROM viec_nhan_tin_dong WHERE viec_id IN (SELECT id FROM viec_nhan_tin WHERE class_id = ?)', classId);   // LPB-0: việc BPXL Nhận thông tin của lớp trống
     chup.chay('DELETE FROM viec_nhan_tin WHERE class_id = ?', classId);
+    /* LPB-1 (N73 ⑤): khung việc của lớp trống (Bàn giao · Bàn giao môn · Chốt / Xét lại lộ trình) — người theo dõi / lịch sử / mô tả rồi dòng bảng phụ. */
+    const KHUNG_LOP = `(loai IN ('ban_giao', 'chot_lo_trinh', 'xet_lai') AND ref_id = ?1) OR (loai = 'ban_giao_mon' AND ref_id IN (SELECT id FROM viec_ban_giao_mon WHERE lop_id = ?1))`;
+    for (const b of ['viec_theo_doi', 'viec_giao_lan', 'viec_mo_ta']) chup.chay(`DELETE FROM ${b} WHERE ${KHUNG_LOP}`, classId);
+    chup.chay(`DELETE FROM viec_han_lan WHERE ${KHUNG_LOP.replace(/ref_id/g, 'viec_id')}`, classId);
+    for (const b of ['viec_ban_giao', 'viec_chot_lo_trinh', 'viec_xet_lai']) chup.chay(`DELETE FROM ${b} WHERE id = ?`, classId);
+    chup.chay('DELETE FROM viec_ban_giao_mon WHERE lop_id = ?', classId);
     chup.chay('DELETE FROM doi_phan_cong WHERE class_id = ?', classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
     chup.chay('DELETE FROM teacher_assignments WHERE class_id = ?', classId);
     chup.chay('DELETE FROM class_skills WHERE class_id = ?', classId);
@@ -227,6 +233,7 @@ export function quetLopTrong(homNay = demoToday()): boolean {
   return quetMoiNgay('quet:lop-trong', homNay, () => {
     dongLopTrong(homNay);
     try { donTheoDoiCu(homNay); } catch (e) { console.error('[theo-doi] dọn', e); }
+    try { dongKhungHetViec(); } catch (e) { console.error('[khung] đóng việc hết', e); }   // LPB-1 (N73 ⑤)
   });
 }
 

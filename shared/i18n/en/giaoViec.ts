@@ -1,6 +1,15 @@
 /** GV-1 (N58, chủ SP 20/11) — giao việc liên phòng ban: tên nhóm việc Meeting + câu báo của máy chủ. Khoá = chữ Việt. */
 export const EN_GIAO_VIEC = {
   'Xếp lịch họp': 'Schedule meeting',
+  /* LPB-1 (N73 ⑤): khung việc chung — việc TVV · Bàn giao · việc Head. */
+  'Bàn giao môn': 'Subject handover', 'Cập nhật KQ thi thật': 'Update real exam result', 'Xếp lịch MT': 'Schedule MT',
+  'Bạn chỉ bổ sung được trường hồ sơ còn thiếu của em này (Ngày sinh · Email).': 'You can only fill in this student’s missing profile fields (Date of birth · Email).',
+  'Bàn giao của lớp này ngoài phạm vi của bạn.': 'This class’s handover is outside your scope.',
+  'Lớp không còn việc bàn giao môn này.': 'The class no longer has a handover task for this subject.',
+  'Thiếu lớp hoặc môn.': 'Missing class or subject.',
+  'Học viên này nằm ngoài phạm vi bạn được xem.': 'This student is outside the scope you can view.',
+  'Người này không xếp lịch MT được ở lớp của em — chọn Head, Quản trị hoặc BPXL.': 'This person cannot schedule MTs for the student’s class — choose a Head, Admin or scheduler.',
+  'Chốt / Xét lại lộ trình chỉ giao cho người có quyền chốt lộ trình lớp này (Head, Quản trị) — chọn người khác.': 'Finalising / reviewing pathways can only go to someone who can finalise this class (Head, Admin) — choose someone else.',
   /* LPB-0 (N73): việc BPXL Nhận thông tin. */
   'Nhận thông tin': 'Info handover',
   'Xác nhận đã nhận thông tin (BPXL)': 'Confirmed info received (scheduling)', 'Mở lại việc Nhận thông tin': 'Reopened the Info handover task',

@@ -726,6 +726,7 @@ export function hoanTacQuayLai(p: Principal, studentId: number) {
 /* OV-13q: `coQuyenBuocTiep` chuyển sang permissions.ts (thiThat.ts dùng — tránh vòng import thiThat → students → buocTiep → thiThat). */
 import { coQuyenBuocTiep, grantPhiaTvv } from '../permissions.ts';
 import { dongViecLuuTru, moLaiViecLuuTru, type DongLuuTru } from './dongLuuTru.ts';
+import { duocGiao } from '../worklist/khungViec.ts';
 export { coQuyenBuocTiep };
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
@@ -923,7 +924,12 @@ export function chanLuuTruHv(p: Principal, studentId: number) {
 
 /** `emailRoiDi`: em cùng lô Sửa cả lớp đang bỏ email cũ (VN-1: hai em đổi email cho nhau) — không tính là đang dùng. */
 export function updateStudent(p: Principal, studentId: number, patch: any, emailRoiDi: readonly number[] = []) {
-  if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
+  /* LPB-1 (N73 ⑤): người được giao "Bổ sung hồ sơ thiếu" của em (không có vai sửa thông tin em) — chỉ Ngày sinh / Email khi CÒN THIẾU. */
+  if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }) && duocGiao(p, 'bo_sung_ho_so', studentId)) {
+    const s0 = db().prepare('SELECT dob, email FROM students WHERE id = ?').get(studentId) as any;
+    const duoc = new Set([...(s0?.dob ? [] : ['dob']), ...(s0?.email ? [] : ['email'])]);
+    if (!Object.keys(patch ?? {}).length || Object.keys(patch ?? {}).some((k) => !duoc.has(k))) throw forbidden('Bạn chỉ bổ sung được trường hồ sơ còn thiếu của em này (Ngày sinh · Email).');
+  } else if (!can(p, PERMISSIONS.STUDENT_EDIT, { studentId })) {
     require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId });
     const ghiChu = can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
     if (Object.keys(patch ?? {}).some((k) => !TRUONG_THONG_TIN.has(k) && !(k === 'note' && ghiChu))) throw forbidden(CHI_SUA_THONG_TIN);

@@ -2510,6 +2510,67 @@ CREATE TABLE IF NOT EXISTS viec_nhan_tin_dong (
 CREATE INDEX IF NOT EXISTS idx_vnt_dong_viec ON viec_nhan_tin_dong(viec_id);
 CREATE INDEX IF NOT EXISTS idx_vnt_dong_lenh ON viec_nhan_tin_dong(lenh_id) WHERE lenh_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_vnt_dong_doi ON viec_nhan_tin_dong(doi_id) WHERE doi_id IS NOT NULL;
+-- LPB-1 (N73 ⑤): KHUNG việc chung (Phụ trách · Hạn · Theo dõi · Việc con) cho việc TVV, Bàn giao, việc Head — như khối Xử lý vi phạm: việc vẫn TÍNH khi đọc,
+-- bảng phụ chỉ có dòng khi có người giao / đặt hạn / mô tả / theo dõi. id = đơn vị việc ở Công việc: lộ trình (chot_ngay_thi · buoc_tiep · thi_that) ·
+-- em (bo_sung_ho_so) · lớp nguồn (ban_giao — GVCN xác nhận) · lớp (chot_lo_trinh · xet_lai) · mốc PA (xep_lich_mt = case_interventions.id).
+-- trang_thai: mo | xong (việc hết — quét ngày / Lưu trữ) | bo; dòng không 'mo' = đợt trước, đọc như chưa giao. Bàn giao đổi GV: cột trên ban_giao_gv.
+CREATE TABLE IF NOT EXISTS viec_chot_ngay_thi (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_buoc_tiep (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_thi_that (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_bo_sung_ho_so (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_ban_giao (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_chot_lo_trinh (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_xet_lai (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE TABLE IF NOT EXISTS viec_xep_lich_mt (
+  id INTEGER PRIMARY KEY,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+-- Bàn giao môn (GVBM, chuyển lớp): đơn vị = (lớp nguồn, môn) → id riêng (AUTOINCREMENT — không dùng lại).
+CREATE TABLE IF NOT EXISTS viec_ban_giao_mon (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lop_id INTEGER NOT NULL REFERENCES classes(id), mon TEXT NOT NULL,
+  trang_thai TEXT NOT NULL DEFAULT 'mo', han_chon TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL, xong_luc TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_ban_giao_mon ON viec_ban_giao_mon(lop_id, mon);
+CREATE INDEX IF NOT EXISTS idx_viec_chot_ngay_thi_giao ON viec_chot_ngay_thi(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_buoc_tiep_giao ON viec_buoc_tiep(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_thi_that_giao ON viec_thi_that(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_bo_sung_ho_so_giao ON viec_bo_sung_ho_so(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_ban_giao_giao ON viec_ban_giao(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_chot_lo_trinh_giao ON viec_chot_lo_trinh(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_xet_lai_giao ON viec_xet_lai(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_xep_lich_mt_giao ON viec_xep_lich_mt(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_ban_giao_mon_giao ON viec_ban_giao_mon(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
 -- Việc giao cho tôi (/my-work, một câu UNION ALL): chỉ mục một phần — dòng theo luật (NULL) không vào chỉ mục, câu cũ không đổi kế hoạch.
@@ -2677,8 +2738,10 @@ CREATE TABLE ban_giao_gv (
   tao_boi INTEGER NOT NULL REFERENCES users(id),
   xong_luc TEXT,
   xong_boi INTEGER,
-  xong_thay INTEGER NOT NULL DEFAULT 0
+  xong_thay INTEGER NOT NULL DEFAULT 0,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, han_chon TEXT   -- LPB-1 (N73 ⑤): khung việc chung
 );
+CREATE INDEX IF NOT EXISTS idx_ban_giao_gv_giao ON ban_giao_gv(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 CREATE INDEX ix_bg_gv_lop ON ban_giao_gv (class_id, trang_thai);
 CREATE INDEX ix_bg_gv_cu ON ban_giao_gv (nguoi_cu, trang_thai);
 CREATE INDEX ix_bg_gv_mo ON ban_giao_gv (trang_thai, nguoi_lam);   -- Công việc: việc đang mở của một người

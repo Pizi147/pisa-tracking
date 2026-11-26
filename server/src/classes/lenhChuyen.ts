@@ -867,7 +867,9 @@ export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: 
   return nho(`chot-lo-trinh:${p.userId}:${branchId ?? ''}:${today}:${lopId ?? ''}`, () => tinhLopChoChotLoTrinh(p, branchId, today, lopId));
 }
 
-function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
+/** LPB-1 (N73 ⑤): lớp còn việc "Chốt lộ trình" (không xét quyền người xem) — khung việc đọc CÙNG luật với Công việc. */
+export const lopChotLoTrinhMo = (lopId: number, today: string): ChotLoTrinh | null => tinhLopChoChotLoTrinh(null, null, today, lopId)[0] ?? null;
+function tinhLopChoChotLoTrinh(p: Principal | null, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   const lop = [...lopDayDu().values()].filter((c) => c.status === 'active' && c.is_fast_track === 0 && (!branchId || c.branch_id === branchId) && (!lopId || c.id === lopId));
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
@@ -878,7 +880,7 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
     const moc = pr.finalWeekStart ? mocLoTrinh(pr.finalWeekStart) : null;
     const han = moc?.hanChot ?? null;
     const den = moc ? today >= moc.nhacTu : mocKetKhoa(pr, today).hetKhoa;
-    return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
+    return den && (!p || can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id })) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];
   const dem = demChotTheoLop(toi.map((x) => x.classId));
