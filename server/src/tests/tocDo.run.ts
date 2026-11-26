@@ -40,7 +40,7 @@ const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');  
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
-const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON, TRAN_BAO_PH_LO } = await import('./tocDoDuong.ts');
 const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -2586,6 +2586,19 @@ await checkAsync(`TUYEN-1 · TVV giữ Báo PH: POST /mgmt-tasks (chaLoai) ≤ $
   } finally {
     if (id) { gvSvc.donViec('van_hanh', [id]); conn.prepare('DELETE FROM tasks WHERE id = ?').run(id); }
   }
+});
+
+/* TUYEN-2 (PTA chốt): bảng Báo PH nhiều em — một GET theo lô khi mở panel; số câu không theo số em (lô). */
+await checkAsync(`TUYEN-2 · TVV mở bảng Báo PH nhiều em: GET /y-thuc/bao-ph-lo ≤ ${TRAN_BAO_PH_LO.cau} câu · ≤ ${TRAN_BAO_PH_LO.dong} dòng; một em và nhiều em cùng số câu`, async () => {
+  const ids = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL AND v.phu_trach_id IS NULL
+      AND s.consultant_user_id = ? AND s.archived_at IS NULL ORDER BY v.id LIMIT 6`).all(USER.TVV) as any[]).map((r) => r.id as number);
+  assert(ids.length >= 2, `seed: TVV đo cần ≥ 2 việc Báo PH từ nguồn (có ${ids.length})`);
+  const mot1 = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${ids[0]}`);
+  const nhieu = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${ids.join(',')}`);
+  console.log(`      (đo: 1 em ${mot1.n} câu ${mot1.dong} dòng · ${ids.length} em ${nhieu.n} câu ${nhieu.dong} dòng)`);
+  assert(nhieu.status === 200 && Object.keys(nhieu.json as object).length === ids.length, `trả ${Object.keys(nhieu.json as object).length}/${ids.length}`);
+  assert(nhieu.n <= TRAN_BAO_PH_LO.cau && nhieu.dong <= TRAN_BAO_PH_LO.dong, `${nhieu.n} câu ${nhieu.dong} dòng > ${TRAN_BAO_PH_LO.cau} · ${TRAN_BAO_PH_LO.dong}`);
+  assert(nhieu.n <= mot1.n + 2, `N+1: 1 em ${mot1.n} câu · ${ids.length} em ${nhieu.n} câu`);
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {

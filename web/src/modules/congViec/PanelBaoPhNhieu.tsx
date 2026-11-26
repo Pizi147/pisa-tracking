@@ -9,6 +9,8 @@ import { t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
 import { ChuoiCham } from '../yThuc/KhoiTuyen.tsx';
+import type { TrangThaiBuoc } from '../yThuc/kieu.ts';
+import { useApi } from '../../lib/useApi.ts';
 
 /**
  * BÁO PH NHIỀU EM (TUYEN-2, mockup v27 T11a — N72 ⑤, khuôn A): một dòng lớp × nguồn × đợt ("4 em · Trao đổi gia đình · MT2") → bảng em; bấm "Ghi" mở khay NGAY dưới
@@ -18,6 +20,8 @@ import { ChuoiCham } from '../yThuc/KhoiTuyen.tsx';
 export function PanelBaoPhNhieu({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
   const { homNay } = useNgayNghiepVu();
   const ds = it.con ?? [];
+  /* TUYEN-2 (PTA chốt): chuỗi chấm + Máy điền sẵn từng em — MỘT GET theo lô khi mở panel (không làm nặng `/my-work`). */
+  const { data: lo } = useApi<Record<number, { chuoi: TrangThaiBuoc[] | null; mayDien: string | null }>>(ds.length ? `/y-thuc/bao-ph-lo?ids=${ds.map((c) => c.viecId).filter(Boolean).join(',')}` : null, [it.key]);
   const [mo, setMo] = useState<string | null>(ds[0]?.key ?? null);
   const nguon = ds[0]?.contextLabel ?? it.contextLabel ?? '';
   const dau = dauViec({ lop: it.classCode, ngCanh: t('{n} em', { n: ds.length }) });
@@ -32,7 +36,8 @@ export function PanelBaoPhNhieu({ it, onDong, onDaLam, onTiep }: { it: WorkItem;
           {ds.map((c) => {
             const dangMo = mo === c.key;
             const muc = c.due && homNay ? mucHan(c.due, homNay) : 'xa';
-            const [dau1, ...conLai] = (c.mayDien ?? '').split('\n').filter(Boolean);
+            const them = c.viecId ? lo?.[c.viecId] : undefined;
+            const [dau1, ...conLai] = (them?.mayDien ?? '').split('\n').filter(Boolean);
             const con = conLai.join(' · ') || null;
             return (
               <div key={c.key} className="border-t" style={{ borderColor: 'var(--line)' }}>
@@ -42,8 +47,8 @@ export function PanelBaoPhNhieu({ it, onDong, onDaLam, onTiep }: { it: WorkItem;
                     <Link to={duongHoSoHocVien(c.studentId!, { tab: 'y-thuc', sub: 'phoi-hop' })} className="ten-hv font-semibold text-[color:var(--text)] no-underline hover:underline">{c.studentName}</Link>
                     <span className="text-xs text-dim">{dau1 ?? c.statusLabel}{!dau1 && c.due ? <span className={`ml-1.5 tabular-nums ${LOP_MUC_HAN[muc]}`}>{ngay(c.due)}</span> : null}</span>
                   </span>
-                  <span role="cell" className="max-sm:col-start-1 max-sm:row-start-2">{c.chuoiTuyen?.length ? <ChuoiCham chuoi={c.chuoiTuyen} /> : null}</span>
-                  <span role="cell" className="min-w-0 text-[13px] text-dim max-sm:hidden" title={c.mayDien ?? undefined}>{con ?? '—'}</span>
+                  <span role="cell" className="max-sm:col-start-1 max-sm:row-start-2">{them?.chuoi?.length ? <ChuoiCham chuoi={them.chuoi} /> : null}</span>
+                  <span role="cell" className="min-w-0 text-[13px] text-dim max-sm:hidden" title={them?.mayDien ?? undefined}>{con ?? '—'}</span>
                   <span role="cell" className="justify-self-end max-sm:col-start-2 max-sm:row-start-1">
                     <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-[30px] ${dangMo ? '' : 'btn-primary'}`} aria-expanded={dangMo}
                       onClick={() => setMo(dangMo ? null : c.key)}>{dangMo ? t('Đóng') : t('Ghi')}</button>

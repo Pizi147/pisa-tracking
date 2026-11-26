@@ -52,7 +52,6 @@ export type WorkItem = {
   /** UI-CV-TVV: Báo PH — id việc (`viec_bao_ph`) · số lần "Chưa liên hệ được". */
   viecId?: number; soLanThu?: number;
   /** TUYEN-2: Báo PH theo nguồn × đợt — gộp "n em" theo lớp × nguồn. */ gopNguon?: string;
-  /** TUYEN-2: chuỗi chấm tuyến + nội dung máy điền (dòng trong bảng Báo PH nhiều em). */ chuoiTuyen?: ('xong' | 'dang' | 'cho' | 'bo' | 'tam_dung')[]; mayDien?: string | null;
   /** SOS-TAM-PA: dòng Xác nhận PA là "Chọn PA" (HD3-2: thẻ Hướng dẫn riêng). */
   chonPa?: boolean;
   /** BO-QUA-XEP-MT: QL bỏ qua được ngay trên dòng (việc `moc:` Xếp lịch MT / Nhập dự kiến thi). */

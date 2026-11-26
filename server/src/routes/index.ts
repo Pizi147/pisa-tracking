@@ -624,28 +624,8 @@ const kemTestSapToi = (p: Principal, kq: any, branchId?: number | null) => {
   const lopKetThuc = tongQuanSvc.lopKetThucCuaGv(p);   // N71: lớp đã kết thúc còn việc / trong hạn xem — 0 câu
   return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(lopKetThuc.length ? { lopKetThuc } : {}), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
 };
-/**
- * TUYEN-2 (mockup v27 T11a, PTA chốt): dòng Báo PH "n em" (lớp × nguồn, `gopNguon`) — mỗi em chuỗi chấm tuyến (em × lượt) + "Máy điền sẵn" cho bảng nhiều em.
- * Chỉ khi CÓ dòng gộp đó: MỘT câu tìm nguồn + tuyến theo LÔ (`chuoiPhoiHop`) + nội dung theo LÔ (`noiDungNguonTvvLo`) — không N+1; không có dòng gộp → 0 câu.
- * Việc đã nằm trong danh sách của chính người xem (quyền theo `viecBaoPhCuaToi`).
- */
-const kemBaoPhNhieuEm = (p: Principal, kq: any) => {
-  const con = ((kq?.dong ?? []) as any[]).filter((d) => d.group === 'bao_ph_yt' && d.con?.length).flatMap((d) => d.con as any[]).filter((c) => c.viecId && c.gopNguon);
-  if (!con.length) return kq;
-  const nguon = new Map((db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
-      WHERE v.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(con.map((c) => c.viecId))) as { id: number; ph: number; luot: number }[]).map((r) => [r.id, r]));
-  const chuoi = tuyenSvc.chuoiPhoiHop(p, [...nguon.values()].map((r) => r.luot));
-  const nd = phoiHopSvc.noiDungNguonTvvLo(p, [...nguon.values()].map((r) => r.ph));
-  for (const c of con) {
-    const n = nguon.get(c.viecId);
-    if (!n) continue;
-    if (chuoi[n.luot]) c.chuoiTuyen = chuoi[n.luot].chuoi;
-    c.mayDien = nd.get(n.ph) ?? null;
-  }
-  return kq;
-};
 /** `/my-work` mặc định ("Của tôi") — route `/my-work` và phần `cuaToi` của Tổng quan (TQ-QT-NHE A2) gọi CHUNG, JSON y hệt. */
-const viecCuaToi = (p: Principal, branchId: number | null | undefined) => kemBaoPhNhieuEm(p, can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })
+const viecCuaToi = (p: Principal, branchId: number | null | undefined) => (can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })
   ? kemTestSapToi(p, nheMyWork(myWork(p, { branchId })), branchId)
   : kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })), branchId));
 /**
@@ -1741,6 +1721,24 @@ api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { t
   return traLaiSvc.giuNguyenTraLai(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
 }));
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
+/**
+ * TUYEN-2 (mockup v27 T11a, PTA chốt): bảng Báo PH nhiều em — mỗi việc (`?ids=`) chuỗi chấm tuyến (em × lượt) + "Máy điền sẵn". Gọi KHI MỞ panel (không ở `/my-work`):
+ * chỉ việc nằm trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`, câu đã nhớ theo request) · MỘT câu tìm nguồn · tuyến theo LÔ · nội dung theo LÔ.
+ */
+api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req);
+  const xin = [...new Set(String(req.query.ids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50);
+  if (!xin.length) return {};
+  const cua = new Set(baoPhSvc.viecBaoPhCuaToi(p, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
+  const ids = xin.filter((id) => cua.has(id));
+  if (!ids.length) return {};
+  const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
+      WHERE v.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(ids)) as { id: number; ph: number; luot: number }[];
+  const chuoi = tuyenSvc.chuoiPhoiHop(p, nguon.map((r) => r.luot));
+  const nd = phoiHopSvc.noiDungNguonTvvLo(p, nguon.map((r) => r.ph));
+  return Object.fromEntries(nguon.map((r) => [r.id, { chuoi: chuoi[r.luot]?.chuoi ?? null, mayDien: nd.get(r.ph) ?? null }]));
+}));
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);

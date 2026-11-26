@@ -158,8 +158,6 @@ export type WorkItem = {
   viecId?: number;
   /** TUYEN-2: việc TVV báo PH sinh từ một nguồn theo đợt (Trao đổi gia đình · Progress · Final) — gộp "n em" theo lớp × nguồn (`khoaGopCua`). */
   gopNguon?: string;
-  /** TUYEN-2: chuỗi chấm tuyến (Phối hợp em × lượt) + nội dung máy điền — chỉ việc nằm trong dòng gộp Báo PH "n em" (bảng nhiều em T11a). */
-  chuoiTuyen?: ('xong' | 'dang' | 'cho' | 'bo' | 'tam_dung')[]; mayDien?: string | null;
   /** UI-CV-TVV: số lần đã ghi "Chưa liên hệ được" của việc Báo PH đang mở — dòng "⚠ Chưa liên hệ được · lần n". */
   soLanThu?: number;
   /** TL-1 (N61): việc Báo PH có yêu cầu trả lại đang mở — "Chờ GV sửa", hạn tạm dừng (urgency luôn normal). Chỉ có khi đúng. */

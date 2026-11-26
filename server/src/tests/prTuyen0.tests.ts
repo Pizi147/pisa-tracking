@@ -221,6 +221,33 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(x.trangThai === 'xong' && x.noiDung === 'Đã báo mẹ em kết quả và lịch họp GĐCN', `TVV xong: ${JSON.stringify(x)}`);
   }));
 
+  await checkAsync('TUYEN2-1 · Meeting: BPXL mở panel chỉ nhận phần Xếp lịch (không lộ phần Kết quả, không 403); bước GVCN xác nhận kèm Phụ huynh — chỉ người xem được em; việc TVV từ nguồn `nguonTvv`', () => thu(() => {
+    const sid = moiEm();
+    conn.prepare(`UPDATE students SET parent_name = 'Nguyễn Thu Hà', parent_relation = 'mẹ', parent_phone = '0912345678' WHERE id = ?`).run(sid);
+    const { att, ids } = luot(sid, ['cx_meeting_family', 'talk_family']);
+    bp.dongBoViecTvvLuot([att]);
+    ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Cần họp GĐCN với em và phụ huynh' });
+    xoaNho();
+    /* (a) xemMeeting — BPXL giữ Xếp lịch họp: một phần, không phần Kết quả meeting (trước: 403 cả panel). GVCN: đủ hai phần. */
+    const mB = gv.xemMeeting(bpxl, ids[0]);
+    assert(mB.phan.length === 1 && mB.phan[0].meeting.phan === 'xep_lich', `BPXL: ${mB.phan.map((g: any) => g.meeting.phan).join(',')}`);
+    xoaNho();
+    assert(gv.xemMeeting(gvcn, ids[0]).phan.length === 2, 'GVCN đọc đủ hai phần');
+    /* (b) bước GVCN xác nhận: "Nội dung gửi" + Phụ huynh — GVCN (xem được em) đọc; BPXL thấy khung, không nội dung. */
+    const a = tuyen(gvcn, 'phoi_hop', att);
+    const xn = a.buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN'));
+    assert(xn?.noiDung?.includes('Nội dung gửi: Cần họp GĐCN') && xn.noiDung.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà · 0912345678'), `GVCN: ${JSON.stringify(xn)}`);
+    const c = tuyen(bpxl, 'phoi_hop', att).buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN'));
+    assert(c && c.khongQuyen && !('noiDung' in c), `BPXL: không nội dung bước GVCN (SĐT PH): ${JSON.stringify(c)}`);
+    /* (c) việc TVV Trao đổi gia đình: panel biết là việc từ nguồn (không vẽ hai phần Meeting) — Progress / Final cùng cờ (`laViecTvvBaoPh`). */
+    const v = mot('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', ids[1]);
+    xoaNho();
+    const vb = bp.xemViecBaoPh(tvv, v.id);
+    assert(vb.nguonTvv === true && vb.phoiHopId === ids[1], `nguonTvv: ${vb.nguonTvv}`);
+    const nguon = mot(`SELECT v.id FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id WHERE x.kind = 'bao_ph_tvv' ORDER BY v.id LIMIT 1`);
+    if (nguon) { xoaNho(); assert(bp.xemViecBaoPh(P.admin, nguon.id).nguonTvv === true, 'Kết quả Progress / Final: nguonTvv'); }
+  }));
+
   await checkAsync('TUYEN0-15 · BAOPH-0 hai việc giao được (xu_ly · da_thuc_hien): người theo dõi N58 thấy MỘT dòng tuyến ở Đang theo dõi; người được giao thành người giữ', () => thu(() => {
     const admin = taiKhoan('admin', 'office_admin');
     /* Xử lý vi phạm (việc theo em): Head thêm người theo dõi → dòng tuyến "đang chờ xử lý" của em. */
