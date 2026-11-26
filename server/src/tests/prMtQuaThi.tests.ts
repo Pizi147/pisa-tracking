@@ -44,7 +44,7 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
     const it = tim(d.key);
     assert(it && it.group === 'missing_data' && tabCuaViec(it) === 'van-hanh' && it.cycleId === d.cycle && it.boQuaDuoc && it.mine,
       `thiếu việc / sai dáng: ${JSON.stringify(it)}`);
-    assert(/^MT sau ngày thi · /.test(it.tieuDe) && /^MT\d+ W\d [A-Z]{3}/.test(it.phu) && /^Thi \d\d\/\d\d\/\d{4}$/.test(it.statusLabel), `chữ: ${JSON.stringify(it)}`);
+    assert(/^MT\d+(, MT\d+)* sau ngày thi · /.test(it.tieuDe) && /^MT\d+ W\d [A-Z]{3}.* sau ngày thi \d\d\/\d\d\/\d{4}/.test(it.reason) && /^Thi \d\d\/\d\d\/\d{4}$/.test(it.contextLabel), `chữ: ${JSON.stringify(it)}`);
     /* Ngày thi = thứ Hai tuần MT (MT không còn SAU ngày thi) → hết. */
     conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = ?').run(d.tuan, d.cycle);
     assert(!tim(d.key), 'ngày thi không còn trước MT mà việc còn');
@@ -84,7 +84,7 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
     mywork.boQuaViec(QL, d.key, true);
     assert(!tim(d.key), 'việc còn sau khi bỏ qua');
     const bq = (viec().daBoQua ?? []).find((x: any) => x.key === d.key);
-    assert(bq && bq.boi && bq.luc && /^MT sau ngày thi · /.test(bq.tieuDe), `daBoQua: ${JSON.stringify(bq)}`);
+    assert(bq && bq.boi && bq.luc && / sau ngày thi · /.test(bq.tieuDe), `daBoQua: ${JSON.stringify(bq)}`);
     const nk = () => all(`SELECT 1 FROM audit_logs WHERE action = 'viec.bo_qua' AND entity_type = 'learning_cycle' AND entity_id = ?`, d.cycle).length;
     assert(nk() === 1, 'thiếu nhật ký bỏ qua');
     mywork.boQuaViec(QL, d.key, true);
