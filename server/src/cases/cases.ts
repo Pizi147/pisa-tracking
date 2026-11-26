@@ -2795,6 +2795,8 @@ export type CaseFilters = {
   /** D-01 (N46): bỏ Case của lộ trình đã có KQ thi thật — MỘT công tắc cho mọi số "Case đang mở / chưa có PA" (lọc sau SQL, không vào khoá nhớ). */
   anSauThi?: boolean;
   branchId?: number | null;
+  /** RA-2711: nhiều chi nhánh MỘT lần (= hợp các lần `branchId` từng chi nhánh, thứ tự dòng theo chi nhánh như gọi lần lượt) — Học viên & Lớp vai toàn hệ thống. */
+  branchIds?: number[] | null;
   classId?: number | null;
   studentId?: number | null;
   /** OV-15f: chỉ Case của các em này (xuất Excel danh sách — không đọc cả chi nhánh); ≤ 500 em một lần. */
@@ -2878,7 +2880,7 @@ export type MappedCase = {
  */
 function khoaDsCase(userId: number, f: CaseFilters): string {
   const fSql: Record<string, unknown> = {};
-  for (const k of ['studentId', 'studentIds', 'classId', 'branchId', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner', 'kemTam'] as const) {
+  for (const k of ['studentId', 'studentIds', 'classId', 'branchId', 'branchIds', 'status', 'cycleId', 'origin', 'ownerUserId', 'noOwner', 'kemTam'] as const) {
     const v = f[k];
     if (v !== null && v !== undefined && v !== false) fSql[k] = v;
   }
@@ -2988,6 +2990,13 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
                           UNION SELECT x.id FROM classes k JOIN assessment_attempts a2 ON a2.class_id = k.id JOIN sos_cases x ON x.attempt_id = a2.id WHERE k.branch_id = ?
                           UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`, `${CN_CUA_CASE} = ?`);
     params.push(f.branchId, f.branchId, f.branchId);
+  }
+  if (f.branchIds?.length) {
+    where.push(`sc.id IN (SELECT x.id FROM classes k JOIN enrollments e ON e.class_id = k.id AND e.status = 'active' JOIN sos_cases x ON x.student_id = e.student_id WHERE k.branch_id IN (${DS_JSON})
+                          UNION SELECT x.id FROM classes k JOIN assessment_attempts a2 ON a2.class_id = k.id JOIN sos_cases x ON x.attempt_id = a2.id WHERE k.branch_id IN (${DS_JSON})
+                          UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`, `${CN_CUA_CASE} IN (${DS_JSON})`);
+    const j = JSON.stringify(f.branchIds);
+    params.push(j, j, j);
   }
   if (f.status) { where.push('sc.status = ?'); params.push(f.status); }
   if (f.cycleId) { where.push('COALESCE(sc.cycle_id, a.cycle_id) = ?'); params.push(f.cycleId); }
