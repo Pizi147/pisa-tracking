@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { NutChon } from '../../ui/ui.tsx';
 import { OChon as OChonThuong } from '../phanTich/dungChung.tsx';
 import { ROLES, ROLE_LABEL, VAI_CN_TUY_CHON, roleLabel, type Role } from '@shared/domain/index.ts';
@@ -27,6 +27,24 @@ export const loiThieuChiNhanh = (ds: CapVai[]) => ds.flatMap((g, i) => (g.role &
   ? [{ i, lyDo: t('Chọn chi nhánh cho vai {vai}', { vai: roleLabel(g.role) }) }] : []));
 
 /**
+ * VAI-1 (N75–N77, mockup v29 V1): dòng phụ dưới chip — nói đúng HẬU QUẢ của lựa chọn (lưu ý cần thiết): GĐCN như Head chỉ nhận Kết quả meeting · Lead TVV như CX giữ
+ * việc em chưa có TVV · BPXL "Toàn hệ thống" = lead BPXL (không nhận việc tự động) · BPXL tích chi nhánh = nhận việc chi nhánh đó. Vai khác: không dòng.
+ */
+function dongPhuVai(g: CapVai, tongCn: number): ReactNode {
+  const toan = g.branches.size === 0;
+  if (g.role === 'branch_director') return toan
+    ? <><b>{t('Toàn hệ thống')}</b> · {t('quyền như Head mọi chi nhánh · chỉ theo dõi, không nhận việc tự động.')}</>
+    : <>{t('Quyền như Head ở chi nhánh đã chọn · máy chỉ giao')} <b>{t('Kết quả meeting')}</b> {t('(em SOS 3), không nhận việc khác của Head.')}</>;
+  if (g.role === 'lead_consultant') return toan
+    ? <><b>{t('Toàn hệ thống')}</b> · {t('quyền như CX mọi chi nhánh · chỉ theo dõi, không giữ việc em chưa có TVV.')}</>
+    : <>{t('Quyền như CX · giữ việc TVV của em')} <b>{t('chưa có TVV')}</b> {t('ở chi nhánh đã chọn. Toàn hệ thống: chỉ theo dõi.')}</>;
+  if (g.role === 'scheduler') return toan
+    ? <><b>{t('Lead BPXL')}</b> · {t('xếp lịch, làm hộ, gán người xếp cho lớp ở mọi chi nhánh · không nhận việc tự động.')}</>
+    : <>{t('Xếp lịch mọi chi nhánh · nhận việc tự động của lớp chưa ai nhận ở')} <b>{g.branches.size >= tongCn && tongCn > 1 ? t('cả {n} chi nhánh', { n: tongCn }) : [...g.branches].join(', ')}</b> {t('(vẫn là nhân viên, không phải lead).')}</>;
+  return null;
+}
+
+/**
  * BỘ SỬA VAI TRÒ · CHI NHÁNH — dùng chung cho panel Sửa tài khoản và hộp đổi vai tại dòng (QTV2-TK): mỗi vai một hàng (ô chọn vai + nút chi nhánh
  * bật / tắt + Gỡ). `qtCuaMinh`: hàng Quản trị của chính mình khoá ô vai + Gỡ (OV-11b QT-2, máy chủ cũng chặn).
  */
@@ -42,11 +60,12 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
       {value.map((g, i) => {
         const khoaQt = qtCuaMinh && g.role === 'system_admin';
         const loi = loiHang?.(i);
+        const phu = dongPhuVai(g, branches.length);
         return (
           <div key={i} className="surface-2 rounded-lg p-2.5">
-            <div className="flex flex-wrap items-center gap-2" {...propsHang?.(i)} tabIndex={-1}>
+            <div className="flex flex-wrap items-center gap-2 max-sm:[&>*]:order-2" {...propsHang?.(i)} tabIndex={-1}>
               {/* GD-17c (⑤ A6): ô chọn thường — một dáng với lọc Tài khoản. */}
-              <OChonThuong className="w-44" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
+              <OChonThuong className="w-[200px] max-sm:!order-none max-sm:w-[calc(100%-72px)]" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
                 onChange={(e) => sua(i, (x) => ({ ...x, role: e.target.value }))}>
                 {ROLES.map((r) => <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>)}
               </OChonThuong>
@@ -71,9 +90,10 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
                   </NutChon>
                 ))}
               </>)}
-              <button className="btn btn-sm btn-ghost ml-auto max-sm:min-h-[44px]" type="button" disabled={khoaQt}
+              <button className="btn btn-sm btn-ghost ml-auto max-sm:!order-1 max-sm:min-h-[44px]" type="button" disabled={khoaQt}
                 onClick={() => onChange(value.filter((_, j) => j !== i))}>{t('Gỡ')}</button>
             </div>
+            {phu && <p className="m-0 mt-1.5 text-[13px] leading-[1.45] text-dim sm:pl-[208px] [&_b]:font-semibold [&_b]:text-slate-100">{phu}</p>}
             {khoaQt && <p className="m-0 mt-1.5 text-xs text-slate-400">{t('Không tự gỡ vai Quản trị của mình')}</p>}
             {loi && <p className="m-0 mt-1.5 text-xs text-late">{loi}</p>}
           </div>

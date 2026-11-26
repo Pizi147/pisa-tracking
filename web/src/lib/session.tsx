@@ -13,6 +13,8 @@ const khoPhien = () => { try { return window.sessionStorage; } catch { return nu
 export type Grant = {
   id: number; role: string; roleName: string;
   branchId: number | null; branchName: string | null; permissions: string[];
+  /** VAI-1: mã vai thật khi khác `role` — GĐCN (`branch_director`, role Head), Lead TVV (`lead_consultant`, role CX). */
+  vaiThat?: string;
 };
 
 export type Assignment = {
