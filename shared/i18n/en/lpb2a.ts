@@ -16,7 +16,7 @@ export const EN_LPB2A = {
   'Mở tuyến của {ten}': (b) => `Open the track of ${b.ten}`,
   'Đóng tuyến của {ten}': (b) => `Close the track of ${b.ten}`,
   'đã huỷ chuyển': 'move cancelled',
-  'đã đổi lớp đích': 'target class changed',
+  'đã đổi lớp chuyển đến': 'destination class changed',
   'đi theo em': 'moves with the student',
   'ở lại lớp cũ': 'stays in the old class',
   'Giáo viên đổi': 'Teachers changed',

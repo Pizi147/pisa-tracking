@@ -137,13 +137,13 @@ function BangEm({ em, chuoi, hn }: { em: DongEm[]; chuoi: TomTuyen[]; hn: string
               </span>
               <span role="cell" className="grid min-w-0 gap-0.5 max-sm:col-start-1 max-sm:row-start-2 max-sm:flex max-sm:flex-wrap max-sm:gap-x-1.5 max-sm:text-[13px]">
                 {e.lopMoi ? <Link to={`/hoc-vien/lop/${e.lopMoi.id}`} className="font-semibold text-[color:var(--text)] no-underline hover:underline"><span className="sm:hidden">→ </span>{e.lopMoi.code}</Link> : <span className="text-dim">—</span>}
-                <small className="text-xs text-dim max-sm:text-[13px]"><span className="sm:hidden" aria-hidden>· </span>{e.trangThai === 'huy' ? t('đã huỷ chuyển') : e.trangThai === 'roi' ? t('đã đổi lớp đích') : t('từ {tuan}', { tuan: tuanLich(e.tuan, hn) })}</small>
+                <small className="text-xs text-dim max-sm:text-[13px]"><span className="sm:hidden" aria-hidden>· </span>{e.trangThai === 'huy' ? t('đã huỷ chuyển') : e.trangThai === 'roi' ? t('đã đổi lớp chuyển đến') : t('từ {tuan}', { tuan: tuanLich(e.tuan, hn) })}</small>
               </span>
               {coLich && (
                 <span role="cell" className="grid min-w-0 gap-0.5 text-[13px] max-sm:col-span-2 max-sm:row-start-3">
                   {e.lichMock.length ? e.lichMock.map((m) => (
                     <span key={m.ten} className="whitespace-nowrap max-sm:whitespace-normal">
-                      <b className="font-semibold">{m.ten.split(' · ')[0]}</b>{m.ten.includes(' · ') ? ` · ${m.ten.split(' · ').slice(1).join(' · ')}` : ''} · <span className={m.kieu === 'o_lai' ? 'text-[color:var(--soon)]' : m.kieu === 'huy' ? 'text-bad' : 'text-dim'}>{NHAN_LICH[m.kieu]()}</span>
+                      <b className="font-semibold">{m.ten.split(' · ')[0]}</b>{m.ten.includes(' · ') ? ` · ${m.ten.split(' · ').slice(1).join(' · ')}` : ''} · <span className={m.kieu === 'o_lai' ? 'text-[color:var(--warn)]' : m.kieu === 'huy' ? 'text-bad' : 'text-dim'}>{NHAN_LICH[m.kieu]()}</span>
                     </span>
                   )) : <span className="text-dim">—</span>}
                 </span>
