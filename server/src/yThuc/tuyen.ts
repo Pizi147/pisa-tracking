@@ -698,9 +698,9 @@ export function khoaBaoPh(v: { id: number; measureId: number | null; tinhHinhId:
 }
 
 /** Chuỗi chấm (bảng nhiều em, hồ sơ): tóm tắt một tuyến — cùng hàm dựng, không câu riêng. */
-export type TomTuyen = Pick<Tuyen, 'loai' | 'khoa' | 'tieuDe' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc'> & { em: number | null; chuoi: TrangThaiBuoc[] };
+export type TomTuyen = Pick<Tuyen, 'loai' | 'khoa' | 'tieuDe' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc' | 'ketThucLuc'> & { em: number | null; chuoi: TrangThaiBuoc[] };
 export const tomTat = (t: Tuyen): TomTuyen => ({ loai: t.loai, khoa: t.khoa, tieuDe: t.tieuDe, em: t.em?.id ?? null, xong: t.xong, tong: t.tong, soDang: t.soDang, dangO: t.dangO,
-  ketThuc: t.ketThuc, chuoi: t.buoc.map((b) => b.trangThai) });
+  ketThuc: t.ketThuc, ketThucLuc: t.ketThucLuc, chuoi: t.buoc.map((b) => b.trangThai) });   // TUYEN-4: "Xong {ngày}" ở hồ sơ
 
 /**
  * Hồ sơ HV › Ý thức & Phối hợp (+ panel Xử lý vi phạm): tuyến "đang chờ xử lý" đầy đủ + chuỗi chấm mọi tuyến của em (lần xử lý, lượt Phối hợp, tình hình,

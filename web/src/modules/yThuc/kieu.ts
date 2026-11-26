@@ -98,12 +98,15 @@ export type Tuyen = {
 
 /** TUYEN-0 `tomTat` — chuỗi chấm một tuyến (bảng nhiều em, hồ sơ). */
 export type TomTuyen = { loai: string; khoa: string; tieuDe: string; em: number; xong: number; tong: number; soDang: number;
-  dangO: { ten: string; nguoi: string | null; han: string | null } | null; ketThuc: boolean; chuoi: TrangThaiBuoc[] };
+  dangO: { ten: string; nguoi: string | null; han: string | null } | null; ketThuc: boolean; chuoi: TrangThaiBuoc[];
+  /** TUYEN-4: ngày tuyến xong ("Xong {ngày}" ở hồ sơ). */ ketThucLuc?: string | null };
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
   /** TUYEN-0: tuyến "đang chờ xử lý" của em (panel Xử lý vi phạm). */
   tuyen?: Tuyen | null;
+  /** TUYEN-4 (mockup v27 T10a): chuỗi chấm mọi tuyến của em (lần xử lý, lượt Phối hợp…) — khối Vi phạm hồ sơ HV. */
+  chuoiTuyen?: TomTuyen[];
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
   /** MA-QL-VIEC: QL / Quản trị áp thẳng cách khác Nâng 1 bậc (máy chủ `yThucHocVien`). */
   qlApThang?: boolean;

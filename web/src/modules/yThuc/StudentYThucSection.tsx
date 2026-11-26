@@ -13,13 +13,14 @@ import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
+import { DongTuyenHs } from './DongTuyenHs.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TheLoai, type VpDong } from './BangLan.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { lamMoiYThucCua, type BaoPhLan, type DongThoiGianYt, type TinhHinhView, type ViPhamV4, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type BaoPhLan, type DongThoiGianYt, type TinhHinhView, type TomTuyen, type ViPhamV4, type YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
 
@@ -43,12 +44,12 @@ const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text
  */
 /** N63 ⑤: BPXL không xem Ý thức — tab hồ sơ chỉ còn Phối hợp (việc Xếp lịch họp Meeting của BPXL ở đây). Cùng đường + cùng bảng phân đoạn Phối hợp. */
 export function PhoiHopHocVien({ studentId, thuong, onGoAcademic }: { studentId: number; thuong: boolean; onGoAcademic?: () => void }) {
-  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
+  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number; chuoiTuyen?: Record<number, TomTuyen> }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
   return (
     <section className="card overflow-clip pb-1" aria-label={thuong ? t('Phối hợp') : t('Phối hợp SOS')}>
       {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
         : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
-        : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" tieuDe={thuong ? t('Phối hợp') : t('Phối hợp SOS')} onGoAcademic={onGoAcademic} onChanged={() => { coord.reload(); }} />}
+        : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" tieuDe={thuong ? t('Phối hợp') : t('Phối hợp SOS')} onGoAcademic={onGoAcademic} onChanged={() => { coord.reload(); }} chuoi={coord.data.chuoiTuyen} />}
     </section>
   );
 }
@@ -65,7 +66,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [params, setParams] = useSearchParams();
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
   const { data: d, error, loading, reload } = useApi<YThucHocVien>(`/students/${studentId}/y-thuc${phamVi === 'tat-ca' ? '?pham-vi=tat-ca' : ''}`, [studentId, phamVi]);
-  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
+  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number; chuoiTuyen?: Record<number, TomTuyen> }>(`/students/${studentId}/phoi-hop-sos`, [studentId]);
   const [loc, setLoc] = useState<LocLs>('tat-ca');
   const [nhomVp, setNhomVp] = useState('');
   const [moVp, setMoVp] = useState<string | null>(null);
@@ -269,6 +270,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   /* Số "Lịch sử · n" = mọi dòng lịch sử của phạm vi (không theo lọc loại) — đổi lọc không làm khối biến mất; 0 dòng thì không vẽ khối (lời 40). */
   const soTong = d.dongThoiGian.filter((x) => (x.loai === 'vi-pham' ? x.trangThai === 'da_ghi_nhan' : x.status === 'done' || x.status === 'thu_hoi')).length
     + d.tinhHinh.filter((x) => x.trangThai !== 'mo').length;
+  /* TUYEN-4: tuyến Vi phạm của em (lần xử lý cũ → mới, "chờ xử lý" cuối) — từ `chuoiTuyen` của GET Ý thức (0 request thêm). */
+  const dongVp = (d.chuoiTuyen ?? []).filter((x) => x.loai === 'vi_pham' && x.chuoi.length)
+    .sort((a, b) => Number(a.khoa.startsWith('em')) - Number(b.khoa.startsWith('em')) || Number(a.khoa) - Number(b.khoa));
+  const coDongVp = dongVp.length > 0;
   const nhanChuoi = d.chuoi.nhan.startsWith('lớp thường') ? d.chuoi.nhan.replace('lớp thường', t('Lớp thường')) : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
 
   return (
@@ -309,17 +314,29 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
 
           {/* HV-YT-BO-TAB-CON (mockup v23 Y1 / Y3): Phối hợp SOS ngay dưới thang — không còn tab con; em không có Phối hợp → không vẽ khối.
               Tải song song với Ý thức (hai request cùng lúc khi mở tab). -mb-px: vạch cuối của lượt trùng vạch trên Lịch sử. */}
+          {/* TUYEN-4 (mockup v27 T10a): ≥ 1280 hai cột — Phối hợp SOS (trái) · Vi phạm (phải: mỗi lần xử lý một dòng tuyến, chuỗi chấm + "Đang ở …", bấm mở Tuyến). */}
+          <div className={`grid items-start ${coDongVp && (coord.error || !!coord.data?.rows.length) ? 'min-[1280px]:grid-cols-2' : ''}`}>
           {(coord.error || !!coord.data?.rows.length) && (
-            <div ref={phRef} className="-mb-px scroll-mt-24">
+            <div ref={phRef} className="-mb-px min-w-0 scroll-mt-24">
               {coord.error ? <>
                 <h3 className="m-0 flex min-h-12 items-center border-b px-4 text-[14px] font-bold text-[color:var(--text)] max-sm:px-3" style={{ borderColor: 'var(--line)' }}>{tenPhoiHop}</h3>
                 <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
               </>
                 /* PHOI-HOP-V2 PR-2 (mockup #1368 K7): cùng bảng với hồ sơ lớp, cột đầu là Lượt. */
                 : <BangPhoiHopHoSo turns={coord.data!.rows} cot1="luot" tieuDe={tenPhoiHop} onGoAcademic={onGoAcademic} phamVi={t('mọi lượt')}
-                    onChanged={() => { coord.reload(); }} />}
+                    onChanged={() => { coord.reload(); }} chuoi={coord.data!.chuoiTuyen} />}
             </div>
           )}
+          {coDongVp && (
+            <section className="min-w-0 border-t min-[1280px]:border-l min-[1280px]:border-t-0" style={{ borderColor: 'var(--line)' }} aria-label={t('Vi phạm')}>
+              <div className="flex min-h-12 flex-wrap items-center gap-x-2.5 border-b py-1.5 pl-4 pr-2 max-sm:pl-3" style={{ borderColor: 'var(--line)' }}>
+                <h3 className="m-0 text-[14px] font-bold text-[color:var(--text)]">{t('Vi phạm')}</h3>
+                <span className="text-[13px] tabular-nums text-dim">{t('{n} lần xử lý', { n: dongVp.filter((x) => !x.khoa.startsWith('em')).length })}</span>
+              </div>
+              {dongVp.map((x) => <DongTuyenHs key={x.khoa} tom={x} ten={x.khoa.startsWith('em') ? t('Chờ xử lý') : dich(x.tieuDe.replace(/^[^·]+ · /, ''))} />)}
+            </section>
+          )}
+          </div>
 
           <div id={`yt-ls-${studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
             <LichSuGap so={soTong} moSan={moLs} onMo={setMoLs} className="!rounded-none !border-0 !bg-transparent">

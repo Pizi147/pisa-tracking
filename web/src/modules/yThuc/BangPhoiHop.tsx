@@ -22,7 +22,7 @@ import {
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn, PhanMeetingTom } from './PhoiHopSosSection.tsx';
-import { ThanhBuoc, type ONut } from './ThangYThuc.tsx';
+import { chuTomTuyen, HanTomTuyen, TuyenTaiHs } from './DongTuyenHs.tsx';
 import { ChuoiCham, KhoiTuyen } from './KhoiTuyen.tsx';
 import type { TomTuyen, Tuyen } from './kieu.ts';
 import { KhoiGiaoViec, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
@@ -511,8 +511,10 @@ function FormBo({ id, tvv, onDong, onXong }: { id: number; tvv: number | null; o
  * Meeting CX/GĐCN (N58): "GVCN xác nhận" rồi ba phần ĐỘC LẬP Xếp lịch (BPXL) · Kết quả (CX) · Báo PH (TVV); việc chỉ của GVCN một chấm.
  * Người có việc làm tại chỗ (GVCN / QL: Xác nhận; TVV: Ghi kết quả). Dữ liệu = request sẵn có của tab (ba phần Meeting nạp theo lô ở máy chủ).
  */
-export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo, phamVi, tieuDe }: {
+export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo, phamVi, tieuDe, chuoi }: {
   turns: CoordTurn[]; cot1: 'hocVien' | 'luot'; onChanged: () => void; onGoAcademic?: () => void;
+  /** TUYEN-4 (mockup v27 T10): `chuoiTuyen` của GET Phối hợp em / lớp (0 request thêm) — đầu lượt có chuỗi chấm + "Đang ở …" + hạn, bấm mở Tuyến. */
+  chuoi?: Record<number, TomTuyen | undefined> | null;
   /** Chữ phạm vi ("mọi lượt") gắn vào dải đầu của lượt đầu tiên — không đứng riêng một hàng (PTA rà #2000). */
   phamVi?: string;
   /** GV-CU-BO-TRO [XM-2]: em người xem không mở được hồ sơ (người dạy bổ trợ chỉ xem lớp) — tên chữ thường. */
@@ -537,7 +539,7 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo,
           {dau && !themDau && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-[32px]" onClick={() => setThemDau(true)}>{t('+ Thêm việc')}</button>}
         </div>
       )}
-      {ds.map((luot, i) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} phamVi={i === 0 ? phamVi : undefined}
+      {ds.map((luot, i) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} phamVi={i === 0 ? phamVi : undefined} tom={chuoi?.[luot.attemptId] ?? null}
         themNgoai={i === 0 && dau ? { mo: themDau, dat: setThemDau } : undefined} />)}
     </div>
   );
@@ -545,14 +547,14 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo,
 
 const LINK_NHO = 'link inline-flex min-h-[44px] appearance-none items-center border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0';
 
-function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, phamVi, themNgoai }: {
+function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, phamVi, themNgoai, tom }: {
   luot: CoordTurn; cot1: 'hocVien' | 'luot'; vuaLuu: ReadonlySet<number>; vua: (id: number) => (co: boolean) => void; onChanged: () => void; onGoAcademic?: () => void;
-  khongMo?: ReadonlySet<number>; phamVi?: string;
+  khongMo?: ReadonlySet<number>; phamVi?: string; tom?: TomTuyen | null;
   /** "+ Thêm việc" đặt ở đầu khối (không ở dải lượt) — trạng thái mở form do khối giữ. */
   themNgoai?: { mo: boolean; dat: (v: boolean) => void };
 }) {
-  /* Lượt đã xong (hồ sơ HV) gập một dòng, "Xem việc ▸" mở tại chỗ. */
-  const [mo, setMo] = useState(!(cot1 === 'luot' && luot.summary.complete));
+  /* Lượt đã xong (hồ sơ HV) gập một dòng, "Xem việc ▸" mở tại chỗ. TUYEN-4 (mockup v27 T10b): hồ sơ lớp có tuyến → mỗi em một dòng gập (chuỗi chấm + Đang ở), bấm mở. */
+  const [mo, setMo] = useState(!(cot1 === 'luot' && luot.summary.complete) && !(cot1 === 'hocVien' && tom));
   const [themTrong, setThemTrong] = useState(false);
   const them = themNgoai ? themNgoai.mo : themTrong;
   const setThem = themNgoai ? themNgoai.dat : setThemTrong;
@@ -560,6 +562,32 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, p
   const TEN = 'text-sm font-bold text-[color:var(--text)] no-underline';
   return (
     <section className="border-b" style={{ borderColor: 'var(--line)' }} aria-label={cot1 === 'hocVien' ? luot.studentName : luot.nhanDot ?? `MT${luot.attemptNo}`}>
+      {/* TUYEN-4 (mockup v27 T10): có tuyến → HAI hàng — (1) SOS · tên / lượt · điểm … chuỗi chấm phải; (2) "Đang ở … / Xong …" · hạn … liên kết phải. */}
+      {tom ? (
+        <div className="grid gap-y-1 border-b px-4 py-2 max-sm:px-3" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
+        {cot1 === 'hocVien'
+          ? khongMo?.has(luot.studentId) ? <span className={TEN}>{luot.studentName}</span> : <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className={`${TEN} hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center`}>{luot.studentName}</Link>
+          : <b className={`text-sm font-bold ${xong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{luot.nhanDot ?? `MT${luot.attemptNo}`}</b>}
+            {/* < 640: điểm (Overall · Trượt) ẩn — hàng một chỉ SOS · tên · chuỗi chấm như mockup T10b; điểm vẫn ở bản rộng / hồ sơ HV. */}
+            <span className="contents max-sm:hidden"><DiemMotDong th={luot.the} anLuot={cot1 === 'luot'} /></span>
+            <span className="ml-auto"><ChuoiCham chuoi={tom.chuoi} /></span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[13px] text-dim">{chuTomTuyen(tom)}</span>
+            <HanTomTuyen tom={tom} />
+            <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {phamVi && <span className="text-[13px] text-dim">{phamVi}</span>}
+          {tom ? <button type="button" className={`${LINK_NHO} gap-1`} aria-expanded={mo} onClick={() => setMo((x) => !x)}>{mo ? t('Thu gọn') : t('Xem tuyến')}
+            <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={mo ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>
+            : !mo && <button type="button" className={LINK_NHO} aria-expanded={false} onClick={() => setMo(true)}>{t('Xem việc ▸')}</button>}
+          {!themNgoai && luot.canAct && !luot.nhanDot && !them && <button type="button" className={LINK_NHO} onClick={() => setThem(true)}>{t('+ Thêm việc')}</button>}
+          {onGoAcademic && <button type="button" className={LINK_NHO} onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
+            </span>
+          </div>
+        </div>
+      ) : (
       <div className="flex min-h-11 flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-1.5 max-sm:px-3" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
         {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         {cot1 === 'hocVien'
@@ -569,12 +597,17 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo, p
         <Nhan tone={xong ? 'ok' : 'doing'}>{t('{label} việc xong', { label: luot.summary.label })}</Nhan>
         <span className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
           {phamVi && <span className="text-[13px] text-dim">{phamVi}</span>}
-          {!mo && <button type="button" className={LINK_NHO} aria-expanded={false} onClick={() => setMo(true)}>{t('Xem việc ▸')}</button>}
+          {tom ? <button type="button" className={`${LINK_NHO} gap-1`} aria-expanded={mo} onClick={() => setMo((x) => !x)}>{mo ? t('Thu gọn') : t('Xem tuyến')}
+            <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={mo ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>
+            : !mo && <button type="button" className={LINK_NHO} aria-expanded={false} onClick={() => setMo(true)}>{t('Xem việc ▸')}</button>}
           {!themNgoai && luot.canAct && !luot.nhanDot && !them && <button type="button" className={LINK_NHO} onClick={() => setThem(true)}>{t('+ Thêm việc')}</button>}
           {onGoAcademic && <button type="button" className={LINK_NHO} onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
         </span>
       </div>
-      {mo && luot.actions.map((a) => (
+      )}
+      {mo && tom && <div className="border-b px-4 py-2.5 max-sm:px-3" style={{ borderColor: 'var(--line)' }}><TuyenTaiHs loai="phoi_hop" khoa={String(luot.attemptId)} /></div>}
+      {/* TUYEN-4: có Tuyến (tiến độ, ai, ngày, nội dung theo quyền ở khối trên) → chỉ còn dòng việc NGƯỜI XEM thao tác được (Xác nhận · Sửa · Ghi kết quả · Bỏ…); không lặp bước chỉ để xem. */}
+      {mo && luot.actions.filter((a) => !tom || (a.lamDuoc ?? luot.canAct) || (a.status === 'done' && !!a.tvv?.coTheGhi)).map((a) => (
         <DongViecHoSo key={a.id} luot={luot} a={a} vua={vuaLuu.has(a.id)} onVua={vua(a.id)} onChanged={onChanged} />
       ))}
       {them && <div className="px-4 py-2 max-sm:px-3"><AddCoordinationForm attemptId={luot.attemptId} existing={luot.actions.map((a) => a.kind)} onClose={() => setThem(false)} onChanged={onChanged} /></div>}
@@ -587,70 +620,22 @@ const ngayGio = (s: string) => `${ngayHien(s.slice(0, 10))}${s.length > 10 ? ` $
 const DAM = 'font-semibold text-[color:var(--text)]';
 const daBo = (a: CoordAction) => <>{t('Đã bỏ')}{a.removeReasonLabel ? ` · ${a.removeReasonLabel}` : ''}</>;
 
-/** Thanh chấm + dòng phụ của một việc (N58). Thuần theo dữ liệu đã nạp — không câu thêm. */
-function tienDoViec(a: CoordAction): { o: ONut[]; aria: string; doc: boolean; phu: ReactNode[]; phuNgan?: string } {
-  const xn = a.status === 'done';
-  const ngayXn = a.performedOn ? ngayHien(a.performedOn) : null;
-  const gvcn: ONut = {
-    key: 'gvcn', ten: t('GVCN xác nhận'), tenNgan: t('GVCN'), duoi: xn ? ngayXn : a.status === 'removed' ? t('Đã bỏ') : null,
-    title: xn ? `${t('GVCN xác nhận')} · ${ngayXn ?? ''}${a.performerName ? ` · ${a.performerName}` : ''}` : t('GVCN xác nhận'),
-    tt: xn ? 'qua' : a.status === 'removed' ? 'sau' : 'ke',
-  };
-  if (!laMeetingCx(a.kind)) {
-    const phu: ReactNode[] = xn ? [<>{t('GVCN')} {a.performerName && <b className={DAM}>{a.performerName}</b>} · <b className={DAM}>{ngayXn}</b></>]
-      : a.status === 'removed' ? [daBo(a)] : [t('GVCN · chưa xác nhận')];
-    return { o: [{ ...gvcn, tenNgan: undefined }], aria: gvcn.title ?? '', doc: false, phu };   // một chấm: ô đủ rộng cho tên đủ
-  }
-  const m = a.meeting;
-  const v = a.tvv;
-  const phan = (key: string, ten: string, p: PhanMeetingTom | null | undefined, vaiMd: string): ONut => {
-    const xong = p?.trangThai === 'xong';
-    const vai = p?.vai ?? vaiMd;
-    return {
-      key, ten, duoi: vai, tt: !xn ? 'sau' : xong ? 'qua' : p?.trangThai === 'bo' ? 'sau' : 'cho',
-      title: `${ten} · ${vai}${p?.nguoi ? ` ${p.nguoi}` : ''}${xong && p?.xongLuc ? ` · ${ngayHien(p.xongLuc.slice(0, 10))}` : ''}`,
-    };
-  };
-  const baoPh: ONut = {
-    key: 'bao-ph', ten: t('Báo PH'), duoi: v && !v.tvv ? t('GVCN') : t('TVV'),
-    tt: !xn ? 'sau' : v?.trangThai === 'xong' ? 'qua' : v?.trangThai === 'bo' ? 'sau' : 'cho',
-    title: `${t('Báo PH')} · ${v?.tvv ? `${t('TVV')} ${v.tvv}` : v ? t('GVCN') : t('TVV')}`,
-  };
-  const o = [gvcn, phan('xep', t('Xếp lịch'), m?.xepLich, t('BPXL')), phan('kq', t('Kết quả'), m?.ketQua, 'CX'), baoPh];
-  const phu: ReactNode[] = [];
-  if (!xn) phu.push(a.status === 'removed' ? daBo(a) : t('GVCN · chưa xác nhận'));
-  else {
-    const x = m?.xepLich;
-    phu.push(<>{t('GVCN xác nhận')} <b className={DAM}>{ngayXn}</b>{x?.trangThai === 'xong' && <> · {x.vai} {x.nguoi && <b className={DAM}>{x.nguoi}</b>} {t('đã xếp lịch')}{x.ngayGio && <> <b className={DAM}>{ngayGio(x.ngayGio)}</b></>}</>}</>);
-    const cho: ReactNode[] = [];
-    for (const p of [m?.xepLich, m?.ketQua]) if (p && p.trangThai === 'mo') cho.push(<>{p.vai} {p.nguoi && <b className={DAM}>{p.nguoi}</b>}</>);
-    if (v?.trangThai === 'mo') cho.push(v.tvv ? <>{t('TVV')} <b className={DAM}>{v.tvv}</b></> : t('GVCN'));
-    if (cho.length) phu.push(<>{t('Chờ:')} {cho.map((c, i) => <span key={i}>{i > 0 && ' · '}{c}</span>)}</>);
-  }
-  const ten = (tt: ONut['tt']) => o.filter((x) => x.tt === tt).map((x) => x.ten).join(', ') || '—';
-  /* 375 (Y3): một dòng gọn "BPXL đã xếp lịch · chờ CX, TVV" — tên người / giờ họp ở bản rộng và trong `title` từng chấm. */
-  const vaiCho = o.filter((x) => x.tt === 'cho').map((x) => String(x.duoi));
-  const phuNgan = xn ? [m?.xepLich?.trangThai === 'xong' ? `${m.xepLich.vai} ${t('đã xếp lịch')}` : null, vaiCho.length ? t('chờ {ds}', { ds: vaiCho.join(', ') }) : null].filter(Boolean).join(' · ') || undefined : undefined;
-  return { o, doc: true, phu, phuNgan, aria: t('Tiến độ: đã xong {a}; chờ {b}', { a: ten('qua'), b: ten('cho') }) };
-}
-
 /** MỘT việc ở hồ sơ (v23 `.ph-dong`; khối < 760 px — 375 — xếp tên + hạn / thanh chấm / nút thành ba hàng, Y3): tên + dòng phụ + kết quả · thanh chấm · hạn · nút (Xác nhận / Sửa) + ⋯. Form mở tại dòng, cả hàng. */
 function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: CoordAction; vua: boolean; onVua: (co: boolean) => void; onChanged: () => void }) {
   const lam = a.lamDuoc ?? luot.canAct;   // GV-2: cờ theo từng việc (người được giao)
   const { mo, setMo, du, setDu, doi, moLai, daLuu, luuHan } = useViec(a, onVua, onChanged);
   /* Meeting đã xác nhận: hạn của phần Báo PH còn mở (phần TVV) ở cột hạn, như khung Y1. */
   const han = a.status === 'pending' ? a.han ?? null : a.tvv?.trangThai === 'mo' ? a.tvv.han : null;
-  const td = tienDoViec(a);
   const boDi = a.status === 'removed';
   const ghiTvv = a.status === 'done' && !!a.tvv?.coTheGhi && (a.tvv.trangThai === 'mo' || a.tvv.trangThai === 'xong');
   const nen = vua ? 'bg-[rgb(var(--ok-bg-rgb)/0.7)]' : mo === 'xac-nhan' || mo === 'ghi' ? 'bg-[color:var(--accent-soft)]' : '';
   return (
-    <div className={`grid min-h-16 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_112px_auto] items-center gap-x-4 gap-y-2 border-t px-4 py-2.5 first:border-t-0 [@container(max-width:760px)]:grid-cols-[minmax(0,1fr)_auto] [@container(max-width:760px)]:px-3 ${nen}`}
+    /* TUYEN-4: tiến độ ở khối Tuyến của lượt (đầu khối) — dòng việc còn tên · kết quả · hạn · nút (bỏ thanh chấm `ThanhBuoc` + dòng phụ `tienDoViec`). */
+    <div className={`grid min-h-14 grid-cols-[minmax(0,1fr)_112px_auto] items-center gap-x-4 gap-y-2 border-t px-4 py-2.5 first:border-t-0 [@container(max-width:760px)]:grid-cols-[minmax(0,1fr)_auto] [@container(max-width:760px)]:px-3 ${nen}`}
       style={{ borderColor: 'var(--line)' }}>
       <span className={`min-w-0 ${boDi ? 'text-dim' : ''}`}>
         <span className={`block text-sm font-semibold ${boDi ? 'line-through' : 'text-[color:var(--text)]'}`}>{a.name}</span>
-        {td.phu.map((p, i) => <span key={i} className={`block text-[13px] leading-snug text-dim ${td.phuNgan ? '[@container(max-width:760px)]:hidden' : ''}`}>{p}</span>)}
-        {td.phuNgan && <span className="hidden text-[13px] leading-snug text-dim [@container(max-width:760px)]:block">{td.phuNgan}</span>}
+        {boDi && <span className="block text-[13px] leading-snug text-dim">{daBo(a)}</span>}
         {a.noiDung && a.noiDung.length > 0 && (
           <details className="mt-1">
             <summary className="cursor-pointer text-[13px] text-dim">{a.status === 'done' ? t('Nội dung đã báo TVV') : t('Nội dung gửi TVV')} ({a.noiDung.length})</summary>
@@ -659,11 +644,10 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
         )}
         {a.status === 'done' && mo !== 'ghi' && <span className="mt-1 block empty:hidden"><OKetQua a={a} tvv={false} du={du} onDu={() => setDu((x) => !x)} onGhi={() => setMo('ghi')} anHan /></span>}
       </span>
-      <ThanhBuoc o={td.o} aria={td.aria} doc={td.doc} className={`${td.o.length === 1 ? 'max-w-[100px]' : ''} [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-2`} />
       <span className={`[@container(max-width:760px)]:col-start-2 [@container(max-width:760px)]:row-start-1 [@container(max-width:760px)]:self-start [@container(max-width:760px)]:text-right`}>
         {han ? <HanEm han={han} soNgay={false} onSua={a.status === 'pending' && a.hanMacDinh && lam ? () => setMo('han') : undefined} /> : a.status === 'pending' && <span className="text-[13px] text-faint">{t('không hạn')}</span>}
       </span>
-      <span className={`flex flex-nowrap items-center justify-end gap-1.5 [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-3 [@container(max-width:760px)]:[&>.btn-primary]:flex-1 [@container(max-width:760px)]:[&>.btn-primary]:justify-center`}>
+      <span className={`flex flex-nowrap items-center justify-end gap-1.5 [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-2 [@container(max-width:760px)]:[&>.btn-primary]:flex-1 [@container(max-width:760px)]:[&>.btn-primary]:justify-center`}>
         {/* PTA rà #2000: nút TVV của Meeting đứng ở cột nút (nút chính trước), thẳng hàng "Xác nhận" các dòng trên. */}
         {ghiTvv && mo !== 'ghi' && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-[32px] ${a.tvv!.trangThai === 'mo' ? 'btn-primary min-w-[96px]' : ''}`} onClick={() => setMo('ghi')}>{a.tvv!.trangThai === 'mo' ? t('Ghi kết quả') : t('Sửa kết quả')}</button>}
         {a.status === 'pending' && lam && mo !== 'xac-nhan' && <button type="button" className="btn btn-primary btn-sm min-h-[44px] min-w-[96px] sm:min-h-[32px]" onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>}
