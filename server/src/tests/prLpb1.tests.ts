@@ -98,6 +98,7 @@ export async function runPrLpb1Tests(t: any) {
     const [G, H] = gvRanh(lop, 2);
     assert(TVV && G && H, 'seed: cần TVV + 2 GV ở MB');
     const { cy } = emFt(lop);
+    const { cy: cyKhac } = emFt(lop);
     const pT = loadPrincipal(TVV), pG = loadPrincipal(G);
     assert(coViec(pT, `chot-ngay-thi:${cy}`)?.mine, 'tiền đề: TVV giữ việc Chốt ngày thi');
     const [ckT, ckG, ckH] = [await vao(TVV), await vao(G), await vao(H)];
@@ -123,6 +124,9 @@ export async function runPrLpb1Tests(t: any) {
     const ok = await goi(ckH, 'PUT', `/hoc-vien-lop/lich-thi/${cy}`, { ketLuan: 'chot-ngay', ngay });
     assert(ok.status === 200, `người được giao chốt ngày thi: ${ok.status} ${ok.json?.error}`);
     assert(get('SELECT exam_date FROM learning_cycles WHERE id = ?', cy).exam_date === ngay, 'chưa lưu ngày thi');
+    /* Rà PTA #2280: được giao lộ trình A không ghi được lộ trình B; việc xong là mất quyền NGAY (không chờ quét ngày). */
+    assert((await goi(ckH, 'PUT', `/hoc-vien-lop/lich-thi/${cyKhac}`, { ketLuan: 'chot-ngay', ngay })).status === 403, 'người được giao lộ trình A chốt được lộ trình B');
+    assert((await goi(ckH, 'PUT', `/hoc-vien-lop/lich-thi/${cy}`, { ketLuan: 'chot-ngay', ngay: addDays(TODAY, 12) })).status === 403, 'việc đã xong mà người được giao còn sửa được');
     /* Chỉ đúng việc đó: H không sửa được Target / ghi chú lộ trình. */
     assert((await goi(ckH, 'PATCH', `/cycles/${cy}`, { note: 'x' })).status === 403, 'người được giao sửa được ghi chú lộ trình');
     /* Việc hết → quét ngày đóng dòng khung; người theo dõi thấy "vừa xong". */
@@ -148,6 +152,21 @@ export async function runPrLpb1Tests(t: any) {
     const ok = await goi(ckG, 'PATCH', `/students/${sid}`, { dob: '2011-02-03' });
     assert(ok.status === 200 && get('SELECT dob FROM students WHERE id = ?', sid).dob === '2011-02-03', `bổ sung ngày sinh: ${ok.status} ${ok.json?.error}`);
     assert((await goi(ckG, 'PATCH', `/students/${sid}`, { dob: '2011-02-04' })).status === 403, 'đã đủ mà vẫn sửa được ngày sinh');
+    /* Rà PTA #2280: em khác (cùng lớp, cũng thiếu) → 403; em lớp thường thiếu Target: không mở Target (Target chỉ thiếu ở FT — cùng hàm thieuHoSoEm). */
+    const { sid: sidKhac } = emFt(lop, { dob: null });
+    assert((await goi(ckG, 'PATCH', `/students/${sidKhac}`, { dob: '2011-02-03' })).status === 403, 'được giao em A sửa được em B');
+    const thuong = lopMoi('FOU', false);
+    const { sid: sidT, cy: cyT } = emFt(thuong, { dob: null });
+    conn.prepare('UPDATE learning_cycles SET target_score = NULL, route = NULL WHERE id = ?').run(cyT);
+    xoaNho();
+    assert((await goi(ckT, 'POST', `/giao-viec/bo_sung_ho_so/${sidT}/phu-trach`, { userId: G, phuTrachCu: null })).status === 200, 'giao em lớp thường');
+    assert((await goi(ckG, 'PATCH', `/cycles/${cyT}`, { targetScore: 6, lyDo: 'bổ sung' })).status === 403, 'em lớp thường: người được giao đặt được Target');
+    const bpxl = nguoiVai('scheduler', 5).find((u) => !all(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active' AND r.key != 'scheduler'`, u).length);
+    if (bpxl) {
+      const r = await goi(ckT, 'POST', `/giao-viec/bo_sung_ho_so/${sidKhac}/phu-trach`, { userId: bpxl, phuTrachCu: null });
+      assert(r.status === 400 && /BPXL/.test(r.json?.error ?? ''), `giao việc TVV cho BPXL: ${r.status} ${r.json?.error}`);
+      assert(!tn.timNguoi(P.admin, { moiVai: true, chiNhanh: MB, quyen: 'khong_bpxl' }).some((x: any) => x.id === bpxl), 'ô chọn người còn BPXL');
+    } else console.log('    (bỏ qua phần BPXL: seed không có tài khoản chỉ vai BPXL ở MB)');
   }));
 
   await checkAsync('LPB1-4 · HTTP Bàn giao chuyển lớp: GVCN lớp nguồn giao việc (lớp) cho GV khác → GV đó xác nhận được (200), người ngoài 403; Bàn giao môn (lớp × môn) → id khung, người được giao ghi đúng môn đó, môn khác 403', () => thuHttp(async ({ vao, goi }) => {
@@ -174,9 +193,11 @@ export async function runPrLpb1Tests(t: any) {
     assert(!coViec(pC, `ban_giao:${nguon}`) && coViec(pG, `ban_giao:${nguon}`)?.mine, 'việc chưa rời GVCN / chưa vào người được giao');
     assert((await goi(ckH, 'POST', `/lenh-chuyen/${lenhId}/xac-nhan`, { nhanXetChung: 'Em học chăm, cần luyện thêm nghe.' })).status === 403, 'người ngoài (GVCN lớp đích) xác nhận được');
     /* Bàn giao môn (Listening): id khung qua `mo`, giao cho H; H ghi đúng môn đó, môn khác 403. */
+    assert((await goi(ckH, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'listening' })).status === 403, 'người ngoài lớp nguồn mở được id khung môn');
+    assert((await goi(ckL, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'khong_co' })).status === 400, 'cặp (lớp, môn) không có việc vẫn mở được');
     const mo = await goi(ckL, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'listening' });
     assert(mo.status === 200 && mo.json?.id, `mở id khung môn: ${mo.status} ${mo.json?.error}`);
-    assert((await goi(ckH, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: 999999, mon: 'listening' })).status !== 200, 'người ngoài mở id khung lớp lạ');
+    assert((await goi(ckL, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'listening' })).json?.id === mo.json.id, 'mở lại không cùng id');
     assert((await goi(ckL, 'POST', `/giao-viec/ban_giao_mon/${mo.json.id}/phu-trach`, { userId: H, phuTrachCu: null })).status === 200, 'GVBM giao môn');
     assert((await goi(ckH, 'PUT', `/lenh-chuyen/${lenhId}/ban-giao-mon`, { mon: 'reading', noiDung: 'Đọc ổn.' })).status === 403, 'người được giao môn L ghi được môn R');
     const m = await goi(ckH, 'PUT', `/lenh-chuyen/${lenhId}/ban-giao-mon`, { mon: 'listening', noiDung: 'Nghe cần luyện thêm.' });
@@ -214,8 +235,9 @@ export async function runPrLpb1Tests(t: any) {
     const lop = lopMoi('FT', true);
     const [G, H] = gvRanh(lop, 2);
     const { cy } = emFt(lop);
+    const { cy: cyB } = emFt(lop);
     const thi = addDays(TODAY, -3);
-    conn.prepare('UPDATE learning_cycles SET exam_date = ?, exam_month = ?, exam_period_id = ? WHERE id = ?').run(thi, thi.slice(0, 7), week.ensurePeriod(d.mondayOfDate(thi)).id, cy);
+    for (const c of [cy, cyB]) conn.prepare('UPDATE learning_cycles SET exam_date = ?, exam_month = ?, exam_period_id = ? WHERE id = ?').run(thi, thi.slice(0, 7), week.ensurePeriod(d.mondayOfDate(thi)).id, c);
     xoaNho();
     const pT = loadPrincipal(TVV), pG = loadPrincipal(G);
     assert(coViec(pT, `thi_that:${cy}`)?.mine, `tiền đề: TVV giữ "Cập nhật KQ thi thật": ${JSON.stringify(viec(pT).filter((i) => i.cycleId === cy).map((i) => i.key))}`);
@@ -224,6 +246,7 @@ export async function runPrLpb1Tests(t: any) {
     assert((await goi(ckT, 'POST', `/giao-viec/thi_that/${cy}/phu-trach`, { userId: G, phuTrachCu: null })).status === 200, 'TVV giao KQ thi thật');
     assert(!coViec(pT, `thi_that:${cy}`) && coViec(pG, `thi_that:${cy}`)?.mine, 'việc chưa rời TVV / chưa vào GV');
     assert((await goi(ckH, 'PUT', `/cycles/${cy}/outcome`, { khongThi: true })).status === 403, 'người ngoài nhập được KQ thi thật');
+    assert((await goi(ckG, 'PUT', `/cycles/${cyB}/outcome`, { khongThi: true })).status === 403, 'được giao lộ trình A nhập được KQ lộ trình B');
     const kq = await goi(ckG, 'PUT', `/cycles/${cy}/outcome`, { khongThi: true });
     assert(kq.status === 200, `người được giao nhập KQ thi thật: ${kq.status} ${kq.json?.error}`);
     xoaNho();
@@ -235,6 +258,7 @@ export async function runPrLpb1Tests(t: any) {
     assert(mo.status === 200 && mo.json?.coTheChon === true, `người được giao mở panel: ${mo.status} ${JSON.stringify(mo.json).slice(0, 200)}`);
     assert((await goi(ckH, 'GET', `/cycles/${cy}/buoc-tiep`)).status === 403, 'người ngoài mở được panel Bước tiếp');
     assert((await goi(ckH, 'POST', `/cycles/${cy}/buoc-tiep`, { chon: 'ket_thuc' })).status === 403, 'người ngoài chọn được Bước tiếp');
+    assert((await goi(ckG, 'GET', `/cycles/${cyB}/buoc-tiep`)).status === 403, 'được giao lộ trình A mở được Bước tiếp lộ trình B');
   }));
 
   await checkAsync('LPB1-11 · HTTP Bàn giao đổi GV: giao cho GV khác → người viết mới ghi nhận xét được (200), GV cũ (người viết theo luật, đã giao đi) 403, người ngoài 403', () => thuHttp(async ({ vao, goi }) => {
@@ -268,7 +292,9 @@ export async function runPrLpb1Tests(t: any) {
       if (cx) assert(!gv.khungNhanDuoc(l, lop, cx), `${l}: CX nhận được (N63 ①)`);
     }
     assert(gv.khungNhanDuoc('xep_lich_mt', lop, P.mbManager.userId) && !gv.khungNhanDuoc('xep_lich_mt', lop, g), 'Xếp lịch MT: Head không / GV có');
-    assert(gv.khungNhanDuoc('chot_ngay_thi', lop, g), 'việc TVV: ai có tài khoản ở chi nhánh cũng nhận được (N58)');
+    assert(gv.khungNhanDuoc('chot_ngay_thi', lop, g, MB), 'việc TVV: ai có tài khoản ở chi nhánh cũng nhận được (N58)');
+    /* Chi nhánh ngoài phạm vi người gọi → [] (cả khi lọc theo quyền). */
+    for (const quyen of ['chot', 'xep_lich', 'khong_bpxl'] as const) assert(!tn.timNguoi(P.cpManager, { moiVai: true, chiNhanh: MB, quyen }).length, `${quyen}: Head CP thấy người MB`);
     /* Ô chọn người (`/ref/nguoi?nhom=giao_viec&quyen=…`) chỉ liệt kê người hợp lệ — cùng luật máy chủ kiểm khi lưu. */
     for (const [quyen, loai] of [['chot', 'chot_lo_trinh'], ['xep_lich', 'xep_lich_mt']] as const) {
       const ds = tn.timNguoi(P.admin, { moiVai: true, chiNhanh: MB, quyen });
@@ -309,6 +335,27 @@ export async function runPrLpb1Tests(t: any) {
     gv.donGiaoHetHieuLuc({ userId: G }, null);
     xoaNho();
     assert(coViec(pT, `chot-ngay-thi:${cy}`)?.mine, 'người được giao hết vai mà việc không về TVV');
+  }));
+
+  check('LPB1-12 · Tốc độ (rà PTA #2280): Đang theo dõi + quét ngày đọc việc khung theo LOẠI — 20 dòng theo dõi (Chốt ngày thi · Bổ sung hồ sơ) không thêm câu theo dòng', () => thu(() => {
+    const lop = lopMoi('FT', true);
+    const [X] = gvRanh(lop, 1);
+    const pT = loadPrincipal(TVV), pX = loadPrincipal(X);
+    const em = Array.from({ length: 10 }, () => emFt(lop, { dob: null }));
+    const dem = () => chayTrongRequest('GET', () => { const a = soCauSql(); gv.viecTheoDoi(pX); return soCauSql() - a; });
+    gv.themTheoDoi(pT, 'chot_ngay_thi', em[0].cy, { userIds: [X] });
+    xoaNho();
+    const mot = dem();
+    for (const e of em) { gv.themTheoDoi(pT, 'chot_ngay_thi', e.cy, { userIds: [X] }); gv.themTheoDoi(pT, 'bo_sung_ho_so', e.sid, { userIds: [X] }); }
+    xoaNho();
+    const hai = dem();
+    const td = gv.viecTheoDoi(pX);
+    assert(td.nhom.find((n: any) => n.loai === 'chot_ngay_thi')?.mo.length === 10 && td.nhom.find((n: any) => n.loai === 'bo_sung_ho_so')?.mo.length === 10, JSON.stringify(td).slice(0, 300));
+    assert(hai - mot <= 4, `Đang theo dõi: 1 dòng ${mot} câu → 20 dòng ${hai} câu (thêm câu theo dòng)`);
+    assert(hai <= 30, `Đang theo dõi 20 dòng khung ${hai} câu > 30`);
+    const q = chayTrongRequest('GET', () => { const a = soCauSql(); gv.dongKhungHetViec(); return soCauSql() - a; });
+    assert(q <= 30, `quét ngày 20 dòng khung ${q} câu > 30`);   // theo loại: câu đọc bảng phụ + mỗi loại vài câu (không theo dòng)
+    console.log(`      (đo: Đang theo dõi 1 dòng ${mot} câu · 20 dòng ${hai} câu · quét ngày ${q} câu)`);
   }));
 
   check('LPB1-9 · Tốc độ: /my-work của GV không có việc giao → +1 câu (đọc khung việc đã giao, một lần mỗi request)', () => {

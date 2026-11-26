@@ -1762,12 +1762,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
   /* LPB-1 (N73 ⑤): "Xếp lịch MT" giao cho tôi (người xếp lịch được — BPXL / Head) — vào nhánh này dù tôi không xem người khác. */
-  const mocToi = co('missing_data') && giaoChoNguoi(p.userId, 'xep_lich_mt').length > 0;
-  if ((xemNguoiKhac || mocToi) && co('missing_data')) {
-    const truoc = docNho(SQL_MOC);
+  const mocToi = co('missing_data') && !xemNguoiKhac ? giaoChoNguoi(p.userId, 'xep_lich_mt').map((g) => g.id) : [];
+  /* Rà PTA #2280 (tốc độ): người chỉ có việc được giao (BPXL) — đọc đúng các mốc được giao, không điền mốc cả phạm vi. */
+  const docMoc = () => (xemNguoiKhac ? docNho(SQL_MOC) : conn.prepare(`${SQL_MOC} AND iv.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(mocToi)) as any[]);
+  if ((xemNguoiKhac || mocToi.length) && co('missing_data')) {
+    const truoc = docMoc();
     if (truoc.length) {
-      dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      const sau = docNho(SQL_MOC);
+      if (xemNguoiKhac) dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
+      const sau = xemNguoiKhac ? docNho(SQL_MOC) : truoc;
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;

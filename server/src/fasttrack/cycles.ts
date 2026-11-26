@@ -19,6 +19,7 @@ import { apDoiLoTrinh } from './doiLoTrinh.ts';
 import { duocDoiLoTrinh, duocDoiMon } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { duocGiao } from '../worklist/khungViec.ts';
+import { SQL_HO_SO_TVV, thieuHoSoEm } from '../worklist/viecTvv.ts';
 
 /**
  * Lộ trình học của một học viên.
@@ -233,9 +234,15 @@ export function docDiemXuatPhat(v: unknown): number {
 export function truongGiaoLoTrinh(p: Principal, c: { id: number; student_id: number; status?: string; start_period_id?: number | null; target_score?: number | null }): string[] {
   return [
     ...(duocGiao(p, 'chot_ngay_thi', c.id) ? ['examDate', 'examMonth', 'examPeriodId'] : []),
-    ...(c.status === 'active' && duocGiao(p, 'bo_sung_ho_so', c.student_id)
-      ? [...(c.start_period_id ? [] : ['startWeek', 'startPeriodId']), ...(c.target_score == null ? ['targetScore', 'lyDo'] : [])] : []),
+    ...(c.status === 'active' && duocGiao(p, 'bo_sung_ho_so', c.student_id) ? truongThieuLoTrinh(c.student_id, c.id) : []),
   ];
+}
+/** Rà PTA #2280 (bảo mật 4): trường lộ trình còn thiếu theo CÙNG hàm việc "Bổ sung hồ sơ thiếu" (`thieuHoSoEm` — Target chỉ lớp FT). */
+function truongThieuLoTrinh(sid: number, cycleId: number): string[] {
+  const r = db().prepare(`${SQL_HO_SO_TVV} WHERE s.id = ?`).get(sid) as any;
+  if (!r || r.cycle_id !== cycleId) return [];
+  const k = new Set(thieuHoSoEm(r).map((m: any) => m.key));
+  return [...(k.has('start_week') ? ['startWeek', 'startPeriodId'] : []), ...(k.has('target') ? ['targetScore', 'lyDo'] : [])];
 }
 
 export function updateCycle(p: Principal, cycleId: number, patch: any) {

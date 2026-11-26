@@ -543,7 +543,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
     chiNhanh: qInt(req, 'chiNhanh'),
     moiVai: nhom === 'giao_viec',   // GV-2 (N58): ô giao việc liên phòng ban — mọi vai ở chi nhánh của việc
-    quyen: qStr(req, 'quyen') === 'chot' || qStr(req, 'quyen') === 'xep_lich' ? qStr(req, 'quyen') as 'chot' | 'xep_lich' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT
+    quyen: ['chot', 'xep_lich', 'khong_bpxl'].includes(qStr(req, 'quyen') ?? '') ? qStr(req, 'quyen') as 'chot' | 'xep_lich' | 'khong_bpxl' : null,   // LPB-1: Chốt / Xét lại · Xếp lịch MT · việc TVV / Bàn giao
   });
 }));
 

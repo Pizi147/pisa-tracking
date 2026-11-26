@@ -34,8 +34,8 @@ import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
 import { CON_VAI_BPXL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
 import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
-import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, laKhung, type LoaiKhung } from './khungViec.ts';
-import { docViecKhung } from './khungDoc.ts';
+import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, laKhung, type LoaiKhung } from './khungViec.ts';
+import { docViecKhung, docViecKhungLo, type ViecKhung } from './khungDoc.ts';
 import { coTheChotLoTrinh } from '../classes/quyenChuyenLop.ts';
 import { quyenBanGiao, viecBanGiao } from '../classes/banGiao.ts';
 
@@ -132,12 +132,7 @@ const ngayMeeting = (ngayXacNhan: string | null | undefined, taoLuc: string | nu
 export function docViec(loai: LoaiGiao, id: number): Viec {
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Việc không hợp lệ.');
   if (loai === 'nhan_tin') return docViecNhanTin(id);
-  if (laKhung(loai)) {
-    /* LPB-1 (N73 ⑤): việc khung — người mặc định / còn việc / hạn luật theo CÙNG hàm với Công việc (`khungDoc.ts`). */
-    const k = docViecKhung(loai, id);
-    const pt: number | null = k.row.phu_trach_id && hoatDongO(k.row.phu_trach_id, k.branchId) ? k.row.phu_trach_id : null;
-    return { loai, id, ...k, pt, phuTrach: pt ? [pt] : k.macDinh };
-  }
+  if (laKhung(loai)) return ganKhung(loai, id, docViecKhung(loai, id));
   const homNay = demoToday();
   let r: any;
   if (loai === 'meeting') {
@@ -198,6 +193,19 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
   /* (2) người được giao hết hiệu lực (xoá / hết vai ở chi nhánh) → như NULL: việc về người theo luật, người đó không còn quyền theo việc. */
   const pt: number | null = r.phu_trach_id && hoatDongO(r.phu_trach_id, branchId) ? r.phu_trach_id : null;
   return { loai, id, row: r, studentId: r.student_id, tenEm: ten(r), tvv, gvcn, branchId, mo, tieuDe, pt, macDinh, phuTrach: pt ? [pt] : macDinh };
+}
+
+/**
+ * LPB-1 (N73 ⑤): việc khung — người mặc định / còn việc / hạn luật theo CÙNG hàm với Công việc (`khungDoc.ts`). Người được giao còn hiệu lực đọc từ `giaoKhung`
+ * (một câu mỗi request, chung với Công việc) — không câu theo dòng.
+ */
+const ganKhung = (loai: LoaiKhung, id: number, k: ViecKhung): Viec => {
+  const pt: number | null = k.row.phu_trach_id && giaoCua(loai, id)?.pt === k.row.phu_trach_id ? k.row.phu_trach_id : null;
+  return { loai, id, ...k, pt, phuTrach: pt ? [pt] : k.macDinh };
+};
+/** Rà PTA #2280 (tốc độ): nhiều việc khung cùng loại một lượt (Đang theo dõi, quét ngày) — câu theo loại, không theo dòng. */
+export function docViecLo(loai: LoaiKhung, ids: readonly number[]): Map<number, Viec> {
+  return new Map([...docViecKhungLo(loai, ids)].map(([id, k]) => [id, ganKhung(loai, id, k)]));
 }
 
 /**
@@ -329,14 +337,16 @@ function kiemNguoiNhan(uid: unknown, branchId: number | null): number {
  * LPB-1 (N73 ④ ⑤, N63 ①): Chốt / Xét lại lộ trình chỉ giao cho người CÓ QUYỀN CHỐT lớp đó (`coTheChotLoTrinh` — không CX); "Xếp lịch MT" chỉ cho người
  * xếp lịch được ở lớp em (`plan.week` — Head / Quản trị / BPXL). Người khác: 400.
  */
-export function khungNhanDuoc(loai: LoaiKhung, lopId: number | null, uid: number): boolean {
+export function khungNhanDuoc(loai: LoaiKhung, lopId: number | null, uid: number, cn: number | null = null): boolean {
+  if (KHUNG_KHONG_BPXL.has(loai)) return loadPrincipal(uid).grants.some((g) => g.roleKey !== VAI_BPXL && (g.branchId === null || g.branchId === cn));   // rà #2280 [XM]
   if (!KHUNG_CO_QUYEN.has(loai)) return true;
   if (!lopId) return false;
   const q = loadPrincipal(uid);
   return loai === 'xep_lich_mt' ? can(q, PERMISSIONS.PLAN_WEEK, { classId: lopId }) : coTheChotLoTrinh(q, lopId);
 }
 function kiemNguoiNhanKhung(loai: LoaiKhung, v: Viec, uid: number): void {
-  if (khungNhanDuoc(loai, v.row.class_id ?? null, uid)) return;
+  if (khungNhanDuoc(loai, v.row.class_id ?? null, uid, v.branchId)) return;
+  if (KHUNG_KHONG_BPXL.has(loai)) throw badRequest('Việc này không giao cho BPXL (BPXL không xem hồ sơ học thuật / bàn giao của em) — chọn người khác.');
   throw badRequest(loai === 'xep_lich_mt' ? 'Người này không xếp lịch MT được ở lớp của em — chọn Head, Quản trị hoặc BPXL.'
     : 'Chốt / Xét lại lộ trình chỉ giao cho người có quyền chốt lộ trình lớp này (Head, Quản trị) — chọn người khác.');
 }
@@ -1441,9 +1451,13 @@ export function dongKhungHetViec(): number {
   const ds = db().prepare(LOAI_KHUNG.filter((l) => l !== 'ban_giao_gv').map((l) => `SELECT '${l}' AS loai, id AS id FROM ${BANG_KHUNG[l]} WHERE trang_thai = 'mo'`).join(' UNION ALL '))
     .all() as { loai: LoaiKhung; id: number }[];
   let n = 0;
+  const lo = new Map<string, Viec>();
+  for (const l of LOAI_KHUNG) {
+    const ids = ds.filter((r) => r.loai === l).map((r) => r.id);
+    if (ids.length) for (const [id, v] of docViecLo(l, ids)) lo.set(`${l}:${id}`, v);
+  }
   for (const r of ds) {
-    let v: Viec | null = null;
-    try { v = docViec(r.loai, r.id); } catch { /* đơn vị việc đã xoá */ }
+    const v = lo.get(`${r.loai}:${r.id}`) ?? null;   // không có = đơn vị việc đã xoá
     if (v?.mo) continue;
     tx(() => {
       if (!db().prepare(`UPDATE ${BANG_KHUNG[r.loai]} SET trang_thai = 'xong', xong_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id).changes) return;
@@ -1547,6 +1561,12 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
   ).all(p.userId, today, tu) as any[];
   const giu = giuViecQl(p);
   const coVai = (key: string, b: number | null) => p.grants.some((g) => laVaiThat(g, key) && (g.branchId === null || g.branchId === b));
+  /* Rà PTA #2280 (tốc độ): việc khung đọc theo LOẠI một lượt (`docViecLo`). */
+  const khung = new Map<string, Viec>();
+  for (const l of LOAI_KHUNG) {
+    const ids = rows.filter((r) => r.loai === l).map((r) => r.ref_id as number);
+    if (ids.length) for (const [id, v] of docViecLo(l, ids)) khung.set(`${l}:${id}`, v);
+  }
   const theoLoai = new Map<LoaiTheoDoi, { mo: DongTheoDoi[]; vuaXong: DongTheoDoi[] }>();
   const theoVai: [DongTheoDoi, number[]][] = [];
   for (const r of rows) {
@@ -1554,8 +1574,8 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
     const loai = r.loai as LoaiTheoDoi;
     if (laKhung(loai)) {
       /* LPB-1 (N73 ⑤): việc khung — CÙNG `docViec` với panel (người mặc định, còn việc, hạn). Vài câu mỗi dòng (người theo dõi việc khung thường ít). */
-      let v: Viec;
-      try { v = docViec(loai, r.ref_id); } catch { continue; }
+      const v = khung.get(`${loai}:${r.ref_id}`);
+      if (!v) continue;
       if (!p.grants.some((g) => g.branchId === null || g.branchId === v.branchId)) continue;   // (F) người đã rời chi nhánh của việc không thấy
       if (v.phuTrach.includes(p.userId)) continue;   // (11) việc của tôi nằm ở "Của tôi"
       const tt: 'mo' | 'xong' | 'bo' = v.mo ? 'mo' : v.row.trang_thai === 'bo' || v.row.trang_thai === 'huy' ? 'bo' : 'xong';

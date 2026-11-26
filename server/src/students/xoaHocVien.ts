@@ -113,6 +113,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id'], ['viec_mo_ta', 'ref_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
   /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
   { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' WHEN 'vi_pham_tra_lai' THEN 'tra_lai' ${BANG_KHUNG_EM} END`, 'doi_tuong_id')}` },
+  /* Rà PTA #2280: việc con của khung việc của em — cha_id NULL (giữ cha_loai: không lên bảng Vận hành), id lộ trình / em dùng lại không thừa hưởng. */
+  { bang: 'tasks', sql: `UPDATE tasks SET cha_id = NULL WHERE ${VIEC_KHUNG_EM('cha_loai', 'cha_id')}` },
   { bang: 'viec_chot_ngay_thi', sql: `DELETE FROM viec_chot_ngay_thi WHERE id IN (${Y})` },
   { bang: 'viec_buoc_tiep', sql: `DELETE FROM viec_buoc_tiep WHERE id IN (${Y})` },
   { bang: 'viec_thi_that', sql: `DELETE FROM viec_thi_that WHERE id IN (${Y})` },

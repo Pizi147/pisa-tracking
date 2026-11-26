@@ -24,6 +24,8 @@ export const NHAN_KHUNG: Record<LoaiKhung, string> = {
 };
 /** Việc của lớp (không một em). */
 export const KHUNG_LOP: ReadonlySet<LoaiKhung> = new Set(['ban_giao', 'ban_giao_mon', 'ban_giao_gv', 'chot_lo_trinh', 'xet_lai']);
+/** Rà PTA #2280 (bảo mật 3, [XM]): việc TVV + Bàn giao KHÔNG giao cho người chỉ có vai BPXL ở chi nhánh việc (BPXL không đọc Case / PA / Ý thức — N57). */
+export const KHUNG_KHONG_BPXL: ReadonlySet<LoaiKhung> = new Set(['chot_ngay_thi', 'buoc_tiep', 'thi_that', 'bo_sung_ho_so', 'ban_giao', 'ban_giao_mon', 'ban_giao_gv']);
 /** Việc Head (N63 ①): chỉ giao cho người có quyền chốt / xếp lịch — người nhận kiểm ở `kiemNguoiNhanKhung`. */
 export const KHUNG_CO_QUYEN: ReadonlySet<LoaiKhung> = new Set(['chot_lo_trinh', 'xet_lai', 'xep_lich_mt']);
 
@@ -87,4 +89,12 @@ export function chuKhung(p: Principal, tatCa: boolean, loai: LoaiKhung, id: numb
  * Người xem ĐANG là người được giao (còn hiệu lực) của đúng việc này — quyền ghi mở cho đúng việc đó (N58, N73 ⑤). Đọc `giaoKhung` (một câu mỗi request,
  * chung với Công việc). Bàn giao môn: `id` = `{lớp}:{môn}`. Nơi gọi hỏi SAU quyền vai (người có vai: 0 câu).
  */
-export const duocGiao = (p: Principal, loai: LoaiKhung, id: number | string): boolean => giaoCua(loai, id)?.pt === p.userId;
+export function duocGiao(p: Principal, loai: LoaiKhung, id: number | string): boolean {
+  const g = giaoCua(loai, id);
+  if (g?.pt !== p.userId) return false;
+  /* Rà PTA #2280 (bảo mật 1): quyền theo việc đóng NGAY khi việc xong (không chờ lượt quét ngày) — "còn việc" cùng hàm Công việc (`khungDoc`, đăng ký lúc nạp). */
+  return !conMo || nho(`lpb1:con-mo:${loai}:${g.id}`, () => conMo!(loai, g.id));
+}
+/** `khungDoc.ts` đăng ký hàm "việc còn mở" (tệp này là tệp lá — không import ngược). */
+let conMo: ((loai: LoaiKhung, id: number) => boolean) | null = null;
+export const datConMo = (f: (loai: LoaiKhung, id: number) => boolean) => { conMo = f; };

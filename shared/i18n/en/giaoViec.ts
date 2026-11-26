@@ -7,6 +7,7 @@ export const EN_GIAO_VIEC = {
   'Bàn giao của lớp này ngoài phạm vi của bạn.': 'This class’s handover is outside your scope.',
   'Lớp không còn việc bàn giao môn này.': 'The class no longer has a handover task for this subject.',
   'Thiếu lớp hoặc môn.': 'Missing class or subject.',
+  'Việc này không giao cho BPXL (BPXL không xem hồ sơ học thuật / bàn giao của em) — chọn người khác.': 'This task cannot go to a scheduler (schedulers do not see academic records / handovers) — choose someone else.',
   'Học viên này nằm ngoài phạm vi bạn được xem.': 'This student is outside the scope you can view.',
   'Người này không xếp lịch MT được ở lớp của em — chọn Head, Quản trị hoặc BPXL.': 'This person cannot schedule MTs for the student’s class — choose a Head, Admin or scheduler.',
   'Chốt / Xét lại lộ trình chỉ giao cho người có quyền chốt lộ trình lớp này (Head, Quản trị) — chọn người khác.': 'Finalising / reviewing pathways can only go to someone who can finalise this class (Head, Admin) — choose someone else.',

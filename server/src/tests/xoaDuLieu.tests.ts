@@ -435,7 +435,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 86, `xoá tốn ${nIt} câu (> 86)`);   // LPB-1: +5 câu xoá bảng phụ khung việc của em (Chốt ngày thi · Bước tiếp · KQ thi thật · Bổ sung hồ sơ · Xếp lịch MT)   // LPB-0: +2 câu (đóng việc BPXL hết em · xoá dòng em trong việc Nhận thông tin)   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 88, `xoá tốn ${nIt} câu (> 88)`);   // LPB-1: +7 câu (việc con — chụp + gỡ · bảng phụ khung việc của em (Chốt ngày thi · Bước tiếp · KQ thi thật · Bổ sung hồ sơ · Xếp lịch MT)   // LPB-0: +2 câu (đóng việc BPXL hết em · xoá dòng em trong việc Nhận thông tin)   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });

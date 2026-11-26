@@ -110,18 +110,23 @@ export function xoaLop(p: Principal, classId: number) {
   const conn = db();
   return tx(() => {
     const chup = new BoChup(conn);
+    /* LPB-1 (N73 ⑤, rà PTA #2280): khung việc của lớp trống (Bàn giao · Bàn giao môn · Bàn giao đổi GV · Chốt / Xét lại) — người theo dõi / lịch sử / mô tả /
+       bản ghi đảo / việc con (cha_id NULL — giữ cha_loai: không lên bảng Vận hành) rồi dòng bảng phụ. TRƯỚC khi xoá ban_giao_gv (tập id đọc từ nó). */
+    const KHUNG_LOP = (l: string, r: string) => `((${l} IN ('ban_giao', 'chot_lo_trinh', 'xet_lai') AND ${r} = ?1)
+      OR (${l} = 'ban_giao_mon' AND ${r} IN (SELECT id FROM viec_ban_giao_mon WHERE lop_id = ?1)) OR (${l} = 'ban_giao_gv' AND ${r} IN (SELECT id FROM ban_giao_gv WHERE class_id = ?1)))`;
+    for (const b of ['viec_theo_doi', 'viec_giao_lan', 'viec_mo_ta']) chup.chay(`DELETE FROM ${b} WHERE ${KHUNG_LOP('loai', 'ref_id')}`, classId);
+    chup.chay(`DELETE FROM viec_han_lan WHERE ${KHUNG_LOP('loai', 'viec_id')}`, classId);
+    chup.chay(`DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${KHUNG_LOP(`CASE bang WHEN 'viec_ban_giao' THEN 'ban_giao' WHEN 'viec_chot_lo_trinh' THEN 'chot_lo_trinh'
+      WHEN 'viec_xet_lai' THEN 'xet_lai' WHEN 'viec_ban_giao_mon' THEN 'ban_giao_mon' WHEN 'ban_giao_gv' THEN 'ban_giao_gv' END`, 'doi_tuong_id')}`, classId);
+    chup.chay(`UPDATE tasks SET cha_id = NULL WHERE ${KHUNG_LOP('cha_loai', 'cha_id')}`, classId);
+    for (const b of ['viec_ban_giao', 'viec_chot_lo_trinh', 'viec_xet_lai']) chup.chay(`DELETE FROM ${b} WHERE id = ?`, classId);
+    chup.chay('DELETE FROM viec_ban_giao_mon WHERE lop_id = ?', classId);
     /* PR-B: việc bàn giao đổi GV của lớp trống (trỏ `doi_phan_cong`) — xoá trước. */
     chup.chay('DELETE FROM ban_giao_gv_em WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
     chup.chay('DELETE FROM ban_giao_gv_mon WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
     chup.chay('DELETE FROM ban_giao_gv WHERE class_id = ?', classId);
     chup.chay('DELETE FROM viec_nhan_tin_dong WHERE viec_id IN (SELECT id FROM viec_nhan_tin WHERE class_id = ?)', classId);   // LPB-0: việc BPXL Nhận thông tin của lớp trống
     chup.chay('DELETE FROM viec_nhan_tin WHERE class_id = ?', classId);
-    /* LPB-1 (N73 ⑤): khung việc của lớp trống (Bàn giao · Bàn giao môn · Chốt / Xét lại lộ trình) — người theo dõi / lịch sử / mô tả rồi dòng bảng phụ. */
-    const KHUNG_LOP = `(loai IN ('ban_giao', 'chot_lo_trinh', 'xet_lai') AND ref_id = ?1) OR (loai = 'ban_giao_mon' AND ref_id IN (SELECT id FROM viec_ban_giao_mon WHERE lop_id = ?1))`;
-    for (const b of ['viec_theo_doi', 'viec_giao_lan', 'viec_mo_ta']) chup.chay(`DELETE FROM ${b} WHERE ${KHUNG_LOP}`, classId);
-    chup.chay(`DELETE FROM viec_han_lan WHERE ${KHUNG_LOP.replace(/ref_id/g, 'viec_id')}`, classId);
-    for (const b of ['viec_ban_giao', 'viec_chot_lo_trinh', 'viec_xet_lai']) chup.chay(`DELETE FROM ${b} WHERE id = ?`, classId);
-    chup.chay('DELETE FROM viec_ban_giao_mon WHERE lop_id = ?', classId);
     chup.chay('DELETE FROM doi_phan_cong WHERE class_id = ?', classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
     chup.chay('DELETE FROM teacher_assignments WHERE class_id = ?', classId);
     chup.chay('DELETE FROM class_skills WHERE class_id = ?', classId);
