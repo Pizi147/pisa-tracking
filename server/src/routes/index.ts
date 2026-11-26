@@ -28,6 +28,7 @@ import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as giaoViecSvc from '../worklist/giaoViec.ts';
 import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as traLaiSvc from '../yThuc/traLai.ts';
+import * as tuyenSvc from '../yThuc/tuyen.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -644,7 +645,9 @@ api.get('/my-work', requireAuth, wrap((req) => {
 /** GV-1 (N58): tab "Đang theo dõi" — việc tôi theo dõi còn mở + vừa xong 7 ngày, chia theo loại. Chỉ gọi khi mở tab (không vào /my-work, không số đếm). */
 api.get('/my-work/theo-doi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.viecTheoDoi(principalOf(req));
+  const p = principalOf(req);
+  /* TUYEN-0 (N72 ①): `tuyen` = một dòng một tuyến Ý thức & Phối hợp (gom việc N58 của tuyến — dòng `viec`); `nhom` cho web hiện tại, bỏ việc của tuyến đã "Bỏ theo dõi". */
+  return tuyenSvc.voiTuyen(p, giaoViecSvc.viecTheoDoi(p));
 }));
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
 api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req), req.body?.key, req.body?.boQua !== false)));
@@ -1427,7 +1430,9 @@ api.get('/students/:id/violations', requireAuth, wrap((req) => {
 /** Tab Ý thức của học viên (K3 §4f) + khung phải của tab lớp khi chọn em: thang, thanh việc, vi phạm, dòng thời gian trộn. */
 api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return xuLySvc.yThucHocVien(principalOf(req), pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
+  const p = principalOf(req);
+  const v = xuLySvc.yThucHocVien(p, pInt(req, 'id'), { phamVi: qStr(req, 'pham-vi') === 'tat-ca' ? 'tat-ca' : 'chuoi' });
+  return { ...v, ...tuyenSvc.tuyenCuaEm(p, v.studentId) };   // TUYEN-0: tuyến "đang chờ xử lý" (panel Xử lý) + chuỗi chấm mọi tuyến của em
 }));
 
 /** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
@@ -1594,8 +1599,9 @@ api.post('/students/:id/y-thuc/khai-bac/hoan-tac', requireAuth, wrap((req) => {
 api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
-  const v = xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
-  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(principalOf(req), 'discipline_measure', v.id) } : v;
+  const p = principalOf(req);
+  const v = { ...xuLySvc.xemXuLy(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenTheoKhoa(p, { loai: 'vi_pham', khoa: String(pInt(req, 'id')) }) };   // TUYEN-0
+  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(p, 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
 api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
@@ -1668,7 +1674,8 @@ api.post('/y-thuc/tra-lai', requireAuth, wrap((req) => {   // { violationId | me
 }));
 api.get('/y-thuc/tra-lai/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return traLaiSvc.xemTraLai(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  return { ...traLaiSvc.xemTraLai(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'tra_lai', pInt(req, 'id')) };   // TUYEN-0
 }));
 api.post('/y-thuc/tra-lai/:id/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1689,7 +1696,9 @@ api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { t
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return baoPhSvc.xemViecBaoPh(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  const v = baoPhSvc.xemViecBaoPh(p, pInt(req, 'id'));
+  return { ...v, tuyen: tuyenSvc.tuyenTheoKhoa(p, tuyenSvc.khoaBaoPh(v)) };   // TUYEN-0: khoá tuyến đọc từ panel (không câu tìm khoá)
 }));
 api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2614,11 +2623,15 @@ api.post('/cases/:id/dismiss', requireAuth, wrap((req) => {
  */
 api.get('/classes/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return phoiHopSvc.coordinationOfClass(principalOf(req), pInt(req, 'id'), { includeDone: qStr(req, 'includeDone') === '1' });
+  const p = principalOf(req);
+  const r = phoiHopSvc.coordinationOfClass(p, pInt(req, 'id'), { includeDone: qStr(req, 'includeDone') === '1' });
+  return { ...r, chuoiTuyen: tuyenSvc.chuoiPhoiHop(p, r.rows.map((t) => t.attemptId)) };   // TUYEN-0: chuỗi chấm từng em × lượt
 }));
 api.get('/students/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return phoiHopSvc.coordinationOfStudent(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  const r = phoiHopSvc.coordinationOfStudent(p, pInt(req, 'id'));
+  return { ...r, chuoiTuyen: tuyenSvc.chuoiPhoiHop(p, r.rows.map((t) => t.attemptId)) };   // TUYEN-0
 }));
 api.post('/attempts/:id/phoi-hop-sos', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2651,7 +2664,8 @@ api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
 /* GV-1 (N58): Meeting CX / GĐCN — ba phần (Xếp lịch họp · Kết quả meeting · Báo PH của TVV) cho panel. */
 api.get('/phoi-hop-sos/:id/meeting', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.xemMeeting(principalOf(req), pInt(req, 'id'));
+  const p = principalOf(req);
+  return { ...giaoViecSvc.xemMeeting(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'phoi_hop', pInt(req, 'id')) };   // TUYEN-0
 }));
 
 /*
@@ -2660,7 +2674,27 @@ api.get('/phoi-hop-sos/:id/meeting', requireAuth, wrap((req) => {
  */
 api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return giaoViecSvc.xemGiaoViec(principalOf(req), giaoViecSvc.docLoai(req.params.loai), pInt(req, 'id'));
+  const p = principalOf(req);
+  const loai = giaoViecSvc.docLoai(req.params.loai);
+  const g = giaoViecSvc.xemGiaoViec(p, loai, pInt(req, 'id'));
+  /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng · BAOPH-0 Xử lý vi phạm / Đã thực hiện — tuyến đi cùng khối giao việc. */
+  return loai === 'tinh_hinh' || loai === 'xu_ly' || loai === 'da_thuc_hien' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, loai, g.id) } : g;
+}));
+/**
+ * TUYEN-0 (N72 ②–④): một tuyến Ý thức & Phối hợp — `:loai` vi_pham | phoi_hop | tinh_hinh | cap_bac, `:khoa` id (vi_pham: id lần xử lý hoặc `em{id}`).
+ * Đang theo dõi + Chờ duyệt mở dòng. Khung cho người có mặt trong tuyến / xem được em; nội dung theo quyền sẵn có (C3). Theo dõi: DELETE = bỏ cả tuyến · POST = theo dõi lại.
+ */
+api.get('/tuyen/:loai/:khoa', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return tuyenSvc.dungTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
+}));
+api.delete('/tuyen/:loai/:khoa/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tuyenSvc.boTheoDoiTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
+}));
+api.post('/tuyen/:loai/:khoa/theo-doi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tuyenSvc.theoDoiLaiTuyen(principalOf(req), tuyenSvc.docKhoaTuyen(req.params.loai, req.params.khoa));
 }));
 /* { userId: số | null (về mặc định), phuTrachCu? } → khối + `hoanTac` (id bản ghi đảo; null = không đổi gì). */
 api.post('/giao-viec/:loai/:id/phu-trach', requireAuth, wrap((req) => {
