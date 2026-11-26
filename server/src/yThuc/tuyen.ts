@@ -51,6 +51,8 @@ export type Tuyen = {
   /** "Đang ở {bước} · {người}" — bước của người xem trước; nhiều bước cùng lúc không phải của người xem → "{n} bước cùng lúc". */
   dangO: { ten: string; nguoi: string | null; han: string | null } | null;
   ketThuc: boolean; ketThucLuc: string | null;
+  /** TUYEN-1 (N74): tên MỘT Head của chi nhánh em (`headCua`) — chỉ tuyến "đang chờ xử lý": web xem trước bước ○ Head duyệt khi GVCN chọn cách khác mặc định. */
+  head?: string | null;
 };
 
 /* ---------------------------------------------------------------- phần dùng chung */
@@ -62,7 +64,7 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
 };
-type TuyenNoi = Omit<Tuyen, 'buoc' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc' | 'ketThucLuc'> & { buoc: BuocNoi[]; luc: string | null; tvv: number | null; cn: number | null };
+type TuyenNoi = Omit<Tuyen, 'buoc' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc' | 'ketThucLuc' | 'head'> & { buoc: BuocNoi[]; luc: string | null; tvv: number | null; cn: number | null };
 
 const ngay10 = (s: string | null | undefined): string | null => (s ? (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ngayTheoGioVN(s) ?? s.slice(0, 10)) : null);
 const ds = (j: string | null | undefined): any[] => (j ? (JSON.parse(j) as any[]).filter((x) => x && x.id != null) : []);
@@ -220,7 +222,8 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
     const viecPh = bp.find((b) => b.measure === m.id);
     const truoc = t.buoc.at(-1)!.ten;
     if (viecPh) t.buoc.push(...buocBaoPh(t, viecPh, { khoa: 'bao_ph', ten: 'Báo PH', tvvTen }));
-    else if (['cho_duyet', 'da_duyet'].includes(m.status)) t.buoc.push(baoPhCho(t, { khoa: 'bao_ph', ten: 'Báo PH', sau: `sau khi ${truoc.toLowerCase()}`, tvvTen }));
+    /* TUYEN-1: khác mặc định — Báo PH chạy cùng lúc với Đã thực hiện, cùng chờ Head duyệt. */
+    else if (['cho_duyet', 'da_duyet'].includes(m.status)) t.buoc.push(baoPhCho(t, { khoa: 'bao_ph', ten: 'Báo PH', sau: de ? 'sau khi Head duyệt' : `sau khi ${truoc.toLowerCase()}`, tvvTen }));
     /* Thu hồi (N5): thẻ chờ Head → bước đang ở; đã áp → tuyến kết thúc ✕; Báo PH đã xong → "Báo lại PH". */
     const th = the.filter((y) => y.loai === 'thu_hoi_y_thuc').at(-1);
     if (th?.tt === 'cho') {
@@ -238,6 +241,8 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
       const lai = bp.find((b) => b.baoLai === m.id);
       if (lai) t.buoc.push(...buocBaoPh(t, lai, { khoa: 'bao_lai', ten: 'Báo lại PH', tvvTen }));
     }
+    /* TUYEN-1 (mockup v27 T2): khác mặc định — sau Head duyệt, "Đã thực hiện" (GVCN) và "Báo PH" (TVV) chạy CÙNG LÚC (`sinhViecBaoPh` lúc chốt, N1). */
+    if (de && t.buoc.some((b) => b.khoa === 'thuc_hien')) for (const b of t.buoc) if (b.khoa === 'thuc_hien' || b.khoa === 'bao_ph' || b.khoa.startsWith('bao_ph:')) b.cungLuc = true;
     /* Nội dung lần xử lý / thẻ: quyền xem Ý thức em hoặc người có mặt ở bước (`docRieng` mặc định). */
     return t;
   });
@@ -476,6 +481,7 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
     xong: t.buoc.filter((b) => b.trangThai === 'xong').length, tong: t.buoc.length, soDang: dang.length,
     dangO: dau ? { ten: dau.ten, nguoi: dau.nguoi, han: dau.han } : dang.length ? { ten: `${dang.length} bước cùng lúc`, nguoi: null, han: null } : null,
     ketThuc, ketThucLuc: ketThuc ? t.buoc.map((b) => b.ngay).filter((x): x is string => !!x).sort().at(-1) ?? null : null,
+    ...(t.loai === 'vi_pham' && t.khoa.startsWith('em') ? { head: head(t.cn)[0]?.ten ?? null } : {}),
   };
 }
 

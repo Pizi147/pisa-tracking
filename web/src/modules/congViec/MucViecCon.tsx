@@ -5,6 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { LOP_MUC_HAN } from '../../ui/Nhan.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { moiKhoaGui, mucHan, ngay, type NguoiChon } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -16,7 +17,8 @@ const XONG = (x: ViecCon) => x.tienDo === 'done' || x.tienDo === 'stopped';
 /**
  * VIỆC CON (TUYEN-1, N72 ⑥ — mockup v27 `.vcon`, như việc Vận hành N59): một tầng, tên · người · hạn, tick = xong; không chặn việc cha, không vào số việc của việc cha.
  * Dữ liệu đi cùng khối giao việc (`GET /giao-viec/:loai/:id` → `viecCon`) — không request riêng. Tạo = `POST /mgmt-tasks` (`chaLoai`, `chaId`, BAOPH-0);
- * quyền tạo theo máy chủ (Head · Quản trị · CX — cờ `nav.vanHanh`). Tick: người được giao việc con hoặc người quản Vận hành (máy chủ kiểm lại).
+ * PTA chốt (theo mockup): NGƯỜI ĐANG GIỮ việc cha (người phụ trách của khối) tạo / tick / sửa hạn việc con như Head · Quản trị · CX (`nav.vanHanh`); người được giao
+ * việc con tick được việc của mình; người theo dõi chỉ xem. Máy chủ kiểm lại (`giuViecCha`, mgmttasks.ts). Hạn = ô bấm (sửa tại chỗ, `PATCH /mgmt-tasks/:id`).
  */
 export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
   const { session } = useSession();
@@ -26,9 +28,18 @@ export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
   const [them, setThem] = useState(false);
   const [dang, setDang] = useState<number | null>(null);
   const ds = g.viecCon ?? [];
-  const taoDuoc = !!session?.nav?.vanHanh && g.mo;
+  const giu = g.phuTrach.some((x) => x.id === session?.user?.id);
+  const quan = (!!session?.nav?.vanHanh || giu) && g.mo;
+  const taoDuoc = quan;
+  const [suaHan, setSuaHan] = useState<{ id: number; han: string } | null>(null);
   if (!ds.length && !taoDuoc) return null;
   const toi = session?.user?.fullName;
+  const luuHan = async () => {
+    if (!suaHan) return;
+    setDang(suaHan.id);
+    try { await api.patch(`/mgmt-tasks/${suaHan.id}`, { due: suaHan.han || null }); setSuaHan(null); invalidate('/my-work'); onDoi(); toast.push('ok', t('Đã lưu hạn')); }
+    catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setDang(null); }
+  };
   const tick = async (x: ViecCon) => {
     setDang(x.id);
     try { await api.post(`/mgmt-tasks/${x.id}/update`, { progress: x.tienDo === 'done' ? 'doing' : 'done' }); invalidate('/my-work'); onDoi(); }
@@ -45,11 +56,20 @@ export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
         return (
           <div key={x.id} className="grid min-h-[40px] grid-cols-[18px_minmax(0,1fr)_max-content_max-content] items-center gap-x-3 rounded-lg border px-3 text-sm max-sm:min-h-[52px] max-sm:grid-cols-[18px_minmax(0,1fr)_max-content] max-sm:py-1.5"
             style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-            <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={x.tienDo === 'done'} disabled={dang === x.id || x.tienDo === 'stopped' || !(laToi || session?.nav?.vanHanh)}
+            <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={x.tienDo === 'done'} disabled={dang === x.id || x.tienDo === 'stopped' || !(laToi || quan)}
               aria-label={t('Xong: {ten}', { ten: x.ten })} onChange={() => void tick(x)} />
             <span className={`min-w-0 ${xong ? 'text-faint line-through' : 'text-[color:var(--text)]'}`}>{x.ten}</span>
             <span className="whitespace-nowrap text-dim max-sm:col-start-2 max-sm:row-start-2 max-sm:text-[13px]">{laToi ? t('Bạn') : x.nguoi ?? t('chưa giao')}</span>
-            <span className={`whitespace-nowrap text-[13px] tabular-nums ${xong ? 'text-dim' : LOP_MUC_HAN[muc]}`}>{x.han ? ngay(x.han) : t('không hạn')}</span>
+            {quan && !xong
+              ? suaHan?.id === x.id
+                ? <span className="col-span-full flex flex-wrap items-center gap-2 py-1.5" onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setSuaHan(null); } }}>
+                    <span className="w-[200px] max-sm:w-full"><ONgay kieu="ngay" value={suaHan.han} onChange={(v) => setSuaHan({ id: x.id, han: v })} ariaLabel={t('Hạn mới')} /></span>
+                    <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-[32px]" disabled={dang === x.id || suaHan.han === (x.han ?? '')} onClick={() => void luuHan()}>{t('Lưu hạn')}</button>
+                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setSuaHan(null)}>{t('Huỷ sửa')}</button>
+                  </span>
+                : <HanBam oBam className="nho" ten={x.han ? ngay(x.han) : t('không hạn')} onClick={() => setSuaHan({ id: x.id, han: x.han ?? hn })}>
+                    <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]}`}>{x.han ? ngay(x.han) : t('không hạn')}</span></HanBam>
+              : <span className={`whitespace-nowrap text-[13px] tabular-nums ${xong ? 'text-dim' : LOP_MUC_HAN[muc]}`}>{x.han ? ngay(x.han) : t('không hạn')}</span>}
           </div>
         );
       })}

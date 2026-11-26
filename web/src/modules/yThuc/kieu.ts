@@ -91,6 +91,7 @@ export type BuocTuyen = {
 export type Tuyen = {
   loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
   buoc: BuocTuyen[]; xong: number; tong: number; soDang: number; ketThuc: boolean;
+  /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
 };
 
 export type YThucHocVien = {

@@ -105,6 +105,15 @@ function coQuyenViec(p: Principal, t: { branch_id: number | null }): boolean {
   /* Luật main: việc Toàn hệ thống — Head (và CX, N59) mọi chi nhánh sửa được (`anyScope`). PTA rà lần 2 rút quyết định "chỉ grant toàn hệ thống". */
   return quanLyVanHanh(p, { branchId: t.branch_id ?? null, anyScope: !t.branch_id });
 }
+/**
+ * TUYEN-1 (PTA chốt theo mockup v27, N72 ⑥): việc con của một việc Ý thức / Phối hợp / Báo PH (`cha_loai`, `cha_id`) — NGƯỜI ĐANG GIỮ việc cha (người phụ trách
+ * theo luật hoặc người được giao, `docViec().phuTrach`) tạo / tick / sửa việc con của việc mình như Head. Việc cha đã đóng hoặc id việc cha đã dọn (0) → không.
+ * Người theo dõi việc cha chỉ xem (không vào đây).
+ */
+function giuViecCha(p: Principal, t: { cha_loai?: string | null; cha_id?: number | null }): boolean {
+  if (!t.cha_loai || !t.cha_id) return false;
+  try { const v = docViec(docLoai(t.cha_loai), t.cha_id); return v.mo && v.phuTrach.includes(p.userId); } catch { return false; }
+}
 /** Xem như quản lý: việc của chi nhánh trong phạm vi, hoặc việc Toàn hệ thống (Head / CX mọi chi nhánh đọc được — bảng Vận hành vẫn liệt kê). */
 const xemQuanLy = coQuyenViec;
 
@@ -582,7 +591,7 @@ export const laHieuLuc = (uid: number, branchId: number | null) =>
 
 /** Người xem một việc: quản lý · người phụ trách · người tạo · người theo dõi (còn hiệu lực) · người phụ trách việc con. */
 function quyenXem(p: Principal, t: any) {
-  const quanLy = coQuyenViec(p, t);
+  const quanLy = coQuyenViec(p, t) || giuViecCha(p, t);
   /* PTA mục 7: người phụ trách / người tạo chỉ còn quyền theo việc khi còn hoạt động + còn vai ở chi nhánh của việc. */
   const conVai = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);
   const phuTrach = conVai && t.assignee_user_id === p.userId;
@@ -882,7 +891,8 @@ export function createMgmtTask(p: Principal, input: {
   /** BAOPH-0 (N72 ⑥, 4.6): việc con của một việc Ý thức / Phối hợp / Báo PH (`LOAI_GIAO` × id) — thay `parentTaskId`; chi nhánh = chi nhánh của em. */
   chaLoai?: unknown; chaId?: unknown;
 }) {
-  if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  /* TUYEN-1: việc con của việc Ý thức — người giữ việc cha tạo được (kiểm ở dưới, sau khi đọc việc cha). */
+  if (!canSeeBoard(p) && (input.chaLoai == null || input.chaLoai === '')) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
   chuTuDo(input.note, 'Mô tả việc', TRAN_MO_TA_VH);
@@ -899,7 +909,7 @@ export function createMgmtTask(p: Principal, input: {
     xemGiaoViec(p, loai, id);
     const v = docViec(loai, id);
     if (!v.mo) throw badRequest('Việc cha đã kết thúc — không thêm việc con.');   // rà #2233 P2-2
-    return { loai, id, branchId: v.branchId };
+    return { loai, id, branchId: v.branchId, giu: v.phuTrach.includes(p.userId) };
   })();
   if (input.parentTaskId) {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
@@ -916,7 +926,7 @@ export function createMgmtTask(p: Principal, input: {
    */
   const pv = phamVi(p);
   const taskBranchId = cha ? cha.branchId : input.branchId ?? parent?.branch_id ?? (!pv.all && pv.branchIds.length === 1 ? pv.branchIds[0] : null);
-  if (!quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  if (!cha?.giu && !quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden(cha ? 'Chỉ người đang giữ việc này, Head, Quản trị hoặc CX mới thêm được việc con.' : 'Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   kiemNguoiVh('Người phụ trách', input.assigneeUserId, taskBranchId);
   const theoDoi = [...(docTheoDoi(input.theoDoiIds, taskBranchId) ?? []), ...(input.watcherUserId ? [input.watcherUserId] : [])];
   kiemNguoiVh('Người theo dõi', input.watcherUserId, taskBranchId);
@@ -1027,7 +1037,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
 
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
   const isAssignee = t.assignee_user_id === p.userId && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
-  if (!coQuyenViec(p, t) && !isAssignee) {
+  if (!coQuyenViec(p, t) && !isAssignee && !giuViecCha(p, t)) {
     throw forbidden('Chỉ người được giao, Head, Quản trị hoặc CX mới cập nhật được công việc này.');
   }
   if (!(TASK_PROGRESS as readonly string[]).includes(input.progress)) {
@@ -1154,7 +1164,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const t = docTask(taskId);
   kiemPhienBan(t, patch.phienBan);
   if (patch.hoanTacGiao === true) return hoanTacGiaoVh(p, t);
-  const quanLy = coQuyenViec(p, t);
+  const quanLy = coQuyenViec(p, t) || giuViecCha(p, t);   // TUYEN-1: người giữ việc cha sửa việc con như Head
   if (!quanLy) {
     const duoc = (t.assignee_user_id === p.userId || t.created_by === p.userId) && laHieuLuc(p.userId, t.branch_id ?? null);   // PTA mục 7
     const ngoai = Object.keys(patch).filter((k) => !['due', 'lyDoDoiHan', 'theoDoiIds', 'phienBan'].includes(k) && (patch as any)[k] !== undefined);

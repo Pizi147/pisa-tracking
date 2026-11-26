@@ -19,4 +19,7 @@ export const EN_TUYEN_1 = {
   'sau khi duyệt': 'after approval',
   '{n} ngày sau khi gửi': '{n} days after sending',
   '{ten} · mặc định': '{ten} · default',
+  'Đã đưa về Chưa thực hiện': 'Set back to not done',
+  'Việc vẫn mở': 'Task stays open',
+  'Lưu · Chưa thực hiện': 'Save · not done',
 } as const;

@@ -30,15 +30,18 @@ import { lucVn } from '../congViec/gioVn.ts';
 
 /**
  * TUYEN-1 (mockup v27 T1-375): GVCN chọn cách KHÁC mặc định (chưa lưu) → Tuyến xem trước thêm bước ○ "Head duyệt" (N1) sau bước Xử lý đang ở; các bước sau
- * chờ "sau khi Head duyệt". Chỉ là bước chưa tới lượt (không việc, không số — N72 ③); người = vai "Head chi nhánh" (web không đoán tên).
+ * chờ "sau khi duyệt". Chỉ là bước chưa tới lượt (không việc, không số — N72 ③); người = tên Head máy chủ trả (`tuyen.head`, `headCua` N74) — web không tự đoán.
  */
 function quaHeadDuyet(tuyen: Tuyen | null | undefined, soNgay: number): Tuyen | null | undefined {
   const i = tuyen?.buoc.findIndex((b) => b.khoa === 'xu_ly' && b.trangThai === 'dang') ?? -1;
   if (!tuyen || i < 0) return tuyen;
-  const head: BuocTuyen = { khoa: 'duyet-du-kien', ten: t('Head duyệt'), trangThai: 'cho', chiTiet: t('{n} ngày sau khi gửi', { n: soNgay }), nguoi: t('Head chi nhánh'), laToi: false,
+  const head: BuocTuyen = { khoa: 'duyet-du-kien', ten: t('Head duyệt'), trangThai: 'cho', chiTiet: t('{n} ngày sau khi gửi', { n: soNgay }), nguoi: tuyen.head ?? t('Head chi nhánh'), laToi: false,
     ngay: null, han: null, cha: null, cungLuc: false, coNoiDung: false, khongQuyen: false };
-  const sau = tuyen.buoc.slice(i + 1).map((b) => (b.trangThai === 'cho' && !b.cha ? { ...b, chiTiet: t('sau khi duyệt') } : b));
-  return { ...tuyen, buoc: [...tuyen.buoc.slice(0, i + 1), head, ...sau], tong: tuyen.tong + 1 };
+  /* Sau Head duyệt: "Đã thực hiện" (người đang giữ bước Xử lý) và "Báo PH" chạy cùng lúc — như máy chủ dựng khi đã gửi (mockup v27 T1-375 · T2). */
+  const xl = tuyen.buoc[i];
+  const thucHien: BuocTuyen = { ...head, khoa: 'thuc-hien-du-kien', ten: t('Đã thực hiện'), chiTiet: t('sau khi duyệt'), nguoi: xl.nguoi, laToi: xl.laToi, cungLuc: true };
+  const sau = tuyen.buoc.slice(i + 1).map((b) => (b.trangThai === 'cho' && !b.cha ? { ...b, chiTiet: t('sau khi duyệt'), cungLuc: true } : b));
+  return { ...tuyen, buoc: [...tuyen.buoc.slice(0, i + 1), head, thucHien, ...sau], tong: tuyen.tong + 2 };
 }
 
 /** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */

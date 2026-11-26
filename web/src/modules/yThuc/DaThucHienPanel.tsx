@@ -17,6 +17,7 @@ import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from '../congViec/KhoiGiaoV
 import { MucViecCon } from '../congViec/MucViecCon.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { lucVn } from '../congViec/gioVn.ts';
+import { ChipRadio } from '../../ui/ChipRadio.tsx';
 
 /**
  * ĐÃ THỰC HIỆN (V4-10) — QL đã duyệt đề xuất (WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác), GVCN ghi ngày đã làm (hạn 5 ngày từ ngày
@@ -46,7 +47,18 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
   /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
   const taiCho = useContext(KhungTaiCho);
   const [daLuu, setDaLuu] = useState<string | null>(null);
-  useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); setPhDu(true); lf.datLai(); }, [measureId, homNay]);
+  /* TUYEN-1 (mockup v27 T2): Kết quả "Đã thực hiện │ Chưa thực hiện". Chưa lưu: "Chưa thực hiện" = việc vẫn mở (không ghi gì). Đã ghi "Đã thực hiện":
+     "Chưa thực hiện" = sửa sai bấm nhầm — đường sẵn có `POST /y-thuc/xu-ly/:id/chua-thuc-hien` (OV-7a, quyền Sửa xử lý ở máy chủ). */
+  const [ketQua, setKetQua] = useState<'da' | 'chua'>('da');
+  useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); setPhDu(true); setKetQua('da'); lf.datLai(); }, [measureId, homNay]);
+  const veChua = async () => {
+    setBusy(true);
+    try {
+      await api.post(`/y-thuc/xu-ly/${measureId}/chua-thuc-hien`);
+      onDone?.(); lamMoiYThucCua({ studentIds: m ? [m.studentId] : [] }); reload(); gv.reload(); setDaLuu(null); setKetQua('da');
+      toast.push('ok', t('Đã đưa về Chưa thực hiện'));
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
 
   if (!measureId) return null;
   if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} dau={dau} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
@@ -55,7 +67,7 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
   if (daLuu) {
     return (
       <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau} onDong={onClose}
-        chan={{ huy: null, chinh: onTiep
+        chan={{ huy: null, phu: <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void veChua()}>{t('Chưa thực hiện')}</button>, chinh: onTiep
           ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
           : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
         <Khoi tieuDe={t('Đã lưu')}><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
@@ -88,10 +100,15 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
       ngCanh={dau && gv.g ? undefined : <span className="truncate">{bacDu(dich(m.nhan))}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
-        trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
+        trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : m.status === 'da_duyet' && ketQua === 'chua' ? <span className="text-slate-400">{t('Việc vẫn mở')}</span> : undefined,
         conThieu: lf.daBam && (loiNgay || loiNguoi) ? [{ nhan: t('Đã thực hiện'), lyDo: loiNgay ?? loiNguoi ?? '' }] : undefined,
         /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕); không có → như cũ. Chỉ khi còn làm được. */
-        ...(onTiep && m.status === 'da_duyet' ? {
+        ...(m.status === 'da_duyet' && ketQua === 'chua' ? {
+          huy: null,
+          chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button>,
+        } : m.status === 'done' && ketQua === 'chua' ? {
+          huy: null, chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void veChua()}>{t('Lưu · Chưa thực hiện')}</button>,
+        } : onTiep && m.status === 'da_duyet' ? {
           huy: null,
           phu: <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{t('Lưu')}</button></>,
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
@@ -102,7 +119,12 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
       {gv.g && <div className="pt-4"><KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDone} /></div>}
       <div className="pt-4"><KhoiTuyen tuyen={m.tuyen} /></div>
       <div className="space-y-3 pt-4">
-        {m.status !== 'da_duyet' && <p className="m-0 text-sm text-slate-400">{t('Lần xử lý này không còn chờ "Đã thực hiện" ({statusLabel}).', { statusLabel: m.statusLabel })}</p>}
+        {m.status !== 'da_duyet' && m.status !== 'done' && <p className="m-0 text-sm text-slate-400">{t('Lần xử lý này không còn chờ "Đã thực hiện" ({statusLabel}).', { statusLabel: m.statusLabel })}</p>}
+        {(m.status === 'da_duyet' || m.status === 'done') && <Truong nhan={t('Kết quả')} as="div">
+          <ChipRadio nhan={t('Kết quả')} value={m.status === 'done' && ketQua === 'da' ? 'da' : ketQua} onChange={setKetQua} disabled={busy}
+            muc={[{ k: 'da', chu: t('Đã thực hiện') }, { k: 'chua', chu: t('Chưa thực hiện') }]} />
+        </Truong>}
+        {m.status === 'da_duyet' && ketQua === 'da' && <>
         <Hang2>
           <Truong nhan={t('Ngày thực hiện')} batBuoc loi={lf.daBam ? loiNgay : null}>
             <ChonNgayGan value={ngayTh} onChange={setNgayTh} soNgay={30} />
@@ -121,6 +143,7 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
             {t('PH dự họp — việc Báo PH của TVV tự xong')}
           </label>
         )}
+        </>}
       </div>
       {/* TUYEN-1: khối "n vi phạm được xử lý" bỏ khi Tuyến có bước "GV ghi n vi phạm" (mở xem từng vi phạm tại chỗ); không có Tuyến thì giữ. */}
       {!m.tuyen && <Khoi tieuDe={t('{n} vi phạm được xử lý', { n: m.viPham.length })}>

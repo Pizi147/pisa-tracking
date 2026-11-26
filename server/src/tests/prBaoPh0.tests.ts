@@ -276,6 +276,34 @@ export async function runPrBaoPh0Tests(t: any) {
     assert((myWork(P.mbManager, {} as any).items as any[]).some((i: any) => i.key === `mgmt:${t.id}`), 'người được giao không thấy việc con');
   }));
 
+  check('TUYEN-1 · việc con (PTA chốt theo mockup v27): NGƯỜI ĐANG GIỮ việc Ý thức (GVCN · Xử lý vi phạm) tạo / tick / sửa hạn việc con của việc mình; người ngoài và người theo dõi 403', () => thu('tuyen1vc', () => {
+    assert(xl, 'seed');
+    const pG = loadPrincipal(xl.gvcn);
+    const ngoai = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
+        AND ur.branch_id = (SELECT branch_id FROM students WHERE id = ?) AND u.id != ? ORDER BY u.id LIMIT 1`, xl.sid, xl.gvcn);
+    assert(ngoai, 'seed: cần GV khác cùng chi nhánh');
+    const pN = loadPrincipal(ngoai.id);
+    const c = mg.createMgmtTask(pG, { title: 'Gọi mẹ em hẹn gặp', chaLoai: 'xu_ly', chaId: xl.sid, assigneeUserId: xl.gvcn, due: TODAY });
+    assert(gv.xemGiaoViec(pG, 'xu_ly', xl.sid).viecCon.some((x: any) => x.id === c.id), 'người giữ việc không tạo được việc con');
+    mg.updateMgmtTask(pG, c.id, { progress: 'done' });
+    assert(get('SELECT progress AS p FROM tasks WHERE id = ?', c.id).p === 'done', 'người giữ việc không tick được');
+    mg.editMgmtTask(pG, c.id, { due: null });
+    assert(get('SELECT due_date AS d FROM tasks WHERE id = ?', c.id).d === null, 'người giữ việc không sửa được hạn');
+    /* Người ngoài (không giữ việc, không quản lý): không thêm, không tick, không sửa. */
+    assert(/403/.test(loi(() => mg.createMgmtTask(pN, { title: 'Việc lạ', chaLoai: 'xu_ly', chaId: xl.sid }))), 'người ngoài thêm được việc con');
+    assert(/403/.test(loi(() => mg.updateMgmtTask(pN, c.id, { progress: 'doing' }))), 'người ngoài tick được việc con');
+    assert(/403/.test(loi(() => mg.editMgmtTask(pN, c.id, { due: TODAY }))), 'người ngoài sửa được việc con');
+    /* Người theo dõi việc cha chỉ xem. */
+    gv.themTheoDoi(pG, 'xu_ly', xl.sid, { userIds: [ngoai.id] });
+    xoaNho();
+    assert(/403/.test(loi(() => mg.createMgmtTask(loadPrincipal(ngoai.id), { title: 'Việc lạ 2', chaLoai: 'xu_ly', chaId: xl.sid }))), 'người theo dõi thêm được việc con');
+    /* Giao việc cha cho người khác → GVCN thôi giữ, mất quyền việc con. */
+    gv.doiPhuTrach(pG, 'xu_ly', xl.sid, { userId: ngoai.id, phuTrachCu: null });
+    xoaNho();
+    assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(xl.gvcn), c.id, { progress: 'doing' }))), 'GVCN đã giao đi vẫn tick được');
+    mg.updateMgmtTask(loadPrincipal(ngoai.id), c.id, { progress: 'doing' });
+  }));
+
   check('BP0-7 · Lưu trữ: khối giao việc Xử lý vi phạm đóng (bo), Hoàn tác trả mo; Quay lại học thì giao lại từ đầu', () => thu('bp7', () => {
     assert(xl, 'seed');
     gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: P.mbManager.userId, phuTrachCu: null });
