@@ -8,10 +8,12 @@ Mockup: `tuyen-cong-viec.html` T8a – T8d, T9. Đặc tả: `docs/superpowers/s
 | Khung mockup (v27) | Thành phần web | Ảnh | |
 |---|---|---|---|
 | T8a: Đang theo dõi MỘT dòng một tuyến, mục theo tên tuyến (Vi phạm · Phối hợp SOS · Báo PH kết quả Test) | `DsTheoDoi` đọc `tuyen` của `GET /my-work/theo-doi` (TUYEN-0, 0 request thêm); việc N58 thuộc tuyến (`viec`) gom vào dòng tuyến, bỏ khỏi mục theo loại việc | t8a | KHỚP |
-| T8a: dòng = lớp · em · chip SOS · "Đang ở {bước} · {người}" · hạn tô màu | `DongTheoDoiViec` (khuôn A sẵn có) + `ChipSos` cho tuyến Phối hợp | t8a, t8b | KHỚP |
-| T8a: "Vừa xong 7 ngày · n tuyến" gập sẵn, cuối danh sách | mục cũ, đếm "n tuyến" khi toàn tuyến | t8a | KHỚP |
+| T8a: dòng = lớp · em · chip SOS · "Đang ở {bước} · {người}" · hạn tô màu — MỘT tầng | `DongTheoDoiViec` + `ChipSos`; máy chủ tên bước NGẮN ("Báo PH" — nguồn ở tên mục); MỘT khuôn "Đang ở {bước} · {người}" cho cả việc N58 (trước: "Phụ trách … · Chưa báo"); việc không gắn em: tên ngắn để cột em vừa chữ; 375: ba tầng lớp + hạn · tên · chi tiết (`.td-A`, như Yêu cầu của tôi) | t8a, t8b | KHỚP |
+| T8a: "MB FOU 15 · 4 em" — Báo PH kết quả Test gộp lớp × nguồn | `DsDong gop` (mục Báo PH — tuyến và việc N58): một dòng "n em ˅" · "Đang ở Báo PH · {người | n người}" · hạn sớm nhất; bấm bung danh sách em ngay dưới (mỗi em mở panel của mình) | t8a, t8b | KHỚP |
+| T8a: "Vừa xong 7 ngày · n tuyến" gập sẵn, cuối danh sách | đếm đúng đơn vị: "n tuyến · m việc" | t8a | KHỚP |
 | T8a: việc theo dõi tay không thuộc tuyến (Báo PH N58, Nhận thông tin…) | giữ mục theo loại việc như cũ, sau các mục tuyến | t8a | KHỚP |
 | T8a / T8d: panel tiêu đề = tên tuyến · em · lớp · ngữ cảnh (MT2 · SOS 3) | `PanelTuyenTheoDoi` (mới, `dauViec`) | t8a, t8d | KHỚP |
+| (chủ SP 27/11: panel không được chỉ một dòng) thân panel có thông tin làm việc | bước đang ở là một việc Báo PH → nhúng panel Báo PH chỉ xem (Phụ trách · Hạn · Theo dõi + Tuyến + Máy điền sẵn / bối cảnh + liên hệ PH + Lịch sử); còn lại → Tuyến mở sẵn nội dung bước đang ở + bước xong gần nhất | t8a, t8d | KHỚP |
 | T8a: dải "Bạn đang theo dõi · chỉ xem" + "Bỏ theo dõi" (bỏ CẢ tuyến) | `DELETE /tuyen/:loai/:khoa/theo-doi`; toast Hoàn tác = `POST …/theo-doi` | t8a, t8d | KHỚP |
 | T8a: khối Tuyến "Xong a/b" (không "đang n"), bấm bước mở nội dung theo quyền | `KhoiTuyen` từ `GET /tuyen/:loai/:khoa` (chỉ khi mở) | t8a, t8d | KHỚP |
 | T8a: "Lịch sử 6 mục" gập dưới Tuyến | — | t8a | KHÁC — tuyến chưa có nguồn lịch sử chung (lịch sử nằm ở từng việc); các bước Tuyến đã ghi ai · ngày. Dòng việc N58 (không thuộc tuyến) vẫn mở panel cũ có Lịch sử |
@@ -26,9 +28,9 @@ Mockup: `tuyen-cong-viec.html` T8a – T8d, T9. Đặc tả: `docs/superpowers/s
 | T9: dòng "Lần trước: {bậc} · {ngày} · đã báo PH {ngày}" đầu khối | máy chủ `tuyen.ts` `lanTruoc` (lần xử lý đã duyệt / đã thực hiện trước đó của em; chỉ người xem được Ý thức em) → dòng nhãn đầu `KhoiTuyen` | t9 | KHỚP — seed: em Lương Gia Bảo không có lần trước nên ảnh không có dòng; phép kiểm TUYEN3-1 |
 | T9 375 | cùng thành phần | t9-375 | KHỚP |
 
-Đếm: 18 dòng · KHỚP 17 · KHÁC 1. **KHỚP thuần 17 / 18 = 94 %.**
+Đếm: 20 dòng · KHỚP 19 · KHÁC 1. **KHỚP thuần 19 / 20 = 95 %.**
 
-Lệch dữ liệu (không phải lệch giao diện): seed không có tuyến "Báo PH kết quả Test" gộp lô "4 em" (máy chủ trả mỗi em một tuyến); chữ "Đang ở …" dài hơn mockup (tên bước đầy đủ "Báo PH · Kết quả Progress") nên xuống hai dòng ở cột hẹp — giữ luật cũ "không … cắt chữ" (`.cvA-ct` HAI-BEN). Phần mở Chờ duyệt giữ các hàng cũ (3 vi phạm, Sau khi duyệt, Hạn tự chốt, Mở ›) trước Tuyến.
+Rà PTA #2281 vòng 1 đã sửa: chữ chi tiết một tầng (rút chữ, không cắt), cột chi tiết rộng nhất, gộp n em, một khuôn dòng, đếm Vừa xong đúng đơn vị; panel có nội dung (chủ SP 27/11). Phần mở Chờ duyệt giữ các hàng cũ (3 vi phạm, Sau khi duyệt, Hạn tự chốt, Mở ›) trước Tuyến.
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | |

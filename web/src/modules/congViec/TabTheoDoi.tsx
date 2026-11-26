@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -79,7 +79,7 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
   }
   const moXong = gap.has('+vua-xong');
   return (
-    <div className="cvA-cq"><div className="cvA">
+    <div className="cvA-cq td-A"><div className="cvA">
       {nhomTuyen.map((g, i) => {
         const k = `tuyen:${g.l}`, id = `td-tuyen-${i}`, dongGap = gap.has(k), q = g.mo.filter((x) => x.quaHan).length;
         return (
@@ -87,7 +87,7 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
             <DaiNhom k={g.l === 'Tình hình học tập' ? 'tinh-hinh' : g.l.startsWith('Báo PH') ? 'bao-ph' : 'y-thuc'} nhan={dich(g.l)} chip={t('{n} việc', { n: g.mo.length })} mo={!dongGap} onMo={() => doi(k, !dongGap)} chevSauTen
               dieuKhien={dongGap ? undefined : id} phu={q ? <span className="font-bold tabular-nums text-late">{q} {t('quá hạn')}</span> : null} />
             {!dongGap && <ul id={id} className="cvA-sub">
-              {g.mo.map((d) => <li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
+              <DsDong ds={g.mo} gop={g.l.startsWith('Báo PH')} chon={chon} onMo={onMo} />
             </ul>}
           </section>
         );
@@ -99,14 +99,14 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
             <DaiNhom k={ICON[g.loai]} nhan={dich(g.ten)} chip={t('{n} việc', { n: g.mo.length })} mo={!dongGap} onMo={() => doi(g.loai, !dongGap)} chevSauTen
               dieuKhien={dongGap ? undefined : `td-${g.loai}`} phu={q ? <span className="font-bold tabular-nums text-late">{q} {t('quá hạn')}</span> : null} />
             {!dongGap && <ul id={`td-${g.loai}`} className="cvA-sub">
-              {g.mo.map((d) => <li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
+              <DsDong ds={g.mo} gop={g.loai === 'bao_ph'} chon={chon} onMo={onMo} />
             </ul>}
           </section>
         );
       })}
       {xong.length > 0 && (
         <section className="card cvA-sub overflow-clip p-0" aria-label={t('Vừa xong 7 ngày')}>
-          <DaiNhom k="vua-xong" nhan={t('Vừa xong 7 ngày')} chip={xong.length === xongTuyen.length ? t('{n} tuyến', { n: xong.length }) : t('{n} việc', { n: xong.length })} mo={moXong} onMo={() => doi('+vua-xong', !moXong)} chevSauTen trungTinh
+          <DaiNhom k="vua-xong" nhan={t('Vừa xong 7 ngày')} chip={[xongTuyen.length ? t('{n} tuyến', { n: xongTuyen.length }) : null, xong.length > xongTuyen.length ? t('{n} việc', { n: xong.length - xongTuyen.length }) : null].filter(Boolean).join(' · ')} mo={moXong} onMo={() => doi('+vua-xong', !moXong)} chevSauTen trungTinh
             dieuKhien={moXong ? 'td-vua-xong' : undefined} />
           {moXong && <ul id="td-vua-xong" className="cvA-sub">
             {xong.map((d) => <li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>)}
@@ -119,16 +119,71 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
 
 /** Tên việc (bỏ mã lớp và tên em — hai ô riêng của dòng). */
 const tenDong = (d: DongTd) => d.tieuDe.split(' · ').filter((x) => x !== d.classCode && x !== d.studentName).join(' · ');
+/**
+ * TUYEN-3 (rà PTA #2281): chữ chi tiết MỘT tầng, cùng khuôn mọi dòng — tuyến: nhãn máy chủ ("Đang ở Báo PH · Phan Mai" / "Xong 12/09/2026");
+ * việc theo dõi tay (N58) còn mở: "Đang ở {tên việc ngắn} · {người phụ trách}" (nguồn đã ở tên mục); đã xong: trạng thái.
+ */
+const chuDong = (d: DongTd) => (d.tuyen || d.trangThai !== 'mo' ? dich(d.nhanTrangThai)
+  : [`${t('Đang ở')} ${dich(tenDong(d).split(' · ')[0])}`, d.phuTrach ? dich(d.phuTrach) : null].filter(Boolean).join(' · '));
+/** Khoá gộp lớp × nguồn (mục Báo PH): tuyến — tên tuyến; việc N58 — tên việc đầy đủ ("Báo PH · Trao đổi với gia đình"). */
+const khoaGop = (d: DongTd) => `${d.classCode ?? ''}|${d.tuyen ? tenTuyen(d.tuyen) : tenDong(d)}`;
+
+/**
+ * Dòng của một mục. `gop` (mục Báo PH — mockup v27 T8a "MB FOU 15 · 4 em"): em cùng lớp × nguồn gộp MỘT dòng "n em"; bấm dòng bung danh sách em ngay dưới
+ * (mỗi em mở panel của mình). Em đang chọn (đường dẫn `theo=`) → dòng gộp bung sẵn.
+ */
+function DsDong({ ds, gop, chon, onMo }: { ds: DongTd[]; gop: boolean; chon: string | null; onMo: (d: DongTd) => void }) {
+  const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set());
+  const nhomGop = new Map<string, DongTd[]>();
+  if (gop) for (const d of ds) if (d.studentName) { const k = khoaGop(d); nhomGop.set(k, [...(nhomGop.get(k) ?? []), d]); }
+  const daVe = new Set<string>();
+  const ra: ReactNode[] = [];
+  for (const d of ds) {
+    const k = gop && d.studentName ? khoaGop(d) : null;
+    const nhom = k ? nhomGop.get(k)! : null;
+    if (!k || !nhom || nhom.length < 2) { ra.push(<li key={khoaTd(d)} className="cvA-sub"><DongTheoDoiViec d={d} chon={chon === khoaTd(d)} onMo={() => onMo(d)} /></li>); continue; }
+    if (daVe.has(k)) continue;
+    daVe.add(k);
+    const bung = mo.has(k) || nhom.some((x) => khoaTd(x) === chon);
+    ra.push(<li key={`gop:${k}`} className="cvA-sub"><DongGop ds={nhom} bung={bung} onBam={() => setMo((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; })} /></li>);
+    if (bung) ra.push(<li key={`con:${k}`} className="cvA-sub cvA-con"><ul className="cvA-sub">
+      {nhom.map((x) => <li key={khoaTd(x)} className="cvA-sub"><DongTheoDoiViec d={x} chon={chon === khoaTd(x)} onMo={() => onMo(x)} /></li>)}
+    </ul></li>);
+  }
+  return <>{ra}</>;
+}
+
+/** Dòng gộp "n em": lớp · "n em" ˅ · "Đang ở {bước} · {người}" (nhiều người → "n người") · hạn sớm nhất (quá hạn nếu có em quá hạn). */
+function DongGop({ ds, bung, onBam }: { ds: DongTd[]; bung: boolean; onBam: () => void }) {
+  const hn = useHn();
+  const chuEm = ds.map(chuDong);
+  const nguoi = [...new Set(chuEm.map((c) => c.split(' · ').slice(1).join(' · ')).filter(Boolean))];
+  const buoc = chuEm[0].split(' · ')[0];
+  const chu = nguoi.length > 1 ? `${buoc} · ${t('{n} người', { n: nguoi.length })}` : chuEm[0];
+  const han = ds.map((x) => x.han).filter((h): h is string => !!h).sort()[0] ?? null;
+  const qua = ds.some((x) => x.quaHan);
+  const muc = qua ? 'qua' : han ? (mucHan(han, hn) === 'qua' ? 'xa' : mucHan(han, hn)) : 'xa';
+  return (
+    <div onClick={onBam} className="cvA-v">
+      <span className="cvA-lop">{ds[0].classCode}</span>
+      <span className="cvA-ai"><button type="button" className="cvA-ten !font-semibold" aria-expanded={bung} onClick={(e) => { e.stopPropagation(); onBam(); }}>
+        {t('{n} em', { n: ds.length })}
+        <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={bung ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button></span>
+      <span className="cvA-ct" title={chu}>{chu}</span>
+      <span className={`cvA-hn ${muc === 'xa' ? '' : muc}`}>{han ? <>{muc === 'qua' && <DauQuaHan />}{shortDate(han, hn)}</> : <span className="sr-only">{t('không hạn')}</span>}</span>
+    </div>
+  );
+}
 
 /** Khuôn A: lớp · em · việc · phụ trách · trạng thái · hạn (ngày tô màu; cờ quá hạn của máy chủ — Báo PH "Chờ GV sửa" không quá hạn). */
 function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: () => void }) {
   const hn = useHn();
-  /* TUYEN-3 (mockup v27 T8a): dòng tuyến — "Đang ở {bước} · {người}" / "Xong {ngày}"; chip SOS (Phối hợp SOS) cạnh tên em. */
-  const chu = d.tuyen ? dich(d.nhanTrangThai)
-    : [d.studentName ? dich(tenDong(d)) : null, d.phuTrach ? t('Phụ trách {ten}', { ten: dich(d.phuTrach) }) : null, dich(d.nhanTrangThai)].filter(Boolean).join(' · ');
+  /* TUYEN-3 (mockup v27 T8a, rà PTA #2281): MỘT khuôn dòng — "Đang ở {bước ngắn} · {người}" / "Xong …"; chip SOS (Phối hợp SOS) cạnh tên em. */
+  const chu = chuDong(d);
   const sos = d.tuyen?.loai === 'phoi_hop' ? Number(d.tieuDe.match(/SOS (\d)/)?.[1]) || null : null;
   const muc = d.quaHan ? 'qua' : d.han ? (mucHan(d.han, hn) === 'qua' ? 'xa' : mucHan(d.han, hn)) : 'xa';
-  const ten = d.studentName ?? (d.tuyen ? d.tieuDe.split(' · ').at(-1)! : dich(tenDong(d)));
+  /* Việc không gắn em: tên ngắn (bỏ phần đầu đã là tên mục — "Nhận thông tin · Chuyển lớp" → "Chuyển lớp") để cột em vừa chữ, cột chi tiết rộng nhất. */
+  const ten = d.studentName ?? (d.tuyen ? d.tieuDe.split(' · ').at(-1)! : dich(tenDong(d).split(' · ').slice(1).join(' · ') || tenDong(d)));
   return (
     <div data-khoa={khoaTd(d)} onClick={onMo} className={`cvA-v ${d.studentName || d.classCode ? '' : 'cvA-kl'} ${chon ? 'dang-chon' : ''}`}>
       <span className="cvA-lop">{d.classCode}</span>
@@ -208,14 +263,32 @@ function PanelTuyenTheoDoi({ x, onDong }: { x: DongTuyen; onDong: () => void }) 
           <span className="min-w-0 flex-1"><b className="font-semibold text-[color:var(--text)]">{t('Bạn đang theo dõi')}</b> · {t('chỉ xem')}</span>
           {!x.ketThuc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" disabled={dang} onClick={() => void bo()}>{t('Bỏ theo dõi')}</button>}
         </div>
-        {khoa.map((k) => <TuyenTai key={k} duong={duong(k)} />)}
+        {khoa.map((k) => <TuyenTai key={k} duong={duong(k)} lo={khoa.length > 1} onDong={onDong} />)}
       </div>
     </KhungPanel>
   );
 }
-function TuyenTai({ duong }: { duong: string }) {
+/**
+ * Thân một tuyến (chủ SP 27/11: panel không được chỉ một dòng chữ — phải có thông tin làm việc):
+ * bước đang ở là MỘT việc Báo PH → nhúng panel Báo PH chỉ xem (Tuyến + Phụ trách · Hạn + Máy điền sẵn / bối cảnh + liên hệ PH + lần liên hệ + Lịch sử — cùng đường
+ * máy chủ, quyền như panel Báo PH); còn lại → khối Tuyến MỞ SẴN nội dung bước đang ở + bước xong gần nhất (theo quyền C3).
+ */
+function TuyenTai({ duong, lo, onDong }: { duong: string; lo: boolean; onDong: () => void }) {
   const { data, error, reload } = useApi<Tuyen>(duong, [duong]);
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (!data) return <Skeleton rows={4} />;
-  return <KhoiTuyen tuyen={data} />;
+  const dang = data.buoc.filter((b) => b.trangThai === 'dang' || b.trangThai === 'tam_dung');
+  const bp = !lo && dang.length === 1 && dang[0].viec?.loai === 'bao_ph' ? dang[0] : null;
+  if (bp && data.em) {
+    const it = { key: `td:bao-ph:${bp.viec!.id}`, group: 'bao_ph_yt', viecId: bp.viec!.id, studentId: data.em.id, studentName: data.em.ten, classCode: data.em.lop,
+      classId: null, contextLabel: bp.ten.split(' · ').slice(1).join(' · ') || null, urgency: 'normal', due: bp.han } as unknown as WorkItem;
+    return <PanelBaoPhTvv nhung chiXem it={it} onDong={onDong} onDaLam={() => {}} onTiep={null} />;
+  }
+  const xongCuoi = data.buoc.filter((b) => b.trangThai === 'xong' && b.coNoiDung).at(-1)?.khoa;
+  return (
+    <div className="grid gap-1.5">
+      {lo && <b className="text-sm font-semibold">{data.em?.ten}</b>}
+      <KhoiTuyen tuyen={data} moSan={(b) => b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.khoa === xongCuoi} />
+    </div>
+  );
 }

@@ -864,7 +864,8 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
     const han = dang.map((b) => b.han).filter((h): h is string => !!h).sort()[0] ?? null;
     ra.push({ loai: t.loai, khoa: t.khoa, tieuDe: t.tieuDe, studentId: t.em?.id ?? null, studentName: t.em?.ten ?? null, classCode: t.em?.lop ?? t.lop?.code ?? null,
       nhan: x.ketThuc ? `Xong${x.ketThucLuc ? ` ${x.ketThucLuc.slice(8, 10)}/${x.ketThucLuc.slice(5, 7)}/${x.ketThucLuc.slice(0, 4)}` : ''}`
-        : x.dangO ? `Đang ở ${x.dangO.ten}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
+                /* TUYEN-3 (rà PTA #2281, mockup v27 T8a): tên bước NGẮN ("Báo PH · Kết quả Progress" → "Báo PH" — nguồn đã ở tên mục) để dòng một tầng. */
+        : x.dangO ? `Đang ở ${x.dangO.ten.split(' · ')[0]}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
       han, quaHan: !!han && han < homNay, ketThuc: x.ketThuc, ketThucLuc: x.ketThucLuc, chuoi: x.buoc.map((b) => b.trangThai), viec: d.viec,
       ...(t.lo ? { lo: t.lo, chuaBaoPh: t.buoc.some((b) => b.khoa.startsWith('bao_ph:') && (b.trangThai === 'dang' || b.trangThai === 'tam_dung')) } : {}) });
   }

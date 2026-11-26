@@ -2154,12 +2154,12 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 }
 
 /* YÊU CẦU CỦA TÔI (v26, PTA bấm thử 25/11): ô Thông tin luôn dài → dưới 600 px dòng có BA tầng: lớp + ngày · tên · thông tin (trải hết bề ngang, căn mép tên, không "·" treo).
-   Chỉ trong `.yc-A`; `.cvA` dùng chung của Công việc không đổi. */
+   Chỉ trong `.yc-A`; `.cvA` dùng chung của Công việc không đổi. TUYEN-3: `.td-A` (Đang theo dõi — tên em + chip SOS + "Đang ở …" không vừa một tầng) cùng kiểu. */
 @layer components {
   @container (max-width: 599px) {
-    .yc-A .cvA-v { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'lop hn' 'ai ai' 'ct ct'; align-items: start; }
-    .yc-A .cvA-v .cvA-ct { justify-self: stretch; }
-    .yc-A .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
+    .yc-A .cvA-v, .td-A .cvA-v:not(.cvA-kl) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'lop hn' 'ai ai' 'ct ct'; align-items: start; }
+    .yc-A .cvA-v .cvA-ct, .td-A .cvA-v .cvA-ct { justify-self: stretch; }
+    .yc-A .cvA-v .cvA-ai + .cvA-ct::before, .td-A .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
   }
 }
 

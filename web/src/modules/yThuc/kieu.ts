@@ -87,6 +87,7 @@ export type TrangThaiBuoc = 'xong' | 'dang' | 'cho' | 'bo' | 'tam_dung';
 export type BuocTuyen = {
   khoa: string; ten: string; trangThai: TrangThaiBuoc; chiTiet: string | null; nguoi: string | null; laToi: boolean;
   ngay: string | null; han: string | null; cha: string | null; cungLuc: boolean; coNoiDung: boolean; khongQuyen: boolean; noiDung?: string;
+  /** Việc lưu sẵn của bước (máy chủ `ViecBuoc`) — TUYEN-3: panel Đang theo dõi mở nội dung việc đang ở. */ viec?: { loai: string; id: number } | null;
 };
 export type Tuyen = {
   loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
