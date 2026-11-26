@@ -625,10 +625,12 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
   const { migratePrTraLai } = await import('../migrate/prTraLai.ts');
   const { migratePrTuyen0 } = await import('../migrate/prTuyen0.ts');
   const { themCotPrVaiMoi } = await import('../migrate/prVaiMoi.ts');
+  const { catLpb0 } = await import('./catBaoPh0.ts');
+  const { migratePrLpb0 } = await import('../migrate/prLpb0.ts');
   check('TL-14 · migrate prTraLai: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate giống schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
-    const cat = SCHEMA
+    const cat = catLpb0(SCHEMA)   // LPB-0
       /* VAI-0: bỏ viec_bao_ph.nguoi_luat + chỉ mục (themCotPrVaiMoi thêm lại bên dưới) — bộ cắt cũ khớp dòng `tra_lai_id` cuối bảng. */
       .replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, '')
       /* TUYEN-0 (sau TL-1): bỏ khối bảng bỏ theo dõi tuyến + chỉ mục người làm bước. */
@@ -647,6 +649,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
     assert(!c.length, `DB dựng từ schema.sql vẫn bị đổi: ${c.join(' | ')}`);
     migratePrTuyen0(cu, []);   // TUYEN-0: DB cũ đi tiếp migrate sau (chỉ mục vi_pham_tra_lai.xong_boi)
     themCotPrVaiMoi(cu, []);   // VAI-0: viec_bao_ph.nguoi_luat
+    migratePrLpb0(cu, []);   // LPB-0
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     for (const bang of ['viec_bao_ph', 'vi_pham_tra_lai']) assert(cot(cu, bang) === cot(moi, bang), `${bang}: ${cot(cu, bang)} ≠ ${cot(moi, bang)}`);

@@ -114,6 +114,8 @@ export function xoaLop(p: Principal, classId: number) {
     chup.chay('DELETE FROM ban_giao_gv_em WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
     chup.chay('DELETE FROM ban_giao_gv_mon WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
     chup.chay('DELETE FROM ban_giao_gv WHERE class_id = ?', classId);
+    chup.chay('DELETE FROM viec_nhan_tin_dong WHERE viec_id IN (SELECT id FROM viec_nhan_tin WHERE class_id = ?)', classId);   // LPB-0: việc BPXL Nhận thông tin của lớp trống
+    chup.chay('DELETE FROM viec_nhan_tin WHERE class_id = ?', classId);
     chup.chay('DELETE FROM doi_phan_cong WHERE class_id = ?', classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
     chup.chay('DELETE FROM teacher_assignments WHERE class_id = ?', classId);
     chup.chay('DELETE FROM class_skills WHERE class_id = ?', classId);

@@ -2377,8 +2377,11 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   tinh_hinh_id INTEGER,                  -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
   phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,   -- GV-1 (N58): người được giao; NULL = theo luật
   tra_lai_id INTEGER,                    -- TL-1 (N61): yêu cầu trả lại đang mở làm việc "Chờ GV sửa" (hạn tạm dừng); NULL = không chờ
-  nguoi_luat INTEGER REFERENCES users(id)   -- VAI-0 (N76b): em chưa có TVV lúc sinh → Lead TVV chốt (ít việc mở nhất); NULL = Head giữ. Em có TVV → TVV (đọc)
+  nguoi_luat INTEGER REFERENCES users(id),  -- VAI-0 (N76b): em chưa có TVV lúc sinh → Lead TVV chốt (ít việc mở nhất); NULL = Head giữ. Em có TVV → TVV (đọc)
+  lenh_chuyen_id INTEGER,                -- LPB-0 (N73 ①): việc "Báo PH · Chuyển lớp" (lenh_chuyen_lop.id, liên kết mềm) — gộp được với Kết quả Final (cùng dòng có phoi_hop_id)
+  lenh_mau TEXT                          -- LPB-0: "lớp đích|tuần" PH đã / sẽ được báo (đã báo mà lệnh đổi → Báo lại PH) · 'huy' = Báo lại PH · Huỷ chuyển lớp
 );
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_lenh ON viec_bao_ph(lenh_chuyen_id) WHERE lenh_chuyen_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat ON viec_bao_ph(nguoi_luat) WHERE trang_thai = 'mo' AND nguoi_luat IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
@@ -2480,6 +2483,33 @@ CREATE TABLE IF NOT EXISTS lop_xep_lich (
   gan_luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_lop_xep_lich_nguoi ON lop_xep_lich(user_id);
+-- LPB-0 (N73 ① ②, N77): việc BPXL "Nhận thông tin" — chuyen_lop: một việc mỗi LỚP ĐÍCH còn mở (lệnh mới dồn vào) · doi_gv: một việc mỗi lần lưu × lớp
+-- (cặp có tích "Tạo việc bàn giao"). Một nút Xác nhận. trang_thai mo | xong | bo (hệ thống: hết em / lịch đổi đã huỷ). Migrate `prLpb0` chép y.
+CREATE TABLE IF NOT EXISTS viec_nhan_tin (
+  id INTEGER PRIMARY KEY,
+  loai TEXT NOT NULL,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  branch_id INTEGER,
+  trang_thai TEXT NOT NULL DEFAULT 'mo',
+  han TEXT NOT NULL, han_chon TEXT,
+  nguoi_luat INTEGER REFERENCES users(id),   -- N74: MỘT người chốt lúc sinh (CVXL lớp → BPXL chi nhánh ít việc nhất → Head)
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,
+  tao_boi INTEGER REFERENCES users(id), tao_luc TEXT NOT NULL,
+  xong_boi INTEGER REFERENCES users(id), xong_luc TEXT, bo_ly_do TEXT, bo_luc TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_viec_nhan_tin_lop ON viec_nhan_tin(class_id, loai, trang_thai);
+CREATE INDEX IF NOT EXISTS idx_viec_nhan_tin_luat ON viec_nhan_tin(nguoi_luat) WHERE trang_thai = 'mo';
+CREATE INDEX IF NOT EXISTS idx_viec_nhan_tin_giao ON viec_nhan_tin(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_nhan_tin_xong ON viec_nhan_tin(xong_boi) WHERE xong_boi IS NOT NULL;
+-- Dòng của việc: lenh_id (lệnh chuyển lớp) | doi_id (doi_phan_cong) — liên kết mềm. `mau` = thứ BPXL đã thấy (đổi sau khi xác nhận → tin "Cập nhật").
+CREATE TABLE IF NOT EXISTS viec_nhan_tin_dong (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  viec_id INTEGER NOT NULL REFERENCES viec_nhan_tin(id),
+  lenh_id INTEGER, doi_id INTEGER, mau TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_vnt_dong_viec ON viec_nhan_tin_dong(viec_id);
+CREATE INDEX IF NOT EXISTS idx_vnt_dong_lenh ON viec_nhan_tin_dong(lenh_id) WHERE lenh_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_vnt_dong_doi ON viec_nhan_tin_dong(doi_id) WHERE doi_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
 -- Việc giao cho tôi (/my-work, một câu UNION ALL): chỉ mục một phần — dòng theo luật (NULL) không vào chỉ mục, câu cũ không đổi kế hoạch.

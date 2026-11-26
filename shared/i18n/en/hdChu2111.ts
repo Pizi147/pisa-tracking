@@ -47,4 +47,13 @@ export const EN_HD_CHU_2111 = {
   'Mở <b>Công việc</b> › tab <b>Đang theo dõi</b>: việc bạn được thêm vào <b>Theo dõi</b>; bấm dòng xem, chỉ xem.': 'Open <b>To do</b> › the <b>Following</b> tab: tasks where you were added to <b>Followers</b>; click a row to view (view only).',
   'Tin <b>Cập nhật</b> ở chuông báo khi việc đổi người, đổi hạn, có kết quả.': '<b>Update</b> news in the bell tells you when a task changes owner or deadline, or gets a result.',
   'Học thuật (điểm, Case, PA) và Cuối khoá: CX chỉ xem, Head chốt.': 'Academics (scores, Cases, PAs) and End of course: CX can only view; Head confirms.',
+  /* LPB-0 (N73): thẻ BPXL "Nhận thông tin". */
+  'Nhận thông tin chuyển lớp, đổi GV': 'Receive class transfer / teacher change info',
+  'Công việc › Nhận thông tin': 'To do › Info handover',
+  'Head ra quyết định chuyển lớp "Từ tuần …" (lớp bạn nhận xếp lịch) hoặc đổi GV có tích "Tạo việc bàn giao".': 'Head decides a class transfer "From week …" (a class you schedule) or a teacher change with "Create handover task" ticked.',
+  'Mở dòng <b>Nhận thông tin</b>, xem bảng em (lớp cũ → lớp mới, tuần bắt đầu, lịch Mock) hoặc cặp GV.': 'Open the <b>Info handover</b> row and read the student table (old → new class, start week, Mock schedule) or the teacher pairs.',
+  'Bấm <b>Xác nhận đã nhận</b>.': 'Click <b>Confirm received</b>.',
+  'Việc Xác nhận; em chuyển sau sẽ vào việc mới.': 'The task is confirmed; students transferred later go into a new task.',
+  'Bấm <b>Hoàn tác</b> hoặc <b>Mở lại</b>.': 'Click <b>Undo</b> or <b>Reopen</b>.',
+  'Không phải lớp của bạn: bấm ô Phụ trách để chuyển cho người khác.': 'Not your class: click the Owner box to pass it to someone else.',
 } as const;

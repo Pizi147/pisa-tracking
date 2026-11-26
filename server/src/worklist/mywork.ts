@@ -183,6 +183,8 @@ export type WorkItem = {
   /** B2-06: việc Vận hành có HV liên quan — tên các em (dòng phụ). */
   hocVienLienQuan?: string;
   hangMuc?: string | null;
+  /** LPB-0 (N73 ①): việc Báo PH · Chuyển lớp — lớp NGUỒN của lệnh; web gom một dòng "Chuyển lớp · {lớp cũ} · n em". */
+  nhomChuyenLop?: { lopId: number; ma: string } | null;
 };
 
 /**
@@ -230,7 +232,9 @@ export type WorkGroupKey =
   /* N49 (chủ SP 16/11): Báo cáo PH quá hạn > 7 ngày (đã rời việc GV) mà lớp còn thiếu em — một việc mỗi lớp × đợt cho QL (tab "Việc quản lý"). */
   | 'bc_ph_qua_han'
   /* GV-1 (N58, B2): Meeting CX / GĐCN — Xếp lịch họp (BPXL; không có → TVV của em) · Kết quả meeting (CX; không có → Head). Bảng `meeting_phan`. */
-  | 'meeting_xep_lich' | 'meeting_ket_qua';
+  | 'meeting_xep_lich' | 'meeting_ket_qua'
+  /* LPB-0 (N73 ⑥): BPXL "Nhận thông tin · Chuyển lớp / Đổi GV" — một việc mỗi lớp đích còn mở / mỗi lần lưu × lớp; một nút Xác nhận. Bảng `viec_nhan_tin`. */
+  | 'nhan_tin';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -292,6 +296,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   meeting_ket_qua: {
     label: 'Kết quả meeting',
     hint: 'Meeting CX/GĐCN — ghi kết quả buổi họp rồi bấm Hoàn thành. TVV nhập hộ được. Chi nhánh chưa có CX thì Head ghi.',
+  },
+  nhan_tin: {
+    label: 'Nhận thông tin',
+    hint: 'Học viên chuyển lớp / đổi GV — xem thông tin để xếp lịch rồi bấm Xác nhận đã nhận.',
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {

@@ -45,6 +45,7 @@ function soViecMo(ids: readonly number[]): Map<number, number> {
         WHERE x.status = 'pending' AND ${CON_VIEC('pa')} AND x.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT assignee_user_id FROM tasks WHERE progress NOT IN ('done', 'stopped') AND assignee_user_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT COALESCE(phu_trach_id, nguoi_luat) FROM viec_nhan_tin WHERE trang_thai = 'mo' AND COALESCE(phu_trach_id, nguoi_luat) IN (SELECT value FROM json_each(?1))   -- LPB-0
     ) GROUP BY nguoi`).all(ds) as { nguoi: number; n: number }[];
   return new Map(rows.map((r) => [r.nguoi, r.n]));
 }
@@ -56,6 +57,21 @@ export function itViecNhat(ds: readonly number[]): number | null {
   let tot = ds[0];
   for (const u of ds) if ((n.get(u) ?? 0) < (n.get(tot) ?? 0)) tot = u;
   return tot;
+}
+
+/**
+ * Rà PTA #2266 (N74): chọn LẦN LƯỢT cho một lô việc sinh cùng lúc — đếm việc mở MỘT lần (`soViecMo`), mỗi lần chọn người ít việc nhất rồi cộng dần (hoà → gán sớm hơn).
+ * Trả hàm chọn: gọi một lần mỗi việc của lô. Nhóm ≤ 1 người: 0 câu.
+ */
+export function chonLanLuot(ds: readonly number[]): () => number | null {
+  if (ds.length <= 1) return () => ds[0] ?? null;
+  const n = soViecMo(ds);
+  return () => {
+    let tot = ds[0];
+    for (const u of ds) if ((n.get(u) ?? 0) < (n.get(tot) ?? 0)) tot = u;
+    n.set(tot, (n.get(tot) ?? 0) + 1);
+    return tot;
+  };
 }
 
 /** CVXL đã nhận lớp (N77) — còn hoạt động + còn vai BPXL ở bất kỳ chi nhánh nào (BPXL xếp lịch mọi chi nhánh). */

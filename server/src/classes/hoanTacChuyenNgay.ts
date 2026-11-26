@@ -55,6 +55,10 @@ export function dongDaoChuyenNgay(sidVao: number | readonly number[], lopIds: re
     { bang: 'viec_bao_ph', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'viec_bao_ph_lan', dk: `viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id ${em})`, args: sids, k: 'them' },   // rà vòng 2 P2 (1): lần ghi của việc sinh trong lần chuyển
     { bang: 'viec_theo_doi', dk: `loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE student_id ${em})`, args: sids, k: 'them' },
+    /* LPB-0 (N73): việc BPXL Nhận thông tin của lớp (nguồn / đích) + dòng em của các lệnh + người theo dõi — sinh / đổi theo lệnh, Hoàn tác trả như trước. */
+    { bang: 'viec_nhan_tin', dk: `class_id ${lop}`, args: [...lopIds], k: 'ca' },
+    { bang: 'viec_nhan_tin_dong', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
+    { bang: 'viec_theo_doi', dk: `loai = 'nhan_tin' AND ref_id IN (SELECT id FROM viec_nhan_tin WHERE class_id ${lop})`, args: [...lopIds], k: 'them' },
     { bang: 'lenh_chuyen_lop', dk: `student_id ${em}`, args: sids, k: 'ca' },
     { bang: 'ban_giao_mon', dk: `lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id ${em})`, args: sids, k: 'ca' },
     { bang: 'ban_chup_lo_trinh', dk: `student_id ${em}`, args: sids, k: 'them' },

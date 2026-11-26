@@ -10134,6 +10134,9 @@ await runPrBanGiaoDotTests({ check, checkAsync, assert, assertThrows, conn, TODA
 // ==================================================================== VAI-0 (N74–N77, chủ SP 26/11): GĐCN · Lead TVV · BPXL theo lớp · một việc một người
 const { runPrVaiMoiTests } = bocTep('prVaiMoi', await import('./prVaiMoi.tests.ts'));
 await runPrVaiMoiTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== LPB-0 (N73, chủ SP 26/11): việc liên phòng ban TVV / BPXL khi chuyển lớp / đổi GV
+const { runPrLpb0Tests } = bocTep('prLpb0', await import('./prLpb0.tests.ts'));
+await runPrLpb0Tests({ check, checkAsync, assert, conn, TODAY, P, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

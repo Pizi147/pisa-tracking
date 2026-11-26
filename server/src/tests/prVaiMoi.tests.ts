@@ -188,7 +188,7 @@ export async function runPrVaiMoiTests(t: any) {
     conn.prepare(`UPDATE students SET consultant_user_id = NULL WHERE id = ?`).run(v.student_id);
     bp.chotLeadBaoPh([v.id]);
     xoaNho();
-    const co = (pp: any, nguoi?: 'tat-ca') => ((myWork(pp, { nguoi }) as any).items as any[]).filter((i) => i.key.includes(`:${v.id}`) && i.mine);
+    const co = (pp: any, nguoi?: 'tat-ca') => ((myWork(pp, { nguoi }) as any).items as any[]).filter((i) => i.key === `bao-ph:${v.id}` && i.mine);
     assert(co(loadPrincipal(leadMb)).length === 1, 'Lead Của tôi');
     assert(co(loadPrincipal(leadMb), 'tat-ca').length === 1, 'Lead Tất cả');
     assert(!co(P.mbManager).length, 'Head Của tôi không còn');

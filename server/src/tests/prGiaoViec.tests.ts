@@ -119,7 +119,9 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(await ma(() => gv.themTheoDoi(ql, 'bao_ph', id, { userIds: [tvv2.userId, 'x'] })) === 400 && soTd() === td0, 'lô có id hỏng → 400');
     assert(await ma(() => giao(gvbm, 'bao_ph', id, admin.userId)) === 403, 'GVBM (người theo dõi, không phụ trách) đổi → 403');
     giao(tvv, 'bao_ph', id, admin.userId);
-    assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', id, { userId: tvv2.userId, phuTrachCu: admin.userId })) === 403, 'TVV hết là người phụ trách → 403');
+    /* LPB-0 (N73 ④, chủ SP 26/11): người ĐÃ GIAO (TVV) đổi tiếp được — kiểm bằng người không giữ, không giao: TVV khác cùng chi nhánh → 403. */
+    assert(gv.xemGiaoViec(tvv, 'bao_ph', id).coTheDoiNguoi, 'người đã giao đổi được (N73 ④)');
+    assert(await ma(() => gv.doiPhuTrach(tvv2, 'bao_ph', id, { userId: ql.userId, phuTrachCu: admin.userId })) === 403, 'không giữ, không giao → 403');
     assert(await ma(() => gv.doiPhuTrach(admin, 'bao_ph', id, { userId: tvv2.userId, phuTrachCu: null })) === 409, 'phuTrachCu cũ → 409');
     /* Đổi song song: hai lượt cùng thấy Admin → lượt sau 409. */
     gv.doiPhuTrach(ql, 'bao_ph', id, { userId: tvv2.userId, phuTrachCu: admin.userId });
@@ -911,14 +913,15 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'có vai ở chi nhánh của lớp thì chọn được');
   }));
 
-  const { catBaoPh0 } = await import('./catBaoPh0.ts');
+  const { catBaoPh0, catLpb0 } = await import('./catBaoPh0.ts');
+  const { migratePrLpb0 } = await import('../migrate/prLpb0.ts');
   const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước GV-1: cắt ba dòng cột giao việc + khối bảng GV-1 khỏi chữ schema.sql. */
     /* VAI-0: bỏ viec_bao_ph.nguoi_luat + chỉ mục (themCotPrVaiMoi thêm lại bên dưới) — bộ cắt cũ khớp dòng `tra_lai_id` cuối bảng. */
-    const cat = catBaoPh0(SCHEMA.replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, ''))   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
+    const cat = catBaoPh0(catLpb0(SCHEMA).replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, ''))   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
       /* TUYEN-0 (sau TL-1): bỏ khối bảng bỏ theo dõi tuyến + chỉ mục người làm bước. */
       .replace(/-- TUYEN-0 \(N72 ①\)[\s\S]*?idx_tra_lai_xong_boi[^\n]*\n/, '')
       /* TL-1 (sau GV-1): bỏ viec_bao_ph.tra_lai_id + khối vi_pham_tra_lai trước — DB trước GV-1 cũng trước TL-1. */
@@ -940,6 +943,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     themCotPrBaoPh0(cu, []);   // BAOPH-0
     migratePrTuyen0(cu, []);   // TUYEN-0: chỉ mục người làm bước (meeting_phan.xong_boi)
     themCotPrVaiMoi(cu, []);   // VAI-0: meeting_phan.nguoi_luat + lop_xep_lich
+    migratePrLpb0(cu, []);   // LPB-0: viec_bao_ph.lenh_chuyen_id / lenh_mau
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND (name LIKE '%giao%' OR name LIKE '%theo_doi%' OR name LIKE '%meeting_phan%') ORDER BY name`).all() as any[]));
