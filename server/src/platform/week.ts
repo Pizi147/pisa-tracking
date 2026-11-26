@@ -23,10 +23,16 @@ import { nho } from './nguCanhRequest.ts';
  */
 import { MONTH_CODE, hanChamMt0, owningMonthOf, tuanLich, weekNumberInMonthOf } from '../../../shared/domain/index.ts';
 
+/* RA-2711: hàm thuần, gọi cho từng ô điểm (hạn chấm, mốc trễ, mã tuần) — nhớ theo ngày (vài nghìn ngày, cả tiến trình). */
+const THU_HAI = new Map<string, string>();
 export function mondayOf(date: string): string {
-  const d = parseDate(date);
-  const dow = d.getUTCDay();            // 0 = Chủ nhật
-  return addDays(date, dow === 0 ? -6 : 1 - dow);
+  let t2 = THU_HAI.get(date);
+  if (t2 === undefined) {
+    const dow = parseDate(date).getUTCDay();            // 0 = Chủ nhật
+    t2 = addDays(date, dow === 0 ? -6 : 1 - dow);
+    THU_HAI.set(date, t2);
+  }
+  return t2;
 }
 
 /** Tháng sở hữu tuần = tháng chứa thứ Năm (ngày thứ 4 tính từ thứ Hai). */
