@@ -53,6 +53,7 @@
  "web/src/modules/classes/TenGiaoVien.tsx",
  "web/src/modules/classes/ThanhViecLop.tsx",
  "web/src/modules/classes/ThongTinLopPanel.tsx",
+ "web/src/modules/classes/XepLichLop.tsx",
  "web/src/modules/classes/XoaKetThucLopPanel.tsx",
  "web/src/modules/classes/banGiaoChung.tsx",
  "web/src/modules/classes/chuyenLopChung.tsx",

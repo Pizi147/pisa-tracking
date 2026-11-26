@@ -126,13 +126,19 @@ export function HoTroHocVienTab() {
   const uid = session?.user?.id;
   const soCuaToi = useSoViecCuaToi();
   const macDinhCx = soCuaToi && !soCuaToi.viec ? 'tat-ca' : 'toi';
-  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : laCx ? nguoiDaNho(uid) ?? macDinhCx : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
+  /* VAI-1 (N75, mockup v29 V3c): GĐCN (chỉ nhận Kết quả meeting) mở như CX — có việc → "Của tôi", không → "Tất cả". Kiêm Head thật thì như Head. */
+  const laGdcn = !!session?.grants?.some((g) => g.vaiThat === 'branch_director') && !session?.grants?.some((g) => g.role === 'manager' && !g.vaiThat);
+  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : laCx || laGdcn ? nguoiDaNho(uid) ?? macDinhCx : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
+  /* VAI-1 (N76b, mockup v29 V4): Lead TVV ở "Của tôi" giữ việc TVV của em chưa có TVV — chia tab như TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ);
+     "Của GV" / "Tất cả" vẫn tab như CX. Chỉ đổi cách chia tab, không đổi quyền / nút. */
+  const laLeadTvv = !!session?.grants?.some((g) => g.vaiThat === 'lead_consultant');
+  const tabTvv = laTvv || (nguoi === 'toi' && laLeadTvv);
   const hep = useManHinh('(max-width: 639px)');
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
   /* CV-TAB (chủ SP 06/11): tab hạng mục ở `nhom=` (tham số sẵn có — link Tổng quan / chuông / Quay lại cũ vẫn đúng); link `loai=` (một loại việc) → tab chứa loại đó. */
-  const tabUrl = params.get('nhom') ?? (params.get('loai') ? (laTvv ? nhomViecTvvCua : nhomViecCua)(params.get('loai')!) : null);
+  const tabUrl = params.get('nhom') ?? (params.get('loai') ? (tabTvv ? nhomViecTvvCua : nhomViecCua)(params.get('loai')!) : null);
   /* OV-11f (TQ-2): `loai=` (từ Tổng quan, vd "PA chưa có Kết quả") lọc ĐÚNG loại việc — số ở ô = số việc nơi mở; đổi nhóm / Xoá lọc thì bỏ. */
   const loai = !params.get('nhom') && params.get('loai') ? params.get('loai') : null;
   const viec = params.get('viec');
@@ -272,14 +278,14 @@ export function HoTroHocVienTab() {
   const coDuyet = !xemMotGv && (!!demDuyet?.cho || !!theId);
   const coVanHanh = (!!session?.nav?.workOps || !!session?.nav?.vanHanh) && !chiChamDiem;
   /* NHẸ HƠN PR-2a (v23 ④, XM-4; PTA chốt XM-B): Admin — tab vận hành Tất cả · Điểm · Báo cáo PH · Lịch thi · Hồ sơ · Vận hành; "Tất cả" xếp mọi loại (tab gộp, không là tab của việc nào). */
-  const thuTuTab: readonly string[] = laTvv ? NHOM_CV_TVV : chiChamDiem ? TAB_ADMIN : TAB_CV;
+  const thuTuTab: readonly string[] = tabTvv ? NHOM_CV_TVV : chiChamDiem ? TAB_ADMIN : TAB_CV;
   const tabThat = thuTuTab.filter((k) => k !== 'tat-ca');
-  const tabCua = (it: WorkItem) => (chiChamDiem ? tabAdminCua(it) : tabCuaViec(it, laTvv));
+  const tabCua = (it: WorkItem) => (chiChamDiem ? tabAdminCua(it) : tabCuaViec(it, tabTvv));
   const trongTabK = (it: WorkItem, k: string | null) => k === 'tat-ca' || tabCua(it) === k;
   const dongCuaTab = (ds: readonly WorkItem[], k: string) => dongTab(ds.filter((x) => trongTabK(x, k)), moCaDong);
   /* AUDIT-1611 P1-03: số tab / đầu mục của GV, TVV đếm việc CỦA TÔI (như đầu trang, chuông) — dòng làm thay vẫn vẽ, ghi riêng "· n làm thay". */
   const cuaBan = (ds: readonly WorkItem[]) => (laQuanLy ? ds : dongCuaToi(ds));
-  const tenTab = (k: string) => (k === 'theo-doi' ? t('Đang theo dõi') : k === 'duyet' ? t('Chờ bạn duyệt') : chiChamDiem ? NHAN_TAB_ADMIN[k] ?? nhanTabCv(k) : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, laTvv));
+  const tenTab = (k: string) => (k === 'theo-doi' ? t('Đang theo dõi') : k === 'duyet' ? t('Chờ bạn duyệt') : chiChamDiem ? NHAN_TAB_ADMIN[k] ?? nhanTabCv(k) : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, tabTvv));
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
     if (chiChamDiem && conGiu.size) conGiu.add('tat-ca');
@@ -319,7 +325,7 @@ export function HoTroHocVienTab() {
   useEffect(() => {
     if (data && tab && !choDemDuyet && tab !== params.get('nhom') && !params.get('loai') && !theId) setParam('nhom', tab);
   }, [data, tab, choDemDuyet]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const trongTab = useMemo(() => items.filter((it) => trongTabK(it, tab)), [items, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const trongTab = useMemo(() => items.filter((it) => trongTabK(it, tab)), [items, tab, tabTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* P1 rà 11/11 G5-04 / G1-05: bộ lọc hạn áp CẢ trang (mọi tab, `locItems`) → số trong ô đếm cùng tập với đầu trang "n việc · m quá hạn" (`items`), không riêng tab. */
   const demHan = useMemo(() => demLocNhanh(items, 'tat-ca', homNay), [items, homNay]);
   /* TU2-4: việc dựng từ PA chưa tới hạn (khối "PA đang chạy") đang / vừa mở — không nằm trong `/my-work`; nhớ để panel đứng nguyên khi dữ liệu tải lại (Lưu xong PA rời khối). */
@@ -341,7 +347,7 @@ export function HoTroHocVienTab() {
   /* Mục của MỌI tab (thứ tự "việc tiếp" đi tiếp sang tab sau) — dòng vẽ = máy chủ + dòng giữ chỗ, cùng lọc hạn. */
   const mucTheoTab = useMemo(() => {
     const hien = theoKhung(hienThi).filter((it) => khopLocNhanh(it, loc, homNay));
-    const out = new Map(thuTuTab.map((k) => [k, chiaMucTab(dongCuaTab(hien, k), laTvv, homNay)]));
+    const out = new Map(thuTuTab.map((k) => [k, chiaMucTab(dongCuaTab(hien, k), tabTvv, homNay)]));
     const cu = thuTuCu.current;
     if (!cu || cu.khoa !== khoaLoc) {
       thuTuCu.current = { khoa: khoaLoc, vt: new Map([...out.values()].flat().flatMap((m) => m.items).map((x, i) => [x.key, i])) };
@@ -358,17 +364,17 @@ export function HoTroHocVienTab() {
     }
     const vt = (x: WorkItem) => cu.vt.get(x.key)!;
     return new Map([...out].map(([k, ds]) => [k, ds.map((m) => ({ ...m, items: [...m.items].sort((a, b) => vt(a) - vt(b)) }))]));
-  }, [hienThi, khung, loai, loc, homNay, khoaLoc, laTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hienThi, khung, loai, loc, homNay, khoaLoc, tabTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
   const demMuc = useMemo(() => {
     if (!tab) return new Map<string, { n: number; quaHan: number; lamThay: number }>();
-    const toi = new Map(chiaMucTab(dongCuaTab(cuaBan(locItems), tab), laTvv, homNay).map((m) => [m.key, m] as const));
-    return new Map(chiaMucTab(dongCuaTab(locItems, tab), laTvv, homNay).map((m) => {
+    const toi = new Map(chiaMucTab(dongCuaTab(cuaBan(locItems), tab), tabTvv, homNay).map((m) => [m.key, m] as const));
+    return new Map(chiaMucTab(dongCuaTab(locItems, tab), tabTvv, homNay).map((m) => {
       const x = toi.get(m.key);
       return [m.key, { n: x?.items.length ?? 0, quaHan: x?.quaHan ?? 0, lamThay: m.items.length - (x?.items.length ?? 0) }] as const;
     }));
-  }, [locItems, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [locItems, tab, tabTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang. `nhom` = nhóm đang vẽ (CV-05: việc kế cùng nhóm). */
@@ -525,7 +531,7 @@ export function HoTroHocVienTab() {
   const dsXong = useMemo(() => {
     const ds = [...giu.values()].filter((x) => xong.has(x.key));
     return tabThat.map((k) => ({ key: k, label: tenTab(k), items: ds.filter((x) => tabCua(x) === k), quaHan: 0 })).filter((m) => m.items.length);
-  }, [giu, xong, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [giu, xong, tabTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!xong.size) setXemXong(false); }, [xong.size]);
   const loiVanHanh = <LoiVanHanh cn={branchId} />;
   /* GV-2 (mockup v22 G8a): BPXL (`trangDauTest`, không dạy lớp) — không khối "Lớp của tôi" / "+ Task" của GV. */
@@ -573,7 +579,7 @@ export function HoTroHocVienTab() {
   const khoaPanel = theoDoiChon && !moThang && !coLamThay;
   const dangLamThay = theoDoiChon && coLamThay;
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking') : /^(meeting_|phoi_hop_tvv$)/.test(chon.group) ? t('Meeting CX/GĐCN')   // GV-2 (mockup v22 G8): "Việc · Meeting CX/GĐCN"
-    : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
+    : dich(tabTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
     loai: `${dangLamThay ? t('Làm thay') : chiXemCx(chon) ? t('Chỉ xem') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null, chiXem: chiXemCx(chon),
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
@@ -613,7 +619,8 @@ export function HoTroHocVienTab() {
                       if (k !== 'toi' && next.get('nhom') === 'duyet') next.delete('nhom');
                       setParams(next, { replace: true });
                     }}
-                    muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'gv' ? soGvQuaHan || null : null, title: k === 'gv' && soGvQuaHan ? t('{n} quá hạn', { n: soGvQuaHan }) : undefined }))} /></span>}
+                    /* VAI-1 (PTA 26/11, mockup v29 V4): Lead TVV trọng HV / khách hàng — chỉ Của tôi · Tất cả, không "Của GV". */
+                    muc={LOC_NGUOI_VIEC.filter((k) => !(laLeadTvv && k === 'gv')).map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'gv' ? soGvQuaHan || null : null, title: k === 'gv' && soGvQuaHan ? t('{n} quá hạn', { n: soGvQuaHan }) : undefined }))} /></span>}
                 {/* DEM-VIEC: nút "Của tôi" không số. NHẸ HƠN PR-2a: "Của GV · n" = số quá hạn (chỉ khi đã nạp danh sách tất cả). */}
               </>
             )}
@@ -755,7 +762,7 @@ export function HoTroHocVienTab() {
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : tab === 'van-hanh' && coVanHanh ? loiVanHanh : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && tab !== 'duyet' && (mucs.length > 0 || (tab === 'case-hoc-thuat' && !!data.paDangChay?.length)) && (
-            <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
+            <DanhSachViec muc={mucs} nho={uid != null ? `u${uid}:${tab ?? ''}` : undefined} dem={demMuc} soHien={10} dauPhai={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={tabTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} chamS={{ lop: lopCham, nguoi: nguoiCham, mo: moLopCham, con: conViecKhac, onTiep: keTiep ? () => boChuRoi(() => mo(keTiep)) : null }} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} anNguoi={chiChamDiem} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
               /* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. Cùng lưới cột với các nhóm trên. */

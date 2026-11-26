@@ -34,14 +34,20 @@ export function KeHoachTestTab() {
   const { branchCount, session } = useSession();
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
-  const branchId = cnUrl ? Number(cnUrl) : macDinh;
+  const bpxl = !!session?.nav?.trangDauTest;
+  /* VAI-1 (N77, mockup v29 K1): BPXL xếp lịch MỌI chi nhánh — ô Chi nhánh luôn hiện, mặc định chi nhánh gán (nhiều: chi nhánh đầu); "Tất cả" = `cn=all`
+     (máy chủ `branchId=all`; không gửi gì = máy chủ tự mở chi nhánh gán — lead BPXL toàn hệ thống: mọi chi nhánh). */
+  const cnGan = bpxl ? session?.grants?.find((g) => g.role === 'scheduler' && g.branchId !== null)?.branchId ?? null : null;
+  const tatCaCn = bpxl && cnUrl === 'all';
+  const branchId = tatCaCn ? null : cnUrl ? Number(cnUrl) : macDinh ?? cnGan;
+  const qCn = tatCaCn ? '?branchId=all' : branchId ? `?branchId=${branchId}` : '';
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
   /* OV-15c (C18): em vừa chọn ở ô tìm — lưới lớp đó cuộn tới hàng em và đánh dấu hàng. */
   const hvParam = params.get('hv') ? Number(params.get('hv')) : null;
   const [xuat, setXuat] = useState(false);
 
-  const { data, loading, error, reload } = useApi<DanhSachLop>(`/ke-hoach-test/lop${branchId ? `?branchId=${branchId}` : ''}`);
+  const { data, loading, error, reload } = useApi<DanhSachLop>(`/ke-hoach-test/lop${qCn}`);
   const [chu, setChu] = useState('');
   const [moLoc, setMoLoc] = useState(false);
   const [moList, setMoList] = useState<number[]>([]);
@@ -56,9 +62,8 @@ export function KeHoachTestTab() {
   const [lopLoc, setLopLoc] = useState<number | null>(lopParam);
   /* Tin chuông khi đang ở sẵn trang: lọc + mở đúng lớp đó (lần đầu vào trang thì `?classId=` tự mở như cũ). */
   useEffect(() => { if (lopParam) { setLopLoc(lopParam); setMoList((m) => (m.includes(lopParam) ? m : [...m, lopParam])); } }, [lopParam]);
-  const bpxl = !!session?.nav?.trangDauTest;
   /* Dải số BPXL: hai số từ `GET /tong-quan/mock-test` (một request, chỉ BPXL); hai số kia cộng từ danh sách lớp đã nạp. Lưu ở lưới không gọi lại. */
-  const tq = useApi<TongQuanMt>(bpxl ? `/tong-quan/mock-test${branchId ? `?branchId=${branchId}` : ''}` : null, [bpxl, branchId]);
+  const tq = useApi<TongQuanMt>(bpxl ? `/tong-quan/mock-test${qCn}` : null, [bpxl, qCn]);
   const dienThoai = useDienThoai();
   const { homNay } = useNgayNghiepVu();
   /* Đầu trang (mockup U05; G1-08): Xuất Excel… · Xếp nhiều MT… cạnh tiêu đề "Test" — TestPage chừa chỗ `#test-nut-trang`. Điện thoại cùng chỗ
@@ -183,6 +188,13 @@ export function KeHoachTestTab() {
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
   const lyDoTat = hopMo ? t('Đóng hộp kỹ năng trước') : undefined;
 
+  const doiCn = (id: number | null) => {
+    const next = new URLSearchParams(params);
+    next.delete('branchId'); if (id) next.set('cn', String(id)); else if (bpxl) next.set('cn', 'all'); else next.delete('cn');
+    next.delete('classId'); next.delete('lop'); setLopLoc(null);
+    setParams(next, { replace: true });
+  };
+
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || (tuan && hl.loading && !hl.data)) return <div className="space-y-3"><Skeleton rows={8} /></div>;
   if (!data.lop.length) return <div className="card"><Empty title={t('Bạn không có lớp nào để xem lịch Test')} /></div>;
@@ -207,6 +219,8 @@ export function KeHoachTestTab() {
       {/* U05 (mockup V11 `.thanh-cu`): Fast Track / Lớp thường · chip "Chưa đủ MT" · Chi nhánh · ô tìm · chip "Lớp: … ✕" · ⓘ · phải: n HV.
           375 (khu E): ô tìm + "Lọc" + ⋯ (Xuất, Xếp nhiều MT…); chip, Chi nhánh trong "Lọc". */}
       <div className="loc-hv flex flex-wrap items-center gap-2" data-hd="kht-loc">
+        {/* VAI-1 (mockup v29 K1): BPXL — ô Chi nhánh đầu hàng lọc (thứ tự DOM = thứ tự nhìn, Tab đi đúng). */}
+        {bpxl && !dienThoai && <BranchFilter luon branchId={branchId} onBranch={doiCn} />}
         {!dienThoai && <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
           onChange={(k) => { if (k !== 'tat-ca') { setLopLoc(null); setLoai(k); } }} />}
         {tuanXem && (
@@ -233,24 +247,19 @@ export function KeHoachTestTab() {
               )}
             </>
           );
-          const doiCn = (id: number | null) => {
-            const next = new URLSearchParams(params);
-            next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-            next.delete('classId'); next.delete('lop'); setLopLoc(null);
-            setParams(next, { replace: true });
-          };
           return dienThoai ? (
             <>
               {/* GD-11b (mockup ⑦ B7): 375 — Fast Track / Lớp thường đủ rộng, ô tìm một hàng, chip "Chưa đủ MT" hiện thẳng; "Lọc" chỉ còn khi
                   có nhiều chi nhánh (chi nhánh nằm trong đó). */}
+              {bpxl && <div className="basis-full"><BranchFilter luon hetHang branchId={branchId} onBranch={doiCn} /></div>}
               <div className="flex basis-full [&>*]:flex-1"><CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
                 onChange={(k) => { if (k !== 'tat-ca') { setLopLoc(null); setLoai(k); } }} /></div>
-              <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className={`min-w-0 flex-1 ${branchCount > 1 ? '' : 'basis-full'}`} />
-              {branchCount > 1 && (
+              <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className={`min-w-0 flex-1 ${branchCount > 1 && !bpxl ? '' : 'basis-full'}`} />
+              {branchCount > 1 && !bpxl && (
                 /* KIEM-TAY-1011 (6): nút + khối là con trực tiếp của hàng flex — khối "Lọc" xuống dòng riêng (`basis-full`). */
                 <button type="button" className="btn min-h-[44px]" aria-expanded={moLoc} aria-controls="kht-loc-them" onClick={() => setMoLoc((v) => !v)}>{t('Lọc')}</button>
               )}
-              {moLoc && branchCount > 1 && (
+              {moLoc && branchCount > 1 && !bpxl && (
                 <div id="kht-loc-them" className="order-1 flex basis-full flex-wrap items-center gap-2">
                   <BranchFilter branchId={branchId} onBranch={doiCn} />
                 </div>
@@ -260,7 +269,7 @@ export function KeHoachTestTab() {
           ) : (
             <>
               {chipKe}
-              {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
+              {!bpxl && branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
               <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="w-[280px]" />
             </>
           );
@@ -288,6 +297,8 @@ export function KeHoachTestTab() {
           )}
           {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>{t('tuần {n}/{tong}', { n: 5, tong: 10 })}</b>).</span>}
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
+          {/* VAI-1 (chủ SP 26/11 "Ẩn điểm, chỉ lịch"): vì sao lớp chi nhánh khác không có điểm. */}
+          {data.lop.some((l) => l.xemHoSo === false) && <span className="block">{t('Lớp ở chi nhánh bạn không được gán: chỉ lịch, không có điểm.')}</span>}
         </NutLuat></span>
         <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:ml-auto">
           {/* BPXL-2 (mockup v22 K2): đang lọc em (Vắng / Chưa đủ lịch MT) → số em khớp; còn lại → HV của các lớp đang hiện. */}
