@@ -40,7 +40,7 @@ const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');  
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
-const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON, TRAN_BAO_PH_LO } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON, TRAN_BAO_PH_LO, TRAN_BAO_PH_LO_QL } = await import('./tocDoDuong.ts');
 const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -2605,6 +2605,29 @@ await checkAsync(`TUYEN-2 · TVV mở bảng Báo PH nhiều em: GET /y-thuc/bao
   assert(nhieu.status === 200 && Object.keys(nhieu.json as object).length === ids.length, `trả ${Object.keys(nhieu.json as object).length}/${ids.length}`);
   assert(nhieu.n <= TRAN_BAO_PH_LO.cau && nhieu.dong <= TRAN_BAO_PH_LO.dong, `${nhieu.n} câu ${nhieu.dong} dòng > ${TRAN_BAO_PH_LO.cau} · ${TRAN_BAO_PH_LO.dong}`);
   assert(nhieu.n <= mot1.n + 2, `N+1: 1 em ${mot1.n} câu · ${ids.length} em ${nhieu.n} câu`);
+  /* Rà PTA #2273 P2-2: Head / Quản trị (danh sách "Tất cả" của Báo PH) — cùng trần. */
+  for (const v of ['QL', 'QT'] as const) {
+    const r = await doSql(v, 'GET', `/y-thuc/bao-ph-lo?ids=${ids.join(',')}`);
+    console.log(`      (đo ${v}: ${ids.length} em ${r.n} câu ${r.dong} dòng)`);
+    assert(r.status === 200 && r.n <= TRAN_BAO_PH_LO_QL.cau && r.dong <= TRAN_BAO_PH_LO_QL.dong, `${v}: ${r.status} · ${r.n} câu ${r.dong} dòng > ${TRAN_BAO_PH_LO_QL.cau} · ${TRAN_BAO_PH_LO_QL.dong}`);
+  }
+  /* Rà PTA #2273 P2-4 (quyền): việc của em TVV khác / em chi nhánh khác → bị bỏ, trả {}; việc được GIAO cho TVV (phu_trach_id) → trả. */
+  const la = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL AND v.phu_trach_id IS NULL
+      AND s.consultant_user_id IS NOT NULL AND s.consultant_user_id != ? ORDER BY v.id LIMIT 3`).all(USER.TVV) as any[]).map((r) => r.id as number);
+  assert(la.length > 0, 'seed: cần việc Báo PH từ nguồn của em TVV khác');
+  const khac = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${la.join(',')}`);
+  assert(khac.status === 200 && JSON.stringify(khac.json) === '{}', `TVV đọc việc em TVV khác: ${JSON.stringify(khac.json)}`);
+  const cnKhac = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL
+      AND s.branch_id != (SELECT ur.branch_id FROM user_roles ur WHERE ur.user_id = ? AND ur.branch_id IS NOT NULL LIMIT 1) ORDER BY v.id LIMIT 3`).all(USER.QL) as any[]).map((r) => r.id as number);
+  if (cnKhac.length) {
+    const r = await doSql('QL', 'GET', `/y-thuc/bao-ph-lo?ids=${cnKhac.join(',')}`);
+    assert(r.status === 200 && JSON.stringify(r.json) === '{}', `Head MB đọc việc em chi nhánh khác: ${JSON.stringify(r.json)}`);
+  }
+  conn.prepare('UPDATE viec_bao_ph SET phu_trach_id = ? WHERE id = ?').run(USER.TVV, la[0]);
+  try {
+    const giao = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${la[0]}`);
+    assert(Object.keys(giao.json as object).map(Number).includes(la[0]), `việc được giao cho TVV: ${JSON.stringify(giao.json)}`);
+  } finally { conn.prepare('UPDATE viec_bao_ph SET phu_trach_id = NULL WHERE id = ?').run(la[0]); }
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {

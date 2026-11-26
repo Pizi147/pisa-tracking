@@ -67,6 +67,7 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Người có mặt ở bước (giữ / làm / nhận) — quyền khung + "Bạn". */ ids: number[];
   /** Người ĐÃ LÀM bước (theo dõi theo tuyến, C1). */ lam: number[];
   nd: string | null;
+  /** TUYEN-2 (rà #2273 P2-3): phần nội dung CHỈ người xem được Ý thức em đọc (liên hệ phụ huynh) — nối sau `nd`. */ ndEm?: string | null;
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
 };
@@ -342,13 +343,14 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
           ? buoc({ khoa, ten, trangThai: 'xong', chiTiet: x.performed_by ? null : x.thuc_ten ?? null, nguoi: x.thuc_ten ?? null, ngay: x.performed_on, ids: lam, lam, cungLuc: song, nd: x.note ?? null, viec: vx })
           : buoc({ khoa, ten, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'Đã bỏ', ngay: ngay10(x.removed_at), ...giuGvcn(x), cungLuc: song, viec: vx }));
       t.buoc.at(-1)!.docRieng = (p) => t.buoc.find((b) => b.khoa === khoa)!.ids.includes(p.userId) || theoDoiTayCua(p).has(`phoi_hop:${x.id}`);
-      /* TUYEN-2 (mockup v27 T6, PTA chốt): bước GVCN xác nhận Meeting — nội dung = "Nội dung gửi" + Phụ huynh (tên · quan hệ · SĐT). Có liên hệ PH → CHỈ người xem được
-         Ý thức em (`xemYThucHv`) đọc nội dung bước này (không qua quyền riêng của bước / theo dõi tay). */
+      /* TUYEN-2 (mockup v27 T6, PTA chốt): bước GVCN xác nhận Meeting — nội dung = "Nội dung gửi" + Phụ huynh (tên · quan hệ · SĐT). Dòng PH: CHỈ người xem được
+         Ý thức em (`xemYThucHv`) — không qua quyền riêng của bước / theo dõi tay. */
       if (laMeetingCx(x.kind) && x.status === 'done') {
         const ph = [x.ph_qh ? `${x.ph_qh.charAt(0).toUpperCase()}${x.ph_qh.slice(1)}` : null, x.ph_ten, x.ph_sdt].filter(Boolean).join(' · ');
         const b = t.buoc.at(-1)!;
-        b.nd = [x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null, ph ? `Phụ huynh: ${ph}` : null].filter(Boolean).join('\n') || null;
-        if (ph) b.docRieng = () => false;
+        /* Rà #2273 P2-3: "Nội dung gửi" theo quyền đọc nội dung bước như cũ; dòng Phụ huynh (`ndEm`) CHỈ người xem được Ý thức em. */
+        b.nd = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
+        b.ndEm = ph ? `Phụ huynh: ${ph}` : null;
       }
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
@@ -577,9 +579,10 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
   const xemEm = t.em ? xemYThucHv(p, t.em.id) : false;
   const hd = conVaiO(p, t.cn);
   const buocRa: BuocTuyen[] = t.buoc.map((b) => {
-    const co = !!b.nd?.trim();
-    const duoc = co && (xemEm || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
-    const { ids: _i, lam: _l, nd, docRieng: _d, vai: _v, ...goc } = b;
+    const co = !!b.nd?.trim() || !!b.ndEm;
+    const nd = [b.nd?.trim() ? b.nd : null, xemEm ? b.ndEm : null].filter(Boolean).join('\n');
+    const duoc = !!nd && (xemEm || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
+    const { ids: _i, lam: _l, nd: _n, ndEm: _e, docRieng: _d, vai: _v, ...goc } = b;
     return { ...goc, laToi: b.ids.includes(p.userId) && (b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho' || b.lam.includes(p.userId)),
       coNoiDung: duoc, khongQuyen: co && !duoc, ...(duoc ? { noiDung: nd! } : {}) };
   });

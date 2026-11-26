@@ -12,7 +12,7 @@
 import { DS_JSON, db, docNho, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  GHI_CHU_MEETING_TOI_THIEU, VIEC_TVV_BAO_PH, buocTvvViec, laMeetingCx, laViecTvvBaoPh, tenViec, quaHanBaoPh, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, tuanLich, type KetQuaBaoPh,
+  GHI_CHU_MEETING_TOI_THIEU, VIEC_TVV_BAO_PH, buocTvvViec, laMeetingCx, laViecTvvBaoPh, tenViec, quaHanBaoPh, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, tuanLich, nguonBaoPh, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { boVaiBpxl, can, coQuyenBuocTiep, laTvvCuaEm, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -711,11 +711,11 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       /* BAOPH-0 (N72 ⑤): Trao đổi gia đình (Phối hợp SOS — một lần báo PH mỗi em × lượt, nói luôn việc họp CX) · kết quả Progress / Final (Báo PH). */
       const traoDoi = r.ph_kind === 'talk_family';
       /* TUYEN-2 (mockup v27 T11c, N72 ⑤): mọi nguồn báo PH là MỘT nhóm "Báo PH" — dòng lớp × nguồn × đợt, "n em" mở tại chỗ (`gopNguon`, khuôn A). */
-      const nguon = traoDoi ? `Trao đổi gia đình${r.ph_luot ? ` · MT${r.ph_luot}` : ''}` : r.nhan;
+      const { nguon, gopNguon } = nguonBaoPh({ phKind: r.ph_kind, phLuot: r.ph_luot, nhan: r.nhan })!;
       items.push({
         key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency,
         studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nguon, count: null, gopNguon: `${r.ph_kind}:${r.ph_luot ?? ''}:${nguon}`,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: nguon, count: null, gopNguon,
         reason: traoDoi ? `Phối hợp SOS sau MT${r.ph_luot ?? ''} — báo gia đình (cả việc họp CX / GĐCN nếu có) và ghi kết quả` : `${r.nhan} lớp thường — báo phụ huynh và ghi kết quả`,
         tieuDe: `Báo PH · ${traoDoi ? 'Trao đổi gia đình' : r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: traoDoi && r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
@@ -741,10 +741,11 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     if (r.lenh_chuyen_id != null) {
       /* LPB-0 (N73 ①): Báo PH · Chuyển lớp — cùng nhóm Báo PH; web gom một dòng "Chuyển lớp · {lớp cũ} · n em" theo `nhomChuyenLop` (lớp nguồn của lệnh).
          TUYEN-2 (mockup v27 T11c, khuôn A): dòng gộp theo LỚP CŨ × nguồn (`gopNguon` + lớp của dòng = lớp nguồn lệnh; lệnh thiếu lớp nguồn → lớp hiện tại). */
+      const g = nguonBaoPh({ nhan: r.nhan, lenh: true, lopNguon: r.lc_nguon_id ? { id: r.lc_nguon_id, code: r.lc_nguon } : null })!;
       items.push({
         key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency,
-        studentId: r.student_id, studentName: r.full_name, classId: r.lc_nguon_id ?? r.class_id ?? null, classCode: r.lc_nguon ?? r.class_code ?? null,
-        gopNguon: `chuyen_lop:${r.nhan}`,
+        studentId: r.student_id, studentName: r.full_name, classId: g.lop?.id ?? r.class_id ?? null, classCode: g.lop?.code ?? r.class_code ?? null,
+        gopNguon: g.gopNguon,
         attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: r.nhan, count: null,
         reason: `${r.lc_nguon ?? ''} → ${r.lc_dich ?? ''} — báo phụ huynh và ghi kết quả`,
         tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',

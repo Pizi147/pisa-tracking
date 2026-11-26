@@ -1731,11 +1731,12 @@ api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const xin = [...new Set(String(req.query.ids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50);
   if (!xin.length) return {};
+  /* Rà PTA #2273 P2-2: việc trong danh sách Báo PH người xem làm / quản (`viecBaoPhCuaToi`) HOẶC việc được giao cho người xem (`phu_trach_id`) — như /my-work. */
   const cua = new Set(baoPhSvc.viecBaoPhCuaToi(p, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
-  const ids = xin.filter((id) => cua.has(id));
-  if (!ids.length) return {};
   const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
-      WHERE v.id IN (SELECT value FROM json_each(?))`).all(JSON.stringify(ids)) as { id: number; ph: number; luot: number }[];
+      WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
+    .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number; luot: number }[];
+  if (!nguon.length) return {};
   const chuoi = tuyenSvc.chuoiPhoiHop(p, nguon.map((r) => r.luot));
   const nd = phoiHopSvc.noiDungNguonTvvLo(p, nguon.map((r) => r.ph));
   return Object.fromEntries(nguon.map((r) => [r.id, { chuoi: chuoi[r.luot]?.chuoi ?? null, mayDien: nd.get(r.ph) ?? null }]));

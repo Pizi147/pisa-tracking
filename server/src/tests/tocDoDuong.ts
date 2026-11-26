@@ -2315,7 +2315,9 @@ export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };
  * việc con (`GET /mgmt-tasks/:id`, quyền qua `giuViecCha` nhớ theo request). Đo ở tocDo.run.ts — câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉).
  */
 /** TUYEN-2 (PTA chốt): GET /y-thuc/bao-ph-lo — bảng Báo PH nhiều em (chuỗi chấm + Máy điền sẵn theo lô, gọi khi mở panel). Đo ở tocDo.run.ts. */
-export const TRAN_BAO_PH_LO = { cau: 23, dong: 165 };   // đo 27/11: 1 em 15 câu · 30 dòng · 6 em 17 câu · 115 dòng → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
+export const TRAN_BAO_PH_LO = { cau: 23, dong: 165 };
+/** Rà #2273 P2-2: Head / Quản trị — lọc theo danh sách Báo PH "Tất cả" trong phạm vi (dòng theo số việc mở của chi nhánh). Đo 27/11: QL 6 em 19 câu · 205 dòng. */
+export const TRAN_BAO_PH_LO_QL = { cau: 25, dong: 400 };   // đo 27/11: 1 em 15 câu · 30 dòng · 6 em 17 câu · 115 dòng → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
 export const TRAN_VIEC_CON = { tao: { cau: 41 }, mo: { cau: 27, dong: 67 } };   // đo 26/11: tạo 35 câu (đường tạo việc Vận hành sẵn có + một `docViec` việc cha) · mở 21 câu · 17 dòng (việc Vận hành được giao 15 · 9: + `giuViecCha` đọc việc cha một lần / request)   // đo 15 câu · 9 dòng (QT cùng việc 13 · 7: cổng +2 câu, +2 dòng) → câu đo + 6, dòng max(đo + 50, ⌈đo × 1,3⌉)
 
 /**

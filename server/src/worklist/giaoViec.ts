@@ -15,7 +15,7 @@
  *  · Lịch sử: `viec_giao_lan` (người, theo dõi, phần Meeting) + `viec_han_lan` (hạn — bảng sẵn có). Xoá dòng việc → `donViec` (id được dùng lại).
  */
 import { DS_JSON, db, docNho, tx } from '../db.ts';
-import { PERMISSIONS, TASK_PROGRESS_LABEL, laMeetingCx, laViecTvvBaoPh, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TASK_PROGRESS_LABEL, laMeetingCx, laViecTvvBaoPh, nguonBaoPh, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
 import { boVaiBpxl, can, laTvvCuaEm, laVaiThat, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -1121,7 +1121,11 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   const ve: string[] = [
     veToi(`SELECT 'bao_ph' AS loai, v.id AS id, v.student_id AS student_id, v.phu_trach_id AS phu_trach_id, v.giao_boi AS giao_boi, v.han AS han, v.han_chon AS han_chon, v.nhan AS nhan,
               v.phoi_hop_id AS ph_id, v.tinh_hinh_id AS th_id, v.bao_lai_cua AS bl, COALESCE(m.kind, (SELECT x.kind FROM sos_coordination_actions x WHERE x.id = v.phoi_hop_id)) AS kind, m.custom_name AS ten, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-              NULL AS pb, NULL AS tao, NULL AS phan, NULL AS vai_id, ${HOP_MEETING_SQL('v')} AS hop,
+              /* TUYEN-2 (rà PTA #2273 P2-1): nguồn × đợt như /my-work theo luật (nguonBaoPh) — pb = lượt (MTn) của nguồn TVV · tao / phan = lớp NGUỒN lệnh chuyển lớp (phan khác NULL = việc Chuyển lớp). */
+              (SELECT a.attempt_no FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id WHERE x.id = v.phoi_hop_id) AS pb,
+              (SELECT l.lop_nguon_id FROM lenh_chuyen_lop l WHERE l.id = v.lenh_chuyen_id) AS tao,
+              CASE WHEN v.lenh_chuyen_id IS NOT NULL THEN COALESCE((SELECT c.code FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id WHERE l.id = v.lenh_chuyen_id), '') END AS phan,
+              NULL AS vai_id, ${HOP_MEETING_SQL('v')} AS hop,
               ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} AS quay_lai,   -- rà 25/11 PR 2 (N34 ③): Báo PH = sự kiện Tạm dừng / Quay lại (JSON, khoangTuSuKien); Vận hành dùng cột này cho tên HV
               v.tra_lai_id AS cho
          FROM viec_bao_ph v LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua) WHERE v.phu_trach_id = ? AND v.trang_thai = 'mo'`, 'v'),
@@ -1274,8 +1278,10 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     const han = hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.quay_lai), r.han_chon);
     const nhan = r.ph_id || r.th_id ? r.nhan : r.kind ? `${nhanLoaiXuLy(r.kind, r.ten ?? null)}${r.bl ? ' đã thu hồi' : ''}` : r.nhan;
     const meeting = r.ph_id != null && !laViecTvvBaoPh(r.kind ?? '');   // BAOPH-0: Trao đổi gia đình / kết quả Test là Báo PH thường
+    const g = meeting ? null : nguonBaoPh({ phKind: r.ph_id != null ? r.kind : null, phLuot: r.pb ?? null, nhan: r.nhan, lenh: r.phan != null, lopNguon: r.tao ? { id: r.tao, code: r.phan } : null });
     return {
-      ...chung, key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? chuHop(r.hop) : nhan,
+      ...chung, ...(g ? { gopNguon: g.gopNguon, ...(g.lop ? { classId: g.lop.id, classCode: g.lop.code } : {}) } : {}),
+      key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? chuHop(r.hop) : g?.nguon ?? nhan,
       reason: meeting ? `GVCN đã xác nhận ${nhan} — báo gia đình và ghi kết quả` : 'Báo phụ huynh và ghi kết quả',
       tieuDe: meeting ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${nhan} · ${r.full_name}`, phu: meeting ? chuHop(r.hop) : `Báo PH · ${nhan}`,   // A3-09: "họp {ngày giờ}" như dòng CX
       actionLabel: meeting ? 'Ghi KQ' : 'Ghi báo PH', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', ...(meeting ? { sub: 'phoi-hop' } : {}) }),
