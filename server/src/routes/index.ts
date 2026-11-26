@@ -711,7 +711,7 @@ api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
   keHoachSvc.danhSachLop(principalOf(req), { branchId: cnBpxl(req, toInt(req.query?.branchId)) })));
 
 api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
-  keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
+  keHoachSvc.chiLich(principalOf(req), pInt(req, 'classId'), keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId')))));
 
 /** Đọc object tuần `{ listening: periodId, … }` — từng giá trị qua `toInt`, kỹ năng lạ bị bỏ. */
 function tuanTheoKyNang(v: any): Record<string, number> {
@@ -830,7 +830,7 @@ api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   keHoachSvc.requireXem(principalOf(req), pInt(req, 'classId'));   // PTA rà #1987: kiểm quyền xem TRƯỚC khi quét (quét có ghi)
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
-  return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
+  return keHoachSvc.chiLich(principalOf(req), pInt(req, 'classId'), keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId')));
 }));
 
 /**

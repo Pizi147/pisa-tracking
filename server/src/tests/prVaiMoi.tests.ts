@@ -12,6 +12,7 @@ export async function runPrVaiMoiTests(t: any) {
   const { myWork } = await import('../worklist/mywork.ts');
   const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
   const cases: any = await import('../cases/cases.ts');
+  const kh: any = await import('../keHoach/keHoachTest.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { giuViecQl, leadTvvCua } = await import('../worklist/viecTvv.ts');
   const { quanLyCuaChiNhanh } = await import('../platform/audit.ts');
@@ -265,5 +266,14 @@ export async function runPrVaiMoiTests(t: any) {
       if (stL !== 403 && stL !== 404) sai.push(`Lead TVV MB sửa HV CP: ${stL}`);
       assert(!sai.length, sai.join(' | '));
     } finally { may.close(); xoaNho(); }
+  });
+
+  check('VM-14 · (chủ SP 26/11 "Ẩn điểm, chỉ lịch") BPXL xem Kế hoạch Test lớp CN khác: API không có trường điểm; người xem được lượt (Head) vẫn có', () => {
+    xoaNho();
+    const a = loadPrincipal(bpA);
+    const bpx = JSON.stringify(kh.chiLich(a, CP_FT, kh.luoiFT(a, CP_FT)).hang);
+    assert(!/"(diem|ovr|kyVong|nhanXet|sEx)":/.test(bpx), `BPXL CN khác còn điểm: ${bpx.slice(0, 300)}`);
+    const head = JSON.stringify(kh.chiLich(P.cpManager, CP_FT, kh.luoiFT(P.cpManager, CP_FT)).hang);
+    assert(/"(diem|ovr)":/.test(head), 'Head CP vẫn thấy điểm (seed CP FT 110 cần lượt có điểm)');
   });
 }
