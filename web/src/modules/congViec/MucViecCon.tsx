@@ -67,7 +67,7 @@ export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
                     <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-[32px]" disabled={dang === x.id || suaHan.han === (x.han ?? '')} onClick={() => void luuHan()}>{t('Lưu hạn')}</button>
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setSuaHan(null)}>{t('Huỷ sửa')}</button>
                   </span>
-                : <HanBam oBam className="nho" ten={x.han ? ngay(x.han) : t('không hạn')} onClick={() => setSuaHan({ id: x.id, han: x.han ?? hn })}>
+                : <HanBam className="nho" ten={x.han ? ngay(x.han) : t('không hạn')} onClick={() => setSuaHan({ id: x.id, han: x.han ?? hn })}>
                     <span className={`whitespace-nowrap tabular-nums ${LOP_MUC_HAN[muc]}`}>{x.han ? ngay(x.han) : t('không hạn')}</span></HanBam>
               : <span className={`whitespace-nowrap text-[13px] tabular-nums ${xong ? 'text-dim' : LOP_MUC_HAN[muc]}`}>{x.han ? ngay(x.han) : t('không hạn')}</span>}
           </div>
