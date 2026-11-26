@@ -40,7 +40,7 @@ const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');  
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
-const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON } = await import('./tocDoDuong.ts');
+const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO, TRAN_VH_DUOC_GIAO, TRAN_VIEC_CON, TRAN_BAO_PH_LO, TRAN_BAO_PH_LO_QL } = await import('./tocDoDuong.ts');
 const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -1604,14 +1604,20 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* LPB-0 (N73, 26/11): chụp lại 4 băm — đổi CÓ CHỦ Ý. Đã kiểm trên seed: 3 lô lệnh "Từ tuần" của seed (ctSeed / xetLaiSeed qua `raLenh`) giờ sinh 3 việc BPXL
        Nhận thông tin (Head MB giữ — seed tạo BPXL cuối seed) + 13 việc TVV Báo PH · Chuyển lớp (1 gộp Kết quả Final) → dòng mới ở 'QL toi' / 'QL tat-ca' / 'QT tat-ca' /
        'QT tat-ca cn'; 7 băm khác giữ. Trước: QL toi 3b5b2c5cc315bb67, QL tat-ca 6daa449480d10d2b, QT tat-ca 5b6062172b9e63fd, QT tat-ca cn c0b53eb771110380 */
-    'QL toi': 'b716cdf0509e9853', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
+    /* TUYEN-2 (N72 ⑤, mockup v27 T11c — 27/11): chụp lại 4 băm — đổi CÓ CHỦ Ý: việc TVV "Trao đổi gia đình" vào nhóm `bao_ph_yt` (trước `phoi_hop_tvv`),
+       nhãn "Trao đổi gia đình · MT{n}" + trường `gopNguon` (gộp lớp × nguồn) ở mọi việc TVV báo PH từ nguồn. Việc / người / hạn không đổi. Trước: QL toi 3b5b2c5cc315bb67,
+       QL tat-ca 6daa449480d10d2b, QT tat-ca 5b6062172b9e63fd, QT tat-ca cn c0b53eb771110380 */
+    /* TUYEN-2 sau gộp LPB-0 (27/11): chụp lại 4 băm — đổi CÓ CHỦ Ý: việc Báo PH · Chuyển lớp mang `gopNguon` + lớp của dòng = lớp NGUỒN lệnh (dòng gộp
+       "Chuyển lớp · {lớp cũ} · n em", mockup v27 T11c), cộng đổi Trao đổi gia đình ở trên. Trước (main sau LPB-0): QL toi b716cdf0509e9853, QL tat-ca 16673cf5d9e3c76f,
+       QT tat-ca f51ee151b7d33334, QT tat-ca cn fcdec41d090473ae */
+    'QL toi': '2f605293934691d9', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '16673cf5d9e3c76f', 'QT tat-ca': 'f51ee151b7d33334',
-    'QT tat-ca cn': 'fcdec41d090473ae', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': 'e13988efbaa6302a', 'QT tat-ca': '333a8951950cad36',
+    'QT tat-ca cn': 'b5e6d34fabb94c9d', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -2586,6 +2592,42 @@ await checkAsync(`TUYEN-1 · TVV giữ Báo PH: POST /mgmt-tasks (chaLoai) ≤ $
   } finally {
     if (id) { gvSvc.donViec('van_hanh', [id]); conn.prepare('DELETE FROM tasks WHERE id = ?').run(id); }
   }
+});
+
+/* TUYEN-2 (PTA chốt): bảng Báo PH nhiều em — một GET theo lô khi mở panel; số câu không theo số em (lô). */
+await checkAsync(`TUYEN-2 · TVV mở bảng Báo PH nhiều em: GET /y-thuc/bao-ph-lo ≤ ${TRAN_BAO_PH_LO.cau} câu · ≤ ${TRAN_BAO_PH_LO.dong} dòng; một em và nhiều em cùng số câu`, async () => {
+  const ids = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL AND v.phu_trach_id IS NULL
+      AND s.consultant_user_id = ? AND s.archived_at IS NULL ORDER BY v.id LIMIT 6`).all(USER.TVV) as any[]).map((r) => r.id as number);
+  assert(ids.length >= 2, `seed: TVV đo cần ≥ 2 việc Báo PH từ nguồn (có ${ids.length})`);
+  const mot1 = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${ids[0]}`);
+  const nhieu = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${ids.join(',')}`);
+  console.log(`      (đo: 1 em ${mot1.n} câu ${mot1.dong} dòng · ${ids.length} em ${nhieu.n} câu ${nhieu.dong} dòng)`);
+  assert(nhieu.status === 200 && Object.keys(nhieu.json as object).length === ids.length, `trả ${Object.keys(nhieu.json as object).length}/${ids.length}`);
+  assert(nhieu.n <= TRAN_BAO_PH_LO.cau && nhieu.dong <= TRAN_BAO_PH_LO.dong, `${nhieu.n} câu ${nhieu.dong} dòng > ${TRAN_BAO_PH_LO.cau} · ${TRAN_BAO_PH_LO.dong}`);
+  assert(nhieu.n <= mot1.n + 2, `N+1: 1 em ${mot1.n} câu · ${ids.length} em ${nhieu.n} câu`);
+  /* Rà PTA #2273 P2-2: Head / Quản trị (danh sách "Tất cả" của Báo PH) — cùng trần. */
+  for (const v of ['QL', 'QT'] as const) {
+    const r = await doSql(v, 'GET', `/y-thuc/bao-ph-lo?ids=${ids.join(',')}`);
+    console.log(`      (đo ${v}: ${ids.length} em ${r.n} câu ${r.dong} dòng)`);
+    assert(r.status === 200 && r.n <= TRAN_BAO_PH_LO_QL.cau && r.dong <= TRAN_BAO_PH_LO_QL.dong, `${v}: ${r.status} · ${r.n} câu ${r.dong} dòng > ${TRAN_BAO_PH_LO_QL.cau} · ${TRAN_BAO_PH_LO_QL.dong}`);
+  }
+  /* Rà PTA #2273 P2-4 (quyền): việc của em TVV khác / em chi nhánh khác → bị bỏ, trả {}; việc được GIAO cho TVV (phu_trach_id) → trả. */
+  const la = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL AND v.phu_trach_id IS NULL
+      AND s.consultant_user_id IS NOT NULL AND s.consultant_user_id != ? ORDER BY v.id LIMIT 3`).all(USER.TVV) as any[]).map((r) => r.id as number);
+  assert(la.length > 0, 'seed: cần việc Báo PH từ nguồn của em TVV khác');
+  const khac = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${la.join(',')}`);
+  assert(khac.status === 200 && JSON.stringify(khac.json) === '{}', `TVV đọc việc em TVV khác: ${JSON.stringify(khac.json)}`);
+  const cnKhac = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL
+      AND s.branch_id != (SELECT ur.branch_id FROM user_roles ur WHERE ur.user_id = ? AND ur.branch_id IS NOT NULL LIMIT 1) ORDER BY v.id LIMIT 3`).all(USER.QL) as any[]).map((r) => r.id as number);
+  if (cnKhac.length) {
+    const r = await doSql('QL', 'GET', `/y-thuc/bao-ph-lo?ids=${cnKhac.join(',')}`);
+    assert(r.status === 200 && JSON.stringify(r.json) === '{}', `Head MB đọc việc em chi nhánh khác: ${JSON.stringify(r.json)}`);
+  }
+  conn.prepare('UPDATE viec_bao_ph SET phu_trach_id = ? WHERE id = ?').run(USER.TVV, la[0]);
+  try {
+    const giao = await doSql('TVV', 'GET', `/y-thuc/bao-ph-lo?ids=${la[0]}`);
+    assert(Object.keys(giao.json as object).map(Number).includes(la[0]), `việc được giao cho TVV: ${JSON.stringify(giao.json)}`);
+  } finally { conn.prepare('UPDATE viec_bao_ph SET phu_trach_id = NULL WHERE id = ?').run(la[0]); }
 });
 
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {

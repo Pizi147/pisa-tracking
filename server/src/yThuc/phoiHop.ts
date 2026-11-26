@@ -862,6 +862,20 @@ export function noiDungNguonTvv(p: Principal, id: number): string | null {
     .filter(Boolean).join('\n');
 }
 
+/** TUYEN-2 (mockup v27 T11a): `noiDungNguonTvv` theo LÔ — MỘT câu đọc các việc nguồn + `turnsOf` một lần (bảng Báo PH nhiều em). */
+export function noiDungNguonTvvLo(p: Principal, ids: readonly number[]): Map<number, string | null> {
+  const ra = new Map<number, string | null>();
+  if (!ids.length) return ra;
+  const rows = db().prepare(`SELECT * FROM sos_coordination_actions WHERE id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(ids)])) as any[];
+  for (const t of turnsOf(p, rows)) {
+    const s = t.the;
+    const chung = [`${s.luot} · Overall ${s.ovr ?? '—'}${s.moc != null ? ` / kỳ vọng ${s.moc}` : ''}${s.tam ? ' (tạm)' : ''}`, s.truot.length ? `Kỹ năng trượt: ${s.truot.join(', ')}` : null]
+      .filter(Boolean).join('\n');
+    for (const a of t.actions) ra.set(a.id, a.noiDung ? a.noiDung.join('\n') : chung);
+  }
+  return ra;
+}
+
 const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
 /** BAOPH-0 (N72 ⑤): GVCN / Head thôi bước báo PH — nói lý do + bước tiếp. */
 const NGUON_TVV = 'Việc này TVV báo phụ huynh — ghi kết quả, bỏ hay khôi phục ở việc Báo PH của TVV (GVCN theo dõi).';

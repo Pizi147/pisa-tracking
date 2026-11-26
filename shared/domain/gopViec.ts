@@ -22,6 +22,8 @@ export type ViecGopDuoc = {
   studentId: number | null; studentName: string; classId: number | null; classCode: string | null;
   khung?: 'ft' | 'thuong' | null; ownerId: number | null;
   tieuDe: string; contextLabel: string | null; count: number | null; href: string; actionLabel: string;
+  /** TUYEN-2: Báo PH theo nguồn × đợt (Trao đổi gia đình · Progress · Final) — gộp theo lớp × nguồn dù nhóm giữ từng dòng (vi phạm, tình hình vẫn mỗi em một dòng). */
+  gopNguon?: string;
   /** PR-DON: phần riêng của việc khi nằm trong dòng gộp (kỹ năng, bài, việc cụ thể) — dòng phụ của em; dòng đã gom sẵn: tên việc. Không có → dòng phụ chỉ là `contextLabel`. */
   phu?: string | null;
   /** Case sinh từ SOS (`origin_kind = 'mock'`, Case từ kết quả Test) — khác Case GV / QL tự tạo, chuyển cấp, khai bù. */
@@ -66,7 +68,7 @@ const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep', 'phoi_h
 /* TL-2 (mockup v22 T4a): Vi phạm bị trả lại — mỗi yêu cầu một dòng (lý do, người trả, hạn riêng). VH-1b: việc tay (Vận hành) mỗi việc một dòng — gắn lớp không gộp "Cả lớp". */
 const GIU_TUNG_DONG = new Set(['phoi_hop_sos', 'meeting_xep_lich', 'meeting_ket_qua', 'mgmt', 'yt_tra_lai']);
 const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !it.chonPa && !(it.khung === 'ft' && it.caseSos && GIU_TUNG_DONG_FT.has(it.group))
-  && !GIU_TUNG_DONG_TVV.has(it.group) && !GIU_TUNG_DONG.has(it.group) && !it.key.startsWith('chot-ngay-thi:');
+  && (!GIU_TUNG_DONG_TVV.has(it.group) || !!it.gopNguon) && !GIU_TUNG_DONG.has(it.group) && !it.key.startsWith('chot-ngay-thi:');
 /**
  * Dòng Nhập điểm gộp theo tuần thi qua nhiều lớp (OV-13c). Chấm chéo không gom theo tuần: QL "Tất cả" (u0) gom theo lớp như cũ; GV Speaking có
  * MỘT việc "Chấm Speaking" (OV-14c, `KHOA_CHAM_SPEAKING`, không gắn lớp).
@@ -80,6 +82,7 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   /* SUA-2211-B (chủ SP 22/11 ý 9 "'cả lớp'? Không có ý nghĩa… Đồng bộ hết chia ra từng lớp đi"): Nhập điểm theo tuần thi gom TRONG MỘT LỚP — mỗi lớp một dòng. */
   if (theoTuanThi(it)) return `gop:score:t${it.tuanThi}:c${it.classId}:u${it.ownerId ?? 0}:${it.khung ?? ''}`;
   const k = khoaDongGop(it.group, it.classId!, it.ownerId);
+  if (it.gopNguon) return `${k}|${it.gopNguon}`;
   /* RA-LUONG-1: dòng gộp chấm chéo (QL "Tất cả", gom theo lớp) giữ đuôi `|cc` như việc lẻ — không thì nó lọt vào Chấm điểm (không đếm) và mở panel Nhập điểm cả dòng. */
   if (laViecChamCheo(it)) return `${k}|cc`;
   /* GD-20c ([XM-6] mockup ⑫ C1): Ghi kết quả PA gộp theo lớp + CÙNG KỲ (cùng hạn kỳ `action_due`) — hai kỳ khác nhau là hai dòng, mỗi dòng mở một lưới. */

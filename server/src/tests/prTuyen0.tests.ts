@@ -182,11 +182,12 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(ten(b) === 'Meeting CX/GĐCN (sau Mock) · HV:xong → Xếp lịch họp:dang → Báo PH:dang → Kết quả meeting:dang', `sau xác nhận: ${ten(b)}`);
     assert(b.buoc.at(-1).ten === 'Kết quả meeting' && b.soDang === 3 && b.dangO?.ten === '3 bước cùng lúc', `Kết quả cuối · đang ở: ${JSON.stringify(b.dangO)}`);
     assert(soViec(tvv) >= viecTvv, 'TVV: việc Báo PH thật');
-    /* BPXL (giữ Xếp lịch họp): thấy khung; đọc được phần mình, KHÔNG đọc nội dung GVCN xác nhận / Báo PH. */
+    /* BPXL (giữ Xếp lịch họp): thấy khung; đọc được phần mình; KHÔNG đọc nội dung Báo PH. Chủ SP 27/11 (#2273 P1): đang giữ Xếp lịch họp còn mở → ĐỌC bước GVCN
+       xác nhận (ghi chú + PH) — trước TUYEN-2: không (C3). */
     const baoPhId = b.buoc[2].viec.id;
     bp.ghiKetQuaBaoPh(tvv, { viecIds: [baoPhId], ketQua: 'da_bao', ghiChu: 'Đã báo mẹ em lịch họp' });
     const c = tuyen(bpxl, 'phoi_hop', att);
-    assert(c.buoc[0].khongQuyen && !('noiDung' in c.buoc[0]), `BPXL: bước GVCN không noiDung: ${JSON.stringify(c.buoc[0])}`);
+    assert(c.buoc[0].coNoiDung && c.buoc[0].noiDung?.includes('Nội dung gửi'), `BPXL giữ Xếp lịch: đọc bước GVCN: ${JSON.stringify(c.buoc[0])}`);
     assert(c.buoc[2].trangThai === 'xong' && c.buoc[2].khongQuyen && !('noiDung' in c.buoc[2]) && !c.buoc[2].coNoiDung, `BPXL: Báo PH không noiDung: ${JSON.stringify(c.buoc[2])}`);
     assert(c.buoc[1].laToi && c.dangO?.ten === 'Xếp lịch họp', `BPXL: Xếp lịch là của mình: ${JSON.stringify(c.dangO)}`);
     /* BPXL ngoài tuyến (lượt khác) → 403. */
@@ -219,6 +220,51 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const c = tuyen(gvcn, 'phoi_hop', att);
     const x = c.buoc.find((y: any) => y.ten === 'Báo PH · Trao đổi với gia đình');
     assert(x.trangThai === 'xong' && x.noiDung === 'Đã báo mẹ em kết quả và lịch họp GĐCN', `TVV xong: ${JSON.stringify(x)}`);
+  }));
+
+  await checkAsync('TUYEN2-1 · Meeting: BPXL mở panel chỉ nhận phần Xếp lịch (không lộ phần Kết quả, không 403); bước GVCN xác nhận kèm Phụ huynh — chỉ người xem được em; việc TVV từ nguồn `nguonTvv`', () => thu(() => {
+    const sid = moiEm();
+    conn.prepare(`UPDATE students SET parent_name = 'Nguyễn Thu Hà', parent_relation = 'mẹ', parent_phone = '0912345678' WHERE id = ?`).run(sid);
+    const { att, ids } = luot(sid, ['cx_meeting_family', 'talk_family']);
+    bp.dongBoViecTvvLuot([att]);
+    ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Cần họp GĐCN với em và phụ huynh' });
+    xoaNho();
+    /* (a) xemMeeting — BPXL giữ Xếp lịch họp: một phần, không phần Kết quả meeting (trước: 403 cả panel). GVCN: đủ hai phần. */
+    const mB = gv.xemMeeting(bpxl, ids[0]);
+    assert(mB.phan.length === 1 && mB.phan[0].meeting.phan === 'xep_lich', `BPXL: ${mB.phan.map((g: any) => g.meeting.phan).join(',')}`);
+    xoaNho();
+    assert(gv.xemMeeting(gvcn, ids[0]).phan.length === 2, 'GVCN đọc đủ hai phần');
+    /* (b) bước GVCN xác nhận: "Nội dung gửi" + Phụ huynh — GVCN (xem được em) đọc; BPXL thấy khung, không nội dung. */
+    const a = tuyen(gvcn, 'phoi_hop', att);
+    const xn = a.buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN'));
+    assert(xn?.noiDung?.includes('Nội dung gửi: Cần họp GĐCN') && xn.noiDung.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà · 0912345678'), `GVCN: ${JSON.stringify(xn)}`);
+    /* Chủ SP 27/11 (P1 "Có, khi đang giữ việc"): BPXL ĐANG GIỮ phần Xếp lịch họp còn mở thấy PH + ghi chú (tuyến + boiCanh panel); BPXL khác / đã giao đi → không. */
+    const xl = mot(`SELECT id FROM meeting_phan WHERE phoi_hop_id = ? AND phan = 'xep_lich'`, ids[0]).id as number;
+    const bpxl2 = taiKhoan('bpxl2', 'scheduler');
+    xoaNho(); gv.doiPhuTrach(ql, 'meeting', xl, { userId: bpxl.userId, phuTrachCu: null });
+    /* Không có mặt trong tuyến (BPXL khác / đã giao đi) → 404 như không có tuyến: cũng là "không PH". */
+    const buocXn = (p: any) => { try { return tuyen(p, 'phoi_hop', att).buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN')); } catch (e: any) { if (e?.status === 404) return null; throw e; } };
+    const c = buocXn(bpxl);
+    assert(c?.noiDung?.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà') && c.noiDung.includes('Nội dung gửi'), `BPXL giữ việc: tuyến có PH: ${JSON.stringify(c)}`);
+    xoaNho(); const bc = gv.xemMeeting(bpxl, ids[0]).boiCanh;
+    assert(bc.phuHuynh?.sdt === '0912345678' && bc.ghiChu, `BPXL giữ việc: boiCanh PH: ${JSON.stringify(bc)}`);
+    const c2 = buocXn(bpxl2);
+    assert(!c2?.noiDung?.includes('Phụ huynh'), `BPXL khác: không PH trong tuyến: ${JSON.stringify(c2)}`);
+    xoaNho(); assert(ma(() => { const b2 = gv.xemMeeting(bpxl2, ids[0]).boiCanh; if (b2.phuHuynh || b2.ghiChu) throw Object.assign(new Error('lộ'), { status: 999 }); }) !== 999, 'BPXL khác: boiCanh không PH');
+    xoaNho(); gv.doiPhuTrach(ql, 'meeting', xl, { userId: bpxl2.userId, phuTrachCu: mot('SELECT phu_trach_id AS pt FROM meeting_phan WHERE id = ?', xl).pt });
+    const c3 = buocXn(bpxl);
+    assert(!c3?.noiDung?.includes('Phụ huynh'), `BPXL đã giao đi: không PH trong tuyến: ${JSON.stringify(c3)}`);
+    xoaNho(); assert(ma(() => { const b3 = gv.xemMeeting(bpxl, ids[0]).boiCanh; if (b3.phuHuynh || b3.ghiChu) throw Object.assign(new Error('lộ'), { status: 999 }); }) !== 999, 'BPXL đã giao đi: boiCanh không PH');
+    assert(buocXn(bpxl2)?.noiDung?.includes('Phụ huynh'), 'BPXL mới giữ việc: thấy PH');
+    /* GV bộ môn chỉ xem (cùng luật panel GV2-1): không dòng PH trong tuyến. */
+    assert(!buocXn(gvbm)?.noiDung?.includes('Phụ huynh'), `GVBM: không PH: ${JSON.stringify(buocXn(gvbm))}`);
+    /* (c) việc TVV Trao đổi gia đình: panel biết là việc từ nguồn (không vẽ hai phần Meeting) — Progress / Final cùng cờ (`laViecTvvBaoPh`). */
+    const v = mot('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', ids[1]);
+    xoaNho();
+    const vb = bp.xemViecBaoPh(tvv, v.id);
+    assert(vb.nguonTvv === true && vb.phoiHopId === ids[1], `nguonTvv: ${vb.nguonTvv}`);
+    const nguon = mot(`SELECT v.id FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id WHERE x.kind = 'bao_ph_tvv' ORDER BY v.id LIMIT 1`);
+    if (nguon) { xoaNho(); assert(bp.xemViecBaoPh(P.admin, nguon.id).nguonTvv === true, 'Kết quả Progress / Final: nguonTvv'); }
   }));
 
   await checkAsync('TUYEN0-15 · BAOPH-0 hai việc giao được (xu_ly · da_thuc_hien): người theo dõi N58 thấy MỘT dòng tuyến ở Đang theo dõi; người được giao thành người giữ', () => thu(() => {

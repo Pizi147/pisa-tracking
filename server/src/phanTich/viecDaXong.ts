@@ -19,7 +19,7 @@ import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { LA_CASE_MT, LA_CASE_SOS } from '../cases/sosState.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from '../loTrinh/cotSauThi.ts';
 import { nguoiGiuMiniTest } from '../normal/cuoiKhoa.ts';
-import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
+import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, laViecTvvBaoPh, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
 
 export type ViecXong = ViecGopDuoc & { xong: string; dung: boolean };
 type Ky = { cns: readonly number[]; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay: string };
@@ -97,9 +97,10 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
   ).all(json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon), xong: r.xong ? String(r.xong).slice(0, 10) : null },
       /* rà #2233 vòng 2 P2 (3): nhãn theo nguồn thật — Meeting CX · Trao đổi gia đình (Phối hợp SOS) · kết quả Progress / Final (Báo PH). */
-      r.phoi_hop_id != null && r.ph_kind !== 'bao_ph_tvv'
-        ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: r.ph_kind === 'talk_family' ? 'Báo PH · Trao đổi gia đình' : 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
-        : r.phoi_hop_id != null ? { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: `Báo PH · ${r.nhan}`, href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
+      /* TUYEN-2 (rà PTA #2273 P2-1): Trao đổi gia đình cùng nhóm Báo PH như Công việc (`laViecTvvBaoPh`) — chỉ Báo PH Meeting còn nhóm riêng. */
+      r.phoi_hop_id != null && !laViecTvvBaoPh(r.ph_kind ?? '')
+        ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
+        : r.phoi_hop_id != null ? { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: r.ph_kind === 'talk_family' ? 'Báo PH · Trao đổi gia đình' : `Báo PH · ${r.nhan}`, href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
         : { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: 'Báo PH', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc' }) });
   }
 

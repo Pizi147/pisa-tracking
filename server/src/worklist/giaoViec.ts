@@ -15,7 +15,7 @@
  *  · Lịch sử: `viec_giao_lan` (người, theo dõi, phần Meeting) + `viec_han_lan` (hạn — bảng sẵn có). Xoá dòng việc → `donViec` (id được dùng lại).
  */
 import { DS_JSON, db, docNho, tx } from '../db.ts';
-import { PERMISSIONS, TASK_PROGRESS_LABEL, laMeetingCx, laViecTvvBaoPh, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, TASK_PROGRESS_LABEL, laMeetingCx, laViecTvvBaoPh, nguonBaoPh, type TaskProgress, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, ngayTheoGioVN, nhanLoaiXuLy, quaHanBaoPh, tenViec } from '../../../shared/domain/index.ts';
 import { boVaiBpxl, can, laTvvCuaEm, laVaiThat, type Principal } from '../permissions.ts';
 import { addDays, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -23,7 +23,7 @@ import { notify, nguoiVaiCuaChiNhanh, quanLyCuaChiNhanh, writeAudit } from '../p
 import { GhiDao, HOAN_TAC_PHUT, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { canManageDiscipline, gvcnCuaEm } from '../yThuc/access.ts';
+import { canManageDiscipline, gvcnCuaEm, xemLienHePh } from '../yThuc/access.ts';
 import { CHI_NHANH_EM, CHO_GV_SUA, HOP_MEETING_SQL, chuHop, coTheGhi, coTheSuaHan as coTheSuaHanBaoPh, suaHanBaoPh, xuLyCon } from '../yThuc/baoPhTvv.ts';
 import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
@@ -960,15 +960,23 @@ export function xemMeeting(p: Principal, phoiHopId: number): { phoiHopId: number
   const ids = db().prepare(`SELECT id FROM meeting_phan WHERE phoi_hop_id = ? ORDER BY CASE phan WHEN 'xep_lich' THEN 0 ELSE 1 END`).all(phoiHopId) as any[];
   if (!ids.length) throw notFound('Meeting này chưa có phần Xếp lịch họp / Kết quả meeting.');
   const bp = db().prepare('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?').get(phoiHopId) as { id: number } | undefined;
-  const phan = ids.map((r) => xemGiaoViec(p, 'meeting', r.id));   // kiểm quyền đọc từng phần (requireDoc) TRƯỚC khi đọc bối cảnh
+  /* TUYEN-2: chỉ các phần người xem ĐỌC ĐƯỢC (requireDoc từng phần, TRƯỚC khi đọc bối cảnh) — BPXL giữ Xếp lịch họp không đọc phần Kết quả meeting
+     (trước: một phần 403 → cả panel 403). Phần kia hiện ở khối Tuyến (khung bước, nội dung theo quyền — C3). Không phần nào đọc được → 403 như cũ. */
+  const phan: KhoiGiaoViec[] = [];
+  let chan: unknown = null;
+  for (const r of ids) { try { phan.push(xemGiaoViec(p, 'meeting', r.id)); } catch (e: any) { if (e?.status !== 403) throw e; chan = e; } }
+  if (!phan.length) throw chan;
   /* GV-2 (mockup v22 G8a): bối cảnh đầu panel — một câu: mức SOS của lượt · ngày + GVCN xác nhận · ghi chú GVCN · PH. SĐT PH chỉ cho người LÀM được một
      phần / người đổi được việc (Head · QT · CX) / người quản lý Ý thức của em (GVCN, Head) — người theo dõi thuần không thấy. */
-  const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,
+  const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, s.consultant_user_id AS tvv, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,
       (SELECT MAX(c.sos_level) FROM sos_cases c WHERE c.attempt_id = x.attempt_id) AS sos
     FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN users u ON u.id = x.performed_by WHERE x.id = ?`).get(phoiHopId) as any;
-  const lienHe = phan.some((g) => g.meeting?.coTheLam || g.coTheDoiNguoi) || canManageDiscipline(p, x.student_id);
+  /* Chủ SP 27/11 (rà #2273 P1, "Có, khi đang giữ việc"): MỘT luật với bước GVCN của Tuyến (`xemLienHePh`) — BPXL chỉ khi ĐANG GIỮ phần còn mở của em này;
+     BPXL khác / theo dõi / đã giao đi / phần đã xong / GV bộ môn chỉ xem → không thấy PH, ghi chú GVCN. */
+  const lienHe = xemLienHePh(p, { id: x.student_id, tvv: x.tvv ?? null, cn: phan[0].branchId },
+    phan.some((g) => g.meeting?.trangThai === 'mo' && g.phuTrach.some((n) => n.id === p.userId)));
   return { phoiHopId, phan, baoPhId: bp?.id ?? null, boiCanh: {
-    sos: x.sos ?? null, ngay: x.performed_on ?? null, gvcn: x.gvcn ?? null, ghiChu: x.note?.trim() || null,
+    sos: x.sos ?? null, ngay: x.performed_on ?? null, gvcn: x.gvcn ?? null, ghiChu: lienHe ? x.note?.trim() || null : null,
     phuHuynh: lienHe ? { ten: x.parent_name ?? null, quanHe: x.parent_relation ?? null, sdt: x.parent_phone ?? null } : null,
   } };
 }
@@ -1116,7 +1124,11 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   const ve: string[] = [
     veToi(`SELECT 'bao_ph' AS loai, v.id AS id, v.student_id AS student_id, v.phu_trach_id AS phu_trach_id, v.giao_boi AS giao_boi, v.han AS han, v.han_chon AS han_chon, v.nhan AS nhan,
               v.phoi_hop_id AS ph_id, v.tinh_hinh_id AS th_id, v.bao_lai_cua AS bl, COALESCE(m.kind, (SELECT x.kind FROM sos_coordination_actions x WHERE x.id = v.phoi_hop_id)) AS kind, m.custom_name AS ten, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-              NULL AS pb, NULL AS tao, NULL AS phan, NULL AS vai_id, ${HOP_MEETING_SQL('v')} AS hop,
+              /* TUYEN-2 (rà PTA #2273 P2-1): nguồn × đợt như /my-work theo luật (nguonBaoPh) — pb = lượt (MTn) của nguồn TVV · tao / phan = lớp NGUỒN lệnh chuyển lớp (phan khác NULL = việc Chuyển lớp). */
+              (SELECT a.attempt_no FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id WHERE x.id = v.phoi_hop_id) AS pb,
+              (SELECT l.lop_nguon_id FROM lenh_chuyen_lop l WHERE l.id = v.lenh_chuyen_id) AS tao,
+              CASE WHEN v.lenh_chuyen_id IS NOT NULL THEN COALESCE((SELECT c.code FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id WHERE l.id = v.lenh_chuyen_id), '') END AS phan,
+              NULL AS vai_id, ${HOP_MEETING_SQL('v')} AS hop,
               ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} AS quay_lai,   -- rà 25/11 PR 2 (N34 ③): Báo PH = sự kiện Tạm dừng / Quay lại (JSON, khoangTuSuKien); Vận hành dùng cột này cho tên HV
               v.tra_lai_id AS cho
          FROM viec_bao_ph v LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua) WHERE v.phu_trach_id = ? AND v.trang_thai = 'mo'`, 'v'),
@@ -1269,8 +1281,10 @@ export function dongViecGiao(r: any, today: string, ownerId: number | null, mine
     const han = hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.quay_lai), r.han_chon);
     const nhan = r.ph_id || r.th_id ? r.nhan : r.kind ? `${nhanLoaiXuLy(r.kind, r.ten ?? null)}${r.bl ? ' đã thu hồi' : ''}` : r.nhan;
     const meeting = r.ph_id != null && !laViecTvvBaoPh(r.kind ?? '');   // BAOPH-0: Trao đổi gia đình / kết quả Test là Báo PH thường
+    const g = meeting ? null : nguonBaoPh({ phKind: r.ph_id != null ? r.kind : null, phLuot: r.pb ?? null, nhan: r.nhan, lenh: r.phan != null, lopNguon: r.tao ? { id: r.tao, code: r.phan } : null });
     return {
-      ...chung, key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? chuHop(r.hop) : nhan,
+      ...chung, ...(g ? { gopNguon: g.gopNguon, ...(g.lop ? { classId: g.lop.id, classCode: g.lop.code } : {}) } : {}),
+      key: `bao-ph:${r.id}`, group: meeting ? 'phoi_hop_tvv' : 'bao_ph_yt', urgency: r.cho ? 'normal' : urgencyOf(han, today),   /* `quaHanBaoPh`: đang chờ GV sửa không quá hạn */ contextLabel: meeting ? chuHop(r.hop) : g?.nguon ?? nhan,
       reason: meeting ? `GVCN đã xác nhận ${nhan} — báo gia đình và ghi kết quả` : 'Báo phụ huynh và ghi kết quả',
       tieuDe: meeting ? `Báo PH · Meeting CX/GĐCN · ${r.full_name}` : `Báo PH · ${nhan} · ${r.full_name}`, phu: meeting ? chuHop(r.hop) : `Báo PH · ${nhan}`,   // A3-09: "họp {ngày giờ}" như dòng CX
       actionLabel: meeting ? 'Ghi KQ' : 'Ghi báo PH', href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', ...(meeting ? { sub: 'phoi-hop' } : {}) }),

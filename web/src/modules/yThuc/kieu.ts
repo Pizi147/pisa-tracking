@@ -94,6 +94,10 @@ export type Tuyen = {
   /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
 };
 
+/** TUYEN-0 `tomTat` — chuỗi chấm một tuyến (bảng nhiều em, hồ sơ). */
+export type TomTuyen = { loai: string; khoa: string; tieuDe: string; em: number; xong: number; tong: number; soDang: number;
+  dangO: { ten: string; nguoi: string | null; han: string | null } | null; ketThuc: boolean; chuoi: TrangThaiBuoc[] };
+
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
   /** TUYEN-0: tuyến "đang chờ xử lý" của em (panel Xử lý vi phạm). */
