@@ -40,7 +40,7 @@ export const CHO_GV_SUA = 'Chờ GV sửa';
 export const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'Head từ chối xử lý', system_rut: 'Đề xuất đã rút', system_huy_thu_hoi: 'Head huỷ thu hồi',
   system_meeting_mo_lai: 'GVCN đưa Meeting về Cần xử lý', system_rut_tinh_hinh: 'GV đã rút', system_luu_tru: 'Học viên vào Lưu trữ',
   /* BAOPH-0 (N72 ⑤): nguồn việc TVV gỡ theo điểm (sửa điểm hết trượt / mức SOS đổi) · C8: việc Báo PH Meeting cũ gộp vào việc Trao đổi gia đình cùng lượt. */
-  system_nguon_go: 'Nguồn việc đã gỡ theo điểm', system_gop_trao_doi: 'Gộp vào Trao đổi gia đình' } as const;
+  system_nguon_go: 'Nguồn việc đã gỡ theo điểm', system_gop_trao_doi: 'Gộp vào Trao đổi gia đình', system_sau_thi: 'Lộ trình đã có KQ thi thật' } as const;
 /** PHOI-HOP-V2: việc TVV sau Meeting CX đóng vì GVCN đưa Meeting về Cần xử lý / bỏ — xác nhận lại thì mở lại (`phoiHop.ts dongBoViecTvv`). */
 export const LY_DO_MEETING_MO_LAI = 'system_meeting_mo_lai';
 type LyDoHeThong = keyof typeof LY_DO_HE_THONG;
@@ -171,11 +171,17 @@ const nhanViecTvvNguon = (kind: string, pb: number | null, aKind: string | null)
  * Nguồn người dùng bỏ / xong / Lưu trữ: việc đã theo cùng lúc (`nguonTheoViecTvv`, `dongViecLuuTru`) — không đụng.
  */
 /** Lý do đóng việc TVV vì nguồn bị HỆ THỐNG gỡ (điểm sửa / mức SOS · huỷ lượt · Lộ trình mới / chốt Cuối khoá) — nguồn hồi thì việc mở lại. */
-const NGUON_GO = new Set(['system_nguon_go', 'system_luot_huy', 'system_ket_thuc_lo_trinh']);
+const NGUON_GO = new Set(['system_nguon_go', 'system_luot_huy', 'system_ket_thuc_lo_trinh', 'system_sau_thi']);
+/** N46: việc TVV của các lộ trình vừa có / gỡ KQ thi thật — đóng / mở lại theo `dongBoViecTvvLuot`. TRONG tx; hai câu. */
+export function dongBoViecTvvLoTrinh(cycleIds: readonly number[]): void {
+  if (!cycleIds.length) return;
+  dongBoViecTvvLuot((db().prepare(`SELECT DISTINCT x.attempt_id AS id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
+      WHERE a.cycle_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`).all(JSON.stringify(cycleIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[]).map((r) => r.id as number));
+}
 export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: number | null = null): number[] {
   if (!attemptIds.length) return [];
   const rows = db().prepare(
-    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, v.id AS viec, v.trang_thai, v.bo_ly_do,
+    `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, a.status AS a_tt, v.id AS viec, v.trang_thai, v.bo_ly_do,
             (a.status = 'cancelled' OR ${LUOT_SAU_THI_SQL('a')}) AS ngoai   -- N46 (rà #2233 P1-4): lượt huỷ / lộ trình đã thi thật không sinh việc
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = x.id
       WHERE x.attempt_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`,
@@ -183,7 +189,13 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
   for (const r of rows) {
-    if (r.status === 'pending' && !r.viec && !r.ngoai) {
+    if (r.ngoai) {
+      /* N46 (rà #2233 vòng 2 P1-A): lộ trình đã có KQ thi thật / lượt huỷ → việc còn mở ĐÓNG ở gốc (Việc được giao, KPI đọc DB) — KQ thi thật gỡ thì mở lại (nhánh dưới). */
+      if (r.trang_thai === 'mo') db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
+        .run(r.a_tt === 'cancelled' ? 'system_luot_huy' : 'system_sau_thi', luc, r.viec);
+      continue;
+    }
+    if (r.status === 'pending' && !r.viec) {
       const k = db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(r.id, r.student_id, nhanViecTvvNguon(r.kind, r.pb_moc ?? null, r.a_kind ?? null), hanBaoPh(homNay), luc);
       moi.push({ id: Number(k.lastInsertRowid), sid: r.student_id });
@@ -201,7 +213,7 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
         SELECT 'bao_ph', v.id, g.uid, 'gvcn', NULL, ?2 FROM viec_bao_ph v JOIN (SELECT v2.id AS vid, (SELECT ta.user_id FROM enrollments e JOIN teacher_assignments ta ON ta.class_id = e.class_id
             AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?3 AND (ta.effective_to IS NULL OR ta.effective_to >= ?3)
           WHERE e.student_id = v2.student_id AND e.status = 'active' ORDER BY e.id DESC, ta.id LIMIT 1) AS uid FROM viec_bao_ph v2 WHERE v2.id IN (SELECT value FROM json_each(?1))) g ON g.vid = v.id
-        WHERE g.uid IS NOT NULL ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(ids, luc, homNay);
+        WHERE g.uid IS NOT NULL AND ${HOAT_DONG_O('g.uid', CN_EM('v.student_id'))} ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(ids, luc, homNay);   // rà vòng 2 P2 (4): như themTheoDoiDong
     if (nguoiTao) db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'bao_ph', v.id, ?2, 'tay', ?2, ?3 FROM viec_bao_ph v
         WHERE v.id IN (SELECT value FROM json_each(?1)) AND ${HOAT_DONG_O('?2', CN_EM('v.student_id'))}
         ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(ids, nguoiTao, luc);

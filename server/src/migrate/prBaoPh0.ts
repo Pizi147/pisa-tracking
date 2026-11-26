@@ -8,7 +8,7 @@
  */
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { VIEC_TVV_BAO_PH, tenViec } from '../../../shared/domain/index.ts';
+import { VIEC_TVV_BAO_PH } from '../../../shared/domain/index.ts';
 import { dongBoViecTvvLuot } from '../yThuc/baoPhTvv.ts';
 import { donViec, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 
@@ -28,23 +28,16 @@ export function doiBaoPh0(conn: any): KetQuaBaoPh0 {
   for (let i = 0; i < luot.length; i += 200) taoViec.push(...dongBoViecTvvLuot(luot.slice(i, i + 200)));
   /* ② việc Báo PH Meeting còn mở. */
   const gop: number[] = [], chuyen: KetQuaBaoPh0['chuyen'] = [];
-  const daChuyen = new Set<number>();
-  for (const r of conn.prepare(`SELECT v.id, v.nhan, v.phoi_hop_id AS ph, t.id AS td, t.status AS td_tt, tv.id AS td_viec FROM viec_bao_ph v
+  for (const r of conn.prepare(`SELECT v.id, v.nhan, v.phoi_hop_id AS ph, t.id AS td, tv.id AS td_viec FROM viec_bao_ph v
       JOIN sos_coordination_actions m ON m.id = v.phoi_hop_id AND m.kind IN ('cx_meeting_student', 'cx_meeting_family')
       LEFT JOIN sos_coordination_actions t ON t.id = (SELECT MIN(t2.id) FROM sos_coordination_actions t2 WHERE t2.attempt_id = m.attempt_id AND t2.kind = 'talk_family' AND t2.status != 'removed')
       LEFT JOIN viec_bao_ph tv ON tv.phoi_hop_id = t.id
      WHERE v.trang_thai = 'mo' ORDER BY v.id`).all() as any[]) {
     if (!r.td) continue;
-    /* Rà #2233 P1-5: chỉ ĐỔI khi nguồn Trao đổi gia đình còn chờ và chưa có việc (lượt sau thi thật / chưa đồng bộ) — nguồn GVCN đã xong giữ nguyên (không ghi đè kết quả
-       GVCN), việc Meeting thì GỘP; hai việc Meeting cùng lượt: việc sau gộp (UNIQUE phoi_hop_id). */
-    if (r.td_viec || r.td_tt !== 'pending' || daChuyen.has(r.td)) {
-      conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_gop_trao_doi', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id);
-      gop.push(r.id);
-    } else {
-      conn.prepare('UPDATE viec_bao_ph SET phoi_hop_id = ?, nhan = ? WHERE id = ?').run(r.td, tenViec('talk_family'), r.id);
-      daChuyen.add(r.td);
-      chuyen.push({ viec: r.id, cu: r.ph, moi: r.td, nhanCu: r.nhan });
-    }
+    /* Rà #2233 P1-5 + vòng 2 P1-A: lượt đã có Trao đổi gia đình (còn chờ → ① đã sinh việc TVV; đã xong → GVCN đã báo; lượt huỷ / sau thi thật → không còn việc)
+       → việc Báo PH Meeting luôn GỘP — không ghi đè nguồn GVCN, không tạo việc ẩn còn mở. `chuyen` giữ cho nhật ký cũ (khôi phục). */
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_gop_trao_doi', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(nowIso(), r.id);
+    gop.push(r.id);
   }
   /* ③ người gửi Tình hình (việc đang mở) + Head / CX mọi việc Báo PH đang mở. */
   conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'bao_ph', v.id, t.nguoi_gui, 'tay', t.nguoi_gui, ?

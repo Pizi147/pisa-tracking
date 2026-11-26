@@ -3,6 +3,7 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
+import { dongBoViecTvvLoTrinh } from '../yThuc/baoPhTvv.ts';
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { fmtBand } from '../../../shared/domain/display.ts';
@@ -158,6 +159,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     /* SỔ NGHĨA VỤ (rà 25/11): KQ thi thật đổi "MT chưa làm còn là việc" (N46, `LUOT_CON_KE_HOACH_SQL`) — ghi lại lượt của em ngay, không chờ đối chiếu đêm. */
     ghiSoHocVien([c.student_id]);
     /* `khoiPhucId`: nhật ký của lần lưu này — toast Hoàn tác gửi lại (`khoiPhucThiThat`); không đổi gì → null (không có gì để hoàn tác). */
+    dongBoViecTvvLoTrinh([cycleId]);   // BAOPH-0 (N46, rà #2233 P1-A): có KQ thi thật → việc TVV của lộ trình đóng ở gốc
     return { ...cycleById(cycleId), khoiPhucId };
   });
 }
@@ -230,6 +232,7 @@ export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?
     const khoiPhucId = writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
       before: { ...truongNk(cu), _hoan: hoan }, after: { ...truongNk(sau), _nguon: 'Khôi phục bản trước' } });
     ghiSoHocVien([c.student_id]);   // SỔ NGHĨA VỤ: như lần lưu
+    dongBoViecTvvLoTrinh([cycleId]);   // BAOPH-0 (N46): gỡ / khôi phục KQ thi thật → việc TVV mở lại / đóng theo
     return { ...sau, khoiPhucId };
   });
 }

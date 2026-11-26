@@ -904,7 +904,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
 /** OV-7a (chủ SP 13/10, thay Q5 06/10): ai lưu được thì sửa được — GVCN lớp em (cả lần đã thực hiện) + QL / Quản trị. Lần nháp đi `xoaNhap`. */
 function quyenSuaXuLy(p: Principal, m: any): boolean {
   if (m.status === 'nhap' || m.status === 'thu_hoi') return false;
-  return duyetYThuc(p, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id);
+  return duyetYThuc(p, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id) || lamXuLyDuocGiao(p, m);   // rà vòng 2 P2 (2): người được giao đợt này
 }
 
 function loadXuLy(id: number): any {
@@ -1000,9 +1000,10 @@ export function soLieuThuHoi(ds: { measureId: number; studentId: number }[]): Ma
  * QL vẫn duyệt / từ chối thẻ trong hộp (quyền duyệt theo phạm vi thẻ).
  */
 export function kiemNguoiGuiYThuc(p: Principal, measureId: number): void {
-  const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  const m = db().prepare('SELECT * FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) return;   // lần xử lý không còn — luật của loại báo lỗi riêng
-  if (!duyetYThuc(p, { studentId: m.student_id }) && !canManageDiscipline(p, m.student_id)) {
+  /* BAOPH-0 (rà #2233 vòng 2 P2 (2)): người được giao Xử lý vi phạm đợt này sửa / rút / Hoàn tác rút đề xuất mình gửi. */
+  if (!duyetYThuc(p, { studentId: m.student_id }) && !canManageDiscipline(p, m.student_id) && !lamXuLyDuocGiao(p, m)) {
     throw forbidden('Bạn không còn phụ trách lớp của em — không sửa hoặc rút được yêu cầu này. Head chi nhánh xử lý yêu cầu trong Chờ duyệt.');
   }
 }

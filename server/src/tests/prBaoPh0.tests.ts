@@ -16,6 +16,7 @@ export async function runPrBaoPh0Tests(t: any) {
   const mg: any = await import('../worklist/mgmttasks.ts');
   const tq: any = await import('../worklist/tongQuanV5.ts');
   const sc: any = await import('../cases/systemClose.ts');
+  const ac: any = await import('../yThuc/access.ts');
   t.attempts = await import('../fasttrack/attempts.ts');
   const hz: any = await import('../classes/hoanTacChuyenNgay.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -138,7 +139,8 @@ export async function runPrBaoPh0Tests(t: any) {
     const bm2 = Number(conn.prepare(`INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc, phoi_hop_id) VALUES (?, 'Meeting 2', ?, 'mo', ?, ?)`).run(tf.student_id, TODAY, now, m2).lastInsertRowid);
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(tf.attempt_id);   // không cho ① sinh việc (N46 / lượt huỷ) — giữ "chưa có việc"
     const k4 = mig.doiBaoPh0(conn);
-    assert(k4.chuyen.length === 1 && k4.chuyen[0].moi === tf.id && k4.gop.length === 1 && [bm, bm2].includes(k4.gop[0]), `đổi một, gộp một: ${JSON.stringify(k4)}`);
+    /* Rà vòng 2 P1-A: lượt huỷ / sau thi thật → GỘP cả hai (không tạo việc ẩn còn mở, không ghi đè nguồn). */
+    assert(!k4.chuyen.length && k4.gop.includes(bm) && k4.gop.includes(bm2) && !get('SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ? AND trang_thai = ?', tf.id, 'mo'), `gộp cả hai: ${JSON.stringify(k4)}`);
   }));
 
   /* Em đang có việc Xử lý vi phạm của GVCN (luật Ý thức). */
@@ -202,11 +204,28 @@ export async function runPrBaoPh0Tests(t: any) {
     const em = get('SELECT student_id AS s FROM sos_coordination_actions WHERE id = ?', n.id).s;
     const pT = loadPrincipal(get('SELECT consultant_user_id AS u FROM students WHERE id = ?', em).u ?? P.mbManager.userId);
     const cy = get('SELECT cycle_id AS c FROM assessment_attempts WHERE id = ?', n.attempt_id).c;
+    /* Rà vòng 2 P1-A: việc đã giao cho người khác + nằm trong KPI → có KQ thi thật SAU khi việc sinh → đóng ở gốc. */
+    const tvv2 = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND u.status = 'active' AND ur.status = 'active'
+        AND (ur.branch_id IS NULL OR ur.branch_id = (SELECT branch_id FROM students WHERE id = ?)) AND u.id != ? ORDER BY u.id LIMIT 1`, em, pT.userId);
+    assert(tvv2, 'seed: cần TVV thứ hai cùng chi nhánh');
+    const pN = loadPrincipal(tvv2.id);
+    gv.doiPhuTrach(P.admin, 'bao_ph', n.viec, { userId: tvv2.id, phuTrachCu: null });
+    conn.prepare('UPDATE viec_bao_ph SET tao_luc = ? WHERE id = ?').run(`${tq.tongQuanTvv(pN).ky.den}T03:00:00.000Z`, n.viec);
+    xoaNho(); const kpi0 = tq.tongQuanTvv(pN).baoPh.tong;
+    assert(khoa(pN).has(`bao-ph:${n.viec}`), 'tiền đề: việc ở Việc được giao');
     conn.prepare(`UPDATE learning_cycles SET route = COALESCE(route, 'ielts'), thi_that_khong_thi = 1, buoc_tiep = NULL WHERE id = ?`).run(cy);   // lộ trình "đã thi thật" (DA_THI_THAT_SQL)
-    assert(!khoa(pT).has(`bao-ph:${n.viec}`), 'việc của lượt sau thi thật còn ở Công việc TVV');
+    bp.dongBoViecTvvLoTrinh([cy]);   // như datKetQuaThiThat
+    assert(tt(n.viec).t === 'bo' && tt(n.viec).l === 'system_sau_thi', `KQ thi thật → việc đóng: ${JSON.stringify(tt(n.viec))}`);
+    assert(!khoa(pN).has(`bao-ph:${n.viec}`) && !khoa(pT).has(`bao-ph:${n.viec}`), 'việc sau thi thật còn ở Việc được giao / Công việc');
+    xoaNho(); assert(tq.tongQuanTvv(pN).baoPh.tong === kpi0 - 1, 'việc sau thi thật còn vào KPI Báo PH đúng hạn');
     gv.donViec('bao_ph', [n.viec]); conn.prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(n.viec);
     bp.dongBoViecTvvLuot([n.attempt_id]);
     assert(!get('SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ?', n.id), 'lượt sau thi thật vẫn sinh việc TVV');
+    /* Gỡ KQ thi thật (khôi phục) → việc mở lại. */
+    bp.dongBoViecTvvLuot([n.attempt_id]);
+    conn.prepare(`UPDATE learning_cycles SET thi_that_khong_thi = 0 WHERE id = ?`).run(cy);
+    bp.dongBoViecTvvLoTrinh([cy]);
+    assert(get('SELECT trang_thai AS t FROM viec_bao_ph WHERE phoi_hop_id = ?', n.id)?.t === 'mo', 'gỡ KQ thi thật: việc TVV chưa có lại');
   }));
 
   check('BP0-11 · rà #2233 P1-3: Hoàn tác chuyển lớp ngay / chốt Cuối khoá — bản chụp có viec_bao_ph + người theo dõi việc Báo PH (không để việc TVV mồ côi)', () => {
@@ -227,6 +246,23 @@ export async function runPrBaoPh0Tests(t: any) {
     assert(tt(v).t === 'mo' && nguon(a.id).status === 'pending', `khôi phục: ${JSON.stringify(tt(v))}`);
     const dien = nguonTvv('talk_family');
     if (dien) assert(/TVV báo phụ huynh/.test(loi(() => ph.removeCoordination(P.admin, dien.id, { reasonCode: 'not_needed' }))), 'nguồn điền sẵn bỏ được');
+  }));
+
+  check('BP0-13 · rà vòng 2 P1-B: người được giao Xử lý vi phạm (không quản lý Ý thức) làm trọn lần xử lý của đợt mình; người lập cũ không còn giao / quản lý → 403 bằng chứng', () => thu('bp13', () => {
+    assert(xl, 'seed');
+    const gvbm = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
+        AND ur.branch_id = (SELECT branch_id FROM students WHERE id = ?) AND u.id != ? ORDER BY u.id LIMIT 1`, xl.sid, xl.gvcn);
+    assert(gvbm, 'seed: cần GV cùng chi nhánh');
+    const pB = loadPrincipal(gvbm.id);
+    gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: gvbm.id, phuTrachCu: null });
+    const now = new Date().toISOString();
+    const m = Number(conn.prepare(`INSERT INTO discipline_measures (student_id, kind, status, created_at, created_by) VALUES (?, 'report_1', 'nhap', ?, ?)`).run(xl.sid, now, gvbm.id).lastInsertRowid);
+    assert(!loi(() => ac.measureOwner(m).requireEdit(pB)), 'người được giao không đính được bằng chứng nháp');
+    conn.prepare(`UPDATE discipline_measures SET status = 'done' WHERE id = ?`).run(m);
+    gv.xongViecXuLy([xl.sid]);
+    assert(!loi(() => ac.measureOwner(m).requireEdit(pB)), 'vừa lưu (đợt này): người được giao bị chặn');
+    conn.prepare(`UPDATE viec_xu_ly SET phu_trach_id = NULL WHERE id = ?`).run(xl.sid);   // đợt sau / thôi được giao
+    assert(/403/.test(loi(() => ac.measureOwner(m).requireEdit(pB))), 'người lập cũ không còn được giao vẫn đụng bằng chứng');
   }));
 
   check('BP0-6 · việc con (N59) gắn việc Ý thức: Head tạo → khối giao việc có việc con; không lên bảng Vận hành; người được giao thấy ở Việc được giao', () => thu('bp6', () => {

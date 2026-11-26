@@ -89,15 +89,17 @@ export function viecXongCn(c: Ky, kemThieuNgay = false): Map<number, ViecXong[]>
 
   /* 3. Báo PH (TVV của em) — lần "đã báo" đầu. PHOI-HOP-V2: việc sau Meeting CX là loại việc riêng (`phoi_hop_tvv`, khớp Công việc). */
   for (const r of conn.prepare(
-    `SELECT v.id, v.phoi_hop_id, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
+    `SELECT v.id, v.phoi_hop_id, v.nhan, (SELECT x.kind FROM sos_coordination_actions x WHERE x.id = v.phoi_hop_id) AS ph_kind, v.student_id AS hv, s.full_name AS ten, COALESCE(v.phu_trach_id, s.consultant_user_id) AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft, s.branch_id AS cn_,
             (SELECT MIN(x.ngay) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id AND x.ket_qua = 'da_bao') AS xong,
             CASE WHEN v.han_chon IS NULL THEN ${SU_KIEN_TAM_DUNG_SQL('v.student_id')} END AS dung   -- R1-L2: hạn như panel (Tạm dừng → Quay lại)
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN classes l ON l.id = ${lopEm('v.student_id', 'NULL')}
       WHERE s.branch_id ${CN_IN} AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
   ).all(json, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon), xong: r.xong ? String(r.xong).slice(0, 10) : null },
-      r.phoi_hop_id != null
-        ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
+      /* rà #2233 vòng 2 P2 (3): nhãn theo nguồn thật — Meeting CX · Trao đổi gia đình (Phối hợp SOS) · kết quả Progress / Final (Báo PH). */
+      r.phoi_hop_id != null && r.ph_kind !== 'bao_ph_tvv'
+        ? { key: `bao-ph:${r.id}`, group: 'phoi_hop_tvv', tieuDe: r.ph_kind === 'talk_family' ? 'Báo PH · Trao đổi gia đình' : 'Báo PH · Meeting CX/GĐCN', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
+        : r.phoi_hop_id != null ? { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: `Báo PH · ${r.nhan}`, href: duongHoSoHocVien(r.hv, { tab: 'y-thuc', sub: 'phoi-hop' }) }
         : { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: 'Báo PH', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc' }) });
   }
 
