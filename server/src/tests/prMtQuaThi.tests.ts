@@ -10,7 +10,7 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
   const mywork: any = await import('../worklist/mywork.ts');
   const { xoaNho, soCauSql } = await import('../platform/nguCanhRequest.ts');
   const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
-  const { tabCuaViec } = await import('../../../shared/domain/index.ts');
+  const { tabCuaViec, mucCuaViec, khoaGopCua, chiaMucTab } = await import('../../../shared/domain/index.ts');
   console.log('\nMT-QUA-THI · MT xếp sau ngày thi → việc Head');
 
   const thu = <T>(fn: () => T): T => {
@@ -45,6 +45,9 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
     assert(it && it.group === 'missing_data' && tabCuaViec(it) === 'van-hanh' && it.cycleId === d.cycle && it.boQuaDuoc && it.mine,
       `thiếu việc / sai dáng: ${JSON.stringify(it)}`);
     assert(/^MT\d+(, MT\d+)* sau ngày thi · /.test(it.tieuDe) && /^MT\d+ W\d [A-Z]{3}.* sau ngày thi \d\d\/\d\d\/\d{4}/.test(it.reason) && /^Thi \d\d\/\d\d\/\d{4}$/.test(it.contextLabel), `chữ: ${JSON.stringify(it)}`);
+    /* PTA 26/11: mục riêng "Lịch MT" (không "Thiếu dữ liệu"); dòng gộp lớp không chung khoá với Xếp lịch MTn. */
+    assert(mucCuaViec(it) === 'lich-mt' && /\|mt-thi$/.test(khoaGopCua(it) ?? '') && chiaMucTab([it]).map((m: any) => m.label).join() === 'Lịch MT', `mục: ${mucCuaViec(it)} · ${khoaGopCua(it)}`);
+    assert(mucCuaViec({ group: 'missing_data', key: 'moc:1' }) === 'thieu', 'Xếp lịch MT phải giữ mục Thiếu dữ liệu');
     /* Ngày thi = thứ Hai tuần MT (MT không còn SAU ngày thi) → hết. */
     conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = ?').run(d.tuan, d.cycle);
     assert(!tim(d.key), 'ngày thi không còn trước MT mà việc còn');
@@ -94,6 +97,37 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
     mywork.boQuaViec(QL, d.key, true);
     mywork.boQuaViec(P.admin, d.key, false);
     assert(tim(d.key), 'khôi phục mà việc chưa hiện');
+  }));
+
+  check('MT-6 · (rà PTA P2-1) Bỏ qua theo TẬP MT: dời bớt MT về trước ngày thi → vẫn ẩn; đổi ngày thi / MT MỚI sau ngày thi → hiện lại', () => thu(() => {
+    const an = mywork.daBoQuaMtThi;
+    assert(an('2026-10-02|2,3', '2026-10-02|2,3') && an('2026-10-02|2,3', '2026-10-02|3'), 'cùng tập / dời bớt phải còn ẩn');
+    assert(!an('2026-10-02|3', '2026-10-02|2,3'), 'MT mới sau ngày thi phải hiện lại');
+    assert(!an('2026-10-02|2,3', '2026-10-09|2,3'), 'đổi ngày thi phải hiện lại');
+    assert(!an(null, '2026-10-02|2') && !an('', '2026-10-02|2'), 'chưa bỏ qua');
+    /* Tích hợp: dấu lưu có thêm một MT (như lúc bỏ qua còn hai MT, nay dời bớt một) → vẫn ẩn. */
+    const d = dung();
+    mywork.boQuaViec(QL, d.key, true);
+    const dau = one('SELECT mt_thi_bo_qua m FROM learning_cycles WHERE id = ?', d.cycle).m as string;
+    assert(/^\d{4}-\d{2}-\d{2}\|\d+(,\d+)*$/.test(dau), `dấu: ${dau}`);
+    conn.prepare('UPDATE learning_cycles SET mt_thi_bo_qua = ? WHERE id = ?').run(`${dau},99`, d.cycle);
+    assert(!tim(d.key), 'dời bớt MT (tập hiện tại ⊂ tập đã bỏ qua) mà việc hiện lại');
+  }));
+
+  check('MT-7 · (rà PTA P2-5) ngày thi thật ưu tiên ngày dự kiến; MT huỷ hết môn (LUOT_HUY_HET); em Tạm dừng → không việc', () => thu(() => {
+    const d = dung();
+    conn.prepare('UPDATE learning_cycles SET exam_date = ?, thi_that_ngay = ? WHERE id = ?').run('2099-01-01', truoc1(d.tuan), d.cycle);
+    assert(tim(d.key), 'ngày thi thật trước MT (dự kiến muộn) mà không có việc');
+    conn.prepare('UPDATE learning_cycles SET exam_date = ?, thi_that_ngay = ? WHERE id = ?').run(truoc1(d.tuan), '2099-01-01', d.cycle);
+    assert(!tim(d.key), 'ngày thi thật sau MT (dự kiến sớm) mà vẫn có việc');
+    conn.prepare('UPDATE learning_cycles SET thi_that_ngay = NULL WHERE id = ?').run(d.cycle);
+    assert(tim(d.key), 'về ngày dự kiến trước MT phải có việc');
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id IN (SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND status = 'planned')`).run(d.cycle);
+    assert(!tim(d.key), 'MT huỷ hết môn mà việc còn');
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled' WHERE attempt_id = ?`).run(d.attempt);
+    assert(tim(d.key), 'MT có môn chưa huỷ phải có việc');
+    conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(d.sid);
+    assert(!tim(d.key), 'em Tạm dừng mà việc còn');
   }));
 
   check(`MT-5 · trần câu SQL: bỏ qua ≤ ${TRAN_GHI_LO.boQuaViec}`, () => thu(() => {

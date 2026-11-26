@@ -7,7 +7,7 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
-import { KHOA_CHAM_SPEAKING, gopViecTheoLop, laViecChamCheo, soSanhViecCham, type ViecGopDuoc } from './gopViec.ts';
+import { KHOA_CHAM_SPEAKING, gopViecTheoLop, laViecChamCheo, laViecLichMt, soSanhViecCham, type ViecGopDuoc } from './gopViec.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 
@@ -168,7 +168,7 @@ const MUC_CV = [
   /* GD-4b (PTA Plan 15/11): "Báo PH kết quả Test" của GVCN (không hạn) đứng SAU Phối hợp SOS — việc có hạn lên trước. Mục riêng, cùng tên "Báo PH":
      TVV giữ mục `bao-ph` (Báo PH vi phạm · tình hình) ở chỗ cũ, thứ tự tab Báo PH của TVV không đổi. */
   ['bao-ph-test', t('Báo PH')], ['phan-cong', t('Phân công')],
-  ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
+  ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['lich-mt', t('Lịch MT')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
 ] as const;
 type MaMuc = (typeof MUC_CV)[number][0];
@@ -186,7 +186,7 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
  * KHÔNG có hạng mục) và "Chấm Speaking" (bài chấm chéo không là việc của ai). Việc tay có hạng mục nằm TRONG mục đó cạnh việc do luật sinh (`mucCuaViec`,
  * `tabCuaViec` đọc `hangMuc` trước); không có → "Việc được giao" tab Vận hành. Máy chủ kiểm khoá bằng danh sách này.
  */
-export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo' && k !== 'bao-ph-test');
+export const HANG_MUC_CV: readonly (readonly [string, string])[] = MUC_CV.filter(([k]) => k !== 'giao' && k !== 'khac' && k !== 'cham-cheo' && k !== 'bao-ph-test' && k !== 'lich-mt');   // MT-QUA-THI: Lịch MT chỉ việc máy
 /** A2-03 (AUDIT-2111): MỘT hạng mục "Báo PH" (`bao-ph`) — mục theo vai người nhận do `mucCuaViec` quy (GVCN → Báo PH kết quả Test, TVV → Báo PH).
     Khoá cũ `bao-ph-test` (web cũ gửi) vẫn nhận, máy chủ ghi thành `bao-ph` (`chuanHangMuc`). */
 export const laHangMucCv = (k: unknown): k is string => typeof k === 'string' && (k === 'bao-ph-test' || HANG_MUC_CV.some(([m]) => m === k));
@@ -208,6 +208,7 @@ export function mucCuaViec(it: { group: string; key: string; kind?: string | nul
   if (it.hangMuc && laHangMucCv(it.hangMuc)) return (!tvv && it.hangMuc === 'bao-ph' ? 'bao-ph-test' : it.hangMuc) as MaMuc;
   if (laViecChamCheo(it)) return 'cham-cheo';
   if (it.group === 'score') return it.kind === 'progress' || it.kind === 'final' ? 'pf' : it.kind === 'checkpoint' ? 'cp' : 'mock';
+  if (laViecLichMt(it)) return 'lich-mt';   // MT-QUA-THI (PTA 26/11): MT sau ngày thi không phải "thiếu dữ liệu"
   if (tvv && it.group === 'missing_data') return 'chot-ngay';   // việc `missing_data` của TVV chỉ có Chốt ngày thi
   /* S3-5 (rà Tutor P2-13): ngoài góc TVV (QL "Tất cả" / "Của GV"), Báo PH của TVV chung mục "Báo PH" với Báo PH kết quả Test — không hai mục cùng tên. */
   if (!tvv && it.group === 'bao_ph_yt') return 'bao-ph-test';

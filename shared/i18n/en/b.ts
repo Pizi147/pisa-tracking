@@ -1114,6 +1114,9 @@ const EN_B_MAY = {
   'Chưa có lịch': 'Not scheduled',
   /* MT-QUA-THI: MT xếp sau ngày thi (việc Head). */
   '{x} sau ngày thi · {x2}': '{x} after exam date · {x2}',
+  'MT sau ngày thi': 'MT after exam date',
+  'Sau ngày thi': 'After exam date',
+  '{n} MT xếp sau ngày thi — dời về trước hoặc xoá': '{n} MT after the exam date — move earlier or delete',
   '{x} xếp sau ngày thi {x2} — dời về trước ngày thi hoặc xoá MT': '{x} scheduled after the exam date {x2} — move before the exam or delete the MT',
   'Sửa lịch MT': 'Edit MT schedule',
   'Thi {x}': 'Exam {x}',

@@ -626,12 +626,13 @@ function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name:
  * MT-QUA-THI (chủ SP 26/11): lộ trình có NGÀY THI cụ thể (thi thật đã nhập ngày, không thì ngày dự kiến — như `ngayThiSauThi`; chỉ tuần / tháng = chưa có ngày)
  * mà còn MT chưa thi xếp ở tuần bắt đầu SAU ngày thi → việc của Head CN để tự chỉnh. Không tính: em không đang học (Lưu trữ / Tạm dừng), lộ trình đã có KQ thi
  * thật, MT đã huỷ / xoá hết môn, MT lịch sử. Tính lúc đọc (một câu cho cả phạm vi, đi từ chỉ mục lộ trình chờ KQ) — dời MT / huỷ / đổi ngày thi là tự hết.
- * `boQuaViec` đọc lại một lộ trình bằng `sqlMtThi('AND lc.id = ?')`.
+ * `boQuaViec` đọc lại một lộ trình bằng `sqlMtThi('AND lc.id = ?')` — theo khoá, không ghim chỉ mục (rà PTA P2-3).
+ * Lớp / chi nhánh của việc = lớp của MT SỚM NHẤT sau ngày thi (`MIN(a.attempt_no)`: SQLite lấy cột trần từ đúng dòng đó — rà PTA P2-2).
  */
-const sqlMtThi = (them = '') => `SELECT lc.id, lc.student_id AS sid, s.full_name, a.class_id, cc.code AS class_code, cc.branch_id,
+const sqlMtThi = (them = '') => `SELECT lc.id, lc.student_id AS sid, s.full_name, MIN(a.attempt_no) AS mt_dau, a.class_id, cc.code AS class_code, cc.branch_id,
               substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AS ngay_thi, GROUP_CONCAT(a.attempt_no || '@' || rp.week_start) AS mts,
               lc.mt_thi_bo_qua, lc.mt_thi_bo_qua_luc, ub.full_name AS bo_qua_ten
-         FROM learning_cycles lc INDEXED BY idx_cycle_cho_kq_ngay
+         FROM learning_cycles lc ${them ? '' : 'INDEXED BY idx_cycle_cho_kq_ngay'}
         CROSS JOIN assessment_attempts a ON a.cycle_id = lc.id AND a.kind = 'mock' AND a.status = 'planned' AND a.lich_su = 0
          JOIN report_periods rp ON rp.id = a.planned_period_id
          JOIN students s ON s.id = lc.student_id
@@ -642,18 +643,28 @@ const sqlMtThi = (them = '') => `SELECT lc.id, lc.student_id AS sid, s.full_name
           AND rp.week_start > substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AND NOT ${LUOT_HUY_HET_SQL('a')} ${them}
         GROUP BY lc.id`;
 
-/** Chữ của việc `mt-thi:` + `dau` = ngày thi + các MT (bỏ qua ghi dấu này; đổi ngày thi / thêm MT sau ngày thi → việc hiện lại). */
+/** Chữ của việc `mt-thi:` + `dau` = ngày thi + số các MT (`2026-10-02|2,3`) — bỏ qua ghi dấu này (`daBoQuaMtThi`). */
 function viecMtThi(r: { full_name: string | null; ngay_thi: string; mts: string }) {
   const mts = r.mts.split(',').map((x) => { const [n, w] = x.split('@'); return { n: Number(n), w }; }).sort((a, b) => a.n - b.n);
   const ds = mts.map((m) => `MT${m.n} ${tuanLich(m.w)}`).join(', ');   // không "·": biến của mẫu dịch EN
   const ten = r.full_name ?? 'Học viên';
   return {
-    dau: `${r.ngay_thi}|${mts.map((m) => `${m.n}@${m.w}`).join(',')}`, soBai: mts.length,
+    dau: `${r.ngay_thi}|${mts.map((m) => m.n).join(',')}`, soBai: mts.length,
     /* Tên không mã tuần (khuôn dòng Công việc bỏ phần có mã tuần, tách tuần lên đầu) — tuần từng MT ở lý do + panel Lịch MT; không `phu` (dòng gộp lớp chép `phu` của em đầu). */
     tieuDe: `${mts.map((m) => `MT${m.n}`).join(', ')} sau ngày thi · ${ten}`,
     reason: `${ds} xếp sau ngày thi ${shortDate(r.ngay_thi)} — dời về trước ngày thi hoặc xoá MT`,
     thi: `Thi ${shortDate(r.ngay_thi)}`,
   };
+}
+
+/** MT-QUA-THI (rà PTA P2-1): còn ẩn khi CÙNG ngày thi và các MT đang sau ngày thi ⊆ các MT lúc bỏ qua (dời bớt / dời trong khoảng sau thi vẫn ẩn);
+ *  đổi ngày thi hoặc có MT MỚI sau ngày thi → hiện lại. */
+export function daBoQuaMtThi(luu: string | null | undefined, dau: string): boolean {
+  if (!luu) return false;
+  const [ngayLuu, dsLuu = ''] = luu.split('|');
+  const [ngayMoi, dsMoi = ''] = dau.split('|');
+  const co = new Set(dsLuu.split(','));
+  return ngayLuu === ngayMoi && dsMoi.split(',').every((n) => co.has(n));
 }
 
 /** BO-QUA-XEP-MT: việc QL đã bỏ qua (danh sách "Đã bỏ qua" ở Công việc — khôi phục được). */
@@ -1794,7 +1805,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       const minh = giuQl(r.branch_id ?? null);
       if (!minh && !tatCa) continue;
       const v = viecMtThi(r);
-      if (r.mt_thi_bo_qua === v.dau) {
+      if (daBoQuaMtThi(r.mt_thi_bo_qua, v.dau)) {
         daBoQua.push({ key: `mt-thi:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
           boi: r.bo_qua_ten ?? null, luc: r.mt_thi_bo_qua_luc });
         continue;
