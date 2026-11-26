@@ -64,6 +64,8 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
   const doi = (k: string) => setMo((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   const dong: ReactNode[] = [];
+  /* TUYEN-3 (mockup v27 T9): dòng "Lần trước…" đầu khối (tuyến Vi phạm) — cùng kiểu dòng nhãn nhóm. */
+  if (tuyen.lanTruoc) dong.push(<li key="lan-truoc" className="nhom"><span>{tuyen.lanTruoc}</span></li>);
   if (gap.length) dong.push(
     <li key="xem" className="xem"><button type="button" aria-expanded={false} onClick={() => setHetGap(true)}>
       {t('Xem {n} bước đã xong', { n: gap.length })}<svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d="M3 4.5L6 7.5 9 4.5" /></svg></button></li>,
@@ -72,7 +74,10 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
     /* Song song (`cungLuc`): dòng nhãn "Cùng lúc · n bước" trước dải bước cùng lúc, các bước đó thụt như bước con. */
     if (b.cungLuc && !hien[i - 1]?.cungLuc) {
       let n = 0; while (hien[i + n]?.cungLuc) n++;
-      dong.push(<li key={`nhom-${b.khoa}`} className="nhom"><span>{t('Cùng lúc · {n} bước', { n })}</span></li>);
+      /* TUYEN-3 (mockup v27 T9): các bước cùng lúc CHỜ bước người xem đang giữ → "Sau khi bạn duyệt · cùng lúc" (Head duyệt) / "Sau bước của bạn · cùng lúc". */
+      const truoc = hien[i - 1];
+      const sauToi = !!truoc?.laToi && truoc.trangThai === 'dang' && hien.slice(i, i + n).every((x) => x.trangThai === 'cho');
+      dong.push(<li key={`nhom-${b.khoa}`} className="nhom"><span>{sauToi ? (truoc!.ten === 'Head duyệt' ? t('Sau khi bạn duyệt · cùng lúc') : t('Sau bước của bạn · cùng lúc')) : t('Cùng lúc · {n} bước', { n })}</span></li>);
     }
     const con = !!b.cha || b.cungLuc;
     const rieng = thanRieng?.(b) ?? null;

@@ -92,6 +92,7 @@ export type Tuyen = {
   loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
   buoc: BuocTuyen[]; xong: number; tong: number; soDang: number; ketThuc: boolean;
   /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
+  /** TUYEN-3 (mockup v27 T9): "Lần trước: {bậc} · {ngày} · đã báo PH {ngày}" — tuyến Vi phạm, người xem được Ý thức em. */ lanTruoc?: string;
 };
 
 /** TUYEN-0 `tomTat` — chuỗi chấm một tuyến (bảng nhiều em, hồ sơ). */
