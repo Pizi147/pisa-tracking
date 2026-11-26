@@ -1,7 +1,7 @@
 # Việc liên phòng ban (TVV / BPXL) — thiết kế (26/11)
 
 Session `brainstorm-lien-pb` (Fable 5.2 · high), brainstorming trực tiếp với chủ SP 26/11. Đọc trên `origin/main` ce2ba5770.
-Trạng thái: **chờ chủ SP duyệt đặc tả** (đã chốt Q1–Q4 trong session) → mockup `thiet-ke/v28/` → PTA Plan giao code.
+Trạng thái: **chủ SP DUYỆT đặc tả 26/11** ("Duyệt, vẽ mockup" — Q1–Q4 + 9 điểm session tự quyết đã trình) → đang vẽ mockup `thiet-ke/v28/` → PTA Plan giao code.
 Nền: N72 ①–⑥ (đặc tả `../2026-11-26-tuyen-cong-viec-yt-phoi-hop/thiet-ke.md`, mockup `thiet-ke/v27/`). Tệp này chỉ ghi phần **thêm**.
 
 ## 0. Lời chủ SP (nguyên văn, 26/11)
@@ -156,7 +156,7 @@ Tuyến · Chuyển lớp · Trịnh Ngọc Ánh · MB BE 04 → MB ELE 02
 - **Đổi GV** (khoá = lần lưu × lớp): Lưu phân công → [Bàn giao (GV cũ) · Nhận thông tin, cùng lúc].
 - Làm xong phần mình → tự theo dõi tuyến (N72 ①); nội dung theo quyền sẵn có (N72 ④): BPXL không đọc nội dung Báo PH / câu bàn giao, chỉ thấy khung bước.
 
-## 5. Luật mới — **chờ chủ SP duyệt** (đề xuất số N73; PTA Plan ghi vào `plan.md` 1.6 khi duyệt đặc tả)
+## 5. Luật mới — **chủ SP duyệt 26/11** (đề xuất số N73; PTA Plan ghi vào `plan.md` 1.6 khi duyệt đặc tả)
 
 **N73 · Việc liên phòng ban TVV / BPXL (chủ SP 26/11):** ① **Chuyển lớp** — mọi lệnh có lớp đích, thi hành "Từ tuần …" (lẻ · Cuối khoá · Xét lại) sinh ngay lúc ra lệnh: việc TVV **"Báo PH · Chuyển lớp"** (một loại với mọi Báo PH — N72 ⑤; nội dung máy điền; em không TVV → Head) + việc BPXL **"Nhận thông tin · Chuyển lớp"** (một việc mỗi lô, **một nút Xác nhận**); **chuyển "Ngay hôm nay" không sinh việc**; không chặn / không làm chậm lệnh · em có việc Báo PH "Kết quả Final" đang mở → **gộp một việc**, hạn muộn hơn · lệnh sửa / huỷ: việc mở tự đổi / tự đóng; TVV đã báo → "Báo lại PH"; BPXL đã xác nhận → chỉ tin "Cập nhật" · ② **Đổi GV** — cặp có tích "Tạo việc bàn giao" sinh thêm việc BPXL **"Nhận thông tin · Đổi GV"** (một việc mỗi lần lưu × lớp, một nút Xác nhận) · ③ **Hạn Chủ nhật** cho ba việc trên: sinh T2–T5 → CN tuần đó; **T6 → T2, T7 → T3, CN → T4** tuần sau (ngoại lệ N2 cho nguồn chuyển lớp); sửa được · ④ **Chuyển người / đổi hạn (sửa N58):** người đang giữ · **người đã giao** · Head · Quản trị · CX; người theo dõi chỉ xem; đổi người → việc rời danh sách người cũ, người cũ tự theo dõi, người mới có chuông + việc trong danh sách; việc của cả nhóm BPXL chuyển cho một người thì thuộc hẳn người đó, người chuyển vào theo dõi; Hoàn tác, không bắt lý do · ⑤ **Khung việc chung (mở rộng N72 ⑥):** thêm việc TVV (Chốt ngày thi · Chọn bước tiếp sau thi · Bổ sung hồ sơ thiếu · Cập nhật KQ thi thật), Bàn giao (chuyển lớp · đổi GV), việc quản lý của Head (Chốt lộ trình · Xét lại lộ trình · Xếp lịch MT còn thiếu — Chốt / Xét lại chỉ giao cho người có quyền chốt) — giữ người làm mặc định + hạn theo luật cũ, có Việc con; **ngoài khung:** chấm / nhập điểm / nhận xét Test, Case / PA học thuật, Báo cáo PH tháng / đợt, thẻ Chờ duyệt · ⑥ BPXL thêm nhóm việc "Nhận thông tin" (sửa N57 "BPXL chỉ có việc Xếp lịch họp + Việc được giao + Đang theo dõi").
 
