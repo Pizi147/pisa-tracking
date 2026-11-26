@@ -38,7 +38,7 @@ figure img { width: 100%; border: .75pt solid var(--vien); border-radius: 4pt; d
 figure.nua img { width: 72%; margin: 0 auto; }
 figcaption { font-size: 8.5pt; color: var(--nhat); margin-top: 3pt; text-align: center; }
 .sap { background: var(--vang); border: 1pt solid var(--vang-vien); border-radius: 5pt; padding: 5pt 8pt; margin: 6pt 0 10pt; font-size: 9.5pt; break-inside: avoid; }
-.sap::before { content: "Sắp đổi · "; font-weight: 700; color: #9a6b00; }
+.sap::before { content: "Sắp có · "; font-weight: 700; color: #9a6b00; }
 .luu-y { background: #eef2ff; border-left: 3pt solid var(--chinh); padding: 5pt 8pt; margin: 6pt 0 10pt; font-size: 9.8pt; break-inside: avoid; }
 table.nhip { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 6pt 0 10pt; }
 table.nhip th, table.nhip td { border: .75pt solid var(--vien); padding: 5pt 7pt; vertical-align: top; text-align: left; }
