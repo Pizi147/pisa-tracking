@@ -261,7 +261,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
         const v = views.get(k);
         return {
           skill: k,
-          /* N71: em ngừng học — ô thi sau ngày dừng không còn chờ (cùng `scoreDebt.ts`). */
+          /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (cùng `scoreDebt.ts`). */
           required: !!v && oConNoKhiDung(a.hv_archived, v.weekStart, a.hv_quay_lai),
           scored: row?.raw_score !== null && row?.raw_score !== undefined,
           progress: v?.progress ?? 'upcoming',
@@ -281,7 +281,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
 
     /* Không truyền `hoanTat` (R11) có chủ ý: chỉ đếm ô chưa có điểm theo band/noShow/mine, không đọc canEdit/khoa — đỡ 3 câu SQL. */
     const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), undefined, undefined, true)
-      .map((c) => (!c.required || oConNoKhiDung(a.hv_archived, c.weekStart, a.hv_quay_lai) ? c : { ...c, required: false, mine: false }));   // N71: như `listAttempts`
+      .map((c) => (!c.required || oConNoKhiDung(a.hv_archived, c.weekStart, a.hv_quay_lai) ? c : { ...c, required: false, mine: false }));   // Lưu trữ (26/11): như `listAttempts`
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     if (pending.length) bump(needScores, a.class_id, pending.length);
   }

@@ -668,7 +668,7 @@ function hangLopTuan(
   for (const r of rows) {
     /* Chỉ đếm lượt còn ngồi thi (chưa vắng, chưa huỷ phần thi): em vắng không làm dòng thành "Đã chấm xong". */
     if (r.sit_status !== 'scheduled' && r.sit_status !== 'sat') continue;
-    /* N71: em ngừng học — tuần thi sau ngày dừng không còn "còn chờ" (cùng `scoreDebt.ts`). */
+    /* Lưu trữ (chủ SP 26/11): em Lưu trữ không còn ô nào là việc; ô thi trước tuần quay lại học không mở lại (cùng `scoreDebt.ts`). */
     if (!oConNoKhiDung(r.hv_archived, String(tuan.week_start), r.hv_quay_lai)) continue;
     if (!giuLop(r.class_id)) continue;
     /* PR-MT0 (mockup ⑤): MT0 ở lớp thường = một hàng riêng `{lớp}:mt0`, lưới band, tên môn IELTS, mở Nhập điểm `kind=mt0`. */

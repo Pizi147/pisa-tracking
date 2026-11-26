@@ -16,11 +16,15 @@ const EM_DANG_HOC_SQL = (s: string, kemTamDung: boolean) => `${HV_DANG_HOC_SQL(s
 /**
  * LƯU TRỮ (chủ SP 26/11, THAY ngoại lệ N71 "em dừng vẫn nợ ô thi trước ngày dừng"): em vào Lưu trữ (Tạm dừng / Kết thúc học) → MỌI ô chấm của em thôi là
  * việc, không tính quá hạn, không vào sổ; em Quay lại học / Học lại KHÔNG mở lại ô cũ — chỉ ô thi từ tuần quay lại trở đi. Mốc = lần quay lại gần nhất
- * (journey `resume`); "Hoàn tác Kết thúc học" là hoàn tác, không phải quay lại → trả đủ việc cũ (Hoàn tác Tạm dừng / Quay lại xoá mốc của chúng).
- * `sid` = biểu thức id em. Một câu con trên chỉ mục idx_journey_student — không thêm câu.
+ * (journey `resume`) đứng NGAY SAU một lần dừng thật (Tạm dừng / Kết thúc học) ở NGÀY TRƯỚC — Lộ trình mới khi em vẫn đang học (Kết thúc + Học lại cùng
+ * ngày, rà #2217 P2-3) không phải quay lại. Hoàn tác trả đủ việc cũ: Hoàn tác Tạm dừng / Quay lại / Học lại xoá mốc của chúng; "Hoàn tác Kết thúc học" ghi
+ * mốc `resume` cho Hành trình nhưng là hoàn tác → bỏ theo tên. `sid` = biểu thức id em. Câu con trên chỉ mục idx_journey_student — không thêm câu.
  */
 export const QUAY_LAI_SQL = (sid: string) => `(SELECT MAX(j.event_date) FROM journey_events j
-  WHERE j.student_id = ${sid} AND j.event_type = 'resume' AND j.title != 'Hoàn tác Kết thúc học')`;
+  WHERE j.student_id = ${sid} AND j.event_type = 'resume' AND j.title != 'Hoàn tác Kết thúc học'
+    AND (SELECT CASE WHEN k.event_type != 'resume' AND k.event_date < j.event_date THEN 1 END FROM journey_events k
+          WHERE k.student_id = j.student_id AND k.event_type IN ('pause', 'finish', 'resume') AND (k.event_date < j.event_date OR (k.event_date = j.event_date AND k.id < j.id))
+          ORDER BY k.event_date DESC, k.id DESC LIMIT 1) = 1)`;
 /** Ô có tuần thi `tuan` còn là việc chấm của em: em không trong Lưu trữ, và ô không thi trước tuần em quay lại học (`quayLai` = `QUAY_LAI_SQL`). */
 export const oConNoKhiDung = (archivedAt: string | null | undefined, tuan: string | null | undefined, quayLai: string | null | undefined): boolean =>
   !archivedAt && !(quayLai && tuan && tuan.slice(0, 10) < mondayOf(String(quayLai).slice(0, 10)));
