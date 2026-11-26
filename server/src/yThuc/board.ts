@@ -348,7 +348,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string, giao
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay_xong   -- rà 25/11 PR 2: lần "đã báo" ĐẦU như sổ đúng hạn
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
-        WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
+        WHERE v.id IN (SELECT COALESCE(MIN(CASE WHEN trang_thai = 'mo' THEN id END), MAX(id)) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL AND lenh_chuyen_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       if (r.trang_thai === 'mo' && r.phu_trach_id != null) giaoCho?.set(r.student_id, r.phu_trach_id);

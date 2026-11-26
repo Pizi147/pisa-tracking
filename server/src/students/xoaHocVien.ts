@@ -101,6 +101,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'xet_lai_lo_trinh', sql: `DELETE FROM xet_lai_lo_trinh WHERE student_id = ?1 OR lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})) OR lenh_moi_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },   // P9a XET-LAI
   { bang: 'ban_giao_gv_em', sql: 'DELETE FROM ban_giao_gv_em WHERE student_id = ?1' },   // PR-B: góp ý bàn giao đổi GV (việc của lớp giữ)
   { bang: 'ban_giao_mon', sql: `DELETE FROM ban_giao_mon WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
+  /* LPB-0: dòng em trong việc BPXL Nhận thông tin (liên kết mềm tới lệnh) — việc của lớp giữ; hết em thì không hiện ở Công việc. */
+  { bang: 'viec_nhan_tin_dong', sql: `DELETE FROM viec_nhan_tin_dong WHERE lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q}))` },
   { bang: 'lenh_chuyen_lop', sql: `DELETE FROM lenh_chuyen_lop WHERE student_id = ?1 OR tu_yeu_cau_id IN (${Q})` },
   /* PR-DUYET: thẻ Chờ duyệt của em (đối tượng là PA/đề nghị dời/lộ trình của em — xoá cùng em) */
   { bang: 'yeu_cau_duyet', sql: 'DELETE FROM yeu_cau_duyet WHERE hoc_vien_id = ?1' },

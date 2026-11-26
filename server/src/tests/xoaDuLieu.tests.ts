@@ -435,7 +435,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 79, `xoá tốn ${nIt} câu (> 79)`);   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 80, `xoá tốn ${nIt} câu (> 80)`);   // LPB-0: +1 câu xoá dòng em trong việc BPXL Nhận thông tin   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
@@ -636,7 +636,8 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
     /* BAOPH-0: +4 (discipline_measures.phu_trach_id · giao_boi, viec_xu_ly.phu_trach_id · giao_boi). TUYEN-0: +1 (tuyen_bo_theo_doi.user_id). BO-BAO-CAO-PH: +1 (bao_cao_ph_bo_em.nguoi). */
     /* VAI-0: +4 (meeting_phan.nguoi_luat, viec_bao_ph.nguoi_luat, lop_xep_lich.gan_boi dấu vết · lop_xep_lich.user_id thiết lập). */
-    assert(!thua.length && coDinh.length === 153 && new Set(coDinh).size === 153, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    /* LPB-0: +5 dấu vết (viec_nhan_tin.phu_trach_id · giao_boi · nguoi_luat · tao_boi · xong_boi). */
+    assert(!thua.length && coDinh.length === 158 && new Set(coDinh).size === 158, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
     assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'gv_cham_cot.examiner_user_id', 'gv_cham_cot.user_id', 'lop_xep_lich.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id', 'tuyen_bo_theo_doi.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());

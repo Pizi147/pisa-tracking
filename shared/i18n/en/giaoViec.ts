@@ -1,6 +1,13 @@
 /** GV-1 (N58, chủ SP 20/11) — giao việc liên phòng ban: tên nhóm việc Meeting + câu báo của máy chủ. Khoá = chữ Việt. */
 export const EN_GIAO_VIEC = {
   'Xếp lịch họp': 'Schedule meeting',
+  /* LPB-0 (N73): việc BPXL Nhận thông tin. */
+  'Nhận thông tin': 'Info handover',
+  'Xác nhận đã nhận thông tin (BPXL)': 'Confirmed info received (scheduling)', 'Mở lại việc Nhận thông tin': 'Reopened the Info handover task',
+  'Chỉ người phụ trách, lead BPXL hoặc Head chi nhánh xác nhận được việc này.': 'Only the owner, the scheduling lead or the branch Head can confirm this task.',
+  'Việc đã tự đóng (không còn em / lịch đổi đã huỷ).': 'The task closed itself (no students left / the change was cancelled).',
+  'Chỉ người phụ trách, lead BPXL hoặc Head chi nhánh mở lại được việc này.': 'Only the owner, the scheduling lead or the branch Head can reopen this task.',
+  'Việc chưa xác nhận — không có gì để mở lại.': 'The task is not confirmed — nothing to reopen.',
   'Kết quả meeting': 'Meeting result',
   'Loại việc không hợp lệ.': 'Invalid task type.',
   'Không tìm thấy việc.': 'Task not found.',

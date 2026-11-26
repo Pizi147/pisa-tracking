@@ -150,6 +150,7 @@ import { migratePrLuuTruDong } from './migrate/prLuuTruDong.ts';
 import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
 import { migratePrTuyen0 } from './migrate/prTuyen0.ts';
 import { migratePrVaiMoi, themCotPrVaiMoi } from './migrate/prVaiMoi.ts';
+import { migratePrLpb0 } from './migrate/prLpb0.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -591,6 +592,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrLuuTruDong(conn, applied));
   /* VAI-0: cột viec_bao_ph.nguoi_luat / meeting_phan.nguoi_luat + lop_xep_lich TRƯỚC BAOPH-0 — `dongBoViecTvvLuot` (sinh việc TVV) chốt Lead TVV vào cột này. */
   buoc(() => { const t: string[] = []; themCotPrVaiMoi(conn, t); if (t.length) applied.push(`VAI-0 (cột): ${t.join(', ')}.`); });
+  /* LPB-0 (N73): viec_bao_ph.lenh_chuyen_id / lenh_mau + bảng viec_nhan_tin TRƯỚC BAOPH-0 — `dongBoViecTvvLuot` gộp Kết quả Final với Báo PH · Chuyển lớp đọc cột này. */
+  buoc(() => migratePrLpb0(conn, applied));
   buoc(() => migratePrBaoPh0(conn, applied));   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
   /* TUYEN-0 (N72 ①): bảng tuyen_bo_theo_doi + chỉ mục người làm bước (chỉ thêm, chạy lặp được). */
   buoc(() => migratePrTuyen0(conn, applied));

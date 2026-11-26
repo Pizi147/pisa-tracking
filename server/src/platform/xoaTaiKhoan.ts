@@ -61,7 +61,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('viec_bao_ph', 'bo_boi', DV, 'việc Báo PH'), c('viec_bao_ph_lan', 'ghi_boi', DV, 'việc Báo PH'),   // SV-YT-TVV
   c('viec_han_lan', 'boi', DV, 'việc Báo PH'),   // HAN-BAO-PH: người đổi hạn
   /* GV-1 (N58): giao việc — người được giao / người giao / người theo dõi / người làm phần Meeting (dấu vết: xoá mềm giữ lịch sử). */
-  ...(['viec_bao_ph', 'sos_coordination_actions', 'tinh_hinh_hoc_tap', 'meeting_phan', 'viec_xu_ly', 'discipline_measures'] as const).flatMap((b) => [c(b, 'phu_trach_id', DV, 'giao việc'), c(b, 'giao_boi', DV, 'giao việc')]),
+  ...(['viec_bao_ph', 'sos_coordination_actions', 'tinh_hinh_hoc_tap', 'meeting_phan', 'viec_xu_ly', 'discipline_measures', 'viec_nhan_tin'] as const).flatMap((b) => [c(b, 'phu_trach_id', DV, 'giao việc'), c(b, 'giao_boi', DV, 'giao việc')]),
+  c('viec_nhan_tin', 'nguoi_luat', DV, 'giao việc'), c('viec_nhan_tin', 'tao_boi', DV, 'giao việc'), c('viec_nhan_tin', 'xong_boi', DV, 'giao việc'),   // LPB-0
   c('meeting_phan', 'xong_boi', DV, 'giao việc'), c('meeting_phan', 'nhap_ho_boi', DV, 'giao việc'),
   c('meeting_phan', 'nguoi_luat', DV, 'giao việc'), c('viec_bao_ph', 'nguoi_luat', DV, 'giao việc'), c('lop_xep_lich', 'gan_boi', DV, 'giao việc'),   // VAI-0 (N74): người theo luật hết hiệu lực → `luatMeeting` lùi
   /* TL-1 (N61): trả lại vi phạm — người trả / người nhận / người xử lý / giao việc (dấu vết). */

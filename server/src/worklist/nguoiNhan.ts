@@ -45,6 +45,7 @@ function soViecMo(ids: readonly number[]): Map<number, number> {
         WHERE x.status = 'pending' AND ${CON_VIEC('pa')} AND x.phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT phu_trach_id FROM tinh_hinh_hoc_tap WHERE trang_thai = 'mo' AND phu_trach_id IN (SELECT value FROM json_each(?1))
       UNION ALL SELECT assignee_user_id FROM tasks WHERE progress NOT IN ('done', 'stopped') AND assignee_user_id IN (SELECT value FROM json_each(?1))
+      UNION ALL SELECT COALESCE(phu_trach_id, nguoi_luat) FROM viec_nhan_tin WHERE trang_thai = 'mo' AND COALESCE(phu_trach_id, nguoi_luat) IN (SELECT value FROM json_each(?1))   -- LPB-0
     ) GROUP BY nguoi`).all(ds) as { nguoi: number; n: number }[];
   return new Map(rows.map((r) => [r.nguoi, r.n]));
 }

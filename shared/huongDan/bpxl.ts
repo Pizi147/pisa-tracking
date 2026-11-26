@@ -38,6 +38,17 @@ export const HD_BPXL: HuongDan = {
       tuKhac: ['họp', 'meeting', 'xếp lịch họp', 'cx', 'gđcn'],
     },
     {
+      /* LPB-0 (N73): việc "Nhận thông tin" — em chuyển lớp (theo lớp đích) / đổi GV có bàn giao. */
+      id: 'nhan-tin', ten: 'Nhận thông tin chuyển lớp, đổi GV', nhom: 'lich', viecWeb: ['nhan_tin'],
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Nhận thông tin', duong: CV },
+      khiCo: 'Head ra quyết định chuyển lớp "Từ tuần …" (lớp bạn nhận xếp lịch) hoặc đổi GV có tích "Tạo việc bàn giao".',
+      buoc: ['Mở dòng <b>Nhận thông tin</b>, xem bảng em (lớp cũ → lớp mới, tuần bắt đầu, lịch Mock) hoặc cặp GV.', 'Bấm <b>Xác nhận đã nhận</b>.'],
+      xong: 'Việc Xác nhận; em chuyển sau sẽ vào việc mới.',
+      sai: 'Bấm <b>Hoàn tác</b> hoặc <b>Mở lại</b>.',
+      khongDuoc: ['Không phải lớp của bạn: bấm ô Phụ trách để chuyển cho người khác.'],
+      tuKhac: ['chuyển lớp', 'đổi gv', 'nhận thông tin', 'xác nhận', 'bàn giao'],
+    },
+    {
       id: 'sua-lich-lop', ten: 'Sửa lịch lớp thường', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ › Thông tin lớp' },
       buoc: ['Mở hồ sơ lớp thường, bấm <b>⋯ › Thông tin lớp</b>.', 'Đổi tuần khai giảng, tuần Progress, tuần Final; lớp Fast Track nhờ Head.'],

@@ -29,6 +29,7 @@ import * as giaoViecSvc from '../worklist/giaoViec.ts';
 import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as traLaiSvc from '../yThuc/traLai.ts';
 import * as tuyenSvc from '../yThuc/tuyen.ts';
+import * as lienPhongSvc from '../classes/lienPhongBan.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -2704,8 +2705,22 @@ api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const loai = giaoViecSvc.docLoai(req.params.loai);
   const g = giaoViecSvc.xemGiaoViec(p, loai, pInt(req, 'id'));
+  /* LPB-0 (N73): việc BPXL Nhận thông tin — bảng em / cặp GV + tuyến (Đổi GV: một tuyến · Chuyển lớp: chuỗi chấm từng em). */
+  if (loai === 'nhan_tin') {
+    const nhanTin = lienPhongSvc.xemNhanTin(p, g.id);
+    return { ...g, nhanTin, ...(nhanTin.loai === 'doi_gv' ? { tuyen: tuyenSvc.tuyenCuaViec(p, 'nhan_tin', g.id) } : { chuoiTuyen: tuyenSvc.tuyenNhanTin(p, g.id) }) };
+  }
   /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng · BAOPH-0 Xử lý vi phạm / Đã thực hiện — tuyến đi cùng khối giao việc. */
   return loai === 'tinh_hinh' || loai === 'xu_ly' || loai === 'da_thuc_hien' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, loai, g.id) } : g;
+}));
+/* LPB-0 (N73): Nhận thông tin — "Xác nhận đã nhận" (không ô nhập) · mo-lai = Hoàn tác / Mở lại. Người giữ · lead BPXL · Head / Quản trị / CX của chi nhánh lớp. */
+api.post('/giao-viec/nhan_tin/:id/xac-nhan', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lienPhongSvc.xacNhanNhanTin(principalOf(req), pInt(req, 'id'));
+}));
+api.post('/giao-viec/nhan_tin/:id/mo-lai', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lienPhongSvc.moLaiNhanTin(principalOf(req), pInt(req, 'id'));
 }));
 /**
  * TUYEN-0 (N72 ②–④): một tuyến Ý thức & Phối hợp — `:loai` vi_pham | phoi_hop | tinh_hinh | cap_bac, `:khoa` id (vi_pham: id lần xử lý hoặc `em{id}`).

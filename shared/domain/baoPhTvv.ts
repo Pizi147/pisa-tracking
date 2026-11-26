@@ -14,6 +14,15 @@ export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', m
 export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay)) - 1;
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
 /**
+ * LPB-0 (N73 ③, chủ SP 26/11): hạn "Chủ nhật gần nhất" của việc liên phòng ban (Báo PH · Chuyển lớp, Nhận thông tin · Chuyển lớp / Đổi GV) —
+ * sinh T2–T5 → Chủ nhật tuần đó; cách Chủ nhật ≤ 2 ngày thì 3 ngày: T6 → T2, T7 → T3, CN → T4 tuần sau. Ngày giờ VN.
+ */
+export const hanChuNhat = (sinh: string): string => {
+  const d = ngayTheoGioVN(sinh) ?? sinh.slice(0, 10);
+  const thu = new Date(`${d}T00:00:00Z`).getUTCDay();   // 0 = Chủ nhật
+  return addDaysIso(d, thu >= 1 && thu <= 4 ? 7 - thu : 3);
+};
+/**
  * TL-1 (rà #1927 (3)): MỘT luật quá hạn cho việc Báo PH ở mọi nơi đọc (Công việc, panel, tab lớp, hồ sơ HV, Đang theo dõi): đang "Chờ GV sửa" (`viec_bao_ph.tra_lai_id`
  * / `WorkItem.choGvSua`) → hạn tạm dừng, không quá hạn. `han` = hạn hiệu lực (`hanBaoPhHieuLuc`).
  */

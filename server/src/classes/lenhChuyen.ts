@@ -21,6 +21,7 @@ import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { quetLopTrong } from './xoaKetThucLop.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
 import { quetDoiDenHan } from './phanCongGv.ts';
+import { dongBoLienPhongLenh, lenhVuaLuu } from './lienPhongBan.ts';
 
 /**
  * LỆNH CHUYỂN LỚP do QUẢN LÝ quyết (PR-CT, §3.1f Q30-1): em nào · lớp chuyển đến nào · tuần bắt đầu (Thứ Hai, từ tuần sau trở đi — hoặc
@@ -250,6 +251,8 @@ export function raLenh(p: Principal, v: {
       const ngayEm = hang.filter((h) => h[5] === homNay).map((h) => h[0] as number);
       if (ngayEm.length) daChuyen.push(...thiHanhNgay(v.lopNguonId, v.boiCanh, homNay, ngayEm));
       thongBaoSapNhan(p, nguon, [...new Set(hang.map((h) => h[2]).filter(Boolean))] as number[], dich, homNay);
+      /* LPB-0 (N73 ①): việc TVV Báo PH · Chuyển lớp + việc BPXL Nhận thông tin theo lệnh vừa lưu — SAU thi hành ngay (lệnh "Ngay hôm nay" không sinh việc). Theo lô. */
+      dongBoLienPhongLenh(lenhVuaLuu(v.lopNguonId, hang.map((h) => h[0] as number)), p.userId);
     }
     return { ok: hang.map((h) => h[0] as number), failed, daChuyen };
   });
@@ -406,6 +409,7 @@ export function huyLenh(p: Principal, id: number, lyDo?: string | null): void {
   tx(() => {
     const conn = db();
     huyMotLenh(p, l, why);
+    dongBoLienPhongLenh([l.id], p.userId);   // LPB-0: việc mở tự đóng / đã báo → Báo lại PH · đã xác nhận → tin Cập nhật
     const hv = conn.prepare('SELECT full_name FROM students WHERE id = ?').get(l.student_id) as any;
     const ma = new Map((conn.prepare('SELECT id, code FROM classes WHERE id IN (?, ?)').all(l.lop_nguon_id, l.lop_dich_id ?? l.lop_nguon_id) as any[]).map((r) => [r.id as number, r.code as string]));
     const nhan = nguoiNhanCuaLop([l.lop_nguon_id, ...(l.lop_dich_id ? [l.lop_dich_id] : [])]);
@@ -456,6 +460,8 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
     }
   }
   if (ngoaiQuyen === ds.length) throw forbidden(CUNG_LOP_CHI_NHANH);
+  /* LPB-0: việc liên phòng ban của các lệnh vừa huỷ — MỘT lượt đồng bộ cho cả lô (không theo số lệnh). */
+  if (daHuy.length) tx(() => dongBoLienPhongLenh(daHuy.map((l) => l.id as number), p.userId));
   guiChuongHuyNhieu(p, daHuy, why);
   return kq;
 }
@@ -517,6 +523,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
               tuan_bat_dau = COALESCE(?, tuan_bat_dau) WHERE id = ? AND trang_thai = 'huy'`,
         ).run(nowIso(), doiTuan, id);
         if (doiTuan) l.tuan_bat_dau = doiTuan;
+        dongBoLienPhongLenh([id], p.userId);   // LPB-0: việc đã tự đóng theo lệnh huỷ mở lại
         /*
          * PR-LCa (I1): quyết định Cuối khoá lớp thường chờ lại → Lộ trình tiếp theo + MT0 theo quyết định như `raLenh` (bất biến lệnh chờ ⇒
          * LTT cùng Hướng). Hướng LTT khác là do ghi SAU khi huỷ — của GVCN (`cuLaQl: false`). Mỗi lệnh một giao dịch nên đọc theo lệnh.
@@ -680,6 +687,7 @@ function huyHeThong(mat: any[], lyDo: string) {
   const ids = mat.map((l) => l.id as number);
   db().prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE trang_thai = 'cho' AND id IN (${inHang(ids)})`)
     .run(nowIso(), lyDo, nowIso(), ...ids);
+  dongBoLienPhongLenh(ids, null);   // LPB-0
 }
 
 /** Đánh dấu TRƯỚC khi chuyển; `AND trang_thai = 'cho'` để lượt song song không đánh dấu lần hai. */

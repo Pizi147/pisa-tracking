@@ -11,3 +11,16 @@ export function catBaoPh0(schema: string): string {
   if (/BAOPH-0|viec_xu_ly|cha_loai/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt catBaoPh0');
   return cat;
 }
+
+/**
+ * LPB-0 (N73): cắt phần lược đồ LPB-0 khỏi CHỮ schema.sql (LF) — DB trước LPB-0 (cột viec_bao_ph.lenh_chuyen_id / lenh_mau + chỉ mục, bảng viec_nhan_tin /
+ * viec_nhan_tin_dong). So với schema.sql hiện tại thì chạy thêm `migratePrLpb0`. Khuôn đổi → ném lỗi.
+ */
+export function catLpb0(schema: string): string {
+  const cat = schema
+    .replace(/(\n {2}nguoi_luat INTEGER REFERENCES users\(id\)),( {2}-- VAI-0 \(N76b\)[^\n]*)\n {2}lenh_chuyen_id INTEGER,[^\n]*\n {2}lenh_mau TEXT[^\n]*\n\);\nCREATE INDEX IF NOT EXISTS idx_viec_bao_ph_lenh[^\n]*\n/,
+      '$1 $2\n);\n')
+    .replace(/-- LPB-0 \(N73 ① ②, N77\): việc BPXL[\s\S]*?idx_vnt_dong_doi[^\n]*\n/, '');
+  if (/LPB-0|lenh_chuyen_id|viec_nhan_tin/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt catLpb0');
+  return cat;
+}
