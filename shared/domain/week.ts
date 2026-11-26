@@ -62,7 +62,14 @@ export function owningMonthOf(weekStart: string): { year: number; month: number 
 }
 
 /** Thứ tự tuần trong tháng sở hữu, đếm các thứ Hai có cùng tháng sở hữu. */
+/* RA-2711: hàm thuần gọi cho từng ô / mã tuần (~0,4 s CPU trên bộ đo 245 đường) — nhớ theo ngày (vài nghìn khoá, cả tiến trình / trang). */
+const SO_TUAN = new Map<string, number>();
 export function weekNumberInMonthOf(weekStart: string): number {
+  let n = SO_TUAN.get(weekStart);
+  if (n === undefined) { n = demTuanTrongThang(weekStart); SO_TUAN.set(weekStart, n); }
+  return n;
+}
+function demTuanTrongThang(weekStart: string): number {
   const { year, month } = owningMonthOf(weekStart);
   let cursor = weekStart;
   let n = 1;
