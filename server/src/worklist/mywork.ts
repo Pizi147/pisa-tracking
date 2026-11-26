@@ -4,8 +4,8 @@ import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, KHONG_CHU_SQL, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, docNho, tx } from '../db.ts';
-import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
+import { CASE_SAU_THI_SQL, CO_KET_QUA_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt, shortDate } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
@@ -622,6 +622,39 @@ function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name:
   };
 }
 
+/**
+ * MT-QUA-THI (chủ SP 26/11): lộ trình có NGÀY THI cụ thể (thi thật đã nhập ngày, không thì ngày dự kiến — như `ngayThiSauThi`; chỉ tuần / tháng = chưa có ngày)
+ * mà còn MT chưa thi xếp ở tuần bắt đầu SAU ngày thi → việc của Head CN để tự chỉnh. Không tính: em không đang học (Lưu trữ / Tạm dừng), lộ trình đã có KQ thi
+ * thật, MT đã huỷ / xoá hết môn, MT lịch sử. Tính lúc đọc (một câu cho cả phạm vi, đi từ chỉ mục lộ trình chờ KQ) — dời MT / huỷ / đổi ngày thi là tự hết.
+ * `boQuaViec` đọc lại một lộ trình bằng `sqlMtThi('AND lc.id = ?')`.
+ */
+const sqlMtThi = (them = '') => `SELECT lc.id, lc.student_id AS sid, s.full_name, a.class_id, cc.code AS class_code, cc.branch_id,
+              substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AS ngay_thi, GROUP_CONCAT(a.attempt_no || '@' || rp.week_start) AS mts,
+              lc.mt_thi_bo_qua, lc.mt_thi_bo_qua_luc, ub.full_name AS bo_qua_ten
+         FROM learning_cycles lc INDEXED BY idx_cycle_cho_kq_ngay
+        CROSS JOIN assessment_attempts a ON a.cycle_id = lc.id AND a.kind = 'mock' AND a.status = 'planned' AND a.lich_su = 0
+         JOIN report_periods rp ON rp.id = a.planned_period_id
+         JOIN students s ON s.id = lc.student_id
+         LEFT JOIN classes cc ON cc.id = a.class_id
+         LEFT JOIN users ub ON ub.id = lc.mt_thi_bo_qua_boi
+        WHERE lc.route IS NOT NULL AND lc.thi_that_khong_thi = 0 AND lc.outcome_score IS NULL AND COALESCE(lc.thi_that_ngay, lc.exam_date, lc.ended_at) > ''
+          AND lc.status = 'active' AND COALESCE(lc.thi_that_ngay, lc.exam_date) IS NOT NULL AND NOT ${CO_KET_QUA_THI_SQL('lc')} AND ${HV_DANG_HOC_SQL('s')}
+          AND rp.week_start > substr(COALESCE(lc.thi_that_ngay, lc.exam_date), 1, 10) AND NOT ${LUOT_HUY_HET_SQL('a')} ${them}
+        GROUP BY lc.id`;
+
+/** Chữ của việc `mt-thi:` + `dau` = ngày thi + các MT (bỏ qua ghi dấu này; đổi ngày thi / thêm MT sau ngày thi → việc hiện lại). */
+function viecMtThi(r: { full_name: string | null; ngay_thi: string; mts: string }) {
+  const mts = r.mts.split(',').map((x) => { const [n, w] = x.split('@'); return { n: Number(n), w }; }).sort((a, b) => a.n - b.n);
+  const ds = mts.map((m) => `MT${m.n} ${tuanLich(m.w)}`).join(', ');   // không "·": biến của mẫu dịch EN
+  const ten = r.full_name ?? 'Học viên';
+  return {
+    dau: `${r.ngay_thi}|${mts.map((m) => `${m.n}@${m.w}`).join(',')}`, soBai: mts.length,
+    tieuDe: `MT sau ngày thi · ${ten}`,
+    reason: `${ds} xếp sau ngày thi ${shortDate(r.ngay_thi)} — dời về trước ngày thi hoặc xoá MT`,
+    phu: ds,
+  };
+}
+
 /** BO-QUA-XEP-MT: việc QL đã bỏ qua (danh sách "Đã bỏ qua" ở Công việc — khôi phục được). */
 export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
@@ -630,11 +663,28 @@ export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; stud
  * Một người bỏ qua là cả phạm vi QL không thấy (cờ trên PA). Quyền = người thấy việc đó (QL / Quản trị có `case.approve` với em). Nhật ký `audit_logs`.
  */
 export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
-  const m = /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
-  if (!m) throw badRequest('Việc này không bỏ qua được.');
+  const mt = /^mt-thi:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
+  const m = mt ? null : /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
+  if (!m && !mt) throw badRequest('Việc này không bỏ qua được.');
   if (phamViXemViec(p) !== 'het') throw forbidden('Chỉ Head trong phạm vi bỏ qua được việc này.');
   const conn = db();
-  const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m[1])) as any;
+  if (mt) {
+    /* MT-QUA-THI: cùng luật bỏ qua — cờ trên lộ trình, dấu = ngày thi + các MT đang sau ngày thi. */
+    const r = conn.prepare(sqlMtThi('AND lc.id = ?')).get(Number(mt[1])) as any;
+    if (!r?.id) throw notFound('Việc này không còn — có thể lịch MT đã được dời.');
+    if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) throw forbidden('Học viên này ngoài phạm vi của bạn.');
+    const v = viecMtThi(r);
+    const moi = boQua ? v.dau : null;
+    if ((r.mt_thi_bo_qua ?? null) === moi) return { ok: true };
+    tx(() => {
+      conn.prepare('UPDATE learning_cycles SET mt_thi_bo_qua = ?, mt_thi_bo_qua_boi = ?, mt_thi_bo_qua_luc = ? WHERE id = ?')
+        .run(moi, boQua ? p.userId : null, boQua ? nowIso() : null, r.id);
+      writeAudit({ actorUserId: p.userId, action: boQua ? 'viec.bo_qua' : 'viec.khoi_phuc', entityType: 'learning_cycle', entityId: r.id,
+        entityLabel: v.tieuDe, before: { mtThiBoQua: r.mt_thi_bo_qua ?? null }, after: { mtThiBoQua: moi } });
+    });
+    return { ok: true };
+  }
+  const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m![1])) as any;
   if (!r) throw notFound('Việc này không còn — có thể đã xếp lịch.');
   if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) throw forbidden('Học viên này ngoài phạm vi của bạn.');
   const v = viecMoc(r);
@@ -1731,6 +1781,31 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
         });
       }
+    }
+  }
+  /* MT-QUA-THI (chủ SP 26/11): MT chưa thi xếp sau ngày thi — việc Head CN của em (cùng quyền / người giữ như `moc:`), mỗi em một dòng, mở Lịch MT tại chỗ. */
+  if (xemNguoiKhac && co('missing_data')) {
+    const ds = docNho(sqlMtThi());
+    napTruocPhamVi(ds.map((r) => r.sid));
+    for (const r of ds) {
+      if (f.branchId && r.branch_id !== f.branchId) continue;
+      if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
+      const minh = giuQl(r.branch_id ?? null);
+      if (!minh && !tatCa) continue;
+      const v = viecMtThi(r);
+      if (r.mt_thi_bo_qua === v.dau) {
+        daBoQua.push({ key: `mt-thi:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+          boi: r.bo_qua_ten ?? null, luc: r.mt_thi_bo_qua_luc });
+        continue;
+      }
+      items.push({
+        key: `mt-thi:${r.id}`, group: 'missing_data', urgency: 'normal',
+        studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
+        reason: v.reason, tieuDe: v.tieuDe, phu: v.phu, ...{ cycleId: r.id as number },   // như `moc:` (R3-W2) — web đọc `cycleId`
+        actionLabel: 'Sửa lịch MT', href: `/hoc-vien/${r.sid}`,
+        ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: `Thi ${shortDate(r.ngay_thi)}`, boQuaDuoc: true,
+      });
     }
   }
 

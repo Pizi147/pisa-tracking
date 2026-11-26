@@ -1112,6 +1112,12 @@ const EN_B_MAY = {
   'Xếp lịch MT{x}': 'Schedule MT{x}',
   'Nhập ngày thi': 'Enter exam date',
   'Chưa có lịch': 'Not scheduled',
+  /* MT-QUA-THI: MT xếp sau ngày thi (việc Head). */
+  'MT sau ngày thi · {x}': 'MT after exam date · {x}',
+  '{x} xếp sau ngày thi {x2} — dời về trước ngày thi hoặc xoá MT': '{x} scheduled after the exam date {x2} — move before the exam or delete the MT',
+  'Sửa lịch MT': 'Edit MT schedule',
+  'Thi {x}': 'Exam {x}',
+  'Việc này không còn — có thể lịch MT đã được dời.': 'This task is gone — the MT schedule may already have moved.',
   '{head} — chưa ai nhận điều phối': '{head} — nobody coordinating',
   'Chọn người phụ trách': 'Pick an owner',
   '{length} em mới vào web chưa xác nhận cấp bậc vi phạm đã có trước đó': (b) => `${so(b.length, 'student', 'students')} new to the app without a confirmed past incident level`,
