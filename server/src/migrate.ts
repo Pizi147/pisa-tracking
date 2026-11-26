@@ -143,6 +143,7 @@ import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
 import { migratePrTinhLuiPc } from './migrate/prTinhLuiPhanCong.ts';
+import { migratePrVeLopLucThi } from './migrate/prVeLopLucThi.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -574,6 +575,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* SUA-2211-B (chủ SP 22/11 ý 14): vai TVV gỡ analysis.view (một lần, khoá demo_config). */
   buoc(() => migratePrTvvPt(conn, applied));
   buoc(() => migratePrTvvTest(conn, applied));
+  /* VE-LOP-LUC-THI (N71, chủ SP 26/11): lượt bị chuyển lớp cũ (trước #2175) kéo sang lớp mới mà còn ô thi ở lớp cũ → về lớp lúc thi; nhật ký audit giữ lớp cũ,
+     khôi phục `khoiPhucVeLopLucThi` (đổi dữ liệu MỘT lần, khoá demo_config). Sau đó chạy `npm run nap-so`. */
+  buoc(() => migratePrVeLopLucThi(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

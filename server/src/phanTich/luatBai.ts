@@ -26,9 +26,14 @@ export function nguoiPcSau(ds: readonly DongPc[], d: string): number | null {
 /** Ghi danh của một em (ngày ISO). */
 export type GhiDanh = { lop: number; tu: string; den: string | null };
 
-/** Lớp lúc thi: ghi danh bắt đầu trước hết tuần thi và chưa kết thúc trước tuần thi; nhiều dòng → dòng bắt đầu muộn nhất; không có → lớp của lượt. */
+/**
+ * Lớp lúc thi. N71 (chủ SP 26/11, ELE 79 / BE 114 lên FT trước tuần Final): lượt của lớp em ĐÃ vào trước hết tuần thi là bài của lớp đó — cả khi em rời lớp
+ * trước tuần thi (Final, MT0 lớp cũ ở lại lớp cũ: GV cũ chấm, hạn lớp cũ, như Công việc). Chỉ lượt bị kéo sang lớp em vào SAU tuần thi mới tính theo ghi danh:
+ * ghi danh bắt đầu trước hết tuần thi và chưa kết thúc trước tuần thi; nhiều dòng → dòng bắt đầu muộn nhất; không có → lớp của lượt.
+ */
 export function lopLucThi(ghiDanh: readonly GhiDanh[], tuan: string, lopLuot: number): number {
   const cuoi = addDays(tuan, 6);
+  if (ghiDanh.some((e) => e.lop === lopLuot && e.tu && e.tu <= cuoi)) return lopLuot;
   const ds = ghiDanh.filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
   return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
 }
