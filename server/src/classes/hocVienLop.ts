@@ -240,7 +240,12 @@ export function danhSachHocVienLop(
    * thành đúng MỘT lời gọi — y hệt hành vi cũ.
    */
   const chiNhanhCuaLops = [...new Set(lops.map((r) => r.branchId))];
-  const allCases = chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows);   // D-01 (N46)
+  /* RA-2711: nhiều chi nhánh (CX / Admin / BPXL / QT) → MỘT lần `branchIds` (trước một lần mỗi chi nhánh: ×3 câu); xếp lại theo chi nhánh như gọi lần lượt. */
+  const thuTuCn = new Map(chiNhanhCuaLops.map((b, i) => [b, i]));
+  const allCases = chiNhanhCuaLops.length > 1 && chiNhanhCuaLops.every((b) => b != null)
+    ? listCases(p, { branchIds: chiNhanhCuaLops as number[], anSauThi: true }).rows.map((c, i) => ({ c, i }))
+      .sort((x, y) => thuTuCn.get(x.c.branchId!)! - thuTuCn.get(y.c.branchId!)! || x.i - y.i).map((x) => x.c)
+    : chiNhanhCuaLops.flatMap((b) => listCases(p, { branchId: b, anSauThi: true }).rows);   // D-01 (N46)
 
   /* Số Case đang mở của mỗi lớp — tra lớp HIỆN TẠI của học viên qua `lopCuaHv`, chỉ tính em đang học. */
   const soCaseByClass = new Map<number, number>();
