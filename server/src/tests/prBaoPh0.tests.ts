@@ -297,11 +297,13 @@ export async function runPrBaoPh0Tests(t: any) {
     gv.themTheoDoi(pG, 'xu_ly', xl.sid, { userIds: [ngoai.id] });
     xoaNho();
     assert(/403/.test(loi(() => mg.createMgmtTask(loadPrincipal(ngoai.id), { title: 'Việc lạ 2', chaLoai: 'xu_ly', chaId: xl.sid }))), 'người theo dõi thêm được việc con');
-    /* Giao việc cha cho người khác → GVCN thôi giữ, mất quyền việc con. */
+    /* Giao việc cha cho người khác → GVCN thôi giữ, mất quyền việc con KHÔNG giao cho mình (việc con giao cho GVCN thì GVCN vẫn tick — người được giao). */
+    const c2 = mg.createMgmtTask(pG, { title: 'Chuẩn bị biên bản', chaLoai: 'xu_ly', chaId: xl.sid });
     gv.doiPhuTrach(pG, 'xu_ly', xl.sid, { userId: ngoai.id, phuTrachCu: null });
     xoaNho();
-    assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(xl.gvcn), c.id, { progress: 'doing' }))), 'GVCN đã giao đi vẫn tick được');
-    mg.updateMgmtTask(loadPrincipal(ngoai.id), c.id, { progress: 'doing' });
+    assert(/403/.test(loi(() => mg.updateMgmtTask(loadPrincipal(xl.gvcn), c2.id, { progress: 'doing' }))), 'GVCN đã giao việc cha đi vẫn tick việc con không giao cho mình');
+    mg.updateMgmtTask(loadPrincipal(ngoai.id), c2.id, { progress: 'doing' });
+    mg.updateMgmtTask(loadPrincipal(xl.gvcn), c.id, { progress: 'doing' });   // người được giao việc con c vẫn tick việc của mình
   }));
 
   check('BP0-7 · Lưu trữ: khối giao việc Xử lý vi phạm đóng (bo), Hoàn tác trả mo; Quay lại học thì giao lại từ đầu', () => thu('bp7', () => {
