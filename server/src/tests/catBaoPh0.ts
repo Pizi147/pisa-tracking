@@ -13,6 +13,18 @@ export function catBaoPh0(schema: string): string {
 }
 
 /**
+ * LPB-1 (N73 ⑤): cắt phần lược đồ LPB-1 khỏi CHỮ schema.sql (LF) — DB trước LPB-1 (bảng phụ khung việc + chỉ mục, cột giao trên ban_giao_gv + chỉ mục).
+ * So với schema.sql hiện tại thì chạy thêm `migratePrLpb1`. Khuôn đổi → ném lỗi.
+ */
+export function catLpb1(schema: string): string {
+  const cat = schema
+    .replace(/(\n {2}xong_thay INTEGER NOT NULL DEFAULT 0),\n {2}phu_trach_id INTEGER REFERENCES users\(id\), giao_boi[^\n]*\n\);\nCREATE INDEX IF NOT EXISTS idx_ban_giao_gv_giao[^\n]*\n/, '$1\n);\n')
+    .replace(/-- LPB-1 \(N73 ⑤\): KHUNG việc chung[\s\S]*?idx_viec_ban_giao_mon_giao[^\n]*\n/, '');
+  if (/LPB-1|viec_chot_ngay_thi|viec_ban_giao_mon|idx_ban_giao_gv_giao/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt catLpb1');
+  return cat;
+}
+
+/**
  * LPB-0 (N73): cắt phần lược đồ LPB-0 khỏi CHỮ schema.sql (LF) — DB trước LPB-0 (cột viec_bao_ph.lenh_chuyen_id / lenh_mau + chỉ mục, bảng viec_nhan_tin /
  * viec_nhan_tin_dong). So với schema.sql hiện tại thì chạy thêm `migratePrLpb0`. Khuôn đổi → ném lỗi.
  */

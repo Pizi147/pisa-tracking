@@ -913,7 +913,8 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'có vai ở chi nhánh của lớp thì chọn được');
   }));
 
-  const { catBaoPh0, catLpb0 } = await import('./catBaoPh0.ts');
+  const { catBaoPh0, catLpb0, catLpb1 } = await import('./catBaoPh0.ts');
+  const { migratePrLpb1 } = await import('../migrate/prLpb1.ts');
   const { migratePrLpb0 } = await import('../migrate/prLpb0.ts');
   const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
@@ -921,7 +922,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước GV-1: cắt ba dòng cột giao việc + khối bảng GV-1 khỏi chữ schema.sql. */
     /* VAI-0: bỏ viec_bao_ph.nguoi_luat + chỉ mục (themCotPrVaiMoi thêm lại bên dưới) — bộ cắt cũ khớp dòng `tra_lai_id` cuối bảng. */
-    const cat = catBaoPh0(catLpb0(SCHEMA).replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, ''))   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
+    const cat = catBaoPh0(catLpb0(catLpb1(SCHEMA)).replace(/\n {2}nguoi_luat INTEGER REFERENCES users\(id\) {3}-- VAI-0 \(N76b\)[^\n]*/, '').replace(/CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_luat[^\n]*\n/, ''))   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
       /* TUYEN-0 (sau TL-1): bỏ khối bảng bỏ theo dõi tuyến + chỉ mục người làm bước. */
       .replace(/-- TUYEN-0 \(N72 ①\)[\s\S]*?idx_tra_lai_xong_boi[^\n]*\n/, '')
       /* TL-1 (sau GV-1): bỏ viec_bao_ph.tra_lai_id + khối vi_pham_tra_lai trước — DB trước GV-1 cũng trước TL-1. */
@@ -944,6 +945,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     migratePrTuyen0(cu, []);   // TUYEN-0: chỉ mục người làm bước (meeting_phan.xong_boi)
     themCotPrVaiMoi(cu, []);   // VAI-0: meeting_phan.nguoi_luat + lop_xep_lich
     migratePrLpb0(cu, []);   // LPB-0: viec_bao_ph.lenh_chuyen_id / lenh_mau
+    migratePrLpb1(cu, []);   // LPB-1: bảng phụ khung việc + cột giao ban_giao_gv
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));
     const chiMuc = (d: any) => JSON.stringify((d.prepare(`SELECT name, sql FROM sqlite_master WHERE type = 'index' AND (name LIKE '%giao%' OR name LIKE '%theo_doi%' OR name LIKE '%meeting_phan%') ORDER BY name`).all() as any[]));

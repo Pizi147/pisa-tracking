@@ -435,7 +435,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     try {
       const nIt = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, it.sid, { maXacNhan: it.ma }); });
       const nNhieu = demTruyVan(() => { xoaHV.xoaHocVien(P.admin, nhieu.sid, { maXacNhan: nhieu.ma }); });
-      assert(nIt <= 81, `xoá tốn ${nIt} câu (> 81)`);   // LPB-0: +2 câu (đóng việc BPXL hết em · xoá dòng em trong việc Nhận thông tin)   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
+      assert(nIt <= 88, `xoá tốn ${nIt} câu (> 88)`);   // LPB-1: +7 câu (việc con — chụp + gỡ · bảng phụ khung việc của em (Chốt ngày thi · Bước tiếp · KQ thi thật · Bổ sung hồ sơ · Xếp lịch MT)   // LPB-0: +2 câu (đóng việc BPXL hết em · xoá dòng em trong việc Nhận thông tin)   // BO-BAO-CAO-PH: +1 câu xoá đợt em không cần báo cáo PH (bao_cao_ph_bo_em) · BAOPH-0: +1 câu xoá khối giao việc Xử lý vi phạm (viec_xu_ly)   // VH-1b: +1 câu xoá mô tả việc; TL-1: +1 câu xoá yêu cầu trả lại; GV-1: +5 câu (người theo dõi · lịch sử giao · lịch sử hạn · bản ghi đảo giao việc · phần Meeting của việc của em); UI-HO-SO-LOP: +1 câu xoá đánh giá đầu ra; P9a XET-LAI: +1 câu xoá xét lại
       assert(nNhieu === nIt, `số câu đổi theo số lượt: ${nIt} → ${nNhieu}`);
     } finally { khoTepMod.datKhoTepChoKiemThu(null); tepDaXoa.length = 0; }
   });
@@ -629,7 +629,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { id: userId, email, ten: `Thu Xoa ${ten} ${tkSeq}` };
   };
 
-  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (149 — BO-BAO-CAO-PH thêm 1 (bao_cao_ph_bo_em.nguoi), TUYEN-0 thêm 1 thiết lập (tuyen_bo_theo_doi.user_id), VH-1b thêm 1 (viec_mo_ta.sua_boi), VH-1 thêm 1 (task_groups.tao_boi), TL-1 thêm 5 (vi_pham_tra_lai.nguoi_tra, nguoi_nhan, xong_boi, phu_trach_id, giao_boi), GV-1 thêm 13 (phu_trach_id · giao_boi × 4 bảng, meeting_phan.xong_boi · nhap_ho_boi, viec_theo_doi.user_id · them_boi, viec_giao_lan.boi), TU2-1 thêm 1 (tutors.user_id), HOC-TIEP thêm 1 (thi_that_lich_su.chon_boi), LG-12 thêm 1 (violations.khong_xu_ly_boi), LG-5c thêm 2 thiết lập (gv_cham_cot.user_id, examiner_user_id), TINH-HINH thêm 3 (tinh_hinh_hoc_tap.nguoi_gui, tra_loi_boi, rut_boi), QTV2-HAN thêm 1 (cau_hinh_phien_ban.nguoi_id), BC-DOT-QL thêm 1 (bao_cao_ph_dot.nguoi), BAO-CAO-PH thêm 1 (bao_cao_ph.sua_boi), HAN-BAO-PH thêm 1 (viec_han_lan.boi), PR-B thêm 5 (ban_giao_gv.nguoi_cu, nguoi_lam, tao_boi, ban_giao_gv_mon.nguoi_moi, ban_giao_gv_em.nguoi_ghi), PC-GV-A thêm 3 (doi_phan_cong.nguoi_cu, nguoi_moi, tao_boi), BAND-QUY-DOI thêm 1 (bang_quy_doi.nguoi_id), P9a XET-LAI thêm 1 (xet_lai_lo_trinh.nguoi_id), UI-HO-SO-LOP thêm 1 (danh_gia_dau_ra.sua_boi), SV-LOP thêm 1 (s_expert.xoa_boi), SV-S-EXPERT thêm 3, SV-YT-TVV thêm 2, SV-BAI-LOP thêm 2, TU-a thêm 3, OV-15c thêm 1, OV-13k thêm 1, OV-12g thêm 1, OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1, PR-OV2a thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 12 cột thiết lập', () => {
+  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (178 — LPB-1 thêm 20 (phu_trach_id · giao_boi × 9 bảng phụ khung việc + ban_giao_gv), BO-BAO-CAO-PH thêm 1 (bao_cao_ph_bo_em.nguoi), TUYEN-0 thêm 1 thiết lập (tuyen_bo_theo_doi.user_id), VH-1b thêm 1 (viec_mo_ta.sua_boi), VH-1 thêm 1 (task_groups.tao_boi), TL-1 thêm 5 (vi_pham_tra_lai.nguoi_tra, nguoi_nhan, xong_boi, phu_trach_id, giao_boi), GV-1 thêm 13 (phu_trach_id · giao_boi × 4 bảng, meeting_phan.xong_boi · nhap_ho_boi, viec_theo_doi.user_id · them_boi, viec_giao_lan.boi), TU2-1 thêm 1 (tutors.user_id), HOC-TIEP thêm 1 (thi_that_lich_su.chon_boi), LG-12 thêm 1 (violations.khong_xu_ly_boi), LG-5c thêm 2 thiết lập (gv_cham_cot.user_id, examiner_user_id), TINH-HINH thêm 3 (tinh_hinh_hoc_tap.nguoi_gui, tra_loi_boi, rut_boi), QTV2-HAN thêm 1 (cau_hinh_phien_ban.nguoi_id), BC-DOT-QL thêm 1 (bao_cao_ph_dot.nguoi), BAO-CAO-PH thêm 1 (bao_cao_ph.sua_boi), HAN-BAO-PH thêm 1 (viec_han_lan.boi), PR-B thêm 5 (ban_giao_gv.nguoi_cu, nguoi_lam, tao_boi, ban_giao_gv_mon.nguoi_moi, ban_giao_gv_em.nguoi_ghi), PC-GV-A thêm 3 (doi_phan_cong.nguoi_cu, nguoi_moi, tao_boi), BAND-QUY-DOI thêm 1 (bang_quy_doi.nguoi_id), P9a XET-LAI thêm 1 (xet_lai_lo_trinh.nguoi_id), UI-HO-SO-LOP thêm 1 (danh_gia_dau_ra.sua_boi), SV-LOP thêm 1 (s_expert.xoa_boi), SV-S-EXPERT thêm 3, SV-YT-TVV thêm 2, SV-BAI-LOP thêm 2, TU-a thêm 3, OV-15c thêm 1, OV-13k thêm 1, OV-12g thêm 1, OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1, PR-OV2a thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 12 cột thiết lập', () => {
     const coDinh = xoaTK.COT_TRO_TAI_KHOAN.map((x) => `${x.bang}.${x.cot}`);
     const thieu = COT_USERS.filter((k) => !coDinh.includes(k));
     const thua = coDinh.filter((k) => !COT_USERS.includes(k));
@@ -637,7 +637,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     /* BAOPH-0: +4 (discipline_measures.phu_trach_id · giao_boi, viec_xu_ly.phu_trach_id · giao_boi). TUYEN-0: +1 (tuyen_bo_theo_doi.user_id). BO-BAO-CAO-PH: +1 (bao_cao_ph_bo_em.nguoi). */
     /* VAI-0: +4 (meeting_phan.nguoi_luat, viec_bao_ph.nguoi_luat, lop_xep_lich.gan_boi dấu vết · lop_xep_lich.user_id thiết lập). */
     /* LPB-0: +5 dấu vết (viec_nhan_tin.phu_trach_id · giao_boi · nguoi_luat · tao_boi · xong_boi). */
-    assert(!thua.length && coDinh.length === 158 && new Set(coDinh).size === 158, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    assert(!thua.length && coDinh.length === 178 && new Set(coDinh).size === 178, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
     assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'gv_cham_cot.examiner_user_id', 'gv_cham_cot.user_id', 'lop_xep_lich.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id', 'tuyen_bo_theo_doi.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());
@@ -835,7 +835,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 20 (LPB-0 +1 câu chốt lại việc Nhận thông tin của người hết vai · #1418: +3 câu chụp email phụ / quyền / phân công · N69 +1 câu đọc việc đứng tên)', () => {
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 21 (LPB-1 +1 câu việc Head hết quyền · LPB-0 +1 câu chốt lại việc Nhận thông tin của người hết vai · #1418: +3 câu chụp email phụ / quyền / phân công · N69 +1 câu đọc việc đứng tên)', () => {
     const han = taoTK('demhan');
     const mem = taoTK('demmem');
     conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
@@ -845,7 +845,8 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(user(mem.id)?.status === 'deleted' && user(han.id)?.status === 'deleted', 'tiền đề: cả hai xoá mềm (G5-10)');
     /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
     const them = xoaTK.CAU_DAU_VET.length - 1;
-    assert(nXem <= 8 + them && nMem <= 20 + them && nHan <= 20 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
+    assert(nXem <= 8 + them && nMem <= 21 + them && nHan <= 21 + them,   // LPB-1: +1 câu việc Head giao cho người hết quyền chốt / xếp lịch (`khungHetQuyen`)
+      `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {

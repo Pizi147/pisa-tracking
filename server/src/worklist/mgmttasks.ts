@@ -12,6 +12,7 @@ import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
 import { CN_VH, HOAT_DONG_O, baoTheoDoi, damBaoDong, docLoai, docViec, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
+import { laKhung } from './khungViec.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -119,7 +120,8 @@ function giuViecCha(p: Principal, t: { cha_loai?: string | null; cha_id?: number
   return nho(`giu-cha:${loai}:${id}:${p.userId}`, () => {
     try {
       const v = docViec(docLoai(loai), id);
-      return v.mo && v.phuTrach.includes(p.userId) && (v.loai !== 'xu_ly' || v.row.trang_thai === 'mo');
+      /* LPB-1: việc khung — như Xử lý vi phạm, chỉ đợt đang mở (dòng bảng phụ 'mo'). */
+      return v.mo && v.phuTrach.includes(p.userId) && ((v.loai !== 'xu_ly' && !laKhung(v.loai)) || v.row.trang_thai === 'mo');
     } catch { return false; }
   });
 }
@@ -987,7 +989,7 @@ export function createMgmtTask(p: Principal, input: {
     const cu = theoKhoaGui('tasks', 'created_by', p.userId, khoa);
     if (cu) return mgmtTaskDetail(p, cu);
     /* TUYEN-1: việc con của Xử lý vi phạm gắn ĐỢT đang mở — đợt chưa có dòng (hoặc dòng đợt trước) → làm dòng đợt này (tách việc con đợt trước). */
-    if (cha?.loai === 'xu_ly') damBaoDong('xu_ly', cha.id);
+    if (cha) damBaoDong(cha.loai, cha.id);   // LPB-1: + việc khung (bảng phụ id = đơn vị việc)
     const info = conn
       .prepare(
         `INSERT INTO tasks (code, title, kind, task_type, group_id, parent_task_id,

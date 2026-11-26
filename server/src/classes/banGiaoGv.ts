@@ -14,6 +14,7 @@ import { boVaiBpxl, boVaiCx, can, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import type { GhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
 import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { tuDienTheoLo } from './banGiao.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
@@ -168,9 +169,11 @@ export function hoanTacViecDuoc(bgIds: readonly number[], cotIds: readonly numbe
 
 function docViec(id: number): any {
   const b = db().prepare(
-    `SELECT b.*, c.code, c.programme_code AS ct, c.branch_id, uc.full_name AS ten_cu, ux.full_name AS ten_xong, ul.full_name AS ten_lam
+    /* LPB-1 (N73 ⑤): người được giao (còn hiệu lực ở chi nhánh lớp) là người viết của việc — `nguoi_lam` đọc ra đã thay; người viết theo luật ở `nguoi_lam_luat`. */
+    `SELECT b.*, b.nguoi_lam AS nguoi_lam_luat, COALESCE(CASE WHEN (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_boi = b.phu_trach_id)) AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) AS nguoi_lam,   -- rà #2280: xong → chỉ khi chính người được giao xác nhận (P1-A)
+            c.code, c.programme_code AS ct, c.branch_id, uc.full_name AS ten_cu, ux.full_name AS ten_xong, ul.full_name AS ten_lam
        FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id JOIN users uc ON uc.id = b.nguoi_cu LEFT JOIN users ux ON ux.id = b.xong_boi
-       LEFT JOIN users ul ON ul.id = b.nguoi_lam WHERE b.id = ?`,
+       LEFT JOIN users ul ON ul.id = COALESCE(CASE WHEN (b.trang_thai = 'mo' OR (b.trang_thai = 'xong' AND b.xong_boi = b.phu_trach_id)) AND b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) WHERE b.id = ?`,
   ).get(id) as any;
   if (!b) throw notFound('Không tìm thấy việc bàn giao');
   return b;
@@ -319,7 +322,8 @@ export function xacNhanBanGiaoGv(p: Principal, id: number): void {
 
 // ==================================================================== việc (Công việc) — ≤ 3 câu cho mọi việc
 
-export type ViecBanGiaoGv = { id: number; userId: number | null; lopId: number; code: string; monNgan: string[]; nguoiMoi: string; du: number; tong: number; han: string; emIds: number[] };
+export type ViecBanGiaoGv = { id: number; userId: number | null; lopId: number; code: string; monNgan: string[]; nguoiMoi: string; du: number; tong: number; han: string; emIds: number[];
+  /** LPB-1 (N73 ⑤): việc đã giao — tên người giao (người giữ = `userId`). */ giaoBoi?: string | null };
 
 /**
  * Việc bàn giao đổi GV đang mở: của MỘT người (`nguoi_lam = userId`, kèm việc không người viết — nơi gọi lọc QL bằng `can`), hoặc mọi người
@@ -327,14 +331,17 @@ export type ViecBanGiaoGv = { id: number; userId: number | null; lopId: number; 
  */
 export function viecBanGiaoGv(userId: number | null, branchId?: number | null, ids?: readonly number[]): ViecBanGiaoGv[] {
   const conn = db();
-  const dk = [`b.trang_thai = 'mo'`, ...(userId !== null ? ['(b.nguoi_lam = ? OR b.nguoi_lam IS NULL)'] : []), ...(branchId ? ['c.branch_id = ?'] : []),
+  /* LPB-1 (N73 ⑤): người được giao (còn hiệu lực ở chi nhánh lớp) thắng người viết theo luật; hạn đặt tay thắng. */
+  const dk = [`b.trang_thai = 'mo'`, ...(userId !== null ? ['(b.nguoi_lam = ? OR b.nguoi_lam IS NULL OR b.phu_trach_id = ?)'] : []), ...(branchId ? ['c.branch_id = ?'] : []),
     ...(ids ? [`b.id IN (${DS_JSON})`] : [])];
   const rows = conn.prepare(
-    `SELECT b.id, b.class_id, b.nguoi_lam, b.han, c.code, c.programme_code AS ct, m.mon, u.full_name AS moi
+    `SELECT b.id, b.class_id, COALESCE(CASE WHEN b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN b.phu_trach_id END, b.nguoi_lam) AS nguoi_lam,
+            CASE WHEN b.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('b.phu_trach_id', 'c.branch_id')} THEN (SELECT g.full_name FROM users g WHERE g.id = b.giao_boi) END AS giao_ten,
+            COALESCE(b.han_chon, b.han) AS han, c.code, c.programme_code AS ct, m.mon, u.full_name AS moi
        FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id
        JOIN ban_giao_gv_mon m ON m.ban_giao_id = b.id AND m.trang_thai = 'mo' JOIN users u ON u.id = m.nguoi_moi
-      WHERE ${dk.join(' AND ')} ORDER BY b.han, b.id, m.mon = 'gvcn', m.id`,
-  ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined), ...(ids ? [JSON.stringify(ids)] : [])) as any[];
+      WHERE ${dk.join(' AND ')} ORDER BY COALESCE(b.han_chon, b.han), b.id, m.mon = 'gvcn', m.id`,
+  ).all(...[userId, userId, branchId].filter((x) => x !== null && x !== undefined), ...(ids ? [JSON.stringify(ids)] : [])) as any[];
   if (!rows.length) return [];
   const viec = new Map<number, { r: any; cot: string[]; moi: string[] }>();
   for (const r of rows) {
@@ -357,7 +364,7 @@ export function viecBanGiaoGv(userId: number | null, branchId?: number | null, i
     const ds = em.get(r.class_id) ?? [];
     return {
       id: r.id, userId: r.nguoi_lam ?? null, lopId: r.class_id, code: r.code, monNgan: cot.map((m) => nhanCotBg(r.ct ?? null, m)), nguoiMoi: moi.join(', '),
-      du: ds.filter((s) => cot.every((m) => co.has(`${r.id}|${s}|${m}`))).length, tong: ds.length, han: r.han, emIds: ds,
+      du: ds.filter((s) => cot.every((m) => co.has(`${r.id}|${s}|${m}`))).length, tong: ds.length, han: r.han, emIds: ds, ...(r.giao_ten ? { giaoBoi: r.giao_ten } : {}),
     };
   });
 }
