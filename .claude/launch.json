@@ -13,8 +13,25 @@
     {
       "name": "thiet-ke",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5480", "--bind", "127.0.0.1", "--directory", "thiet-ke"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5480",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "thiet-ke"
+      ],
       "port": 5480
+    },
+    {
+      "name": "cam-nang",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.PORT='4210';process.env.WEB_PORT='5310';process.env.PISA_DB='C:/Users/Admin/AppData/Local/Temp/claude/c10703947439a845/8ca83c47-76a1-49fe-bb53-f6a248fab753/scratchpad/db/cam-nang.sqlite'; require('child_process').spawn('npx', ['concurrently','-k','npm:dev:api','npm:dev:web'], { stdio: 'inherit', shell: true }).on('exit', (c) => process.exit(c ?? 0))"
+      ],
+      "port": 5310
     }
   ]
 }
