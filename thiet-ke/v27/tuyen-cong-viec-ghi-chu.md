@@ -93,7 +93,7 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 6. Tiền tố **"hạn"** trước ngày chỉ dùng TRONG khối Tuyến (một khối có cả ngày đã làm và hạn) — dòng việc ở danh sách giữ ngày trơn (NH4).
 7. Hồ sơ HV / lớp (T10) chỉ vẽ tab Ý thức & Phối hợp, đầu hồ sơ rút gọn — không đổi phần khác.
 8. Dải "Chờ GV sửa" (T3) giữ chữ nút "Rút" như web.
-10. **Đổi người cho Xử lý vi phạm / Đã thực hiện / Phối hợp SOS** (mở rộng N58 theo lời "chọn / đổi người thực hiện"): người nhận làm được đúng việc đó, lịch sử ghi tên. Trước đây chỉ GVCN / Head làm (N64 làm thay). Nếu chủ SP chỉ muốn đổi người ở việc TVV / Báo PH thì bỏ nút Đổi ở ba việc này.
+10. **[ĐÃ CHỐT 26/11 — chủ SP "Cho mọi việc"]** **Đổi người cho Xử lý vi phạm / Đã thực hiện / Phối hợp SOS** (mở rộng N58 theo lời "chọn / đổi người thực hiện"): người nhận làm được đúng việc đó, lịch sử ghi tên. Trước đây chỉ GVCN / Head làm (N64 làm thay). Nếu chủ SP chỉ muốn đổi người ở việc TVV / Báo PH thì bỏ nút Đổi ở ba việc này.
 11. Việc con không vào số việc của việc cha và không chặn việc cha xong (như Vận hành N59).
 
 ## 5. Skill đã chạy
