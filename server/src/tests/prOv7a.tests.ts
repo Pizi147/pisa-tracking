@@ -196,7 +196,10 @@ export async function runPrOv7aTests(t: YThucTestKit) {
 
   await checkAsync('OV7a-2e · Ý thức: đề xuất "Gửi QL" còn chờ — GVCN sửa ghi chú (thẻ + lần xử lý cùng đổi, đếm bằng chứng lại), Rút (thẻ đóng, không chuông, vi phạm về chưa xử lý); QL đã duyệt → 400', () => thu(() => {
     const sid = moiEm(); const [v1, v2] = nVp(sid, 2);
+    /* RA-2711: khối giao "Xử lý vi phạm" của đợt (BAOPH-0 4.6) — gửi Head đóng, rút phải mở lại (người được giao / hạn giữ nguyên). */
+    get(`INSERT INTO viec_xu_ly (id, student_id, trang_thai, tao_luc) VALUES (?1, ?1, 'mo', ?2) ON CONFLICT(id) DO UPDATE SET trang_thai = 'mo' RETURNING id`, sid, TODAY);
     const g = guiWl3(sid, [v1]);
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', sid).t === 'xong', 'gửi Head: khối giao việc chưa đóng');
     const chuongQl = demChuong(P.mbManager.userId);
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: g.measureId, url: 'https://example.com/them', displayName: 'Ảnh thêm' });
     yc.suaYeuCau(gvcn, g.the.id, { note: 'Em vi phạm nhiều lần, đã nhắc ba buổi — cần Head quyết' });
@@ -213,6 +216,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(sau.trang_thai === 'tu_dong' && sau.ly_do_dong === 'Người gửi đã rút', JSON.stringify(sau));
     assert(demChuong(gvcn.userId) === chuongGv && demChuong(P.mbManager.userId) === chuongQl, 'rút không chuông');
     assert(!get('SELECT 1 FROM discipline_measures WHERE id = ?', g.measureId) && trangThaiVp(sid, v1) !== 'cho_duyet', 'đề xuất rút: lần xử lý xoá, vi phạm về chưa xử lý');
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', sid).t === 'mo', 'rút đề xuất: khối giao Xử lý vi phạm chưa mở lại');
     assert(nhatKy('request.withdraw', g.the.id).length === 1, 'nhật ký rút');
     const g2 = guiWl3(sid, [v2]);
     yc.duyetYeuCau(P.mbManager, g2.the.id);
