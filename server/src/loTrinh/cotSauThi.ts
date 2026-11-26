@@ -18,7 +18,8 @@ export const cotSauThi = (c = 'c', ep = 'ep') => `${c}.thi_that_ngay, ${c}.exam_
        THEN ${ngayCoKq(c)} END AS ngay_kq`;
 export const COT_SAU_THI = cotSauThi();
 /**
- * Lộ trình MỚI NHẤT của em chưa Lưu trữ (P7: em Tạm dừng ở Lưu trữ vẫn tính — chỉ loại em Kết thúc học đã lưu trữ) — cùng lọc với việc Chọn bước tiếp. Rà #436: em đã Kết thúc học / lộ trình bỏ dở (`abandoned`) mà CHƯA có kết quả
+ * Lộ trình MỚI NHẤT của em chưa Lưu trữ (P7: em Tạm dừng ở Lưu trữ vẫn tính — chỉ loại em Kết thúc học đã lưu trữ): việc ghi KQ thi thật GIỮ cho em Tạm dừng
+ * (chủ SP 26/11); Chọn bước tiếp thì không còn cho em Lưu trữ (`SQL_CHO_BUOC_TIEP`, `coTheChon`). Rà #436: em đã Kết thúc học / lộ trình bỏ dở (`abandoned`) mà CHƯA có kết quả
  * thi → không nhắc "chờ kết quả" (em nghỉ, không đi thi); đã có kết quả thì vẫn chờ chọn bước tiếp như OV-8a / OV-13m. Một chỗ cho việc, nhãn, migrate, kiểm trước.
  */
 export const LO_TRINH_MOI_NHAT = `c.seq = (SELECT MAX(x.seq) FROM learning_cycles x WHERE x.student_id = c.student_id) AND (s.archived_at IS NULL OR s.status = 'inactive')

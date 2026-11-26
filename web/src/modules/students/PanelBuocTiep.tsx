@@ -17,6 +17,8 @@ import { HanBam } from '../../ui/HanBam.tsx';
 /** `GET /cycles/:id/buoc-tiep` (máy chủ `trangThaiBuocTiep`). */
 export type TrangThaiBuocTiep = {
   chon: LuaChonSauThi | null; luc: string | null; boi: string | null; coTheChon: boolean;
+  /** Chủ SP 26/11: em trong Lưu trữ — không Chọn bước tiếp (dùng Quay lại học). */
+  luuTru?: boolean;
   /** P7: gợi ý hướng (Đạt Target → Tạm dừng / Kết thúc học; chưa đạt / Không thi → Lộ trình mới). */
   goiY?: HuongSauThi | null;
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;

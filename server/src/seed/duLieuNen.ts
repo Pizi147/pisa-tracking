@@ -108,8 +108,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_k316_da_chay', now, now);   // K3-16: DB mới không có PA cũ chạy cạnh PA mới
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_don_nguoi_cham_s_da_chay', now, now);   // DON-NGUOI-CHAM-S: DB mới đã theo luật 2.4 (#1545)
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_tinh_lui_phan_cong_da_chay', now, now);
-  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ve_lop_luc_thi_da_chay', now, now);
-  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_luu_tru_dong_da_chay', now, now);   // LUU-TRU-DONG: DB mới — vào Lưu trữ đã đóng việc từ đầu   // VE-LOP-LUC-THI: DB mới — chuyển lớp đã giữ lượt ở lớp lúc thi (#2175)
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ve_lop_luc_thi_da_chay', now, now);   // VE-LOP-LUC-THI: DB mới — chuyển lớp đã giữ lượt ở lớp lúc thi (#2175)
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_luu_tru_dong_da_chay', now, now);   // LUU-TRU-DONG: DB mới — vào Lưu trữ đã đóng việc từ đầu
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ky_vong_tu_dat_da_chay', now, now);   // KY-VONG-MT0: DB mới không có "Không đạt" cũ khi MT0 đạt   // TINH-LUI-PC: DB mới — phân công khai đúng ngày từ đầu, không tính lùi
   /* LG-3: mốc bật việc GV "Viết Báo cáo PH" = ngày dựng DB (giờ VN); seed ghi đè = ngày demo. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_MOC_BC_PH_VIEC_GV, ngayTheoGioVN(now) ?? now, now);

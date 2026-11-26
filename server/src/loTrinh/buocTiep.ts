@@ -107,7 +107,7 @@ const tgChu = (c: any) => chuTargetKck(c.target_score == null ? null : fmtBand(c
 const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
-  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean;
+  chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean; luuTru: boolean;
   /** OV-13m: "Đã xong · OVR 6.5 · Đạt Target" · hạn chọn (ngày có kết quả + 7) · Thứ Hai hẹn bắt đầu + lớp hẹn · lớp đang giữ ("Lớp này") · Target giữ. */
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
   studentId: number; cycleId: number;
@@ -140,12 +140,13 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
   if (!coMuc(c0)) return null;
   const c = kemKqHocTiep(c0);   // N51: Học tiếp — nhãn "Đã xong", gợi ý, Target gợi ý theo KQ lần thi đã chọn
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
-  const coTheChon = coQuyenBuocTiep(p, c.student_id);
+  /* Chủ SP 26/11 (rà #2219 P2-7): em trong Lưu trữ không còn Chọn bước tiếp — dùng Quay lại học. */
+  const coTheChon = coQuyenBuocTiep(p, c.student_id) && !c.em_archived;
   const daChuyen = (c.buoc_tiep === 'lo_trinh_moi' || c.buoc_tiep === 'hoc_tiep') && !!g.lenhId && (db().prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any)?.trang_thai === 'da_chuyen';
   return {
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
-    coTheChon, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
+    coTheChon, luuTru: !!c.em_archived, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
     coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
     daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? c.bc_class_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
@@ -413,7 +414,7 @@ function batDauBangHocLai(q: Principal, c: any, o: { date: string; lopMoiId: num
     if (ph.length) ghi.dongPhoiHop = ph;
   }
   if ((conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status !== 'finished') {
-    setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI);
+    setStudentStatus(q, c.student_id, 'finished', o.date, LY_DO_MOI, undefined, { giuViec: true });   // rà #2219 P1-1: em vẫn học (Học lại ngay dưới) — không đóng việc Lưu trữ
     ghi.ketThucHoc = true;
   }
   /* Về lớp cũ: lộ trình đã thi KHÔNG chạy tiếp → đóng hẳn trước, `hocLai` thấy không còn lộ trình để chạy tiếp thì mở lộ trình mới ở lớp cũ. */

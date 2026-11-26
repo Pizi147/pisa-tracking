@@ -93,9 +93,9 @@ export function raiseSignal(input: {
   const existing = key ? (conn.prepare('SELECT * FROM case_signals WHERE dedup_key = ?').get(key) as SignalRow | undefined) : undefined;
 
   if (existing) {
-    /* PR-SO: em đã kết thúc học → tín hiệu đã thu hồi KHÔNG mở lại (sửa điểm cũ không sinh việc xác minh cho em đã nghỉ). */
+    /* PR-SO → Lưu trữ (chủ SP 26/11, rà #2219 P2-4): em đã kết thúc học / đang Lưu trữ → tín hiệu đã thu hồi KHÔNG mở lại (sửa điểm cũ không sinh việc cho em đã dừng). */
     if (existing.status === 'withdrawn'
-      && (conn.prepare('SELECT status FROM students WHERE id = ?').get(existing.student_id) as any)?.status === 'finished') return existing;
+      && (conn.prepare(`SELECT status = 'finished' OR archived_at IS NOT NULL AS dung FROM students WHERE id = ?`).get(existing.student_id) as any)?.dung) return existing;
     if (existing.status === 'withdrawn') {
       const raisedOn = input.raisedOn ?? demoToday();
       conn

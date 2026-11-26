@@ -9,6 +9,7 @@ export async function runPrLuuTruDongTests(t: any) {
   const studentsSvc: any = await import('../students/students.ts');
   const mig: any = await import('../migrate/prLuuTruDong.ts');
   const { choBuocTiep } = await import('../loTrinh/buocTiep.ts');
+  const luat: any = await import('../classes/luatLoTrinh.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = (ten: string, fn: () => void) => {
@@ -77,6 +78,27 @@ export async function runPrLuuTruDongTests(t: any) {
     conn.prepare(`UPDATE students SET status = 'inactive', archived_at = ? WHERE id = ?`).run(TODAY, c.student_id);
     xoaNho();
     assert(!choBuocTiep().some((x: any) => x.student_id === c.student_id), 'em Tạm dừng vẫn có việc Chọn bước tiếp');
+  }));
+
+  check('LT-5 · (rà #2219 P1-2) Tạm dừng cả lớp (Chuyển tiếp) = vào Lưu trữ: archived_at, đóng việc; Hoàn tác Tạm dừng trả lại', () => thu('lt5', () => {
+    const v = taoViec();
+    const truoc = trangThai(v);
+    luat.apDungBaoLuuCaLop(P.admin, { fromClassId: em.lop, ngay: TODAY, dongs: [{ sid: em.id, lyDo: 'Bảo lưu' }] });
+    assert(get('SELECT archived_at AS a FROM students WHERE id = ?', em.id).a === TODAY && trangThai(v) === 'done,removed,bo,rut,rut', `Tạm dừng cả lớp: ${trangThai(v)}`);
+    studentsSvc.hoanTacTamDung(P.admin, em.id);
+    assert(trangThai(v) === truoc && !get('SELECT archived_at AS a FROM students WHERE id = ?', em.id).a, `Hoàn tác: ${trangThai(v)} ≠ ${truoc}`);
+  }));
+
+  check('LT-6 · (rà #2219 P2-2) em Tạm dừng trước luật mới, migrate đóng việc → Hoàn tác Tạm dừng trả cả việc migrate đóng', () => thu('lt6', () => {
+    studentsSvc.setStudentStatus(P.admin, em.id, 'inactive', TODAY, 'Tạm nghỉ');
+    /* Việc mở còn sót sau lần dừng (dữ liệu trước luật mới) — migrate đóng. */
+    conn.prepare(`UPDATE sos_cases SET status = 'open', system_close_reason = NULL WHERE id = ?`).run(em.ca);
+    const v = taoViec();
+    const truoc = trangThai(v);
+    assert(mig.dongLuuTruCu(conn).em >= 1 && trangThai(v) === 'done,removed,bo,rut,rut', `migrate: ${trangThai(v)}`);
+    studentsSvc.hoanTacTamDung(P.admin, em.id);
+    const sau = trangThai(v).split(',').slice(1).join(',');
+    assert(sau === truoc.split(',').slice(1).join(','), `Hoàn tác sau migrate: ${trangThai(v)} ≠ ${truoc}`);
   }));
 
   check('LT-4 · migrate LUU-TRU-DONG: em đang Lưu trữ còn việc mở → đóng; chạy lại không đổi; khôi phục trả lại', () => thu('lt4', () => {

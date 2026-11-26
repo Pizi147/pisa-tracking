@@ -290,7 +290,8 @@ export function setStudentStatus(
   p: Principal, studentId: number, status: 'active' | 'inactive' | 'finished', date: string, reason?: string,
   /** PR-LT: "Kết thúc vì" của dòng enrollment đóng lại (Q18). Mặc định theo `status` khi không truyền. */
   endKind?: 'bao_luu' | 'dung_hoc' | 'ket_thuc' | null,
-  o: { lopKetThucDuoc?: boolean } = {},
+  /** `giuViec` (rà #2219 P1-1): Kết thúc chỉ là bước nối của Lộ trình mới (Học lại ngay sau) — em vẫn đang học, không đóng việc Lưu trữ. */
+  o: { lopKetThucDuoc?: boolean; giuViec?: boolean } = {},
 ) {
   /* OV-8b: TVV / CX Tạm dừng / Quay lại học / Thôi học (`student.edit_more`) — cùng luật. */
   if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
@@ -363,7 +364,7 @@ export function setStudentStatus(
       ghiBanChup(conn, dongBoiLanNay!.loTrinhDong, { lyDo: 'ket_thuc', ngay: date });
     }
     /* Lưu trữ (chủ SP 26/11): vào Lưu trữ → việc còn mở của em đóng hẳn (Tạm dừng: cả Case / PA); Hoàn tác trả lại đúng chúng, Quay lại học không mở lại. */
-    const dongLuuTru = status !== 'active' ? dongViecLuuTru(p.userId, studentId, date, status === 'inactive') : null;
+    const dongLuuTru = status !== 'active' && !o.giuViec ? dongViecLuuTru(p.userId, studentId, date, status === 'inactive' ? 'luu_tru' : null) : null;
     const journeyId = addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
       eventDate: date,
@@ -625,7 +626,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     for (const id of nk.loTrinhDong) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND student_id = ? AND status = 'abandoned'`).run(id, studentId);
     const cs = moLaiCaseHeThongDong({ actorUserId: p.userId, studentId, reason: 'course_ended', chup: nk.dongCase, tinHieu: nk.rutTinHieu });
     if (cs.moLai.length) datLaiHanCase(studentId, date);
-    moLaiViecLuuTru(p.userId, studentId, nk.dongLuuTru);
+    moLaiViecLuuTru(p.userId, studentId, nk.dongLuuTru, 'Hoàn tác Kết thúc học');
     addJourney({ studentId, eventType: 'resume', eventDate: date, title: 'Hoàn tác Kết thúc học', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.finish_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, archivedAt: veTamDung ? nk.truocArchivedAt ?? date : null, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
@@ -681,6 +682,12 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
     }
     if (journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'pause'`).run(journeyId, studentId);
     moLaiViecLuuTru(p.userId, studentId, dongLuuTru);   // Lưu trữ (26/11): việc lần Tạm dừng này đóng mở lại đúng như cũ
+    /* Rà #2219 P2-2: em Tạm dừng trước luật mới — migrate LUU-TRU-DONG đóng việc sau lần dừng này (nhật ký riêng) → trả cùng lúc, đánh dấu đã trả. */
+    for (const h of conn.prepare(`SELECT id AS id, after_json AS sau FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.luu_tru_dong'
+        AND id > (SELECT MAX(id) FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status')`).all(studentId, studentId) as any[]) {
+      moLaiViecLuuTru(p.userId, studentId, JSON.parse(h.sau)?.dongLuuTru);
+      conn.prepare(`UPDATE audit_logs SET action = 'student.luu_tru_dong_khoi_phuc' WHERE id = ?`).run(h.id);
+    }
     writeAudit({ actorUserId: p.userId, action: 'student.pause_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'inactive', ...cuoi.after }, after: { status: 'active' } });
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);

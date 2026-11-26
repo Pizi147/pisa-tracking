@@ -9,17 +9,17 @@ import { db, theoLo } from '../db.ts';
 import { nowIso } from '../util.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
 
-export type DongLuuTru = { case: ChupCaseDong[]; tinHieu: number[]; phoiHop: number[]; meeting: number[]; baoPh: number[]; tinhHinh: number[]; traLai: number[] };
+export type DongLuuTru = { lyDoCase?: 'luu_tru' | 'course_ended'; case: ChupCaseDong[]; tinHieu: number[]; phoiHop: number[]; meeting: number[]; baoPh: number[]; tinhHinh: number[]; traLai: number[] };
 const MA = 'system_luu_tru';
 
 const idCua = (sql: string, ...a: unknown[]) => (db().prepare(sql).all(...a) as any[]).map((r) => r.id as number);
 const capNhat = (ids: readonly number[], sql: (ph: string) => string, ...truoc: unknown[]) =>
   theoLo([...ids], (lo, ph) => { db().prepare(sql(ph)).run(...truoc, ...lo); });
 
-/** Đóng việc còn mở của em. `dongCase`: Tạm dừng (Kết thúc học đóng Case ở đường riêng). */
-export function dongViecLuuTru(actorUserId: number | null, studentId: number, ngay: string, dongCase: boolean): DongLuuTru {
+/** Đóng việc còn mở của em. `lyDoCase`: đóng cả Case — 'luu_tru' (Tạm dừng), 'course_ended' (migrate: em đã Kết thúc học); null = không (Kết thúc học đóng Case ở đường riêng). */
+export function dongViecLuuTru(actorUserId: number | null, studentId: number, ngay: string, lyDoCase: 'luu_tru' | 'course_ended' | null): DongLuuTru {
   const luc = nowIso();
-  const cs = dongCase ? closeCasesBySystem({ actorUserId, studentId, reason: 'luu_tru', on: ngay }) : null;
+  const cs = lyDoCase ? closeCasesBySystem({ actorUserId, studentId, reason: lyDoCase, on: ngay }) : null;
   const phoiHop = idCua(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND status = 'pending'`, studentId);
   const meeting = phoiHop.length ? idCua(`SELECT id FROM meeting_phan WHERE trang_thai = 'mo' AND phoi_hop_id IN (SELECT value FROM json_each(?))`, JSON.stringify(phoiHop)) : [];
   const baoPh = idCua(`SELECT id FROM viec_bao_ph WHERE student_id = ? AND trang_thai = 'mo'`, studentId);
@@ -31,14 +31,14 @@ export function dongViecLuuTru(actorUserId: number | null, studentId: number, ng
   /* Tình hình / Trả lại không có cột lý do: "rút" với người rút / người xong trống = hệ thống (người dùng rút luôn ghi người). */
   capNhat(tinhHinh, (ph) => `UPDATE tinh_hinh_hoc_tap SET trang_thai = 'rut', rut_boi = NULL, rut_luc = ? WHERE id IN (${ph})`, luc);
   capNhat(traLai, (ph) => `UPDATE vi_pham_tra_lai SET trang_thai = 'rut', xong_boi = NULL, xong_luc = ? WHERE id IN (${ph})`, luc);
-  return { case: cs?.chup ?? [], tinHieu: cs?.withdrawnSignalIds ?? [], phoiHop, meeting, baoPh, tinhHinh, traLai };
+  return { ...(lyDoCase ? { lyDoCase } : {}), case: cs?.chup ?? [], tinHieu: cs?.withdrawnSignalIds ?? [], phoiHop, meeting, baoPh, tinhHinh, traLai };
 }
 
 /** Hoàn tác: trả đúng các dòng lần đóng đó — chỉ dòng còn mang dấu hệ thống (người đã sửa sau thì giữ). */
-export function moLaiViecLuuTru(actorUserId: number | null, studentId: number, d: Partial<DongLuuTru> | null | undefined): void {
+export function moLaiViecLuuTru(actorUserId: number | null, studentId: number, d: Partial<DongLuuTru> | null | undefined, lyDo = 'Hoàn tác Tạm dừng'): void {
   if (!d) return;
   const luc = nowIso();
-  if (d.case?.length || d.tinHieu?.length) moLaiCaseHeThongDong({ actorUserId, studentId, reason: 'luu_tru', chup: d.case ?? [], tinHieu: d.tinHieu ?? [], lyDo: 'Hoàn tác Tạm dừng' });
+  if (d.case?.length || d.tinHieu?.length) moLaiCaseHeThongDong({ actorUserId, studentId, reason: d.lyDoCase ?? 'luu_tru', chup: d.case ?? [], tinHieu: d.tinHieu ?? [], lyDo });
   capNhat(d.phoiHop ?? [], (ph) => `UPDATE sos_coordination_actions SET status = 'pending', remove_reason_code = NULL, removed_by = NULL, removed_at = NULL, updated_at = ?
     WHERE id IN (${ph}) AND status = 'removed' AND remove_reason_code = '${MA}'`, luc);
   capNhat(d.meeting ?? [], (ph) => `UPDATE meeting_phan SET trang_thai = 'mo' WHERE id IN (${ph}) AND trang_thai = 'bo'`);
