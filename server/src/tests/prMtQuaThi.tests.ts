@@ -44,7 +44,7 @@ export async function runPrMtQuaThiTests(t: { check: any; assert: any; conn: any
     const it = tim(d.key);
     assert(it && it.group === 'missing_data' && tabCuaViec(it) === 'van-hanh' && it.cycleId === d.cycle && it.boQuaDuoc && it.mine,
       `thiếu việc / sai dáng: ${JSON.stringify(it)}`);
-    assert(/^MT\d+(, MT\d+)* sau ngày thi · /.test(it.tieuDe) && /^MT\d+ W\d [A-Z]{3}.* sau ngày thi \d\d\/\d\d\/\d{4}/.test(it.reason) && /^Thi \d\d\/\d\d\/\d{4}$/.test(it.contextLabel), `chữ: ${JSON.stringify(it)}`);
+    assert(/^MT\d+(, \d+)* sau ngày thi · /.test(it.tieuDe) && /^MT\d+ W\d [A-Z]{3}.* sau ngày thi \d\d\/\d\d\/\d{4}/.test(it.reason) && /^Thi \d\d\/\d\d\/\d{4}$/.test(it.statusLabel) && it.contextLabel === null, `chữ: ${JSON.stringify(it)}`);
     /* PTA 26/11: mục riêng "Lịch MT" (không "Thiếu dữ liệu"); dòng gộp lớp không chung khoá với Xếp lịch MTn. */
     assert(mucCuaViec(it) === 'lich-mt' && /\|mt-thi$/.test(khoaGopCua(it) ?? '') && chiaMucTab([it]).map((m: any) => m.label).join() === 'Lịch MT', `mục: ${mucCuaViec(it)} · ${khoaGopCua(it)}`);
     assert(mucCuaViec({ group: 'missing_data', key: 'moc:1' }) === 'thieu', 'Xếp lịch MT phải giữ mục Thiếu dữ liệu');

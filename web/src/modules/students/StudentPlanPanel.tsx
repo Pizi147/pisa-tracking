@@ -99,8 +99,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                     <thead>
                       <tr>
                         <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.')}>{t('Lượt')}</Th>
-                        <Th hint={t('Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.')}>{t('Tuần học')}</Th>
-                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học. Áp lịch chỉ xếp lượt chưa có lịch.')}>{t('Tuần đề xuất')}</Th>
+                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học (tuần thứ mấy — mốc mặc định Fast Track tuần 6 · 12 · 16 · 20 · 24). Áp lịch chỉ xếp lượt chưa có lịch.')}>{t('Tuần đề xuất')}</Th>
                         <Th hint={t('Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt đã có lịch (kể cả sau chuyển lớp) giữ nguyên.')}>{t('Hiện tại')}</Th>
                         <Th align="right">{t('Thao tác')}</Th>
                       </tr>

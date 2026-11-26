@@ -13,7 +13,7 @@ import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKet
 import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
-import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
+import { duongDotTest, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
@@ -35,6 +35,9 @@ export type HangMt = {
   huy?: { attemptId: number } | null;
 };
 export type BangLichMt = { hang: HangMt[]; soKeTiep: number; classId: number | null; studentId: number; coTheXep: boolean; coTheKhoiPhuc?: boolean; /** RA-2511 (N57): false = chỉ xếp lịch nhờ vai BPXL ở lớp này — không Vắng / Huỷ điểm / thi lại / xoá MT có điểm (cờ theo lớp, không theo vai). */ diem: boolean };
+
+/** dd/mm — dòng phụ tuần (mã tuần ở dòng trên đã nói tháng / năm). */
+const ngayNgan = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
 /** MT-QUA-THI: cùng luật việc Head (`mt-thi:`) — lượt chưa thi (chưa / đã xếp, không lịch sử), tuần bắt đầu sau ngày thi (yyyy-mm-dd). */
 export function sauNgayThi(l: HangMt['luot'], ngayThi: string | null): boolean {
@@ -110,12 +113,14 @@ export function HangLichMt({ h, bang, hocVien, homNay, ngayThi = null, moDiem, o
           {/* MT-QUA-THI: cột đầu — luôn thấy cả khi bảng cuộn ngang (375). */}
           {sauThi && <span className="block text-xs font-semibold text-late">{t('Sau ngày thi')}</span>}
         </td>
-        <td className="td text-slate-400 whitespace-nowrap tabular-nums">{h.studyWeek !== null ? t('tuần {n}', { n: h.studyWeek }) : '—'}</td>
+        {/* MT-QUA-THI (PTA 26/11, "xấu thì sửa luôn"): "Tuần học" gộp vào dòng phụ của Tuần đề xuất, ngày rút dd/mm — bảng vừa bề ngang panel, không cuộn ngang ở 1280 / 1440. */}
         <td className="td whitespace-nowrap">
           {tuanHien ? (
             <>
               <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
-              <span className="block text-xs text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
+              <span className="block text-xs tabular-nums text-slate-500">
+                {h.studyWeek !== null && <>{t('tuần {n}', { n: h.studyWeek })} · </>}{ngayNgan(tuanHien)} – {ngayNgan(addDaysStr(tuanHien, 6))}
+              </span>
             </>
           ) : <span className="text-xs text-slate-500" title={t('Ngoài lịch mặc định — Head xếp tay')}>{t('xếp tay')}</span>}
         </td>

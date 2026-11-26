@@ -651,7 +651,8 @@ function viecMtThi(r: { full_name: string | null; ngay_thi: string; mts: string 
   return {
     dau: `${r.ngay_thi}|${mts.map((m) => m.n).join(',')}`, soBai: mts.length,
     /* Tên không mã tuần (khuôn dòng Công việc bỏ phần có mã tuần, tách tuần lên đầu) — tuần từng MT ở lý do + panel Lịch MT; không `phu` (dòng gộp lớp chép `phu` của em đầu). */
-    tieuDe: `${mts.map((m) => `MT${m.n}`).join(', ')} sau ngày thi · ${ten}`,
+    /* PTA 26/11: một dòng cả khi panel mở (ô chi tiết ~167 px ở 1440) — "MT2, 3 sau ngày thi"; ngày thi (`statusLabel` "Thi dd/mm/yyyy") ở cột ngày của dòng. */
+    tieuDe: `MT${mts.map((m) => m.n).join(', ')} sau ngày thi · ${ten}`,
     reason: `${ds} xếp sau ngày thi ${shortDate(r.ngay_thi)} — dời về trước ngày thi hoặc xoá MT`,
     thi: `Thi ${shortDate(r.ngay_thi)}`,
   };
@@ -1813,7 +1814,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         key: `mt-thi:${r.id}`, group: 'missing_data', urgency: 'normal',
         studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
-        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: v.thi, count: null,
+        attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
         reason: v.reason, tieuDe: v.tieuDe, ...{ cycleId: r.id as number },   // như `moc:` (R3-W2) — web đọc `cycleId`
         actionLabel: 'Sửa lịch MT', href: `/hoc-vien/${r.sid}`,
         ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: v.thi, boQuaDuoc: true,
