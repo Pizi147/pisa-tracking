@@ -290,7 +290,8 @@ export function setStudentStatus(
   p: Principal, studentId: number, status: 'active' | 'inactive' | 'finished', date: string, reason?: string,
   /** PR-LT: "Kết thúc vì" của dòng enrollment đóng lại (Q18). Mặc định theo `status` khi không truyền. */
   endKind?: 'bao_luu' | 'dung_hoc' | 'ket_thuc' | null,
-  o: { lopKetThucDuoc?: boolean } = {},
+  /** `giuViec` (rà #2219 P1-1): Kết thúc chỉ là bước nối của Lộ trình mới (Học lại ngay sau) — em vẫn đang học, không đóng việc Lưu trữ. */
+  o: { lopKetThucDuoc?: boolean; giuViec?: boolean } = {},
 ) {
   /* OV-8b: TVV / CX Tạm dừng / Quay lại học / Thôi học (`student.edit_more`) — cùng luật. */
   if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
@@ -362,6 +363,8 @@ export function setStudentStatus(
       /* PR-TK: cùng giao dịch; mọi đường Kết thúc học (một em, nhiều em, dừng học ở Chuyển tiếp) đều đi qua đây. */
       ghiBanChup(conn, dongBoiLanNay!.loTrinhDong, { lyDo: 'ket_thuc', ngay: date });
     }
+    /* Lưu trữ (chủ SP 26/11): vào Lưu trữ → việc còn mở của em đóng hẳn (Tạm dừng: cả Case / PA); Hoàn tác trả lại đúng chúng, Quay lại học không mở lại. */
+    const dongLuuTru = status !== 'active' && !o.giuViec ? dongViecLuuTru(p.userId, studentId, date, status === 'inactive' ? 'luu_tru' : null) : null;
     const journeyId = addJourney({
       studentId, eventType: status === 'inactive' ? 'pause' : status === 'active' ? 'resume' : 'finish',
       eventDate: date,
@@ -371,7 +374,7 @@ export function setStudentStatus(
     /* PR-Pb2-b (Q14, T65): Quay lại học → hạn xử lý vi phạm chưa phản hồi chốt lại từ ngày quay lại (sau `addJourney` — mốc đọc sự kiện resume). */
     if (status === 'active' && s.status === 'inactive') chotHanXuLy([studentId], { ghiDe: true });
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
-      entityLabel: s.student_code, before: { status: s.status, archivedAt: s.archived_at ?? null }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu, ...(ghiDanhDung ? { ghiDanhDung, journeyId } : {}), ...(status === 'active' ? { journeyId } : {}) } });
+      entityLabel: s.student_code, before: { status: s.status, archivedAt: s.archived_at ?? null }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu, ...(dongLuuTru ? { dongLuuTru } : {}), ...(ghiDanhDung ? { ghiDanhDung, journeyId } : {}), ...(status === 'active' ? { journeyId } : {}) } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
     ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
@@ -381,6 +384,7 @@ export function setStudentStatus(
 /** Nhật ký lần Kết thúc học GẦN NHẤT của em (`student.status` → finished): đúng id ghi danh / lộ trình / Case đã đóng. Em kết thúc từ trước PR-LUI-b thì không có → `null`. */
 type NhatKyKetThuc = {
   ghiDanhDong: { id: number; truoc: string }[]; loTrinhDong: number[]; dongCase: ChupCaseDong[]; rutTinHieu: number[]; truocStatus: string; truocArchivedAt: string | null;
+  dongLuuTru: DongLuuTru | null;
 };
 function nhatKyKetThucGanNhat(studentId: number): NhatKyKetThuc | null {
   const r = db().prepare(`SELECT before_json, after_json FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status' ORDER BY id DESC LIMIT 1`).get(studentId) as any;
@@ -390,7 +394,7 @@ function nhatKyKetThucGanNhat(studentId: number): NhatKyKetThuc | null {
     return {
       ghiDanhDong: a.ghiDanhDong.map((x: any) => (typeof x === 'number' ? { id: x, truoc: 'active' } : x)), loTrinhDong: a.loTrinhDong ?? [],
       dongCase: a.dongCase ?? [], rutTinHieu: a.rutTinHieu ?? [], truocStatus: JSON.parse(r.before_json ?? '{}')?.status ?? 'active',
-      truocArchivedAt: JSON.parse(r.before_json ?? '{}')?.archivedAt ?? null,
+      truocArchivedAt: JSON.parse(r.before_json ?? '{}')?.archivedAt ?? null, dongLuuTru: a.dongLuuTru ?? null,
     };
   } catch { return null; }
 }
@@ -624,6 +628,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     for (const id of nk.loTrinhDong) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND student_id = ? AND status = 'abandoned'`).run(id, studentId);
     const cs = moLaiCaseHeThongDong({ actorUserId: p.userId, studentId, reason: 'course_ended', chup: nk.dongCase, tinHieu: nk.rutTinHieu });
     if (cs.moLai.length) datLaiHanCase(studentId, date);
+    moLaiViecLuuTru(p.userId, studentId, nk.dongLuuTru, 'Hoàn tác Kết thúc học');
     addJourney({ studentId, eventType: 'resume', eventDate: date, title: 'Hoàn tác Kết thúc học', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.finish_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, archivedAt: veTamDung ? nk.truocArchivedAt ?? date : null, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
@@ -669,7 +674,7 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
   if (s.status !== 'inactive' || cuoi?.action !== 'student.status' || cuoi.after?.status !== 'inactive' || cuoi.before?.status !== 'active' || !Array.isArray(cuoi.after?.ghiDanhDung)) {
     throw conflict('Không còn hoàn tác được — học viên đã đổi trạng thái sau lần Tạm dừng.');
   }
-  const { ghiDanhDung, journeyId } = cuoi.after as { ghiDanhDung: number[]; journeyId?: number };
+  const { ghiDanhDung, journeyId, dongLuuTru } = cuoi.after as { ghiDanhDung: number[]; journeyId?: number; dongLuuTru?: DongLuuTru };
   return tx(() => {
     conn.prepare(`UPDATE students SET status = 'active', archived_at = NULL WHERE id = ?`).run(studentId);   // P7 (E10): Tạm dừng nay vào Lưu trữ — Hoàn tác ra khỏi Lưu trữ
     for (const id of ghiDanhDung) {
@@ -678,6 +683,13 @@ export function hoanTacTamDung(p: Principal, studentId: number) {
       if (l) moLaiLop(p, l.id, { lyDo: `Hoàn tác Tạm dừng: ${s.full_name}`, heQua: true });
     }
     if (journeyId) conn.prepare(`DELETE FROM journey_events WHERE id = ? AND student_id = ? AND event_type = 'pause'`).run(journeyId, studentId);
+    moLaiViecLuuTru(p.userId, studentId, dongLuuTru);   // Lưu trữ (26/11): việc lần Tạm dừng này đóng mở lại đúng như cũ
+    /* Rà #2219 P2-2: em Tạm dừng trước luật mới — migrate LUU-TRU-DONG đóng việc sau lần dừng này (nhật ký riêng) → trả cùng lúc, đánh dấu đã trả. */
+    for (const h of conn.prepare(`SELECT id AS id, after_json AS sau FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.luu_tru_dong'
+        AND id > (SELECT MAX(id) FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status')`).all(studentId, studentId) as any[]) {
+      moLaiViecLuuTru(p.userId, studentId, JSON.parse(h.sau)?.dongLuuTru);
+      conn.prepare(`UPDATE audit_logs SET action = 'student.luu_tru_dong_khoi_phuc' WHERE id = ?`).run(h.id);
+    }
     writeAudit({ actorUserId: p.userId, action: 'student.pause_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'inactive', ...cuoi.after }, after: { status: 'active' } });
     ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em ra khỏi Lưu trữ — ô của em tính lại (rà #2217 P2-2)
@@ -712,6 +724,7 @@ export function hoanTacQuayLai(p: Principal, studentId: number) {
 
 /* OV-13q: `coQuyenBuocTiep` chuyển sang permissions.ts (thiThat.ts dùng — tránh vòng import thiThat → students → buocTiep → thiThat). */
 import { coQuyenBuocTiep, grantPhiaTvv } from '../permissions.ts';
+import { dongViecLuuTru, moLaiViecLuuTru, type DongLuuTru } from './dongLuuTru.ts';
 export { coQuyenBuocTiep };
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;

@@ -253,8 +253,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
      * PR-MT: lượt đã huỷ hoặc MT lịch sử (không vào luồng vắng) cũng không còn thẻ chờ. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id
-                          WHERE r.id = y.doi_tuong_id AND r.status = 'pending' AND a.status != 'cancelled' AND a.lich_su = 0)`,
-      lyDo: 'Đề nghị dời không còn chờ',
+                          WHERE r.id = y.doi_tuong_id AND r.status = 'pending' AND a.status != 'cancelled' AND a.lich_su = 0)
+              OR EXISTS (SELECT 1 FROM skill_move_requests r JOIN assessment_attempts a ON a.id = r.attempt_id JOIN students s ON s.id = a.student_id
+                          WHERE r.id = y.doi_tuong_id AND s.archived_at IS NOT NULL)`,   // Lưu trữ (chủ SP 26/11, rà #2219)
+      lyDo: 'Đề nghị dời không còn chờ / em vào Lưu trữ',
     },
     nap: (conn, ds) => napTheoDoiTuong(conn, ds,
       `SELECT r.id, r.skill, r.move_no % 100 AS move_no, r.attempt_id, a.attempt_no, a.kind, a.class_id, pr.week_start,
@@ -858,8 +860,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     loai: 'bao_len_cuoi_khoa',
     theoLopTao: true,
     chet: {
-      sql: `NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = y.doi_tuong_id AND a.status = 'planned')`,
-      lyDo: 'Bài đã có điểm đủ hoặc đã huỷ',
+      sql: `NOT EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.id = y.doi_tuong_id AND a.status = 'planned')
+              OR EXISTS (SELECT 1 FROM assessment_attempts a JOIN students s ON s.id = a.student_id WHERE a.id = y.doi_tuong_id AND s.archived_at IS NOT NULL)`,   // Lưu trữ (26/11)
+      lyDo: 'Bài đã có điểm đủ, đã huỷ hoặc em vào Lưu trữ',
     },
     nap: (conn, ds) => napNguoiNhac(conn, ds, napTheoDoiTuong(conn, ds,
       `SELECT a.id, s.full_name, rp.week_start FROM assessment_attempts a JOIN students s ON s.id = a.student_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.id IN (?)`)),

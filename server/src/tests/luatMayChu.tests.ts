@@ -620,7 +620,8 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(again.closedCaseIds.length === 0 && auditSys(x.caseId) === 1, 'Chạy lại không được đóng/ghi thêm');
   });
 
-  check('S16 · Học viên chuyển "Đã kết thúc" → Case mở đóng "Học viên kết thúc khoá"; "Tạm dừng" thì KHÔNG đóng', () => {
+  /* Lưu trữ (chủ SP 26/11, thay "Tạm dừng thì không đóng"): Tạm dừng cũng đóng Case — lý do "Học viên vào Lưu trữ". */
+  check('S16 · Học viên chuyển "Đã kết thúc" → Case mở đóng "Học viên kết thúc khoá"; "Tạm dừng" đóng "Học viên vào Lưu trữ"', () => {
     const a = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const b = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
     const xa = caseCoViec(a), xb = caseCoViec(b);
@@ -628,7 +629,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     students.setStudentStatus(P.mbManager, b.sid, 'inactive', TODAY, 'Tạm nghỉ ốm');
     const st = (id: number) => conn.prepare('SELECT status, system_close_reason AS r FROM sos_cases WHERE id = ?').get(id) as any;
     assert(st(xa.caseId).status === 'done' && st(xa.caseId).r === 'course_ended', `Kết thúc: ${JSON.stringify(st(xa.caseId))}`);
-    assert(st(xb.caseId).status !== 'done', 'Tạm dừng không được đóng Case');
+    assert(st(xb.caseId).status === 'done' && st(xb.caseId).r === 'luu_tru', `Tạm dừng: ${JSON.stringify(st(xb.caseId))}`);
   });
 
   check('S16 · FT "Kết luận lộ trình": kèm cờ dongCaseKhiKetThuc (em thôi học) → đóng Case; không cờ (học tiếp) → Case giữ', () => {

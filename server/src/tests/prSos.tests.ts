@@ -556,7 +556,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!ds.some((i) => i.key === `ghi_nhan_xet:${c.id}` || i.key === `action:${iv.id}`), 'còn dòng Ghi nhận xét hoặc Ghi kết quả cho PA chờ xác nhận');
     assert(d.nhomViecCua('xac_nhan_pa') === 'case-hoc-thuat' && d.LOAI_HAN_CUA_VIEC.xac_nhan_pa === 'xac-minh-sos', 'nhóm / loại hạn');
   });
-  check('SOS (7) · Em Tạm dừng: không dòng cause / Xác nhận PA / Ghi kết quả, không Báo QL; Quay lại → hạn tính lại từ ngày quay lại (K3-41)', () => {
+  /* Lưu trữ (chủ SP 26/11, thay K3-41 cho việc đã đóng): Tạm dừng đóng Case / PA; Quay lại học KHÔNG mở lại. */
+  check('SOS (7) · Em Tạm dừng: Case / PA đóng (không dòng việc, không Báo QL); Quay lại học không mở lại', () => {
     const { st } = mt2W2('T7b');
     const c = cvL(st); const cS = caseOf(st.id, 'speaking');
     const { iv } = (() => {
@@ -571,9 +572,10 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(!khoa.includes(`ghi_nhan_xet:${c.id}`) && !khoa.includes(`action:${iv.id}`), 'em Tạm dừng còn dòng việc Case');
     yc.quetYeuCau(TODAY);
     assert(!get(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_nguyen_nhan' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c.id), 'em Tạm dừng bị Báo QL');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'done' && get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'cancelled', 'Tạm dừng chưa đóng Case / PA');
     studentsSvc.setStudentStatus(P.admin, st.id, 'active', TODAY, 'Quay lại học');
-    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY), 'hạn xác nhận chưa tính lại');
-    assert(get('SELECT action_due h FROM case_interventions WHERE id = ?', iv.id).h === d.hanKyGhiKetQua(TODAY), 'hạn ghi kết quả chưa tính lại');
+    const khoa2 = (myworkSvc.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).map((i: any) => i.key as string);
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status === 'done' && !khoa2.includes(`action:${iv.id}`), 'Quay lại học mở lại Case / PA cũ');
   });
   check('SOS (7) · Hiệu quả PA: PA huỷ không theo dõi, PA chờ xác nhận, PA hệ thống đóng không vào N; cột Xử lý Tổng hợp theo trạng thái v4 (K1-20, K1-23, K5-55)', () => {
     const { st } = mt2W2('T7c');

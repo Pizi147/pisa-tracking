@@ -21,6 +21,7 @@ import { cuoiKhoaTheoHocVien, sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { dongViecLuuTru } from '../students/dongLuuTru.ts';
 import { doiMt0KhiVeThuong, huyKhiVeThuong, keHoachVeThuong, noiMt0VaoFt } from '../fasttrack/mt0.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
@@ -888,7 +889,11 @@ export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: 
   const now = nowIso();
   const ids = o.dongs.map((d) => d.sid);
   const ph = ids.map(() => '?').join(',');
-  conn.prepare(`UPDATE students SET status = 'inactive' WHERE id IN (${ph})`).run(...ids);
+  /* Rà #2219 P1-2 (Lưu trữ, chủ SP 26/11): Tạm dừng cả lớp = vào Lưu trữ như Tạm dừng một em — `archived_at`, đóng việc, nhật ký đủ để Hoàn tác Tạm dừng. */
+  const ghiDanhDung = new Map<number, number[]>();
+  for (const e of conn.prepare(`SELECT id, student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (${ph})`).all(o.fromClassId, ...ids) as any[])
+    (ghiDanhDung.get(e.student_id) ?? ghiDanhDung.set(e.student_id, []).get(e.student_id)!).push(e.id);
+  conn.prepare(`UPDATE students SET status = 'inactive', archived_at = ? WHERE id IN (${ph})`).run(o.ngay, ...ids);
   const byLyDo = new Map<string, number[]>();
   for (const d of o.dongs) {
     if (!byLyDo.has(d.lyDo)) byLyDo.set(d.lyDo, []);
@@ -905,16 +910,19 @@ export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: 
   }
   const rows = o.dongs.map(() => '(?,?,?,?,NULL,NULL,?,?)').join(',');
   const params = o.dongs.flatMap((d) => [d.sid, 'pause', o.ngay, `Tạm dừng học (bảo lưu) — ${d.lyDo}`, p.userId, now]);
-  conn
+  const mocId = new Map<number, number>();
+  for (const r of conn
     .prepare(
       `INSERT INTO journey_events (student_id, event_type, event_date, title, ref_table, ref_id, created_by, created_at)
-       VALUES ${rows}`,
+       VALUES ${rows} RETURNING id, student_id`,
     )
-    .run(...params);
-  /* OV-13j: mỗi em một dòng nhật ký Tạm dừng — MỘT câu. Không kèm `ghiDanhDung` nên không mở "Hoàn tác Tạm dừng" cho đường cả lớp. */
+    .all(...params) as any[]) mocId.set(r.student_id, r.id);
+  /* OV-13j: mỗi em một dòng nhật ký Tạm dừng — MỘT câu; kèm ghi danh dừng + mốc + việc đã đóng (rà #2219 P1-2) → "Hoàn tác Tạm dừng" từng em. */
   writeAuditLo(o.dongs.map((d) => ({
     actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: d.sid,
-    before: { status: 'active' }, after: { status: 'inactive', date: o.ngay, reason: d.lyDo },
+    before: { status: 'active', archivedAt: null },
+    after: { status: 'inactive', date: o.ngay, reason: d.lyDo, archivedAt: o.ngay, ghiDanhDung: ghiDanhDung.get(d.sid) ?? [], journeyId: mocId.get(d.sid),
+      dongLuuTru: dongViecLuuTru(p.userId, d.sid, o.ngay, 'luu_tru') },
   })));
   ghiSoHocVien(ids);   // SỔ NGHĨA VỤ: em tạm dừng từ ngày này
 }

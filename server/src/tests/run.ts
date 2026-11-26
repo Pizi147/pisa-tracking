@@ -9843,6 +9843,8 @@ await runPrAuViecLopCuTests({ check, assert, assertThrows, conn, P, TODAY } as a
 // ==================================================================== SUA-N71 (rà 25/11 PR 3: nợ điểm theo người lúc thi · sổ cùng bộ lọc Công việc)
 const { runPrSuaN71Tests } = bocTep('prSuaN71', await import('./prSuaN71.tests.ts'));
 await runPrSuaN71Tests({ check, assert, conn, P, TODAY } as any);
+const { runPrLuuTruDongTests } = bocTep('prLuuTruDong', await import('./prLuuTruDong.tests.ts'));
+await runPrLuuTruDongTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== AU-SO gói 2 SO-QL (AUDIT-1611: số của QL cùng nguồn)
 const { runPrAuSoQlTests } = bocTep('prAuSoQl', await import('./prAuSoQl.tests.ts'));
 await runPrAuSoQlTests({ check, assert, assertThrows, conn, P } as any);

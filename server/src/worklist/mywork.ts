@@ -1187,6 +1187,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
         WHERE m.ty_le IS NULL
           AND NOT EXISTS (SELECT 1 FROM case_interventions ivs JOIN sos_cases sc ON sc.id = ivs.case_id WHERE ivs.nhom_bo_tro = m.nhom_bo_tro AND ${CASE_SAU_THI_SQL('sc', 's.id')})   -- N46
+          /* Lưu trữ (chủ SP 26/11, rà #2219): Case của nhóm bổ trợ đã đóng vì em vào Lưu trữ / kết thúc khoá (không còn Case mở) → Mini Test không hiện lại khi Quay lại / Học lại. */
+          AND NOT (EXISTS (SELECT 1 FROM case_interventions ivl JOIN sos_cases scl ON scl.id = ivl.case_id WHERE ivl.nhom_bo_tro = m.nhom_bo_tro AND scl.status = 'done' AND scl.system_close_reason IN ('luu_tru', 'course_ended'))
+            AND NOT EXISTS (SELECT 1 FROM case_interventions ivo JOIN sos_cases sco ON sco.id = ivo.case_id WHERE ivo.nhom_bo_tro = m.nhom_bo_tro AND sco.status != 'done'))
         ORDER BY m.han, m.id`,
     p.userId).map((r) => ({ ...r }));   // chép dòng — dưới gán `m.gv`
   /*

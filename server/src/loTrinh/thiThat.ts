@@ -376,7 +376,7 @@ export type SauThiEm = TrangThaiSauThi & { cycleId: number; coTheNhap: boolean; 
  * Em Lưu trữ / lộ trình khác giai đoạn → null (cùng lọc với việc Công việc).
  */
 export function sauThiCuaEm(p: Principal, studentId: number, today = demoToday()): SauThiEm | null {
-  const c = db().prepare(`SELECT c.id, c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+  const c = db().prepare(`SELECT c.id, c.student_id, s.archived_at AS em_archived, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
      WHERE c.student_id = ? AND c.route IS NOT NULL AND ${LO_TRINH_MOI_NHAT}`).get(studentId) as any;
   if (!c) return null;
   const st = trangThaiSauThi(c, today);
@@ -384,5 +384,5 @@ export function sauThiCuaEm(p: Principal, studentId: number, today = demoToday()
   /* Nút của LUỒNG VIỆC = người nhận việc (GVCN lớp cuối, QL, QT, TVV); CX / Admin chỉ xem (CX vẫn nhập được ở ⋯ hồ sơ như OV-8b). */
   const coTheGiaHan = coTheGiaHanSauThi(p, c, st.giaiDoan);
   const nguoiNhan = coQuyenBuocTiep(p, studentId) || laGvcnLopCuoi(p, c.id);
-  return { ...st, cycleId: c.id, coTheNhap: st.giaiDoan === 'da_thi_cho_kq' && nguoiNhan && coTheNhapThiThat(p, c), coTheChon: st.giaiDoan === 'cho_buoc_tiep' && coQuyenBuocTiep(p, studentId), coTheGiaHan };
+  return { ...st, cycleId: c.id, coTheNhap: st.giaiDoan === 'da_thi_cho_kq' && nguoiNhan && coTheNhapThiThat(p, c), coTheChon: st.giaiDoan === 'cho_buoc_tiep' && !c.em_archived && coQuyenBuocTiep(p, studentId), coTheGiaHan };   // Lưu trữ: không Chọn bước tiếp (26/11)
 }
