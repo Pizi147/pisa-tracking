@@ -326,13 +326,13 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
             ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: data.quyetDot ? 108 : 120, goiY: p.ten })),   // BO-BAO-CAO-PH: + cột "Không báo cáo" vẫn vừa 1280
             ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 112 } as CotBang] : []),
-            ...(data.quyetDot ? [{ key: 'nut', nhan: '', kieu: 'nut', rong: 128 } as CotBang] : []),
+            ...(data.quyetDot ? [{ key: 'nut', nhan: t('Không báo cáo'), anNhan: true, kieu: 'nut', rong: 128 } as CotBang] : []),
           ]}
           oCua={(e, c) => {
             if (c.key === 'ten') return <Link className="ten-hv ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
             /* BO-BAO-CAO-PH: dòng em đã bỏ — ô phần "–" mờ (không viết, không đếm), không Xuất; cột cuối "Không báo cáo" / "Khôi phục". */
             if (c.key === 'nut') return nutBoEm(e);
-            if (e.bo) return c.key === 'xuat' ? null : <span aria-hidden>–</span>;
+            if (e.bo) return c.key === 'xuat' ? null : <><span aria-hidden>–</span><span className="sr-only">{t('Không báo cáo')}</span></>;
             if (c.key === 'xuat') {
               return (
                 <span className="inline-flex gap-3">

@@ -107,7 +107,7 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   const ungVien = d.ds.filter((x) => soNgayQuaHan(x, homNay) <= 7 || x.han >= batTu);
   if (!ungVien.length) return khong;
   const ghiDanh = db().prepare(
-    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s')} AS bo
+    `SELECT s.id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo
        FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn'`,
   ).all(classId) as any[];
   const emDot = new Map(ungVien.map((x) => [x.ma, [...new Set(ghiDanh.filter((r) => emTrongDot(r, x, homNay)).map((r) => r.id as number))]]));
@@ -133,7 +133,7 @@ export function emCuaDot(classId: number, d: DotBc, homNay: string, kemBo = fals
   const moc = d.han < homNay ? d.han : homNay;
   const thay = new Set<number>();
   return (db().prepare(
-    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s')} AS bo
+    `SELECT s.id, s.full_name, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo
        FROM enrollments e JOIN students s ON s.id = e.student_id
       WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')} AND substr(e.started_at, 1, 10) <= ? AND e.status != 'withdrawn'
       ORDER BY s.full_name`,
@@ -145,10 +145,10 @@ export function emCuaDot(classId: number, d: DotBc, homNay: string, kemBo = fals
 export const COT_BAI_ROI = (e: string) => `CASE WHEN ${e}.ended_at IS NOT NULL THEN (SELECT group_concat(DISTINCT a.kind) FROM assessment_attempts a
   WHERE a.student_id = ${e}.student_id AND a.class_id = ${e}.class_id AND a.kind IN ('progress', 'final') AND a.status != 'cancelled') END`;
 /**
- * BO-BAO-CAO-PH (chủ SP 26/11): mã các đợt Head / Quản trị / Admin đã bỏ báo cáo của em (`group_concat`, khoá chính em × đợt) — cột kèm câu ghi danh,
- * KHÔNG thêm câu. `s` bí danh `students`. Mọi nơi đếm em trong đợt đi qua `emTrongDot` nên em bỏ rời mọi nơi cùng lúc.
+ * BO-BAO-CAO-PH (chủ SP 26/11): mã các đợt Head / Quản trị / Admin đã bỏ báo cáo của em Ở LỚP CỦA GHI DANH (`group_concat`, khoá em × lớp × đợt) — cột kèm
+ * câu ghi danh, KHÔNG thêm câu. `s` bí danh `students`, `e` bí danh `enrollments`. Bỏ theo lớp (PTA 26/11): lớp khác của em không bị ảnh hưởng. Mọi nơi đếm em trong đợt đi qua `emTrongDot` nên em bỏ rời mọi nơi cùng lúc.
  */
-export const COT_BO_EM = (s: string) => `(SELECT group_concat(b.dot) FROM bao_cao_ph_bo_em b WHERE b.student_id = ${s}.id)`;
+export const COT_BO_EM = (s: string, e: string) => `(SELECT group_concat(b.dot) FROM bao_cao_ph_bo_em b WHERE b.student_id = ${s}.id AND b.class_id = ${e}.class_id)`;
 /** Em đã bỏ báo cáo đợt `d`? (`bo` = cột `COT_BO_EM`; mã đợt không có dấu phẩy). */
 export const emBoDot = (r: { bo?: string | null }, d: Pick<DotBc, 'ma'>): boolean => !!r.bo && r.bo.split(',').includes(d.ma);
 /**
@@ -229,8 +229,8 @@ export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | nu
   }
   const boBoi = new Map<number, { ten: string | null; luc: string }>();
   if (em.some((e) => e.bo)) {
-    for (const r of db().prepare(`SELECT b.student_id, b.luc, u.full_name FROM bao_cao_ph_bo_em b LEFT JOIN users u ON u.id = b.nguoi WHERE b.dot = ? AND b.student_id IN (${DS_JSON})`)
-      .all(d.ma, JSON.stringify(em.filter((e) => e.bo).map((e) => e.id))) as any[]) boBoi.set(r.student_id, { ten: r.full_name ?? null, luc: r.luc });
+    for (const r of db().prepare(`SELECT b.student_id, b.luc, u.full_name FROM bao_cao_ph_bo_em b LEFT JOIN users u ON u.id = b.nguoi WHERE b.dot = ? AND b.class_id = ? AND b.student_id IN (${DS_JSON})`)
+      .all(d.ma, classId, JSON.stringify(em.filter((e) => e.bo).map((e) => e.id))) as any[]) boBoi.set(r.student_id, { ten: r.full_name ?? null, luc: r.luc });
   }
   return {
     ...chungTrang, dot: d.ma, daBo: null, sapMo: null, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
@@ -458,12 +458,13 @@ export function boEmBaoCaoPh(p: Principal, classId: number, body: any) {
   const sid = toInt(body?.studentId);
   const emDot = emCuaDot(classId, d, homNay, true);
   const e = sid ? emDot.find((x) => x.id === sid) : undefined;
-  if (!e) throw badRequest('Học viên không có trong đợt báo cáo này');
+  if (!e) throw notFound('Học viên không có trong đợt báo cáo này');   // em lớp khác (kể cả id thật) qua id lớp mình
+  if (body?.khoiPhuc !== undefined && typeof body.khoiPhuc !== 'boolean') throw badRequest('Yêu cầu không hợp lệ');
   const khoiPhuc = body?.khoiPhuc === true;
   if (e.bo === !khoiPhuc) return { doi: false };
   const luc = nowIso();
   tx(() => {
-    if (khoiPhuc) db().prepare('DELETE FROM bao_cao_ph_bo_em WHERE student_id = ? AND dot = ?').run(e.id, d.ma);
+    if (khoiPhuc) db().prepare('DELETE FROM bao_cao_ph_bo_em WHERE student_id = ? AND class_id = ? AND dot = ?').run(e.id, classId, d.ma);
     else db().prepare('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc) VALUES (?, ?, ?, ?, ?)').run(e.id, d.ma, classId, p.userId, luc);
     writeAudit({ actorUserId: p.userId, action: khoiPhuc ? 'bao_cao_ph.bo_em_khoi_phuc' : 'bao_cao_ph.bo_em', entityType: 'student', entityId: e.id, entityLabel: c.code,
       after: { dot: d.ma, nhan: nhanDotBc(d, homNay) } });

@@ -35,6 +35,8 @@ export type DinhNghiaCot = {
   rong?: number;
   /** Chữ giải thích khi rê lên tiêu đề (title — không phải câu dưới tiêu đề). */
   goiY?: string;
+  /** BO-BAO-CAO-PH: tiêu đề chỉ cho trình đọc màn (`sr-only`) — cột thao tác cuối dòng không cần chữ hiện. */
+  anNhan?: boolean;
   /** BANG-1: cột đang được mở từ Lịch Test / việc — tiêu đề màu nhấn. */
   sang?: boolean;
   /** Cột máy tính sẵn (W tổng) — nền xám cả tiêu đề lẫn ô (04 mục 6.3). */

@@ -69,6 +69,8 @@ export async function runPrSuaLichLopTests(t: YThucTestKit) {
     const cp = schedule.classProgress(LOP);
     const sf = ghiBc(`final:${cp.finalWeekStart}`, 'F' + Math.random().toString(36).slice(2, 6));
     const sp = ghiBc(`progress:${cp.progressWeekStart}`, 'P' + Math.random().toString(36).slice(2, 6));
+    /* BO-BAO-CAO-PH: em đã bỏ báo cáo đợt Final cũ → vẫn bỏ ở đợt Final mới (cùng đợt, dời tuần). */
+    conn.prepare('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc) VALUES (?,?,?,?,?)').run(sf, `final:${cp.finalWeekStart}`, LOP, P.admin.userId, new Date().toISOString());
     schedule.setClassProgress(P.normalCoreTeacher, LOP, { finalWeek: 5, progressWeek: 2 });
     const moi = schedule.classProgress(LOP);
     assert(moi.finalWeekStart === t.addDays(cp.finalWeekStart, -7) && moi.progressWeekStart === t.addDays(cp.progressWeekStart, -7), 'tiền đề: mốc lùi một tuần');
@@ -76,6 +78,7 @@ export async function runPrSuaLichLopTests(t: YThucTestKit) {
     assert(dot(sf) === `final:${moi.finalWeekStart}`, `Final: ${dot(sf)}`);
     assert(dot(sp) === `progress:${moi.progressWeekStart}`, `Progress: ${dot(sp)}`);
     assert(all(`SELECT 1 FROM bao_cao_ph WHERE class_id = ? AND (dot = ? OR dot = ?)`, LOP, `final:${cp.finalWeekStart}`, `progress:${cp.progressWeekStart}`).length === 0, 'không còn dòng ở mã đợt cũ');
+    assert(get('SELECT dot FROM bao_cao_ph_bo_em WHERE student_id = ? AND class_id = ?', sf, LOP)?.dot === `final:${moi.finalWeekStart}`, 'dòng bỏ báo cáo dời theo đợt Final mới');
   });
 
   check('SL-c · đổi tuần Final → hạn bàn giao lệnh Cuối khoá đang chờ tính lại; lệnh đã xác nhận giữ nguyên', () => {

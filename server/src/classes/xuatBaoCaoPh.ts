@@ -94,7 +94,7 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
   theoLoJson([...new Set(ds.map((x) => x.c.id))], (json) => {
     /* TOC-DO-2511c: `docNho` — Tổng quan kèm "Của tôi" (Admin) gọi hai lượt Công việc cùng câu (dòng chỉ đọc). */
     rows.push(...docNho(
-      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s')} AS bo, s.id, s.full_name
+      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo, s.id, s.full_name
          FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`, json));
   });
@@ -301,13 +301,24 @@ function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, hom
       for (const r of docNho(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`,
         json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))]))) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
     });
-    return cap.flatMap(({ c, d, bo }) => {
+    const ket = cap.flatMap(({ c, d, bo }) => {
       const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
       if (!em.length) return [];
       const thieu = em.filter((e) => (dem.get(`${d.ma}|${e.id}`)?.du ?? 0) < bo.length).length;
       const luc = thieu ? null : em.map((e) => dem.get(`${d.ma}|${e.id}`)?.luc ?? '').sort().at(-1)!;
       return [{ c, d, soEm: em.length, thieu, luc, qh: soNgayQuaHan(d, homNay) }];
     });
+    /* BO-BAO-CAO-PH: bỏ em cuối còn thiếu cũng làm lớp "đủ" → ngày đủ = lần lưu cuối HOẶC lần bỏ em cuối (sau). Một câu, chỉ khi có lớp đủ. */
+    const du = ql ? [] : ket.filter((x) => x.thieu === 0);   // việc QL chỉ lấy lớp còn thiếu
+    if (du.length) {
+      const bo = new Map<string, string>();
+      theoLoJson([...new Set(du.map((x) => x.c.id))], (json) => {
+        for (const r of db().prepare(`SELECT class_id, dot, MAX(luc) luc FROM bao_cao_ph_bo_em WHERE class_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY class_id, dot`)
+          .all(json, JSON.stringify([...new Set(du.map((x) => x.d.ma))])) as any[]) bo.set(`${r.class_id}|${r.dot}`, r.luc);
+      });
+      for (const x of du) { const l = bo.get(`${x.c.id}|${x.d.ma}`); if (l && l > x.luc!) x.luc = l; }
+    }
+    return ket;
   });
 }
 

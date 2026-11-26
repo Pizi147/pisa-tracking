@@ -596,6 +596,20 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(bc.trangBaoCaoPh(P.lrTeacher, lop, ma).quyetDot === false, 'GV không thấy ⋯ Không báo cáo');
     assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: 'thang:2099-01', studentId: e0.id }), /./, 'đợt chưa mở');
     assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: 99999999 }), /./, 'em lạ');
+    assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: e0.id, khoiPhuc: 'true' }), /./, 'khoiPhuc không phải boolean → 400');
+    /* em CÓ THẬT của lớp khác (cùng chi nhánh) qua id lớp mình → 404, không ghi */
+    const lopKhac = classId('MB FT 102');
+    const emKhac = (conn.prepare("SELECT student_id id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id NOT IN (SELECT student_id FROM enrollments WHERE class_id = ?) LIMIT 1").get(lopKhac, lop) as any)?.id;
+    if (emKhac) {
+      let ma404 = 0;
+      try { bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentId: emKhac }); } catch (err: any) { ma404 = err?.status ?? -1; }
+      assert(ma404 === 404 && !(conn.prepare('SELECT 1 FROM bao_cao_ph_bo_em WHERE student_id = ?').get(emKhac)), `em lớp khác: phải 404, được ${ma404}`);
+    }
+    /* bỏ theo LỚP: dòng bỏ ghi ở lớp khác (cùng mã đợt) không làm em rời lớp này */
+    conn.prepare('INSERT INTO bao_cao_ph_bo_em (student_id, dot, class_id, nguoi, luc) VALUES (?,?,?,?,?)').run(e0.id, ma, lopKhac, P.mbManager.userId, new Date().toISOString());
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id)?.bo === null && cuaS()[0]?.soEm === n, 'dòng bỏ của lớp khác không ảnh hưởng lớp này');
+    conn.prepare('DELETE FROM bao_cao_ph_bo_em WHERE class_id = ?').run(lopKhac);
 
     /* Head bỏ — đo câu */
     xoaNho();
@@ -622,6 +636,17 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     xoaNho();
     assert(!cuaS().length, 'GV đủ phần mình (trừ em bỏ) → việc rời');
     if (admin) assert(xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu === 0 && v.soEm === n - 1), 'Admin: việc Xuất "đủ" n − 1 em');
+    /* ngày "lớp đủ" = sau cùng của lần lưu và lần bỏ em: bài viết xong 10 ngày trước, bỏ em cuối hôm nay → việc Admin vẫn hiện (7 ngày từ hôm nay) */
+    if (admin) {
+      conn.prepare('UPDATE bao_cao_ph SET sua_luc = ? WHERE dot = ?').run(`${d.addDaysIso(TODAY, -10)}T03:00:00.000Z`, ma);
+      conn.prepare('UPDATE bao_cao_ph_bo_em SET luc = ? WHERE dot = ? AND class_id = ?').run(`${TODAY}T03:00:00.000Z`, ma, lop);
+      xoaNho();
+      const v = xbc.viecXuatBaoCaoPh(admin, null).find((x: any) => x.classId === lop && x.dot === ma);
+      assert(v?.duLuc === TODAY, 'ngày đủ theo lần bỏ em cuối: ' + JSON.stringify(v));
+      conn.prepare('UPDATE bao_cao_ph_bo_em SET luc = ? WHERE dot = ? AND class_id = ?').run(`${d.addDaysIso(TODAY, -10)}T03:00:00.000Z`, ma, lop);
+      xoaNho();
+      assert(!xbc.viecXuatBaoCaoPh(admin, null).some((x: any) => x.classId === lop && x.dot === ma), 'cả lưu lẫn bỏ quá 7 ngày → việc rời');
+    }
     const chip = bc.chipBaoCaoPh(P.mbManager, lop);
     assert(!chip || chip.dot !== ma || chip.quaHan === 0, 'chip không báo quá hạn vì em bỏ');
     try {
