@@ -212,7 +212,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                       <li key={v.id} className="min-h-[44px] py-1 text-sm text-slate-200 sm:min-h-0">
                         {/* VI-PHAM-MO: ô tick chỉ chọn; bấm TÊN mở mô tả tại chỗ. */}
                         <DongViPham v={v} ngay={ngay(v.occurredOn, homNay)}
-                          truoc={<label className="-m-3 shrink-0 cursor-pointer p-3 max-sm:pt-6"><input type="checkbox" className="mt-0.5 block" checked={chon.includes(v.id)} onChange={() => doi(v.id)} aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
+                          truoc={<label className="-m-3 shrink-0 cursor-pointer p-3"><input type="checkbox" className="mt-0.5 block" checked={chon.includes(v.id)} onChange={() => doi(v.id)} aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
                           duoi={<>{dich(v.categoryLabel)}{dangGan.has(v.id) ? '' : t(' · chưa xử lý')}</>} />
                       </li>
                     ))}

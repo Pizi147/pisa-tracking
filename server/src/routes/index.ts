@@ -176,7 +176,9 @@ const laMyWorkTvv = (p: Principal, duong: string, method: string) =>
  * chi tiết (GET), cập nhật tiến độ (POST …/update), sửa hạn / theo dõi (PATCH) — khi là người phụ trách / phụ trách việc con / người theo dõi đúng việc đó
  * (`coQuyenTheoViec`). Danh sách, nhóm, Dừng lặp, tạo việc: vẫn chặn. Tệp đi `/attachments` (quyền của việc, không qua cổng này).
  */
-const laViecVhCuaToi = (p: Principal, duong: string, method: string) => {
+const laViecVhCuaToi = (p: Principal, duong: string, method: string, body?: any) => {
+  /* TUYEN-1 (PTA chốt theo mockup v27): tạo VIỆC CON của việc Ý thức / Phối hợp / Báo PH (`chaLoai`) — người giữ việc cha (TVV, GV…) qua cổng; `createMgmtTask` kiểm người giữ. */
+  if (method === 'POST' && /^\/mgmt-tasks\/?$/.test(duong) && body?.chaLoai != null && body.chaLoai !== '') return true;
   const m = (method === 'GET' || method === 'PATCH' ? /^\/mgmt-tasks\/(\d+)\/?$/ : method === 'POST' ? /^\/mgmt-tasks\/(\d+)\/update\/?$/ : null)?.exec(duong);
   return !!m && mgmtSvc.coQuyenTheoViec(p, Number(m[1]));
 };
@@ -188,7 +190,7 @@ api.use((req, _res, next) => {
   const laViec = KHU_VIEC.some((r) => r.test(duong)) || (/^\/yeu-cau\/?$/.test(duong) && req.method === 'GET' && !req.query.studentId);
   if (KHU_PHAN_TICH.test(duong) && !can(p, PERMISSIONS.ANALYSIS_VIEW, { anyScope: true })) { next(forbidden('Vai trò của bạn không có khu Phân tích.')); return; }
   const quyen = KHU_TEST.some((r) => r.test(duong)) ? PERMISSIONS.TEST_VIEW : laViec ? PERMISSIONS.WORK_VIEW : null;
-  if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method))) {
+  if (quyen && !can(p, quyen, { anyScope: true }) && !laMyWorkTvv(p, duong, req.method) && !(quyen === PERMISSIONS.WORK_VIEW && laViecVhCuaToi(p, duong, req.method, req.body))) {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }

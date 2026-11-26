@@ -79,6 +79,8 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const cho = tuyen(gvcn, 'vi_pham', `em${sid}`);
     assert(ten(cho) === 'GV ghi 3 vi phạm:xong → Xử lý vi phạm:dang → Báo PH:cho', `chờ xử lý: ${ten(cho)}`);
     assert(cho.buoc[2].nguoi === tvv.fullName && cho.buoc[2].chiTiet === 'sau khi xử lý' && cho.buoc[1].laToi, `bước sau: ${JSON.stringify(cho.buoc[2])}`);
+    /* TUYEN-1 (N74): tuyến chờ xử lý trả tên MỘT Head chi nhánh em (`headCua`) — web xem trước ○ Head duyệt khi chọn khác mặc định; tuyến lần xử lý không có trường này. */
+    assert(cho.head === ql.fullName, `head: ${cho.head} ≠ ${ql.fullName}`);
     const viecTvv = soViec(tvv); const tinTruoc = soTin();
     const m = xu.xacNhanXuLy(gvcn, sid, { violationIds: [vid], performedOn: TODAY, performerName: null, note: 'Nhắc nhở em sau giờ học, em hứa sửa' });
     const x = tuyen(gvcn, 'vi_pham', m.id);
@@ -112,12 +114,15 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     xu.guiDeXuat(gvcn, nhap.id);
     const a = tuyen(gvcn, 'vi_pham', nhap.id);
     assert(ten(a) === 'GV ghi 1 vi phạm:xong → Xử lý vi phạm:xong → Head duyệt:dang → Đã thực hiện:cho → Báo PH:cho', `chờ Head: ${ten(a)}`);
-    assert(a.buoc[2].nguoi && a.buoc[2].han && a.buoc[4].chiTiet === 'sau khi đã thực hiện', `Head duyệt: ${JSON.stringify(a.buoc[2])} · ${JSON.stringify(a.buoc[4])}`);
+    assert(a.buoc[2].nguoi && a.buoc[2].han && a.buoc[4].chiTiet === 'sau khi Head duyệt', `Head duyệt: ${JSON.stringify(a.buoc[2])} · ${JSON.stringify(a.buoc[4])}`);
+    /* TUYEN-1 (mockup v27 T2): Đã thực hiện ‖ Báo PH cùng lúc; các bước trước không. */
+    assert(a.buoc[3].cungLuc && a.buoc[4].cungLuc && !a.buoc[2].cungLuc && !a.buoc[1].cungLuc, `cùng lúc: ${a.buoc.map((x: any) => x.cungLuc).join(',')}`);
     assert(theoDoi(gvcn).find((r) => r.khoa === String(nhap.id))?.nhan.startsWith('Đang ở Head duyệt'), 'GVCN theo dõi: Đang ở Head duyệt');
     yc.duyetYeuCau(ql, mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id);
     const b = tuyen(ql, 'vi_pham', nhap.id);
     assert(ten(b) === 'GV ghi 1 vi phạm:xong → Xử lý vi phạm:xong → Head duyệt:xong → Đã thực hiện:dang → Báo PH:dang', `sau duyệt: ${ten(b)}`);
     assert(b.buoc[2].laToi && b.buoc[3].han, `Head = Bạn; hạn Đã thực hiện: ${JSON.stringify(b.buoc[3])}`);
+    assert(b.buoc[3].cungLuc && b.buoc[4].cungLuc, 'sau duyệt: Đã thực hiện ‖ Báo PH cùng lúc');
     /* Head làm bước giữa → theo dõi; GVCN đang giữ "Đã thực hiện" → rời Đang theo dõi (ở Của tôi). */
     assert(theoDoi(ql).some((r) => r.khoa === String(nhap.id)) && !theoDoi(gvcn).some((r) => r.khoa === String(nhap.id)), 'Head theo dõi · GVCN giữ bước');
   }));

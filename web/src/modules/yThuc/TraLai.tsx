@@ -23,6 +23,8 @@ export type TraLaiMo = { id: number; violationId: number | null; measureId: numb
 export type TraLaiView = {
   id: number; studentId: number; tenEm: string; violationId: number | null; measureId: number | null; nhanXuLy: string | null;
   lyDo: string; nguoiTra: { id: number; ten: string | null }; traLuc: string;
+  /** TUYEN-0: tuyến của lần xử lý có việc trả lại này. */
+  tuyen?: import('./kieu.ts').Tuyen | null;
   han: string; hanMacDinh: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut'; ketQua: string | null; nhanKetQua: string | null;
   traLoi: string | null; xongLuc: string | null; xongBoi: string | null; phuTrach: { id: number; ten: string | null }[];
   viPham: { id: number; ten: string; moTa: string; skill: string | null; occurredOn: string; classCode: string | null }[];
@@ -224,9 +226,9 @@ function DongVp({ x, dau, mo, cho, hn, traLaiDuoc, dangNhap, onBam, onNhap, onTr
   return (
     <li className={dau ? '' : 'border-t'} style={{ borderColor: 'var(--line)' }}>
       <button type="button" aria-expanded={mo} aria-controls={mo ? ma : undefined} onClick={onBam}
-        className="grid min-h-[44px] w-full appearance-none grid-cols-[84px_28px_minmax(0,1fr)_auto_16px] items-center gap-2 border-0 px-3 py-1.5 text-left font-[inherit] text-sm text-[color:var(--text)] hover:bg-[color:var(--accent-soft)] max-sm:grid-cols-[80px_26px_minmax(0,1fr)_16px]"
+        className="grid min-h-[44px] w-full appearance-none grid-cols-[84px_28px_minmax(0,1fr)_auto_16px] items-center gap-2 border-0 px-3 py-1.5 text-left font-[inherit] text-sm text-[color:var(--text)] hover:bg-[color:var(--accent-soft)] max-sm:grid-cols-[86px_26px_minmax(0,1fr)_16px]"
         style={mo ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : { background: 'transparent' }}>
-        <span className="text-[13px] font-medium tabular-nums text-dim">{shortDate(x.ngay, hn)}</span>
+        <span className="whitespace-nowrap text-[13px] font-medium tabular-nums text-dim">{shortDate(x.ngay, hn)}</span>
         <ChipMon skill={x.skill} />
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"><span className="min-w-0 break-words">{ten}</span>
           {cho ? <TheChoGv /> : x.daSua ? <span className="inline-flex h-5 items-center whitespace-nowrap rounded border px-1.5 text-xs text-dim" style={{ borderColor: 'var(--line-strong)' }}>{t('đã sửa')}</span> : null}</span>

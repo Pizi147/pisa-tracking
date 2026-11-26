@@ -22,7 +22,7 @@ export type DongTd = { loai: LoaiTd; refId: number; tieuDe: string; studentId: n
   phuTrach: string | null; han: string | null; quaHan: boolean; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; xongLuc: string | null };
 type TheoDoi = { nhom: { loai: LoaiTd; ten: string; mo: DongTd[]; vuaXong: DongTd[] }[] };
 export const khoaTd = (d: Pick<DongTd, 'loai' | 'refId'>) => `${d.loai}:${d.refId}`;
-const ICON: Record<LoaiTd, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc', tra_lai: 'y-thuc', van_hanh: 'van-hanh' };
+const ICON: Record<LoaiTd, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc', tra_lai: 'y-thuc', xu_ly: 'y-thuc', da_thuc_hien: 'y-thuc', van_hanh: 'van-hanh' };
 
 /**
  * TAB "ĐANG THEO DÕI" (GV-2, N58; mockup v22 G5 / G6 / G7a) — mọi vai có Công việc. GỌI `/my-work/theo-doi` CHỈ khi tab đang mở (không lúc mở trang, tab không số).

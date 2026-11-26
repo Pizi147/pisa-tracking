@@ -6,11 +6,12 @@ import { t } from '@shared/i18n/index.ts';
  * gạch chân chấm mảnh làm gợi ý bấm. Chỉ vẽ khi người xem có quyền (cờ máy chủ); không có quyền → nơi gọi vẽ ngày trơn.
  * `ten` = chữ ngày đọc cho trình đọc màn hình ("Sửa hạn 12/11/2026").
  */
-export const HanBam = forwardRef<HTMLButtonElement, { ten: string; onClick: () => void; children: ReactNode; className?: string }>(
-  function HanBam({ ten, onClick, children, className = '' }, ref) {
+export const HanBam = forwardRef<HTMLButtonElement, { ten: string; onClick: () => void; children: ReactNode; className?: string;
+  /** TUYEN-1 (chủ SP 26/11, C7): trong khối Phụ trách · Hạn — ngày nằm trong Ô BẤM viền mảnh (`.o-bam`), cùng kiểu ô Phụ trách. */ oBam?: boolean }>(
+  function HanBam({ ten, onClick, children, className = '', oBam }, ref) {
     return (
       <button ref={ref} type="button" aria-label={t('Sửa hạn {ngay}', { ngay: ten })} title={t('Sửa hạn')} onClick={onClick}
-        className={`inline-flex min-h-[44px] cursor-pointer items-center appearance-none p-0 underline decoration-dotted decoration-1 underline-offset-4 hover:decoration-solid focus-visible:outline-2 sm:min-h-0 ${className}`}>
+        className={oBam ? `o-bam han ${className}` : `inline-flex min-h-[44px] cursor-pointer items-center appearance-none p-0 underline decoration-dotted decoration-1 underline-offset-4 hover:decoration-solid focus-visible:outline-2 sm:min-h-0 ${className}`}>
         {children}
       </button>
     );

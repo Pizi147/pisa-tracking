@@ -175,7 +175,7 @@ export function docViec(loai: LoaiGiao, id: number): Viec {
 }
 
 /** 4.6: việc Xử lý vi phạm chưa có dòng (tính theo em) — tạo dòng rỗng trước lần ghi đầu (giao / hạn). TRONG tx. */
-function damBaoDong(loai: LoaiGiao, id: number): void {
+export function damBaoDong(loai: LoaiGiao, id: number): void {
   if (loai !== 'xu_ly') return;
   /* Dòng của đợt TRƯỚC (`xong` — đã xử lý; `bo` — em vào Lưu trữ) mà nay việc tính lại → dòng mới: không mang người giao / hạn / người theo dõi / lịch sử của đợt trước. */
   const cu = db().prepare('SELECT trang_thai FROM viec_xu_ly WHERE id = ?').get(id) as { trang_thai: string } | undefined;
@@ -767,7 +767,8 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
   const tenSo = (s: string | null) => (s && /^\d+$/.test(s) ? tenCua.get(Number(s)) ?? null : null);
   const h = hanCua(v);
   const doiDuoc = v.mo && coTheDoiNguoi(p, v);
-  const con = (db().prepare(`SELECT t.id, t.title, t.due_date, t.progress, u.full_name FROM tasks t LEFT JOIN users u ON u.id = t.assignee_user_id
+  /* TUYEN-1: Xử lý vi phạm — việc con chỉ của ĐỢT đang mở (dòng `viec_xu_ly` 'mo'); đợt trước / chưa có dòng → không hiện việc con cũ. */
+  const con = (loai === 'xu_ly' && r.trang_thai !== 'mo' ? [] : db().prepare(`SELECT t.id, t.title, t.due_date, t.progress, u.full_name FROM tasks t LEFT JOIN users u ON u.id = t.assignee_user_id
       WHERE t.cha_loai = ? AND t.cha_id = ? ORDER BY t.id`).all(loai, id) as any[]).map((t) => ({ id: t.id as number, ten: t.title as string, nguoi: t.full_name ?? null, han: t.due_date ?? null, tienDo: t.progress as string }));
   const gd = v.mo && doiDuoc ? timGhiDao(db(), LOAI_GHI_DAO, BANG[loai], id) : null;
   return {
