@@ -8,6 +8,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { DauQuaHan, LOP_MUC_HAN, Nhan } from '../../ui/Nhan.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
+import { HanBam } from '../../ui/HanBam.tsx';
 import { AddCoordinationForm } from './PhoiHopSosSection.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -189,13 +190,14 @@ const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
  * Hạn — luật hạn NHẸ HƠN (chủ SP 22/11): dd/mm/yyyy tô theo `mucHan` (chữ phụ · vàng còn ≤ 2 ngày · đỏ + nền đỏ nhạt quá hạn, không ⚠).
  * `soNgay`: dòng việc panel Công việc thêm "quá hạn n ngày"; hồ sơ HV / lớp chỉ tô màu ngày.
  */
-function HanEm({ han, soNgay = true }: { han: string; soNgay?: boolean }) {
+function HanEm({ han, soNgay = true, onSua }: { han: string; soNgay?: boolean; /** Chủ SP 26/11: có quyền sửa hạn → bấm ngày mở ô sửa (không mục "Sửa hạn…" ở ⋯). */ onSua?: () => void }) {
   const { homNay } = useNgayNghiepVu();
   if (!homNay) return null;
   const muc = mucHan(han, homNay);
+  const ve = <>{muc === 'qua' && <DauQuaHan />}{ngayHien(han)}</>;
   return (
     <span className={`mt-1 block whitespace-nowrap text-[13px] tabular-nums ${LOP_MUC_HAN[muc]}`}>
-      {muc === 'qua' && <DauQuaHan />}{ngayHien(han)}
+      {onSua ? <HanBam ten={ngayHien(han)} onClick={onSua}>{ve}</HanBam> : ve}
     </span>
   );
 }
@@ -241,7 +243,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>
         <DiemMotDong th={luot.the} />
-        {han && <HanEm han={han} />}
+        {han && <HanEm han={han} onSua={!tvv && a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />}
       </span>
       {mo === 'xac-nhan' ? (
         <span role="cell" className={`${O} ${gop ? 'col-span-2' : 'col-span-3'} max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} onTaiLai={doi} /></span>
@@ -272,8 +274,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
             <>
               {!gop && <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
               <span role="cell" className="relative py-2.5 text-right max-sm:col-start-2 max-sm:row-start-1 max-sm:pb-1">
-                <Menu3 a={a} tvv={tvv} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
-                  onHan={a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />
+                <Menu3 a={a} tvv={tvv} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()} />
               </span>
             </>
           )}
@@ -281,7 +282,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
       )}
       {mo === 'han' && a.han && a.hanMacDinh && (
         <span role="cell" className="col-span-full pb-3">
-          <DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={doi}
+          <DongHan gon moSan onDong={() => setMo(null)} han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={doi}
             onLuu={luuHan} />
         </span>
       )}
@@ -326,8 +327,8 @@ function OKetQua({ a, tvv, du, onDu, onGhi, anHan = false }: { a: CoordAction; t
 }
 
 /** ⋯ — việc ít dùng: Bỏ việc… · Đưa lại Cần xử lý (việc đã làm). TVV: Bỏ việc… của việc báo PH. */
-function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
-  a: CoordAction; tvv: boolean; canAct: boolean; onBo: () => void; onMoLai: () => void; onHan?: () => void;
+function Menu3({ a, tvv, canAct, onBo, onMoLai }: {
+  a: CoordAction; tvv: boolean; canAct: boolean; onBo: () => void; onMoLai: () => void;
 }) {
   /* Khôi phục: chỉ việc NGƯỜI DÙNG bỏ (việc hệ thống bỏ theo điểm không khôi phục tay). */
   const khoiPhuc = a.status === 'removed' && (COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(a.removeReasonCode ?? '');
@@ -335,7 +336,7 @@ function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
     ? (a.tvv?.coTheGhi && a.tvv.trangThai === 'mo' ? [[t('Bỏ việc…'), onBo]] : [])
     : !canAct ? [] : a.status === 'done' ? [[t('Đưa lại Cần xử lý'), onMoLai], [t('Bỏ việc…'), onBo]]
     : a.status === 'removed' ? (khoiPhuc ? [[t('Khôi phục'), onMoLai]] : [])
-    : [...(onHan ? [[t('Sửa hạn…'), onHan] as [string, () => void]] : []), [t('Bỏ việc…'), onBo]];
+    : [[t('Bỏ việc…'), onBo]];
   /* GD-4c: một menu thả = MenuDong (trước: role="menu" tự viết, không phím ↑ ↓ / Esc). */
   return <MenuDong lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
 }
@@ -624,7 +625,7 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
       </span>
       <ThanhBuoc o={td.o} aria={td.aria} doc={td.doc} className={`${td.o.length === 1 ? 'max-w-[100px]' : ''} [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-2`} />
       <span className={`[@container(max-width:760px)]:col-start-2 [@container(max-width:760px)]:row-start-1 [@container(max-width:760px)]:self-start [@container(max-width:760px)]:text-right`}>
-        {han ? <HanEm han={han} soNgay={false} /> : a.status === 'pending' && <span className="text-[13px] text-faint">{t('không hạn')}</span>}
+        {han ? <HanEm han={han} soNgay={false} onSua={a.status === 'pending' && a.hanMacDinh && lam ? () => setMo('han') : undefined} /> : a.status === 'pending' && <span className="text-[13px] text-faint">{t('không hạn')}</span>}
       </span>
       <span className={`flex flex-nowrap items-center justify-end gap-1.5 [@container(max-width:760px)]:col-span-full [@container(max-width:760px)]:row-start-3 [@container(max-width:760px)]:[&>.btn-primary]:flex-1 [@container(max-width:760px)]:[&>.btn-primary]:justify-center`}>
         {/* PTA rà #2000: nút TVV của Meeting đứng ở cột nút (nút chính trước), thẳng hàng "Xác nhận" các dòng trên. */}
@@ -632,8 +633,7 @@ function DongViecHoSo({ luot, a, vua, onVua, onChanged }: { luot: CoordTurn; a: 
         {a.status === 'pending' && lam && mo !== 'xac-nhan' && <button type="button" className="btn btn-primary btn-sm min-h-[44px] min-w-[96px] sm:min-h-[32px]" onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>}
         {a.status === 'pending' && lam === false && <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
         {a.status === 'done' && lam && mo !== 'xac-nhan' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
-        <Menu3 a={a} tvv={false} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
-          onHan={a.status === 'pending' && a.hanMacDinh && lam ? () => setMo('han') : undefined} />
+        <Menu3 a={a} tvv={false} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()} />
       </span>
       {mo === 'xac-nhan' && <span className="col-span-full"><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} onTaiLai={doi} /></span>}
       {mo === 'ghi' && <span className="col-span-full"><FormTvv a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, true)} /></span>}

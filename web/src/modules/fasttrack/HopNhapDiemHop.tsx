@@ -12,7 +12,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { DemChu } from '../../ui/KhungPanel.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MuiTenKyVong } from '../../ui/BieuTuong.tsx';
@@ -27,7 +27,7 @@ import { khoRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 import { laLR, lucNgan, lyDoHuyO, LichSuO, O_NGUOI_CHAM, oVangCua, type HopProps } from './HopNhapDiem.tsx';
 
-export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTiep = null, tiepEm = false, ketThuc = null, gvMacDinh = null, tuanXem = null }: HopProps) {
+export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTiep = null, tiepEm = false, ketThuc = null, gvMacDinh = null, tuanXem = null, thaoTac }: HopProps) {
   const { homNay } = useNgayNghiepVu();
   const { session } = useSession();
   const motO = laLR(cell.skill) || !!ctx.mt0;     // một ô: số câu (L/R) hoặc Band (MT0)
@@ -71,6 +71,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const [luuAnh, setLuuAnh] = useState<string | null>(null);
   const loiRef = useRef<HTMLDivElement>(null);
   const nutHetRef = useRef<HTMLButtonElement>(null);
+  /* Chủ SP 26/11: ⋯ ở đầu hộp có "Huỷ điểm" — hỏi MỘT dòng ở chân ("Huỷ điểm Listening · Minh Anh?" · Giữ · Huỷ điểm), rồi Hoàn tác 10 giây như đường cũ. */
+  const [hoiHuy, setHoiHuy] = useState(false);
+  const nutGiuRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (hoiHuy) nutGiuRef.current?.focus(); }, [hoiHuy]);
 
   const bangQd = useApi<BangQuyDoi>('/ref/bang-quy-doi').data;
   /* Lệnh điểm từ chữ đang gõ — cùng hàm với mọi nơi nhập. `o` = ô sai (0..3 tiêu chí / ô một, 4 = Band) để tô đỏ. */
@@ -205,7 +209,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     else luu(!vang && !!onTiep);
   };
   const phim = (e: React.KeyboardEvent) => {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.keyCode === 229) return;   // đang gõ chữ Việt (IME)
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing || e.keyCode === 229 || hoiHuy) return;   // đang gõ chữ Việt (IME) · đang hỏi Huỷ điểm (Enter trên nút = chính nút đó)
     const el = e.target as HTMLElement;
     if (el.tagName === 'BUTTON') return;                      // Enter trên nút = chính nút đó
     if (el.tagName === 'TEXTAREA' && !(e.ctrlKey || e.metaKey)) return;   // ô nhận xét: Enter xuống dòng, Ctrl / Cmd + Enter = nút chính
@@ -360,13 +364,15 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       <span className="flex-1" />
       <button ref={nutHetRef} type="button" className={`${nut} btn-primary`} onClick={ketThuc.nut?.onClick ?? onDong}>{ketThuc.nut?.nhan ?? t('Đóng')}</button>
     </>
+  ) : hoiHuy ? (
+    <>
+      <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{t('Huỷ điểm {skillLabel} · {tenHv}?', { skillLabel: skillLabel(cell.assessedSkill), tenHv: ctx.tenHv })}</span>
+      <button ref={nutGiuRef} type="button" className={nut} onClick={() => setHoiHuy(false)}>{t('Giữ')}</button>
+      <button type="button" className={`${nut} btn-danger`} onClick={() => { thaoTac?.huyDiem?.(); onDong(); }}>{t('Huỷ điểm')}</button>
+    </>
   ) : vang ? (
     <>
-      {/* Chủ SP 14/11 (rà #1563): ô đang Vắng — cùng dáng chân: ⋯ (Bỏ vắng khi gỡ được) · nút chính "Lưu điểm · đóng". */}
-      {cell.daChot!.goDuoc && (
-        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`}
-          muc={[{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }]} />
-      )}
+      {/* Chủ SP 14/11 (rà #1563) + 26/11: ô đang Vắng — chân chỉ còn nút chính "Lưu điểm · đóng"; ⋯ (Bỏ vắng khi gỡ được · Dời lịch · Huỷ điểm) ở đầu hộp. */}
       <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? dangLuuChu : t('Lưu điểm · đóng')}</button>}
@@ -374,21 +380,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   ) : (
     <>
       {onTiep && nhanTiep && <span className="ten-hv basis-full text-xs text-slate-400">{t('Tiếp: {x}', { x: nhanTiep })}</span>}
-      {/* GD-3 HOP-NHAP-GON (mockup v21 K2b): ngoài chỉ ⋯ · Vắng · nút chính; ⋯ = Lưu · đóng (thay "Lưu" ở lại khi có bài kế) · Khôi phục điểm · Bỏ vắng
-          (hai mục sau chỉ khi ô ở trạng thái đó). Không có bài kế: "Lưu" vẫn là nút chính như cũ. */}
-      {!daLuu && (
-        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`} muc={[
-          ...(onTiep ? [{ key: 'luu-dong', nhan: t('Lưu · đóng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => luu(false, true) }] : []),
-          ...(cell.diemHuy ? [{ key: 'khoi-phuc', nhan: CHU_THAO_TAC['khoi-phuc-diem'], tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ khoiPhuc: true }], onDong, 'khac') }] : []),
-          ...(boKhongDuThi ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : []),
-        ]} />
-      )}
-      {nhanVang && !daLuu && (
-        /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. Vắng kết thúc ô → sang bài tiếp. */
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
-          {dangLuu === 'khac' ? dangLuuChu : t('Vắng')}
-        </button>
-      )}
+      {/* Chủ SP 26/11: ⋯ (Vắng · Khôi phục điểm · Bỏ vắng · Dời lịch · Huỷ điểm) ở ĐẦU hộp; chân chỉ còn "Lưu · bài tiếp ›" + "Lưu · đóng" bên phải. */}
       <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {daLuu ? (
@@ -402,17 +394,34 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <>
           {!onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu')}</button>}
           {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(true)}>{dangLuu === 'tiep' ? dangLuuChu : tiepEm ? t('Lưu · em tiếp ›') : t('Lưu · bài tiếp ›')}</button>}
+          {onTiep && <button type="button" className={nut} disabled={busy} onClick={() => luu(false, true)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu · đóng')}</button>}
         </>
       )}
     </>
   );
 
+  /* Chủ SP 26/11: nút ⋯ ở đầu hộp — việc ít dùng của MỘT ô. Vắng · Bỏ vắng · Khôi phục là của chính hộp (cờ `cell`); Dời lịch · Huỷ điểm do nơi gọi báo
+     (`thaoTacKyNang`, cờ máy chủ — BPXL / người không có quyền thì mục ẩn). Hết bài / vừa lưu: không menu. */
+  const menuDau: MucMenu[] = (ketThuc || daLuu ? [] : [
+    ...(nhanVang ? [{ key: 'vang', nhan: t('Vắng'), onChon: () => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac') }] : []),
+    ...(vang ? (cell.daChot!.goDuoc ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : [])
+      : [
+        ...(cell.diemHuy ? [{ key: 'khoi-phuc', nhan: CHU_THAO_TAC['khoi-phuc-diem'], onChon: () => void gui([{ khoiPhuc: true }], onDong, 'khac') }] : []),
+        ...(boKhongDuThi ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : []),
+      ]),
+    ...(thaoTac?.doiLich ? [{ key: 'doi-lich', nhan: CHU_THAO_TAC['doi-lich'], onChon: () => { thaoTac.doiLich!(); onDong(); } }] : []),
+    ...(thaoTac?.huyDiem ? [{ key: 'huy-diem', nhan: CHU_THAO_TAC['huy-diem'], nguyHiem: true, onChon: () => setHoiHuy(true) }] : []),
+  ]).map((m) => ({ ...m, tat: busy, title: busy ? dangLuuChu : undefined }));
+  const nutBaCham = menuDau.length > 0 && !hoiHuy ? (
+    <MenuDong mat="⋯" nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: skillLabel(cell.skill), studentName: ctx.tenHv })} muc={menuDau}
+      lopNut="grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[16px] leading-none text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11" />
+  ) : null;
   const ten = `${skillLabel(cell.skill)} · ${ctx.luot}`;
   /* QC-Q82 ở MT cũ: phân công đã có trong phiên (0 request); tên GV phụ trách ô không có ở lưới → chỉ nói "Bạn nhập hộ". */
   const nhapHo = !!ctx.mtCu && !session?.assignments?.some((a) => a.classCode === ctx.lop && (a.skill === cell.skill || a.skill === cell.assessedSkill));
   return (
     <KhungHop anchor={anchor} ten={ten} phu={<>{[ctx.tenHv, ctx.lop].filter(Boolean).join(' · ')}{tuan && <> · <span className="tabular-nums">{tuan}</span></>}{nhapHo && <> · <b className="font-semibold text-soon">{t('Bạn nhập hộ')}</b></>}</>}
-      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={t('Bỏ điểm {skillLabel} · {tenHv}?', { skillLabel: skillLabel(cell.skill), tenHv: ctx.tenHv })} onDong={dong} onKeyDown={phim} chan={chan}>
+      nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={t('Bỏ điểm {skillLabel} · {tenHv}?', { skillLabel: skillLabel(cell.skill), tenHv: ctx.tenHv })} onDong={dong} onKeyDown={phim} chan={chan} menu={nutBaCham}>
       {ketThuc
         ? <p role="status" className="m-0 text-sm text-slate-200">{t('Đã xong phần của bạn · {phamVi}: đã lưu {n} bài', { phamVi: ketThuc.phamVi, n: ketThuc.daLuu })}</p>
         : than}
@@ -456,9 +465,11 @@ export function khungCuonCuaO(o: HTMLElement): HTMLElement | null {
  * về ô. Esc / bấm ra ngoài → `onDong` (bấm ra ngoài khi đã gõ thì giữ hộp, chặn cú bấm đó, hỏi Bỏ · Gõ tiếp — không mất chữ). Esc khi đã gõ (CA3-8): chân hộp thành câu
  * `cauBo` + Bỏ · Gõ tiếp (không hộp thứ hai); Esc lần nữa = Gõ tiếp.
  */
-function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, chan, children }: {
+function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, chan, menu, children }: {
   anchor: HTMLElement; ten: string; phu: ReactNode; nhanHop: string; daGo: boolean; cauBo: string; onDong: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void; chan: ReactNode; children: ReactNode;
+  /** Chủ SP 26/11: nút ⋯ của hộp, đứng ngay trước ✕ ở đầu hộp. */
+  menu?: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const goTiepRef = useRef<HTMLButtonElement>(null);
@@ -580,6 +591,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
             <div className="text-[14px] font-bold text-slate-100">{ten}</div>
             <div className="ten-hv mt-0.5 text-[13px] text-slate-400">{phu}</div>
           </div>
+          {menu}
           {/* GD-3 (mockup v21 K2b): ✕ ở đầu hộp — cùng đường với Esc (đã gõ thì hỏi bỏ chữ ở chân). */}
           <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[16px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
             onClick={() => { if (daGo) setHoi(true); else onDong(); }}>✕</button>

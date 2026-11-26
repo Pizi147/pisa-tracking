@@ -172,10 +172,9 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                 <CanLam>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="min-w-0 flex-1 max-sm:basis-full">
-                      <NhanSauThi s={data.sauThi} />
+                      <NhanSauThi s={data.sauThi} onHan={data.sauThi.coTheGiaHan ? () => setGiaHan(true) : undefined} />
                       {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: shortDate(data.sauThi.ngayThi, homNay) })}</span>}
                     </span>
-                    {data.sauThi.coTheGiaHan && <button type="button" className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
                     {/* SAU-THI-GON (chủ SP 21/11): em không thi → một bấm tại chỗ. */}
                     {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && <NutKhongThi cycleId={data.sauThi.cycleId} className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onDone={daDoi} />}
                     {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && (

@@ -190,7 +190,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
     const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
     /* LG-5c: `gvChamCot` (lựa chọn GV chấm đầu cột của người xem) không thuộc ảnh chụp refactor — bỏ khi băm. */
-    const bo = (x: any) => ({ ...x, gvChamCot: undefined });
+    const bo = (x: any) => ({ ...x, gvChamCot: undefined, quyen: undefined });   // HAN-HOP-DIEM (26/11): `quyen` (cờ ⋯ đầu hộp) cũng không thuộc ảnh chụp
     assert(bam(bo(cu)) === ANH_CHUP.tuan && bam(bo(moi)) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(bo(cu))} moi=${bam(bo(moi))}`);
     assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
     assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');

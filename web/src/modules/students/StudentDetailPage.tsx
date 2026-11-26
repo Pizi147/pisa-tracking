@@ -323,10 +323,7 @@ export default function StudentDetailPage() {
               {/* N48 (③ K9f): GV / GVCN lớp cũ xem chỉ đọc 30 ngày từ ngày em rời lớp. */}
               {lopCu && <Info>{t('Lớp cũ · chỉ xem')}</Info>}
               {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
-              {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
-              {data.sauThi?.coTheGiaHan && (
-                <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>
-              )}
+              {data.sauThi ? <NhanSauThi s={data.sauThi} onHan={data.sauThi.coTheGiaHan ? () => setGiaHan(true) : undefined} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
             </h1>
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
             <div className="ml-auto flex flex-wrap items-start gap-2">

@@ -24,6 +24,7 @@
  "web/src/modules/cham/PanelNhapDiemLop.tsx",
  "web/src/modules/cham/huyDiem.ts",
  "web/src/modules/cham/phienCham.ts",
+ "web/src/modules/cham/thaoTacO.tsx",
  "web/src/modules/cham/thongBaoVang.ts",
  "web/src/modules/classes/BanGiaoGvPanel.tsx",
  "web/src/modules/classes/BanGiaoPanel.tsx",
