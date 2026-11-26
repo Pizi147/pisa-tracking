@@ -1464,7 +1464,8 @@ export const TRAN_DONG: Record<string, number> = {
   /* GV-1 (N58): tab "Đang theo dõi" — đo 1–2 dòng (seed chưa có ai theo dõi) → đo + 50. ponytail: dòng tăng theo số việc từng theo dõi (đọc hết rồi lọc 7 ngày ở mã). */
   /* GV-2: ô giao việc đọc người có vai ở MỘT chi nhánh (seed MB 19), lọc tên không dấu ở JS — trần 40 (LIMIT SQL 300 cho bản chính). */
   'QL /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QL /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40,
-  'QL /my-work/theo-doi': 52, 'QT /my-work/theo-doi': 52, 'GVCN /my-work/theo-doi': 52, 'GVBM /my-work/theo-doi': 52, 'TVV /my-work/theo-doi': 52, 'CX /my-work/theo-doi': 52, 'ADMIN /my-work/theo-doi': 52,
+  /* TUYEN-0 (N72 ①): + một dòng một tuyến (tìm tuyến người xem đã làm bước / theo dõi việc N58 + dựng theo lô) — đo QL 55 (trước 52, câu 8 không đổi trần); ×3 (GV-1) 298 → trần 100 (100 × 3 + 60 ≥ 298). */
+  'QL /my-work/theo-doi': 100, 'QT /my-work/theo-doi': 100, 'GVCN /my-work/theo-doi': 100, 'GVBM /my-work/theo-doi': 100, 'TVV /my-work/theo-doi': 100, 'CX /my-work/theo-doi': 100, 'ADMIN /my-work/theo-doi': 100,
   /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
   'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -2301,6 +2302,12 @@ export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 d�
  * NHẸ HƠN PR-6: GET /students/:id/phoi-hop-sos có MỘT Meeting CX đã xác nhận (GVCN, em mới MB FT 101) — thêm câu lô `meeting_phan` (+1) và người giữ vai
  * (`nguoiGiuVai`, một câu mỗi request, chung với /my-work). Đo 23/11: 25 câu · 69 dòng → trần max(đo + 10, ⌈đo × 1,3⌉) câu, max(đo + 50, ⌈đo × 1,3⌉) dòng.
  */
+/**
+ * TUYEN-0 (N72): dựng tuyến theo LÔ — `mot`: GET /tuyen/:loai/:khoa (vi phạm · Phối hợp có Meeting); `panel`: trường `tuyen` thêm vào một đường panel
+ * (tìm khoá + dựng, đo ngoài request — đường thật dùng lại bộ nhớ phạm vi); `theoDoi`: phần tuyến của GET /my-work/theo-doi. Số câu không theo số tuyến
+ * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +6 · 39 · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉).
+ */
+export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 9 }, theoDoi: { cau: 12, dong: 180 } };
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 /** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */
