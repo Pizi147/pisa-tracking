@@ -161,7 +161,6 @@ const EN_B_WEB = {
   'Lý do không cần theo dõi': 'Reason to stop tracking',
   'Ví dụ: Em ốm cả tuần Test': 'E.g. Ill for the whole test week',
   'Tuần Test mới': 'New test week',
-  'Mặc định là tuần GV đề nghị. Tuần đã bắt đầu thì không chọn được.': 'Defaults to the week the teacher asked for. Weeks already started cannot be picked.',
   'Ví dụ: Đã chuyển sang lớp MB FT 102': 'E.g. Moved to class MB FT 102',
   'Gửi từ chối': 'Send decline',
   'Gửi trả lời': 'Send reply',

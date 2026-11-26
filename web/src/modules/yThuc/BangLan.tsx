@@ -196,7 +196,7 @@ export function OBaoPh({ b, homNay, tvv, moDu, onXemDu, onSuaHan }: {
         <span className="text-xs tabular-nums text-slate-400">
           {/* Chủ SP 26/11: bấm chính hạn để sửa (không nút "Sửa hạn"). */}
           {b.coTheSuaHan && onSuaHan ? <HanBam ten={ngay(b.han, homNay)} onClick={onSuaHan} className="max-sm:min-h-[44px]">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</HanBam> : t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}
-          {b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}
+          {tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}
         </span>
       )}
       {b.trangThai === 'xong' && tvv && <span className="text-xs text-slate-400">{t('TVV {ten}', { ten: tvv })}</span>}
@@ -234,7 +234,7 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
         {v.trangThai === 'mo' && (() => {
           const chu = t('hạn {ngay}', { ngay: ngay(v.han, homNay) });
           const the = 'rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2';
-          return v.coTheSuaHan && onSuaHan ? <HanBam ten={ngay(v.han, homNay)} onClick={onSuaHan} className={the}>{chu}</HanBam> : <span className={the}>{chu}</span>;
+          return v.coTheSuaHan && onSuaHan ? <HanBam ten={ngay(v.han, homNay)} onClick={onSuaHan}>{chu}</HanBam> : <span className={the}>{chu}</span>;
         })()}
       </div>
       {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${bacDu(dich(v.bo.nhan))}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}

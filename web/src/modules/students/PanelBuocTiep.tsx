@@ -135,9 +135,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[14px]">
       <span className="font-semibold text-slate-100"><span className="text-ok">✓</span> {dich(bt.daXong)}</span>
       {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: shortDate(bt.ngayThi, hn) })}</span>}
-      {!bt.chon && bt.daGiaHan && <span className="text-slate-400">· {t('đã gia hạn')}</span>}
       {/* OV-13q + chủ SP 26/11: bấm ngày hạn → hộp gia hạn nhỏ đè panel này (không đóng panel); không còn nút "Gia hạn". */}
-      {!bt.chon && bt.coTheGiaHan && bt.han && <HanBam ten={shortDate(bt.han, hn)} onClick={() => setGiaHan(true)} className="text-slate-400">· {t('hạn {ngay}', { ngay: shortDate(bt.han, hn) })}</HanBam>}
+      {!bt.chon && bt.coTheGiaHan && bt.han && <HanBam ten={shortDate(bt.han, hn)} onClick={() => setGiaHan(true)} className="text-slate-400">{t('hạn {ngay}', { ngay: shortDate(bt.han, hn) })}</HanBam>}
       <span className="flex-1" />
       {onSuaKetQua && bt.chon !== 'hoc_tiep' && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
       <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>

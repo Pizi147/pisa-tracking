@@ -491,7 +491,6 @@ export const EN_R1_EN = {
   'Final Test': 'Final Test',
   'Progress Test': 'Progress Test',
   /* CHU-GIAI (chủ SP 07/11): lưu ý cần thiết viết lại ngắn. */
-  'Để trống phần không đánh giá · không đổi điểm Test, mức SOS': 'Leave unassessed parts blank · does not change Test scores or SOS level',
   'Đổi tuần khai giảng không dời lịch MT của em đã có.': "Changing the start week does not move existing students' MT schedules.",
   'Hiện ở hồ sơ {n} em lớp {lop} · em chưa có Case kỹ năng này được mở Case mới': (b) => `Shows on the profiles of ${so(b.n, 'student', 'students')} in ${b.lop} · students without a case in this skill get a new one`,
 } satisfies Record<string, Dich>;
