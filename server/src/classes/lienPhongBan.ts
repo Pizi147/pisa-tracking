@@ -16,13 +16,13 @@
  * Không chặn, không làm chậm lệnh / lưu: chạy TRONG tx của nơi gọi, theo LÔ (số câu không theo số em).
  */
 import { DS_JSON, db, tx } from '../db.ts';
-import { hanChuNhat, tuanLich } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, hanChuNhat, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { badRequest, conflict, forbidden, nowIso } from '../util.ts';
-import type { Principal } from '../permissions.ts';
+import { can, type Principal } from '../permissions.ts';
 import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
-import { CON_VAI_BPXL, chonLanLuot, cvxlCuaLop, headCua, nhomVaiCn } from '../worklist/nguoiNhan.ts';
+import { CON_VAI_BPXL, chonLanLuot, headCua, nhomVaiCn } from '../worklist/nguoiNhan.ts';
 import { chotLeadBaoPh } from '../yThuc/baoPhTvv.ts';
 import { HL_NHAN_TIN, baoTheoDoi, docViec, ghiLan, laLeadBpxl, theoDoiVaiBaoPh, vaiQuanLy, xemGiaoViec, type KhoiGiaoViec } from '../worklist/giaoViec.ts';
 
@@ -167,16 +167,21 @@ export function gopFinalVaoChuyenLop(phoiHopId: number, studentId: number, nhanF
  * Người nhận việc BPXL của lớp (N74 / N77): CVXL nhận lớp → BPXL gán chi nhánh lớp ít việc mở nhất → Head. Một bộ chọn cho MỘT lô (rà PTA #2266): đếm việc mở
  * một lần mỗi chi nhánh rồi chia LẦN LƯỢT (`chonLanLuot`, cộng dần), CVXL lớp đọc một lần mỗi lớp (`cvSan` = đã đọc sẵn cả lô).
  */
-export function boChonNhanTin(cvSan?: ReadonlyMap<number, number>): (classId: number, cn: number | null) => number | null {
-  const cv = new Map<number, number | null>(cvSan ?? []);
+export function boChonNhanTin(cvSan: ReadonlyMap<number, number>): (classId: number, cn: number | null) => number | null {
   const lanLuot = new Map<number, () => number | null>();
   return (classId, cn) => {
-    if (!cv.has(classId)) cv.set(classId, cvSan ? null : cvxlCuaLop(classId));
-    const c = cv.get(classId);
+    const c = cvSan.get(classId);
     if (c) return c;
     if (cn && !lanLuot.has(cn)) lanLuot.set(cn, chonLanLuot(nhomVaiCn('scheduler', cn)));
     return (cn ? lanLuot.get(cn)!() : null) ?? headCua(cn);
   };
+}
+
+/** CVXL đã nhận các lớp (N77) — còn hoạt động + còn vai BPXL; MỘT câu cho cả lô (rà PTA #2266 P2-3 — không một câu mỗi lớp). */
+export function cvxlCacLop(ids: readonly number[]): Map<number, number> {
+  if (!ids.length) return new Map();
+  return new Map((db().prepare(`SELECT l.class_id AS c, l.user_id AS u FROM lop_xep_lich l JOIN users u ON u.id = l.user_id WHERE l.class_id IN (${DS_JSON})
+      AND u.status = 'active' AND u.deleted_at IS NULL AND ${CON_VAI_BPXL('l.user_id')}`).all(J([...new Set(ids)])) as { c: number; u: number }[]).map((r) => [r.c, r.u]));
 }
 
 /** TRONG tx: một việc Nhận thông tin mới của lớp (hạn Chủ nhật từ hôm nay). */
@@ -191,9 +196,9 @@ function taoViec(loai: LoaiNhanTin, lop: { id: number; branch_id: number | null 
  */
 export function chotNguoiNhanTin(ids: readonly number[], moi?: number | null): void {
   if (!ids.length) return;
-  const chon = boChonNhanTin();
-  const ghi = (db().prepare(`SELECT id, class_id, branch_id FROM viec_nhan_tin WHERE id IN (${DS_JSON})`).all(J(ids)) as any[])
-    .map((v) => [v.id, moi ?? chon(v.class_id, v.branch_id ?? null)]);
+  const vs = db().prepare(`SELECT id, class_id, branch_id FROM viec_nhan_tin WHERE id IN (${DS_JSON})`).all(J(ids)) as any[];
+  const chon = boChonNhanTin(moi != null ? new Map() : cvxlCacLop(vs.map((v) => v.class_id)));
+  const ghi = vs.map((v) => [v.id, moi ?? chon(v.class_id, v.branch_id ?? null)]);
   db().prepare(`UPDATE viec_nhan_tin SET nguoi_luat = (SELECT json_extract(j.value, '$[1]') FROM json_each(?1) j WHERE json_extract(j.value, '$[0]') = viec_nhan_tin.id)
       WHERE id IN (SELECT json_extract(value, '$[0]') FROM json_each(?1))`).run(J(ghi));
 }
@@ -207,12 +212,36 @@ export function nhanTinHetHieuLuc(userId: number): void {
     .all(userId) as { id: number }[]).map((r) => r.id));
 }
 
-/** GVCN đang hiệu lực của các lớp — một câu (phụ trách chính của tuyến: Chuyển lớp = GVCN lớp cũ · Đổi GV = GVCN lớp; không có → Head). */
-function gvcnCacLop(ids: readonly number[]): Map<number, number> {
-  if (!ids.length) return new Map();
-  return new Map((db().prepare(`SELECT class_id AS c, MIN(user_id) AS u FROM teacher_assignments WHERE class_id IN (${DS_JSON}) AND is_core = 1 AND status = 'active'
-      AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) GROUP BY class_id`).all(J([...new Set(ids)]), demoToday(), demoToday()) as { c: number; u: number }[])
-    .map((r) => [r.c, r.u]));
+/**
+ * N73 ④ — PHỤ TRÁCH CHÍNH của tuyến, MỘT hàm cho nơi ghi (người theo dõi) và Tuyến (đứng tên): GVCN đang hiệu lực của lớp (nhiều GVCN → phân công `id` nhỏ nhất,
+ * như `GVCN_SQL` của tuyến) · không có → MỘT Head chi nhánh CỦA LỚP ĐÓ (`headCua`). Chuyển lớp = lớp nguồn · Đổi GV = lớp. Một câu (+ một câu tên Head khi cần).
+ */
+/** Câu con của quy tắc phụ trách chính: GVCN đang hiệu lực của lớp `c` (phân công `id` nhỏ nhất) → `[id, tên]` · `?2` = hôm nay. Tuyến đọc trong câu dựng tuyến. */
+export const GV_CHINH_SQL = (c: string) => `(SELECT json_array(ta.user_id, gu.full_name) FROM teacher_assignments ta JOIN users gu ON gu.id = ta.user_id
+    WHERE ta.class_id = ${c} AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?2 AND (ta.effective_to IS NULL OR ta.effective_to >= ?2) ORDER BY ta.id LIMIT 1)`;
+/** Phần còn lại của quy tắc: GVCN (json của `GV_CHINH_SQL`) → không có: MỘT Head chi nhánh của lớp đó (`headCua`; tên do nơi gọi điền khi cần). */
+export function chinhTuGv(gv: string | null, cnLop: number | null): { id: number; ten: string | null } | null {
+  const g = gv ? JSON.parse(gv) as [number, string] : null;
+  if (g) return { id: g[0], ten: g[1] };
+  const h = headCua(cnLop);
+  return h ? { id: h, ten: null } : null;
+}
+export function phuTrachChinh(ids: readonly number[]): Map<number, { id: number; ten: string } | null> {
+  const ra = new Map<number, { id: number; ten: string } | null>();
+  if (!ids.length) return ra;
+  const rows = db().prepare(`SELECT c.id, c.branch_id, ${GV_CHINH_SQL('c.id')} AS gv FROM classes c WHERE c.id IN (SELECT value FROM json_each(?1))`)
+    .all(J([...new Set(ids)]), demoToday()) as { id: number; branch_id: number | null; gv: string | null }[];
+  const thieu: [number, number][] = [];
+  for (const r of rows) {
+    const c = chinhTuGv(r.gv, r.branch_id);
+    if (c?.ten != null) ra.set(r.id, { id: c.id, ten: c.ten });
+    else if (c) thieu.push([r.id, c.id]); else ra.set(r.id, null);
+  }
+  if (thieu.length) {
+    const ten = new Map((db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(J([...new Set(thieu.map((x) => x[1]))])) as any[]).map((u) => [u.id as number, u.full_name as string]));
+    for (const [c, h] of thieu) ra.set(c, { id: h, ten: ten.get(h) ?? '' });
+  }
+  return ra;
 }
 
 /**
@@ -256,10 +285,11 @@ function dongBoNhanTinLenh(ls: Lenh[], boi: number | null, homNay: string): void
   const dongViec = new Set<number>(); const mau: [number, string][] = [];
   const them: [number, number, string][] = [];   // việc · lệnh · mẫu
   const theoDoi = new Map<number, Set<number>>();
-  const cvCua = new Map<number, number | null>();
   const tinLo = boTin(boi);
-  const chon = boChonNhanTin();
-  let gvcn: Map<number, number> | null = null;   // phụ trách chính (GVCN lớp nguồn) — đọc MỘT lần khi có dòng mới
+  /* Đọc lười, MỘT lần cho cả lô (chỉ khi có dòng mới): CVXL lớp đích + lớp nguồn (một câu) · phụ trách chính của lớp nguồn (một câu). */
+  let cv: Map<number, number> | null = null;
+  let chon: ReturnType<typeof boChonNhanTin> | null = null;
+  let chinhCua: ReturnType<typeof phuTrachChinh> | null = null;
   for (const l of ls) {
     const t = trangLenh(l, homNay);
     const d = t === 'sinh' ? l.lop_dich_id : null;
@@ -288,17 +318,17 @@ function dongBoNhanTinLenh(ls: Lenh[], boi: number | null, homNay: string): void
     }
     if (!d || hl.some((y) => y.class_id === d)) continue;
     let vid = mo.get(d);
+    cv ??= cvxlCacLop([...dich, ...ls.map((x) => x.lop_nguon_id)]);
+    chon ??= boChonNhanTin(cv);
     if (!vid) { vid = taoViec('chuyen_lop', lop.get(d), boi, chon); mo.set(d, vid); }
     them.push([vid, l.id, moc]);
     const td = theoDoi.get(vid) ?? theoDoi.set(vid, new Set()).get(vid)!;
     td.add(l.nguoi_ra_lenh);
-    if (!cvCua.has(l.lop_nguon_id)) cvCua.set(l.lop_nguon_id, cvxlCuaLop(l.lop_nguon_id));   // một câu mỗi lớp nguồn (lô cả lớp: một)
-    const cvNguon = cvCua.get(l.lop_nguon_id);   // N77: CVXL lớp nguồn chỉ theo dõi
+    const cvNguon = cv.get(l.lop_nguon_id);   // N77: CVXL lớp nguồn chỉ theo dõi
     if (cvNguon) td.add(cvNguon);
-    /* N73 ④: phụ trách chính của tuyến (GVCN lớp cũ → Head) theo dõi — tuyến Chuyển lớp ở Đang theo dõi của họ tới khi xong. */
-    gvcn ??= gvcnCacLop(ls.map((x) => x.lop_nguon_id));
-    if (!gvcn.has(l.lop_nguon_id)) gvcn.set(l.lop_nguon_id, headCua(lop.get(d)?.branch_id ?? null) ?? 0);   // không GVCN → Head (nhớ theo lớp nguồn — không một lần mỗi em)
-    const chinh = gvcn.get(l.lop_nguon_id) || null;
+    /* N73 ④: phụ trách chính của tuyến (GVCN lớp cũ → Head chi nhánh lớp cũ) theo dõi việc — Tuyến / panel chỉ cho họ thấy em của lớp mình (rà PTA #2266 P2-1). */
+    chinhCua ??= phuTrachChinh(ls.map((x) => x.lop_nguon_id));
+    const chinh = chinhCua.get(l.lop_nguon_id)?.id ?? null;
     if (chinh) td.add(chinh);
   }
   tinLo.gui();
@@ -329,9 +359,7 @@ export function sinhNhanTinDoiGv(p: Principal, ds: readonly { lop: { id: number;
   const co = ds.filter((x) => x.doi.length);
   if (!co.length) return;
   const conn = db();
-  const cv = new Map((conn.prepare(`SELECT l.class_id AS c, l.user_id AS u FROM lop_xep_lich l JOIN users u ON u.id = l.user_id WHERE l.class_id IN (${DS_JSON})
-      AND u.status = 'active' AND u.deleted_at IS NULL AND ${CON_VAI_BPXL('l.user_id')}`).all(J(co.map((x) => x.lop.id))) as { c: number; u: number }[]).map((r) => [r.c, r.u]));
-  const chon = boChonNhanTin(cv);   // N74: chia lần lượt trong lô (cộng dần)
+  const chon = boChonNhanTin(cvxlCacLop(co.map((x) => x.lop.id)));   // N74: chia lần lượt trong lô (cộng dần)
   const nguoi = (x: (typeof co)[number]) => chon(x.lop.id, x.lop.branch_id);
   const luc = nowIso();
   const viec = conn.prepare(`INSERT INTO viec_nhan_tin (loai, class_id, branch_id, trang_thai, han, nguoi_luat, tao_boi, tao_luc)
@@ -341,10 +369,10 @@ export function sinhNhanTinDoiGv(p: Principal, ds: readonly { lop: { id: number;
   conn.prepare(`INSERT INTO viec_nhan_tin_dong (viec_id, doi_id, mau) SELECT json_extract(j.value, '$[0]'), json_extract(j.value, '$[1]'), json_extract(j.value, '$[2]') FROM json_each(?) j WHERE true`)
     .run(J(co.flatMap((x) => x.doi.map((d) => [vid.get(x.lop.id), d.id, d.hieuLuc]))));
   /* Người lưu + phụ trách chính (GVCN lớp → Head — N73 ④) theo dõi tuyến Đổi GV — một câu. */
-  const gv = gvcnCacLop(co.map((x) => x.lop.id));
+  const gv = phuTrachChinh(co.map((x) => x.lop.id));
   theoDoiNhanTinLo(co.flatMap((x) => {
     const v = vid.get(x.lop.id)!;
-    const chinh = gv.get(x.lop.id) ?? headCua(x.lop.branch_id);
+    const chinh = gv.get(x.lop.id)?.id ?? null;
     return [[v, p.userId], ...(chinh ? [[v, chinh]] : [])] as [number, number][];
   }), p.userId);
 }
@@ -394,12 +422,17 @@ export function xemNhanTin(p: Principal, id: number): NhanTinView {
   const v = docViec('nhan_tin', id);
   const r = v.row;
   const homNay = demoToday();
-  const em: DongEmNhanTin[] = r.loai !== 'chuyen_lop' ? [] : (db().prepare(`SELECT d.lenh_id, l.student_id, s.full_name, l.lop_nguon_id, cn.code AS nguon, cn.is_fast_track AS nguon_ft,
+  /* Rà PTA #2266 P2-1: người giữ / làm hộ / BPXL (xếp lịch mọi CN — N77) / người xem được lớp đích đọc cả bảng; người chỉ theo dõi (GVCN lớp nguồn — phụ trách chính,
+     người ra lệnh) chỉ thấy em của lệnh liên quan tới mình — không lộ tên em lớp khác cùng chuyển vào lớp này. */
+  const xemHet = coTheLam(p, v) || p.roleKeys.includes('scheduler') || can(p, PERMISSIONS.STUDENT_VIEW, { classId: r.class_id });
+  const lopToi = xemHet ? null : new Set((db().prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND is_core = 1 AND status = 'active'`).all(p.userId) as any[]).map((x) => x.class_id as number));
+  const em: DongEmNhanTin[] = r.loai !== 'chuyen_lop' ? [] : (db().prepare(`SELECT d.lenh_id, l.student_id, s.full_name, l.lop_nguon_id, l.nguoi_ra_lenh, cn.code AS nguon, cn.is_fast_track AS nguon_ft,
         l.lop_dich_id, cd.code AS dich, cd.is_fast_track AS dich_ft, l.tuan_bat_dau, l.trang_thai, l.huong, l.boi_canh, d.mau,
         (SELECT json_group_array(json_object('no', a.attempt_no, 'tuan', rp.week_start)) FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
           WHERE a.student_id = l.student_id AND a.status = 'planned' AND a.kind = 'mock' AND a.class_id = l.lop_nguon_id) AS mt
       FROM viec_nhan_tin_dong d JOIN lenh_chuyen_lop l ON l.id = d.lenh_id JOIN students s ON s.id = l.student_id AND s.archived_at IS NULL
-      JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id WHERE d.viec_id = ? AND ${CON_DONG('d')} ORDER BY s.full_name, d.id`).all(id) as any[]).map((x) => {
+      JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id WHERE d.viec_id = ? AND ${CON_DONG('d')} ORDER BY s.full_name, d.id`).all(id) as any[])
+    .filter((x) => !lopToi || x.nguoi_ra_lenh === p.userId || lopToi.has(x.lop_nguon_id)).map((x) => {
     const kieu = x.boi_canh === 'cuoi-khoa' ? 'o_lai' : x.nguon_ft && !x.dich_ft ? 'huy' : x.nguon_ft ? 'di_theo' : 'o_lai';
     return {
       lenhId: x.lenh_id, studentId: x.student_id, ten: x.full_name, lopCu: { id: x.lop_nguon_id, code: x.nguon }, lopMoi: x.lop_dich_id ? { id: x.lop_dich_id, code: x.dich } : null,

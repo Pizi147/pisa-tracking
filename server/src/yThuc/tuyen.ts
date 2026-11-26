@@ -23,6 +23,7 @@ import { trangThaiYThuc } from './trangThai.ts';
 import { xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
 import { luatMeeting } from '../worklist/giaoViec.ts';
+import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
 import { conVaiO as giuVaiO, headCua } from '../worklist/nguoiNhan.ts';
 
 /* LPB-0 (N73 ④, 4.7): + `chuyen_lop` khoá = id lệnh chuyển lớp (một em) · `doi_gv` khoá = id việc Nhận thông tin · Đổi GV (một lần lưu × lớp — không em). */
@@ -451,21 +452,16 @@ function dungCapBac(ids: number[], homNay: string): TuyenNoi[] {
 
 /* ---------------------------------------------------------------- LPB-0 (N73, 4.7): tuyến Chuyển lớp · Đổi GV */
 
-/** Câu con: GVCN đang hiệu lực của lớp `c` → `[id, tên]`. `?2` = hôm nay. */
-const GVCN_LOP_SQL = (c: string) => `(SELECT json_array(ta.user_id, gu.full_name) FROM teacher_assignments ta JOIN users gu ON gu.id = ta.user_id WHERE ta.class_id = ${c}
-    AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?2 AND (ta.effective_to IS NULL OR ta.effective_to >= ?2) ORDER BY ta.id LIMIT 1)`;
+/** Phụ trách chính (quy tắc chung `chinhTuGv`) — tên Head lùi lấy từ danh sách người giữ vai đã đọc (0 câu). */
+const chinhTuyen = (gv: string | null, cn: number | null): { id: number; ten: string } | null => {
+  const c = chinhTuGv(gv, cn);
+  return c ? { id: c.id, ten: c.ten ?? nguoiVai().find((y) => y.u === c.id)?.ten ?? '' } : null;
+};
 /** Câu con json: việc Nhận thông tin (BPXL) theo điều kiện trên dòng `d` (viec_nhan_tin_dong). */
 const NHAN_TIN_JSON = (dk: string) => `json((SELECT json_group_array(json_object('id', v.id, 'tt', v.trang_thai, 'pt', v.phu_trach_id, 'ptTen', pu.full_name, 'nl', v.nguoi_luat,
     'nlTen', nu_.full_name, 'han', COALESCE(v.han_chon, v.han), 'xongBoi', v.xong_boi, 'xongTen', xu_.full_name, 'xongLuc', v.xong_luc, 'boLuc', v.bo_luc))
   FROM viec_nhan_tin v LEFT JOIN users pu ON pu.id = v.phu_trach_id LEFT JOIN users nu_ ON nu_.id = v.nguoi_luat LEFT JOIN users xu_ ON xu_.id = v.xong_boi
   WHERE v.id IN (SELECT d.viec_id FROM viec_nhan_tin_dong d WHERE ${dk} AND COALESCE(d.mau, '') != 'x')))`;
-/** Phụ trách chính: GVCN của lớp (json [id, tên]) → Head chi nhánh. */
-const chinhCua = (gv: string | null, cn: number | null): { id: number; ten: string } | null => {
-  const g = gv ? JSON.parse(gv) as [number, string] : null;
-  if (g) return { id: g[0], ten: g[1] };
-  const h = head(cn)[0];
-  return h ? { id: h.u, ten: h.ten } : null;
-};
 /** Bước "Nhận thông tin (BPXL)" của một việc — một người giữ (N74). */
 const buocNhanTin = (n: any, khoa: string): BuocNoi => {
   const viec: ViecBuoc = { loai: 'nhan_tin', id: n.id };
@@ -481,14 +477,14 @@ function dungChuyenLop(ids: number[], homNay: string): TuyenNoi[] {
   if (!ids.length) return [];
   const rows = db().prepare(
     `SELECT l.id, l.lop_nguon_id, l.lop_dich_id, l.tuan_bat_dau, l.trang_thai, l.nguoi_ra_lenh, l.ngay_ra_lenh, l.tao_luc, l.han_gvcn, l.xac_nhan_boi, l.xac_nhan_luc,
-            nu.full_name AS ra_ten, xu.full_name AS xn_ten, cn.code AS nguon, cn.branch_id AS nguon_cn, cd.code AS dich, ${GVCN_LOP_SQL('l.lop_nguon_id')} AS gv_nguon,
+            nu.full_name AS ra_ten, xu.full_name AS xn_ten, cn.code AS nguon, cn.branch_id AS nguon_cn, cd.code AS dich, ${GV_CHINH_SQL('l.lop_nguon_id')} AS gv_nguon,
             ${EM_COT}, ${BAO_PH_JSON('b.lenh_chuyen_id = l.id')} AS bp, ${NHAN_TIN_JSON('d.lenh_id = l.id')} AS nt
        FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id LEFT JOIN users nu ON nu.id = l.nguoi_ra_lenh
        LEFT JOIN users xu ON xu.id = l.xac_nhan_boi JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id
       WHERE l.id IN (SELECT value FROM json_each(?1))`,
   ).all(JSON.stringify(ids), homNay) as any[];
   return rows.map((r) => {
-    const chinh = chinhCua(r.gv_nguon, r.nguon_cn ?? null);
+    const chinh = chinhTuyen(r.gv_nguon, r.nguon_cn ?? null);   // N73 ④: cùng quy tắc với nơi ghi người theo dõi (lienPhongBan), đọc trong câu dựng tuyến
     const t: TuyenNoi = { loai: 'chuyen_lop', khoa: String(r.id), tieuDe: `Chuyển lớp · ${r.nguon}${r.dich ? ` → ${r.dich}` : ''}`, em: { id: r.sid, ten: r.em_ten, lop: r.lop ?? null },
       chiXem: !!r.archived_at, buoc: [], luc: r.tao_luc, tvv: r.tvv ?? null, cn: r.cn ?? null, lop: { id: r.lop_nguon_id, code: r.nguon }, chinh, lo: `${r.lop_nguon_id}:${r.ngay_ra_lenh}` };
     const huy = r.trang_thai === 'huy';
@@ -515,7 +511,7 @@ function dungChuyenLop(ids: number[], homNay: string): TuyenNoi[] {
 function dungDoiGv(ids: number[], homNay: string): TuyenNoi[] {
   if (!ids.length) return [];
   const rows = db().prepare(
-    `SELECT v.id, v.class_id, c.code, c.branch_id AS cn, v.tao_boi, tu.full_name AS tao_ten, v.tao_luc, ${GVCN_LOP_SQL('v.class_id')} AS gv, ${NHAN_TIN_JSON('d.viec_id = v.id')} AS nt,
+    `SELECT v.id, v.class_id, c.code, c.branch_id AS cn, v.tao_boi, tu.full_name AS tao_ten, v.tao_luc, ${GV_CHINH_SQL('v.class_id')} AS gv, ${NHAN_TIN_JSON('d.viec_id = v.id')} AS nt,
             json((SELECT json_group_array(json_object('id', bg.id, 'tt', bg.trang_thai, 'lam', bg.nguoi_lam, 'lamTen', lu.full_name, 'han', bg.han, 'xongBoi', bg.xong_boi, 'xongTen', bx.full_name,
               'xongLuc', bg.xong_luc)) FROM ban_giao_gv bg LEFT JOIN users lu ON lu.id = bg.nguoi_lam LEFT JOIN users bx ON bx.id = bg.xong_boi
               WHERE bg.id IN (SELECT m.ban_giao_id FROM ban_giao_gv_mon m JOIN viec_nhan_tin_dong d ON d.doi_id = m.doi_id WHERE d.viec_id = v.id))) AS bg
@@ -523,7 +519,7 @@ function dungDoiGv(ids: number[], homNay: string): TuyenNoi[] {
       WHERE v.id IN (SELECT value FROM json_each(?1)) AND v.loai = 'doi_gv'`,
   ).all(JSON.stringify(ids), homNay) as any[];
   return rows.map((r) => {
-    const chinh = chinhCua(r.gv, r.cn ?? null);
+    const chinh = chinhTuyen(r.gv, r.cn ?? null);
     const t: TuyenNoi = { loai: 'doi_gv', khoa: String(r.id), tieuDe: `Đổi GV · ${r.code}`, em: null, chiXem: false, buoc: [], luc: r.tao_luc, tvv: null, cn: r.cn ?? null,
       lop: { id: r.class_id, code: r.code }, chinh };
     t.buoc.push(buoc({ khoa: 'luu', ten: 'Lưu phân công', trangThai: 'xong', nguoi: r.tao_ten ?? null, ngay: ngay10(r.tao_luc), ids: r.tao_boi ? [r.tao_boi] : [], lam: r.tao_boi ? [r.tao_boi] : [] }));
@@ -561,7 +557,9 @@ const theoDoiTayCua = (p: Principal): Set<string> => nho(`tuyen:td:${p.userId}`,
 
 /** Có mặt trong tuyến: giữ / làm / nhận một bước (bước ○ giữ theo VAI cả chi nhánh không tính — P2-6) hoặc theo dõi việc N58 của tuyến; còn vai ở chi nhánh em. */
 const coMat = (p: Principal, t: TuyenNoi) => conVaiO(p, t.cn)
-  && (t.chinh?.id === p.userId || t.buoc.some((b) => (b.ids.includes(p.userId) && !(b.vai && b.trangThai === 'cho')) || (b.viec && theoDoiTayCua(p).has(`${b.viec.loai}:${b.viec.id}`))));
+  && (t.chinh?.id === p.userId || t.buoc.some((b) => (b.ids.includes(p.userId) && !(b.vai && b.trangThai === 'cho'))
+    /* Rà PTA #2266 P2-1: theo dõi việc Nhận thông tin (cả lớp đích, nhiều em) KHÔNG cho thấy tuyến từng em — chỉ người giữ / làm bước / phụ trách chính của chính em đó. */
+    || (b.viec && b.viec.loai !== 'nhan_tin' && theoDoiTayCua(p).has(`${b.viec.loai}:${b.viec.id}`))));
 /** C3: khung tuyến — xem được Ý thức em (quyền sẵn có) hoặc có mặt trong tuyến (BPXL chỉ khi có mặt). */
 /* LPB-0: tuyến của lớp (Đổi GV) — người xem được lớp (Head / GV lớp / BPXL) thấy khung. */
 const xemKhung = (p: Principal, t: TuyenNoi) => (t.em ? xemYThucHv(p, t.em.id) : !!t.lop && (can(p, PERMISSIONS.STUDENT_VIEW, { classId: t.lop.id }) || p.roleKeys.includes('scheduler')))

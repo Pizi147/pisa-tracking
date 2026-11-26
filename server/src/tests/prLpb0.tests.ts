@@ -21,7 +21,7 @@ export async function runPrLpb0Tests(t: any) {
   const xoaHv: any = await import('../students/xoaHocVien.ts');
   const { migratePrLpb0 } = await import('../migrate/prLpb0.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+  const { TRAN_GHI_LO, TRAN_TUYEN } = await import('./tocDoDuong.ts');
   const xl: any = await import('../classes/xepLichLop.ts');
   const fs: any = await import('node:fs');
   const path: any = await import('node:path');
@@ -422,5 +422,35 @@ export async function runPrLpb0Tests(t: any) {
     const ds = [chon(), chon(), chon(), chon()];
     assert(ds.join() === [a, b, a, b].join(), ds.join());
     assert(soCauSql() - s0 === 1, `một câu đếm: ${soCauSql() - s0}`);
+  }));
+
+  check('LPB-19 · (rà P2-1, P2-4) hai lớp nguồn A, B cùng chuyển vào X: GVCN lớp A (phụ trách chính, theo dõi việc X) chỉ thấy em lớp A ở panel, không mở được tuyến em lớp B, Đang theo dõi không có em B · đo theo dõi cả Chuyển lớp + Đổi GV', () => thu(() => {
+    const { nguon: A, dich: X } = dung();
+    const B = lop('FOU', 8); gan(B, GV[2], null, true); xoaNho();
+    const [la] = ra(A, X, [em(A)]);
+    const [lb] = ra(B, X, [em(B)]);
+    const nt = ntCua(X)[0];
+    assert(nt.so === 2, `một việc lớp đích, 2 em: ${JSON.stringify(nt)}`);
+    const gA = loadPrincipal(GV[0]);
+    assert(get(`SELECT 1 FROM viec_theo_doi WHERE loai = 'nhan_tin' AND ref_id = ? AND user_id = ?`, nt.id, GV[0]), 'GVCN lớp A theo dõi');
+    const xem = lpb.xemNhanTin(gA, nt.id);
+    assert(xem.em.length === 1 && xem.em[0].lenhId === la, `panel GVCN A: ${JSON.stringify(xem.em.map((x: any) => x.lenhId))}`);
+    assert(ma(() => tuyen.dungTuyen(gA, { loai: 'chuyen_lop', khoa: String(lb) })) === 404, 'tuyến em lớp B: 404');
+    assert(tuyen.dungTuyen(gA, { loai: 'chuyen_lop', khoa: String(la) }).phuTrachChinh, 'tuyến em lớp A: thấy');
+    /* Đổi GV ở lớp A có tích bàn giao → GVCN lớp A (phụ trách chính) theo dõi cả tuyến Đổi GV. */
+    gan(A, GV[0], 'reading', false); gan(A, GV[1], 'listening', false); xoaNho();
+    const slots = all(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, A).map((r) => ({ userId: r.user_id, skill: r.skill, isCore: r.is_core === 1 }));
+    pc.luuPhanCong(P.mbManager, { lop: [{ classId: A, slots: slots.filter((x) => x.skill !== 'listening').concat([{ userId: GV[2], skill: 'listening', isCore: false }]) }],
+      hieuLuc: { loai: 'tuan', tuanId: week.ensurePeriod(TUAN[0]).id } });
+    xoaNho();
+    const td = tuyen.theoDoiTuyen(gA).tuyen as any[];
+    assert(!td.some((x) => x.loai === 'chuyen_lop' && (x.khoa === String(lb) || (x.khoaLo ?? []).includes(String(lb)))), 'Đang theo dõi không có em lớp B');
+    /* Tuyến Chuyển lớp của em lớp A không ở Đang theo dõi vì GVCN A đang giữ bước Bàn giao (việc ở "Của tôi") — có tuyến Đổi GV lớp A; đo cả hai loại tuyến được dựng. */
+    assert(td.some((x) => x.loai === 'doi_gv'), `theo dõi tuyến Đổi GV: ${td.map((x) => x.loai).join()}`);
+    xoaNho(); const c0 = soCauSql();
+    chayTrongRequest('GET', () => tuyen.theoDoiTuyen(gA));
+    const n = soCauSql() - c0;
+    console.log(`    (đo Đang theo dõi tuyến — người theo dõi cả Chuyển lớp + Đổi GV: ${n} câu)`);
+    assert(n <= TRAN_TUYEN.theoDoi.cau, `${n} > ${TRAN_TUYEN.theoDoi.cau}`);
   }));
 }
