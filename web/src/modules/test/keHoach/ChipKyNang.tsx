@@ -16,7 +16,7 @@ import { t } from '@shared/i18n/index.ts';
  */
 const CHU_MON: Record<MonGon['loai'], string> = { co: t('có điểm'), cho: t('chưa có điểm'), tre: t('trễ chấm') };
 
-export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href, children }: {
+export function ODotGon({ o, kn, ct = null, nhan, ketQua, anDiem, khoa, chon, onMo, href, children }: {
   o: OGon;
   /** Ô kỹ năng của đợt (thứ tự badge, môn dời vì vắng `doiTu`). */
   kn: Partial<Record<KyNangKH, OKyNang>>;
@@ -25,6 +25,8 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
   nhan: string;
   /** FT đợt xong: Overall + kỳ vọng (null: không có kỳ vọng). */
   ketQua?: { ovr: number; dat: boolean | null; kyVong?: number | null } | null;
+  /** VAI-1 (N77): lớp chỉ lịch (máy chủ không trả điểm) — đợt xong ghi "Đã có điểm" thay band. */
+  anDiem?: boolean;
   /** Lớp thường: tuần trong khoá (`tuần 4/8`) của tuần chính. */
   khoa?: { khaiGiang: string | null; tongTuan: number | null; tuan: string | null } | null;
   chon?: boolean;
@@ -45,6 +47,7 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
     : o.vang ? { chu: o.vang, lop: o.huyHet ? 'text-faint' : '' }
     : choCham ? { chu: t('Chờ chấm'), lop: 'text-soon' }
     : o.tt?.loai === 'nay' || o.dong.some((d) => d.tt?.loai === 'nay') ? { chu: t('Đang làm bài'), lop: 'text-doing' }
+    : anDiem && o.xong ? { chu: t('Đã có điểm'), lop: 'text-dim' }
     : o.dong.some((d) => d.tt?.loai === 'chua') ? { chu: t('Chưa xếp tuần'), lop: 'text-dim' } : null;
   const doc = [
     nhan,

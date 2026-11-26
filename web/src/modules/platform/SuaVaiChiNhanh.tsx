@@ -44,9 +44,9 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
         const loi = loiHang?.(i);
         return (
           <div key={i} className="surface-2 rounded-lg p-2.5">
-            <div className="flex flex-wrap items-center gap-2" {...propsHang?.(i)} tabIndex={-1}>
+            <div className="flex flex-wrap items-center gap-2 max-sm:[&>*]:order-2" {...propsHang?.(i)} tabIndex={-1}>
               {/* GD-17c (⑤ A6): ô chọn thường — một dáng với lọc Tài khoản. */}
-              <OChonThuong className="w-44" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
+              <OChonThuong className="w-[200px] max-sm:!order-none max-sm:w-[calc(100%-72px)]" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
                 onChange={(e) => sua(i, (x) => ({ ...x, role: e.target.value }))}>
                 {ROLES.map((r) => <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>)}
               </OChonThuong>
@@ -71,7 +71,7 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
                   </NutChon>
                 ))}
               </>)}
-              <button className="btn btn-sm btn-ghost ml-auto max-sm:min-h-[44px]" type="button" disabled={khoaQt}
+              <button className="btn btn-sm btn-ghost ml-auto max-sm:!order-1 max-sm:min-h-[44px]" type="button" disabled={khoaQt}
                 onClick={() => onChange(value.filter((_, j) => j !== i))}>{t('Gỡ')}</button>
             </div>
             {khoaQt && <p className="m-0 mt-1.5 text-xs text-slate-400">{t('Không tự gỡ vai Quản trị của mình')}</p>}

@@ -38,7 +38,15 @@ const PHAN_CUA_LOP = `SELECT mp.id FROM meeting_phan mp JOIN sos_coordination_ac
   WHERE mp.phan = 'xep_lich' AND mp.trang_thai = 'mo' AND mp.phu_trach_id IS NULL`;
 
 /** `userId` = người nhận (null = bỏ nhận) · `cu` = người đang thấy (null = chưa ai) — khác → 409. */
-export function ganXepLich(p: Principal, classId: number, body: { userId?: unknown; cu?: unknown }): { xepLich: XepLichLop; hoanTac: number | null } {
+/** VAI-1 (mockup v29 V2a): hộp gán hộ — mọi BPXL đang hoạt động (BPXL xếp lịch mọi chi nhánh), kèm mã chi nhánh gán ("" = toàn hệ thống). */
+export function dsBpxl(): { id: number; ten: string; chiNhanh: string }[] {
+  return (db().prepare(`SELECT u.id, u.full_name AS ten, COALESCE(GROUP_CONCAT(b.code, ', '), '') AS cn FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+      JOIN users u ON u.id = ur.user_id LEFT JOIN branches b ON b.id = ur.branch_id
+     WHERE r.key = 'scheduler' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
+     GROUP BY u.id ORDER BY u.full_name, u.id`).all() as any[]).map((r) => ({ id: r.id, ten: r.ten, chiNhanh: r.cn }));
+}
+
+export function ganXepLich(p: Principal, classId: number, body: { userId?: unknown; cu?: unknown }): { xepLich: XepLichLop; hoanTac: number | null; soViec?: number } {
   if (!Number.isInteger(classId) || classId <= 0) throw badRequest('Lớp không hợp lệ.');
   const lop = db().prepare(`SELECT id, code, status FROM classes WHERE id = ?`).get(classId) as any;
   if (!lop) throw notFound('Không tìm thấy lớp.');
@@ -89,7 +97,7 @@ export function ganXepLich(p: Principal, classId: number, body: { userId?: unkno
     if (moi && moi !== p.userId) {
       notify({ userId: moi, kind: 'cap_nhat', title: `Bạn được gán xếp lịch lớp ${lop.code}`, body: null, entityType: 'classes', entityId: classId, dedupKey: `xep-lich-lop:${aid}:moi` });
     }
-    return { xepLich: xemXepLich(classId), hoanTac: gid };
+    return { xepLich: xemXepLich(classId), hoanTac: gid, soViec: phan.length };   // VAI-1: toast "n việc Xếp lịch họp chuyển theo"
   });
 }
 

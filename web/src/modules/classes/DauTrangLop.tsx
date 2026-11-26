@@ -24,6 +24,7 @@ import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeL
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, useViecLop } from './ThanhViecLop.tsx';
 import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
+import { XepLichLop, type NguoiXepLich } from './XepLichLop.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import type { RosterRow } from '../students/ClassRoster.tsx';
 
@@ -287,9 +288,12 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
           : (viec.data?.dongToi ?? viec.data?.cuaToi ?? []).length ? ` — ${t('chỉ xem; việc còn của bạn vẫn làm được')}` : ` — ${t('chỉ xem')}`}</DaiChiXem>
       )}
 
-      {/* ② GV theo kỹ năng MỘT dòng (bấm mở bản đủ — tên GV ở bản đủ là link hồ sơ GV). */}
-      <DongGiaoVien gon={nhomGon} du={nhomDu}
-        onDoi={onDoiGv && (data.viewer.canAssign || data.viewer.canAssignSubject) ? onDoiGv : undefined} doiGvcn={!!data.viewer.canAssign} />
+      {/* ② GV theo kỹ năng MỘT dòng (bấm mở bản đủ — tên GV ở bản đủ là link hồ sơ GV). VAI-1 (mockup v29 V2): + cụm "Xếp lịch {tên}" cùng dòng. */}
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
+        <DongGiaoVien gon={nhomGon} du={nhomDu}
+          onDoi={onDoiGv && (data.viewer.canAssign || data.viewer.canAssignSubject) ? onDoiGv : undefined} doiGvcn={!!data.viewer.canAssign} />
+        <XepLichDau classId={data.id} code={data.code} hien={data.status !== 'finished' && (!!session?.roles?.includes('scheduler') || !!data.viewer.canAssign)} />
+      </div>
       <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
             {/* GD-4 e (mockup v21 H3, ⓪ dòng 21): MỘT dải chỉ số cao 44 — Lượt mới nhất (chữ) · Đạt MT (ô số → panel em trong mẫu, tab Chưa đạt · Đạt) ·
@@ -366,6 +370,17 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const emTask: EmLop[] = em.map((r) => ({ id: r.id, ten: r.fullName, lopId: data.id, lop: data.code, tvv: r.tvv ?? null,
     phu: (r.sosLevel ?? 0) > 0 ? `SOS ${Math.min(r.sosLevel ?? 0, 3)}` : r.sosLevel === 0 ? t('Đạt') : t('Chưa có kết quả') }));
   return { sos, sosDong, emTask, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
+}
+
+/** VAI-1 (N77, mockup v29 V2): CVXL của lớp ở đầu hồ sơ — chỉ BPXL (Nhận lớp / Bỏ nhận) và người gán hộ được (Head / GĐCN / Quản trị — ô tên mở hộp chọn BPXL). */
+function XepLichDau({ classId, code, hien }: { classId: number; code: string; hien: boolean }) {
+  const x = useApi<{ xepLich: NguoiXepLich; ganHo: boolean; ungVien?: { id: number; ten: string; chiNhanh: string }[] }>(hien ? `/classes/${classId}/xep-lich` : null);
+  if (!x.data) return null;
+  return (
+    <span className="inline-flex min-h-7 items-center border-l pl-4 max-sm:border-l-0 max-sm:pl-0" style={{ borderColor: 'var(--line)' }}>
+      <XepLichLop classId={classId} code={code} xepLich={x.data.xepLich} ganHo={x.data.ganHo} ungVien={x.data.ungVien} onDoi={() => x.reload()} />
+    </span>
+  );
 }
 
 /**

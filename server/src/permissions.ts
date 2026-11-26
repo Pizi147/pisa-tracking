@@ -1008,6 +1008,7 @@ export function permissionSummary(p: Principal) {
     branchId: g.branchId,
     branchName: g.branchName,
     permissions: [...g.permissions].sort(),
+    ...(g.vaiThat ? { vaiThat: g.vaiThat } : {}),   // VAI-1: web biết GĐCN / Lead TVV (Công việc mặc định như CX — N75)
   }));
 }
 

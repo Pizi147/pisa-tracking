@@ -420,7 +420,7 @@ api.get('/ref/branches', requireAuth, wrap((req) => {
     return all.filter((b) => duoc.has(b.id)).map((b) => ({ ...b, phanCong: can(p, PERMISSIONS.CLASS_ASSIGN, { branchId: b.id }) }));
   }
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.all) return all;
+  if (scope.all || p.grants.some((g) => g.roleKey === 'scheduler')) return all;   // VAI-1 (N77): BPXL xếp lịch mọi chi nhánh — ô Chi nhánh của Test liệt kê đủ
   const viaClass = scope.classIds.length
     ? (db().prepare(`SELECT DISTINCT branch_id AS id FROM classes WHERE id IN (${scope.classIds.map(() => '?').join(',')})`)
         .all(...scope.classIds) as any[]).map((r) => r.id)
@@ -1461,7 +1461,9 @@ api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
 api.get('/classes/:id/xep-lich', requireAuth, wrap((req) => {
   const id = pInt(req, 'id');
   if (!xepLichLopSvc.xemDuocXepLich(principalOf(req), id)) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
-  return { xepLich: xepLichLopSvc.xemXepLich(id) };
+  /* VAI-1: `ganHo` (Head / GĐCN / Quản trị / lead BPXL) → web hiện ô đổi người + danh sách BPXL (một câu, chỉ khi gán hộ được). */
+  const ganHo = xepLichLopSvc.ganHoDuoc(principalOf(req), id);
+  return { xepLich: xepLichLopSvc.xemXepLich(id), ganHo, ...(ganHo ? { ungVien: xepLichLopSvc.dsBpxl() } : {}) };
 }));
 api.post('/classes/:id/xep-lich', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
