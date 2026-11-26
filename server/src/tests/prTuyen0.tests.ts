@@ -251,7 +251,7 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const c2 = buocXn(bpxl2);
     assert(!c2?.noiDung?.includes('Phụ huynh'), `BPXL khác: không PH trong tuyến: ${JSON.stringify(c2)}`);
     xoaNho(); assert(ma(() => { const b2 = gv.xemMeeting(bpxl2, ids[0]).boiCanh; if (b2.phuHuynh || b2.ghiChu) throw Object.assign(new Error('lộ'), { status: 999 }); }) !== 999, 'BPXL khác: boiCanh không PH');
-    xoaNho(); gv.doiPhuTrach(ql, 'meeting', xl, { userId: bpxl2.userId, phuTrachCu: bpxl.userId });
+    xoaNho(); gv.doiPhuTrach(ql, 'meeting', xl, { userId: bpxl2.userId, phuTrachCu: mot('SELECT phu_trach_id AS pt FROM meeting_phan WHERE id = ?', xl).pt });
     const c3 = buocXn(bpxl);
     assert(!c3?.noiDung?.includes('Phụ huynh'), `BPXL đã giao đi: không PH trong tuyến: ${JSON.stringify(c3)}`);
     xoaNho(); assert(ma(() => { const b3 = gv.xemMeeting(bpxl, ids[0]).boiCanh; if (b3.phuHuynh || b3.ghiChu) throw Object.assign(new Error('lộ'), { status: 999 }); }) !== 999, 'BPXL đã giao đi: boiCanh không PH');
