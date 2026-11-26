@@ -218,6 +218,7 @@ export type ViPhamVao = {
   /** LG-12: người ghi yêu cầu GVCN xử lý (`yeu_cau_xu_ly`) · ngày GVCN "Không xử lý" (null = chưa / đã Hoàn tác). */
   yeuCau?: boolean; khongXuLy?: string | null;
   /** N50 (5) (rà PTA ④): Quản lý "Không xử lý" VƯỢT luật — vi phạm ra khỏi luật 3 / 2 tuần như đã đóng (việc xử lý hết). */ vuotLuat?: boolean;
+  /** Lưu trữ (chủ SP 26/11): vi phạm chưa xử lý ghi TRƯỚC lần Quay lại học thật gần nhất — dừng hẳn, không mở lại (ra khỏi luật, không việc, không hạn). */ dungLuuTru?: boolean;
   xuLy: { id: number; kind: string; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null }[];
 };
 /** `mocLop` = max(ngày vào lớp đang học, ngày Quay lại học) — hạn đặt lại từ đây (M-08). `tamDung`: em đang Tạm dừng (T65). */
@@ -225,7 +226,7 @@ export type NguCanhHan = { homNay: string; mocLop: string | null; tamDung: boole
 
 const DONG_VP: ReadonlySet<string> = new Set(['done', 'cho_duyet', 'da_duyet']);
 /** Vi phạm "đã đóng bằng xử lý": nằm trong một lần xử lý xong, đang chờ QL, hoặc đã duyệt. Từ chối / nháp không tính. */
-const daDong = (v: Pick<ViPhamVao, 'xuLy' | 'vuotLuat'>) => !!v.vuotLuat || v.xuLy.some((x) => DONG_VP.has(x.status));
+const daDong = (v: Pick<ViPhamVao, 'xuLy' | 'vuotLuat' | 'dungLuuTru'>) => !!v.vuotLuat || !!v.dungLuuTru || v.xuLy.some((x) => DONG_VP.has(x.status));
 const maxNgay = (...ds: (string | null | undefined)[]) => ds.filter((d): d is string => !!d).map((d) => d.slice(0, 10)).sort().pop() ?? null;
 const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
 
@@ -271,6 +272,8 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
   const xong = v.xuLy.filter((x) => x.status === 'done')
     .sort((a, b) => (a.performedOn ?? '').localeCompare(b.performedOn ?? '') || a.id - b.id).pop();
   if (xong) return { t: 'da_xu_ly', nhan: t('Đã xử lý · {nhanLoaiXuLy}', { nhanLoaiXuLy: nhanLoaiXuLy(xong.kind) }), han: null, quaHanNgay: null, lyDoQuaHan: null };
+  /* Lưu trữ (chủ SP 26/11): chưa xử lý xong trước lần em vào Lưu trữ rồi quay lại — trung tính như "Không xử lý", không hạn, không việc. */
+  if (v.dungLuuTru) return { t: 'da_ghi_nhan', nhan: t('Dừng — em vào Lưu trữ'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ Head duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
   if (duyet) {

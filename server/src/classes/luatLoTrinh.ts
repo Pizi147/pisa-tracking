@@ -405,7 +405,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
       if (quayLai) {
         addJourney({ studentId: d.sid, eventType: 'resume', eventDate: d.ngay, title: 'Quay lại học', detail: `vào lớp ${toClass.code}`, createdBy: p.userId });
         datLaiHanCase(d.sid, d.ngay);
-        chotHanXuLy([d.sid], { ghiDe: true });
+        chotHanXuLy([d.sid]);   // Lưu trữ (26/11): như Quay lại học — vi phạm cũ dừng hẳn
       }
       thongBaoChuyenVao({
         sid: d.sid, tenHocVien: (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(d.sid) as any).full_name,

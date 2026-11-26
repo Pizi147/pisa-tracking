@@ -9,6 +9,7 @@
 import { DS_JSON, db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coNho, coKhoa, datNho, nho, xoaNho } from '../platform/nguCanhRequest.ts';
+import { QUAY_LAI_SQL } from '../students/tamDung.ts';
 import {
   bacHienTai, bacKeTiep, batBuocTu, chuoiThang, nhomEm, trangThaiViPham, hanTheoNgay, hanTai,
   type MeasureStatus, type NhanYThucEm, type NhomEm, type TrangThaiViPhamKq, type TrangThaiVp, type ViPhamVao,
@@ -160,7 +161,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   const quayLai = new Map<number, string>();
   for (const r of conn.prepare(
     `SELECT s.id, s.status AS s_status, e.class_id, e.started_at,
-            (SELECT MAX(j.event_date) FROM journey_events j WHERE j.student_id = s.id AND j.event_type = 'resume') AS quay_lai,
+            ${QUAY_LAI_SQL('s.id')} AS quay_lai,   -- Lưu trữ (26/11): lần quay lại THẬT (sau một lần dừng) — cùng mốc với việc chấm
             ${GVCN_LOP_SQL('e')} AS gvcn
        FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
       WHERE s.id IN (${ph}) ORDER BY e.id`).all(homNay, homNay, json) as any[]) {
@@ -182,7 +183,11 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
         a.push({ id: m.id, kind: m.kind, status: m.status, performedOn: m.performedOn, quyetLuc: m.quyetLuc });
       }
     }
-    const vao: ViPhamVao[] = dsVp.map((v) => ({ id: v.id, occurredOn: v.occurredOn, reportedOn: v.reportedOn, ghiNhanLuc: v.ghiNhanLuc, yeuCau: v.yeuCau, khongXuLy: v.khongXuLy, vuotLuat: v.vuotLuat, xuLy: theoVp.get(v.id) ?? [] }));
+    /* Lưu trữ (chủ SP 26/11): việc Ý thức phát sinh TRƯỚC lần quay lại học thật gần nhất không mở lại — vi phạm chưa xử lý (`dungLuuTru`), đề xuất chờ / đã duyệt. */
+    const ql = quayLai.get(sid)?.slice(0, 10) ?? null;
+    const truocQl = (ngay: string | null | undefined) => !!ql && !!ngay && ngay.slice(0, 10) < ql;
+    const vao: ViPhamVao[] = dsVp.map((v) => ({ id: v.id, occurredOn: v.occurredOn, reportedOn: v.reportedOn, ghiNhanLuc: v.ghiNhanLuc, yeuCau: v.yeuCau, khongXuLy: v.khongXuLy, vuotLuat: v.vuotLuat,
+      dungLuuTru: truocQl(v.reportedOn), xuLy: theoVp.get(v.id) ?? [] }));
     const bb = batBuocTu(vao);
     const mocLop = [g.batDau?.slice(0, 10), quayLai.get(sid)?.slice(0, 10)].filter((x): x is string => !!x).sort().pop() ?? null;
     const n = { homNay, mocLop, tamDung: g.tamDung };
@@ -205,10 +210,10 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
 
     /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
     const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), hanTai('xu_ly_vi_pham', m.quyetLuc.slice(0, 10)).ngay) : null);
-    const daDuyet = dsXl.filter((m) => m.status === 'da_duyet')
+    const daDuyet = dsXl.filter((m) => m.status === 'da_duyet' && !truocQl(m.quyetLuc ?? m.createdAt))
       .sort((a, b) => (a.quyetLuc ?? '').localeCompare(b.quyetLuc ?? '') || a.id - b.id)
       .map((m) => { const han = hanThucHien(m); return { id: m.id, kind: m.kind, customName: m.customName, han, quaHan: !!han && homNay > han }; });
-    const choDuyet = dsXl.filter((m) => m.status === 'cho_duyet').sort((a, b) => b.id - a.id)[0] ?? null;
+    const choDuyet = dsXl.filter((m) => m.status === 'cho_duyet' && !truocQl(m.createdAt)).sort((a, b) => b.id - a.id)[0] ?? null;
     const dx = daDuyet[0] ? { ...daDuyet[0], status: 'da_duyet' as const } : choDuyet ? { id: choDuyet.id, kind: choDuyet.kind, customName: choDuyet.customName, status: 'cho_duyet' as const } : null;
     const hanDx = daDuyet[0] ? daDuyet[0].han : choDuyet ? choDuyet.hanDuyet : null;
     const dxQuaHan = daDuyet.some((x) => x.quaHan);
@@ -253,7 +258,8 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
 /**
  * PR-Pb2-b (Q14) — CHỐT HẠN XỬ LÝ vào `violations.han_xu_ly` để bảng Phân tích giáo viên đo "Xử lý vi phạm đúng hạn" theo hạn LÚC thành
  * "Cần xử lý", không theo hạn suy lại hôm nay. Luật hạn không chép: đọc `trangThaiYThuc` (không qua bộ nhớ request).
- *   · vi phạm bắt buộc (Cần xử lý / Quá hạn vì chưa xử lý) có hạn, chưa chốt → chốt; `ghiDe` (Quay lại học, T65) → chốt lại nếu chưa phản hồi.
+ *   · vi phạm bắt buộc (Cần xử lý / Quá hạn vì chưa xử lý) có hạn, chưa chốt → chốt; `ghiDe` → chốt lại nếu chưa phản hồi (chuyển lớp, D1). Quay lại học
+ *     không ghi đè nữa (Lưu trữ 26/11: vi phạm cũ dừng hẳn — hết bắt buộc nên hạn chốt được bỏ ở vế dưới).
  *   · vi phạm hết bắt buộc (sửa / xoá vi phạm khác, Q1) mà chưa phản hồi → bỏ hạn chốt.
  * Gọi TRONG giao dịch ghi của: ghi · sửa · xoá vi phạm, QL từ chối đề xuất, Quay lại học.
  */
