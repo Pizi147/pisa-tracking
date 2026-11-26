@@ -581,7 +581,7 @@ export type Disposition = (typeof DISPOSITIONS)[number];
  * không tính. PA đã xong có kết quả thật trước đó VẪN tính hiệu quả (planning review 22/09, Q7). Lịch sử giữ nguyên.
  * Chữ "lớp thường" thay "Normal" theo đặc tả §2 (không viết "Normal" trên màn).
  */
-export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos', 'ket_thuc_lo_trinh', 'khong_con_hoc_mon'] as const;
+export const SYSTEM_CLOSE_REASONS = ['course_ended', 'moved_to_normal', 'moved_to_ft', 'luot_da_huy', 'ket_qua_huy', 'doi_quyet_dinh', 'overall_dat', 'cho_chot_sos', 'ket_thuc_lo_trinh', 'khong_con_hoc_mon', 'luu_tru'] as const;
 export type SystemCloseReason = (typeof SYSTEM_CLOSE_REASONS)[number];
 export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   course_ended: t('Học viên kết thúc khoá'),
@@ -601,6 +601,8 @@ export const SYSTEM_CLOSE_REASON_LABEL: Record<SystemCloseReason, string> = {
   ket_thuc_lo_trinh: t('Kết thúc lộ trình'),
   /* P8 (N13, Q5): bỏ môn giữa lộ trình — Case mở của môn đó đóng; PA đang chạy "Dừng — không còn học môn", không vào Hiệu quả PA. Bật lại môn không mở lại. */
   khong_con_hoc_mon: t('Không còn học môn'),
+  /* Lưu trữ (chủ SP 26/11): em Tạm dừng → Case chưa xong đóng hẳn; Quay lại học không mở lại, Hoàn tác Tạm dừng mở lại. */
+  luu_tru: t('Học viên vào Lưu trữ'),
 };
 
 /**

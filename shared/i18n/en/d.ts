@@ -533,6 +533,7 @@ const EN_D_SHARED = {
   'Không cần xử lý thêm': 'No further action',
   'Có kế hoạch hỗ trợ': 'Support planned',
   'Học viên kết thúc khoá': 'Student finished the course',
+  'Học viên vào Lưu trữ': 'Student moved to Archive',
   'Chuyển sang lớp thường': 'Moved to a Normal class',
   'Lượt đã huỷ': 'Attempt cancelled',
   'Kết quả MT đã huỷ': 'MT result cancelled',
