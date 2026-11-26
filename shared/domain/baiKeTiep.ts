@@ -13,6 +13,13 @@ export type ODiemConThieu = { required: boolean; canEdit: boolean; band: number 
 export const conThieuFt = (c: ODiemConThieu) =>
   c.required && c.canEdit && c.band === null && !c.noShow && (awaitingScore(c.progress as SkillProgress) || c.progress === 'lich_su');
 
+/**
+ * Ô FT CÒN TRỐNG CỦA TUẦN ĐANG XEM (bộ lọc "Còn trống" ở Lịch Test, chủ SP 26/11): bắt buộc, chưa band, chưa "-", chưa huỷ / vắng, và thi ĐÚNG tuần `tuan`
+ * (ô thi tuần khác không tính). Không xét `canEdit` — lọc để biết còn trống phần nào, cùng nghĩa số `conBai` của hàng lớp (máy chủ `canCham.ts`).
+ */
+export const oTrongTuanFt = (c: Omit<ODiemConThieu, 'canEdit'> & { weekStart?: string | null }, tuan: string | null | undefined) =>
+  !!tuan && c.weekStart === tuan && c.required && c.band === null && !c.noShow && c.progress !== 'cancelled' && c.progress !== 'absent';
+
 /** `khoa` = attemptId (lưới) hoặc id dòng (Speaking chéo). */
 export type ViTriO = { khoa: number; kyNang: string };
 

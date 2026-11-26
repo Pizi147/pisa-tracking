@@ -25,7 +25,7 @@ import type { CaseChiTiet } from '../cases/caseLop.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
 import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
-import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
+import { coTheNhapThiThat, loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
@@ -50,7 +50,9 @@ export type TrangHocVienLop = {
   hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm; hang?: HangHv;
     /** UI-HV-LOP (khu d): TVV của em + lịch thi thật (`trangThaiLichThi`, cùng hàm góc Lịch thi) — cột Học viên / Lịch thi, chip "Thi tháng này". */
     tvv?: string | null; lich?: LichThi;
-    nhapDiem?: { kind: string; attemptNo: number; dot: string | null } }[];
+    nhapDiem?: { kind: string; attemptNo: number; dot: string | null };
+    /** Chủ SP 26/11: em Đã thi · chờ KQ — lộ trình + người xem nhập được KQ thi thật (⋯ dòng "Ghi KQ thi thật"; máy chủ vẫn kiểm lúc lưu). */
+    choKq?: { cycleId: number; coTheNhap: boolean } }[];
   /** Người xem có tạo được lớp MỚI ở chi nhánh nào không — không gắn với lớp đã tồn tại nào (điểm a rà soát cuối). */
   coTheTaoLop: boolean;
   /** HL-14: "+ Học viên" đầu trang — có lớp trong phạm vi thêm được học viên, KHÔNG phụ thuộc ô tìm (tìm không ra em là lúc cần thêm). */
@@ -313,7 +315,7 @@ export function danhSachHocVienLop(
   const them = f.them ? nhanLocThem(hvKhop.map((h) => h.id as number), allCases, standing, vl.chiTiet) : null;
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
-  const daThi = new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.student_id as number));
+  const daThi = new Map(loTrinhChoKetQuaThi(today).map((x) => [x.c.student_id as number, x.c]));
   const hang = hangHvFt(hvKhop.filter((h) => laFt.get(h.class_id)), standing, allCases, vl);
   const hocVien: TrangHocVienLop['hocVien'] = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
@@ -330,12 +332,14 @@ export function danhSachHocVienLop(
     if (daThi.has(h.id)) loc.push('da-thi');
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
     const nd = ndEm.get(h.id);
+    const kq = daThi.get(h.id);
     return { id: h.id as number, classId: h.class_id as number, loc, khung: ft ? 'ft' as const : 'thuong' as const,
       ten: h.full_name as string, ma: (h.student_code ?? '') as string, ...(thieu.length ? { thieu: thieu.map((m) => m.label) } : {}),
       ...(them ? { them: them.get(h.id as number) } : {}), ...(ft && hang.has(h.id) ? { hang: hang.get(h.id) } : {}),
       tvv: h.tvv ?? null, lich: trangThaiLichThi(h, examPlanOf(h), today),
       /* UI-HV-LOP (XM-2): ⋯ dòng em có "Nhập điểm" chỉ khi người xem còn ô chờ nhập của em — lượt sớm nhất còn nợ (`nhapDiemTheoEm`, cùng nguồn Công việc). */
-      ...(nd?.thuTu ? { nhapDiem: { kind: nd.thuTu.kind, attemptNo: nd.thuTu.attempt_no, dot: nd.dot } } : {}) };
+      ...(nd?.thuTu ? { nhapDiem: { kind: nd.thuTu.kind, attemptNo: nd.thuTu.attempt_no, dot: nd.dot } } : {}),
+      ...(kq ? { choKq: { cycleId: kq.id as number, coTheNhap: coTheNhapThiThat(p, kq) } } : {}) };
   });
   /* U04-3 (chủ SP 03/11 khuya): em Kết thúc học không còn trong danh sách — xem ở hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K (bỏ khối OV-11g, bớt 1 câu). */
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);

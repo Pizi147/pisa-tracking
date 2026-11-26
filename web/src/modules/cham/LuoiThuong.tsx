@@ -29,7 +29,7 @@ import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { ChuConCho, DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
-import { DongThi, LuotChinhContext } from './DongThi.tsx';
+import { ChiOTrongContext, DongThi, LuotChinhContext } from './DongThi.tsx';
 import { HopNhanXetThuong, NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';   /* HopNhanXetThuong: bản nạp lười (TD-WEB-2) — lưới không tải mảnh hộp trước khi mở */
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -305,6 +305,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   /* PANEL-GON (v24 P1): trong panel việc 720 — cột Kết quả riêng ở mép phải (luật cột: tên 2 phần, cột môn / Kết quả bằng nhau, index.css) thay
      "Kết quả dưới tên" (G1-11 `gon`); em còn ô trống lên trên, "Đã có điểm · n em" là dòng gập trong CÙNG lưới. Nhóm chốt lúc mở lưới. */
   const trongPanel = useContext(OTrongPanel) && !gon;
+  const chiTrong = useContext(ChiOTrongContext);
   const conOTrong = (r: Row) => skills.some((k) => { const o = oThuong(r, k, data.today); return o.canEdit && o.trong; });
   const [xongLucMo] = useState(() => new Set(data.rows.filter((r) => !conOTrong(r)).map((r) => r.attemptId)));
   const [moXong, setMoXong] = useState(true);
@@ -409,7 +410,12 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
 
   /* SUA-UI #19 (chủ SP 25/11): Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT môn thi đúng tuần đang xem (hoặc dấu "-" dời từ tuần này); em thi cả bộ ở tuần khác không hiện. */
   const hienTuan = (r: Row) => !tuanDangXem || data.programme.skills.some((k) => { const w = oThuong(r, k, data.today).s; return w?.weekStart === tuanDangXem || w?.movedFromStart === tuanDangXem; });
-  const dsHien = data.rows.filter(hienTuan);
+  /* Lịch Test › "Còn trống" (chủ SP 26/11): chỉ em có môn thi ĐÚNG tuần đang xem mà chưa có điểm (không xét quyền sửa; "-" / vắng / huỷ không tính). */
+  const trongTuan = (r: Row) => skills.some((k) => {
+    const s = lichCua(r, k);
+    return !!tuanDangXem && s?.weekStart === tuanDangXem && !s.noShow && !s.khongDuThi && s.progress !== 'cancelled' && s.progress !== 'absent' && (ketQuaCua(r, k)?.score ?? null) === null;
+  });
+  const dsHien = data.rows.filter(hienTuan).filter((r) => !chiTrong || trongTuan(r));
   const dsThieu = dsHien.filter((r) => !xongLucMo.has(r.attemptId));
   const dsXong = dsHien.filter((r) => xongLucMo.has(r.attemptId));
   const TACH = { attemptId: -1 } as Row;

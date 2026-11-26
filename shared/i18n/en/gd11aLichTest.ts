@@ -4,6 +4,10 @@ import type { Dich } from '../en.ts';
 export const EN_GD11A_LICH_TEST = {
   'Môn của bạn': 'Your skills',
   'Còn chờ': 'Waiting on',
+  'Còn trống': 'Empty',
+  'Ghi KQ thi thật': 'Record real exam result',
+  '{n} lớp · {m} bài chưa có điểm trong tuần': '{n} classes · {m} cells without a score this week',
+  'Tuần {maTuan} không còn ô trống.': 'No empty cells left in {maTuan}.',
   'Còn chờ: {ds}': 'Waiting on: {ds}',
   'Mở {dot}': 'Open {dot}',
   'chấm chéo {mon}': 'cross-marking {mon}',

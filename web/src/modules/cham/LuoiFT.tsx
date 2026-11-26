@@ -13,8 +13,8 @@ import { DeadlinePill, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '..
 import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, nhanKetQuaLuoi, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
-import { DongThi, LuotChinhContext } from './DongThi.tsx';
+import { ENTRY_SKILLS, chipSosMt0, nhanKetQuaLuoi, duongHoSoHocVien, conThieuFt, oTrongTuanFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ChiOTrongContext, DongThi, LuotChinhContext } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { HopSEx } from '../test/keHoach/HopSEx.tsx';
@@ -177,6 +177,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. GD-3 → NHẸ HƠN (v23 C1, panel 75 %): trong panel việc cột ô 88, Kết quả 168,
      cột tên lấy phần còn lại (index.css `.luoi-trong-panel`). */
   const trongPanel = useContext(OTrongPanel);
+  const chiTrong = useContext(ChiOTrongContext);
   const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 80 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
@@ -213,7 +214,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   }
   /* SUA-UI #19 (chủ SP 25/11): Lịch Test tuần chỉ hiện em có ÍT NHẤT MỘT kỹ năng thi đúng tuần đang xem — em thi cả bộ ở tuần khác không hiện. */
   const rows = data.rows.filter((r) => !chiConHuy(r, tuanDangXem))
-    .filter((r) => !lich || !tuanDangXem || r.cells.some((c) => c.required && (c.weekStart === tuanDangXem || nutTuanGoc(c))));
+    .filter((r) => !lich || !tuanDangXem || r.cells.some((c) => c.required && (c.weekStart === tuanDangXem || nutTuanGoc(c))))
+    /* Lịch Test › "Còn trống" (chủ SP 26/11): chỉ em có ô chưa điểm của đúng tuần đang xem. */
+    .filter((r) => !chiTrong || (!r.ngungHoc && r.cells.some((c) => oTrongTuanFt(c, tuanDangXem))));
   /* UI-LICH-TUAN (#31, như Kế hoạch Test #534): lớp dài ở Lịch tuần hiện 10 em đầu + "Hiện tất cả n"; mở từ việc / em (kn, hv) thì hiện hết. */
   const gonHv = lich && !hetHv && hv === null && !kn && rows.length > 12;
   const rowsHien = gonHv ? rows.slice(0, 10) : rows;

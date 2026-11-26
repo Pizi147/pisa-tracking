@@ -11,6 +11,9 @@ export const DongThiContext = createContext(false);
  */
 export const LuotChinhContext = createContext<string | null>(null);
 
+/** Lịch Test › "Còn trống": lưới chỉ hiện em có ô chưa có điểm của đúng tuần đang xem (`oTrongTuanFt`). Nơi khác không bật. */
+export const ChiOTrongContext = createContext(false);
+
 /** "W1 OCT" (lệch kỹ năng: "W1 OCT · S W2 OCT"; chưa có: "Chưa xếp tuần") — chữ nhỏ xám, không tô đậm / màu. OV-4b: `tienTo` "MT2 · W2 OCT". */
 export function DongThi({ muc, tienTo }: { muc: { nhan: string; weekStart: string | null }[]; tienTo?: string }) {
   if (!useContext(DongThiContext)) return null;
