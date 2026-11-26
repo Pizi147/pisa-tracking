@@ -1689,8 +1689,12 @@ CREATE TABLE tasks (
   lap_tu TEXT,
   /* VH-1b (N62): hạng mục chính thống của Công việc (`HANG_MUC_CV`, shared/domain/tongQuan.ts) — việc tay nằm trong mục đó; NULL = tab Vận hành theo nhóm.
      Lớp liên quan dùng `class_id`, học viên liên quan dùng `task_students` (case_id NULL). */
-  hang_muc TEXT
+  hang_muc TEXT,
+  /* BAOPH-0 (N72 ⑥, 4.6): VIỆC CON của một việc Ý thức / Phối hợp / Báo PH (khoá giao việc `LOAI_GIAO` × id) — một tầng, không chặn việc cha, không vào bảng
+     Vận hành (người được giao thấy ở "Việc được giao"). NULL = việc Vận hành thường. Migrate `prBaoPh0` chép y. */
+  cha_loai TEXT, cha_id INTEGER
 );
+CREATE INDEX idx_task_cha ON tasks(cha_loai, cha_id) WHERE cha_loai IS NOT NULL;
 CREATE UNIQUE INDEX ux_tasks_khoa_gui ON tasks(created_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_parent ON tasks(parent_task_id);   -- PR-DEPLOY (DEP-2c): migrate (`migrateMgmtTasks`) đã có, schema.sql thiếu
@@ -2002,7 +2006,9 @@ CREATE TABLE discipline_measures (
   created_by INTEGER NOT NULL REFERENCES users(id),
   updated_at TEXT,
   -- PR-YT4: ngày QL duyệt / từ chối (ngày nghiệp vụ). Hạn "Đã thực hiện" = ngày này + 4; từ chối → vi phạm Cần xử lý từ ngày này.
-  quyet_luc TEXT
+  quyet_luc TEXT,
+  -- BAOPH-0 (N72 ⑥, 4.6): giao việc "Đã thực hiện" (status da_duyet) — người được giao (NULL = GVCN theo luật) · hạn đặt tay (NULL = quyết + 4). Migrate `prBaoPh0` chép y.
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, han_chon TEXT
 );
 CREATE INDEX idx_measure_student ON discipline_measures(student_id, status);
 CREATE INDEX idx_dm_cycle ON discipline_measures(cycle_id);   -- TURSO-1211: cột WL2 của SQL_THI_THAT
@@ -2429,6 +2435,15 @@ CREATE TABLE IF NOT EXISTS viec_giao_lan (
   boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_viec_giao_lan ON viec_giao_lan(loai, ref_id);
+-- BAOPH-0 (N72 ⑥, 4.6): KHỐI GIAO VIỆC của "Xử lý vi phạm" — việc TÍNH theo em (≥ 3 vi phạm / 2 tuần hoặc có yêu cầu), không có dòng việc; dòng này chỉ có khi
+-- người dùng giao / đặt hạn / theo dõi. id = student_id (khoá việc = em). trang_thai mo | bo (em vào Lưu trữ — `dongViecLuuTru`). Lưu xử lý / gửi đề xuất → xoá dòng
+-- (tuyến sang lần xử lý mới, `donViec`). Migrate `prBaoPh0` chép y.
+CREATE TABLE IF NOT EXISTS viec_xu_ly (
+  id INTEGER PRIMARY KEY REFERENCES students(id), student_id INTEGER NOT NULL REFERENCES students(id), trang_thai TEXT NOT NULL DEFAULT 'mo',
+  han_chon TEXT, phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT, tao_luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_viec_xu_ly_giao ON viec_xu_ly(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_dm_giao ON discipline_measures(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 -- VH-1b (N62): MÔ TẢ tuỳ chọn của việc có khối giao việc N58 (bao_ph · phoi_hop · tinh_hinh · meeting · tra_lai) — MỘT chỗ chung theo (loai, ref_id), ≤ 500 ký tự;
 -- lịch sử ở viec_giao_lan (truong mo_ta); dọn trong donViec. Việc Vận hành dùng tasks.note (không lưu hai nơi).
 CREATE TABLE IF NOT EXISTS viec_mo_ta (

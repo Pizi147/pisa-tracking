@@ -90,8 +90,8 @@ export async function runPrUxGTests(t: YThucTestKit) {
       const s = doc(f);
       assert(!/Tạo task cho TVV/.test(s) && !/trên Base/.test(s), `${f}: còn câu cũ`);
     }
-    assert(doc('server/src/yThuc/phoiHop.ts').includes(CAU), 'phoiHop.ts thiếu câu mới');
-    assert(doc('server/src/worklist/mywork.ts').includes(CAU), 'mywork.ts thiếu câu mới');
+    /* BAOPH-0 (N72 ⑤, thay N6): việc là của TVV thật — câu "Nhờ TVV… đánh dấu đã làm" của GVCN bỏ hẳn (đặc tả 4.4). */
+    for (const f of ['server/src/yThuc/phoiHop.ts', 'server/src/worklist/mywork.ts', 'server/src/worklist/giaoViec.ts']) assert(!doc(f).includes(CAU), `${f}: còn câu "Nhờ TVV" của GVCN`);
   });
 
   // ------------------------------------------------------------------ G4 · Lịch Test: cột thao tác nằm trong khung

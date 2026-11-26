@@ -315,8 +315,10 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     /* 45% học lại: đúng một việc Báo PH kết quả Test làm bởi Quản lý (không phải GVCN). */
     const baoPh = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(s1) as any[];
     assert(baoPh.length === 1 && baoPh[0].attempt_id === l.luot.get(s1) && baoPh[0].preset === 1 && baoPh[0].status === 'pending', JSON.stringify(baoPh));
-    const viec = (who: any) => (myWorkMod.myWork(who, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `baoph:${baoPh[0].id}`);
-    assert(viec(P.mbManager).length === 1 && viec(P.mbManager)[0].tieuDe.includes('Final Test 45%'), 'Quản lý phải thấy việc Báo PH: ' + JSON.stringify(viec(P.mbManager).map((x: any) => x.tieuDe)));
+    /* BAOPH-0 (N72 ⑤): Báo PH kết quả Final là việc TVV (`bao-ph:{việc}`) — Head thôi giữ, thấy ở "Tất cả" (người chốt theo dõi). */
+    const vId = (conn.prepare('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?').get(baoPh[0].id) as any)?.id;
+    const viec = (who: any) => (myWorkMod.myWork(who, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `bao-ph:${vId}`);
+    assert(vId && viec(P.mbManager).length === 1 && viec(P.mbManager)[0].tieuDe.includes('Kết quả Final'), 'Quản lý phải thấy việc Báo PH: ' + JSON.stringify(viec(P.mbManager).map((x: any) => x.tieuDe)));
     assert(viec(permMod.loadPrincipal(P.normalCoreTeacher.userId)).length === 0, 'GVCN không có việc Báo PH của Final Test');
     assert(caseCuaEm(s1, cycleMoi(s1)).length === 0, '45% học lại không có Case bổ trợ');
   });
@@ -584,7 +586,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const bao = conn.prepare(`SELECT status, preset FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(trang) as any[];
     assert(bao.length === 1 && bao[0].status === 'pending', '45% học lại: một việc Báo PH');
     const ql = permMod.loadPrincipal((conn.prepare(`SELECT id FROM users WHERE full_name = 'Nguyễn Khánh Vy'`).get() as any).id);
-    assert(((myWorkMod.myWork(ql, { nguoi: 'tat-ca' }) as any).items as any[]).some((i) => i.key.startsWith('baoph:') && i.studentId === trang), 'Quản lý thấy việc Báo PH');
+    assert(((myWorkMod.myWork(ql, { nguoi: 'tat-ca' }) as any).items as any[]).some((i) => i.key.startsWith('bao-ph:') && i.studentId === trang), 'Quản lý thấy việc Báo PH');   // BAOPH-0: việc TVV
     const be04 = classId('MB BE 04');
     const e = cuoiKhoaMod.cuoiKhoaTheoHocVien(be04);
     assert(e.get(khoi).goiY.canQuanLy && e.get(huy).goiY.dai === 'dat' && !e.get(huy).goiY.boTroNeuLen, '55% cân nhắc · 78% Pass');

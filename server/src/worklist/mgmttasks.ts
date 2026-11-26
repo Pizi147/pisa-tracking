@@ -11,7 +11,7 @@ import { ensurePeriod } from '../platform/week.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { caseAccess } from '../cases/cases.ts';
-import { CN_VH, HOAT_DONG_O, baoTheoDoi, ghiLan, laNguoiTheoDoi, themTheoDoiDong, type SuKien } from './giaoViec.ts';
+import { CN_VH, HOAT_DONG_O, baoTheoDoi, docLoai, docViec, ghiLan, laNguoiTheoDoi, themTheoDoiDong, xemGiaoViec, type SuKien } from './giaoViec.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
@@ -376,7 +376,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   /* PTA rà #1929: lọc chi nhánh ngoài phạm vi → danh sách RỖNG (như main: người có vai khác ở chi nhánh đó, chỉ số Tổng quan không vỡ) — không đọc việc / nhóm chi nhánh đó. */
   const ngoai = !!f.branchId && !scope.all && !scope.branchIds.includes(f.branchId);
 
-  const base: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'", ...(ngoai ? ['0'] : [])];
+  const base: string[] = ['t.parent_task_id IS NULL', 't.cha_loai IS NULL', "t.kind = 'branch_ops'", ...(ngoai ? ['0'] : [])];   // 4.6: việc con của việc Ý thức không lên bảng Vận hành
   const baseParams: unknown[] = [];
   if (f.branchId) { base.push('t.branch_id = ?'); baseParams.push(f.branchId); }
   else if (!scope.all && scope.branchIds.length) {
@@ -879,6 +879,8 @@ export function createMgmtTask(p: Principal, input: {
   hangMuc?: unknown; classId?: unknown; studentIds?: unknown;
   /** VH-2 (V2): Trong kỳ (`in_period`) │ Dài hạn (`long_term`, mặc định — như trước). Việc con theo việc cha. */
   taskType?: unknown;
+  /** BAOPH-0 (N72 ⑥, 4.6): việc con của một việc Ý thức / Phối hợp / Báo PH (`LOAI_GIAO` × id) — thay `parentTaskId`; chi nhánh = chi nhánh của em. */
+  chaLoai?: unknown; chaId?: unknown;
 }) {
   if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
@@ -890,6 +892,15 @@ export function createMgmtTask(p: Principal, input: {
 
   const conn = db();
   let parent: any = null;
+  /* 4.6: việc cha là việc Ý thức (đọc + quyền xem theo khối giao việc); một tầng — không kèm việc cha Vận hành, không lặp. */
+  const cha = input.chaLoai == null || input.chaLoai === '' ? null : (() => {
+    if (input.parentTaskId) throw badRequest('Việc con chỉ có một tầng.');
+    const loai = docLoai(input.chaLoai), id = Number(input.chaId);
+    xemGiaoViec(p, loai, id);
+    const v = docViec(loai, id);
+    if (!v.mo) throw badRequest('Việc cha đã kết thúc — không thêm việc con.');   // rà #2233 P2-2
+    return { loai, id, branchId: v.branchId };
+  })();
   if (input.parentTaskId) {
     parent = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(input.parentTaskId) as any;
     if (!parent) throw notFound('Không tìm thấy công việc cha.');
@@ -904,7 +915,7 @@ export function createMgmtTask(p: Principal, input: {
    * do vô ý); người quản nhiều chi nhánh / toàn hệ thống gửi null → giữ Toàn hệ thống như main.
    */
   const pv = phamVi(p);
-  const taskBranchId = input.branchId ?? parent?.branch_id ?? (!pv.all && pv.branchIds.length === 1 ? pv.branchIds[0] : null);
+  const taskBranchId = cha ? cha.branchId : input.branchId ?? parent?.branch_id ?? (!pv.all && pv.branchIds.length === 1 ? pv.branchIds[0] : null);
   if (!quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   kiemNguoiVh('Người phụ trách', input.assigneeUserId, taskBranchId);
   const theoDoi = [...(docTheoDoi(input.theoDoiIds, taskBranchId) ?? []), ...(input.watcherUserId ? [input.watcherUserId] : [])];
@@ -912,7 +923,7 @@ export function createMgmtTask(p: Principal, input: {
   const groupId = parent ? parent.group_id ?? null : nhomChoViec(input, taskBranchId) ?? null;
   const hangMuc = parent ? null : docHangMuc(input.hangMuc) ?? null;
   const lienQuan = docLienQuan(p, input.classId, input.studentIds, taskBranchId);
-  const lap = parent ? null : docLap(input.lap);
+  const lap = parent || cha ? null : docLap(input.lap);
   if (parent && input.lap != null && input.lap !== '') throw badRequest('Việc con lặp theo việc cha — đặt lặp lại ở việc cha.');
   /*
    * PR-Dọn (quét #5a): Case làm căn cứ — tối đa 50, mỗi Case phải tồn tại và người tạo XEM được (chi tiết việc hiện tên Case + tên HV;
@@ -956,14 +967,14 @@ export function createMgmtTask(p: Principal, input: {
         `INSERT INTO tasks (code, title, kind, task_type, group_id, parent_task_id,
                             branch_id, assignee_user_id, assignee_name, due_date,
                             progress, note, source_type, source_unit_report_id, created_by, created_at, idempotency_key,
-                            lap_kieu, lap_ngay, lap_ky, hang_muc, class_id)
-         VALUES (?,?, 'branch_ops', ?, ?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?, ?,?,?,?,?)`,
+                            lap_kieu, lap_ngay, lap_ky, hang_muc, class_id, cha_loai, cha_id)
+         VALUES (?,?, 'branch_ops', ?, ?,?,?,?,?,?, 'not_started', ?,?,?,?,?,?, ?,?,?,?,?,?,?)`,
       )
       .run(nextCode(conn), title, parent?.task_type ?? loaiViec(input.taskType) ?? 'long_term', groupId, input.parentTaskId ?? null,
            taskBranchId,
            input.assigneeUserId ?? null, assigneeName,
            input.due ?? null, (input.note ?? '').trim() || null, sourceType, sourceUnitReportId, p.userId, nowIso(), khoa,
-           lap?.kieu ?? null, lap ? lap.ngay.join(',') : null, lap ? demoToday() : null, hangMuc, lienQuan?.classId ?? null);
+           lap?.kieu ?? null, lap ? lap.ngay.join(',') : null, lap ? demoToday() : null, hangMuc, lienQuan?.classId ?? null, cha?.loai ?? null, cha?.id ?? null);
     const id = Number(info.lastInsertRowid);
 
     for (const caseId of caseIds) {

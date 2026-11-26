@@ -267,8 +267,8 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     assert(await ma(() => gv.suaMoTa(tvv, 'bao_ph', id2, { moTa: 'x', moTaCu: null })) === 200, 'việc đã đóng: R2 C13 — sửa mô tả được');
     /* phoi_hop (GVCN theo luật). */
     const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND a.student_id IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'talk_family') AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;
-    const phId = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'talk_family', 1, 'pending', ?)`)
+        AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'gvcn_meeting') AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;   // BAOPH-0: việc GVCN (talk_family là nguồn việc TVV)
+    const phId = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'gvcn_meeting', 1, 'pending', ?)`)
       .run(att, sid2, new Date().toISOString()).lastInsertRowid);
     assert(ghiMoTa(ql, 'phoi_hop', phId, 'Phối hợp: hẹn thứ Sáu').moTa.noiDung === 'Phối hợp: hẹn thứ Sáu', 'phoi_hop');
     /* tinh_hinh (TVV gửi → GVCN trả lời). */
@@ -345,10 +345,12 @@ export async function runPrHangMucTests(t: YThucTestKit) {
   const { fileURLToPath } = await import('node:url');
   const { default: SqliteDb } = await import('libsql');
   const { migratePrHangMuc } = await import('../migrate/prHangMuc.ts');
+  const { catBaoPh0 } = await import('./catBaoPh0.ts');
+  const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   check('VH1b-5 · migrate prHangMuc: chạy hai lần không đổi; tự lành; khớp schema.sql; DB seed không đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
-    const cat = SCHEMA.replace(/  lap_tu TEXT,\n  \/\* VH-1b[\s\S]*?hang_muc TEXT\n\);/, '  lap_tu TEXT\n);')
+    const cat = catBaoPh0(SCHEMA).replace(/  lap_tu TEXT,\n  \/\* VH-1b[\s\S]*?hang_muc TEXT\n\);/, '  lap_tu TEXT\n);')
       .replace(/-- VH-1b \(N62\): MÔ TẢ[\s\S]*?PRIMARY KEY \(loai, ref_id\)\n\);\n/, '');
     if (/hang_muc|viec_mo_ta/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm VH1b-5');
     const cu = new SqliteDb(':memory:'); cu.exec(cat);
@@ -358,6 +360,7 @@ export async function runPrHangMucTests(t: YThucTestKit) {
     cu.exec('DROP TABLE viec_mo_ta');
     const c2: string[] = []; migratePrHangMuc(cu, c2);
     assert(c2.length === 1 && /viec_mo_ta/.test(c2[0]), `tự lành: ${c2.join(' | ')}`);
+    themCotPrBaoPh0(cu, []);   // BAOPH-0: bước sau VH-1b
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (db: any, bang: string) => JSON.stringify((db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}:${x.pk}`));
     for (const bang of ['tasks', 'viec_mo_ta']) assert(cot(cu, bang) === cot(moi, bang), `${bang}: ${cot(cu, bang)} ≠ ${cot(moi, bang)}`);

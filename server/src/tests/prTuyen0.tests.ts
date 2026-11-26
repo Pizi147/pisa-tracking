@@ -192,15 +192,52 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(d.ketThuc && d.buoc[1].chiTiet === 'tự xong' && d.buoc[3].noiDung === 'Em hứa đi học đều', `sau Kết quả: ${ten(d)} · ${JSON.stringify(d.buoc[1])}`);
   }));
 
-  await checkAsync('TUYEN0-7 · em SOS 3 (Trao đổi gia đình + Meeting GĐCN) chỉ MỘT lần Báo PH ở bước tương lai (N72 ⑥, C8); Kết quả meeting dưới cùng', () => thu(() => {
+  await checkAsync('TUYEN0-7 · em SOS 3 (Trao đổi gia đình + Meeting GĐCN): ĐÚNG MỘT bước Báo PH (TVV, BAOPH-0 C8) · Meeting không Báo PH riêng · Kết quả meeting dưới cùng', () => thu(() => {
     const sid = moiEm();
-    const { att } = luot(sid, ['cx_meeting_family', 'talk_student', 'talk_family']);
+    const { att, ids } = luot(sid, ['cx_meeting_family', 'talk_student', 'talk_family']);
+    bp.dongBoViecTvvLuot([att]);   // như syncSosCoordination: nguồn Trao đổi gia đình → việc TVV
     const a = tuyen(tvv, 'phoi_hop', att);
-    const soBaoPh = a.buoc.filter((b: any) => b.ten === 'Báo PH').length;
-    assert(soBaoPh <= 1, `một lần Báo PH: ${ten(a)}`);
+    const baoPh = a.buoc.filter((b: any) => b.ten.startsWith('Báo PH'));
+    assert(baoPh.length === 1 && baoPh[0].ten === 'Báo PH · Trao đổi với gia đình' && baoPh[0].trangThai === 'dang' && baoPh[0].nguoi === tvv.fullName && !baoPh[0].cha,
+      `một lần Báo PH (TVV): ${ten(a)}`);
+    assert(!a.buoc.some((b: any) => b.ten.startsWith('Trao đổi với gia đình')), `GVCN không giữ Trao đổi gia đình: ${ten(a)}`);
     assert(a.buoc.at(-1).ten === 'Kết quả meeting' && a.buoc.filter((b: any) => !b.cha).every((b: any) => b.cungLuc), `Kết quả cuối, các việc cùng lúc: ${ten(a)}`);
-    assert(a.buoc[0].ten.startsWith('Trao đổi ngắn') && a.buoc.findIndex((b: any) => b.ten.startsWith('Meeting')) > a.buoc.findIndex((b: any) => b.ten.startsWith('Trao đổi với gia đình')),
-      `Meeting sau các việc GVCN: ${ten(a)}`);
+    /* GVCN xác nhận Meeting → hai phần Xếp lịch → Kết quả; vẫn không có Báo PH Meeting. */
+    ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Cần họp GĐCN với em và phụ huynh' });
+    const b = tuyen(gvcn, 'phoi_hop', att);
+    assert(b.buoc.filter((x: any) => x.ten.startsWith('Báo PH')).length === 1 && b.buoc.at(-1).ten === 'Kết quả meeting' && b.buoc.some((x: any) => x.ten === 'Xếp lịch họp' && x.trangThai === 'dang'),
+      `sau xác nhận: ${ten(b)}`);
+    /* TVV báo xong → bước Báo PH xong (người, nội dung). */
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [baoPh[0].viec.id], ketQua: 'da_bao', ghiChu: 'Đã báo mẹ em kết quả và lịch họp GĐCN' });
+    const c = tuyen(gvcn, 'phoi_hop', att);
+    const x = c.buoc.find((y: any) => y.ten === 'Báo PH · Trao đổi với gia đình');
+    assert(x.trangThai === 'xong' && x.noiDung === 'Đã báo mẹ em kết quả và lịch họp GĐCN', `TVV xong: ${JSON.stringify(x)}`);
+  }));
+
+  await checkAsync('TUYEN0-15 · BAOPH-0 hai việc giao được (xu_ly · da_thuc_hien): người theo dõi N58 thấy MỘT dòng tuyến ở Đang theo dõi; người được giao thành người giữ', () => thu(() => {
+    const admin = taiKhoan('admin', 'office_admin');
+    /* Xử lý vi phạm (việc theo em): Head thêm người theo dõi → dòng tuyến "đang chờ xử lý" của em. */
+    const sid = moiEm();
+    for (const i of [1, 2, 3]) viPham(sid, i);
+    gv.themTheoDoi(ql, 'xu_ly', sid, { userIds: [admin.userId] });
+    const d = theoDoi(admin).find((r) => r.loai === 'vi_pham' && r.khoa === `em${sid}`);
+    assert(d && d.viec.includes(`xu_ly:${sid}`) && d.nhan === `Đang ở Xử lý vi phạm · ${gvcn.fullName}`, `xu_ly: ${JSON.stringify(d)}`);
+    assert(tu.tuyenCuaViec(admin, 'xu_ly', sid)?.khoa === `em${sid}`, 'khối giao việc xu_ly → tuyến chờ xử lý');
+    /* Đã thực hiện: Head duyệt đề xuất → giao cho Admin → Admin là người giữ bước; Head (người giao) theo dõi. */
+    const s2 = moiEm();
+    const vid = viPham(s2);
+    const nhap = xu.deXuat(gvcn, s2, { kind: 'wl_3', violationIds: [vid], note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    att.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(gvcn, nhap.id);
+    yc.duyetYeuCau(ql, mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id);
+    gv.doiPhuTrach(ql, 'da_thuc_hien', nhap.id, { userId: admin.userId, phuTrachCu: null });
+    const x = tuyen(ql, 'vi_pham', nhap.id);
+    const th = x.buoc.find((b: any) => b.khoa === 'thuc_hien');
+    assert(th.trangThai === 'dang' && th.nguoi === admin.fullName && th.viec?.loai === 'da_thuc_hien', `Đã thực hiện giao: ${JSON.stringify(th)}`);
+    const g = theoDoi(gvcn).find((r) => r.khoa === String(nhap.id));
+    /* Sau Head duyệt: Đã thực hiện (Admin) và Báo PH (TVV) cùng đang — GVCN (người giữ trước, giờ theo dõi) thấy MỘT dòng, gom cả hai việc N58. */
+    assert(g && g.nhan === "Đang ở 2 bước cùng lúc" && g.viec.includes(`da_thuc_hien:${nhap.id}`), `GVCN theo dõi (giao đi): ${JSON.stringify(g)}`);
+    assert(!theoDoi(admin).some((r) => r.khoa === String(nhap.id)), 'người được giao giữ bước → không ở Đang theo dõi');
   }));
 
   await checkAsync('TUYEN0-8 · Tình hình HAI CHIỀU: GV → TVV (Báo PH) · TVV → GVCN (trả lời); người gửi theo dõi tuyến', () => thu(() => {

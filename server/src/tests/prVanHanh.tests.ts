@@ -482,11 +482,13 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     }
   });
 
+  const { catBaoPh0 } = await import('./catBaoPh0.ts');
+  const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   check('VH1-9 · migrate prVanHanh: group_key → nhóm, watcher + task_followers → viec_theo_doi; chạy hai lần không đổi; tự lành chỉ mục; khớp schema.sql', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
-    /* DB trước VH-1: cắt khối cột VH-1 của tasks, hai chỉ mục, bảng task_groups. */
-    const cat = SCHEMA
+    /* DB trước VH-1: cắt khối cột VH-1 của tasks, hai chỉ mục, bảng task_groups. BAOPH-0: cắt phần BAOPH-0 trước, chạy lại themCotPrBaoPh0 trước khi so. */
+    const cat = catBaoPh0(SCHEMA)
       .replace(/idempotency_key TEXT,( +--[^\n]*)\n {2}\/\*\n {3}\* VH-1[\s\S]*?lap_tu TEXT(?:,\n[\s\S]*?hang_muc TEXT)?\n\)/, 'idempotency_key TEXT$1\n)')   // VH-1b: hang_muc là cột của bước sau (prHangMuc)
       .replace(/CREATE UNIQUE INDEX ux_tasks_lap_ky[^\n]*\n/, '').replace(/CREATE INDEX idx_tasks_lap_mo[^\n]*\n/, '').replace(/CREATE INDEX idx_task_giao_mo[^\n]*\n/, '')
       .replace(/\/\*\n \* VH-1 \(N59\): NHÓM VIỆC[\s\S]*?tao_luc TEXT NOT NULL\n\);\n/, '');
@@ -511,6 +513,7 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     cu.exec('DROP INDEX ux_tasks_lap_ky');
     const c2: string[] = []; migratePrVanHanh(cu, c2);
     assert(c2.length === 1 && /ux_tasks_lap_ky/.test(c2[0]), `tự lành: ${c2.join(' | ')}`);
+    themCotPrBaoPh0(cu, []);   // BAOPH-0
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).filter((x) => x.name !== 'hang_muc').map((x) => `${x.name}:${x.type}:${x.notnull}`));
     for (const bang of ['tasks', 'task_groups']) assert(cot(cu, bang) === cot(moi, bang), `${bang}: ${cot(cu, bang)} ≠ ${cot(moi, bang)}`);

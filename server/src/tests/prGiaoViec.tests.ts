@@ -71,7 +71,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const phan = hang('SELECT * FROM meeting_phan WHERE phoi_hop_id = ? ORDER BY phan', aid);
     return { aid, xep: phan.find((r) => r.phan === 'xep_lich'), kq: phan.find((r) => r.phan === 'ket_qua'), bpId: mot('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', aid)?.id as number };
   };
-  const phoiHopViec = (sid: number, kind = 'talk_family') => {
+  const phoiHopViec = (sid: number, kind = 'gvcn_meeting') => {   // BAOPH-0: talk_family là nguồn việc TVV — không giao ở phoi_hop
     const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND a.student_id IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = ?)
         AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`, kind).id;
@@ -907,11 +907,13 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(suggestCaseOwner({ classId: lop, category: 'listening' }) === e.userId, 'có vai ở chi nhánh của lớp thì chọn được');
   }));
 
+  const { catBaoPh0 } = await import('./catBaoPh0.ts');
+  const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   check('GV1-9 · migrate prGiaoViec: chạy hai lần không đổi; tự lành khi thiếu chỉ mục; DB cũ sau migrate có cột + bảng giống DB dựng từ schema.sql; DB mới không bị đổi', () => {
     const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
     const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
     /* DB trước GV-1: cắt ba dòng cột giao việc + khối bảng GV-1 khỏi chữ schema.sql. */
-    const cat = SCHEMA
+    const cat = catBaoPh0(SCHEMA)   // BAOPH-0: bước sau GV-1 — cắt trước, chạy lại themCotPrBaoPh0 trước khi so
       /* TUYEN-0 (sau TL-1): bỏ khối bảng bỏ theo dõi tuyến + chỉ mục người làm bước. */
       .replace(/-- TUYEN-0 \(N72 ①\)[\s\S]*?idx_tra_lai_xong_boi[^\n]*\n/, '')
       /* TL-1 (sau GV-1): bỏ viec_bao_ph.tra_lai_id + khối vi_pham_tra_lai trước — DB trước GV-1 cũng trước TL-1. */
@@ -930,6 +932,7 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     const c: string[] = []; migratePrGiaoViec(conn, c);
     assert(!c.some((x) => !/sinh \d+ phần Meeting/.test(x)), `DB dựng từ schema.sql vẫn bị đổi: ${c.join(' | ')}`);
     migratePrTraLai(cu, []);   // TL-1: DB cũ đi tiếp migrate sau → so cột / chỉ mục với schema.sql hiện tại
+    themCotPrBaoPh0(cu, []);   // BAOPH-0
     migratePrTuyen0(cu, []);   // TUYEN-0: chỉ mục người làm bước (meeting_phan.xong_boi)
     const moi = new SqliteDb(':memory:'); moi.exec(SCHEMA);
     const cot = (d: any, bang: string) => JSON.stringify((d.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((x) => `${x.name}:${x.type}:${x.notnull}`));

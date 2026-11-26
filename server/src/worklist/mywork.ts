@@ -269,10 +269,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     label: 'Xác nhận Case Speaking',
     hint: 'Người chấm chéo đã ghi nhận xét bài Speaking của em có Case. Dùng nhận xét đó làm mô tả Case, giữ mô tả đang có hoặc viết mô tả khác — hạn = hạn SOS.',
   },
-  /* PR-LT2a (N3, T45): GVCN báo PH kết quả Test — không hạn (M-05). */
+  /* BAOPH-0 (N72 ⑤): Báo PH kết quả Test là việc TVV (nhóm Báo PH) — nhóm GVCN cũ không còn dòng. */
   phoi_hop: {
     label: 'Báo PH kết quả Test',
-    hint: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
+    hint: 'Việc này TVV báo phụ huynh.',
   },
 
   /* PR-VAI-a (K5-10, Q14): Phối hợp SOS của GVCN là VIỆC THẬT. PHOI-HOP-V2: một dòng mỗi (lớp × việc); chỉ Meeting CX có hạn. */
@@ -1161,20 +1161,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
        JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')} AND NOT ${CASE_SAU_THI_SQL('sc', 'st.id')}   /* N46 */
       WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${locNxS.map((x) => ` AND ${x}`).join('')}`,
   ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
-  const baoPh = !co('phoi_hop') ? [] : conn
-    .prepare(
-      `SELECT x.id, x.attempt_id, x.student_id, x.phu_trach_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
-              (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
-         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
-         JOIN assessment_attempts a ON a.id = x.attempt_id
-         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending'${f.branchId ? ' AND c.branch_id = ?' : ''}${tatCa ? '' : `
-          /* GIAM-COMPUTE-2: ngoài "Tất cả" mục 3c chỉ giữ dòng chưa giao người, lớp em đang học do tôi chủ nhiệm (tập cha của isCoreTeacherOf) hoặc Final (việc QL). */
-          AND x.phu_trach_id IS NULL AND (a.kind = 'final' OR cur.class_id IN (SELECT ta.class_id FROM teacher_assignments ta WHERE ta.user_id = ? AND ta.is_core = 1))`} ORDER BY x.id`,   /* DOC-THUA: chi nhánh lọc trong SQL như X05 */
-    )
-    .all(...(f.branchId ? [f.branchId] : []), ...(tatCa ? [] : [p.userId])) as any[];
-  const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
-  henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
   const miniTest = !co('mini_test') ? [] : docNho(   // TOC-DO-2511: Tổng quan kèm Tất cả + Của tôi đọc một lần
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
@@ -1205,7 +1191,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const gvcnLa = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ? { nguoi: p.userId, homNay: today } : undefined;
   const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null, lopIds: lopYt, gvcnLa }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
-    .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
+    .concat(miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
   const giu = nguoiGiuKetQua([...ghiKetQua, ...paGvCu].map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
   /* N71 2b': trong hạn GV cũ (Người dạy ≠ người giữ việc — cùng `gvCu` của bảng kỹ năng) → dòng thuộc GV cũ, không thành việc của chủ Case mới cùng lúc. */
@@ -1568,35 +1554,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].group === 'ghi_nhan_xet' && caseXnS.has(items[i].caseId as number)) items.splice(i, 1);
   }
 
-  // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)
-  /* Báo PH kết quả Test: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
-  /* PR-S5F-a: Báo PH Giữa khoá là việc của GVCN lớp em ĐANG học (`gvcn_id` đọc cùng câu) — Quản lý xem "Tất cả" thấy người đó, không "chưa ai phụ trách". */
-  const phanTramCuoi = new Map<number, string>();
-  for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
-  for (const r of baoPh) {
-    /* GV-1 (N58): việc đã giao — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" (Head, sổ nghĩa vụ) thấy, đứng tên người được giao. */
-    if (r.phu_trach_id != null && (!tatCa || r.phu_trach_id === p.userId)) continue;
-    const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
-    const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
-    const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
-    const qlGiu = laCuoiKhoa && cuaGv && giuQl(cnLop(r.cur_class_id));
-    if (!gvcn && !cuaGv) continue;
-    if (laCuoiKhoa && !gvcn && !qlGiu && !tatCa) continue;
-    items.push({
-      key: `baoph:${r.id}`, group: 'phoi_hop', urgency: 'normal',
-      studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
-      classId: r.cur_class_id, classCode: r.class_code ?? null,
-      attemptId: r.attempt_id, attemptNo: r.attempt_no ?? null, caseId: null, level: null,
-      contextLabel: nhanDot(r.attempt_kind, r.attempt_no), count: null,
-      reason: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm: kết quả, môn khó khăn, nguyên nhân, phương án hỗ trợ và khả năng học lại.',
-      phu: laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress'),
-      tieuDe: `Báo PH kết quả Test · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
-      actionLabel: 'Mở Phối hợp SOS',
-      href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: r.phu_trach_id ?? (gvcn || qlGiu ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null), owner: null, mine: r.phu_trach_id == null && (gvcn || qlGiu),
-      due: null, statusLabel: 'Chưa làm',
-    });
-  }
+  /* 3c. Báo PH kết quả Test lớp thường: BAOPH-0 (N72 ⑤) — việc TVV (`viecBaoPhCuaToi`), GVCN / Head thôi giữ. */
   /*
    * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật. Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
    * dòng mang hạn sớm nhất, quá hạn tô như việc khác.
@@ -1856,6 +1814,24 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
     /* GD-19 (mockup ⑪ K2a): việc bắt buộc CHỈ vì được yêu cầu → thẻ phụ "{người ghi} yêu cầu". Một câu, chỉ khi có việc loại này (thường 0). */
     const yeuCauCan: { it: WorkItem; sid: number; ke: string }[] = [];
+    /* BAOPH-0 (N72 ⑥, 4.6): Xử lý vi phạm / Đã thực hiện ĐÃ GIAO rời dòng GVCN (người được giao thấy qua `viecGiaoChoToi`; "Tất cả" đứng tên người đó) · hạn đặt tay
+       thắng hạn luật. MỘT câu, chỉ khi có em ứng viên (chỉ mục khoá chính / `idx_measure_student`). */
+    const giaoYt = new Map<string, { pt: number | null; han: string | null }>();
+    if (uv.length) {
+      const ds = JSON.stringify(uv.map((r) => r.id));
+      for (const g of conn.prepare(`SELECT 'xu_ly' AS l, id AS id, phu_trach_id AS pt, han_chon AS han FROM viec_xu_ly WHERE trang_thai = 'mo' AND id IN (SELECT value FROM json_each(?1))
+          UNION ALL SELECT 'dth', id, phu_trach_id, han_chon FROM discipline_measures WHERE student_id IN (SELECT value FROM json_each(?1)) AND status = 'da_duyet'
+            AND (phu_trach_id IS NOT NULL OR han_chon IS NOT NULL)`).all(ds) as any[]) giaoYt.set(`${g.l}:${g.id}`, { pt: g.pt ?? null, han: g.han ?? null });
+    }
+    /* Việc đã giao cho người khác: bỏ (thường) / đứng tên người đó ("Tất cả"); giao cho tôi: `viecGiaoChoToi` dựng. */
+    const theoGiao = (k: string, it: WorkItem): WorkItem | null => {
+      const g = giaoYt.get(k);
+      if (!g) return it;
+      const due = g.han ?? it.due;
+      if (!g.pt) return { ...it, due, urgency: urgencyOf(due, today) };
+      if (!tatCa || g.pt === p.userId) return null;
+      return { ...it, due, urgency: urgencyOf(due, today), ownerId: g.pt, mine: false };
+    };
     for (const r of uv) {
       const em = trang.get(r.id);
       if (!em || em.tamDung) continue;
@@ -1872,20 +1848,21 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       const quaHan = [...em.viPham.values()];
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = nhanLoaiXuLy(em.keTiep.kind);
-        items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
+        const xl = theoGiao(`xu_ly:${r.id}`, { ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
           /* LG-12: bắt buộc chỉ vì được yêu cầu → nói rõ "được yêu cầu" (luật 3 thì giữ chữ cũ). */
           reason: em.theoLuat ? `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý` : `${em.soBatBuoc} vi phạm được yêu cầu xử lý`,   // một số với tiêu đề (rà #1735 P2)
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
-        if (!em.theoLuat) yeuCauCan.push({ it: items[items.length - 1], sid: r.id, ke });
+        if (xl) { items.push(xl); if (!em.theoLuat) yeuCauCan.push({ it: xl, sid: r.id, ke }); }
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
       for (const x of em.daDuyet) {
         const nhan = nhanLoaiXuLy(x.kind, x.customName);
-        items.push({ ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
+        const it = theoGiao(`dth:${x.id}`, { ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
           reason: `Head đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
           href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
+        if (it) items.push(it);
       }
     }
     if (yeuCauCan.length) {

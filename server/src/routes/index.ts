@@ -2677,8 +2677,8 @@ api.get('/giao-viec/:loai/:id', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const loai = giaoViecSvc.docLoai(req.params.loai);
   const g = giaoViecSvc.xemGiaoViec(p, loai, pInt(req, 'id'));
-  /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng — tuyến đi cùng khối giao việc. */
-  return loai === 'tinh_hinh' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, 'tinh_hinh', g.id) } : g;
+  /* TUYEN-0: Tình hình học tập (TVV hỏi → GVCN trả lời) không có đường panel riêng · BAOPH-0 Xử lý vi phạm / Đã thực hiện — tuyến đi cùng khối giao việc. */
+  return loai === 'tinh_hinh' || loai === 'xu_ly' || loai === 'da_thuc_hien' ? { ...g, tuyen: tuyenSvc.tuyenCuaViec(p, loai, g.id) } : g;
 }));
 /**
  * TUYEN-0 (N72 ②–④): một tuyến Ý thức & Phối hợp — `:loai` vi_pham | phoi_hop | tinh_hinh | cap_bac, `:khoa` id (vi_pham: id lần xử lý hoặc `em{id}`).
@@ -3355,6 +3355,7 @@ api.post('/mgmt-tasks', requireAuth, wrap((req) => {
     watcherUserId: b.watcherUserId ? Number(b.watcherUserId) : null,
     due: b.due ?? null, note: b.note ?? null,
     parentTaskId: b.parentTaskId ? Number(b.parentTaskId) : null,
+    chaLoai: b.chaLoai, chaId: b.chaId,   // BAOPH-0 (4.6): việc con của việc Ý thức / Phối hợp / Báo PH
     caseIds: Array.isArray(b.caseIds) ? b.caseIds.map(Number) : [],
     unitReportId: b.unitReportId ? Number(b.unitReportId) : null,
     idempotencyKey: b.idempotencyKey,   // PR-GVa: chuẩn hoá ở `chuanKhoaGui` (chuỗi lạ → không khoá)

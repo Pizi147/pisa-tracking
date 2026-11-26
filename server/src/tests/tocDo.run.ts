@@ -269,6 +269,8 @@ const BG_GV = (() => {
 /** VH-1b (N62): một việc Báo PH (khối giao việc N58 + Mô tả) — đường `/giao-viec/bao_ph/{viecBaoPh}`. */
 const VIEC_BAO_PH = (conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE s.branch_id = ? ORDER BY v.id LIMIT 1`).get(CN) as any)?.id as number;
 assert(VIEC_BAO_PH, 'Seed thiếu việc Báo PH ở chi nhánh MB');
+/** BAOPH-0 (4.6): một em ở chi nhánh MB — khối giao việc "Xử lý vi phạm" (`/giao-viec/xu_ly/{emXl}`, khoá việc = em). */
+const EM_XL = (conn.prepare(`SELECT s.id FROM students s WHERE s.branch_id = ? AND EXISTS (SELECT 1 FROM violations x WHERE x.student_id = s.id) ORDER BY s.id LIMIT 1`).get(CN) as any)?.id as number;
 /** NHẸ HƠN PR-2b: một vi phạm ở chi nhánh MB — tệp của vi phạm tải khi mở dòng ở panel Báo PH (`/attachments?ownerType=violation`). */
 const VP = (conn.prepare(`SELECT x.id FROM violations x JOIN students s ON s.id = x.student_id WHERE s.branch_id = ? ORDER BY x.id LIMIT 1`).get(CN) as any)?.id as number;
 assert(VP, 'Seed thiếu vi phạm ở chi nhánh MB');
@@ -296,7 +298,7 @@ function urlFor(mau: string): string {
     .replace('{ycPa}', String(YC_PA))
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
-    .replace('{viecBaoPh}', String(VIEC_BAO_PH))
+    .replace('{viecBaoPh}', String(VIEC_BAO_PH)).replace('{emXl}', String(EM_XL))
     .replace('{vp}', String(VP))
     .replace('{cn}', String(CN))
     .replace('{sos23}', SOS23)
@@ -1587,14 +1589,15 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* SUA-GOP-2511 ([XM7] #2070): chụp lại 'QL toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý CHỈ thêm `emBoSung` (lớp · tên · thiếu từng em, chỉ hiển thị)
        vào việc Bổ sung hồ sơ thiếu; 0 câu thêm (dòng đã đọc). Đã kiểm: `emBoSung: undefined` → cả 11 băm trùng ảnh cũ.
        Trước: QL toi 4f025585561f2eab, QL tat-ca 50125dbbf3460fcc, QT tat-ca 99b9f7ce08e5b071, QT tat-ca cn 41c0c2a404b291fa */
-    'QL toi': '4b9329d8861262f3', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '6dacfaab65010b5f', 'GVBM toi': 'ffba3d289a958121',
+    /* BAOPH-0 (N72 ⑤ ⑥, 26/11): chụp lại 8 băm — đổi CÓ CHỦ Ý: GVCN / Head thôi việc Báo PH kết quả Test + Trao đổi gia đình (mục 3c bỏ, nguồn TVV rời dòng Phối hợp), việc TVV mới ở nhóm Báo PH (dữ liệu mẫu báo qua TVV), hint nhóm phoi_hop. QT toi / ADMIN toi / GVS toi giữ. Trước: QL toi 4b9329d8861262f3, GVCN toi 6dacfaab65010b5f, GVBM toi ffba3d289a958121, GVCN_THUONG toi 6dacfaab65010b5f, QL tat-ca 6619650d184e792e, QT tat-ca c86ee14b9dbdd191, QT tat-ca cn 9043067ed4ef66da, QL gvcn f298a4e8477e0426 */
+    'QL toi': 'b38fc43debef4461', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '6dacfaab65010b5f', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '6619650d184e792e', 'QT tat-ca': 'c86ee14b9dbdd191',
-    'QT tat-ca cn': '9043067ed4ef66da', 'QL gvcn': 'f298a4e8477e0426', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '8d8946c963a08012', 'QT tat-ca': 'f1b6a1a61ac9fa54',
+    'QT tat-ca cn': '05751b21042eb7cf', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1773,7 +1776,8 @@ await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, 
 
 /* GIAM-DOC-0611c: việc "Báo PH kết quả Test" đang chờ (`mywork.ts` 3c, `emCoBaoPhChuaLam`) `x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
    (bản chính 29/10: 436 dòng, 117 đang chờ) — nay đi chỉ mục một phần idx_sca_cho. */
-await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca_cho, không SCAN sos_coordination_actions; migrate chạy lặp được', async () => {
+/* BAOPH-0 (N72 ⑤): mục 3c (GVCN / Head giữ Báo PH kết quả Test) đã bỏ — việc là của TVV (`viec_bao_ph`), GVCN /my-work KHÔNG còn câu này. */
+await checkAsync('GIAM-DOC-0611c (×3) · BAOPH-0: GVCN /my-work không còn câu Báo PH kết quả Test (việc TVV); migrate chạy lặp được', async () => {
   const { migratePrGiamDoc0611 } = await import('../migrate/prGiamDoc0611.ts');
   const lan: string[][] = [[], []];
   migratePrGiamDoc0611(conn, lan[0]); migratePrGiamDoc0611(conn, lan[1]);
@@ -1784,13 +1788,7 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
     assert((await doSql('GVCN', 'GET', '/my-work')).status === 200, 'GVCN /my-work không 200');
   } finally { doQuet.ghi = null; }
   const cau = [...new Map(ghi.filter((g) => /FROM sos_coordination_actions x JOIN students s[\s\S]*x\.kind = 'bao_ph_tvv' AND x\.status = 'pending'/.test(g.sql)).map((g) => [g.sql, g])).values()];
-  assert(cau.length, 'không bắt được câu Báo PH kết quả Test');
-  const loi: string[] = [];
-  for (const { sql, args } of cau) {
-    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
-    if (!plan.some((d) => d.includes('idx_sca_cho')) || plan.some((d) => /^SCAN x$/.test(d))) loi.push(plan.join(' | '));
-  }
-  assert(!loi.length, loi.join(' · '));
+  assert(!cau.length, `GVCN /my-work còn câu Báo PH kết quả Test: ${cau.length}`);
 });
 
 /* TURSO-1211 (đo bản chép bản chính, docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): 7 câu trước quét cả bảng nay đi chỉ mục mới. */

@@ -393,6 +393,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT', 'CX'], url: '/mgmt-tasks/nhom' },
   /* VH-1b (N62): khối giao việc N58 (Phụ trách · Hạn · Theo dõi · Mô tả) — panel một việc. */
   { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/giao-viec/bao_ph/{viecBaoPh}' },
+  { trang: 'Công việc · khối giao việc Xử lý vi phạm (BAOPH-0)', vai: ['QL', 'QT'], url: '/giao-viec/xu_ly/{emXl}' },
   /* NHẸ HƠN PR-2b: panel Báo PH — mở một dòng vi phạm thì tải tệp của vi phạm đó (người dùng bấm, một GET mỗi lần mở). */
   { trang: 'Công việc · khối giao việc', vai: ['QL', 'QT', 'TVV'], url: '/attachments?ownerType=violation&ownerId={vp}' },   // B2-14: TVV MB (em của TVV) → 200; TVV chi nhánh khác 403: `tocDo.run` B2-14
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
@@ -872,7 +873,8 @@ export const TRAN: Record<string, number> = {
   'QT /mgmt-tasks': 17,
   'CX /mgmt-tasks': 17,   // VH-1: đo 8 (main QL / QT 6: +1 người theo dõi, +1 nhóm)
   'QL /mgmt-tasks/nhom': 10, 'QT /mgmt-tasks/nhom': 10, 'CX /mgmt-tasks/nhom': 10,   // VH-1: đo 3
-  'QL /giao-viec/bao_ph/{viecBaoPh}': 20, 'QT /giao-viec/bao_ph/{viecBaoPh}': 20, 'TVV /giao-viec/bao_ph/{viecBaoPh}': 18,   // VH-1b: đo 10 · 10 · 8 (+1 câu Mô tả)
+  'QL /giao-viec/xu_ly/{emXl}': 23, 'QT /giao-viec/xu_ly/{emXl}': 23,   // BAOPH-0 (4.6): đo 13 (trạng thái Ý thức của em + việc con) → đo + 10
+  'QL /giao-viec/bao_ph/{viecBaoPh}': 20, 'QT /giao-viec/bao_ph/{viecBaoPh}': 20, 'TVV /giao-viec/bao_ph/{viecBaoPh}': 18,   // VH-1b: đo 10 · 10 · 8 (+1 câu Mô tả); BAOPH-0: đo 11 (+1 câu việc con)
   'QL /attachments?ownerType=violation&ownerId={vp}': 13, 'QT /attachments?ownerType=violation&ownerId={vp}': 11, 'TVV /attachments?ownerType=violation&ownerId={vp}': 13,   // NHẸ HƠN PR-2b: đo 7 · 5 · 7 (tệp vi phạm khi mở dòng)
   'GVCN /mgmt-tasks': 12,
   'QL /mgmt-tasks?hang=qua-han': 17,
@@ -1464,14 +1466,15 @@ export const TRAN_DONG: Record<string, number> = {
   /* GV-1 (N58): tab "Đang theo dõi" — đo 1–2 dòng (seed chưa có ai theo dõi) → đo + 50. ponytail: dòng tăng theo số việc từng theo dõi (đọc hết rồi lọc 7 ngày ở mã). */
   /* GV-2: ô giao việc đọc người có vai ở MỘT chi nhánh (seed MB 19), lọc tên không dấu ở JS — trần 40 (LIMIT SQL 300 cho bản chính). */
   'QL /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QL /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'QT /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'TVV /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?nhom=giao_viec&chiNhanh={cn}': 40, 'CX /ref/nguoi?q=ng&nhom=giao_viec&chiNhanh={cn}': 40,
-  /* TUYEN-0 (N72 ①): + một dòng một tuyến (tìm tuyến người xem đã làm bước / theo dõi việc N58 + dựng theo lô) — đo QL 55 (trước 52, câu 8 không đổi trần); ×3 (GV-1) 298 → trần 100 (100 × 3 + 60 ≥ 298). */
-  'QL /my-work/theo-doi': 100, 'QT /my-work/theo-doi': 100, 'GVCN /my-work/theo-doi': 100, 'GVBM /my-work/theo-doi': 100, 'TVV /my-work/theo-doi': 100, 'CX /my-work/theo-doi': 100, 'ADMIN /my-work/theo-doi': 100,
+  /* BAOPH-0 (N72 ⑤): Head + CX theo dõi MỌI việc Báo PH (không chỉ vi phạm) — QL đo 57 dòng (seed) → đo + 50.
+     TUYEN-0 (N72 ①): + một dòng một tuyến (tìm tuyến người xem đã làm bước / theo dõi việc N58 + dựng theo lô) — câu không đổi trần; sau gộp BAOPH-0 đo QL 173 → max(173 + 50, ⌈173 × 1,3⌉) = 225; GVCN 135 → 185 · CX 149 → 200 · vai khác đo ≤ 25 → 100. */
+  'QL /my-work/theo-doi': 225, 'QT /my-work/theo-doi': 100, 'GVCN /my-work/theo-doi': 185, 'GVBM /my-work/theo-doi': 100, 'TVV /my-work/theo-doi': 100, 'CX /my-work/theo-doi': 200, 'ADMIN /my-work/theo-doi': 100,
   /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
   'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 619,
   /* MYWORK-TVV: đo 13 dòng (seed, không kèm quét nền) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 66 (109 em): 920–1 121 dòng (14–21 câu); lượt quét nền đầu ngày ~200 câu chạy một lần cho cả hệ thống, không thuộc TVV. */
-  'TVV /my-work': 63,
+  'TVV /my-work': 117,   // BAOPH-0: + việc TVV Trao đổi gia đình / kết quả Progress / Final — đo 67 → đo + 50
   /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */
   'TVV /tong-quan/tvv/em': 782,   // B2-14: TVV MB 49 em đo 601 (trần cũ 124, TVV Cẩm Phả 4 em)
   /* KY-VONG-MT0 (14/11): bảng Kết quả đầu ra lớp FT — đo 14 dòng (kỹ năng Đã huỷ đọc bằng câu con, 0 câu thêm) → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -2088,6 +2091,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /mgmt-tasks?hang=qua-han': 144,   // VH-1: đo 94 (main 42)
   'QT /mgmt-tasks?hang=qua-han': 172,   // VH-1: đo 122 (main 68)
   'QL /mgmt-tasks/nhom': 55, 'QT /mgmt-tasks/nhom': 55, 'CX /mgmt-tasks/nhom': 55,   // VH-1: hộp Nhóm — đo 5 (1 câu nhóm)
+  'QL /giao-viec/xu_ly/{emXl}': 78, 'QT /giao-viec/xu_ly/{emXl}': 78,   // BAOPH-0 (4.6): đo 28 → đo + 50
   'QL /giao-viec/bao_ph/{viecBaoPh}': 58, 'QT /giao-viec/bao_ph/{viecBaoPh}': 58, 'TVV /giao-viec/bao_ph/{viecBaoPh}': 56,   // VH-1b: đo 8 · 8 · 6
   'QL /attachments?ownerType=violation&ownerId={vp}': 55, 'QT /attachments?ownerType=violation&ownerId={vp}': 53, 'TVV /attachments?ownerType=violation&ownerId={vp}': 55,   // NHẸ HƠN PR-2b: đo 5 · 3 · 5
   'QL /meeting/board': 62,   // đo 12
@@ -2305,9 +2309,9 @@ export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 d�
 /**
  * TUYEN-0 (N72): dựng tuyến theo LÔ — `mot`: GET /tuyen/:loai/:khoa (vi phạm · Phối hợp có Meeting); `panel`: trường `tuyen` thêm vào một đường panel
  * (tìm khoá + dựng, đo ngoài request — đường thật dùng lại bộ nhớ phạm vi); `theoDoi`: phần tuyến của GET /my-work/theo-doi. Số câu không theo số tuyến
- * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +3 · 36 (khoá tuyến đọc từ panel — PTA rà #2231 P2-9; trước +6) · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉).
+ * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +3 · 36 (khoá tuyến đọc từ panel — PTA rà #2231 P2-9; trước +6) · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉) · sau gộp BAOPH-0 (Head + CX theo dõi mọi Báo PH): theo dõi 9 câu · 206 dòng → dòng 270.
  */
-export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 12, dong: 180 } };
+export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 12, dong: 270 } };
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 /** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */
@@ -2351,7 +2355,7 @@ export const TRAN_GHI_LO = {
   /** DUONG-LUI-2 (P1-09): POST /classes/:id/transition "Ngay hôm nay" một em (web gửi một em một lời gọi) — ra lệnh Cuối khoá + thi hành + ghi_dao 22 bảng; đo trong prCuoiKhoa CK-7. */
   chotCaLopNgay: 255,   // đo 196 câu, 217 dòng (không chụp 115 câu, 140 dòng — thao tác hiếm) → max(196 + 10, ⌈196 × 1,3⌉)
   /** #8: POST /students/:id/hoan-tac-chuyen-ngay — daoLai một bản ghi + nhật ký (cùng trần cho POST /classes/:id/hoan-tac-chuyen-ngay, CK-7). */
-  hoanTacChuyenNgay: 37,   // đo 27 câu, 19 dòng → max(27 + 10, ⌈27 × 1,3⌉)
+  hoanTacChuyenNgay: 38,   // đo 27 câu, 19 dòng → max(27 + 10, ⌈27 × 1,3⌉); BAOPH-0 +1 (người theo dõi nguồn gvcn về GVCN lớp cũ — `theoGvcnHienTai` sau khi đảo)
   /** LO-TRINH-THEO-HV: POST /cycles/:id/lo-trinh (LT1 → RF, 3 MT: 1 có điểm giữ, 1 dời, 1 huỷ) — quyền, ghi_dao các bảng của MỘT lộ trình, lõi lịch MT, mốc Case, Hành trình, nhật ký. */
   doiLoTrinh: 93,   // đo 71 câu, 148 dòng (thao tác ghi hiếm: ghi_dao 6 bảng + lõi lịch MT từng lượt) → max(71 + 10, ⌈71 × 1,3⌉)
   /** [XM-C1] TVV-TUAN-BD: PATCH /cycles/:id { startWeek } của TVV chi nhánh em — cùng đường QL (kiểm tuần, ghi, lõi lịch MT, Hành trình, nhật ký) + kiểm quyền `duocDoiMon`; đo trong prOv8b OV8b-TUAN. */

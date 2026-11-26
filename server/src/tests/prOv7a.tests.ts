@@ -221,6 +221,8 @@ export async function runPrOv7aTests(t: YThucTestKit) {
 
   // ==================================================================== 3 · PHỐI HỢP / BÁO PH
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
+  const baoPhTvvK: any = await import('../yThuc/baoPhTvv.ts');   // BAOPH-0
+  const { laViecTvvBaoPh: laViecTvvBaoPhK } = await import('../../../shared/domain/index.ts');
   /** Một việc Phối hợp của lượt Mock FT có SOS (bộ demo) + GVCN lớp em đang học. */
   const viecPhoiHop = (kind: string) => {
     const r = get(`SELECT x.*, e.class_id FROM sos_coordination_actions x JOIN enrollments e ON e.student_id = x.student_id AND e.status = 'active'
@@ -253,7 +255,10 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   await checkAsync('OV7a-3b · Phối hợp: số liệu đếm lại từ trạng thái hiện tại (không cộng dồn) — xong hết → Hoàn thành; Đưa lại một việc → Đang xử lý', () => thu(() => {
     const { r, gv } = viecPhoiHop('talk_student');
     const viec = all(`SELECT id, status FROM sos_coordination_actions WHERE attempt_id = ?`, r.attempt_id);
-    for (const v of viec) if (v.status === 'pending') phoiHop.confirmCoordination(gv, v.id, { performedOn: TODAY, note: 'Đã làm' });
+    const viecK = all(`SELECT id, status, kind FROM sos_coordination_actions WHERE attempt_id = ?`, r.attempt_id);
+    /* BAOPH-0: Trao đổi gia đình / Báo PH kết quả Test xong qua việc TVV. */
+    for (const v of viecK) if (v.status === 'pending') { if (laViecTvvBaoPhK(v.kind)) baoPhTvvK.baoXongNguonTvv(v.id, TODAY, 'Đã gọi phụ huynh'); else phoiHop.confirmCoordination(gv, v.id, { performedOn: TODAY, note: 'Đã làm' }); }
+    void viec;
     const tap = (id: string) => phoiHop.phoiHopMetric(P.admin, id, {}).ids as number[];
     assert(tap('phoi-hop-hoan-thanh').includes(r.attempt_id) && !tap('phoi-hop-dang-xu-ly').includes(r.attempt_id), 'xong hết → Hoàn thành');
     phoiHop.moLaiCoordination(gv, r.id);
@@ -263,10 +268,11 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   }));
 
   await checkAsync('OV7a-3c · Báo PH kết quả Test: lưu lại thì chụp lại nội dung đã báo (`noi_dung_luc_bao`)', () => thu(() => {
-    const { r, gv } = viecPhoiHop('bao_ph_tvv');
-    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã làm' });
+    /* BAOPH-0 (N72 ⑤): TVV báo (việc Báo PH) — mỗi lần báo xong nguồn chụp lại 4 nội dung; GVCN không đánh dấu nữa. */
+    const { r } = viecPhoiHop('bao_ph_tvv');
+    baoPhTvvK.baoXongNguonTvv(r.id, TODAY, 'Đã gọi phụ huynh');
     conn.prepare(`UPDATE sos_coordination_actions SET noi_dung_luc_bao = '["cũ","cũ","cũ","cũ"]' WHERE id = ?`).run(r.id);
-    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã nhờ TVV gọi lại' });
+    baoPhTvvK.baoXongNguonTvv(r.id, TODAY, 'Gọi lại phụ huynh, báo thêm');
     const chup = JSON.parse(get('SELECT noi_dung_luc_bao FROM sos_coordination_actions WHERE id = ?', r.id).noi_dung_luc_bao);
     assert(Array.isArray(chup) && chup.length === 4 && chup[0] !== 'cũ', `chụp lại: ${JSON.stringify(chup)}`);
   }));

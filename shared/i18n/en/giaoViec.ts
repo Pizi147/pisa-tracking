@@ -30,6 +30,8 @@ export const EN_GIAO_VIEC = {
   'Chỉ CX, TVV của em hoặc Head ghi được kết quả meeting.': 'Only CX, the student\'s counsellor or Head can record the meeting result.',
   'Chỉ BPXL, người được giao hoặc Head xếp được lịch họp.': 'Only the scheduler, the assignee or Head can schedule the meeting.',
   'Việc của tình hình này là Báo PH của TVV — giao ở việc Báo PH.': 'This update\'s task is the counsellor\'s parent call — assign it there.',
+  'Việc cha đã kết thúc — không thêm việc con.': 'The parent task is closed — no sub-tasks can be added.',
+  'Việc này là Báo PH của TVV — giao ở việc Báo PH.':'This is the counsellor\'s parent call — assign it there.',
   'Ngày hạn không hợp lệ.': 'Invalid deadline.',
   'Xếp lịch họp, Kết quả meeting': 'Schedule meeting, Meeting result',
   'Bấm <b>Hoàn thành</b> ở dòng <b>Xếp lịch họp</b> (ghi ngày giờ họp nếu muốn).': 'Click <b>Done</b> on the <b>Schedule meeting</b> row (add the meeting date and time if you like).',

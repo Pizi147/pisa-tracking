@@ -137,7 +137,7 @@ function baoPhTrongKy(p: Principal, ky: { tu: string; den: string }): DongBaoPh[
             (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngayBao
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
       WHERE (v.phu_trach_id = ? OR (v.phu_trach_id IS NULL AND s.consultant_user_id = ?)) AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học · rà 25/11 PR 2: người giữ như sổ đúng hạn (viecDaXong)
-        AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL AND v.tao_luc >= ? AND v.tao_luc < ? ORDER BY v.han, v.id`,   // R1-L6: ngày tạo theo giờ VN   // PHOI-HOP-V2: việc Meeting CX tách khỏi Báo PH vi phạm
+        AND v.trang_thai != 'bo' AND v.tao_luc >= ? AND v.tao_luc < ? ORDER BY v.han, v.id`,   // R1-L6: ngày tạo theo giờ VN · BAOPH-0 (N72 ⑤, PTA [XM] 1): MỌI việc TVV báo PH (cả nguồn Phối hợp) — một loại việc
   ).all(p.userId, p.userId, dauNgayVnUtc(ky.tu), dauNgayVnUtc(addDays(ky.den, 1))) as (DongBaoPh & { han_chon: string | null })[]);
   /* HAN-BAO-PH (chủ SP 03/11, 17.3): "đúng hạn" so với HẠN HIỆU LỰC (hạn đã chọn, Quay lại học) — cùng hàm với Công việc / hồ sơ; một câu Tạm dừng. */
   const khoang = khoangTamDung([...new Set(ds.map((d) => d.hv))]);
