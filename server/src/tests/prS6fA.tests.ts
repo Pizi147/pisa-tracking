@@ -122,7 +122,8 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const b0 = badge(); const l0 = lt();
     conn.exec('SAVEPOINT s6f2a');
     try {
-      studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', TODAY, 'Tạm nghỉ');
+      /* Dừng hôm qua, quay lại hôm nay — lần dừng thật (dừng + quay lại cùng ngày không tính là quay lại, rà #2217 P2-3). */
+      studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', t.addDays(TODAY, -1), 'Tạm nghỉ');
       const b3 = badge(); const l3 = lt();
       studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'active', TODAY, 'Đi học lại');
       const b4 = badge(); const l4 = lt();
