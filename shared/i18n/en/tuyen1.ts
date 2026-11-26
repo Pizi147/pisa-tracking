@@ -22,4 +22,7 @@ export const EN_TUYEN_1 = {
   'Đã đưa về Chưa thực hiện': 'Set back to not done',
   'Việc vẫn mở': 'Task stays open',
   'Lưu · Chưa thực hiện': 'Save · not done',
+  'Việc con của việc Ý thức không gắn họp đơn vị.': 'A sub-task of a conduct task cannot be linked to a unit meeting.',
+  'Chỉ người đang giữ việc này, Head, Quản trị hoặc CX mới thêm được việc con.': 'Only the person holding this task, the Head, an administrator or CX can add sub-tasks.',
+  'Việc con: người giữ việc chỉ sửa tên, mô tả, hạn, người phụ trách, người theo dõi.': 'Sub-task: the task holder can only change the name, description, due date, owner and followers.',
 } as const;
