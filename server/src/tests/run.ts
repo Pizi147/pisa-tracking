@@ -9951,6 +9951,8 @@ await runPrChanRoiNhapTests({ check, checkAsync, assert } as any);
 // ==================================================================== BO-QUA-XEP-MT (chủ SP 03/11: QL bỏ qua việc Xếp lịch MT)
 const { runPrBoQuaMocTests } = bocTep('prBoQuaMoc', await import('./prBoQuaMoc.tests.ts'));
 await runPrBoQuaMocTests({ check, assert, conn, P, classId } as any);
+const { runPrMtQuaThiTests } = bocTep('prMtQuaThi', await import('./prMtQuaThi.tests.ts'));
+await runPrMtQuaThiTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== XEP-MT-NHAC (chủ SP 07/11: nhắc xếp MT chỉ khi lộ trình thiếu MT)
 const { runPrXepMtNhacTests } = bocTep('prXepMtNhac', await import('./prXepMtNhac.tests.ts'));
 await runPrXepMtNhacTests({ check, assert, conn, P, TODAY, classId, addDays } as any);

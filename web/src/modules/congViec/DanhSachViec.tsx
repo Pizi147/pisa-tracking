@@ -413,6 +413,9 @@ export function HanA({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (daXong) return <span className={`cvA-hn !font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>;
   if (!it.due) {
+    /* MT-QUA-THI (PTA 26/11): việc MT sau ngày thi (lẻ, không gộp) — ngày thi ở cột ngày (ô chi tiết "MT2, 3 sau ngày thi" một dòng). Chỉ dd/mm/yyyy
+       (`statusLabel` "Thi dd/mm/yyyy" ở title): chữ "Thi" làm cột ngày chung của cả danh sách rộng thêm, đẩy dòng khác xuống hai dòng khi panel mở. */
+    if (it.key.startsWith('mt-thi:')) return <span className="cvA-hn" title={dich(it.statusLabel)}>{it.statusLabel.slice(-10)}</span>;
     return <span className="cvA-hn">{it.group === 'xuat_bc_ph' ? dich(it.statusLabel) : laViecChamCheo(it) ? null : <span className="sr-only">{t('không hạn')}</span>}</span>;
   }
   /* GV-2 / TL-1: "Chờ GV sửa" — hạn tạm dừng, không tự so ngày ra "quá hạn" (viên "tạm dừng", ngày ở title). */

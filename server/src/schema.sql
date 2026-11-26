@@ -402,6 +402,8 @@ CREATE TABLE learning_cycles (
   lich_thi_ket_luan TEXT, lich_thi_thang TEXT, lich_thi_ghi_chu TEXT, lich_thi_ghi_chu_boi INTEGER, lich_thi_ghi_chu_luc TEXT,
   -- LICH-THI-NOI-THI: nơi thi thật (chữ ngắn, vd IDP · BC; NULL = chưa ghi).
   noi_thi TEXT,
+  -- MT-QUA-THI: Head bỏ qua việc "MT sau ngày thi" — dấu (ngày thi + các MT; đổi thì việc hiện lại), người / lúc bỏ qua.
+  mt_thi_bo_qua TEXT, mt_thi_bo_qua_boi INTEGER, mt_thi_bo_qua_luc TEXT,
   UNIQUE (student_id, seq)
 );
 

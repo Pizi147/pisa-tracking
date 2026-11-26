@@ -68,6 +68,7 @@ import { migratePrOv13q, themCotPrOv13q } from './migrate/prOv13q.ts';
 import { themCotPrOv15f } from './migrate/prOv15f.ts';
 import { themCotPrNoiThi } from './migrate/prNoiThi.ts';
 import { themCotPrBoQuaMoc } from './migrate/prBoQuaMoc.ts';
+import { themCotPrMtQuaThi } from './migrate/prMtQuaThi.ts';
 import { themCotPrHanBaoPh } from './migrate/prHanBaoPh.ts';
 import { themCotPrBaoLaiPh } from './migrate/prBaoLaiPh.ts';
 import { themCotPrPlanSourceVang } from './migrate/prPlanSourceVang.ts';
@@ -220,6 +221,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     /* LICH-THI-NOI-THI: cột learning_cycles.noi_thi (nơi thi thật) — ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrNoiThi(conn, applied));
     /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
+    /* MT-QUA-THI: 3 cột learning_cycles.mt_thi_bo_qua* (Bỏ qua việc MT sau ngày thi) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrMtQuaThi(conn, applied));
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* CAU-HINH-CASE-SOS (chủ SP 11/11): bảng phiên bản cấu hình + con trỏ pb_loai / pb_moc + trigger tham chiếu — ĐẦU migrate, chỉ thêm (bước sau đọc cột); bảng rỗng = bản gốc. */ buoc(() => migratePrCauHinhCaseSos(conn, applied));
     /* YT-BAO-PH: viec_bao_ph.bao_lai_cua — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrBaoLaiPh(conn, applied));

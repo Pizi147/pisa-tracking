@@ -380,7 +380,7 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(!l.length, `migrate đổi dữ liệu do mã hiện hành ghi (applied ${JSON.stringify(a).slice(0, 300)}): ${l.slice(0, 4).join(' ‖ ')}`);
     assert(a.length === 0, `migrate còn việc trên DB mới: ${JSON.stringify(a)}`);
   });
-  check('DEPLOY-2g · mỗi bước migrate một giao dịch: bộ demo thiếu 3 bước cuối (EN, OV12h, OV12g) → đứt sau bước 86 (EN; HOC-TIEP, LG-12, LICH-THI-NOI-THI, TINH-HINH, CAU-HINH-CASE-SOS, YT-BAO-PH, RÀ 11/11 G1-02, PHOI-HOP-V2, LO-TRINH-THEO-HV, OV-13a, SV-NX-CASE, OV-13k, OV-13q, OV-15f, BO-QUA-XEP-MT, HAN-BAO-PH, RESET-HAN-CASE, XM-VIEC-DUNG-HAN b, P8 ×2 thêm bước thêm cột ở trước) rồi chạy lại = chạy một mạch; lần hai không đổi', () => {
+  check('DEPLOY-2g · mỗi bước migrate một giao dịch: bộ demo thiếu 3 bước cuối (EN, OV12h, OV12g) → đứt sau bước 87 (EN; HOC-TIEP, LG-12, LICH-THI-NOI-THI, TINH-HINH, CAU-HINH-CASE-SOS, YT-BAO-PH, RÀ 11/11 G1-02, PHOI-HOP-V2, LO-TRINH-THEO-HV, OV-13a, SV-NX-CASE, OV-13k, OV-13q, OV-15f, BO-QUA-XEP-MT, HAN-BAO-PH, RESET-HAN-CASE, XM-VIEC-DUNG-HAN b, P8 ×2, MT-QUA-THI thêm bước thêm cột ở trước) rồi chạy lại = chạy một mạch; lần hai không đổi', () => {
     const goc = pathMod.join(thuMuc, 'seed.sqlite');
     const thieu = (ten: string) => {
       const f = pathMod.join(thuMuc, ten);
@@ -395,8 +395,8 @@ export async function runPrDeployTests(t: YThucTestKit) {
     /* TU-b: thêm bước chỉ mục buổi tutor cần chú ý (prTub). TU2-1: thêm bước cột so_buoi của bảng buổi dựng lại (prTutor2). */
     assert(da.length === 6, `một mạch phải làm đúng 6 bước: ${JSON.stringify(da)}`);
     let loi = '';
-    try { migrateTurso(b, 86); } catch (e: any) { loi = String(e.message); }
-    assert(loi.includes('Giả lập đứt kết nối sau bước 86'), `không đứt đúng bước 86: ${loi.slice(-200)}`);
+    try { migrateTurso(b, 87); } catch (e: any) { loi = String(e.message); }
+    assert(loi.includes('Giả lập đứt kết nối sau bước 87'), `không đứt đúng bước 87: ${loi.slice(-200)}`);
     const db2 = migrateTurso(b);
     assert(db2.length === 5 && db2.every((x) => /OV12[gh]|TU-[ab]|TU2-1/.test(x)), `chạy lại phải chỉ làm OV12h + OV12g + TU-a + TU-b + TU2-1 (EN đã chốt): ${JSON.stringify(db2)}`);
     const l = lech(chup(a), chup(b));

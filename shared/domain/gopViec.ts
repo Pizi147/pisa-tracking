@@ -73,6 +73,8 @@ const gopDuoc = (it: ViecGopDuoc) => it.classId !== null && !it.chonPa && !(it.k
  */
 const theoTuanThi = (it: ViecGopDuoc) => it.group === 'score' && !!it.tuanThi && !laViecChamCheo(it);
 /** Khoá dòng gộp mà việc này thuộc về; việc giữ từng dòng → null. Giao diện dùng để giữ việc vừa xong trong dòng gộp của nó. */
+/** MT-QUA-THI: việc "MT sau ngày thi" (lẻ `mt-thi:{lộ trình}` · dòng gộp lớp `…|mt-thi`) — mục "Lịch MT" ở Việc quản lý. */
+export const laViecLichMt = (it: { key: string }): boolean => it.key.startsWith('mt-thi:') || it.key.endsWith('|mt-thi');
 export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (!gopDuoc(it)) return null;
   /* SUA-2211-B (chủ SP 22/11 ý 9 "'cả lớp'? Không có ý nghĩa… Đồng bộ hết chia ra từng lớp đi"): Nhập điểm theo tuần thi gom TRONG MỘT LỚP — mỗi lớp một dòng. */
@@ -82,6 +84,8 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (laViecChamCheo(it)) return `${k}|cc`;
   /* GD-20c ([XM-6] mockup ⑫ C1): Ghi kết quả PA gộp theo lớp + CÙNG KỲ (cùng hạn kỳ `action_due`) — hai kỳ khác nhau là hai dòng, mỗi dòng mở một lưới. */
   if (it.group === 'ghi_ket_qua_pa') return `${k}:d${it.due ?? ''}`;
+  /* MT-QUA-THI (PTA 26/11): "MT sau ngày thi" mục riêng Lịch MT — không gộp chung dòng lớp với Xếp lịch MTn (cùng nhóm `missing_data`). */
+  if (laViecLichMt(it)) return `${k}|mt-thi`;
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
 }
 /** AUDIT-1611 P1-02: số bài + bài quá hạn của các dòng (một hàm cho đầu mục / badge tab Chấm Speaking). */
@@ -133,7 +137,7 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     if (!k || !nhom || nhom.length < 2) { out.push(it); continue; }
     if (daDat.has(k)) continue;
     daDat.add(k);
-    const nhanLoai = nhan(it.group);
+    const nhanLoai = laViecLichMt(it) ? 'MT sau ngày thi' : nhan(it.group);
     /* XEP-CHAM-TEST: lớp con của dòng Nhập điểm theo thứ tự chấm (panel nhiều lớp + "Lớp tiếp" đi theo); việc khác theo hạn. */
     const con = [...nhom].sort(it.group === 'score' ? soSanhViecCham : sapViec).map((x) => conCua(x));
     /* Mức gấp của dòng = việc gấp nhất (theo hạn) — không theo việc đứng đầu khi con xếp theo lớp (XEP-CHAM-TEST). */
