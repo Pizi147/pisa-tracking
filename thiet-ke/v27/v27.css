@@ -200,9 +200,6 @@
 .kgv .nut-nho { height:28px; }
 .kgv .them { width:28px; height:28px; border-radius:50%; border:1px dashed var(--line-strong); background:none; color:var(--text-dim); display:inline-grid; place-items:center; padding:0; }
 .the-giao { display:inline-flex; align-items:center; height:20px; padding:0 6px; border:1px solid var(--line-strong); border-radius:4px; font-size:var(--c12); color:var(--text-dim); white-space:nowrap; }
-.han-bam { border:0; background:none; padding:2px 0; font:600 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; color:var(--text); text-decoration:underline dotted var(--text-faint); text-underline-offset:4px; cursor:pointer; }
-.han-bam:hover { color:var(--accent); text-decoration-color:var(--accent); }
-.han-bam.gan { color:var(--soon); } .han-bam.qua { color:var(--bad); }
 .han-tam { font:600 var(--c14) var(--phong); color:var(--soon); white-space:nowrap; }
 .dt .kgv { display:grid; grid-template-columns:64px minmax(0,1fr); gap:0 8px; padding:4px 12px; }
 .dt .kgv .cum { display:contents; }
@@ -237,3 +234,26 @@
 .dt .kgv .cum:first-child > b { white-space:normal; min-width:0; }
 .tn-dau .tien { margin-right:2px; }
 .tn-dau .phai { gap:6px; }
+/* 26/11 (chủ SP): Phụ trách + Hạn = MỘT kiểu Ô BẤM — giá trị nằm trong ô viền mảnh, bấm thẳng là đổi (bỏ nút "Đổi" riêng). Không quyền: ô không viền. */
+.o-bam { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface); font:500 var(--c14) var(--phong); color:var(--text); white-space:nowrap; cursor:pointer; }
+.o-bam:hover { border-color:var(--accent); }
+.o-bam b { font-weight:600; }
+.o-bam .dim { font-size:var(--c13); }
+.o-bam .mui { font-size:10px; color:var(--text-faint); margin-left:2px; }
+.o-bam.han { font:600 var(--c14) var(--phong-so); font-variant-numeric:tabular-nums; }
+.o-bam.han.gan { color:var(--soon); } .o-bam.han.qua { color:var(--bad); }
+.o-bam.khoa { border-color:transparent; background:none; padding:0; cursor:default; }
+.o-bam.tam { color:var(--soon); font-weight:600; }
+.o-bam.nho { height:28px; padding:0 8px; font-size:var(--c13); }
+.dt .o-bam { height:40px; }
+.dt .kgv .cum:first-child { grid-template-columns:64px minmax(0,1fr) auto; }
+.dt .kgv .cum:first-child > .o-bam { justify-self:start; max-width:100%; }
+.dt .kgv .cum:first-child > .o-bam b { white-space:normal; }
+.dt .kgv .cum > .o-bam { justify-self:start; }
+.dt .kgv .the-giao.md { display:none; }
+.dt .kgv .cum:first-child > .the-giao { justify-self:end; }
+/* vòng 4: thẻ "mặc định / {tên} giao" là chữ phụ (không viền — khỏi lẫn với ô bấm) · 375: Theo dõi nhãn trên cùng, "+" tròn 28 */
+.the-giao { border:0; padding:0; height:auto; font-size:var(--c12); color:var(--text-faint); }
+.dt .kgv .cum.rong > .lb { align-self:start; padding-top:12px; }
+.dt .kgv .cum.rong > .gt { padding:8px 0; }
+.dt .kgv .them { width:28px; height:28px; min-height:28px; }

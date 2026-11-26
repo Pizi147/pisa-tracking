@@ -33,6 +33,13 @@ Mọi panel: **đầu** (tên việc · em · lớp · ⓘ ⋯ ✕ — không c�
 | "có thể tạo công việc con nếu muốn" | Mục Việc con + "+ Việc con" ở mọi panel một việc; có việc con mẫu ở T2 (1/2 xong), T3, T6a | đạt |
 | "gọn gàng, đơn giản, rõ ràng, đẹp hơn" | Tuyến bỏ khung viền + nền, dòng 36 px; hạn không lặp ở đầu panel; một thứ tự cho mọi panel | đạt (critique vòng 3) |
 
+## 1c. Góp ý chủ SP 26/11 lần 2 (C7, C8)
+
+| Ý | Khung | Đạt? |
+|---|---|---|
+| "bấm vào tên người rồi đổi luôn, hoặc để trong box… hạn cũng để dạng badge hoặc trong box" | MỘT kiểu **ô bấm** (`.o-bam`, viền mảnh 6 px, cao 30 / 40 ở 375) cho Phụ trách (tên · bạn · ▾) và Hạn (ngày tô màu) ở mọi panel + hạn việc con; bỏ nút "Đổi"; không quyền → chữ trơn (T4 Vi phạm bị trả lại); tạm dừng → "dừng · ngày" không bấm (T3) | đạt |
+| "meeting CX/GĐCN… để nó ở mốc cuối cùng, nó là việc cuối" | Tuyến: "việc của mốc, cùng lúc" rồi **"Mốc cuối · Meeting CX/GĐCN"** + ba phần (T5, T6, T8, T10); nhóm Phối hợp SOS của GVCN: Trao đổi ngắn → GVCN meeting → **Meeting cuối** (T1–T5). Danh sách TVV giữ luật "quá hạn lên đầu nhóm" (NH10) | đạt ([XM] 12) |
+
 ## 2. Bảng ý → khung (tự rà từng ý)
 
 | # | Ý (đặc tả / N72) | Khung | Đạt? |
@@ -94,6 +101,7 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 7. Hồ sơ HV / lớp (T10) chỉ vẽ tab Ý thức & Phối hợp, đầu hồ sơ rút gọn — không đổi phần khác.
 8. Dải "Chờ GV sửa" (T3) giữ chữ nút "Rút" như web.
 10. **[ĐÃ CHỐT 26/11 — chủ SP "Cho mọi việc"]** **Đổi người cho Xử lý vi phạm / Đã thực hiện / Phối hợp SOS** (mở rộng N58 theo lời "chọn / đổi người thực hiện"): người nhận làm được đúng việc đó, lịch sử ghi tên. Trước đây chỉ GVCN / Head làm (N64 làm thay). Nếu chủ SP chỉ muốn đổi người ở việc TVV / Báo PH thì bỏ nút Đổi ở ba việc này.
+12. **Meeting mốc cuối không chặn:** GVCN vẫn xác nhận Meeting khi việc khác của mốc chưa xong (không thêm điều kiện chặn). Muốn Meeting chỉ mở sau khi các việc khác xong thì chủ SP báo.
 11. Việc con không vào số việc của việc cha và không chặn việc cha xong (như Vận hành N59).
 
 ## 5. Skill đã chạy
@@ -105,6 +113,7 @@ Mất thao tác: không. Thao tác bỏ duy nhất là ba việc báo PH của G
 | Vòng | Điểm Nielsen | P0 / P1 | Đã sửa sau vòng |
 |---|---|---|---|
 | 1 | **27/40** | 2 P1 | ① Meeting hai tên / hai bộ đếm → mọi vai cùng tuyến "Phối hợp SOS · {em} · MT2" · ② gập giấu bước sau → chỉ gập bước ĐÃ XONG, giữ bước đang ở + bước sau + bước cha còn con mở · ③ "›" mở tại chỗ trái G6 → ˅ / ˄, cả dòng là vùng bấm · ④ "Đang ở" chọn một trong các bước song song → bước của người xem trước, không thì "Meeting · 3 phần cùng lúc"; bộ đếm "Xong a/b · đang n" · ⑤ danh sách vi phạm lặp ở T1 → bước "GV ghi" không mở trong panel Xử lý · ⑥ 375: khoảng ngày không gãy dòng, dòng ≥ 44 px · ⑦ dấu đang ở giống nút radio → chấm đặc + quầng; tạm dừng = ô vuông · ⑧ T5-375 tràn khung 157 px (máy dò B) → `contain:inline-size` khay + cột `minmax(0,1fr)` |
+| 4 (góp ý chủ SP lần 2: ô bấm, Meeting mốc cuối) | **33/40** | **0** | ⑮ thẻ "mặc định" thành chữ phụ (không viền, khỏi lẫn ô bấm) · ⑯ 375: nhãn Theo dõi trên cùng, "+" tròn 28 px · ⑰ xoá kiểu ngày gạch chấm cũ. Không còn nút "Đổi" / ngày gạch chấm ở 31 khung; Meeting cuối ở mọi khung (agent rà xác nhận) |
 | 3 (sau góp ý chủ SP: khung base) | **32/40** | 2 P1 → **0** | ⑫ khay nhiều em (T5, T6b, T11a) và panel "TVV hỏi" (T7b) thiếu Việc con → thêm · ⑬ Lịch sử gập ở mọi panel một việc · ⑭ ⓘ sát chữ "Xong a/b" → cách 6 px. Không còn bước Head duyệt mới (chỉ N1 / N5 / N70) — agent rà xác nhận |
 | 2 | **31/40** | **0** | ⑨ Meeting mỗi vai một mốc thời gian → một mốc chung (ba phần đều đang mở, không thứ tự — N58) · ⑩ Đang theo dõi của Head nhóm theo loại tuyến · ⑪ dòng xong có nội dung (phân biệt "không nội dung" với "không quyền"); T0 (d) mở sẵn để thấy dòng không ˅ |
 

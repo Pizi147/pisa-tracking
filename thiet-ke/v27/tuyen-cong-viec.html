@@ -112,12 +112,12 @@ const ntd = (t, x = true) => `<span class="ntd">${t}${x ? `<button aria-label="B
    pt: tên người phụ trách ('Bạn' = mình) · giao: 'mặc định' | '{tên} giao' · han: [dd/mm/yyyy, ''|'gan'|'qua'|'tam'] · td: người theo dõi · them: +n · doi: có nút Đổi */
 const pht = (pt, td, { doi = true, them = 0, han, giao = 'mặc định', toi } = {}) => {
   const ban = pt === 'Bạn';
-  return `<div class="kgv" role="group" aria-label="Phụ trách, hạn, theo dõi"><span class="cum"><span class="lb">Phụ trách</span><b>${ban ? toi ?? 'Bạn' : pt}</b>${ban && toi ? '<span class="dim">bạn</span>' : ''}<span class="the-giao">${giao}</span>${doi ? '<button class="nut nut-nho">Đổi</button>' : ''}</span>`
-    + (han ? `<span class="cum"><span class="lb">Hạn</span>${han[1] === 'tam' ? `<span class="han-tam">dừng · ${han[0]}</span>` : `<button class="han-bam ${han[1] || ''}" aria-label="Sửa hạn ${han[0]}">${han[0]}</button>`}</span>` : '')
+  return `<div class="kgv" role="group" aria-label="Phụ trách, hạn, theo dõi"><span class="cum"><span class="lb">Phụ trách</span>${doi ? `<button class="o-bam" aria-haspopup="dialog" aria-label="Đổi người phụ trách: ${ban ? toi ?? 'Bạn' : pt}"><b>${ban ? toi ?? 'Bạn' : pt}</b>${ban && toi ? '<span class="dim">bạn</span>' : ''}<span class="mui" aria-hidden="true">▾</span></button>` : `<span class="o-bam khoa"><b>${ban ? toi ?? 'Bạn' : pt}</b>${ban && toi ? '<span class="dim">bạn</span>' : ''}</span>`}<span class="the-giao${giao === 'mặc định' ? ' md' : ''}">${giao}</span></span>`
+    + (han ? `<span class="cum"><span class="lb">Hạn</span>${han[1] === 'tam' ? `<span class="o-bam khoa tam">dừng · ${han[0]}</span>` : `<button class="o-bam han ${han[1] || ''}" aria-label="Sửa hạn ${han[0]}">${han[0]}</button>`}</span>` : '')
     + `<span class="cum rong"><span class="lb">Theo dõi</span><span class="gt">${td.length ? td.map((x) => ntd(x, false)).join('') : '<span class="dim">Chưa có</span>'}${them ? `<span class="dim">+${them} người</span>` : ''}<button class="them" aria-label="Thêm người theo dõi">+</button></span></span></div>`;
 };
 /* VIỆC CON (như Vận hành N59): một cấp, mỗi việc con có người + hạn; "+ Việc con" luôn có */
-const viecCon = (ds = []) => `<section class="vcon" aria-label="Việc con"><h4>Việc con${ds.length ? ` <span class="dim">${ds.filter((x) => x[3]).length}/${ds.length}</span>` : ''}</h4>${ds.map(([ten, ng, han, xong]) => `<div class="vc-dong${xong ? ' xong' : ''}"><input type="checkbox" class="tick" aria-label="Xong: ${ten}"${xong ? ' checked' : ''}><span class="vc-ten">${ten}</span><span class="dim">${ng}</span>${xong ? `<span class="tb-ngay">${han}</span>` : `<button class="han-bam ${Array.isArray(han) ? han[1] : ''}" aria-label="Sửa hạn">${Array.isArray(han) ? han[0] : han}</button>`}</div>`).join('')}<button class="nut nut-nho vc-them">+ Việc con</button></section>`;
+const viecCon = (ds = []) => `<section class="vcon" aria-label="Việc con"><h4>Việc con${ds.length ? ` <span class="dim">${ds.filter((x) => x[3]).length}/${ds.length}</span>` : ''}</h4>${ds.map(([ten, ng, han, xong]) => `<div class="vc-dong${xong ? ' xong' : ''}"><input type="checkbox" class="tick" aria-label="Xong: ${ten}"${xong ? ' checked' : ''}><span class="vc-ten">${ten}</span><span class="dim">${ng}</span>${xong ? `<span class="tb-ngay">${han}</span>` : `<button class="o-bam han nho ${Array.isArray(han) ? han[1] : ''}" aria-label="Sửa hạn">${Array.isArray(han) ? han[0] : han}</button>`}</div>`).join('')}<button class="nut nut-nho vc-them">+ Việc con</button></section>`;
 /* Việc con đứng trước Lịch sử (thứ tự panel Vận hành: khối · nội dung · Việc con · Lịch sử) */
 const datCon = (than, con) => { if (con === undefined) return than; const i = than.lastIndexOf('<details class="gap">'); return i < 0 ? than + viecCon(con) : than.slice(0, i) + viecCon(con) + than.slice(i); };
 /* panel: khối việc base đầu thân; hạn chỉ ở khối (bỏ ngày ở đầu panel cho khỏi lặp) */
@@ -150,7 +150,8 @@ function tuyen({ ten, buoc: bs, gap, mo }) {
   /* gập: ẩn bước đã xong; GIỮ bước cha đã xong nếu còn bước con chưa xong (bước con không lơ lửng) */
   const conChuaXong = (i) => { for (let j = i + 1; j < bs.length && bs[j].con; j++) if (bs[j].tt !== 'xong') return true; return false; };
   const giu = bs.filter((b, i) => b.tt !== 'xong' || (!b.con && conChuaXong(i)));
-  const ds = gapLai ? [{ xem: `Xem ${bs.filter((b) => b.tt === 'xong' && !giu.includes(b)).length} bước đã xong` }, ...giu] : bs;
+  const giuGon = giu.filter((b, i) => !b.nhom || (giu[i + 1] && !giu[i + 1].nhom));   /* bỏ nhãn nhóm lẻ (cả nhóm đã gập) */
+  const ds = gapLai ? [{ xem: `Xem ${bs.filter((b) => b.tt === 'xong' && !giu.includes(b)).length} bước đã xong` }, ...giuGon] : bs;
   const li = ds.map(buoc).join('').replace(/^<li class="/, '<li class="dau-ds ').replace(/<li class="([^"]*)"((?:(?!<li ).)*)$/s, '<li class="$1 cuoi-ds"$2');
   return `<section class="tn" aria-label="Tuyến · ${ten}"><div class="tn-dau"><h3>Tuyến</h3><span class="ten-tn">${ten}</span><span class="phai"><span class="tien">Xong <b>${xong}</b>/${soBuoc}${dang > 1 ? ` · đang <b>${dang}</b>` : ''}</span><button class="nut-i" aria-label="Tuyến công việc là gì">${ic('i')}</button></span></div><ol class="tn-ds">${li}</ol></section>`;
 }
@@ -194,9 +195,10 @@ const tnBn = (tvv) => [
 ];
 /* Phối hợp SOS · em × lượt (GVCN xem) */
 const tnPh = (ten, o = {}) => [
-  { nhom: 'MT2 · SOS 3 · các việc cùng lúc' },
+  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ban: 1, ngay: '10/09/2026', nd: '<span class="k">Nội dung</span><span>Em nhận chưa tự học Reading; hẹn nộp bài luyện thứ 4, thứ 6.</span>' },
   { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ng: 'Phan Mai', ngay: ['hạn 15/09/2026', 'gan'] },
+  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: o.daXn ? 'xong' : 'dang', ten: 'Meeting CX/GĐCN · xác nhận', ban: 1, ngay: o.daXn ? '14/09/2026' : ['hạn 19/09/2026', ''] },
   { tt: 'cho', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: 'chờ bạn' },
   { tt: 'cho', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: 'chờ bạn' },
@@ -205,9 +207,10 @@ const tnPh = (ten, o = {}) => [
 /* Meeting · Kiều Thảo Nhi — vai: bpxl | cx | tvv */
 const NOI_DUNG_GVCN = '<span class="k">Nội dung gửi</span><span>Em tụt Overall 2 lượt liền (6.0 → 5.5); cần họp cùng gia đình về giờ tự học và điện thoại.</span><span class="k">Phụ huynh</span><span>Mẹ · Nguyễn Thu Hà · 0912 345 678</span>';
 const tnMeeting = (vai, o = {}) => [
-  { nhom: 'MT2 · SOS 3 · các việc cùng lúc' },
+  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '07/09/2026' },
   { tt: 'xong', ten: 'Báo PH · Trao đổi gia đình', ct: 'Đã báo PH', ...(vai === 'tvv' ? { ban: 1 } : { ng: 'Phan Mai' }), ngay: '09/09/2026', ...(vai === 'bpxl' ? { khoa: 1 } : { nd: '<span class="k">Nội dung</span><span>Đã báo mẹ kết quả MT2 và việc sắp họp CX.</span>' }) },
+  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: 'xong', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Trần Ngọc Hà', ngay: '08/09/2026', nd: NOI_DUNG_GVCN, mo: o.moGvcn },
   { tt: 'dang', con: 1, ten: 'Xếp lịch họp', ...(vai === 'bpxl' ? { ban: 1 } : { ng: 'Lương Thu Trang' }), ngay: ['hạn 12/09/2026', 'qua'] },
   vai === 'cx' ? { tt: 'dang', con: 1, ten: 'Kết quả meeting', ban: 1, ngay: ['hạn 21/09/2026', ''] }
@@ -246,9 +249,9 @@ const DS_GVCN = [
   { ten: 'Xử lý vi phạm', viec: [{ id: 'x1', lop: 'MB FT 101', ten: 'Lương Gia Bảo', ct: '3 vi phạm · Report 2', han: ['13/09/2026', 'qua'] }] },
   { ten: 'Đã thực hiện', viec: [{ id: 'x2', lop: 'MB FT 101', ten: 'Đỗ Minh Khôi', ct: 'WL 3 · Head duyệt 10/09', han: ['14/09/2026', 'gan'] }] },
   { ten: 'Phối hợp SOS', viec: [
-    { id: 'p1', lop: 'MB FT 101', n: 4, ct: 'Meeting CX/GĐCN · MT2', han: ['19/09/2026'] },
+    { id: 'p3', lop: 'MB FT 101', n: 2, ct: 'Trao đổi ngắn với HV · MT2' },
     { id: 'p2', lop: 'MB FT 101', n: 3, ct: 'GVCN meeting với HV · MT2' },
-    { id: 'p3', lop: 'MB FT 101', n: 2, ct: 'Trao đổi ngắn với HV · MT2' }] },
+    { id: 'p1', lop: 'MB FT 101', n: 4, ct: 'Meeting CX/GĐCN · MT2', han: ['19/09/2026'] }] },
   { ten: 'Tình hình học tập', viec: [{ id: 't1', lop: 'MB FT 101', ten: 'Bùi Thảo Vy', ct: 'TVV hỏi', han: ['16/09/2026'] }] },
 ];
 const TAB_GVCN = [['Chấm điểm', 4, 1], ['Case học thuật', 3], ['Ý thức &amp; Phối hợp', 6, 1], ['Vận hành'], ['Đang theo dõi']];
@@ -375,9 +378,10 @@ const DS_TD_HEAD = [
   { ten: 'Vừa xong 7 ngày', gap: 1, donVi: 'tuyến', viec: [1, 2, 3, 4, 5] },
 ];
 const tnDqb = [
-  { nhom: 'MT2 · SOS 3 · các việc cùng lúc' },
+  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
   { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '09/09/2026' },
   { tt: 'xong', ten: 'Báo PH · Trao đổi gia đình', ct: 'Đã báo PH', ng: 'Phan Mai', ngay: '12/09/2026', nd: '<span class="k">Nội dung</span><span>Đã báo bố kết quả MT2; bố xin lịch họp sau 17:00.</span>' },
+  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: 'xong', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Bạn', ngay: '13/09/2026' },
   { tt: 'dang', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: ['hạn 18/09/2026', ''] },
   { tt: 'dang', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: ['hạn 27/09/2026', ''] },
@@ -416,9 +420,10 @@ const TAB_HEAD = [['Chờ bạn duyệt', 3, 1], ['Case học thuật', 2], ['Ý
 
 /* ================= T10 · Hồ sơ ================= */
 const tnNbc = [
-  { nhom: 'MT2 · SOS 3 · các việc cùng lúc' },
+  { nhom: 'MT2 · SOS 3 · việc của mốc, cùng lúc' },
   { tt: 'dang', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: 'không hạn' },
   { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] },
+  { nhom: 'Mốc cuối · Meeting CX/GĐCN' },
   { tt: 'dang', ten: 'Meeting CX/GĐCN · xác nhận', ng: 'Trần Ngọc Hà', ngay: ['hạn 19/09/2026', ''] },
   { tt: 'cho', con: 1, ten: 'Xếp lịch họp', ng: 'Lương Thu Trang', ngay: 'chờ GVCN xác nhận' },
   { tt: 'cho', con: 1, ten: 'Kết quả meeting', ng: 'Vũ Thanh Tâm', ngay: 'chờ GVCN xác nhận' },
@@ -444,7 +449,7 @@ const hoSoLop = `<div class="noi-dung"><div class="hs-dau"><h1>MB FT 101</h1><sp
 const EM_TDGD = [['Đỗ Minh Khôi', 'SOS 2', '5.5 / 6.0'], ['Vũ Gia Huy', 'SOS 3', '5.0 / 6.0'], ['Trịnh Bảo Ngọc', 'SOS 1', '5.5 / 6.0']];
 const pnTraoDoi = () => panel({ ten: 'Báo PH · Trao đổi gia đình', meta: '<a href="#">MB FT 101</a><span>MT2 · 3 em</span><span class="hn gan">15/09/2026</span>',
   than: bangEm({ dau: ['Học viên', 'Tuyến', 'Máy điền sẵn', ''], mo: 0,
-    khay: `${pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['15/09/2026', 'gan'] })}${tuyen({ ten: 'Phối hợp SOS · Đỗ Minh Khôi · MT2', buoc: [{ nhom: 'MT2 · SOS 2 · các việc cùng lúc' }, { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '11/09/2026' }, { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}
+    khay: `${pht('Bạn', ['GVCN Trần Ngọc Hà', 'Head Nguyễn Khánh Vy'], { them: 1, toi: 'Phan Mai', han: ['15/09/2026', 'gan'] })}${tuyen({ ten: 'Phối hợp SOS · Đỗ Minh Khôi · MT2', buoc: [{ nhom: 'MT2 · SOS 2 · việc của mốc, cùng lúc' }, { tt: 'xong', ten: 'GVCN meeting với HV', ng: 'Trần Ngọc Hà', ngay: '11/09/2026' }, { tt: 'dang', ten: 'Báo PH · Trao đổi gia đình', ban: 1, ngay: ['hạn 15/09/2026', 'gan'] }] })}
       <div class="kv3"><span>Máy điền sẵn</span><span>MT2 W1 SEP · Overall <b class="so">5.5</b> / kỳ vọng <b class="so">6.0</b> · trượt <b>R</b>, <b>W</b> · Case Writing: Bổ trợ 4 buổi (GV Cao Khánh Linh)</span></div>${formBaoPh(false, 'Đã báo mẹ kết quả MT2 và lịch bổ trợ Writing.')}${viecCon([])}`,
     hang: EM_TDGD.map(([t, s, p], i) => [`<span class="ten-e"><button class="mo-e" aria-expanded="${i === 0}"><a href="#">${t}</a>${chev('xo')}<span class="chip ${s === 'SOS 1' ? 'sos1' : s === 'SOS 2' ? 'sos2' : 'sos3'}">${s}</span></button><small>MT2 · Overall ✗ ${p}</small></span>`, cc(i === 1 ? 'xdd' : 'xd'), '<span class="dang-o">Điểm · môn trượt · Case</span>', '<button class="nut nut-nho nut-chinh">Ghi</button>']) }),
   chan: chanPn('<span class="luu nhap">Chưa lưu</span>', NUT_LUU(false)) });
