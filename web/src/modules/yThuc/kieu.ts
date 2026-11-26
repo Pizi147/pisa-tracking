@@ -17,6 +17,8 @@ export type ViPhamV4 = {
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
   /** LG-12 / GD-19: người ghi yêu cầu GVCN xử lý · GVCN "Không xử lý" (null = chưa / đã Hoàn tác). Máy chủ cũ không trả → undefined. */
   yeuCauXuLy?: boolean; khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
+  /** Lưu trữ (26/11): vi phạm Dừng (trước lần quay lại học) — không đếm "Trong 2 tuần", khớp `soBatBuoc` máy chủ. */
+  dung?: boolean;
   /** UI-3: số tệp bằng chứng (chỉ tab HV — `yThucHocVien`). */
   soTep?: number;
 };
@@ -60,6 +62,7 @@ export type DongThoiGianYt =
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
       /** LG-12 / GD-19: "Không xử lý" (ngày, lý do, người). */
       khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
+      /** Lưu trữ (26/11): vi phạm Dừng. */ dung?: boolean;
       /** Y-THUC-V2: mã môn (chip) + mô tả cắt ngắn (hộp rê). */
       skill: string | null; moTa: string;
       /** TINH-HINH: "Chỉ nhắc nhở" (ngoài luật, không việc). */

@@ -535,6 +535,7 @@ const EN_D_SHARED = {
   'Học viên kết thúc khoá': 'Student finished the course',
   'Học viên vào Lưu trữ': 'Student moved to Archive',
   'Em đang trong Lưu trữ': 'Student is archived',
+  'Dừng — em vào Lưu trữ': 'Stopped — student was archived',
   'Hệ thống đóng việc của em đang Lưu trữ': 'System closed open work of an archived student',
   'Khôi phục việc đã đóng khi em vào Lưu trữ': 'Restored work closed when the student was archived',
   'Chuyển sang lớp thường': 'Moved to a Normal class',

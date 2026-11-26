@@ -316,7 +316,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(can(moi.gvcn, 'discipline.manage', { studentId: sid }), 'GVCN mới có quyền');
     assert(!can(loadPrincipal(P.coreTeacher.userId), 'student.edit', { studentId: sid }), 'GVCN cũ không sửa hồ sơ (Q17)');
   });
-  check('YT4 (3) · Tạm dừng (T65): không Quá hạn, không hạn; Quay lại học → hạn tính từ ngày quay lại', () => {
+  /* Lưu trữ (chủ SP 26/11, thay T65 "Quay lại → hạn tính lại"): vi phạm chưa xử lý trước lần quay lại thật dừng hẳn — không việc, không hạn. */
+  check('YT4 (3) · Tạm dừng (T65): không Quá hạn, không hạn; Quay lại học → vi phạm cũ dừng hẳn (Lưu trữ 26/11)', () => {
     const sid = hv();
     ba3(sid, addDays(TODAY, -14));
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(sid);
@@ -325,10 +326,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(dung.tamDung && dung.nhom === 'bat_buoc' && dung.han === null, JSON.stringify({ n: dung.nhom, h: dung.han }));
     conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
     conn.prepare(`UPDATE enrollments SET status = 'active' WHERE student_id = ? AND status = 'paused'`).run(sid);
-    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'resume', ?, 'Quay lại học', ?)`)
-      .run(sid, addDays(TODAY, -2), new Date().toISOString());
+    conn.prepare(`INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'pause', ?, 'Tạm dừng học', ?), (?, 'resume', ?, 'Quay lại học', ?)`)
+      .run(sid, addDays(TODAY, -5), new Date().toISOString(), sid, addDays(TODAY, -2), new Date().toISOString());
     const lai = em(sid);
-    assert(!lai.tamDung && lai.nhom === 'bat_buoc' && lai.han === addDays(TODAY, 2), JSON.stringify({ n: lai.nhom, h: lai.han }));
+    assert(!lai.tamDung && lai.soBatBuoc === 0 && lai.han === null && [...lai.viPham.values()].every((x: any) => x.nhan === 'Dừng — em vào Lưu trữ'),
+      JSON.stringify({ n: lai.nhom, h: lai.han, t: [...lai.viPham.values()].map((x: any) => x.nhan) }));
   });
   check('YT4 (3) · 30 em → cửa trạng thái nạp ≤ 3 câu SQL (kế hoạch ≤ 6; không N+1)', () => {
     const ids = (conn.prepare(`SELECT id FROM students ORDER BY id LIMIT 30`).all() as any[]).map((r) => r.id as number);

@@ -118,7 +118,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   /* GD-19: vi phạm được yêu cầu, còn bắt buộc (chưa "Không xử lý", chưa xử lý) — có thì panel là "Xử lý vi phạm" hai lối. */
   const yc = d.viPham.filter((v) => v.yeuCauXuLy && !v.khongXuLy && (v.trangThai === 'can_xu_ly' || v.lyDoQuaHan === 'xu-ly'));
   const tuHai = addDaysIso(mondayOfDate(homNay), -7);
-  const soHaiTuan = d.viPham.filter((v) => v.occurredOn >= tuHai && v.trangThai !== 'da_xu_ly' && v.trangThai !== 'cho_duyet').length;
+  const soHaiTuan = d.viPham.filter((v) => !v.dung && v.occurredOn >= tuHai && v.trangThai !== 'da_xu_ly' && v.trangThai !== 'cho_duyet').length;   // Lưu trữ (26/11): bỏ vi phạm Dừng
   const nguoiYc = [...new Set(yc.map((v) => v.reportedByName).filter(Boolean))].join(', ');
   const khoiYc = yc.length > 0 && (
     <div className="flex flex-col gap-1.5 rounded-[10px] px-3.5 py-3 text-[13px]" style={{ background: 'var(--surface-2)' }}>
