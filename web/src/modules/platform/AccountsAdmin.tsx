@@ -535,7 +535,7 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
   account?: Account; branches: Branch[]; loiCn: ReactNode; onClose: () => void; onDone: () => void;
 }) {
   const toast = useToast();
-  const { session } = useSession();
+  const { session, reload: taiPhien } = useSession();
   const editing = !!account;
   /* OV-11b (QT-2): dòng vai Quản trị của chính mình khoá "Gỡ" + ô chọn vai (máy chủ cũng chặn). */
   const qtCuaMinh = !!account && account.id === session?.user?.id && account.roles.some((g) => g.role === 'system_admin');
@@ -612,6 +612,7 @@ function AccountDialog({ account, branches, loiCn, onClose, onDone }: {
         if (quyenDoi) await api.put(`/admin/accounts/${account!.id}/permissions`, { items: extra, lyDo: lyDoQuyen.trim() });
         if (newPassword) await api.post(`/admin/accounts/${account!.id}/password`, { password: newPassword });
         if (kyNangDoi) await api.put(`/admin/accounts/${account!.id}/skills`, { skills: [...kyNang] });
+        if (account!.id === session?.user?.id) void taiPhien();   // sửa tài khoản của chính mình → menu, Góc nhìn theo vai / quyền mới
       }, t('Đã lưu tài khoản'));
     }
     return run(() => api.post('/admin/accounts', {
