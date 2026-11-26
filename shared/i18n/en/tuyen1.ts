@@ -17,6 +17,7 @@ export const EN_TUYEN_1 = {
   'dừng · {ngay}': 'paused · {ngay}',
   'Người làm': 'Assignee',
   'Head duyệt': 'Head approval',
-  'sau khi Head duyệt': 'after Head approval',
+  'sau khi duyệt': 'after approval',
   '{n} ngày sau khi gửi': '{n} days after sending',
+  '{ten} · mặc định': '{ten} · default',
 } as const;

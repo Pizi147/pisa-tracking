@@ -14,8 +14,8 @@ const LOP: Record<TrangThaiBuoc, string> = { xong: 'xong', dang: 'dang', cho: 'c
 export const dangCoNoiDung = (b: BuocTuyen) => b.trangThai === 'dang' && b.coNoiDung;
 /** Bước "GV gửi / TVV hỏi tình hình" (khoá máy chủ `gui`) có nội dung. */
 export const guiCoNoiDung = (b: BuocTuyen) => b.khoa === 'gui' && b.coNoiDung;
-/** Tuyến dài hơn chừng này bước → gập các bước đã xong (mockup v27 T0 b). */
-const GAP_KHI = 4;
+/** Tuyến dài hơn chừng này bước → gập các bước đã xong (mockup v27: T0 b gập 6 bước; T2 · T3 · T4 mở sẵn 5 bước). */
+const GAP_KHI = 5;
 
 function Dau({ tt }: { tt: TrangThaiBuoc }) {
   return (
@@ -31,7 +31,7 @@ function Dau({ tt }: { tt: TrangThaiBuoc }) {
  * KHỐI TUYẾN (TUYEN-1, N72 ②–④; mockup `thiet-ke/v27/tuyen-cong-viec.html` T0, ghi chú mục 1) — một kiểu mọi nơi: nhãn "Tuyến · {tên}" + "Xong a/b · đang n",
  * một dòng một bước (dấu · tên · chi tiết · người · ngày / hạn · ˅). Dữ liệu dựng ở máy chủ (`dungTuyen`) — web không suy người / bước.
  * Bấm dòng có nội dung → mở ngay dưới dòng (không đổi panel). Không quyền xem nội dung → không ˅ (title "Không xem được nội dung").
- * Bước chưa tới lượt (○) chỉ xám ở đây — không thành việc / số / chuông (N72 ③). > 4 bước: gập các bước đã xong (bước cha còn con mở luôn hiện).
+ * Bước chưa tới lượt (○) chỉ xám ở đây — không thành việc / số / chuông (N72 ③). > 5 bước: gập các bước đã xong (bước cha còn con mở luôn hiện).
  */
 type PropTuyen = { className?: string;
   /** Bước mở sẵn nội dung (mockup v27: T4 lời TVV trả ở bước đang ở · T7 nội dung GV gửi) — thay hộp nội dung riêng của panel. */ moSan?: (b: BuocTuyen) => boolean };

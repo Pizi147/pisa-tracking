@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon, bacDu } from '@shared/domain/index.ts';
+import { bacNgan, luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon, bacDu } from '@shared/domain/index.ts';
 import { NutDongPanel, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { lamMoiYThucCua, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -81,10 +81,11 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
   };
 
   return (
-    <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau} onDong={onClose}
+    /* TUYEN-1 (mockup v27 T2): đầu panel "tên em · lớp · WL 3" — hạn chỉ ở khối Phụ trách · Hạn, ngày Head duyệt ở bước Tuyến. */
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} dau={dau && gv.g ? { ...dau, han: null, dong2: [...dau.dong2, bacNgan(dich(m.nhan))] } : dau} onDong={onClose}
       quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? bacDu(dich(m.nhan)) : null, laMeeting && phDu) : null}
       /* TUYEN-1: ngày Head duyệt nay ở bước "Head duyệt" của Tuyến — đầu panel chỉ còn bậc. */
-      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}</span>}
+      ngCanh={dau && gv.g ? undefined : <span className="truncate">{bacDu(dich(m.nhan))}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
         trai: loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
@@ -100,7 +101,7 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
       {/* TUYEN-1 (mockup v27 T2): khối việc → Tuyến → form → Việc con → Lịch sử. */}
       {gv.g && <div className="pt-4"><KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDone} /></div>}
       <div className="pt-4"><KhoiTuyen tuyen={m.tuyen} /></div>
-      <Khoi tieuDe={t('Đã thực hiện')}>
+      <div className="space-y-3 pt-4">
         {m.status !== 'da_duyet' && <p className="m-0 text-sm text-slate-400">{t('Lần xử lý này không còn chờ "Đã thực hiện" ({statusLabel}).', { statusLabel: m.statusLabel })}</p>}
         <Hang2>
           <Truong nhan={t('Ngày thực hiện')} batBuoc loi={lf.daBam ? loiNgay : null}>
@@ -120,7 +121,7 @@ export function DaThucHienPanel({ measureId, dau, onClose, onDone, onTiep = null
             {t('PH dự họp — việc Báo PH của TVV tự xong')}
           </label>
         )}
-      </Khoi>
+      </div>
       {/* TUYEN-1: khối "n vi phạm được xử lý" bỏ khi Tuyến có bước "GV ghi n vi phạm" (mở xem từng vi phạm tại chỗ); không có Tuyến thì giữ. */}
       {!m.tuyen && <Khoi tieuDe={t('{n} vi phạm được xử lý', { n: m.viPham.length })}>
         <p className="m-0 text-xs text-slate-400">{m.viPham.map((v) => `${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}`).join(' · ') || '—'}</p>

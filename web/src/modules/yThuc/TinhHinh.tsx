@@ -312,7 +312,8 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, dau, onDong, onDaL
   /* F03: đang gửi thì ✕ / Esc chưa đóng — không hỏi "Bỏ chữ" cho câu trả lời máy chủ đang nhận. */
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} dau={dau} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
+    /* TUYEN-1: hạn chỉ ở khối Phụ trách · Hạn — đầu panel không lặp ngày khi khối đã có. */
+    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} dau={dau && gv.g ? { ...dau, han: null } : dau} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
       quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
       chan={{ conThieu: lf.conThieu(loiO),
         /* GD-18 (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · "Lưu · gửi TVV" · "Lưu · việc tiếp ›" (chính); mở lẻ → "Lưu · gửi TVV" (chính). */

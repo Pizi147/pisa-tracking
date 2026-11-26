@@ -15,7 +15,7 @@ import { VI_PHAM_TEN_TOI_DA, bacDu, duongHoSoHocVien, monViPham, shortDate, tenM
 import { t } from '@shared/i18n/index.ts';
 import { lucVn } from './gioVn.ts';
 import { KhoiGiaoViec, dongLichSuGiao, useGiaoViec } from './KhoiGiaoViec.tsx';
-import { LuaChonRadio } from './PanelBaoPhTvv.tsx';
+import { ChipRadio } from '../../ui/ChipRadio.tsx';
 import { HOAN_TAC_MS, LichSuViPham, hoanTacTraLai, lamMoiTraLai, loiLyDo, type TraLaiView } from '../yThuc/TraLai.tsx';
 import { xoaViPham } from '../yThuc/DeleteViolationConfirm.tsx';
 import { KhoiTuyen, dangCoNoiDung } from '../yThuc/KhoiTuyen.tsx';
@@ -150,7 +150,8 @@ export function PanelTraLai({ id, lop, onDong, onDaLam, onTiep }: {
         {lamDuoc && (
           <>
             <Truong nhan={t('Bạn chọn')} as="div">
-              <LuaChonRadio khungRo deu ten={`tra-lai-cach-${id}`} nhan={t('Bạn chọn')} value={c} muc={dsCach} onChange={(k) => { setCach(k); lf.datLai(); if (tt === 'loi') setTt(null); }} />
+              {/* TUYEN-1 (mockup v27 T4): hàng chip tròn như "Cách xử lý". */}
+              <ChipRadio nhan={t('Bạn chọn')} value={c} muc={dsCach.map(([k, chu]) => ({ k, chu }))} onChange={(k) => { setCach(k); lf.datLai(); if (tt === 'loi') setTt(null); }} />
             </Truong>
             {c === 'sua' && vp && (
               <>
