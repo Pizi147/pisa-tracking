@@ -369,18 +369,19 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(hs(b.sid).status === 'active' && hs(b.sid).archived_at === null, 'đang học → ra khỏi Lưu trữ');
   }));
 
-  check('SV-12 · (rà 3) em Tạm dừng (Lưu trữ) có KQ thi thật vẫn có việc "Chọn bước tiếp"; migrate không làm mất việc; em Kết thúc học đã lưu trữ thì không', () => thu(() => {
+  /* Chủ SP 26/11 (thay P7 rà 3): em trong Lưu trữ (Tạm dừng / Kết thúc học) không còn việc "Chọn bước tiếp" — đã có Quay lại học. */
+  check('SV-12 · em Tạm dừng (Lưu trữ) có KQ thi thật KHÔNG còn việc "Chọn bước tiếp"; em Tạm dừng chưa lưu trữ (trước P7) còn; em Kết thúc học đã lưu trữ thì không', () => thu(() => {
     const L = lop(); const a = emThiXong(L); const b = emThiXong(L); const c = emThiXong(L);
     students.setStudentStatus(QL, a.sid, 'inactive', TODAY);
     xoaNho();
-    assert(hs(a.sid).archived_at && bt.choBuocTiep(a.sid).length === 1, 'tạm dừng (Lưu trữ) → còn việc');
+    assert(hs(a.sid).archived_at && bt.choBuocTiep(a.sid).length === 0, 'tạm dừng (Lưu trữ) → còn việc');
     /* em tạm dừng TRƯỚC P7 (chưa lưu trữ) → migrate lưu trữ → việc còn */
     conn.prepare(`UPDATE students SET status = 'inactive', archived_at = NULL WHERE id = ?`).run(b.sid);
     xoaNho();
     assert(bt.choBuocTiep(b.sid).length === 1, 'trước migrate có việc');
     migratePrSvLoTrinh(conn, []);
     xoaNho();
-    assert(hs(b.sid).archived_at && bt.choBuocTiep(b.sid).length === 1, 'sau migrate vẫn có việc');
+    assert(hs(b.sid).archived_at && bt.choBuocTiep(b.sid).length === 0, 'sau migrate (vào Lưu trữ) còn việc');
     conn.prepare(`UPDATE students SET status = 'finished', archived_at = ? WHERE id = ?`).run(TODAY, c.sid);
     xoaNho();
     assert(bt.choBuocTiep(c.sid).length === 0, 'kết thúc + lưu trữ → không việc');
