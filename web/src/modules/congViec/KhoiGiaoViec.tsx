@@ -289,7 +289,7 @@ function DaiVuaGiao({ chu, het, onHet, onHoanTac }: { chu: string; het: number; 
  * ở chi nhánh của việc (`/ref/nguoi`, có LIMIT). Không request khi chỉ mở hộp ngoài lần tìm đầu (ô `ChonNguoi` trễ 250 ms).
  */
 /** LPB-1 (rà PTA #2280): ô ĐỔI NGƯỜI chỉ liệt kê người nhận được — cùng luật máy chủ (`khungNhanDuoc`): Chốt / Xét lại → quyền chốt; Xếp lịch MT → xếp lịch; việc TVV / Bàn giao → không BPXL. */
-const QUYEN_NHAN: Record<string, string> = { chot_lo_trinh: 'chot', xet_lai: 'chot', xep_lich_mt: 'xep_lich', chot_ngay_thi: 'khong_bpxl', buoc_tiep: 'khong_bpxl', thi_that: 'khong_bpxl',
+const QUYEN_NHAN: Record<string, string> = { nhan_tin: 'nhan_tin', chot_lo_trinh: 'chot', xet_lai: 'chot', xep_lich_mt: 'xep_lich', chot_ngay_thi: 'khong_bpxl', buoc_tiep: 'khong_bpxl', thi_that: 'khong_bpxl',
   bo_sung_ho_so: 'khong_bpxl', ban_giao: 'khong_bpxl', ban_giao_mon: 'khong_bpxl', ban_giao_gv: 'khong_bpxl' };
 function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: ReadonlySet<number> = new Set(), quyen: string | null = null): (q: string) => Promise<NguoiTrongDs[]> {
   const lq = new Map<number, NguoiTrongDs>();
@@ -487,7 +487,7 @@ function HopThemTheoDoi({ ds, da, onDong, onThem }: { ds: KhoiGv[]; da: Readonly
   const [loi, setLoi] = useState<string | null>(null);
   const tenCn = useTenCn();
   const [tim] = useState(() => {
-    const goc = nguonNguoi(ds, tenCn);
+    const goc = nguonNguoi(ds, tenCn, new Set(), ds.length && ds.every((g) => (g.loai as string) === 'nhan_tin') ? 'nhan_tin' : null);   // RA-2711 (N77): BPXL mọi chi nhánh
     return { toiThieu: 0, goi: async (q: string) => (await goc(q)).map((r) => (da.has(r.id) ? { ...r, tat: t('đang theo dõi') } : r)) };
   });
   const them = async () => {

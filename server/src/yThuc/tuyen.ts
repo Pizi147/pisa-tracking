@@ -22,7 +22,8 @@ import { SU_KIEN_TAM_DUNG_SQL, khoangTuSuKien } from '../students/tamDung.ts';
 import { trangThaiYThuc } from './trangThai.ts';
 import { xemLienHePh, xemYThucHv } from './access.ts';
 import { CHI_NHANH_EM, LY_DO_HE_THONG } from './baoPhTvv.ts';
-import { luatMeeting } from '../worklist/giaoViec.ts';
+import { luatMeeting, vaiMeetingXemTruoc } from '../worklist/giaoViec.ts';
+import { tvvConVai } from '../worklist/viecTvv.ts';
 import { GV_CHINH_SQL, chinhTuGv } from '../classes/lienPhongBan.ts';
 import { conVaiO as giuVaiO, headCua } from '../worklist/nguoiNhan.ts';
 import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
@@ -72,11 +73,14 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Chủ SP 27/11 (#2273 P1): có thì THAY xem Ý thức em cho `ndEm` và mở đọc cả bước — luật liên hệ PH `xemLienHePh`. */ docEm?: (p: Principal) => boolean;
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
+  /** RA-2711 (PTA rà #2290): THỜI ĐIỂM thật của bước khi nguồn có (giờ ghi) — "làm khi tuyến còn mở" so theo đây; nguồn chỉ có ngày thì không có. */ luc?: string | null;
 };
 type TuyenNoi = Omit<Tuyen, 'buoc' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc' | 'ketThucLuc' | 'head' | 'lop' | 'phuTrachChinh'> & { buoc: BuocNoi[]; luc: string | null; tvv: number | null; cn: number | null;
   lop?: Tuyen['lop']; /** LPB-0: phụ trách chính (có mặt cả tuyến). */ chinh?: { id: number; ten: string } | null; /** LPB-0: khoá lô chuyển lớp (lớp nguồn × ngày ra lệnh) — Đang theo dõi một dòng mỗi lô. */ lo?: string };
 
 const ngay10 = (s: string | null | undefined): string | null => (s ? (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ngayTheoGioVN(s) ?? s.slice(0, 10)) : null);
+/** `ngay` + `luc` từ một mốc giờ của nguồn (RA-2711). */
+const moc = (s: string | null | undefined): { ngay: string | null; luc: string | null } => ({ ngay: ngay10(s), luc: s && s.length > 10 ? s : null });
 const ds = (j: string | null | undefined): any[] => (j ? (JSON.parse(j) as any[]).filter((x) => x && x.id != null) : []);
 const tenGop = (ten: readonly (string | null | undefined)[]): string | null => {
   const t = [...new Set(ten.filter((x): x is string => !!x))];
@@ -115,11 +119,15 @@ const LY_DO_LUU_TRU = 'Học viên vào Lưu trữ';
 const DONG_LUU_TRU = 'Đóng — em vào Lưu trữ';
 
 /** Người giữ Báo PH theo luật (N2, N72 ⑤): người được giao → TVV của em → Head chi nhánh. */
-function giuBaoPh(t: TuyenNoi, pt: number | null, ptTen: string | null, tvvTen: string | null, nl: number | null = null) {
+function giuBaoPh(t: TuyenNoi, pt: number | null, ptTen: string | null, tvvTen: string | null, nl: number | null = null, xemTruoc = false) {
   if (pt) return { ids: [pt], nguoi: ptTen, vai: false };
-  if (t.tvv) return { ids: [t.tvv], nguoi: tvvTen, vai: false };
-  /* VAI-0 (N76b): Lead TVV chốt lúc sinh, còn vai ở CN em. */
+  /* RA-2711: TVV hết vai ở chi nhánh em = chưa có TVV — cùng luật `nguoiGiuBaoPh` / Công việc (trước: Tuyến ghi TVV cũ, Phụ trách ghi Lead TVV / Head). */
+  if (t.tvv && tvvConVai(t.tvv, t.cn)) return { ids: [t.tvv], nguoi: tvvTen, vai: false };
+  /* VAI-0 (N76b): Lead TVV chốt lúc sinh (`nguoi_luat` đã lưu), còn vai ở CN em. RA-2711 (rà #2290): bước ○ (việc CHƯA sinh) — chưa biết Lead TVV nào
+     (`chotLeadBaoPh` chọn người ít việc lúc sinh) → ghi VAI "Lead TVV" (mọi Lead TVV gán CN em), không đoán tên. */
   if (giuVaiO(nl, 'lead_consultant', t.cn)) return { ids: [nl!], nguoi: nguoiVai().find((y) => y.u === nl)?.ten ?? null, vai: false };
+  const leads = xemTruoc && t.cn != null ? nguoiVai().filter((y) => y.key === 'lead_consultant' && y.b === t.cn) : [];
+  if (leads.length) return { ids: [...new Set(leads.map((y) => y.u))], nguoi: 'Lead TVV', vai: true };
   return theoVai(head(t.cn), 'Head chi nhánh');
 }
 
@@ -131,14 +139,14 @@ function buocBaoPh(t: TuyenNoi, b: any, o: { khoa: string; ten: string; cha?: st
   const ra: BuocNoi[] = [];
   const dau = lan.filter((l) => l.kq !== 'da_bao');
   dau.forEach((l, i) => ra.push(buoc({ khoa: `${o.khoa}:l${l.id}`, ten: o.ten, trangThai: 'xong', chiTiet: `Chưa liên hệ được · lần ${i + 1}`, nguoi: l.boiTen ?? null,
-    ngay: l.ngay, cha: o.cha ?? null, viec, ids: l.boi ? [l.boi] : [], nd: l.ghiChu ?? null })));
+    ngay: l.ngay, luc: l.luc ?? null, cha: o.cha ?? null, viec, ids: l.boi ? [l.boi] : [], lam: l.boi ? [l.boi] : [], nd: l.ghiChu ?? null })));   // PTA rà #2290 P1: người ghi thay "Chưa liên hệ được" đã làm bước
   const xong = lan.filter((l) => l.kq === 'da_bao').at(-1);
   if (b.tt === 'xong' && xong) {
-    ra.push(buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'xong', chiTiet: 'Đã báo PH', nguoi: xong.boiTen ?? null, ngay: xong.ngay, cha: o.cha ?? null, viec,
+    ra.push(buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'xong', chiTiet: 'Đã báo PH', nguoi: xong.boiTen ?? null, ngay: xong.ngay, luc: xong.luc ?? null, cha: o.cha ?? null, viec,
       ids: xong.boi ? [xong.boi] : [], lam: xong.boi ? [xong.boi] : [], nd: xong.ghiChu ?? null }));
   } else if (b.tt === 'bo') {
     ra.push(buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'bo', chiTiet: b.bo === LUU_TRU ? DONG_LUU_TRU : (LY_DO_HE_THONG as Record<string, string>)[b.bo] ?? 'Đã bỏ',
-      ngay: ngay10(b.boLuc), cha: o.cha ?? null, viec, ids: giu.ids, vai: giu.vai }));
+      ...moc(b.boLuc), cha: o.cha ?? null, viec, ids: giu.ids, vai: giu.vai }));
   } else {
     /* `dung` qua json lồng là mảng (kiểu json giữ qua câu con) — `khoangTuSuKien` nhận chuỗi. */
     const han = hanBaoPhHieuLuc(b.han, khoangTuSuKien(b.dung == null ? null : typeof b.dung === 'string' ? b.dung : JSON.stringify(b.dung)), b.hanChon ?? null);
@@ -151,7 +159,7 @@ function buocBaoPh(t: TuyenNoi, b: any, o: { khoa: string; ten: string; cha?: st
 }
 /** Báo PH chưa có việc (chưa tới lượt) — người giữ theo luật, chữ "sau khi …". */
 const baoPhCho = (t: TuyenNoi, o: { khoa: string; ten: string; sau: string; cha?: string | null; tvvTen: string | null }): BuocNoi =>
-  buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'cho', chiTiet: o.sau, cha: o.cha ?? null, ...giuBaoPh(t, null, null, o.tvvTen) });
+  buoc({ khoa: o.khoa, ten: o.ten, trangThai: 'cho', chiTiet: o.sau, cha: o.cha ?? null, ...giuBaoPh(t, null, null, o.tvvTen, null, true) });
 
 /* ---------------------------------------------------------------- tuyến Vi phạm (một lần xử lý) */
 
@@ -194,14 +202,14 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
     const xlCon = m.status !== 'thu_hoi' && m.status !== 'tu_choi';
     if (de) {
       /* Khác mặc định (N1): GVCN gửi → Head duyệt (5 ngày, quá hạn tự chốt) → Đã thực hiện (GVCN). */
-      t.buoc.push(buoc({ khoa: 'xu_ly', ten: 'Xử lý vi phạm', trangThai: 'xong', chiTiet: `đề xuất ${nhan}`, ...tao, ngay: ngay10(de.tao), nd: m.note ?? null }));
+      t.buoc.push(buoc({ khoa: 'xu_ly', ten: 'Xử lý vi phạm', trangThai: 'xong', chiTiet: `đề xuất ${nhan}`, ...tao, ...moc(de.tao), nd: m.note ?? null }));
       const hd = head(t.cn);
       if (de.tt === 'cho') t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'dang', ...theoVai(hd, 'Head chi nhánh'), han: de.han ?? null }));
-      else if (de.tt === 'tu_choi') t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối', nguoi: de.duyetTen ?? null, ngay: ngay10(de.xuLy),
+      else if (de.tt === 'tu_choi') t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối', nguoi: de.duyetTen ?? null, ...moc(de.xuLy),
         ids: de.duyet ? [de.duyet] : [], lam: de.duyet ? [de.duyet] : [], nd: de.tuChoi ?? null }));
-      else if (luuTru) t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: DONG_LUU_TRU, ngay: ngay10(de.xuLy) }));
+      else if (luuTru) t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: DONG_LUU_TRU, ...moc(de.xuLy) }));
       else t.buoc.push(buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'xong', chiTiet: de.tt === 'tu_dong' ? 'Tự chốt theo GVCN' : 'Đã duyệt', nguoi: de.duyetTen ?? null,
-        ngay: ngay10(de.xuLy), ids: de.duyet ? [de.duyet] : [], lam: de.duyet ? [de.duyet] : [] }));
+        ...moc(de.xuLy), ids: de.duyet ? [de.duyet] : [], lam: de.duyet ? [de.duyet] : [] }));
       if (m.status === 'da_duyet') {
         const q = ngay10(m.quyet_luc);
         /* BAOPH-0 (N72 ⑥): việc "Đã thực hiện" giao được (`da_thuc_hien`) — người được giao thắng GVCN; hạn đặt tay thắng quyết + 4. */
@@ -224,7 +232,7 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
       t.buoc.push(r.tt === 'mo' && xlCon
         ? buoc({ khoa: `tl${r.id}`, ten, trangThai: 'dang', chiTiet: `${r.traTen ?? 'TVV'} trả`, nguoi: r.nhanTen ?? null, han: r.han ?? null, ids: ids2, nd, viec })
         : buoc({ khoa: `tl${r.id}`, ten, trangThai: r.tt === 'xong' ? 'xong' : 'bo', chiTiet: r.tt === 'xong' ? (r.kq === 'giu_nguyen' ? 'Giữ nguyên' : 'Đã gửi lại') : r.tt === 'mo' ? 'Lần xử lý đã đóng' : heThongRut ? 'Hệ thống rút (Lưu trữ)' : 'Đã rút',
-          nguoi: r.tt === 'xong' ? r.xongTen ?? null : heThongRut ? null : r.traTen ?? null, ngay: ngay10(r.xongLuc ?? r.luc), ids: ids2, lam: r.xongBoi ? [r.xongBoi] : [], nd, viec }));
+          nguoi: r.tt === 'xong' ? r.xongTen ?? null : heThongRut ? null : r.traTen ?? null, ...moc(r.xongLuc ?? r.luc), ids: ids2, lam: r.xongBoi ? [r.xongBoi] : [], nd, viec }));
       t.buoc.at(-1)!.docRieng = (p) => ids2.includes(p.userId) || theoDoiTayCua(p).has(`tra_lai:${r.id}`);
     }
     const bp = ds(m.bp);
@@ -241,12 +249,12 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
         han: th.han ?? null, lam: th.xin ? [th.xin] : [], nd: th.lyDo ?? null }));
       t.buoc.at(-1)!.ids.push(...(th.xin ? [th.xin] : []));
     } else if (th?.tt === 'tu_choi') {
-      t.buoc.push(buoc({ khoa: 'thu_hoi', ten: 'Thu hồi · Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối thu hồi', nguoi: th.duyetTen ?? null, ngay: ngay10(th.xuLy),
+      t.buoc.push(buoc({ khoa: 'thu_hoi', ten: 'Thu hồi · Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối thu hồi', nguoi: th.duyetTen ?? null, ...moc(th.xuLy),
         ids: [th.xin, th.duyet].filter(Boolean), nd: th.tuChoi ?? null }));
     }
     if (m.status === 'thu_hoi') {
-      if (luuTru && !th) t.buoc.push(buoc({ khoa: 'da_thu_hoi', ten: 'Đã đóng', trangThai: 'bo', chiTiet: DONG_LUU_TRU, ngay: ngay10(de.xuLy ?? m.updated_at) }));
-      else t.buoc.push(buoc({ khoa: 'da_thu_hoi', ten: 'Đã thu hồi', trangThai: 'bo', nguoi: th?.duyetTen ?? th?.xinTen ?? null, ngay: ngay10(th?.xuLy ?? m.updated_at),
+      if (luuTru && !th) t.buoc.push(buoc({ khoa: 'da_thu_hoi', ten: 'Đã đóng', trangThai: 'bo', chiTiet: DONG_LUU_TRU, ...moc(de.xuLy ?? m.updated_at) }));
+      else t.buoc.push(buoc({ khoa: 'da_thu_hoi', ten: 'Đã thu hồi', trangThai: 'bo', nguoi: th?.duyetTen ?? th?.xinTen ?? null, ...moc(th?.xuLy ?? m.updated_at),
         ids: [th?.xin, th?.duyet].filter(Boolean) as number[], lam: [th?.xin, th?.duyet].filter(Boolean) as number[], nd: th?.lyDo ?? null }));
       const lai = bp.find((b) => b.baoLai === m.id);
       if (lai) t.buoc.push(...buocBaoPh(t, lai, { khoa: 'bao_lai', ten: 'Báo lại PH', tvvTen }));
@@ -343,7 +351,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         ? buoc({ khoa, ten, trangThai: 'dang', ...giuGvcn(x), han: hanPhoiHop(x.kind, x.created_at, x.han_chon, x.pb_moc ?? null), cungLuc: song, viec: vx })
         : x.status === 'done'
           ? buoc({ khoa, ten, trangThai: 'xong', chiTiet: x.performed_by ? null : x.thuc_ten ?? null, nguoi: x.thuc_ten ?? null, ngay: x.performed_on, ids: lam, lam, cungLuc: song, nd: x.note ?? null, viec: vx })
-          : buoc({ khoa, ten, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'Đã bỏ', ngay: ngay10(x.removed_at), ...giuGvcn(x), cungLuc: song, viec: vx }));
+          : buoc({ khoa, ten, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'Đã bỏ', ...moc(x.removed_at), ...giuGvcn(x), cungLuc: song, viec: vx }));
       t.buoc.at(-1)!.docRieng = (p) => t.buoc.find((b) => b.khoa === khoa)!.ids.includes(p.userId) || theoDoiTayCua(p).has(`phoi_hop:${x.id}`);
       /* TUYEN-2 (mockup v27 T6, PTA chốt): bước GVCN xác nhận Meeting — nội dung = "Nội dung gửi" + Phụ huynh (tên · quan hệ · SĐT). Dòng PH: CHỈ người xem được
          Ý thức em (`xemYThucHv`) — không qua quyền riêng của bước / theo dõi tay. */
@@ -374,8 +382,10 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         if (ph === 'ket_qua') baoPh();
         const r = phan.find((y) => y.phan === ph);
         const tenP = ph === 'xep_lich' ? 'Xếp lịch họp' : 'Kết quả meeting';
-        const luat = luatMeeting(ph, r?.cn ?? t.cn, r?.nl ?? null);   // VAI-0 (N74): một người — cùng nguồn với Công việc / panel
-        const giu = r?.pt ? { ids: [r.pt], nguoi: r.ptTen ?? null, vai: false } : luat ? { ids: [luat.u], nguoi: luat.ten, vai: true }
+        /* VAI-0 (N74): một người — cùng nguồn với Công việc / panel. RA-2711 (rà #2290): bước ○ (phần CHƯA sinh) — ghi VAI giữ phần ở chi nhánh em (BPXL · GĐCN → CX;
+           người cụ thể chọn lúc sinh theo ít việc — `chonNguoiLuat`), không TVV / Head. */
+        const luat = r ? luatMeeting(ph, r.cn ?? t.cn, r.nl ?? null) : vaiMeetingXemTruoc(ph, t.cn);
+        const giu = r?.pt ? { ids: [r.pt], nguoi: r.ptTen ?? null, vai: false } : luat ? { ids: 'ids' in luat ? luat.ids : [luat.u], nguoi: luat.ten, vai: true }
           : ph === 'xep_lich' && t.tvv ? { ids: [t.tvv], nguoi: tvvTen, vai: false } : theoVai(head(t.cn), 'Head chi nhánh');
         const kp = `${khoa}:${ph}`;
         const nd = r ? [r.ngayGio ? `Họp ${r.ngayGio}` : null, r.kq].filter(Boolean).join('\n') || null : null;
@@ -387,7 +397,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         t.buoc.push(r.tt === 'mo'
           ? buoc({ khoa: kp, ten: tenP, trangThai: 'dang', ...giu, han: r.hanChon ?? hanPhanMeeting(ph, ngayMt(r)), cha: khoa, nd, viec: vm })
           : r.tt === 'xong'
-            ? buoc({ khoa: kp, ten: tenP, trangThai: 'xong', chiTiet: r.xongBoi ? null : 'tự xong', nguoi: r.xongTen ?? null, ngay: ngay10(r.xongLuc), cha: khoa, nd,
+            ? buoc({ khoa: kp, ten: tenP, trangThai: 'xong', chiTiet: r.xongBoi ? null : 'tự xong', nguoi: r.xongTen ?? null, ...moc(r.xongLuc), cha: khoa, nd,
               ids: [...new Set([...(giu.vai ? [] : giu.ids), ...(r.xongBoi ? [r.xongBoi] : [])])], lam: r.xongBoi ? [r.xongBoi] : [], viec: vm })
             : buoc({ khoa: kp, ten: tenP, trangThai: 'bo', chiTiet: luuTru(x) ? DONG_LUU_TRU : 'GVCN đưa Meeting về Cần xử lý', ...giu, cha: khoa, viec: vm }));
         /* Đọc phần Meeting (`requireDoc` của khối giao việc): người giữ / làm phần · Head / Quản trị / CX của chi nhánh · người theo dõi phần. */
@@ -417,7 +427,7 @@ function dungTinhHinh(ids: number[], homNay: string): TuyenNoi[] {
     const gvTvv = r.chieu === 'gv_tvv';
     const rut = r.trang_thai === 'rut';
     tt.buoc.push(buoc({ khoa: 'gui', ten: gvTvv ? 'GV gửi tình hình' : 'TVV hỏi tình hình', trangThai: rut ? 'bo' : 'xong', chiTiet: rut ? (r.rut_boi ? 'Đã rút' : 'Hệ thống rút (Lưu trữ)') : null, nguoi: r.gui_ten ?? null,
-      ngay: ngay10(r.tao_luc), ids: [r.nguoi_gui], lam: [r.nguoi_gui], nd: r.noi_dung ?? null }));
+      ...moc(r.tao_luc), ids: [r.nguoi_gui], lam: [r.nguoi_gui], nd: r.noi_dung ?? null }));
     if (rut) return tt;
     if (gvTvv) {
       const bp = ds(r.bp)[0];
@@ -428,7 +438,7 @@ function dungTinhHinh(ids: number[], homNay: string): TuyenNoi[] {
     const giu = r.phu_trach_id ? { ids: [r.phu_trach_id], nguoi: r.pt_ten ?? null, vai: false } : gv ? { ids: [gv[0]], nguoi: gv[1], vai: false } : theoVai(head(tt.cn), 'Head chi nhánh');
     const vt: ViecBuoc = { loai: 'tinh_hinh', id: r.id };
     tt.buoc.push(r.trang_thai === 'xong'
-      ? buoc({ khoa: 'tra_loi', ten: 'Tình hình học tập', trangThai: 'xong', chiTiet: 'GVCN trả lời', nguoi: r.tra_ten ?? null, ngay: ngay10(r.tra_loi_luc),
+      ? buoc({ khoa: 'tra_loi', ten: 'Tình hình học tập', trangThai: 'xong', chiTiet: 'GVCN trả lời', nguoi: r.tra_ten ?? null, ...moc(r.tra_loi_luc),
         ids: [...new Set([...giu.ids, ...(r.tra_loi_boi ? [r.tra_loi_boi] : [])])], lam: r.tra_loi_boi ? [r.tra_loi_boi] : [], nd: r.tra_loi ?? null, viec: vt })
       : buoc({ khoa: 'tra_loi', ten: 'Tình hình học tập', trangThai: 'dang', chiTiet: 'GVCN trả lời', ...giu, han: r.han ?? null, viec: vt }));
     tt.buoc.at(-1)!.docRieng = (p) => tt.buoc.at(-1)!.ids.includes(p.userId) || theoDoiTayCua(p).has(`tinh_hinh:${r.id}`);
@@ -452,16 +462,16 @@ function dungCapBac(ids: number[], homNay: string): TuyenNoi[] {
       buoc: [], luc: y.tao_luc, tvv: y.tvv ?? null, cn: y.cn ?? null };
     const xin = y.nguoi_xin ? [y.nguoi_xin] : [];
     t.buoc.push(buoc({ khoa: 'sua', ten: 'Sửa cấp bậc', trangThai: 'xong', chiTiet: d.bac != null ? `bậc ${d.bacCu ?? '?'} → ${d.bac}` : null, nguoi: y.xin_ten ?? null,
-      ngay: ngay10(y.tao_luc), ids: xin, lam: xin, nd: y.ly_do ?? null }));
+      ...moc(y.tao_luc), ids: xin, lam: xin, nd: y.ly_do ?? null }));
     const duyet = y.nguoi_duyet ? [y.nguoi_duyet] : [];
     t.buoc.push(y.trang_thai === 'cho'
       ? buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'dang', ...theoVai(head(t.cn), 'Head chi nhánh'), han: y.han_duyet ?? null })
       : y.trang_thai === 'tu_choi'
-        ? buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối', nguoi: y.duyet_ten ?? null, ngay: ngay10(y.xu_ly_luc), ids: duyet, lam: duyet, nd: y.ly_do_tu_choi ?? null })
+        ? buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Từ chối', nguoi: y.duyet_ten ?? null, ...moc(y.xu_ly_luc), ids: duyet, lam: duyet, nd: y.ly_do_tu_choi ?? null })
         : ['duyet', 'tu_dong'].includes(y.trang_thai)
           ? buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'xong', chiTiet: y.trang_thai === 'tu_dong' ? 'Tự chốt theo GVCN' : 'Đã duyệt', nguoi: y.duyet_ten ?? null,
-            ngay: ngay10(y.xu_ly_luc), ids: duyet, lam: duyet })
-          : buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Đã rút', ngay: ngay10(y.xu_ly_luc) }));
+            ...moc(y.xu_ly_luc), ids: duyet, lam: duyet })
+          : buoc({ khoa: 'duyet', ten: 'Head duyệt', trangThai: 'bo', chiTiet: 'Đã rút', ...moc(y.xu_ly_luc) }));
     return t;
   });
 }
@@ -482,9 +492,9 @@ const NHAN_TIN_JSON = (dk: string) => `json((SELECT json_group_array(json_object
 const buocNhanTin = (n: any, khoa: string): BuocNoi => {
   const viec: ViecBuoc = { loai: 'nhan_tin', id: n.id };
   const giu = n.pt ?? n.nl ?? null;
-  if (n.tt === 'xong') return buoc({ khoa, ten: 'Nhận thông tin (BPXL)', trangThai: 'xong', chiTiet: 'Đã xác nhận', nguoi: n.xongTen ?? null, ngay: ngay10(n.xongLuc), viec, cungLuc: true,
+  if (n.tt === 'xong') return buoc({ khoa, ten: 'Nhận thông tin (BPXL)', trangThai: 'xong', chiTiet: 'Đã xác nhận', nguoi: n.xongTen ?? null, ...moc(n.xongLuc), viec, cungLuc: true,
     ids: n.xongBoi ? [n.xongBoi] : [], lam: n.xongBoi ? [n.xongBoi] : [] });
-  if (n.tt === 'bo') return buoc({ khoa, ten: 'Nhận thông tin (BPXL)', trangThai: 'bo', chiTiet: 'Tự đóng', ngay: ngay10(n.boLuc), viec, cungLuc: true });
+  if (n.tt === 'bo') return buoc({ khoa, ten: 'Nhận thông tin (BPXL)', trangThai: 'bo', chiTiet: 'Tự đóng', ...moc(n.boLuc), viec, cungLuc: true });
   return buoc({ khoa, ten: 'Nhận thông tin (BPXL)', trangThai: 'dang', nguoi: n.ptTen ?? n.nlTen ?? null, ids: giu ? [giu] : [], han: n.han ?? null, viec, cungLuc: true });
 };
 
@@ -513,7 +523,7 @@ function dungChuyenLop(ids: number[], homNay: string): TuyenNoi[] {
       const kb = r.kbg ? (JSON.parse(r.kbg) as [number | null, string | null, string | null]) : null;
       const gv = kb?.[0] ? [kb[0]] : chinh ? [chinh.id] : [];
       t.buoc.push(r.xac_nhan_boi
-        ? buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'xong', nguoi: r.xn_ten ?? null, ngay: ngay10(r.xac_nhan_luc), ids: [r.xac_nhan_boi], lam: [r.xac_nhan_boi], cungLuc: true })
+        ? buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'xong', nguoi: r.xn_ten ?? null, ...moc(r.xac_nhan_luc), ids: [r.xac_nhan_boi], lam: [r.xac_nhan_boi], cungLuc: true })
         : buoc({ khoa: 'ban_giao', ten: 'Bàn giao', trangThai: 'dang', nguoi: kb?.[0] ? kb[1] ?? null : chinh?.ten ?? null, ids: gv, han: kb?.[2] ?? r.han_gvcn, cungLuc: true }));
     }
     ds(r.bp).forEach((b, i) => t.buoc.push(...buocBaoPh(t, b, { khoa: `bao_ph:${b.id}`, ten: i ? 'Báo lại PH' : 'Báo PH', tvvTen: r.tvv_ten ?? null }).map((x) => Object.assign(x, { cungLuc: true }))));
@@ -544,11 +554,11 @@ function dungDoiGv(ids: number[], homNay: string): TuyenNoi[] {
     const chinh = chinhTuyen(r.gv, r.cn ?? null);
     const t: TuyenNoi = { loai: 'doi_gv', khoa: String(r.id), tieuDe: `Đổi GV · ${r.code}`, em: null, chiXem: false, buoc: [], luc: r.tao_luc, tvv: null, cn: r.cn ?? null,
       lop: { id: r.class_id, code: r.code }, chinh };
-    t.buoc.push(buoc({ khoa: 'luu', ten: 'Lưu phân công', trangThai: 'xong', nguoi: r.tao_ten ?? null, ngay: ngay10(r.tao_luc), ids: r.tao_boi ? [r.tao_boi] : [], lam: r.tao_boi ? [r.tao_boi] : [] }));
+    t.buoc.push(buoc({ khoa: 'luu', ten: 'Lưu phân công', trangThai: 'xong', nguoi: r.tao_ten ?? null, ...moc(r.tao_luc), ids: r.tao_boi ? [r.tao_boi] : [], lam: r.tao_boi ? [r.tao_boi] : [] }));
     for (const b of ds(r.bg)) {
       const giu = b.lam ? { ids: [b.lam], nguoi: b.lamTen ?? null, vai: false } : theoVai(head(t.cn), 'Head chi nhánh');
       t.buoc.push(b.tt === 'xong'
-        ? buoc({ khoa: `ban_giao:${b.id}`, ten: 'Bàn giao', trangThai: 'xong', nguoi: b.xongTen ?? null, ngay: ngay10(b.xongLuc), ids: b.xongBoi ? [b.xongBoi] : [], lam: b.xongBoi ? [b.xongBoi] : [], cungLuc: true })
+        ? buoc({ khoa: `ban_giao:${b.id}`, ten: 'Bàn giao', trangThai: 'xong', nguoi: b.xongTen ?? null, ...moc(b.xongLuc), ids: b.xongBoi ? [b.xongBoi] : [], lam: b.xongBoi ? [b.xongBoi] : [], cungLuc: true })
         : b.tt === 'huy' ? buoc({ khoa: `ban_giao:${b.id}`, ten: 'Bàn giao', trangThai: 'bo', chiTiet: 'Đã huỷ', cungLuc: true })
           : buoc({ khoa: `ban_giao:${b.id}`, ten: 'Bàn giao', trangThai: 'dang', ...giu, han: b.han ?? null, cungLuc: true }));
     }
@@ -596,7 +606,7 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
     const em = b.docEm ? b.docEm(p) : xemEm;
     const nd = [b.nd?.trim() ? b.nd : null, em ? b.ndEm : null].filter(Boolean).join('\n');
     const duoc = !!nd && (xemEm || em || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
-    const { ids: _i, lam: _l, nd: _n, ndEm: _e, docEm: _m, docRieng: _d, vai: _v, ...goc } = b;
+    const { ids: _i, lam: _l, nd: _n, ndEm: _e, docEm: _m, docRieng: _d, vai: _v, luc: _c, ...goc } = b;
     return { ...goc, laToi: b.ids.includes(p.userId) && (b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho' || b.lam.includes(p.userId)),
       coNoiDung: duoc, khongQuyen: co && !duoc, ...(duoc ? { noiDung: nd! } : {}) };
   });
@@ -722,8 +732,9 @@ const NGAY_BUOC = 60;
  * dõi — chỉ việc còn mở hoặc đóng trong 7 ngày (P2-8). `?1` người · `?2` mốc 60 ngày · `?3` mốc 7 ngày.
  * ponytail: bước làm quá 60 ngày mà tuyến còn mở thì rơi khỏi tab (người theo dõi việc N58 vẫn thấy) — nới cửa sổ nếu chủ SP cần.
  */
-export const SQL_TUYEN_THEO_DOI = `SELECT 'vi_pham' AS l, m.id AS k, m.created_at AS luc, 'lam' AS nguon, NULL AS viec FROM discipline_measures m
-       WHERE m.created_by = ?1 AND m.status != 'nhap' AND m.created_at >= ?2
+export const SQL_TUYEN_THEO_DOI = `SELECT 'vi_pham' AS l, m.id AS k, CASE WHEN m.created_by = ?1 THEN m.created_at ELSE m.confirmed_at END AS luc, 'lam' AS nguon, NULL AS viec
+       FROM discipline_measures m   -- RA-2711: người lập · người xác nhận "Đã thực hiện" MỘT vế (OR hai chỉ mục)
+       WHERE (m.created_by = ?1 AND m.status != 'nhap' AND m.created_at >= ?2) OR (m.confirmed_by = ?1 AND m.confirmed_at >= ?2)
      UNION ALL SELECT 'vi_pham', y.doi_tuong_id, y.xu_ly_luc, 'lam', NULL FROM yeu_cau_duyet y
        WHERE y.nguoi_duyet = ?1 AND y.loai IN ('y_thuc', 'thu_hoi_y_thuc') AND y.doi_tuong_loai = 'discipline_measure' AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
      UNION ALL SELECT 'vi_pham', y.doi_tuong_id, y.tao_luc, 'lam', NULL FROM yeu_cau_duyet y
@@ -734,8 +745,13 @@ export const SQL_TUYEN_THEO_DOI = `SELECT 'vi_pham' AS l, m.id AS k, m.created_a
      UNION ALL SELECT 'phoi_hop', x.attempt_id, mp.xong_luc, 'lam', NULL FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id
        WHERE mp.xong_boi = ?1 AND mp.xong_luc >= ?2
      UNION ALL SELECT 'tinh_hinh', t.id, t.tao_luc, 'lam', NULL FROM tinh_hinh_hoc_tap t WHERE t.nguoi_gui = ?1 AND t.tao_luc >= ?2
-     UNION ALL SELECT 'cap_bac', y.id, y.tao_luc, 'lam', NULL FROM yeu_cau_duyet y WHERE y.loai = 'sua_khai_bac' AND y.nguoi_xin = ?1 AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
-     UNION ALL SELECT 'cap_bac', y.id, y.xu_ly_luc, 'lam', NULL FROM yeu_cau_duyet y WHERE y.nguoi_duyet = ?1 AND y.loai = 'sua_khai_bac' AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
+     /* RA-2711 (N72 ①): người ghi Báo PH (mỗi lần ghi) là người đã làm một bước (18 / 20 vế — còn 2 chỗ). */
+     UNION ALL SELECT CASE WHEN b.measure_id IS NOT NULL OR b.bao_lai_cua IS NOT NULL THEN 'vi_pham' WHEN b.phoi_hop_id IS NOT NULL THEN 'phoi_hop'
+           WHEN b.tinh_hinh_id IS NOT NULL THEN 'tinh_hinh' ELSE 'chuyen_lop' END,
+         COALESCE(b.measure_id, b.bao_lai_cua, (SELECT x.attempt_id FROM sos_coordination_actions x WHERE x.id = b.phoi_hop_id), b.tinh_hinh_id, b.lenh_chuyen_id), l.ghi_luc, 'lam', NULL
+       FROM viec_bao_ph_lan l JOIN viec_bao_ph b ON b.id = l.viec_id WHERE l.ghi_boi = ?1 AND l.ghi_luc >= ?2
+     UNION ALL SELECT 'cap_bac', y.id, CASE WHEN y.nguoi_xin = ?1 THEN y.tao_luc ELSE y.xu_ly_luc END, 'lam', NULL FROM yeu_cau_duyet y   -- RA-2711: người xin · người duyệt MỘT vế (OR hai chỉ mục)
+       WHERE ((y.nguoi_xin = ?1 AND y.loai = 'sua_khai_bac') OR (y.nguoi_duyet = ?1 AND y.loai = 'sua_khai_bac')) AND COALESCE(y.xu_ly_luc, y.tao_luc) >= ?2
      UNION ALL SELECT CASE WHEN b.measure_id IS NOT NULL OR b.bao_lai_cua IS NOT NULL THEN 'vi_pham' WHEN b.phoi_hop_id IS NOT NULL THEN 'phoi_hop'
            WHEN b.tinh_hinh_id IS NOT NULL THEN 'tinh_hinh' ELSE 'chuyen_lop' END,
          COALESCE(b.measure_id, b.bao_lai_cua, (SELECT x.attempt_id FROM sos_coordination_actions x WHERE x.id = b.phoi_hop_id), b.tinh_hinh_id, b.lenh_chuyen_id), t.luc, t.nguon, 'bao_ph:' || b.id
@@ -850,7 +866,7 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
     if (!xemKhung(p, t)) continue;
     const x = xuat(p, t);
     const lam = t.buoc.filter((b) => b.lam.includes(p.userId));
-    const lamKhiMo = !!d.lam && lam.length > 0 && (!x.ketThuc || lam.some((b) => (b.ngay ?? '') < (x.ketThucLuc ?? '')));
+    const lamKhiMo = !!d.lam && lam.length > 0 && (!x.ketThuc || lam.some((b) => lamTruocKetThuc(t.buoc, x.ketThucLuc, b)));
     if (!lamKhiMo && !d.viec.length) continue;
     if (x.ketThuc ? (x.ketThucLuc ?? '') < tu : t.buoc.some((b) => (b.trangThai === 'dang' || b.trangThai === 'tam_dung') && b.ids.includes(p.userId))) continue;
     const dang = t.buoc.filter((b) => b.trangThai === 'dang');
@@ -862,6 +878,19 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
       ...(t.lo ? { lo: t.lo, chuaBaoPh: t.buoc.some((b) => b.khoa.startsWith('bao_ph:') && (b.trangThai === 'dang' || b.trangThai === 'tam_dung')) } : {}) });
   }
   return { an, tuyen: gopLo(ra).sort((a, b) => Number(a.ketThuc) - Number(b.ketThuc) || Number(b.quaHan) - Number(a.quaHan) || (a.han ?? '9999').localeCompare(b.han ?? '9999')) };
+}
+
+/**
+ * RA-2711 (PTA chốt, rà #2290): bước `b` làm KHI tuyến đã kết thúc còn mở = không phải bước kết thúc — so THỜI ĐIỂM thật (`luc`, giờ ghi của nguồn): trước thời điểm
+ * kết thúc. Cùng ngày mà một bên không có giờ (nguồn chỉ ghi ngày) → thứ tự bước. Trước: so NGÀY → Head duyệt sáng, GVCN xác nhận chiều → Head mất "Vừa xong".
+ */
+export function lamTruocKetThuc(buoc: readonly Pick<BuocNoi, 'ngay' | 'luc'>[], ketThucLuc: string | null, b: Pick<BuocNoi, 'ngay' | 'luc'>): boolean {
+  if ((b.ngay ?? '') < (ketThucLuc ?? '')) return true;
+  if (b.ngay !== ketThucLuc) return false;
+  const cuoi = buoc.filter((x) => x.ngay && x.ngay === ketThucLuc)
+    .reduce<Pick<BuocNoi, 'ngay' | 'luc'> | null>((m, x) => (!m || (x.luc && m.luc ? x.luc >= m.luc : buoc.indexOf(x) > buoc.indexOf(m)) ? x : m), null);
+  if (!cuoi || b === cuoi) return false;
+  return b.luc && cuoi.luc ? b.luc < cuoi.luc : buoc.indexOf(b) < buoc.indexOf(cuoi);
 }
 
 /** `GET /my-work/theo-doi` (P1-3): `nhom` (việc N58) bỏ việc thuộc tuyến đã "Bỏ theo dõi" + `tuyen` một dòng một tuyến. */

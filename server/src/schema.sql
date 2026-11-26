@@ -2628,6 +2628,9 @@ CREATE INDEX IF NOT EXISTS idx_ycd_nguoi_duyet ON yeu_cau_duyet(nguoi_duyet) WHE
 CREATE INDEX IF NOT EXISTS idx_ycd_xin_thu_hoi ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'thu_hoi_y_thuc';
 CREATE INDEX IF NOT EXISTS idx_ycd_xin_khai ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'sua_khai_bac';
 CREATE INDEX IF NOT EXISTS idx_tra_lai_xong_boi ON vi_pham_tra_lai(xong_boi);
+-- RA-2711: người ghi Báo PH · người xác nhận Đã thực hiện (hai vế "đã làm" của Đang theo dõi). Khớp migrate/prTuyen0.ts.
+CREATE INDEX IF NOT EXISTS idx_bao_ph_lan_ghi_boi ON viec_bao_ph_lan(ghi_boi) WHERE ghi_boi IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_dm_xac_nhan_boi ON discipline_measures(confirmed_by) WHERE confirmed_by IS NOT NULL;
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
 -- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.

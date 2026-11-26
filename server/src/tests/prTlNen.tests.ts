@@ -429,14 +429,15 @@ export async function runPrTlNenTests(t: any) {
   });
 
   /* TD-VIEC-2: "không quét" QL "Của tôi" bớt câu (Ý thức / MT cũ chỉ em · lớp của mình) lượt quét không đổi mã → hiệu tăng (đo: quét 47 · không 29), trần 16 → 19. */
-  await checkAsync('N2-j · câu GET /my-work QL khi quét chạy − khi không ≤ 19', async () => {
+  /* RA-2711 (LOI-2): + đóng đợt Xử lý vi phạm đã hết (`dongXuLyHetDot`: dòng giao việc mở + trạng thái Ý thức của các em đó) — đo quét 53 · không 33, trần 19 → 22. */
+  await checkAsync('N2-j · câu GET /my-work QL khi quét chạy − khi không ≤ 22', async () => {
     await voiMayChu(async (goi) => {
       await goi(P.mbManager.userId, '/my-work');
       const dem = async () => { const a = ngu.soCauSql(); await goi(P.mbManager.userId, '/my-work'); return ngu.soCauSql() - a; };
       datMocQuet(null);
       const quet = await dem();
       const khong = await dem();
-      assert(quet - khong <= 19 && quet > khong, `quét ${quet} · không ${khong}`);
+      assert(quet - khong <= 22 && quet > khong, `quét ${quet} · không ${khong}`);
     });
   });
 }

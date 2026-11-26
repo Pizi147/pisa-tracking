@@ -374,4 +374,32 @@ export async function runPrBaoPh0Tests(t: any) {
     luu.moLaiViecLuuTru(null, xl.sid, d);
     assert(get('SELECT trang_thai AS t, phu_trach_id AS pt FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'mo', 'Hoàn tác không trả');
   }));
+
+  const tu: any = await import('../yThuc/tuyen.ts');
+  const vio: any = await import('../yThuc/violations.ts');
+  check('LOI2-1 · RA-2711 (N72 ①, PTA rà #2290 P1): người GHI THAY Báo PH (Head ghi "Chưa liên hệ được" — không phải người giữ, không theo dõi việc) → tuyến Vi phạm ở Đang theo dõi của người đó (đầu-cuối theoDoiTuyen)', () => thu('loi21', () => {
+    const head = P.mbManager.userId;
+    const v = get(`SELECT v.id, v.measure_id AS mid FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND s.archived_at IS NULL
+      JOIN discipline_measures m ON m.id = v.measure_id AND m.created_by IS NOT ? AND m.confirmed_by IS NOT ?
+      JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id AND c.branch_id = (SELECT id FROM branches WHERE code = 'MB')
+      WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND s.consultant_user_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.doi_tuong_loai = 'discipline_measure' AND y.doi_tuong_id = m.id AND (y.nguoi_duyet = ? OR y.nguoi_xin = ?))
+      ORDER BY v.id LIMIT 1`, head, head, head, head);
+    assert(v, 'seed: cần Báo PH vi phạm đang mở ở MB (em có TVV) mà Head chưa làm bước nào');
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`).run(v.id, head);   // Head không theo dõi việc này — chỉ còn đường "đã làm"
+    const co = () => { xoaNho(); return (tu.theoDoiTuyen(P.mbManager).tuyen as any[]).some((x) => x.loai === 'vi_pham' && String(x.khoa) === String(v.mid)); };
+    assert(!co(), 'seed: tuyến đã ở Đang theo dõi của Head trước khi ghi');
+    bp.ghiKetQuaBaoPh(P.mbManager, { viecIds: [v.id], ketQua: 'chua_lien_he', ngay: TODAY, ghiChu: 'Head gọi thay TVV — mẹ em chưa nghe máy.' });
+    assert(co(), 'Head ghi thay "Chưa liên hệ được" mà tuyến không ở Đang theo dõi của Head');
+  }));
+  check('LOI2-2 · RA-2711: đợt Xử lý vi phạm hết mà không ai lưu (vi phạm bị gỡ) → lượt quét đóng dòng giao việc; em còn bắt buộc thì giữ', () => thu('loi22', () => {
+    assert(xl, 'seed: cần em có việc Xử lý vi phạm');
+    gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: P.mbManager.userId, phuTrachCu: null });
+    const quet = () => { conn.prepare(`UPDATE moc_he_thong SET luc = NULL, ngay = NULL WHERE khoa LIKE 'quet:%'`).run(); xoaNho(); myWork(P.mbManager, {} as any); };   // lượt quét nền đi qua /my-work
+    quet();
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'mo', 'em còn bắt buộc xử lý mà dòng bị đóng');
+    for (const r of conn.prepare(`SELECT id FROM violations WHERE student_id = ?`).all(xl.sid) as any[]) { xoaNho(); vio.deleteViolation(P.admin, r.id); }   // Xoá vi phạm (đường thật, có Thùng rác)
+    quet();
+    assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', xl.sid).t === 'xong', 'đợt hết mà dòng giao việc còn mở (người được giao / hạn cũ sẽ dính đợt sau)');
+  }));
 }
