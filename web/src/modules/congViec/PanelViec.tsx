@@ -46,6 +46,7 @@ const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.Pane
 const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
 const PanelBaoPhNhieu = lazyHop(() => import('./PanelBaoPhNhieu.tsx').then((x) => x.PanelBaoPhNhieu));
 const PanelMeeting = lazyHop(() => import('./PanelMeeting.tsx').then((x) => x.PanelMeeting));
+const PanelNhanTin = lazyHop(() => import('./PanelNhanTin.tsx').then((x) => x.PanelNhanTin));
 const KhaiBacLoPanel = lazyHop(() => import('../yThuc/KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) => x.KhaiBacPanel));
 const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
@@ -210,6 +211,9 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     /* GV-2 (B2, mockup v22 G8): Xếp lịch họp (BPXL) · Kết quả meeting (CX) — panel Meeting ba phần. */
     case 'meeting_xep_lich': case 'meeting_ket_qua':
       return <PanelMeeting key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+    /* LPB-2a (N73, mockup v28 L3 / L4): BPXL Nhận thông tin · Chuyển lớp / Đổi GV. */
+    case 'nhan_tin':
+      return <PanelNhanTin key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'phoi_hop':
       return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'missing_data':
