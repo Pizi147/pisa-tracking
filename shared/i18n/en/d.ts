@@ -534,6 +534,8 @@ const EN_D_SHARED = {
   'Có kế hoạch hỗ trợ': 'Support planned',
   'Học viên kết thúc khoá': 'Student finished the course',
   'Học viên vào Lưu trữ': 'Student moved to Archive',
+  'Hệ thống đóng việc của em đang Lưu trữ': 'System closed open work of an archived student',
+  'Khôi phục việc đã đóng khi em vào Lưu trữ': 'Restored work closed when the student was archived',
   'Chuyển sang lớp thường': 'Moved to a Normal class',
   'Lượt đã huỷ': 'Attempt cancelled',
   'Kết quả MT đã huỷ': 'MT result cancelled',
