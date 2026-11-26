@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Cẩm nang Head · PISA Progress</title>
+<link rel="stylesheet" href="cam-nang.css">
+</head>
+<body>
+
+<section class="bia">
+  <div class="logo"><span>PISA</span> PROGRESS</div>
+  <h1>Cẩm nang Head (Quản lý chi nhánh)</h1>
+  <div class="phu">Việc cần làm và cách bấm trên app</div>
+  <p class="ghi">Bản 26/11/2026 — theo bản chính đang chạy. Chỗ có ô vàng <b>“Sắp đổi”</b> là phần đang làm, sẽ khác sau lần cập nhật tới.<br>
+  Ảnh chụp từ bản demo: mọi tên người, lớp, số điện thoại là dữ liệu giả.</p>
+</section>
+
+<section class="muc-luc">
+  <h2>Mục lục</h2>
+  <ol>
+    <li><a href="#nhip">Mỗi ngày, mỗi tuần mở app làm gì</a></li>
+    <li><a href="#man">Tổng quan và Công việc của Head</a></li>
+    <li><a href="#dau-khoa">Đầu khoá: lớp, học viên, gán TVV, phân công GV</a></li>
+    <li><a href="#duyet">Duyệt yêu cầu (Chờ bạn duyệt)</a></li>
+    <li><a href="#lich">Lịch Test: xếp MT, theo dõi chấm điểm</a></li>
+    <li><a href="#qua-han">GV chấm quá hạn, việc GV tồn</a></li>
+    <li><a href="#chuyen">Chuyển lớp và bàn giao</a></li>
+    <li><a href="#cuoi-khoa">Cuối khoá lớp thường: Chốt lộ trình, Kỳ vọng, Xét lại</a></li>
+    <li><a href="#vql">Việc quản lý khác</a>
+      <ol><li>Em chưa có TVV · Thiếu dữ liệu · Phân công người phụ trách Case · Báo cáo PH quá hạn · Bàn giao quá hạn</li></ol></li>
+    <li><a href="#giao">Giao việc và theo dõi</a></li>
+    <li><a href="#lam-thay">Làm thay GV, GVCN, TVV</a></li>
+    <li><a href="#luu-tru">Tạm dừng, Lưu trữ, khôi phục thứ đã xoá</a></li>
+    <li><a href="#khac">Tutor, Phân tích</a></li>
+  </ol>
+</section>
+
+<!-- 1 -->
+<section class="chuong" id="nhip">
+  <h2>1. Mỗi ngày, mỗi tuần mở app làm gì</h2>
+  <table class="nhip">
+    <tr><th>Mỗi sáng<br><span class="nho">10–15 phút</span></th><td>
+      <ol class="buoc">
+        <li><b>Tổng quan</b>: ba ô <b>GV quá hạn</b> · <b>Chờ duyệt</b> · <b>Em SOS cần chú ý</b>. Bấm số để mở danh sách.</li>
+        <li><b>Công việc › Chờ bạn duyệt</b>: quyết thẻ quá hạn trước (mục 4).</li>
+        <li><b>Công việc › Việc quản lý</b>: việc tô đỏ (Chốt lộ trình, Bàn giao…) trước.</li>
+        <li>Chuông 🔔: Việc cần làm + Cập nhật (tin vi phạm mới gom theo lớp).</li>
+      </ol></td></tr>
+    <tr><th>Mỗi tuần<br><span class="nho">nên trước thứ Sáu</span></th><td>
+      <ul>
+        <li><b>Test › Kế hoạch Test</b>: chip <b>Chưa đủ lịch MT</b> → xếp cho em còn thiếu (mục 5). Từ T6 tới CN lịch MT gần bị khoá, Head phải xác nhận thêm.</li>
+        <li><b>Test › Lịch Test tuần</b>: khối <b>Quá hạn chấm</b> → nhắc GV hoặc nhập hộ (mục 6).</li>
+        <li><b>Công việc › Của GV</b>: xem việc GV đang tồn, quá hạn.</li>
+        <li><b>Học viên &amp; Lớp › Mọi TVV › Chưa có TVV</b>: gán TVV cho em mới (mục 3).</li>
+      </ul></td></tr>
+    <tr><th>Lớp thường sắp Final</th><td>Từ thứ Hai tuần trước tuần Final: <b>Chốt lộ trình</b> (hạn T5 tuần đó). Sau Final: <b>Xét lại lộ trình</b>, <b>Kỳ vọng</b> lớp lên FT (mục 8).</td></tr>
+    <tr><th>Đầu khoá, lớp mới</th><td>Tạo lớp, thêm học viên, gán TVV, phân công GV, xếp lịch Test (mục 3, 5).</td></tr>
+    <tr><th>Mỗi tháng / kỳ</th><td><b>Phân tích</b> (in, xuất Excel); Báo cáo PH quá hạn; số buổi Tutor (mục 13).</td></tr>
+  </table>
+</section>
+
+<!-- 2 -->
+<section class="chuong lien" id="man">
+  <h2>2. Tổng quan và Công việc của Head</h2>
+  <ul>
+    <li><b>Tổng quan</b> (trang đầu): ô số chi nhánh; bảng <b>Giáo viên</b> (số việc quá hạn theo loại); <b>Chờ duyệt</b>; <b>Lớp cần chú ý</b>; <b>Tình hình</b>.</li>
+    <li><b>Công việc</b>: chọn <b>Của tôi · Của GV · Tất cả</b>. Của tôi có tab <b>Chờ bạn duyệt</b> · <b>Ý thức &amp; Phối hợp</b> · <b>Việc quản lý</b> · <b>Đang theo dõi</b>. Của GV có thêm <b>Chấm điểm</b> · <b>Chấm Speaking</b> · <b>Case học thuật</b>.</li>
+    <li><b>Lọc thêm</b>: lọc theo một GV, chi nhánh, Fast Track / Lớp thường. Bấm tiêu đề mục để gập / mở.</li>
+  </ul>
+  <figure><img src="anh/h01-tong-quan.jpg" alt=""><figcaption>Tổng quan của Head.</figcaption></figure>
+  <figure><img src="anh/h05-cua-gv.jpg" alt=""><figcaption>Công việc › Của GV: việc của mọi GV chi nhánh, theo tab.</figcaption></figure>
+</section>
+
+<!-- 3 -->
+<section class="chuong" id="dau-khoa">
+  <h2>3. Đầu khoá: lớp, học viên, gán TVV, phân công GV</h2>
+  <h3>3.1. Tạo lớp, thêm học viên</h3>
+  <ol class="buoc">
+    <li><b>Học viên &amp; Lớp › + Lớp</b>: tên, chương trình, tuần khai giảng.</li>
+    <li><b>+ Thêm học viên</b>: chọn lớp, <b>Tuần bắt đầu học</b> (mặc định tuần này); gõ từng em hoặc dán vùng bảng Excel › <b>Đọc nội dung đã dán</b> › <b>Thêm học viên</b>.</li>
+    <li>Thiếu email vẫn lưu; em có việc Bổ sung hồ sơ.</li>
+  </ol>
+
+  <h3>3.2. Gán TVV cho học viên</h3>
+  <div class="luu-y">App giao việc TVV <b>theo ô TVV trong hồ sơ em</b>. Em chưa gán TVV thì mọi việc phía TVV (Báo PH, Chốt ngày thi, Sau thi, Bổ sung hồ sơ) <b>về Head</b>. Bảng Thêm học viên không có ô TVV; cột “Tư vấn viên” khi dán Excel <b>chưa</b> gán TVV — phải gán theo các bước dưới.</div>
+  <table class="the">
+    <tr><th>Một em</th><td>Hồ sơ em › <b>⋯ › Sửa thông tin</b> › ô <b>TVV</b> › gõ tên, chọn › <b>Lưu</b>.</td></tr>
+    <tr><th>Cả lớp</th><td>Hồ sơ lớp › <b>⋯ › Sửa thông tin học viên</b> › tích các em (hoặc <b>Chọn tất cả</b>) › ô <b>TVV</b> trên thanh › <b>Áp cho n em</b> › <b>Lưu</b>.</td></tr>
+    <tr><th>Tìm em chưa có</th><td><b>Học viên &amp; Lớp</b> › ô <b>Mọi TVV</b> › <b>Chưa có TVV</b> › <b>Mở tất cả</b>.</td></tr>
+    <tr><th>Xong khi</th><td>Đầu hồ sơ em hiện tên TVV; ô Mọi TVV không còn em “Chưa có TVV”.</td></tr>
+    <tr><th>Đổi / nhầm</th><td>Chọn lại tên rồi Lưu. Việc đang mở chuyển sang TVV mới, hạn giữ. Lịch sử ở <b>⋯ › Lịch sử</b>. Danh sách chỉ có TVV cùng chi nhánh của em.</td></tr>
+  </table>
+  <figure><img src="anh/h16-loc-tvv.jpg" alt=""><figcaption>Học viên &amp; Lớp › Mọi TVV: lọc “Chưa có TVV”.</figcaption></figure>
+  <figure><img src="anh/t13-sua-ca-lop.jpg" alt=""><figcaption>Sửa thông tin học viên (cả lớp): ô TVV + Áp cho n em trên thanh; cột TVV từng em.</figcaption></figure>
+
+  <h3>3.3. Phân công giáo viên</h3>
+  <ol class="buoc">
+    <li><b>Học viên &amp; Lớp › tab Phân công GV</b>: mỗi lớp một hàng, mỗi môn (L · R · W1 · W2 · S) và GVCN một ô.</li>
+    <li>Bấm ô, gõ tên GV, chọn. Chip <b>Thiếu GV</b> đếm ô còn trống.</li>
+    <li><b>Lưu</b> cuối dòng (nhiều lớp: <b>Lưu cả n lớp…</b>).</li>
+    <li>Đổi GV A sang B: chọn <b>Hiệu lực</b> <b>Ngay hôm nay</b> hoặc <b>Từ tuần …</b>. Case / PA đang mở chuyển GV mới; GV cũ có việc bàn giao 5 ngày và còn xem lớp cũ chỉ đọc.</li>
+  </ol>
+  <figure><img src="anh/h10-phan-cong.jpg" alt=""><figcaption>Tab Phân công GV.</figcaption></figure>
+</section>
+
+<!-- 4 -->
+<section class="chuong" id="duyet">
+  <h2>4. Duyệt yêu cầu (Chờ bạn duyệt)</h2>
+  <table class="the">
+    <tr><th>Phát sinh</th><td>GV / GVCN gửi: <b>Đề xuất PA</b>, <b>Xin ý kiến</b>, <b>Ý thức</b> (xử lý khác bậc mặc định, thu hồi xử lý, sửa cấp bậc đã khai), <b>Không cần theo dõi</b>, <b>Thông tin HV</b> (GVCN đề xuất đổi Target…), đề xuất chuyển lớp, xin xoá. Thẻ <b>Báo Head</b> chỉ để biết.</td></tr>
+    <tr><th>Hạn</th><td><b>5 ngày, tính cả ngày gửi</b>. Quá hạn: thẻ Ý thức / thu hồi tự chốt theo GVCN; <b>PA khác quy chế</b> (hạn 3 ngày) tự chốt theo PA của GV; loại khác vẫn chờ bạn.</td></tr>
+    <tr><th>Ở đâu</th><td><b>Công việc › Chờ bạn duyệt</b> (hoặc ô Chờ duyệt ở Tổng quan, thanh Việc cần làm ở hồ sơ em). Chip lọc: Học thuật · Ý thức · Thông tin HV · Báo Head · Đã xử lý · 30 ngày · Lớp.</td></tr>
+    <tr><th>Các bước</th><td><ol class="buoc"><li>Bấm dòng để mở chi tiết (đề xuất, vi phạm, bằng chứng, “Sau khi duyệt”).</li><li><b>Duyệt</b>, hoặc <b>Từ chối…</b> kèm lý do (bắt buộc). Xin ý kiến: <b>Trả lời…</b>.</li><li>Nhiều Đề xuất PA cùng loại: tích ô các thẻ › <b>Duyệt n yêu cầu</b>.</li></ol></td></tr>
+    <tr><th>Xong khi</th><td>Thẻ rời danh sách; người gửi nhận tin.</td></tr>
+    <tr><th>Sai thì</th><td><b>Hoàn tác</b> ngay trên thông báo; về sau: chip <b>Đã xử lý · 30 ngày</b> › bấm dòng › <b>Huỷ quyết định</b>.</td></tr>
+  </table>
+  <figure><img src="anh/h03-duyet-panel.jpg" alt=""><figcaption>Chờ bạn duyệt: thẻ Ý thức mở chi tiết (đề xuất, 3 vi phạm, bằng chứng, hạn tự chốt).</figcaption></figure>
+  <ul>
+    <li>Duyệt Đề xuất PA: PA mới chạy từ ngày duyệt. Từ chối: việc cũ của GV quay lại kèm lý do.</li>
+    <li>Từ chối Ý thức: vi phạm về “Cần xử lý”, bậc giữ nguyên.</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="chuong" id="lich">
+  <h2>5. Lịch Test: xếp MT, theo dõi chấm điểm</h2>
+  <h3>5.1. Xếp lịch Mock Test còn thiếu</h3>
+  <table class="the">
+    <tr><th>Phát sinh</th><td>Em FT chưa có lịch MT kế tiếp (chip <b>Chưa đủ lịch MT</b>); lớp mới; em mới vào lớp.</td></tr>
+    <tr><th>Ở đâu</th><td><b>Test › Kế hoạch Test</b>.</td></tr>
+    <tr><th>Các bước</th><td><ol class="buoc"><li>Bấm chip <b>Chưa đủ lịch MT</b> để chỉ còn lớp cần xếp.</li><li>Nhiều lớp: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.</li><li>Một em / một kỹ năng: mở lớp, bấm ô MT › mỗi môn <b>Dời</b> · <b>Vắng</b> · <b>Xoá</b> › <b>Lưu</b>.</li><li>Thêm lượt (MT4, MT5…) hoặc Speaking Expert: <b>+ MT</b> cuối hàng em.</li></ol></td></tr>
+    <tr><th>Xong khi</th><td>Lớp không còn “Chưa đủ lịch MT”.</td></tr>
+    <tr><th>Sai thì</th><td>Dời lại (chọn tuần mới = tính lại từ đầu); lịch sử ở khối <b>Lịch sử · n</b> trong hộp.</td></tr>
+  </table>
+  <ul>
+    <li><b>Khoá cuối tuần</b>: T6 → CN không thêm / huỷ / dời MT của tuần trước, tuần này, tuần sau. Head vẫn làm được sau một câu hỏi (<b>Vẫn đổi lịch</b>); GV bị chặn.</li>
+    <li>Em vắng: GV gõ <b>-</b>, MT dời sang tuần kế tiếp của tuần thi; vắng 2 lần thì huỷ, không có việc “xếp lại”. Muốn cho em thi lại: tự xếp lại.</li>
+    <li>Môn đã có điểm mà em thi lại: ô MT › <b>Thi lại</b> (điểm cũ giữ trong Lịch sử).</li>
+  </ul>
+  <figure><img src="anh/h06-ke-hoach.jpg" alt=""><figcaption>Kế hoạch Test: chip Chưa đủ lịch MT; mỗi lớp ghi số em cần xếp, số em vắng.</figcaption></figure>
+
+  <h3>5.2. Theo dõi chấm điểm trong tuần</h3>
+  <p><b>Test › Lịch Test tuần</b>: chọn tuần ở <b>‹ W3 SEP ›</b>. Khối <b>Quá hạn chấm</b> ở trên, <b>Tuần này</b> ở dưới; mỗi lớp một dòng: đợt · hạn chấm · tiến độ · còn chờ GV nào. Bấm dòng mở lưới điểm; Head gõ, sửa điểm được (sửa điểm đã có: ghi lý do tuỳ chọn, nhật ký ghi lại).</p>
+  <figure><img src="anh/h07-lich-test.jpg" alt=""><figcaption>Lịch Test tuần: Quá hạn chấm · Tuần này; mở một lớp để xem / nhập điểm.</figcaption></figure>
+  <div class="sap">Hộp chấm điểm có thêm <b>⋯</b> (Vắng · Dời lịch · Huỷ điểm); nút <b>Lưu · đóng</b> cạnh <b>Lưu · bài tiếp</b>. Lịch Test tuần có lọc <b>ô còn trống của tuần</b>.</div>
+</section>
+
+<!-- 6 -->
+<section class="chuong" id="qua-han">
+  <h2>6. GV chấm quá hạn, việc GV tồn</h2>
+  <table class="the">
+    <tr><th>Thấy ở đâu</th><td>Tổng quan: ô <b>GV quá hạn</b> và bảng <b>Giáo viên</b> (cột Quá hạn, Loại). Công việc › <b>Của GV</b> › tab Chấm điểm / Case học thuật… (dòng đỏ).</td></tr>
+    <tr><th>Hạn chấm</th><td>Mock / Test lớp thường: <b>thứ Tư tuần sau tuần thi</b>.</td></tr>
+    <tr><th>Bạn làm</th><td><ol class="buoc"><li>Bấm số quá hạn của GV: panel bài / việc quá hạn của GV đó.</li><li>Nhắc GV: biểu tượng hai tờ giấy để chép câu nhắc dán Zalo (không có tên học viên).</li><li>Hoặc làm thay: bấm <b>Nhập hộ</b> ở dòng, gõ điểm (em vắng gõ <b>-</b>).</li></ol></td></tr>
+    <tr><th>Xong khi</th><td>Bài có điểm; số quá hạn giảm.</td></tr>
+  </table>
+  <p>Việc GV khác (Case, PA, Bàn giao, Báo cáo PH): ở <b>Của GV</b>, bấm dòng là mở thẳng form, có dải “Bạn đang làm thay …” — xem mục 11.</p>
+</section>
+
+<!-- 7 -->
+<section class="chuong lien" id="chuyen">
+  <h2>7. Chuyển lớp và bàn giao</h2>
+  <table class="the">
+    <tr><th>Phát sinh</th><td>Em đổi lớp; GVCN gửi <b>Đề xuất chuyển lớp</b> (duyệt ở Chờ bạn duyệt).</td></tr>
+    <tr><th>Ở đâu</th><td>Hồ sơ em › <b>⋯ › Chuyển lớp…</b>; nhiều em: hồ sơ lớp › <b>Chọn nhiều học viên</b> › <b>Chuyển lớp…</b>.</td></tr>
+    <tr><th>Các bước</th><td><ol class="buoc"><li><b>Lớp</b>: gõ mã lớp (lớp cùng chi nhánh hiện trước).</li><li><b>Tuần bắt đầu</b>: <b>Ngay hôm nay</b> hoặc chọn tuần.</li><li><b>Lý do</b> tuỳ chọn. Khi cần: <b>Reset bậc vi phạm</b>; lớp thường tuần 9–10: <b>Theo luồng chuyển tiếp lộ trình</b> (có Test đi kèm).</li><li><b>Quyết định chuyển lớp</b>.</li></ol></td></tr>
+    <tr><th>Xong khi</th><td>Em ở lớp mới từ tuần đã chọn. GV lớp cũ có việc <b>Bàn giao</b> (hạn 7 ngày tính cả ngày ra lệnh); điểm cũ ở lại lớp cũ.</td></tr>
+    <tr><th>Sai thì</th><td>Ngay hôm nay: <b>Hoàn tác</b> trên thông báo. Chọn tuần sau: huỷ được tới lúc chạy (<b>Chọn nhiều học viên › Huỷ chuyển lớp</b>).</td></tr>
+  </table>
+  <figure><img src="anh/h09-chuyen-lop.jpg" alt=""><figcaption>Panel Chuyển lớp: lớp đến, tuần bắt đầu, lý do; chân ghi hạn bàn giao.</figcaption></figure>
+  <p>Bàn giao quá hạn không chặn chuyển lớp; bạn thấy ở <b>Của GV › Việc quản lý › Bàn giao</b>, mở phiếu để <b>Điền thay</b> nếu cần.</p>
+</section>
+
+<!-- 8 -->
+<section class="chuong" id="cuoi-khoa">
+  <h2>8. Cuối khoá lớp thường: Chốt lộ trình, Kỳ vọng, Xét lại</h2>
+  <h3>8.1. Chốt lộ trình</h3>
+  <table class="the">
+    <tr><th>Phát sinh</th><td>Lớp thường, từ thứ Hai tuần trước tuần Final.</td></tr>
+    <tr><th>Hạn</th><td><b>Thứ Năm tuần trước tuần Final</b>. Quá hạn tô đỏ nhưng vẫn chốt được.</td></tr>
+    <tr><th>Ở đâu</th><td><b>Công việc › Việc quản lý › Chốt lộ trình</b> › bấm lớp (hoặc hồ sơ lớp › ⋯ › Cuối khoá…).</td></tr>
+    <tr><th>Các bước</th><td><ol class="buoc"><li>Mỗi em: cột <b>Bước tiếp</b> (Lên lớp, Học lại, Lên FT…), <b>Lớp mới</b>, <b>Tuần</b>. Nhiều em giống nhau: <b>Chọn tất cả</b> rồi áp chung.</li><li>Chưa chắc: <b>Lưu nháp</b>. Xong: <b>Chốt · n em</b>.</li></ol></td></tr>
+    <tr><th>Xong khi</th><td>Mọi em có quyết định. Thứ Hai tuần bắt đầu máy chuyển lớp; GV lớp cũ có phiếu bàn giao.</td></tr>
+    <tr><th>Sai thì</th><td><b>Huỷ quyết định</b> tới khi chuyển lớp; chuyển “Ngay hôm nay” thì bấm <b>Hoàn tác</b> trên thông báo.</td></tr>
+  </table>
+  <figure><img src="anh/h11-cuoi-khoa.jpg" alt=""><figcaption>Chốt lộ trình MB FOU 12: mỗi em một dòng, Lưu nháp · Chốt.</figcaption></figure>
+
+  <h3>8.2. Kỳ vọng (em lớp thường lên FT)</h3>
+  <p><b>Việc quản lý › Kỳ vọng</b> (lớp FOU, BE, ELE có em lên FT chưa kết luận): ô em › <b>Chốt…</b> → <b>Đạt</b> · <b>Không đạt · Trung tâm</b> · <b>Không đạt · Học viên</b> › Lưu. MT0 đạt mốc thì em tự Đạt. Không đạt · Trung tâm: mỗi kỹ năng một Case + Tutor. Sửa: bấm kết quả đã chốt › <b>Sửa</b>.</p>
+
+  <h3>8.3. Xét lại lộ trình</h3>
+  <table class="the">
+    <tr><th>Phát sinh</th><td>Final lệch hướng đã chốt (cho lên mà điểm thấp, học lại mà điểm cao…), hoặc Mini Test bổ trợ chưa đạt.</td></tr>
+    <tr><th>Hạn</th><td>CN tuần 2 lớp mới. Hết hạn không quyết = <b>Tiếp tục</b>.</td></tr>
+    <tr><th>Các bước</th><td><b>Việc quản lý › Xét lại lộ trình</b> › bấm lớp › mỗi em: <b>Tiếp tục …</b> · <b>Học lại …</b> · <b>Tạm dừng / Kết thúc học</b> › <b>Lưu</b>.</td></tr>
+    <tr><th>Sai thì</th><td>Sửa / Hoàn tác tới khi chuyển lớp.</td></tr>
+  </table>
+  <figure><img src="anh/h13-xet-lai.jpg" alt=""><figcaption>Xét lại lộ trình: Final từng môn, ai chốt, gợi ý; ba nút cho từng em.</figcaption></figure>
+</section>
+
+<!-- 9 -->
+<section class="chuong" id="vql">
+  <h2>9. Việc quản lý khác</h2>
+  <figure><img src="anh/h04-viec-ql.jpg" alt=""><figcaption>Công việc › Việc quản lý: Chốt lộ trình, Xét lại, Bổ sung hồ sơ, Việc được giao…</figcaption></figure>
+  <h3>9.1. Em chưa có TVV — Head giữ việc của TVV</h3>
+  <ul>
+    <li><b>Báo PH</b> (vi phạm, tình hình): tab <b>Ý thức &amp; Phối hợp</b>. Gọi PH, chọn <b>Đã báo PH</b> / <b>Chưa liên hệ được</b>, ghi Nội dung, Lưu. Hạn 5 ngày tính cả ngày lưu.</li>
+    <li><b>Chốt ngày thi</b>, <b>Sau thi</b> (kết quả thi thật + Chọn bước tiếp, hạn 7 ngày), <b>Bổ sung hồ sơ</b>: tab <b>Việc quản lý</b>.</li>
+    <li>Cách làm giống cẩm nang TVV. Gán TVV cho em (mục 3.2) thì việc mới về TVV.</li>
+  </ul>
+  <h3>9.2. Thiếu dữ liệu: xếp lịch MT, nhập ngày thi cho PA</h3>
+  <p>PA quy chế “đến MT” / “đến lúc thi” đang chạy mà em chưa có lịch MT kế / ngày thi. Bấm <b>Xếp lịch</b> hoặc <b>Nhập ngày thi</b> ở dòng. Không cần nhắc: <b>Bỏ qua</b> (khôi phục ở mục Đã bỏ qua).</p>
+  <h3>9.3. Phân công người phụ trách Case</h3>
+  <p>Case mở mà lớp thiếu GV môn hoặc GVCN. Tab <b>Case học thuật</b> › <b>Phân công</b> / <b>Chọn người phụ trách</b> › chọn GV (lưu ngay). Chọn nhầm: đổi ở ô người phụ trách trong Case.</p>
+  <h3>9.4. Báo cáo PH quá hạn</h3>
+  <p>Đợt quá hạn hơn 7 ngày mà lớp còn em chưa đủ: một dòng mỗi lớp × đợt. Bấm <b>Báo cáo PH ›</b>: nhắc GV hoặc viết hộ. GV vẫn giữ việc tới khi viết xong. Đợt không cần: <b>Không báo cáo đợt này</b>.</p>
+  <h3>9.5. Báo PH kết quả Test lớp thường</h3>
+  <p>Ở tab <b>Ý thức &amp; Phối hợp › Báo PH</b> (vd “Final 45%”): việc của GVCN, Head làm được — gọi PH, ghi kết quả.</p>
+  <div class="sap">Báo PH thống nhất: kết quả Progress / Final lớp thường và Trao đổi với gia đình (Phối hợp SOS) sinh thẳng việc <b>TVV báo PH</b> (không có TVV → Head), nội dung máy điền sẵn; Head + CX theo dõi. GVCN / Head thôi bước này.</div>
+</section>
+
+<!-- 10 -->
+<section class="chuong" id="giao">
+  <h2>10. Giao việc và theo dõi</h2>
+  <table class="the">
+    <tr><th>Khi nào</th><td>Việc ngoài luật (giáo trình, tuyển tutor, nhắc một GV…) hoặc giao thêm vào đúng mục việc của người nhận.</td></tr>
+    <tr><th>Ở đâu</th><td>Nút <b>+ Giao việc</b> ở đầu Công việc.</td></tr>
+    <tr><th>Các bước</th><td><ol class="buoc"><li>Chọn <b>Việc chi nhánh</b> hoặc <b>Giao GV theo lớp + kỹ năng</b>.</li><li><b>Tên công việc</b>, <b>Hạng mục</b> (chọn mục có sẵn như Báo PH, Chấm điểm… thì việc nằm đúng mục đó ở Công việc người nhận; không chọn → tab Việc được giao), <b>Người phụ trách</b>, <b>Hạn</b>.</li><li>Tuỳ chọn: người theo dõi, lớp / HV liên quan, <b>+ Việc con</b>, <b>Lặp lại</b> hằng tuần / tháng, tệp, mô tả.</li><li><b>Giao việc</b>.</li></ol></td></tr>
+    <tr><th>Theo dõi</th><td><b>Việc quản lý › Tất cả việc đã giao ›</b>: lọc Quá hạn · Chờ người khác · Cần quyết định · Vừa hoàn thành. Bấm dòng: cập nhật tiến độ, sửa hạn (lý do tuỳ chọn), <b>Dừng lặp</b>.</td></tr>
+  </table>
+  <figure><img src="anh/h12-giao-viec.jpg" alt=""><figcaption>+ Giao việc.</figcaption></figure>
+  <p>Ở mọi việc Báo PH, Meeting, Hỏi tình hình: khối <b>Phụ trách · Hạn · Theo dõi</b> đầu panel — Head đổi người phụ trách (<b>Đổi</b>, <b>Về mặc định</b>), đặt hạn, thêm người theo dõi. Không bắt lý do; có Hoàn tác và lịch sử.</p>
+</section>
+
+<!-- 11 -->
+<section class="chuong" id="lam-thay">
+  <h2>11. Làm thay GV, GVCN, TVV</h2>
+  <p>Head mở việc của người khác là <b>làm được ngay</b>, không cần bấm “Làm thay”. Đầu panel có dải “Bạn đang làm thay {người}”; lịch sử ghi tên bạn.</p>
+  <table class="nhip">
+    <tr><th>Nhập điểm</th><td>Của GV › Chấm điểm, hoặc Lịch Test tuần › bấm lớp. Bài quá hạn: <b>Nhập hộ</b>.</td></tr>
+    <tr><th>Case, PA</th><td>Của GV › <b>Case học thuật</b>: Xác nhận Case, Mô tả, Chọn PA, Ghi kết quả PA. <b>Lưu nháp</b> là tạm; nút lưu ở chân là chốt (đổi lại: <b>Sửa kết quả</b>).</td></tr>
+    <tr><th>Xử lý vi phạm</th><td>Ý thức &amp; Phối hợp › <b>Xử lý vi phạm</b>: Nâng 1 bậc → <b>Xác nhận xử lý</b>; cách khác → Head <b>Lưu xử lý</b> là chốt ngay (không qua duyệt). Không cần xử lý: <b>Lưu không xử lý</b> + lý do.</td></tr>
+    <tr><th>Phối hợp SOS</th><td>Ý thức &amp; Phối hợp › <b>Phối hợp SOS</b> › bấm lớp › <b>Xác nhận</b> ở dòng em, ghi nội dung, Lưu.</td></tr>
+    <tr><th>Bàn giao</th><td>Hồ sơ lớp cũ › dải <b>Bàn giao</b> › <b>Mở phiếu</b> › <b>Điền thay</b>.</td></tr>
+    <tr><th>Báo cáo PH</th><td>Hồ sơ lớp › tab <b>Báo cáo PH</b> › chọn đợt › <b>Viết …</b> / <b>Đặt nhanh</b>; <b>+ Đợt báo cáo</b>, <b>Không báo cáo đợt này</b>; xuất PDF / Excel.</td></tr>
+    <tr><th>Việc TVV</th><td>Như mục 9.1; TVV cùng chi nhánh cũng làm thay nhau được.</td></tr>
+  </table>
+  <p>Ghi vi phạm: hồ sơ lớp › tab <b>Ý thức &amp; Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b> (Head không dạy môn nào thì để trống Môn). Sửa cấp bậc vi phạm đã khai của GVCN → thành thẻ chờ Head duyệt; Head tự sửa thì áp ngay.</p>
+</section>
+
+<!-- 12 -->
+<section class="chuong lien" id="luu-tru">
+  <h2>12. Tạm dừng, Lưu trữ, khôi phục thứ đã xoá</h2>
+  <ul>
+    <li><b>Tạm dừng / Kết thúc học</b>: hồ sơ em › ⋯ (nhiều em: hồ sơ lớp › Chọn nhiều học viên). Ô <b>Có thể quay lại học</b> bật = Tạm dừng. Em vào Lưu trữ, hạn dừng. Nhầm: <b>Hoàn tác</b>.</li>
+    <li><b>Lưu trữ ›</b> (đầu Học viên &amp; Lớp): tab Lớp đã kết thúc · Học viên đã lưu trữ · Đã xoá. Mỗi em: <b>Tổng kết</b> · <b>Quay lại học</b> (một hoặc nhiều em). Head mở lại được cả em đã Kết thúc học.</li>
+    <li><b>Xoá nhầm</b> (Case, PA, vi phạm, tệp…): <b>Hoàn tác</b> trong 10 giây; quá 10 giây: tab <b>Đã xoá</b> › <b>Khôi phục</b> (giữ 30 ngày).</li>
+  </ul>
+  <div class="sap">Em vào Lưu trữ thì <b>mọi việc của em dừng hẳn</b> ở mọi nơi (chấm điểm, Case / PA, Ý thức, Báo PH, Phối hợp, việc giao, Tutor), không tính quá hạn; Quay lại học không mở lại việc cũ. Việc ghi kết quả thi thật giữ; em ở Lưu trữ không cần Chọn bước tiếp.</div>
+</section>
+
+<!-- 13 -->
+<section class="chuong lien" id="khac">
+  <h2>13. Tutor, Phân tích</h2>
+  <ul>
+    <li><b>Tutor</b> (menu trên): bảng <b>Người dạy</b>; Head thêm / sửa tutor chi nhánh mình, gộp tên gõ tay trùng nhau; xem số buổi theo người dạy × tháng, <b>Xuất Excel</b>. Tutor không sinh việc — GV ghi số buổi ở Kết quả PA.</li>
+    <li><b>Phân tích</b>: tab Chi nhánh · Thi thật · SOS · Giáo viên · Ý thức. Chọn <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm số mở danh sách tại trang; <b>In</b> (A4 ngang), <b>Xuất Excel</b>.</li>
+    <li><b>Hồ sơ giáo viên</b>: bấm tên GV ở Tổng quan / Phân tích — số theo khoảng tuần, việc đang tồn; sửa kỹ năng của GV.</li>
+  </ul>
+  <figure><img src="anh/h14-phan-tich.jpg" alt=""><figcaption>Phân tích › Chi nhánh.</figcaption></figure>
+  <p class="nho">Tra nhanh trong app: nút <b>?</b> trên thanh trên (trang Hướng dẫn, đọc được cả hướng dẫn của vai khác).</p>
+</section>
+
+</body>
+</html>
