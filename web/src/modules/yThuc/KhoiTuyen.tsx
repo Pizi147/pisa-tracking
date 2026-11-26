@@ -34,12 +34,14 @@ function Dau({ tt }: { tt: TrangThaiBuoc }) {
  * Bước chưa tới lượt (○) chỉ xám ở đây — không thành việc / số / chuông (N72 ③). > 5 bước: gập các bước đã xong (bước cha còn con mở luôn hiện).
  */
 type PropTuyen = { className?: string;
-  /** Bước mở sẵn nội dung (mockup v27: T4 lời TVV trả ở bước đang ở · T7 nội dung GV gửi) — thay hộp nội dung riêng của panel. */ moSan?: (b: BuocTuyen) => boolean };
+  /** Bước mở sẵn nội dung (mockup v27: T4 lời TVV trả ở bước đang ở · T7 nội dung GV gửi) — thay hộp nội dung riêng của panel. */ moSan?: (b: BuocTuyen) => boolean;
+  /** Nội dung panel tự vẽ cho một bước (vd Báo PH: danh sách vi phạm có "Trả lại" ở bước "GV ghi n vi phạm") — thay chữ máy chủ khi mở; null = như thường. */
+  thanRieng?: (b: BuocTuyen) => ReactNode | null };
 export function KhoiTuyen({ tuyen, ...o }: PropTuyen & { tuyen: Tuyen | null | undefined }) {
   /* Dựng lại khi đổi tuyến (tải xong sau khối việc) — mở sẵn tính đúng lúc có dữ liệu. */
   return tuyen?.buoc.length ? <ThanTuyen key={`${tuyen.loai}:${tuyen.khoa}`} tuyen={tuyen} {...o} /> : null;
 }
-function ThanTuyen({ tuyen, className, moSan }: PropTuyen & { tuyen: Tuyen }) {
+function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: Tuyen }) {
   const { homNay } = useNgayNghiepVu();
   const hn = homNay ?? '';
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set(moSan ? tuyen.buoc.filter((b) => b.coNoiDung && moSan(b)).map((b) => b.khoa) : []));
@@ -63,7 +65,9 @@ function ThanTuyen({ tuyen, className, moSan }: PropTuyen & { tuyen: Tuyen }) {
       dong.push(<li key={`nhom-${b.khoa}`} className="nhom"><span>{t('Cùng lúc · {n} bước', { n })}</span></li>);
     }
     const con = !!b.cha || b.cungLuc;
-    const moNd = b.coNoiDung && mo.has(b.khoa);
+    const rieng = thanRieng?.(b) ?? null;
+    const coNd = b.coNoiDung || !!rieng;
+    const moNd = coNd && mo.has(b.khoa);
     const nguoi = b.laToi ? <span className="ban">{t('Bạn')}</span> : b.nguoi;
     /* Ngày: đã làm → ngày · đang / tạm dừng → "hạn dd/mm/yyyy" tô theo hạn · chưa tới lượt → điều kiện ("sau khi Head duyệt"). */
     const cho = b.trangThai === 'cho';
@@ -80,7 +84,7 @@ function ThanTuyen({ tuyen, className, moSan }: PropTuyen & { tuyen: Tuyen }) {
         <span className="tb-ct" title={chiTiet ?? undefined}>{chiTiet}</span>
         <span className="tb-ng">{nguoi}</span>
         <span className={`tb-ngay${muc === 'sap' ? ' gan' : muc === 'qua' ? ' qua' : ''}`}>{ngayVe}</span>
-        {b.coNoiDung
+        {coNd
           ? <button type="button" className="tb-mo" aria-expanded={moNd} aria-label={moNd ? t('Thu gọn {ten}', { ten: b.ten }) : t('Xem nội dung {ten}', { ten: b.ten })}
             onClick={() => doi(b.khoa)}>
             <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={moNd ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>
@@ -89,7 +93,7 @@ function ThanTuyen({ tuyen, className, moSan }: PropTuyen & { tuyen: Tuyen }) {
         <span className="tb-phu2">{[b.laToi ? t('Bạn') : b.nguoi, chiTiet].filter(Boolean).join(' · ')}</span>
       </li>,
     );
-    if (moNd) dong.push(<li key={`nd-${b.khoa}`} className="nd"><div className="nd-than">{b.noiDung}</div></li>);
+    if (moNd) dong.push(<li key={`nd-${b.khoa}`} className="nd">{rieng ? <div className="nd-rieng">{rieng}</div> : <div className="nd-than">{b.noiDung}</div>}</li>);
   });
 
   return (

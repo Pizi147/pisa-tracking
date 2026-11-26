@@ -11,9 +11,10 @@ const NHAN = 'text-xs text-slate-500';
  * `ngay` đã định dạng (mã tuần / dd/mm/yyyy do nơi gọi chọn — cột 84 px vừa ngày có năm, v23 `.vpd`) · `moSan`: khối chỉ có vài dòng, đọc luôn · `truoc` / `phu`: ô tick và nhãn trạng thái của dòng
  * chọn được (ô tick chỉ chọn) · `duoi`: dòng phụ luôn thấy dưới tên · `nhom`: nhóm vi phạm, thấy trong phần mở.
  */
-export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom }: {
+export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom, tienTo }: {
   v: { id: number; ten: string; moTa: string; skill: string | null }; ngay: string; moSan?: boolean;
   truoc?: ReactNode; phu?: ReactNode; duoi?: ReactNode; nhom?: string;
+  /** TUYEN-1 (mockup v27 T1): nhóm vi phạm đứng trước tên trên cùng dòng — "Chuyên cần — vắng không phép". */ tienTo?: string;
 }) {
   const [mo, setMo] = useState(moSan);
   const idChiTiet = useId();
@@ -30,7 +31,7 @@ export function DongViPham({ v, ngay, moSan = false, truoc, phu, duoi, nhom }: {
           <span className="whitespace-nowrap pt-px tabular-nums text-slate-400 max-sm:pt-0">{ngay}</span>
           <button type="button" aria-expanded={mo} aria-controls={mo ? idChiTiet : undefined} onClick={() => setMo((x) => !x)}
             className="flex min-w-0 appearance-none items-start gap-1 border-0 bg-transparent p-0 text-left font-[inherit] text-inherit hover:text-[color:var(--accent)] hover:underline max-sm:min-h-[44px] max-sm:items-center">
-            <ChipMon skill={v.skill} /><span className="min-w-0 break-words">{d.chu(0).trim() || t('Vi phạm')}{/* GV-2 (PTA rà #1930): "▾" ở chữ 12 px vẽ thành "-" (đọc như dấu gạch thừa) → SVG nét mảnh, dính chữ cuối. */}
+            <ChipMon skill={v.skill} /><span className="min-w-0 break-words">{tienTo ? `${tienTo} — ` : ''}{d.chu(0).trim() || t('Vi phạm')}{/* GV-2 (PTA rà #1930): "▾" ở chữ 12 px vẽ thành "-" (đọc như dấu gạch thừa) → SVG nét mảnh, dính chữ cuối. */}
               <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"
                 className={`ml-1.5 inline-block align-middle text-slate-500 ${mo ? 'rotate-180' : ''}`}><path d="M1 1l3 3 3-3" /></svg></span>
           </button>

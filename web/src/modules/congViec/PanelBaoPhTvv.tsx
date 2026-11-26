@@ -197,6 +197,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
       await guiTraLai(y.violationId ? { violationId: y.violationId } : { measureId: y.measureId! }, y.lyDo); setVua(null); sauTraLai();
     } });
   };
+  const dsVp = v.boiCanh.viPham.length > 0 ? <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
+    onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} /> : null;
   const khoi = gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={daiDoi} gon={laMeeting} anTheoDoi={laMeeting} />;
   return (
     <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
@@ -234,7 +236,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
           {khoi}
         </> : <>{khoi}
           {/* TUYEN-1 (mockup v27 T3): khối Tuyến ngay dưới khối việc — thay dòng tóm lần xử lý (`TomLanXuLy`). Meeting: TUYEN-2. */}
-          <KhoiTuyen tuyen={v.tuyen} moSan={guiCoNoiDung} />
+          {/* TUYEN-1 (mockup v27 T3): danh sách vi phạm (bấm xem · Trả lại từng vi phạm) nằm trong bước "GV ghi n vi phạm" của Tuyến — bấm bước là mở. */}
+          <KhoiTuyen tuyen={v.tuyen} moSan={guiCoNoiDung} thanRieng={(b) => (b.khoa === 'ghi' && dsVp ? dsVp : null)} />
         </>}
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
@@ -256,7 +259,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
         {v.tinhHinhId == null && !laMeeting && !v.tuyen && <TomLanXuLy ngayVp={v.boiCanh.viPham.map((x) => x.ngay)} gvcn={v.boiCanh.nguoiLuu ?? null} nhan={bacNgan(v.nhan)}
           ngayXl={v.boiCanh.ngayLam ?? v.boiCanh.luuLuc ?? null} choHead={v.choQlDuyet ? { han: v.choQlDuyet.han ?? null } : undefined} />}
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
-        {v.boiCanh.viPham.length > 0 && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
+        {v.boiCanh.viPham.length > 0 && !(v.tuyen && !laMeeting && v.tuyen.buoc.some((b) => b.khoa === 'ghi')) && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[

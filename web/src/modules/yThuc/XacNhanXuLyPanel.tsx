@@ -335,8 +335,11 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       <DongViPham v={v} ngay={ngay(v.occurredOn, homNay)}
         truoc={<label className="-m-3 shrink-0 cursor-pointer p-3"><input type="checkbox" className="mt-0.5 block" checked={chon.has(v.id)} onChange={() => doi(v.id)}
           aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} /></label>}
-        duoi={<>{dich(v.categoryLabel)}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</>}
-        phu={<NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />} />
+        /* TUYEN-1 (mockup v27 T1): một dòng "Nhóm — tên" · "{người} ghi" sát phải; nhãn trạng thái chỉ khi khác "Cần xử lý" (mặc định của danh sách này). */
+        tienTo={dich(v.categoryLabel)}
+        phu={<span className="flex shrink-0 items-center gap-2 pt-px">{v.trangThai !== 'can_xu_ly' && <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />}
+          {v.reportedByName && <span className="whitespace-nowrap text-[13px] text-dim max-sm:hidden">{t('{ten} ghi', { ten: v.reportedByName })}</span>}</span>}
+        duoi={v.reportedByName ? <span className="sm:hidden">{t('{ten} ghi', { ten: v.reportedByName })}</span> : undefined} />
     </li>
   );
 

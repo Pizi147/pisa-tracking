@@ -14,7 +14,7 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp (đường API s�
 | T0 cột subgrid: dấu · tên · chi tiết · người ("Bạn" đậm) · ngày / "hạn dd/mm/yyyy" tô theo hạn · ˅ | `.tn-ds` subgrid 34 · co giãn · ngày sát phải · 32 | t1 – t7 1440 / 1280 | KHỚP |
 | T0 bước chưa tới lượt: chữ mờ, cột ngày = điều kiện ("sau khi bạn lưu") | `cho` → `chiTiet` máy chủ vào cột ngày | t1 | KHỚP |
 | T0 bấm dòng có nội dung → mở ngay dưới dòng (cả dòng là vùng bấm, ˅ / ˄); không quyền → không ˅, title "Không xem được nội dung" | `coNoiDung` / `khongQuyen` (máy chủ C3) · `.nd-than` | t2, t4, t7a | KHỚP |
-| T0 bước con / song song thụt, nhánh ngang 20 px; "Cùng lúc · n bước" | `cha` / `cungLuc` máy chủ → `.con` + dòng `.nhom` | t2 | KHÁC — máy chủ TUYEN-0 chưa đánh `cungLuc` cho "Đã thực hiện ‖ Báo PH" của tuyến vi phạm, web không tự suy (N72 ④) → hai bước hiện thẳng hàng, không nhãn "Cùng lúc". [XM 1] |
+| T0 bước con / song song thụt, nhánh ngang 20 px; "Cùng lúc · n bước" | `cha` / `cungLuc` máy chủ → `.con` + dòng `.nhom` · máy chủ (PTA chốt [XM 1]) đánh `cungLuc` cho "Đã thực hiện ‖ Báo PH" khác mặc định (chờ Head: cả hai "sau khi Head duyệt") | t2 | KHỚP |
 | T0 b gập các bước đã xong "Xem n bước đã xong" khi tuyến dài | gập khi > 5 bước (T0 b gập 6; T2 / T3 / T4 vẽ 5 bước mở sẵn) | t2 (5 bước, mở) | KHỚP |
 | T0 375: hai tầng — tên + ngày · người + chi tiết; dòng ≥ 44 px | `@container (max-width:560px)` + `.tb-phu2` | t1 – t7 375 | KHỚP |
 | Khung base 4.6 thứ tự: đầu → khối việc → Tuyến → nội dung / form → Việc con → Lịch sử → chân | 5 panel: Xử lý vi phạm · Đã thực hiện · Báo PH · Vi phạm bị trả lại · Tình hình (TVV hỏi) | t1 – t7 | KHỚP |
@@ -24,24 +24,24 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp (đường API s�
 | Hạn chỉ ở khối (bỏ ngày lặp ở đầu panel) | 5 panel bỏ `ChipHan` đầu panel khi khối đã tải | t1 – t7 | KHỚP |
 | T1 đầu panel "Xử lý vi phạm" (tên nhóm việc / bước) | `XacNhanXuLyPanel` tiêu đề (trước "Xác nhận xử lý") | t1 | KHỚP |
 | T1 "Cách xử lý" một hàng chip tròn, "Nâng 1 bậc · mặc định" | `ChipRadio` (mới, `ui/ChipRadio.tsx`) — chữ phụ từng cách ở title | t1 | KHỚP |
-| T1-375 chọn cách khác mặc định → thêm ○ Head duyệt "5 ngày sau khi gửi", bước sau "sau khi duyệt" | `quaHeadDuyet` (web xem trước, chưa lưu) — người = "Head chi nhánh" (vai, không đoán tên — N74) | t1-375 (bấm "Vượt bậc") | KHÁC nhỏ — mockup ghi tên Head; web ghi vai vì panel không có tên Head. [XM 2] |
+| T1-375 chọn cách khác mặc định → thêm ○ Head duyệt "5 ngày sau khi gửi", bước sau "sau khi duyệt" | `quaHeadDuyet` (web xem trước, chưa lưu): + ○ Head duyệt (tên `tuyen.head` = `headCua` máy chủ, N74 — PTA chốt [XM 2]) + ○ Đã thực hiện ‖ Báo PH cùng lúc "sau khi duyệt" | t1-375 (bấm "Vượt bậc"; em seed chưa có bậc nên "Không nâng" tắt) | KHỚP |
 | T1 bỏ ⓘ "Sau khi chốt" · bỏ dòng quy chế "TVV báo PH, hạn …" | đã bỏ; giữ câu hậu quả khi Head / Quản trị áp thẳng | t1 | KHỚP |
-| T1 "3 vi phạm đưa vào" danh sách gọn | GIỮ `DongViPham` có ô tick + nhãn trạng thái (chọn vi phạm đưa vào là thao tác cũ) · ngày một dòng · 375 ngày trên tên | t1 | KHÁC — có lý do: ô tick + "Cần xử lý" là thao tác / trạng thái cũ |
+| T1 "3 vi phạm đưa vào": một dòng "Nhóm — tên" · "{người} ghi" sát phải, bảng viền | `DongViPham tienTo` + "{người} ghi" ở cột phải; nhãn trạng thái chỉ khi khác "Cần xử lý"; ngày một dòng (375: ngày trên tên). GIỮ ô tick chọn vi phạm (thao tác cũ) | t1 | KHỚP |
 | T1 không có dòng "Thang xử lý" | bỏ dòng vạch (bậc hiện tại · bậc kế đã ở dòng trên; thang đủ ở hồ sơ) | t1 | KHỚP |
 | T2 đầu "Đã thực hiện · em · lớp · WL 3"; Head duyệt ở Tuyến | đầu panel `bacNgan` · bỏ "Head duyệt {ngày}" ở đầu · bỏ khối "n vi phạm được xử lý" khi có Tuyến | t2 | KHỚP |
-| T2 "Kết quả: Đã thực hiện / Chưa thực hiện" | — | t2 | KHÁC — máy chủ không có kết quả "Chưa thực hiện" (luật mới) → không làm. [XM 3] |
+| T2 "Kết quả: Đã thực hiện / Chưa thực hiện" | `ChipRadio` Kết quả: chưa lưu → "Chưa thực hiện" = việc vẫn mở (ẩn form, chân Đóng); đã ghi → "Chưa thực hiện" gọi đường sẵn có `POST /y-thuc/xu-ly/:id/chua-thuc-hien` (OV-7a, quyền Sửa xử lý) — cả ở màn "Đã lưu" | t2 | KHỚP |
 | T3 Báo PH: khối → Tuyến (⏸ Báo PH Chờ GV sửa) → Phụ huynh · Ghi chú GVCN → Kết quả · Ngày · Nội dung | `PanelBaoPhTvv` + `KhoiTuyen`; bỏ `TomLanXuLy` khi có Tuyến | t3 | KHỚP |
-| T3 không có danh sách vi phạm riêng | GIỮ `DsViPhamBaoPh` (Trả lại TỪNG vi phạm là thao tác cũ của TVV) | t3 | KHÁC — có lý do (giữ thao tác Trả lại) |
+| T3 không có danh sách vi phạm riêng | danh sách vi phạm (`DsViPhamBaoPh`: bấm xem · Trả lại từng vi phạm) chuyển vào nội dung bước "GV ghi n vi phạm" của Tuyến (`KhoiTuyen thanRieng`) — bấm bước là mở | t3 | KHỚP |
 | T4 lời TVV trả mở sẵn ở bước "Vi phạm bị trả lại" (thay hộp riêng) | `KhoiTuyen moSan={dangCoNoiDung}`; hộp riêng chỉ khi Tuyến không có nội dung đó | t4 | KHỚP |
 | T4 "Bạn chọn" hàng chip | `ChipRadio` | t4 | KHỚP |
 | T4 ô sửa vi phạm (Ngày · Nhóm · Ghi chú gửi TVV) | GIỮ form cũ TL-2 (Ngày · Môn · Vi phạm · Mô tả — đúng trường máy chủ `gui-lai`) | t4 | KHÁC — có lý do (trường lưu thật của máy chủ) |
 | T7a nội dung GV gửi mở sẵn ở bước "GV gửi tình hình" | `moSan={guiCoNoiDung}`, bỏ hộp nội dung riêng | t7a | KHỚP |
 | T7b GVCN · TVV hỏi: khối → Tuyến (câu hỏi mở sẵn) → Kết quả | `PanelHoiTinhHinh` + `KhoiTuyen` | t7b-375 | KHỚP |
-| Việc con mọi panel: "+ Việc con", tick xong, người · hạn | `MucViecCon` (mới) — dữ liệu `viecCon` đi cùng khối (0 request thêm); tạo `POST /mgmt-tasks` `chaLoai/chaId` | t1 – t7 | KHÁC — GVCN / TVV / GV không thấy "+ Việc con": máy chủ BAOPH-0 chỉ cho Head · Quản trị · CX tạo (`canSeeBoard`). Hạn việc con hiện ngày tô màu, sửa ở Vận hành. [XM 4] |
-| Lịch sử gập cuối panel | `LichSuGap` + `dongLichSuGiao` (thêm ở Xử lý vi phạm, Đã thực hiện) | t1, t2 (rỗng: không vẽ) | KHỚP |
+| Việc con mọi panel: "+ Việc con", tick xong, người · hạn | `MucViecCon` (mới) — dữ liệu `viecCon` đi cùng khối (0 request thêm); tạo `POST /mgmt-tasks` `chaLoai/chaId`; hạn = ô bấm sửa tại chỗ (`PATCH`). PTA chốt [XM 4]: NGƯỜI ĐANG GIỮ việc cha tạo / tick / sửa (máy chủ `giuViecCha` + cổng `/mgmt-tasks` cho `chaLoai`), Head · QT · CX như cũ, người theo dõi chỉ xem (phép kiểm 403) | t2, t3 (có việc con mẫu), còn lại "+ Việc con" | KHỚP |
+| Lịch sử gập cuối panel (T1 "Lịch sử · 1 mục · Mở 13/09") | `LichSuGap` + `dongLichSuGiao` (thêm ở Xử lý vi phạm, Đã thực hiện) — hiện khi có đổi người / hạn / theo dõi / mô tả; chưa có lần nào thì không vẽ (luật GD-4c) | t1 (seed chưa có lần đổi → không vẽ) | KHÁC — dữ liệu: việc Xử lý tính theo em, chưa có dòng "Mở {ngày}" (máy chủ không lưu ngày mở việc khi chưa ai giao / đặt hạn). Có đổi người / hạn thì Lịch sử hiện như mockup. |
 
-Đếm: 30 dòng · KHỚP 24 · KHÁC vì giữ thao tác / trường máy chủ cũ 3 · KHÁC chờ máy chủ / luật 3.
-**KHỚP thuần 24 / 30 = 80 % — dưới cổng 90 %.** Tính 3 KHÁC giữ thao tác cũ là đạt (CLAUDE.md: giữ mọi thao tác, lệch phải có lý do) = 27 / 30 = 90 %. Ba KHÁC còn lại cần máy chủ / luật — [XM] 1, 3, 4; PTA / chủ SP quyết.
+Đếm (sau góp ý PTA 26/11, vòng 2): 29 dòng · KHỚP 27 · KHÁC 2: form sửa vi phạm TL-2 (trường lưu thật của máy chủ `gui-lai`) · dòng "Mở {ngày}" của Lịch sử (máy chủ không lưu ngày mở việc Xử lý).
+**KHỚP thuần 27 / 29 = 93 %.**
 
 ## Thao tác TRƯỚC → SAU
 
@@ -58,10 +58,12 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp (đường API s�
 | Xử lý: tick vi phạm · Cũ hơn · Chèn · Khai cấp bậc · Không xử lý · Gửi Head duyệt · Lưu · việc tiếp › · Hoàn tác | có | có | GIỮ |
 | Xử lý: thang vạch "Thang xử lý" | có | bỏ (bậc hiện tại / kế ở dòng trên; thang đủ ở hồ sơ HV) | BỎ (chỉ xem) |
 | Đã thực hiện: Ngày · Người · Ghi chú · PH dự họp · Lưu · việc tiếp › | có | có | GIỮ |
-| Báo PH: Kết quả · Ngày · Nội dung · Lưu · việc tiếp › · Trả lại (từng vi phạm / cả lần) · Rút · Bỏ việc · Khôi phục · Hoàn tác 60 s · gọi PH | có | có | GIỮ |
+| Báo PH: Kết quả · Ngày · Nội dung · Lưu · việc tiếp › · Trả lại cả lần (⋯) · Rút · Bỏ việc · Khôi phục · Hoàn tác 60 s · gọi PH | có | có | GIỮ |
+| Báo PH: Trả lại TỪNG vi phạm | danh sách vi phạm riêng dưới khối | trong bước "GV ghi n vi phạm" của Tuyến (bấm bước → bấm vi phạm → Trả lại) — +1 lần bấm | GIỮ (đổi chỗ, mockup T3) |
 | Trả lại (GV): Sửa rồi gửi lại · Giữ nguyên + trả lời · Xoá vi phạm · Thu hồi · Hoàn tác | radio thẻ | hàng chip | GIỮ |
 | Tình hình (GVCN trả lời): Kết quả · Lưu · gửi TVV · Hoàn tác · Việc tiếp › | có | có | GIỮ |
-| Việc con | chỉ Vận hành | + Việc con (Head · Quản trị · CX), tick xong (người được giao / người quản) | THÊM |
+| Việc con | chỉ Vận hành | + Việc con · tick · sửa hạn (ô bấm): người đang giữ việc cha + Head · Quản trị · CX; người được giao việc con tick việc mình; người theo dõi chỉ xem | THÊM |
+| Đã thực hiện: Kết quả Đã / Chưa thực hiện | "Chưa thực hiện" chỉ ở panel Xem xử lý (hồ sơ) | thêm hàng chọn ở panel Công việc + nút "Chưa thực hiện" ở màn Đã lưu (đường OV-7a sẵn có) | THÊM |
 
 Mất thao tác: không. Bỏ duy nhất: thang vạch chỉ xem ở panel Xử lý.
 
@@ -72,12 +74,17 @@ Mất thao tác: không. Bỏ duy nhất: thang vạch chỉ xem ở panel Xử 
 - `KhoiGiaoViec` ô bấm Phụ trách / Hạn áp cho MỌI nơi dùng khối (Vận hành, Meeting, Đang theo dõi) — một kiểu mọi nơi (C7 "áp mọi panel").
 - `DongViPham` dùng chung Ghi vi phạm, Xem xử lý, bảng lượt — chỉ đổi cột ngày.
 
+## Máy chủ (PTA chốt 26/11, làm trong PR này)
+- `yThuc/tuyen.ts`: khác mặc định — "Đã thực hiện" ‖ "Báo PH" `cungLuc` (cả khi chờ Head: Báo PH "sau khi Head duyệt", trước là "sau khi đã thực hiện") · tuyến "đang chờ xử lý" trả `head` = tên MỘT Head (`headCua`, N74). +0 câu (`nguoiVai` đã nạp theo request).
+- `worklist/mgmttasks.ts` `giuViecCha`: người đang giữ việc cha (`docViec().phuTrach`, việc còn mở) tạo / tick / sửa việc con như Head; người theo dõi không. `routes/index.ts`: cổng khu Công việc cho `POST /mgmt-tasks` có `chaLoai` (TVV không có khu Công việc vẫn tạo việc con của việc mình; dịch vụ kiểm người giữ). Tạo việc Vận hành thường vẫn 403.
+- Phép kiểm: `prTuyen0` (cùng lúc · tên Head) · `prBaoPh0` "TUYEN-1 · việc con" (người giữ tạo / tick / sửa hạn; người ngoài 403 ba đường; người theo dõi 403; giao việc cha đi → mất quyền, người mới có quyền) · `prYt4` (regex Cách xử lý nhận `ChipRadio`).
+
 ## Tốc độ / compute
 - +0 request, +0 câu: tuyến đi trong đường panel sẵn có (`/students/:id/y-thuc`, `/y-thuc/xu-ly/:id`, `/y-thuc/bao-ph/:id`, `/y-thuc/tra-lai/:id`, `/giao-viec/tinh_hinh/:id`) — TUYEN-0. Khối Xử lý / Đã thực hiện: +1 GET `/giao-viec/xu_ly|da_thuc_hien/:id` song song (đường BAOPH-0 đã có trần ở `tocDoDuong.ts`). Việc con đi cùng khối. Không đường API mới.
 
-## [XM] — PTA Plan / chủ SP
-1. Máy chủ chưa đánh `cungLuc` cho "Đã thực hiện ‖ Báo PH" (tuyến vi phạm khác mặc định) → web không vẽ "Cùng lúc · 2 bước". Sửa nhỏ ở `tuyen.ts` (TUYEN-0) nếu muốn đúng T2.
-2. Bước ○ Head duyệt xem trước (T1-375) ghi vai "Head chi nhánh", không tên — muốn tên thật thì `/students/:id/y-thuc` trả thêm tên Head (`headCua`).
-3. T2 "Kết quả: Đã thực hiện / Chưa thực hiện" — luật chưa có "Chưa thực hiện"; không làm.
-4. "+ Việc con" chỉ Head · Quản trị · CX (quyền máy chủ BAOPH-0). Mockup vẽ GVCN / TVV / GV tạo được → nếu đúng ý chủ SP, mở quyền `createMgmtTask` cho người giữ việc cha (PR máy chủ nhỏ). Hạn việc con chưa bấm sửa tại chỗ (sửa ở Vận hành).
+## [XM] — PTA Plan / chủ SP (PTA chốt 26/11: 1, 2, 4 làm trong PR này · 3 làm bằng đường "Chưa thực hiện" sẵn có · 5 → TUYEN-2)
+1. ~~Máy chủ chưa đánh `cungLuc` cho "Đã thực hiện ‖ Báo PH" (tuyến vi phạm khác mặc định) → web không vẽ "Cùng lúc · 2 bước". Sửa nhỏ ở `tuyen.ts` (TUYEN-0) nếu muốn đúng T2.~~ Đã làm.
+2. ~~Bước ○ Head duyệt xem trước (T1-375) ghi vai "Head chi nhánh", không tên — muốn tên thật thì `/students/:id/y-thuc` trả thêm tên Head (`headCua`).~~ Đã làm (`tuyen.head`).
+3. ~~T2 "Kết quả: Đã thực hiện / Chưa thực hiện" — luật chưa có "Chưa thực hiện"; không làm.~~ Có ở máy chủ (OV-7a `chuaThucHien`, xuLy.ts) — đã làm nút.
+4. ~~"+ Việc con" chỉ Head · Quản trị · CX (quyền máy chủ BAOPH-0). Mockup vẽ GVCN / TVV / GV tạo được → nếu đúng ý chủ SP, mở quyền `createMgmtTask` cho người giữ việc cha (PR máy chủ nhỏ). Hạn việc con chưa bấm sửa tại chỗ (sửa ở Vận hành).~~ Đã làm (người giữ việc cha; hạn ô bấm).
 5. Lỗi sẵn có trên main (không thuộc TUYEN-1): việc "Kết quả Progress / Final" (nguồn Phối hợp, `phoi_hop_id`) mở panel tên "Meeting CX/GĐCN" (`PanelBaoPhTvv` `laMeeting` = có `phoiHopId`) → TUYEN-2 (tab Báo PH đủ mọi nguồn).

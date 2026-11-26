@@ -2383,6 +2383,7 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
 .tn-ds > li.nhom span { grid-column: 2 / -1; font-size: 12px; font-weight: 600; color: var(--text-faint); }
 .tn-ds > li.nd { min-height: 0; padding-bottom: 8px; }
 .nd-than { grid-column: 2 / -1; contain: inline-size; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); font-size: 13px; color: var(--text); white-space: pre-line; overflow-wrap: anywhere; }
+.nd-rieng { grid-column: 2 / -1; contain: inline-size; min-width: 0; }
 .tn-ds > li.xem { min-height: 36px; }
 .tn-ds > li.xem button { grid-column: 2 / -1; justify-self: start; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px; margin-left: -8px; border: 0; border-radius: 6px; background: none; font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; }
 .tn-ds > li.xem button:hover { background: var(--accent-soft); }
