@@ -10,10 +10,10 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp: GVCN Trần Ng�
 |---|---|---|---|
 | T11c: MỘT nhóm "Báo PH" mọi nguồn (Vi phạm · Báo lại · Tình hình · Trao đổi gia đình · Kết quả Progress · Kết quả Final) | máy chủ `viecBaoPhCuaToi`: Trao đổi gia đình nhóm `bao_ph_yt` (trước `phoi_hop_tvv` — mục "Phối hợp SOS" riêng) | t11c | KHỚP |
 | T11c: dòng lớp × nguồn × đợt "n em" (khuôn A) | `gopNguon` (máy chủ) → `khoaGopCua` gộp theo lớp × nguồn; vi phạm / tình hình vẫn mỗi em một dòng | t11c | KHỚP |
-| T11c: "4 em ˄" bung danh sách em ngay trong danh sách | bấm dòng "n em" mở panel nhiều em (T11a, `moCaDong`) | t11c / t11a | KHÁC — hai khung mockup tả hai cách mở cùng một dòng; chọn T11a (đặc tả 4.2 "panel nhiều em, khay từng em"). [XM 1] |
+| T11c: "4 em ˄" bung danh sách em ngay trong danh sách | bấm dòng "n em" mở panel nhiều em (T11a, `moCaDong`) | t11c / t11a | KHỚP — hai khung mockup tả hai cách mở cùng một dòng; chọn T11a (đặc tả 4.2 "panel nhiều em, khay từng em"), PTA chốt 27/11 "chọn một là hợp lệ" |
 | T11a: panel nhiều em — bảng em, "Ghi" mở khay NGAY dưới em | `PanelBaoPhNhieu` (mới) | t11a | KHỚP |
 | T11a: khay = khối Phụ trách · Hạn · Theo dõi + Tuyến + Máy điền sẵn + Kết quả · Ngày · Nội dung + Việc con | `PanelBaoPhTvv nhung` (cùng panel một em, không khung) + `NhapViec` theo từng em | t11a | KHỚP |
-| T11a: cột "Tuyến" (chuỗi chấm) + "Máy điền sẵn" tóm mỗi em trên dòng | cột Trạng thái · Hạn (dữ liệu dòng việc sẵn có) | t11a | KHÁC — chuỗi chấm từng em cần tuyến từng em (+1 câu lô ở `/my-work`); để sau. [XM 2] |
+| T11a: cột "Tuyến" (chuỗi chấm) + "Máy điền sẵn" tóm mỗi em trên dòng | cột Tuyến = `ChuoiCham` · cột Máy điền sẵn (dòng 2+); dòng đầu (lượt · Overall) dưới tên — `GET /y-thuc/bao-ph-lo` theo lô khi mở panel (PTA chốt) | t11a | KHỚP |
 | T11b / sửa lỗi: Kết quả Progress / Final mở đúng tên "Báo PH · Kết quả …" (trước: "Meeting CX/GĐCN" + hai phần Meeting) | `nguonTvv` (máy chủ `xemViecBaoPh`) → `laMeeting` chỉ khi Báo PH Meeting thật | t11b | KHỚP |
 | T11a / T11b: "Máy điền sẵn" (lượt · Overall · kỹ năng trượt · Case / điểm từng môn) | hàng `BoiCanh` từ `boiCanh.noiDung` máy chủ | t11a, t11b | KHỚP |
 | T5: cột Tuyến — chuỗi chấm + "Đang ở {bước} · {người}" | `ChuoiCham` (mới, `KhoiTuyen.tsx`, CSS `.cc` chép v27) · `chuoiTuyen` của GET Phối hợp lớp (TUYEN-0, 0 request thêm) | t5 | KHỚP |
@@ -25,12 +25,14 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp: GVCN Trần Ng�
 | T6: MỘT khối Tuyến thay 3 khối (phần người khác · dòng Báo PH · bối cảnh GVCN) | `KhoiTuyen` (trường `tuyen` của `/phoi-hop-sos/:id/meeting`) | t6a, t6b | KHỚP |
 | T6b: bước "Meeting CX/GĐCN · xác nhận" mở sẵn Nội dung gửi; T6a BPXL không quyền nội dung → đóng, không ˅ (C3) | `moSan` (bước cha có hai phần) | t6a, t6b | KHỚP |
 | T6: "{phần} · phần của bạn" + Ngày giờ họp / Kết quả | `PhanMeeting trongPanel` | t6a, t6b | KHỚP |
-| T6: Hoàn thành ở chân panel (Lưu · Hoàn thành) | giữ nút Hoàn thành ngay dưới ô (như cũ); chân Đóng · Việc tiếp › | t6a | KHÁC — đổi chỗ nút cần đưa trạng thái ô lên panel; giữ để không đổi luồng lưu. [XM 3] |
-| T6: Phụ huynh nằm trong nội dung bước GVCN xác nhận | dòng "Phụ huynh" riêng dưới Tuyến (SĐT bấm gọi) | t6a, t6b | KHÁC — nội dung bước máy chủ chưa kèm PH (quyền SĐT riêng); giữ dòng riêng. [XM 4] |
+| T6: Hoàn thành ở chân panel (Lưu · Hoàn thành) | `PhanMeeting baoChan` báo nút lên chân: Đóng · Việc tiếp › · **Hoàn thành** (chính); lỗi lưu ở chân trái; Huỷ sửa giữ trong khối (PTA chốt) | t6a, t6b | KHỚP |
+| T6: Phụ huynh nằm trong nội dung bước GVCN xác nhận | máy chủ `tuyen.ts`: bước GVCN xác nhận (Meeting CX xong) nội dung "Nội dung gửi: … / Phụ huynh: {QH} · {tên} · {SĐT}" — chỉ người xem được em; dòng PH riêng chỉ hiện khi bước không đọc được (PTA chốt) | t6a, t6b | KHỚP |
 | T6: Việc con · Lịch sử gập | `MucViecCon` phần mình · `LichSuGap` | t6a, t6b | KHỚP |
 | T6c 375 / T6d 375 (TVV một em Trao đổi gia đình) | cùng thành phần, 375 | t6c, t6d | KHỚP |
 
-Đếm: 21 dòng · KHỚP 16 · KHÁC 5. **KHỚP thuần 16 / 21 = 76 % — DƯỚI cổng 90 %.** Năm chỗ KHÁC: [XM] 1 – 4 + giữ chip kỹ năng trượt ở T5. Chờ PTA quyết trước khi gửi chủ SP.
+Đếm: 21 dòng · KHỚP 20 · KHÁC 1. **KHỚP thuần 20 / 21 = 95 % — đạt cổng 90 %.** KHÁC còn lại: chip kỹ năng trượt ở T5 (PTA chốt giữ — thông tin làm việc).
+
+Lệch hình nhỏ còn lại (không tính dòng riêng): khay em ở T11a có nút "Lưu" riêng trong khay (mockup: chân panel) — mỗi em lưu độc lập, một chân cho nhiều khay sẽ lẫn em; nội dung bước GVCN là chữ hai dòng (mockup: lưới nhãn · giá trị).
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | |
@@ -46,15 +48,19 @@ Dữ liệu thêm trên DB demo cục bộ trước khi chụp: GVCN Trần Ng�
 | Theo dõi chung cả Meeting (một dòng cho mọi phần) | có | Theo dõi của phần mình trong khối | ĐỔI — [XM 5] |
 
 ## Máy chủ
+- `routes/index.ts` `GET /y-thuc/bao-ph-lo?ids=` (mới): chỉ việc trong danh sách Báo PH người xem làm / quản · một câu nguồn · `chuoiPhoiHop` lô · `noiDungNguonTvvLo` lô (`phoiHop.ts`). `/my-work` KHÔNG đổi. Đo (tocDo.run): 1 em 15 câu · 30 dòng; 6 em 17 câu · 115 dòng → trần `TRAN_BAO_PH_LO` 23 câu · 165 dòng.
+- `tuyen.ts`: bước Meeting CX/GĐCN xong kèm Phụ huynh (`students.parent_*`) trong nội dung bước (đọc theo quyền như nội dung bước).
 - `baoPhTvv.ts`: `xemViecBaoPh` + `nguonTvv`; `viecBaoPhCuaToi` Trao đổi gia đình nhóm `bao_ph_yt` + `gopNguon` (nhãn "Trao đổi gia đình · MT{n}").
 - `giaoViec.ts` `xemMeeting`: chỉ trả phần người xem đọc được (từng phần `requireDoc`); không phần nào → 403 như cũ.
 - `shared/domain/gopViec.ts`: `gopNguon` gộp được dù nhóm giữ từng dòng.
 - Nguồn **Chuyển lớp** (LPB-0 #2266) chưa merge — để chỗ: `gopNguon` nhận mọi nguồn mới, không đổi web khi thêm.
 
 ## [XM]
-1. T11c (bung trong danh sách) vs T11a (panel nhiều em) cho cùng dòng "n em" — chọn T11a.
-2. Chuỗi chấm từng em ở panel Báo PH nhiều em — cần tuyến theo lô ở `/my-work` (TUYEN-0 có `chuoiPhoiHop`), +1 câu.
-3. Nút Hoàn thành ở chân panel Meeting.
-4. Phụ huynh trong nội dung bước GVCN xác nhận (máy chủ `tuyen.ts`).
+1. T11c (bung trong danh sách) vs T11a (panel nhiều em) cho cùng dòng "n em" — chọn T11a (PTA chốt hợp lệ).
+2. ~~Chuỗi chấm từng em~~ — ĐÃ LÀM (GET lô khi mở panel, không ở `/my-work`).
+3. ~~Hoàn thành ở chân panel Meeting~~ — ĐÃ LÀM.
+4. ~~Phụ huynh trong nội dung bước GVCN~~ — ĐÃ LÀM.
+
+Phép kiểm máy chủ `prTuyen0.tests.ts` TUYEN2-1: xemMeeting BPXL một phần (không phần Kết quả), GVCN hai phần; bước GVCN có Nội dung gửi + Phụ huynh, BPXL không nội dung; `nguonTvv` Trao đổi gia đình + Kết quả Progress / Final.
 5. Theo dõi chung một dòng cho cả Meeting → nay theo dõi của phần mình.
 6. Lỗi sẵn có đã sửa: BPXL 403 ở panel Xếp lịch họp.
