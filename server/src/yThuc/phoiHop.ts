@@ -242,15 +242,16 @@ export function phanMeetingCuaHanhDong(ids: readonly number[]): Map<number, { xe
   const out = new Map<number, { xepLich: PhanMeetingTom | null; ketQua: PhanMeetingTom | null }>();
   if (!ids.length) return out;
   for (const r of db().prepare(
-    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
+    `SELECT mp.phoi_hop_id, mp.phan, mp.branch_id, mp.nguoi_luat, mp.trang_thai, mp.ngay_gio, mp.xong_luc, xb.full_name AS xong_ten, tv.full_name AS tvv_ten,
             CASE WHEN mp.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('mp.phu_trach_id', 'mp.branch_id')} THEN pt.full_name END AS pt_ten
        FROM meeting_phan mp JOIN sos_coordination_actions x ON x.id = mp.phoi_hop_id JOIN students s ON s.id = x.student_id
        LEFT JOIN users xb ON xb.id = mp.xong_boi LEFT JOIN users pt ON pt.id = mp.phu_trach_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
       WHERE mp.phoi_hop_id IN (${DS_JSON})`,
   ).all(JSON.stringify(ids)) as any[]) {
     const xep = r.phan === 'xep_lich';
-    const vaiTen = tenVaiTai(r.phan, r.branch_id ?? null);
-    const vai = vaiTen ? (xep ? 'BPXL' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
+    const luat = tenVaiTai(r.phan, r.branch_id ?? null, r.nguoi_luat);   // VAI-0 (N74): một người — GĐCN / CX / BPXL
+    const vaiTen = luat?.ten ?? null;
+    const vai = luat ? (xep ? 'BPXL' : luat.vai === 'branch_director' ? 'GĐCN' : 'CX') : xep && r.tvv_ten ? 'TVV' : 'Head';
     const phan: PhanMeetingTom = { trangThai: r.trang_thai, ngayGio: r.ngay_gio ?? null, xongLuc: r.xong_luc ?? null,
       nguoi: r.trang_thai === 'xong' ? r.xong_ten ?? null : r.pt_ten ?? vaiTen ?? (xep ? r.tvv_ten ?? null : null), vai };
     const m = out.get(r.phoi_hop_id) ?? { xepLich: null, ketQua: null };

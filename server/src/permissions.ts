@@ -20,7 +20,17 @@ export type Grant = {
   branchId: number | null;      // null = toàn hệ thống
   branchName: string | null;
   permissions: Set<string>;
+  /** VAI-0 (N75 / N76): mã vai THẬT khi khác `roleKey` — GĐCN (`branch_director`) mang `roleKey: 'manager'`, Lead TVV (`lead_consultant`) mang `'cx'`. */
+  vaiThat?: string;
 };
+
+/**
+ * VAI-0 (N75 / N76, chủ SP 26/11): vai "như Head" / "như CX" — mọi chỗ kiểm quyền, màn, góc nhìn theo `roleKey` tự áp. Việc tự giao tra vai bằng `r.key` ở SQL
+ * (`quanLyCuaChiNhanh`, `nguoiVaiCuaChiNhanh`…) nên GĐCN / Lead TVV KHÔNG thành người giữ việc theo luật của Head / CX. Chỗ "việc của tôi theo vai" đọc `vaiThat`.
+ */
+export const VAI_NHU: Readonly<Record<string, string>> = { branch_director: 'manager', lead_consultant: 'cx' };
+/** Grant có đúng vai THẬT `key` (không tính vai "như"). */
+export const laVaiThat = (g: Pick<Grant, 'roleKey' | 'vaiThat'>, key: string): boolean => (g.vaiThat ?? g.roleKey) === key;
 
 export type Assignment = {
   id: number;
@@ -140,7 +150,7 @@ export function loadPrincipal(userId: number): Principal {
 /** Dòng có các cột `COT_PRINCIPAL` → Principal. */
 export function principalTuDong(row: any): Principal {
   const grants: Grant[] = (JSON.parse(row.u_grants) as any[][]).map(([id, branchId, roleKey, roleName, branchName, perms]) => ({
-    id, roleKey, roleName, branchId, branchName, permissions: new Set<string>(perms),
+    id, roleKey: VAI_NHU[roleKey] ?? roleKey, roleName, branchId, branchName, permissions: new Set<string>(perms), ...(VAI_NHU[roleKey] ? { vaiThat: roleKey } : {}),
   }));
 
   /*
@@ -748,13 +758,25 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
 export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
   return canGoc(p, permission, ctx) || lopCuTamCo(p, permission, ctx);   // N48: ngoại lệ lớp cũ chỉ hỏi khi quyền thật không cho
 }
+/**
+ * VAI-0 (N77, chủ SP 26/11 "cứ cho xếp hết toàn bộ"): quyền LỊCH của BPXL phủ MỌI chi nhánh — xem / xếp / dời lịch Test ở chi nhánh nào cũng được. Quyền khác của
+ * BPXL (Học viên & Lớp, Công việc) vẫn theo chi nhánh gán; chi nhánh gán = màn mặc định + nhận việc tự động. Đường ghi điểm hỏi `qlDiem` (bỏ grant BPXL) — không mở.
+ */
+export const QUYEN_LICH_BPXL: ReadonlySet<string> = new Set([PERMISSIONS.PLAN_WEEK, PERMISSIONS.SCHEDULE_MOVE, PERMISSIONS.TEST_VIEW, PERMISSIONS.ATTEMPT_VIEW]);
+const lichMoiCn = (g: Grant, permission: string) => g.roleKey === 'scheduler' && QUYEN_LICH_BPXL.has(permission);
+/** VAI-0 (N77): chi nhánh mặc định của BPXL thuần (mọi grant xếp lịch đều là BPXL gán chi nhánh) — trang Test mở đúng chi nhánh mình khi không chọn; null = không đặt. */
+export function cnMacDinhBpxl(p: Principal): number | null {
+  const lich = p.grants.filter((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK) || g.permissions.has(PERMISSIONS.TEST_VIEW));
+  if (!lich.length || lich.some((g) => g.roleKey !== 'scheduler' || g.branchId === null)) return null;
+  return lich[0].branchId;
+}
 function canGoc(p: Principal, permission: string, ctx: Ctx): boolean {
   /* `class.assign_subject` là quyền SUY RA: không vai nào được cấp, grant `teacher` mang nó ngầm và `teacherAllows` siết về GVCN lớp đó. */
   const suyRaGv = permission === PERMISSIONS.CLASS_ASSIGN_SUBJECT;
   if (boTroTamCo(p, permission, ctx)) return true;
   for (const g of p.grants) {
     if (!g.permissions.has(permission) && !(suyRaGv && g.roleKey === 'teacher')) continue;
-    if (!grantCovers(g, ctx)) continue;
+    if (!grantCovers(g, ctx) && !lichMoiCn(g, permission)) continue;
     if (g.roleKey === 'teacher' && !teacherAllows(p, permission, ctx)) continue;
     return true;
   }
@@ -774,7 +796,7 @@ export function duocSuaLichLop(p: Principal, classId: number): boolean {
   if (classIsFastTrack(classId)) return false;
   const ctx = { classId };
   /* BPXL-1 (N57): Chuyên viên Xếp lịch sửa lịch lớp thường như Admin (lớp FT: không). */
-  return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || g.roleKey === 'scheduler' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
+  return p.grants.some((g) => (g.roleKey === 'scheduler' || grantCovers(g, ctx)) && (g.roleKey === 'office_admin' || g.roleKey === 'scheduler' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));   // VAI-0 (N77): BPXL mọi chi nhánh
 }
 
 /** [XM 2] chủ SP 11/11: Admin (`office_admin`) có phạm vi phủ ngữ cảnh (chi nhánh của em / lớp) — quyền HẸP suy từ vai, như `duocSuaLichLop`. */
@@ -845,7 +867,7 @@ export function scopeFor(p: Principal, permission: string, date = demoToday()): 
       for (const a of p.assignments) if (activeAt(a, date)) classIds.add(a.classId);
       continue;
     }
-    if (g.branchId === null) all = true;
+    if (g.branchId === null || lichMoiCn(g, permission)) all = true;   // VAI-0 (N77): lịch BPXL mọi chi nhánh
     else branchIds.add(g.branchId);
   }
   return {

@@ -17,14 +17,18 @@ import { t } from '../i18n/index.ts';
  */
 /* TU-a (đặc tả Tutor mục 4): `head_tutor` = Head tutor — rà soát tutor part-time (trang Tutor), toàn hệ thống, không mở HV / Case / điểm. */
 /* BPXL-1 (N57, chủ SP 20/11): `scheduler` = Chuyên viên Xếp lịch (BPXL) — xếp / dời lịch MT + lịch lớp thường; chỉ xem phần còn lại; không bị giao việc theo luật. */
-export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx', 'head_tutor', 'scheduler'] as const;
+/* VAI-0 (N75 / N76, chủ SP 26/11): `branch_director` = GĐCN — quyền như Head, không nhận việc tự động của Head (chỉ Kết quả meeting) · `lead_consultant` = Lead TVV —
+   quyền như CX, giữ việc TVV của em chưa có TVV. Nạp Principal: grant hai vai mang `roleKey` Head / CX (`vaiThat` = mã thật) — `permissions.ts`. */
+export const VAI_GDCN = 'branch_director';
+export const VAI_LEAD_TVV = 'lead_consultant';
+export const ROLES = ['system_admin', 'manager', 'branch_director', 'teacher', 'office_admin', 'consultant', 'lead_consultant', 'cx', 'head_tutor', 'scheduler'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
   system_admin: t('Quản trị hệ thống'), manager: t('Head'), teacher: t('Giáo viên'),
-  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor', scheduler: t('Chuyên viên Xếp lịch'),
+  office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor', scheduler: t('Chuyên viên Xếp lịch'), branch_director: 'GĐCN', lead_consultant: 'Lead TVV',
 };
 /** Vai chọn được 1 / nhiều chi nhánh hoặc bỏ trống = toàn hệ thống (CX — PR-OV2a; BPXL — N57). Máy chủ (`accounts.ts`) và web cùng danh sách. */
-export const VAI_CN_TUY_CHON: readonly string[] = ['cx', 'scheduler'];
+export const VAI_CN_TUY_CHON: readonly string[] = ['cx', 'scheduler', 'branch_director', 'lead_consultant'];
 /** BPXL-1 (N57): tài khoản chỉ có vai Chuyên viên Xếp lịch — giao diện ẩn / tắt thao tác đụng điểm (thi lại, huỷ điểm, vắng, xoá MT có điểm). Máy chủ vẫn chặn. */
 export const laChiXepLich = (roles: readonly string[] | null | undefined): boolean => !!roles?.length && roles.every((r) => r === 'scheduler');
 /** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */

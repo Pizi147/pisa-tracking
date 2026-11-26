@@ -10126,6 +10126,9 @@ await runPrSuaLoiATests({ check, assert } as any);
 // ==================================================================== RA-2511 PR 1 (sua-quyen): quyền máy chủ + Case / PA / Tutor
 const { runPrSuaQuyenTests } = bocTep('prSuaQuyen', await import('./prSuaQuyen.tests.ts'));
 await runPrSuaQuyenTests({ check, checkAsync, assert, conn, P, classId } as any);
+// ==================================================================== VAI-0 (N74–N77, chủ SP 26/11): GĐCN · Lead TVV · BPXL theo lớp · một việc một người
+const { runPrVaiMoiTests } = bocTep('prVaiMoi', await import('./prVaiMoi.tests.ts'));
+await runPrVaiMoiTests({ check, assert, conn, P, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

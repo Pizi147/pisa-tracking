@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, boVaiBpxl, can, classScopeSql, cnMacDinhBpxl, laGvSpeaking, loadPrincipal, lopDayDu, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -111,6 +111,7 @@ import {
   ensurePeriod, listPeriods, periodById, periodWindow, reportEditWindow,
 } from '../platform/week.ts';
 import * as keHoachSvc from '../keHoach/keHoachTest.ts';
+import * as xepLichLopSvc from '../classes/xepLichLop.ts';
 import * as hoanTacLichSvc from '../keHoach/hoanTacLich.ts';
 import { signalsFor } from '../worklist/signals.ts';
 import * as accountSvc from '../platform/accounts.ts';
@@ -278,7 +279,7 @@ api.get('/demo/session', wrap((req) => {
     /* QTV2-BAND: Kỳ vọng MT FT + Ngưỡng lớp thường — cùng cách (nhớ đệm, 0 câu khi không ai sửa). */
     kyVongFt: cauHinhSvc.dsBanKyVong(), nguongThuong: cauHinhSvc.dsBanNguong(),
     roles: p.roleKeys,
-    roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
+    roleLabels: p.roleKeys.map((r) => nhanVai(p, r)),
     grants: permissionSummary(p),
     assignments: p.assignments.map((a) => (
       { classId: a.classId, classCode: maLopCua.get(a.classId) ?? null, skill: a.skill, isCore: a.isCore,
@@ -323,6 +324,15 @@ api.get('/demo/session', wrap((req) => {
  * PR-OV2a: dữ liệu menu Góc nhìn + dải "Góc nhìn: {vai} · {phạm vi} · Về {vai gốc}". Phạm vi đọc từ MỌI grant / phân công của tài khoản
  * (principal của phiên đã lọc theo góc nhìn) — một lần đọc lại, chỉ cho người đổi được góc nhìn.
  */
+/** VAI-0 (N77): BPXL xếp lịch mọi chi nhánh — không gửi `branchId` thì mở chi nhánh gán (`cnMacDinhBpxl`); gửi `branchId=all` = mọi chi nhánh. */
+const cnBpxl = (req: Request, cn: number | null | undefined): number | null | undefined =>
+  req.query?.branchId === undefined ? cnMacDinhBpxl(principalOf(req)) ?? cn : cn;
+/** VAI-0: nhãn vai theo vai THẬT của grant (GĐCN mang `roleKey` Head, Lead TVV mang CX — `VAI_NHU`). */
+const nhanVai = (p: Principal, r: string) => {
+  const k = p.grants.some((x) => x.roleKey === r && !x.vaiThat) ? r : p.grants.find((x) => x.roleKey === r)?.vaiThat ?? r;
+  return ROLE_LABEL[k as Role] ?? k;
+};
+
 function gocNhinCua(p: Principal) {
   const vaiGoc = p.vaiGoc ?? p.roleKeys;
   if (!coTheDoiGocNhin(vaiGoc)) return null;
@@ -339,7 +349,7 @@ function gocNhinCua(p: Principal) {
   return {
     dangChon: p.gocNhin ?? null,
     vaiGoc: goc,
-    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role),
+    coThe: vaiGoc.map((role) => ({ role, nhan: nhanVai(du, role), phamVi: phamVi(role),
       ...(role === 'teacher' ? { chiNhanh: chiNhanhGv, soLop } : {}),
       soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
   };
@@ -698,7 +708,7 @@ api.get('/attempts/:id', requireAuth, wrap((req) => {
 // -------------------------------------------------------------- PR-Rc2: Kế hoạch Test
 
 api.get('/ke-hoach-test/lop', requireAuth, wrap((req) =>
-  keHoachSvc.danhSachLop(principalOf(req), { branchId: toInt(req.query?.branchId) })));
+  keHoachSvc.danhSachLop(principalOf(req), { branchId: cnBpxl(req, toInt(req.query?.branchId)) })));
 
 api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
   keHoachSvc.luoiFT(principalOf(req), pInt(req, 'classId'))));
@@ -1198,7 +1208,7 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
   const pv = qStr(req, 'phamVi');
-  return chamSvc.lichTest(principalOf(req), periodId, qInt(req, 'branchId'), demoToday(), {
+  return chamSvc.lichTest(principalOf(req), periodId, cnBpxl(req, qInt(req, 'branchId')), demoToday(), {
     phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
   });
 }));
@@ -1445,6 +1455,17 @@ api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return loYThucSvc.loYThucLop(principalOf(req), pInt(req, 'id'));
 }));
+/* VAI-0 (N77): CVXL nhận lớp — xem (ai xem được lịch lớp) · nhận / bỏ / gán hộ (`{ userId | null, cu }`) · Hoàn tác. */
+api.get('/classes/:id/xep-lich', requireAuth, wrap((req) => {
+  const id = pInt(req, 'id');
+  require_(principalOf(req), PERMISSIONS.ATTEMPT_VIEW, { classId: id });
+  return { xepLich: xepLichLopSvc.xemXepLich(id) };
+}));
+api.post('/classes/:id/xep-lich', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xepLichLopSvc.ganXepLich(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/classes/:id/xep-lich/hoan-tac', requireAuth, wrap((req) => xepLichLopSvc.hoanTacXepLich(principalOf(req), pInt(req, 'id'))));
 /** OV-13d: ba hành động theo lô — mỗi em một giao dịch, kết quả từng em (`em[].ok` / `loi`). */
 api.post('/classes/:id/y-thuc/lo/xu-ly', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2461,7 +2482,7 @@ api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
 /* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return tongQuanMt(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
+  return tongQuanMt(principalOf(req), { branchId: cnBpxl(req, qInt(req, 'branchId')) ?? null });
 }));
 /* M6 6b-4: panel "GV chấm quá hạn" — không `gv`: Admin (cùng tập khối Mock Test); `gv` (id · 0 · -1): QL, cùng tập Trễ chấm của GV đó (Q8). */
 api.get('/tong-quan/gv-tre', requireAuth, wrap((req) => {

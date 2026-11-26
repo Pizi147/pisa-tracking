@@ -92,9 +92,10 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       `SELECT c.id, c.code, c.branch_id, pg.scoring_mode AS mode, br.name AS chi_nhanh,
               (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id   -- U05: ô GVCN của hàng lớp (cùng câu, như lopTrongPhamVi)
-                WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn
+                WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn,
+              xl.user_id AS xep_lich_id, xu.full_name AS xep_lich_ten   -- VAI-0 (N77): CVXL đã nhận lớp (cùng câu)
          FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
-         LEFT JOIN branches br ON br.id = c.branch_id
+         LEFT JOIN branches br ON br.id = c.branch_id LEFT JOIN lop_xep_lich xl ON xl.class_id = c.id LEFT JOIN users xu ON xu.id = xl.user_id
         WHERE ${where}
         ORDER BY c.code`,
     )
@@ -234,6 +235,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         canXepLai: canXepLai.get(r.id) ?? 0,
         tomTat: loai === 'ft' ? tomTatFT(r.id) : tomTatThuong(r.id),
         gvcn: (r.gvcn ?? null) as string | null,
+        xepLich: r.xep_lich_id ? { userId: r.xep_lich_id as number, ten: r.xep_lich_ten as string } : null,   // VAI-0 (N77): CVXL đã nhận lớp
         dotChay: loai === 'ft' ? dotChay(r.id) : tomTatThuong(r.id),
         chiXem: chiXemLop(p, r.id),
         /* KIEM-TAY-1011 (2): mã lớp là link chỉ khi người xem mở được hồ sơ lớp (cùng quyền `classOverview`; bảng lớp đã nhớ trong request GET — không thêm câu). */

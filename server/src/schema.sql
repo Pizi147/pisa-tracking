@@ -2464,8 +2464,18 @@ CREATE TABLE IF NOT EXISTS meeting_phan (
   xong_boi INTEGER REFERENCES users(id), xong_luc TEXT, nhap_ho_boi INTEGER REFERENCES users(id),
   han_chon TEXT,                         -- hạn đặt tay (YYYY-MM-DD), NULL = không hạn
   phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,
-  tao_luc TEXT NOT NULL
+  tao_luc TEXT NOT NULL,
+  nguoi_luat INTEGER REFERENCES users(id)   -- VAI-0 (N74): người nhận theo luật, chốt MỘT người lúc sinh (`nguoiNhanTuDong`); hết hiệu lực → người gán sớm nhất khi đọc
 );
+CREATE INDEX IF NOT EXISTS idx_meeting_phan_luat ON meeting_phan(nguoi_luat) WHERE trang_thai = 'mo' AND nguoi_luat IS NOT NULL;
+-- VAI-0 (N77, chủ SP 26/11): CVXL tự nhận lớp để xếp lịch — mọi việc BPXL tự sinh của lớp về người này. Một lớp một người. Migrate `prVaiMoi` chép y.
+CREATE TABLE IF NOT EXISTS lop_xep_lich (
+  class_id INTEGER PRIMARY KEY REFERENCES classes(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  gan_boi INTEGER REFERENCES users(id),
+  gan_luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_lop_xep_lich_nguoi ON lop_xep_lich(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
 -- Việc giao cho tôi (/my-work, một câu UNION ALL): chỉ mục một phần — dòng theo luật (NULL) không vào chỉ mục, câu cũ không đổi kế hoạch.

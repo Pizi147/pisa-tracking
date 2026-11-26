@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
-import { giuViecQl, tvvHieuLuc } from '../worklist/viecTvv.ts';
+import { cnLeadTvvCuaToi, giuViecQl, leadTvvCua, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { banChupBaoPh, noiDungNguonTvv } from './phoiHop.ts';
@@ -597,7 +597,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const pv = scopeFor(p, PERMISSIONS.REQUEST_APPROVE, o.today);
   const ql = !pv.none;
   const tvv = p.roleKeys.includes('consultant');
-  if (!ql && !tvv) return [];   // GV không giữ việc này — khỏi tốn câu (BAOPH-0: em chưa có TVV → Head, GVCN thôi giữ việc sau Meeting)
+  const cnLead = cnLeadTvvCuaToi(p);   // VAI-0 (N76b): em chưa có TVV ở chi nhánh Lead TVV giữ
+  if (!ql && !tvv && !cnLead.length) return [];   // GV không giữ việc này — khỏi tốn câu (BAOPH-0: em chưa có TVV → Head, GVCN thôi giữ việc sau Meeting)
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const giu = giuViecQl(p);
   const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.tra_lai_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
@@ -613,9 +614,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         AND (pa.id IS NULL OR (pa.status != 'cancelled' AND NOT ${LUOT_SAU_THI_SQL('pa')}))`;   // N46 (rà #2233 P1-4): việc theo lượt sau thi thật / lượt huỷ không còn là việc
   const em = o.studentId ? [o.studentId] : [];
   const rows = docNho(   // TOC-DO-2511: nhớ trong request; chép dòng — dưới còn push + gán `r.nhan`
-    `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'
+    `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql && !cnLead.length ? ' AND s.consultant_user_id = ?'
         : pv.all ? '' : ` AND (s.consultant_user_id = ? OR ${CHI_NHANH_EM} IN (${DS_JSON}))`} ORDER BY v.han, v.id`,
-  ...em, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])).map((r) => ({ ...r }));
+  ...em, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql && !cnLead.length ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify([...pv.branchIds, ...cnLead])])).map((r) => ({ ...r }));
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
@@ -625,7 +626,10 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     /* GV-1 (N58): việc đã giao rời danh sách người theo luật — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" của QL thấy tên người được giao. */
     if (r.phu_trach_id != null) { if (!o.tatCa || r.phu_trach_id === p.userId || !trongPv(r.branch_id)) continue; ownerId = r.phu_trach_id; }
     else if (tvv !== null && tvv === p.userId) ownerId = p.userId;
+    /* VAI-0 (N76b): em chưa có TVV, chi nhánh có Lead TVV → Lead TVV giữ; Head / Quản trị chỉ thấy ở "Tất cả". */
+    else if (!tvv && leadTvvCua(r.branch_id) === p.userId) ownerId = p.userId;
     else if (!trongPv(r.branch_id)) continue;
+    else if (!tvv && leadTvvCua(r.branch_id) != null) { if (o.tatCa) ownerId = leadTvvCua(r.branch_id); else continue; }
     /* DEM-VIEC: em chưa có TVV → QL chi nhánh giữ; Quản trị chỉ giữ khi chi nhánh không có QL (`giuViecQl`), còn lại thấy ở "Tất cả" (chưa ai giữ). */
     else if (!tvv) { if (giu(r.branch_id)) ownerId = p.userId; else if (o.tatCa) ownerId = null; else continue; }
     else if (o.tatCa) ownerId = tvv;
