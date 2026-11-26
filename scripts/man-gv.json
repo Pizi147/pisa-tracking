@@ -72,6 +72,7 @@
  "web/src/modules/congViec/MucViecCon.tsx",
  "web/src/modules/congViec/NutTask.tsx",
  "web/src/modules/congViec/PaDangChay.tsx",
+ "web/src/modules/congViec/PanelBaoPhNhieu.tsx",
  "web/src/modules/congViec/PanelBaoPhTvv.tsx",
  "web/src/modules/congViec/PanelChamSpeaking.tsx",
  "web/src/modules/congViec/PanelLopAdmin.tsx",
