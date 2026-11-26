@@ -646,8 +646,8 @@ api.get('/my-work', requireAuth, wrap((req) => {
 api.get('/my-work/theo-doi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
-  /* TUYEN-0 (N72 ①): `tuyen` = một dòng một tuyến Ý thức & Phối hợp (gom việc N58 của tuyến — dòng `viec`); `nhom` giữ nguyên cho web hiện tại. */
-  return { ...giaoViecSvc.viecTheoDoi(p), tuyen: tuyenSvc.theoDoiTuyen(p) };
+  /* TUYEN-0 (N72 ①): `tuyen` = một dòng một tuyến Ý thức & Phối hợp (gom việc N58 của tuyến — dòng `viec`); `nhom` cho web hiện tại, bỏ việc của tuyến đã "Bỏ theo dõi". */
+  return tuyenSvc.voiTuyen(p, giaoViecSvc.viecTheoDoi(p));
 }));
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
 api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req), req.body?.key, req.body?.boQua !== false)));
@@ -1600,7 +1600,7 @@ api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
   const p = principalOf(req);
-  const v = { ...xuLySvc.xemXuLy(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'xu_ly', pInt(req, 'id')) };   // TUYEN-0
+  const v = { ...xuLySvc.xemXuLy(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenTheoKhoa(p, { loai: 'vi_pham', khoa: String(pInt(req, 'id')) }) };   // TUYEN-0
   return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(p, 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
@@ -1697,7 +1697,8 @@ api.post('/y-thuc/tra-lai/:id/giu-nguyen', requireAuth, wrap((req) => {   // { t
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const p = principalOf(req);
-  return { ...baoPhSvc.xemViecBaoPh(p, pInt(req, 'id')), tuyen: tuyenSvc.tuyenCuaViec(p, 'bao_ph', pInt(req, 'id')) };   // TUYEN-0
+  const v = baoPhSvc.xemViecBaoPh(p, pInt(req, 'id'));
+  return { ...v, tuyen: tuyenSvc.tuyenTheoKhoa(p, tuyenSvc.khoaBaoPh(v)) };   // TUYEN-0: khoá tuyến đọc từ panel (không câu tìm khoá)
 }));
 api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

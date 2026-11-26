@@ -2503,6 +2503,10 @@ CREATE INDEX IF NOT EXISTS idx_dm_tao_boi ON discipline_measures(created_by);
 CREATE INDEX IF NOT EXISTS idx_sca_lam_boi ON sos_coordination_actions(performed_by);
 CREATE INDEX IF NOT EXISTS idx_meeting_phan_xong_boi ON meeting_phan(xong_boi);
 CREATE INDEX IF NOT EXISTS idx_tinh_hinh_gui ON tinh_hinh_hoc_tap(nguoi_gui);
+-- Hai nhánh thẻ (Head duyệt · GVCN xin thu hồi / sửa bậc) — chỉ mục MỘT PHẦN theo loai: câu `nguoi_xin = ?` không ORDER BY của Yêu cầu của tôi không đổi kế hoạch.
+CREATE INDEX IF NOT EXISTS idx_ycd_nguoi_duyet ON yeu_cau_duyet(nguoi_duyet) WHERE nguoi_duyet IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ycd_xin_thu_hoi ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'thu_hoi_y_thuc';
+CREATE INDEX IF NOT EXISTS idx_ycd_xin_khai ON yeu_cau_duyet(nguoi_xin) WHERE loai = 'sua_khai_bac';
 CREATE INDEX IF NOT EXISTS idx_tra_lai_xong_boi ON vi_pham_tra_lai(xong_boi);
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).

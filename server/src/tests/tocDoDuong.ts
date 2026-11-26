@@ -2305,9 +2305,9 @@ export const TRAN_VH_DUOC_GIAO = { cau: 21, dong: 59 };   // đo 15 câu · 9 d�
 /**
  * TUYEN-0 (N72): dựng tuyến theo LÔ — `mot`: GET /tuyen/:loai/:khoa (vi phạm · Phối hợp có Meeting); `panel`: trường `tuyen` thêm vào một đường panel
  * (tìm khoá + dựng, đo ngoài request — đường thật dùng lại bộ nhớ phạm vi); `theoDoi`: phần tuyến của GET /my-work/theo-doi. Số câu không theo số tuyến
- * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +6 · 39 · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉).
+ * (prTuyen0 TUYEN0-11 kiểm). Đo 26/11: vi_pham 4 câu · 37 dòng · phoi_hop 5 · 47 · panel Báo PH +3 · 36 (khoá tuyến đọc từ panel — PTA rà #2231 P2-9; trước +6) · theo dõi 9 câu · 130 dòng → câu đo + 3, dòng max(đo + 50, ⌈đo × 1,3⌉).
  */
-export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 9 }, theoDoi: { cau: 12, dong: 180 } };
+export const TRAN_TUYEN = { mot: { cau: 8 }, panel: { cau: 4 }, theoDoi: { cau: 12, dong: 180 } };
 export const TRAN_PHOI_HOP_MEETING = { cau: 35, dong: 119 };
 
 /** N71 (rà sâu #2111 ④): chip tab Báo cáo PH (đầu hồ sơ lớp) — mọi đợt ứng viên đọc chung (ghi danh + số bản đủ), không một cặp câu mỗi đợt. Đo ở prN71. */

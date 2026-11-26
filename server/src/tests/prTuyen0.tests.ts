@@ -58,7 +58,7 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
   };
   const tuyen = (p: any, loai: string, khoa: string | number) => { xoaNho(); return tu.dungTuyen(p, { loai, khoa: String(khoa) }); };
   const ten = (x: any) => x.buoc.map((b: any) => `${b.ten}:${b.trangThai}`).join(' → ');
-  const theoDoi = (p: any) => { xoaNho(); return tu.theoDoiTuyen(p) as any[]; };
+  const theoDoi = (p: any) => { xoaNho(); return tu.theoDoiTuyen(p).tuyen as any[]; };
   const luot = (sid: number, kinds: string[]) => {
     const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id)
         AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id as number;
@@ -163,6 +163,8 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const sid = moiEm();
     const { att, ids } = luot(sid, ['cx_meeting_student']);
     const a = tuyen(tvv, 'phoi_hop', att);
+    /* PTA rà #2231 P2-6: bước ○ Xếp lịch giữ theo VAI (mọi BPXL chi nhánh) không làm BPXL "có mặt" — 404 như không có tuyến (P2-10). */
+    assert(ma(() => tuyen(bpxl, 'phoi_hop', att)) === 404, 'BPXL trước xác nhận (chỉ ○ theo vai) → 404');
     /* Chưa xác nhận: TVV thấy trước Báo PH / Xếp lịch / Kết quả (○ chờ GVCN xác nhận) — không có việc nào (C2). */
     assert(ten(a).endsWith('Xếp lịch họp:cho → Báo PH:cho → Kết quả meeting:cho') && a.buoc.slice(1).every((b: any) => b.cha === `x${ids[0]}` && b.chiTiet === 'chờ GVCN xác nhận'),
       `trước xác nhận: ${ten(a)}`);
@@ -182,7 +184,7 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(c.buoc[1].laToi && c.dangO?.ten === 'Xếp lịch họp', `BPXL: Xếp lịch là của mình: ${JSON.stringify(c.dangO)}`);
     /* BPXL ngoài tuyến (lượt khác) → 403. */
     const khac = luot(moiEm(), ['talk_student']);
-    assert(ma(() => tuyen(bpxl, 'phoi_hop', khac.att)) === 403, 'BPXL ngoài tuyến → 403');
+    assert(ma(() => tuyen(bpxl, 'phoi_hop', khac.att)) === 404, 'BPXL ngoài tuyến → 404 (cùng mã "không có")');
     /* Kết quả meeting xong → Xếp lịch tự xong (N67); BPXL không còn ở "đang" — tuyến xong. */
     const kq = b.buoc[3].viec.id;
     gv.xongPhanMeeting(ql, kq, { ketQua: 'Em hứa đi học đều' });
@@ -253,13 +255,85 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const vp = doTrong(() => tu.dungTuyen(gvcn, { loai: 'vi_pham', khoa: String(mid) }));
     const pho = doTrong(() => tu.dungTuyen(gvcn, { loai: 'phoi_hop', khoa: String(att) }));
     const td = doTrong(() => tu.theoDoiTuyen(gvcn));
-    const panel = doTrong(() => tu.tuyenCuaViec(tvv, 'bao_ph', mot('SELECT id FROM viec_bao_ph WHERE measure_id = ?', mid).id));
+    /* P2-9: số câu THÊM của trường `tuyen` trên đường panel thật (sau `xemViecBaoPh` cùng request — bộ nhớ phạm vi dùng lại). */
+    const bpId = mot('SELECT id FROM viec_bao_ph WHERE measure_id = ?', mid).id;
+    let panel = { c: 0, d: 0 };
+    chayTrongRequest('GET', () => { const v = bp.xemViecBaoPh(tvv, bpId); const c0 = soCauSql(); const d0 = soDongSql(); tu.tuyenTheoKhoa(tvv, tu.khoaBaoPh(v)); panel = { c: soCauSql() - c0, d: soDongSql() - d0 }; });
     console.log(`    đo: /tuyen vi_pham ${vp.c} câu · ${vp.d} dòng | phoi_hop ${pho.c} · ${pho.d} | theo dõi ${td.c} · ${td.d} | panel Báo PH +${panel.c} · ${panel.d}`);
-    assert(vp.c <= TRAN_TUYEN.mot.cau && pho.c <= TRAN_TUYEN.mot.cau && panel.c <= TRAN_TUYEN.panel.cau, `câu: ${vp.c} / ${pho.c} / panel ${panel.c}`);
+    assert(vp.c <= TRAN_TUYEN.mot.cau && pho.c <= TRAN_TUYEN.mot.cau && panel.c <= TRAN_TUYEN.panel.cau && panel.c <= 4, `câu: ${vp.c} / ${pho.c} / panel ${panel.c}`);
     assert(td.c <= TRAN_TUYEN.theoDoi.cau && td.d <= TRAN_TUYEN.theoDoi.dong, `theo dõi: ${td.c} câu / ${td.d} dòng`);
     /* Không N+1: Đang theo dõi với nhiều tuyến hơn giữ nguyên số câu. */
     for (let i = 0; i < 3; i++) xuLy(moiEm());
     const td2 = doTrong(() => tu.theoDoiTuyen(gvcn));
     assert(td2.c === td.c, `theo dõi nhiều tuyến hơn: ${td.c} → ${td2.c} câu`);
+    /* P2-8: câu tìm tuyến theo dõi đi chỉ mục — không quét bảng nguồn nào (yeu_cau_duyet, discipline_measures, …). */
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${tu.SQL_TUYEN_THEO_DOI}`).all(gvcn.userId, '2026-01-01', '2026-01-01') as any[]).map((r) => String(r.detail));
+    assert(!plan.some((d) => /^SCAN /.test(d)), `có SCAN: ${plan.filter((d) => /^SCAN /.test(d)).join(' | ')}`);
+  }));
+
+  await checkAsync('TUYEN0-12 · P1-1 quyền theo tuyến chỉ khi CÒN vai ở chi nhánh em: người theo dõi mất vai · chi nhánh khác · GV ngoài lớp → 404; GVCN rời lớp thấy khung, không nội dung người khác', () => thu(() => {
+    const sid = moiEm();
+    const { mid, bpId } = xuLy(sid);
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [bpId], ketQua: 'chua_lien_he', ghiChu: 'Gọi mẹ em không nghe máy' });
+    const theoDoiViec = (u: any) => conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) VALUES ('bao_ph', ?, ?, 'tay', ?, ?)`).run(bpId, u.userId, ql.userId, new Date().toISOString());
+    /* BPXL (không xem Ý thức em) theo dõi tay việc Báo PH: còn vai → thấy khung + nội dung Báo PH (quyền người theo dõi sẵn có); mất vai → 404, rời Đang theo dõi. */
+    const bp2 = taiKhoan('bpxl2', 'scheduler'); theoDoiViec(bp2);
+    const a = tuyen(bp2, 'vi_pham', mid);
+    assert(a.buoc.find((b: any) => b.ten === 'Báo PH')?.noiDung === 'Gọi mẹ em không nghe máy' && a.buoc[0].khongQuyen, `còn vai: ${JSON.stringify(a.buoc.map((b: any) => [b.ten, b.coNoiDung]))}`);
+    assert(theoDoi(bp2).some((d) => d.khoa === String(mid)), 'còn vai → Đang theo dõi');
+    conn.prepare("UPDATE user_roles SET status = 'inactive' WHERE user_id = ?").run(bp2.userId);
+    const mat = loadPrincipal(bp2.userId);
+    assert(ma(() => tuyen(mat, 'vi_pham', mid)) === 404 && !theoDoi(mat).length && tu.tuyenCuaViec(mat, 'bao_ph', bpId) === null, 'mất vai → 404 · không dòng · panel null');
+    /* Chi nhánh khác: theo dõi tay việc của em MB nhưng chỉ có vai ở CP. */
+    const cp = taiKhoan('bpxlcp', 'scheduler', 'CP'); theoDoiViec(cp);
+    assert(ma(() => tuyen(cp, 'vi_pham', mid)) === 404 && !theoDoi(cp).length, 'chi nhánh khác → 404');
+    /* GV ngoài lớp (vai GV ở MB, không dạy lớp em, không có mặt) → 404. */
+    const gvKhac = taiKhoan('gvkhac', 'teacher');
+    assert(ma(() => tuyen(gvKhac, 'vi_pham', mid)) === 404 && ma(() => tuyen(gvKhac, 'vi_pham', `em${sid}`)) === 404, 'GV ngoài lớp → 404');
+    /* GVCN rời lớp (hết phân công, còn vai ở chi nhánh): đã làm bước → còn thấy khung; nội dung bước của mình đọc được, Báo PH của TVV thì không. */
+    const pcIds = (conn.prepare(`SELECT id FROM teacher_assignments WHERE user_id = ? AND class_id = ? AND status = 'active'`).all(gvcn.userId, lop) as any[]).map((r) => r.id);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE id IN (SELECT value FROM json_each(?))`).run(JSON.stringify(pcIds));
+    /* Đổi GVCN thật: dòng theo dõi nguồn `gvcn` chuyển sang GVCN mới (`theoGvcnHienTai`) — ở đây lớp chưa có GVCN mới nên bỏ dòng cũ như chuyển. */
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE user_id = ? AND nguon = 'gvcn' AND loai = 'bao_ph' AND ref_id = ?`).run(gvcn.userId, bpId);
+    try {
+      const roi = loadPrincipal(gvcn.userId);
+      const b = tuyen(roi, 'vi_pham', mid);
+      const xl = b.buoc.find((x: any) => x.khoa === 'xu_ly'); const ph = b.buoc.find((x: any) => x.ten === 'Báo PH');
+      assert(xl.coNoiDung && ph.khongQuyen && !('noiDung' in ph), `GVCN rời lớp: ${JSON.stringify([xl, ph])}`);
+    } finally { conn.prepare(`UPDATE teacher_assignments SET status = 'active' WHERE id IN (SELECT value FROM json_each(?))`).run(JSON.stringify(pcIds)); }
+  }));
+
+  await checkAsync('TUYEN0-13 · P1-2 / P1-3: Bỏ theo dõi → người KHÁC làm bước sau → vẫn ẩn; việc N58 của tuyến đã bỏ không hiện lẻ ở nhom', () => thu(() => {
+    const sid = moiEm();
+    const { mid, bpId } = xuLy(sid);
+    tu.boTheoDoiTuyen(gvcn, { loai: 'vi_pham', khoa: String(mid) });
+    bp.ghiKetQuaBaoPh(ql, { viecIds: [bpId], ketQua: 'chua_lien_he', ghiChu: 'Head gọi thử, chưa được' });
+    conn.prepare('UPDATE discipline_measures SET updated_at = ? WHERE id = ?').run(new Date(Date.now() + 60_000).toISOString(), mid);   // người khác sửa lần xử lý
+    assert(!theoDoi(gvcn).some((d) => d.khoa === String(mid)), 'người khác làm bước sau → vẫn ẩn');
+    /* GVBM (theo dõi mặc định N58 của Báo PH) bỏ theo dõi tuyến → dòng Báo PH không hiện lẻ ở nhom. */
+    tu.boTheoDoiTuyen(gvbm, { loai: 'vi_pham', khoa: String(mid) });
+    xoaNho();
+    const r = tu.voiTuyen(gvbm, gv.viecTheoDoi(gvbm));
+    assert(!r.tuyen.some((d: any) => d.khoa === String(mid)) && !r.nhom.some((g: any) => [...g.mo, ...g.vuaXong].some((d: any) => d.loai === 'bao_ph' && d.refId === bpId)),
+      `nhom còn việc của tuyến đã bỏ: ${JSON.stringify(r.nhom.map((g: any) => g.mo.map((d: any) => d.refId)))}`);
+    tu.theoDoiLaiTuyen(gvbm, { loai: 'vi_pham', khoa: String(mid) });
+    xoaNho();
+    assert(tu.voiTuyen(gvbm, gv.viecTheoDoi(gvbm)).nhom.some((g: any) => g.mo.some((d: any) => d.refId === bpId)), 'theo dõi lại → nhom về');
+  }));
+
+  await checkAsync('TUYEN0-14 · P2-5 em vào Lưu trữ: thẻ Head tự đóng "Đóng — em vào Lưu trữ" · Tình hình "Hệ thống rút (Lưu trữ)" · không bước đang', () => thu(async () => {
+    const { dongViecLuuTru } = await import('../students/dongLuuTru.ts') as any;
+    const sid = moiEm();
+    const vid = viPham(sid);
+    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [vid], note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    att.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(gvcn, nhap.id);
+    const thId = th.guiTinhHinh(tvv, { chieu: 'tvv_gvcn', studentIds: [sid], noiDung: 'Em dạo này học thế nào ạ?' }).ids[0];
+    dongViecLuuTru(null, sid, TODAY, 'luu_tru');
+    conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(TODAY, sid);
+    const a = tuyen(gvcn, 'vi_pham', nhap.id);
+    assert(a.chiXem && a.ketThuc && a.buoc.some((b: any) => b.chiTiet === 'Đóng — em vào Lưu trữ') && !a.buoc.some((b: any) => b.trangThai === 'dang' || b.trangThai === 'cho'), `lần xử lý: ${ten(a)}`);
+    const b = tuyen(tvv, 'tinh_hinh', thId);
+    assert(b.buoc[0].chiTiet === 'Hệ thống rút (Lưu trữ)' && b.ketThuc, `tình hình: ${JSON.stringify(b.buoc[0])}`);
   }));
 }
