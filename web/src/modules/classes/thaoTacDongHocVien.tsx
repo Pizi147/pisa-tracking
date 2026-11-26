@@ -9,6 +9,7 @@ import {
   DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type MucMenuDong, type ViecQuanLy,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { moLuoiDiemLop } from '../cham/moLuoiDiemLop.ts';
 const HocLaiPanel = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.HocLaiPanel));
 const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
@@ -133,9 +134,9 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     /* K2-30: vạch ngăn trước việc hiếm đầu tiên (khi phía trên còn việc hằng ngày). */
     keTruoc: (HIEM.includes(k) && i > 0 && !HIEM.includes(ds[i - 1])) || (i > 0 && LA_TASK.has(ds[i - 1]) && !LA_TASK.has(k)),
     onChon: () => {
-      /* OV-15b: Nhập điểm mở panel lớp tại chỗ (đúng lượt), không chuyển trang. */
+      /* Nhập điểm: ở hồ sơ lớp cuộn tới lưới điểm (đúng lượt); trang khác (Học viên & Lớp) mở panel lớp tại chỗ (OV-15b). */
       if (k === 'ghi-kq-thi') { if (d.ghiKqThi) setMo({ viec: 'ghi-kq-thi', id: d.id, ten: d.ten, lop: d.maLop, cycleId: d.ghiKqThi.cycleId }); }
-      else if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, lop: d.maLop, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
+      else if (k === 'nhap-diem') { if (d.nhapDiem && !moLuoiDiemLop(d.nhapDiem.classId, { luot: d.nhapDiem.luot })) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, lop: d.maLop, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
       else if (k === 'lo-trinh-tiep') navigate(duongLoTrinhLop(classId!, d.id));
       else if (k === 'tinh-hinh') moTinhHinh(d, false);
       else setMo({ viec: k, id: d.id, ten: d.ten });

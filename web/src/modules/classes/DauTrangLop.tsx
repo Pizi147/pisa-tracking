@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NhanGt } from '../../ui/NhanGt.tsx';
-import { lazyHop } from '../../ui/lazyHop.tsx';
+import { moLuoiDiemLop } from '../cham/moLuoiDiemLop.ts';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, ChipBadgeLop, lopSos } from '../../ui/Nhan.tsx';
@@ -26,8 +26,6 @@ import { duongViecLop, useViecLop } from './ThanhViecLop.tsx';
 import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import type { RosterRow } from '../students/ClassRoster.tsx';
-/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
-const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -185,8 +183,6 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   /* Quản trị hoặc Quản lý của lớp gọi được đường này (403 với người khác) — nên chỉ hỏi khi có cờ. `coTheXoa` do máy chủ trả: lớp trống (OV-12a). */
   const hoiXk = !!data.viewer.coTheXoaKetThuc || !!data.viewer.coTheKetThucLop;
   const xk = useApi<TinhTrangXoaKetThuc>(hoiXk ? `/classes/${data.id}/xoa-ket-thuc` : null, [data.id, hoiXk]);
-  /* OV-15b (C16): Nhập điểm mở panel nhập điểm của lớp ngay tại hồ sơ (thay Test › Điểm theo lớp); chọn lượt / môn trong panel. */
-  const [nhapDiem, setNhapDiem] = useState(false);
   /* PR-OV3a (M2 §1): nút cố định Nhập điểm · + Case · ⋯ — không đổi chỗ theo chặng. ⋯ gom Lớp → Lộ trình → Công cụ → (kẻ) kết thúc, cùng thứ tự hai loại lớp. */
   const mucLop = menuHoSoLop({
     thuong, lienTuc: !!data.lienTuc, chuongTrinh: data.programme?.code ?? null, soHocVien: s?.studentCount ?? 0,
@@ -273,8 +269,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
             </span>
           </span>
           <div className="ml-auto flex items-center gap-2 max-sm:order-3 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
-            {data.viewer.canEnterScores && <button type="button" className={NUT_DAU_HO_SO} onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
-            {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
+            {data.viewer.canEnterScores && <button type="button" className={NUT_DAU_HO_SO} onClick={() => moLuoiDiemLop(data.id)}>{t('Nhập điểm')}</button>}
             {/* GD-6 (mockup ② K1, R2.2): "+ Task" (Case · Vi phạm / Nhắc nhở · Tình hình học tập) thay "+ Case" — mục theo quyền, chọn em trong lớp
                 từ `/roster` đã nạp ([XM-7], không request). Lớp đã kết thúc: không nút ([XM-9]). */}
             {loaiTask.length > 0 && data.status !== 'finished' && <>
