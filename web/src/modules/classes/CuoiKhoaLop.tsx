@@ -807,7 +807,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai, panel }: { class
       </>
     )
   ) : laGvcn ? (
-    <><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b> · {t('Head thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test')}</>
+    <><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b></>
   ) : null;
   const chanNut = laQl ? (
     soLoi && ketQua ? (

@@ -37,7 +37,7 @@ export const EN_PHAN_CONG_GV = {
   "Chờ đổi · {lop}": "Pending change · {lop}",
   "Chờ đổi · {tuan}": "Pending change · {tuan}",
   "Cách dùng": "How to use",
-  "Cách dùng: bấm một ô để đổi GV — đổi xong bấm Lưu cuối dòng (sửa nhiều lớp: Lưu cả n lớp ở chân bảng). Bấm tên GV ở bảng tổng hợp để tô các ô của GV đó. Bàn phím: mũi tên đi giữa ô, Enter mở danh sách, Esc đóng.": "How to use: click a slot to change the teacher — then click Save at the end of the row (several classes: Save all n classes at the bottom). Click a teacher in the summary tables to highlight their slots. Keyboard: arrows move between slots, Enter opens the list, Esc closes.",
+  "Bấm một ô để đổi GV, rồi Lưu cuối dòng (nhiều lớp: Lưu cả n lớp ở chân bảng). Bàn phím: mũi tên, Enter mở, Esc đóng.": "Click a cell to change the teacher, then Save at the end of the row (several classes: Save all n classes at the foot of the table). Keyboard: arrows, Enter to open, Esc to close.",
   "GV cũ": "Previous teacher",
   "GV khác · {cn}": "Other teachers · {cn}",
   "GV mới": "New teacher",

@@ -97,7 +97,6 @@ export function HopDotBaoCaoPh({ kieu, lopId, lopMa, chiNhanh, ft, dot, sua, onC
             <Truong nhan={t('Mở từ')} batBuoc><ONgay kieu="ngay" value={moHien} onChange={setMo} ariaLabel={t('Mở từ')} /></Truong>
             <Truong nhan={t('Hạn')} batBuoc loi={lf.loiCua(loi, 'han')}><ONgay kieu="ngay" value={hanHien} onChange={setHan} toiThieu={moHien} ariaLabel={t('Hạn')} id={lf.oId('han')} onBlur={lf.roi('han')} invalid={!!lf.loiCua(loi, 'han')} /></Truong>
           </div>
-          <p className="m-0 text-[13px] text-slate-400">{ft ? t('Điểm tự điền: Mock gần nhất có điểm trước hạn.') : t('Điểm tự điền: Progress / Final gần nhất có điểm trước hạn.')}</p>
         </Khoi>
       )}
       {kieu !== 'sua' && <Khoi tieuDe={t('Áp cho lớp')}>
