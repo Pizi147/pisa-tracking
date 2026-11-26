@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { shortDate, type ChuDaGhi, type TuDien } from '@shared/domain/index.ts';
@@ -21,12 +21,14 @@ export function chuDangGiao(ten: string, han: string | null, homNay: string): st
     : t('Đang giao cho {ten} · còn hạn {ngay} — bạn làm thay.', { ten, ngay: shortDate(han, homNay) }));
 }
 
-export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, onChon, trangThai, phu, nhan, dau }: {
+export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, onChon, trangThai, phu, nhan, dau, nhom }: {
   ds: T[]; chon: number; onChon: (id: number) => void;
   trangThai?: (e: T) => { khoa: 'du' | 'thieu' | 'chua' | 'muted'; nhan: string } | null;
   phu?: (e: T) => ReactNode; nhan: string;
   /** GD-20b (mockup ⑫ B3): nút / dải ngay trên danh sách ("Chèn cho n em", "✓ Đã chèn n em · Hoàn tác"). */
   dau?: ReactNode;
+  /** BAN-GIAO-DOT: chia khối (đợt bàn giao theo tuần chuyển) — dòng đầu khối khi `khoa` đổi; `ds` đã xếp theo khối. */
+  nhom?: { khoa: (e: T) => string; nhan: (khoa: string) => ReactNode };
 }) {
   const ref = useRef<HTMLUListElement>(null);
   const phim = (ev: KeyboardEvent<HTMLUListElement>) => {
@@ -46,10 +48,15 @@ export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, o
       {dau && <div className="mb-2 grid gap-2">{dau}</div>}
       <ul ref={ref} role="listbox" aria-label={nhan} onKeyDown={phim}
         className="m-0 list-none divide-y rounded-lg p-0 surface-2" style={{ borderColor: 'var(--line)' }}>
-        {ds.map((e) => {
+        {ds.map((e, i) => {
           const tt = trangThai?.(e) ?? null;
+          const k = nhom?.khoa(e);
           return (
-            <li key={e.id} role="option" aria-selected={e.id === chon} tabIndex={e.id === chon ? 0 : -1}
+            <Fragment key={e.id}>
+            {nhom && k !== undefined && (i === 0 || nhom.khoa(ds[i - 1]) !== k) && (
+              <li role="presentation" className="px-3 pb-1 pt-2.5 text-[12px] font-semibold tabular-nums text-slate-400">{nhom.nhan(k)}</li>
+            )}
+            <li role="option" aria-selected={e.id === chon} tabIndex={e.id === chon ? 0 : -1}
               onClick={() => onChon(e.id)} onFocus={() => onChon(e.id)}
               className={`cursor-pointer px-3 py-2 outline-none ${e.id === chon ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'bam'}`}>
               <div className="flex items-center justify-between gap-2">
@@ -58,6 +65,7 @@ export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, o
               </div>
               {phu && <div className="flex items-center justify-between gap-2 text-xs text-slate-500">{phu(e)}</div>}
             </li>
+            </Fragment>
           );
         })}
       </ul>
