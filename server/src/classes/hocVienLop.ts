@@ -12,7 +12,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, laHeadHoacQt, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, laHeadHoacQt, lopXemTam, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { lichMtCua, missingForStudent } from './schedule.ts';
@@ -317,6 +317,8 @@ export function danhSachHocVienLop(
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
   const daThi = new Map(loTrinhChoKetQuaThi(today).map((x) => [x.c.student_id as number, x.c]));
   const hang = hangHvFt(hvKhop.filter((h) => laFt.get(h.class_id)), standing, allCases, vl);
+  /* RA-2711: `coTheNhapThiThat` hỏi chi nhánh của từng em chờ KQ — nạp một câu cho cả lô (trước 2 câu mỗi em). */
+  napTruocPhamVi(hvKhop.filter((h) => daThi.has(h.id)).map((h) => h.id as number));
   const hocVien: TrangHocVienLop['hocVien'] = hvKhop.map((h) => {
     const loc: LocHocVien[] = ['tat-ca'];
     const ft = !!laFt.get(h.class_id);

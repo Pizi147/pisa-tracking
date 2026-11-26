@@ -59,11 +59,10 @@ export function chuTuDo(v: unknown, ten: string, toiDa: number, cu?: string | nu
 /** Ngày nghiệp vụ theo Asia/Ho_Chi_Minh, lưu dạng YYYY-MM-DD. */
 export const BUSINESS_TZ = 'Asia/Ho_Chi_Minh';
 
+/* RA-2711: dựng Intl.DateTimeFormat tốn ~0,1 ms — trước dựng lại mỗi lần gọi (mỗi lần kiểm quyền gọi `demoToday`): GĐCN /my-work ~400 ms CPU chỉ ở đây. */
+const NGAY_VN = new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
 export function todayInBusinessTz(luc: Date = new Date()): string {
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-  });
-  return fmt.format(luc);
+  return NGAY_VN.format(luc);
 }
 
 export function isIsoDate(v: unknown): v is string {
