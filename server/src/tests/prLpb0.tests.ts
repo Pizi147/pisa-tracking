@@ -456,4 +456,34 @@ export async function runPrLpb0Tests(t: any) {
     console.log(`    (đo Đang theo dõi tuyến — người theo dõi cả Chuyển lớp + Đổi GV: ${n} câu)`);
     assert(n <= TRAN_TUYEN.theoDoi.cau, `${n} > ${TRAN_TUYEN.theoDoi.cau}`);
   }));
+
+  /* ---------------------------------------------------------------- LOI-2 (RA-2711, PTA rà #2290) */
+  check('L2-9 · việc Nhận thông tin lớp MB: giao cho BPXL chi nhánh khác (CP) được — N77 BPXL mọi chi nhánh (trước 400); GV chi nhánh khác vẫn 400', () => thu(() => {
+    const { nguon, dich } = dung();
+    ra(nguon, dich, [em(nguon)]);
+    const nt = ntCua(dich)[0];
+    const bpCp = accounts.createAccount(P.admin, { email: `lpb0.l29${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử L2-9 BPXL CP', roles: [{ role: 'scheduler', branches: ['CP'] }] }).userId;
+    xoaNho();
+    const k = gv.xemGiaoViec(P.mbManager, 'nhan_tin', nt.id);
+    const doi = gv.doiPhuTrach(P.mbManager, 'nhan_tin', nt.id, { userId: bpCp, phuTrachCu: k.duocGiao ? k.phuTrach[0]?.id ?? null : null });
+    assert(doi.phuTrach[0]?.id === bpCp, `giao BPXL CP: ${JSON.stringify(doi.phuTrach)}`);
+    const gvCp = get(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = (SELECT id FROM branches WHERE code = 'CP')
+        AND ur.user_id NOT IN (SELECT user_id FROM user_roles x WHERE x.status = 'active' AND (x.branch_id IS NULL OR x.branch_id = ?)) LIMIT 1`, MB).u;
+    let ma = 0; try { gv.themTheoDoi(P.mbManager, 'nhan_tin', nt.id, { userIds: [gvCp] }); } catch (e: any) { ma = e.status; }
+    assert(ma === 400, `GV CP theo dõi việc MB: ${ma}`);
+  }));
+
+  check('L2-10 · Nhận thông tin "n em" ở Công việc bỏ em Lưu trữ — một nguồn với panel (trước: dòng đếm cả em Lưu trữ)', () => thu(() => {
+    const { nguon, dich } = dung();
+    const a = em(nguon), b = em(nguon);
+    ra(nguon, dich, [a, b]);
+    const nt = ntCua(dich)[0];
+    conn.prepare(`UPDATE students SET archived_at = ? WHERE id = ?`).run(new Date().toISOString(), b);
+    xoaNho();
+    const giu = nt.phu_trach_id ?? nt.nguoi_luat;
+    const it = ((myWork(loadPrincipal(giu), {}) as any).items as any[]).find((i) => i.key === `nhan_tin:${nt.id}`);
+    const panel = lpb.xemNhanTin(P.mbManager, nt.id).em.length;
+    assert(it && it.count === panel && panel === 1, `dòng ${it?.count} · panel ${panel}`);
+  }));
 }
+

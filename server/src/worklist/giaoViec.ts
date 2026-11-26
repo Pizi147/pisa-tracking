@@ -723,8 +723,15 @@ export function sauDoiChiNhanhEm(studentIds: readonly number[], boi: number | nu
  * chi nhánh em / Head toàn hệ thống là người theo luật nên không thêm — kể cả khi người đó kiêm CX (rà PTA (2)). Bí danh: `ur` `r` `u` (vai · người —
  * `NGUOI_VAI`), `v` `s` (việc · em) truyền vào.
  */
-let daCoCotNguoiLuat = false;   // chỉ nhớ khi CÓ (cột không mất đi) — DB cũ đang migrate hỏi lại tới khi bước VAI-0 thêm cột
-const coCotNguoiLuat = (): boolean => (daCoCotNguoiLuat ||= !!db().prepare(`SELECT 1 FROM pragma_table_info('viec_bao_ph') WHERE name = 'nguoi_luat'`).get());
+/* Nhớ theo KẾT NỐI, chỉ khi CÓ (cột không mất đi) — DB cũ đang migrate hỏi lại tới khi bước VAI-0 thêm cột; phép kiểm mở nhiều DB không lẫn nhau. */
+const coCotNguoiLuatCua = new WeakSet<object>();
+const coCotNguoiLuat = (): boolean => {
+  const c = db() as unknown as object;
+  if (coCotNguoiLuatCua.has(c)) return true;
+  const co = !!db().prepare(`SELECT 1 FROM pragma_table_info('viec_bao_ph') WHERE name = 'nguoi_luat'`).get();
+  if (co) coCotNguoiLuatCua.add(c);
+  return co;
+};
 export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => {
   const cn = CN_EM(`${v}.student_id`);
   /* RA-2711 (N72 ⑤ / N76): người giữ theo luật như `nguoiGiuBaoPh` — TVV CÒN vai → Lead TVV đã chốt (còn vai ở CN em) → Head. Head theo dõi khi người giữ không
@@ -733,11 +740,12 @@ export const VAI_THEO_DOI_BAO_PH = (v: string, s: string) => {
   /* Migrate DB cũ: `theoDoiVaiBaoPh` (prGiaoViec) chạy TRƯỚC bước VAI-0 thêm cột `nguoi_luat` → chưa có cột thì chưa có Lead TVV giữ việc. */
   const leadGiu = !coCotNguoiLuat() ? '0' : `(${v}.nguoi_luat IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles l_ JOIN roles lr_ ON lr_.id = l_.role_id JOIN users lu_ ON lu_.id = l_.user_id
     WHERE l_.user_id = ${v}.nguoi_luat AND lr_.key = 'lead_consultant' AND l_.status = 'active' AND lu_.status = 'active' AND lu_.deleted_at IS NULL AND l_.branch_id = ${cn}))`;
-  return `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id
-  AND ((r.key = 'manager' AND (${tvvCon} OR ${leadGiu}) AND ur.branch_id = ${cn})
+  /* PTA rà #2290 (7): việc đã GIAO cho người khác (`phu_trach_id`) → người giữ là người đó: Head theo dõi (trừ khi chính Head được giao). */
+  return `ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND ur.user_id IS NOT ${s}.consultant_user_id AND ur.user_id IS NOT ${v}.phu_trach_id
+  AND ((r.key = 'manager' AND (${v}.phu_trach_id IS NOT NULL OR ${tvvCon} OR ${leadGiu}) AND ur.branch_id = ${cn})
     OR (r.key = 'lead_consultant' AND ur.branch_id = ${cn} AND ${tvvCon})   -- VAI-0 (N76): Lead TVV chi nhánh em theo dõi (nguồn 'cx')
     OR (r.key = 'cx' AND (ur.branch_id IS NULL OR ur.branch_id = ${cn})
-      AND NOT (NOT ${tvvCon} AND NOT ${leadGiu} AND EXISTS (SELECT 1 FROM user_roles m_ JOIN roles mr_ ON mr_.id = m_.role_id WHERE m_.user_id = ur.user_id
+      AND NOT (${v}.phu_trach_id IS NULL AND NOT ${tvvCon} AND NOT ${leadGiu} AND EXISTS (SELECT 1 FROM user_roles m_ JOIN roles mr_ ON mr_.id = m_.role_id WHERE m_.user_id = ur.user_id
         AND mr_.key = 'manager' AND m_.status = 'active' AND (m_.branch_id IS NULL OR m_.branch_id = ${cn})))))`;
 };
 export const NGUOI_VAI = 'user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id';
@@ -1214,11 +1222,15 @@ export function luatMeeting(phan: string, cn: number | null, nguoiLuat: number |
   for (const k of vai) { const x = (m.get(k) ?? []).find((y) => y.b !== null && y.b === cn); if (x) return { u: x.u, ten: x.ten, vai: k }; }
   return null;
 }
-/** RA-2711: người giữ phần Meeting CHƯA SINH (bước ○ của Tuyến) — người gán đúng chi nhánh sớm nhất theo thứ tự vai của phần (ổn định, không đếm việc mở). */
-export function luatMeetingXemTruoc(phan: string, cn: number | null): LuatMeeting | null {
+/**
+ * RA-2711 (rà #2290): phần Meeting CHƯA SINH (bước ○ của Tuyến) — VAI giữ phần ở chi nhánh em theo thứ tự vai của phần (Xếp lịch: BPXL · Kết quả: GĐCN → CX) + mọi
+ * người giữ vai đó (gán đúng chi nhánh). Không đoán tên: người cụ thể chọn lúc sinh theo ít việc (`chonNguoiLuat`). Không ai → null (nơi gọi lùi như cũ).
+ */
+const TEN_VAI_PHAN: Record<string, string> = { [VAI_BPXL]: 'BPXL', [VAI_GDCN]: 'GĐCN', cx: 'CX' };
+export function vaiMeetingXemTruoc(phan: string, cn: number | null): { ids: number[]; ten: string } | null {
   if (cn == null) return null;
   const m = nguoiGiuVai();
-  for (const k of VAI_PHAN(phan)) { const x = (m.get(k) ?? []).find((y) => y.b === cn); if (x) return { u: x.u, ten: x.ten, vai: k }; }
+  for (const k of VAI_PHAN(phan)) { const ds = (m.get(k) ?? []).filter((y) => y.b === cn); if (ds.length) return { ids: [...new Set(ds.map((y) => y.u))], ten: TEN_VAI_PHAN[k] ?? k }; }
   return null;
 }
 /** Lớp đang học của em (việc BPXL theo lớp — N77). */

@@ -323,4 +323,76 @@ export async function runPrVaiMoiTests(t: any) {
     const tvvCon = one(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.branch_id = ? AND ur.status = 'active' LIMIT 1`, MB).u;
     assert(thu1(tvvCon) == null, 'em có TVV → không chốt');
   }));
+
+  /* ---------------------------------------------------------------- LOI-2 (RA-2711, PTA rà #2290) */
+  const tu: any = await import('../yThuc/tuyen.ts');
+  check('L2-8 · lamTruocKetThuc: cùng ngày so GIỜ thật (duyệt sáng < xác nhận chiều); bước kết thúc không tính; không giờ → thứ tự bước; ngày trước luôn tính', () => {
+    const a = { ngay: '2026-11-20', luc: null }, s = { ngay: '2026-11-27', luc: '2026-11-27T02:00:00.000Z' }, c = { ngay: '2026-11-27', luc: '2026-11-27T09:00:00.000Z' };
+    const ds = [a, c, s];   // bước kết thúc (c) đứng trước s trong mảng — vẫn so theo giờ
+    assert(tu.lamTruocKetThuc(ds, '2026-11-27', s), 'duyệt sáng phải là "trước kết thúc"');
+    assert(!tu.lamTruocKetThuc(ds, '2026-11-27', c), 'bước kết thúc không tính');
+    assert(tu.lamTruocKetThuc(ds, '2026-11-27', a), 'ngày trước');
+    const x = { ngay: '2026-11-27', luc: null }, y = { ngay: '2026-11-27', luc: null };
+    assert(tu.lamTruocKetThuc([x, y], '2026-11-27', x) && !tu.lamTruocKetThuc([x, y], '2026-11-27', y), 'không giờ → thứ tự bước');
+  });
+
+  check('L2-6 · bước ○ Meeting ghi VAI ở chi nhánh em: Kết quả = GĐCN (mọi GĐCN gán CN) · Xếp lịch = BPXL gán CN (không BPXL toàn hệ thống); chưa ai → null', () => {
+    xoaNho();
+    const kq = gv.vaiMeetingXemTruoc('ket_qua', MB);
+    assert(kq?.ten === 'GĐCN' && kq.ids.includes(gdcnMb), JSON.stringify(kq));
+    const xl0 = gv.vaiMeetingXemTruoc('xep_lich', X.id);
+    assert(xl0?.ten === 'BPXL' && xl0.ids.includes(bpA) && xl0.ids.includes(bpB) && !xl0.ids.includes(bpLead), JSON.stringify(xl0));
+    assert(gv.vaiMeetingXemTruoc('ket_qua', null) === null, 'không chi nhánh');
+  });
+
+  check('L2-7 · Head theo dõi Báo PH theo NGƯỜI GIỮ: Lead TVV đã chốt → Head theo dõi · không TVV / Lead (Head giữ) → không · đã giao người khác → theo dõi', () => thu(() => {
+    const v = one(`SELECT v.id, v.student_id FROM viec_bao_ph v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+        WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND c.branch_id = ? ORDER BY v.id LIMIT 1`, MB);
+    assert(v, 'seed cần việc Báo PH mở ở MB');
+    const head = P.mbManager.userId;
+    const coHead = () => { gv.theoDoiVaiBaoPh({ studentIds: [v.student_id] }); return !!one(`SELECT 1 c FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ? AND them_boi IS NULL`, v.id, head); };
+    conn.prepare(`UPDATE students SET consultant_user_id = NULL WHERE id = ?`).run(v.student_id);
+    conn.prepare(`UPDATE viec_bao_ph SET nguoi_luat = ? WHERE id = ?`).run(leadMb, v.id);
+    xoaNho();
+    assert(coHead(), 'Lead TVV giữ mà Head không theo dõi');
+    conn.prepare(`UPDATE viec_bao_ph SET nguoi_luat = NULL WHERE id = ?`).run(v.id);
+    xoaNho();
+    assert(!coHead(), 'Head đang giữ việc mà vẫn ở người theo dõi');
+    const gvKhac = one(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ? AND ur.user_id != ? LIMIT 1`, MB, head).u;
+    conn.prepare(`UPDATE viec_bao_ph SET phu_trach_id = ? WHERE id = ?`).run(gvKhac, v.id);
+    xoaNho();
+    assert(coHead(), 'việc đã giao người khác mà Head không theo dõi');
+  }));
+
+  check('L2-5 · TVV hết vai ở chi nhánh em → bước Báo PH của Tuyến không còn ghi TVV cũ (cùng luật Công việc)', () => thu(() => {
+    const v = one(`SELECT v.id, v.measure_id mid, s.consultant_user_id tvv, u.full_name ten FROM viec_bao_ph v JOIN students s ON s.id = v.student_id JOIN users u ON u.id = s.consultant_user_id
+        JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+        WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND v.measure_id IS NOT NULL AND c.branch_id = ? ORDER BY v.id LIMIT 1`, MB);
+    assert(v, 'seed cần Báo PH vi phạm mở ở MB, em có TVV');
+    const nguoiBp = () => { xoaNho(); return (tu.dungTuyen(P.mbManager, { loai: 'vi_pham', khoa: String(v.mid) }).buoc as any[]).find((b) => b.khoa === 'bao_ph' && b.trangThai === 'dang')?.nguoi; };
+    assert(nguoiBp() === v.ten, `trước: ${nguoiBp()}`);
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ? AND role_id = (SELECT id FROM roles WHERE key = 'consultant')`).run(v.tvv);
+    assert(nguoiBp() !== v.ten, 'TVV hết vai vẫn đứng tên bước Báo PH');
+  }));
+
+  await t.checkAsync('L2-1 · HTTP /y-thuc/bao-ph-lo: CX (toàn hệ thống) · Lead TVV MB nhận nội dung việc Báo PH của "Tất cả" (trước {}) · Lead TVV CP không (đúng phạm vi)', async () => {
+    const vMb = one(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+        WHERE v.trang_thai = 'mo' AND v.phoi_hop_id IS NOT NULL AND c.branch_id = ? ORDER BY v.id LIMIT 1`, MB);
+    assert(vMb, 'seed cần Báo PH từ Phối hợp mở ở MB');
+    const leadCp = tao('lead_consultant', ['CP']);
+    const cx = tao('cx', []);
+    const { createApp } = await import('../app.ts');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    try {
+      const vao = async (userId: number) => (await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) }))
+        .headers.get('set-cookie')?.split(';')[0] ?? '';
+      const lo = async (userId: number) => (await (await fetch(`http://127.0.0.1:${cong}/api/y-thuc/bao-ph-lo?ids=${vMb.id}`, { headers: { cookie: await vao(userId) } })).json()) as Record<string, unknown>;
+      const co = async (u: number) => Object.keys(await lo(u)).map(Number).includes(vMb.id);
+      assert(await co(cx), 'CX: panel nhiều em rỗng');
+      assert(await co(leadMb), 'Lead TVV MB: panel nhiều em rỗng');
+      assert(!(await co(leadCp)), 'Lead TVV CP đọc được việc MB');
+    } finally { may.close(); }
+  });
 }
+
