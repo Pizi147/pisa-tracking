@@ -15,11 +15,15 @@ import { t } from '@shared/i18n/index.ts';
 import { DongTheoDoi, KhoiGiaoViec, dongLichSuGiao, duongGiaoViec, lamMoiGiaoViec, useGiaoViec, useHn, type KhoiGv } from './KhoiGiaoViec.tsx';
 import { lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { KhoiTuyen } from '../yThuc/KhoiTuyen.tsx';
+import type { Tuyen } from '../yThuc/kieu.ts';
+import { MucViecCon } from './MucViecCon.tsx';
 
 /** `GET /phoi-hop-sos/:id/meeting` — hai phần (Xếp lịch họp · Kết quả meeting) + id việc Báo PH Meeting của TVV. */
 export type MeetingBaPhan = { phoiHopId: number; phan: KhoiGv[]; baoPhId: number | null;
   /** Bối cảnh đầu panel (G8a): SOS của lượt · ngày + GVCN xác nhận · ghi chú GVCN · PH (null = người xem không được thấy liên hệ). */
-  boiCanh: { sos: number | null; ngay: string | null; gvcn: string | null; ghiChu: string | null; phuHuynh: { ten: string | null; quanHe: string | null; sdt: string | null } | null } };
+  boiCanh: { sos: number | null; ngay: string | null; gvcn: string | null; ghiChu: string | null; phuHuynh: { ten: string | null; quanHe: string | null; sdt: string | null } | null };
+  /** TUYEN-0: tuyến Phối hợp SOS của em × lượt (Meeting: GVCN xác nhận → Xếp lịch họp → Kết quả meeting cuối). */ tuyen?: Tuyen | null };
 /** "0903 118 260" — chỉ để đọc; `tel:` giữ số gốc. */
 const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
 export const duongMeeting = (phoiHopId: number) => `/phoi-hop-sos/${phoiHopId}/meeting`;
@@ -42,13 +46,37 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const bc = data?.boiCanh;
   /* Mockup G8a: em · lớp · chip SOS của lượt (đầu panel). */
   const dau = dauTuViec(it, bc?.sos ? <ChipSos muc={bc.sos} tinh /> : null);   // R4 P4: + hạn / "quá hạn n ngày"
-  const tieuDe = t('Meeting CX/GĐCN');
+  /* TUYEN-2 (mockup v27 T6a / T6b): panel là PHẦN CỦA NGƯỜI MỞ (dòng Xếp lịch họp → phần Xếp lịch; Kết quả meeting → phần Kết quả) — phần kia, GVCN xác nhận,
+     Báo PH nằm trong khối Tuyến (một khối thay ba khối riêng). */
+  const cuaToi = it.group === 'meeting_ket_qua' ? 'ket_qua' : 'xep_lich';
+  const toiPhan = data?.phan.find((g) => g.meeting?.phan === cuaToi) ?? null;
+  const tieuDe = toiPhan?.meeting?.ten ?? t('Meeting CX/GĐCN');
   /* A3-08 (AUDIT-2111): chân như mọi panel — Đóng trước, "Việc tiếp ›" sau. */
   const chan = { huy: { nhan: t('Đóng'), onClick: onDong }, chinh: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined };
   if (error) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!phan) return <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
   const datPhan = (g: KhoiGv) => { setBan(phan.map((x) => (x.id === g.id ? g : x))); onDaLam(); };
   const lichSu = [...phan.flatMap((g) => dongLichSuGiao(g, hn, g.meeting?.ten)), ...dongLichSuGiao(bp.g, hn, t('Báo PH'))].sort((a, b) => b.luc.localeCompare(a.luc));
+  const tuyen = data?.tuyen ?? null;
+  const minh = toiPhan ? phan.find((g) => g.id === toiPhan.id) ?? toiPhan : null;
+  if (tuyen && minh) return (
+    <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+      <div className="flex flex-col gap-4 pt-4">
+        <KhoiGiaoViec g={minh} dat={datPhan} reload={reload} onDaDoi={onDaLam} />
+        {/* Bước GVCN xác nhận (cha của hai phần) mở sẵn: nội dung gửi — họp vì sao. */}
+        <KhoiTuyen tuyen={tuyen} moSan={(b) => b.coNoiDung && tuyen.buoc.some((c) => c.cha === b.khoa && c.ten !== 'Báo PH')} />
+        {bc?.phuHuynh && (bc.phuHuynh.ten || bc.phuHuynh.sdt) && <BoiCanh dong={[
+          [t('Phụ huynh'), <span className="flex flex-wrap items-center gap-x-1.5">{bc.phuHuynh.ten}{bc.phuHuynh.ten && bc.phuHuynh.quanHe ? ` (${bc.phuHuynh.quanHe})` : ''}
+            {bc.phuHuynh.sdt && <>{bc.phuHuynh.ten ? ' · ' : ''}<a className="link tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" href={`tel:${bc.phuHuynh.sdt.replace(/\D/g, '')}`}>{sdtDoc(bc.phuHuynh.sdt)}</a></>}</span>],
+        ]} />}
+        <PhanMeeting g={minh} dat={datPhan} reload={reload} trongPanel />
+        <MucViecCon g={minh} onDoi={reload} />
+        <LichSuGap so={lichSu.length}>
+          <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
+        </LichSuGap>
+      </div>
+    </KhungPanel>
+  );
   return (
     <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-3 pt-4">
@@ -94,7 +122,8 @@ const TheTrangThai = ({ xong, chu }: { xong: boolean; chu: string }) => (
  * tuỳ chọn = ô ngày gõ được + lịch + ô giờ, Kết quả tuỳ chọn; Kết quả meeting: Kết quả tuỳ chọn) + Hoàn thành. Người bấm không phải người phụ trách (TVV nhập hộ
  * CX) → dải "Bạn nhập hộ CX {tên}". Xong → dải "✓ {phần} · Xong · Hoàn tác" 10 giây; "Sửa" mở lại ô (lưu = sửa, có lịch sử). Phần đã bỏ (Meeting đưa về Cần xử lý) chỉ đọc.
  */
-export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void }) {
+export function PhanMeeting({ g, dat, reload, trongPanel }: { g: KhoiGv; dat: (g: KhoiGv) => void; reload: () => void;
+  /** TUYEN-2 (T6a): panel một phần — khối Phụ trách · Hạn đã ở đầu panel; đầu khối "{phần} · phần của bạn", không khung viền. */ trongPanel?: boolean }) {
   const hn = useHn();
   const { session } = useSession();
   const toast = useToast();
@@ -135,8 +164,8 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
   const ai = xong ? [m.nhapHoBoi ? t('{ten} nhập hộ CX', { ten: m.nhapHoBoi }) : m.xongBoi ?? (xep ? t('Tự xong theo Kết quả') : null), m.xongLuc ? lucVn(m.xongLuc) : null].filter(Boolean).join(' · ')
     : m.trangThai === 'bo' ? t('Meeting đã đưa về Cần xử lý') : [tenPt, g.han ? t('hạn {ngay}', { ngay: shortDate(g.han, hn) }) : null].filter(Boolean).join(' · ');
   return (
-    <section className={`grid gap-3 rounded-[10px] border ${mo ? 'p-3' : 'px-3 py-2'}`} aria-label={m.ten}
-      style={{ borderColor: mo ? 'var(--line-strong)' : 'var(--line)', background: xong && !mo ? 'var(--surface-2)' : 'var(--surface)' }}>
+    <section className={trongPanel ? 'grid gap-3' : `grid gap-3 rounded-[10px] border ${mo ? 'p-3' : 'px-3 py-2'}`} aria-label={m.ten}
+      style={trongPanel ? undefined : { borderColor: mo ? 'var(--line-strong)' : 'var(--line)', background: xong && !mo ? 'var(--surface-2)' : 'var(--surface)' }}>
       {vuaXong && (
         <div role="status" className="flex min-h-[40px] items-center gap-2.5 rounded-lg border border-ok-line bg-ok-bg py-1.5 pl-3 pr-2 text-sm">
           <b className="font-bold text-ok" aria-hidden>✓</b><span className="min-w-0 flex-1">{t('{phan} · Xong', { phan: m.ten })}</span>
@@ -144,15 +173,15 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
         </div>
       )}
       <div className="flex min-h-[28px] flex-wrap items-center gap-x-2.5 gap-y-1">
-        <h3 className="m-0 text-[14px] font-bold">{m.ten}</h3>
-        <TheTrangThai xong={xong} chu={xong ? t('Hoàn thành') : m.trangThai === 'bo' ? t('Đã bỏ') : t('Chưa xong')} />
+        <h3 className="m-0 text-[14px] font-bold">{trongPanel && mo ? t('{phan} · phần của bạn', { phan: m.ten }) : m.ten}</h3>
+        {!(trongPanel && mo) && <TheTrangThai xong={xong} chu={xong ? t('Hoàn thành') : m.trangThai === 'bo' ? t('Đã bỏ') : t('Chưa xong')} />}
         {!mo && ai && <span className="min-w-0 text-[13px] text-dim">{ai}{xong && xep && m.ngayGio ? <> · {t('họp')} <b className="font-semibold text-[color:var(--text)]">{ngayGioDoc(m.ngayGio, hn)}</b></> : null}</span>}
         {xong && !mo && m.coTheLam && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-[30px]" onClick={() => { setNgay(m.ngayGio?.slice(0, 10) ?? ''); setGio(m.ngayGio?.slice(11, 16) ?? ''); setKq(m.ketQua ?? ''); setSua(true); }}>{t('Sửa')}</button>}
       </div>
       {xong && !mo && m.ketQua && <p className="m-0 whitespace-pre-line break-words text-sm">{m.ketQua}</p>}
       {mo && <>
         {/* Người phụ trách / Head · QT · CX: khối Phụ trách · Hạn. TVV nhập hộ Kết quả meeting: dải "Bạn nhập hộ CX {tên}" (G8b). */}
-        {laPt || g.coTheDoiNguoi ? <KhoiGiaoViec g={g} dat={dat} reload={reload} gon anTheoDoi /> : (
+        {trongPanel && (laPt || g.coTheDoiNguoi) ? null : laPt || g.coTheDoiNguoi ? <KhoiGiaoViec g={g} dat={dat} reload={reload} gon anTheoDoi /> : (
           <div className="flex min-h-[40px] flex-wrap items-center gap-x-1.5 rounded-lg px-3 py-1.5 text-sm text-dim" style={{ background: 'var(--surface-2)' }}>
             {t('Bạn nhập hộ CX')} <b className="font-semibold text-[color:var(--text)]">{tenPt}</b>
           </div>

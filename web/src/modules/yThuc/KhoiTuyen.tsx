@@ -10,6 +10,16 @@ export type { Tuyen } from './kieu.ts';
 /** Tên đọc màn của trạng thái — đọc TRƯỚC tên bước (dấu khác hình, không chỉ màu). */
 const DOC: Record<TrangThaiBuoc, string> = { xong: t('Xong'), dang: t('Đang ở bước này'), cho: t('Chưa tới lượt'), bo: t('Đã bỏ'), tam_dung: t('Tạm dừng') };
 const LOP: Record<TrangThaiBuoc, string> = { xong: 'xong', dang: 'dang', cho: 'cho', bo: 'bo', tam_dung: 'tam' };
+/**
+ * CHUỖI CHẤM (TUYEN-2, mockup v27 `.cc`): một chấm một bước, cùng hình / màu với dấu của khối Tuyến (xong · đang · chưa tới lượt · bỏ · tạm dừng) — bảng nhiều em.
+ * `role="img"` + nhãn "2 xong, 1 đang ở, 3 chưa tới lượt" (không chỉ màu).
+ */
+export function ChuoiCham({ chuoi }: { chuoi: readonly TrangThaiBuoc[] }) {
+  const dem = (k: TrangThaiBuoc) => chuoi.filter((x) => x === k).length;
+  const nhan = [[dem('xong'), t('xong')], [dem('dang'), t('đang ở')], [dem('tam_dung'), t('tạm dừng')], [dem('cho'), t('chưa tới lượt')], [dem('bo'), t('đã bỏ')]]
+    .filter(([n]) => n).map(([n, c]) => `${n} ${c}`).join(', ');
+  return <span className="cc" role="img" aria-label={nhan}>{chuoi.map((x, i) => <i key={i} className={{ xong: 'x', dang: 'd', cho: 'c', tam_dung: 't', bo: 'b' }[x]} />)}</span>;
+}
 /** Bước đang ở có nội dung (lời trả lại…) — panel bỏ hộp riêng khi Tuyến đã mở sẵn phần này. */
 export const dangCoNoiDung = (b: BuocTuyen) => b.trangThai === 'dang' && b.coNoiDung;
 /** Bước "GV gửi / TVV hỏi tình hình" (khoá máy chủ `gui`) có nội dung. */

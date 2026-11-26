@@ -23,6 +23,10 @@ import {
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn, PhanMeetingTom } from './PhoiHopSosSection.tsx';
 import { ThanhBuoc, type ONut } from './ThangYThuc.tsx';
+import { ChuoiCham, KhoiTuyen } from './KhoiTuyen.tsx';
+import type { TomTuyen, Tuyen } from './kieu.ts';
+import { KhoiGiaoViec, useGiaoViec } from '../congViec/KhoiGiaoViec.tsx';
+import { MucViecCon } from '../congViec/MucViecCon.tsx';
 
 /**
  * PHOI-HOP-V2 (chủ SP 11/11, mockup `thiet-ke/2026-11-11-phoi-hop-sos-v2` K1–K3): BẢNG ① Học viên → ② Đã làm → ③ Kết quả, mỗi em một dòng.
@@ -65,7 +69,11 @@ export function DiemMotDong({ th, anLuot = false }: { th: CoordTurn['the']; anLu
 
 /** GV-2: panel một việc có khối Phụ trách · Hạn · Theo dõi — "Sửa hạn" ở ⋯ của dòng ẩn (một chỗ sửa hạn). */
 const AnHan = createContext(false);
-export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false }: {
+/** TUYEN-2: chuỗi chấm từng lượt (attemptId → tóm tuyến) — panel Công việc GVCN. */
+const ChuoiCuaLuot = createContext<Record<number, TomTuyen> | null>(null);
+export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false, chuoi }: {
+  /** TUYEN-2 (mockup v27 T5): `chuoiTuyen` của GET Phối hợp lớp — cột Tuyến (chuỗi chấm + Đang ở) + khay mở Tuyến · khối việc · Việc con dưới em. */
+  chuoi?: Record<number, TomTuyen> | null;
   /** GV-2: hạn sửa ở khối giao việc đầu panel — bỏ "Sửa hạn" của dòng. */
   anHan?: boolean;
   turns: CoordTurn[]; che: { loai: 'gvcn'; khoa: string } | { loai: 'tvv' };
@@ -102,11 +110,12 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false }
   const daLuuLo = (ids: number[]) => setVuaLuu((x) => new Set([...x, ...ids]));
   /* GVCN: hai cột Học viên · Cần làm (Nội dung ghi ngay trong form Xác nhận — mockup B1). TVV: Học viên · GVCN gửi · Báo PH (B2). */
   return (
-    <AnHan.Provider value={anHan}>
+    <AnHan.Provider value={anHan}><ChuoiCuaLuot.Provider value={tvv ? null : chuoi ?? null}>
     {choLo.length >= 2 && <LoXacNhan ds={choLo} onXong={(ids) => { daLuuLo(ids); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged(); }} />}
     <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Cần làm')}>
-      <div role="row" className={`${tvv ? HANG : HANG_GOP} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
+      <div role="row" className={`${tvv ? HANG : !tvv && chuoi ? HANG_TUYEN : HANG_GOP} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
         <span role="columnheader" className="pr-2.5">{t('Học viên')}</span>
+        {!tvv && chuoi && <span role="columnheader" className="px-2.5">{t('Tuyến')}</span>}
         <span role="columnheader" className="px-2.5">{tvv ? t('GVCN gửi') : t('Cần làm')}</span>
         {tvv && <span role="columnheader" className="px-2.5">{t('Báo PH')}</span>}
         <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>
@@ -114,7 +123,7 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop, anHan = false }
       {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} gop={!tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
         onVua={(co) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(d.a.id); else n.delete(d.a.id); return n; })} />)}
     </div>
-    </AnHan.Provider>
+    </ChuoiCuaLuot.Provider></AnHan.Provider>
   );
 }
 
@@ -185,6 +194,8 @@ const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_92px] max-sm:grid-cols-[minm
 /** YT-b: panel Công việc vai GVCN — Học viên · Cần làm (Kết quả gộp vào ô Cần làm) · ⋯. */
 const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_92px] max-sm:grid-cols-[minmax(0,1fr)_auto]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
+/** TUYEN-2 (mockup v27 T5): Học viên · Tuyến (chuỗi chấm + Đang ở) · Cần làm · ⋯. */
+const HANG_TUYEN = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_200px_60px] max-sm:grid-cols-[minmax(0,1fr)_auto]';
 
 /**
  * Hạn — luật hạn NHẸ HƠN (chủ SP 22/11): dd/mm/yyyy tô theo `mucHan` (chữ phụ · vàng còn ≤ 2 ngày · đỏ + nền đỏ nhạt quá hạn, không ⚠).
@@ -235,16 +246,23 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
   const han = tvv ? (cho ? a.tvv!.han : null) : cho ? a.han : null;
   const nen = vua ? 'bg-[rgb(var(--ok-bg-rgb)/0.7)]' : mo === 'xac-nhan' || mo === 'ghi' ? 'bg-[color:var(--accent-soft)]' : noi ? 'shadow-[inset_3px_0_0_var(--accent)]' : '';
   const ngoiLam = a.performerName ?? null;
+  const tom = useContext(ChuoiCuaLuot)?.[luot.attemptId] ?? null;
+  const [khay, setKhay] = useState(false);
   return (
-    <div role="row" className={`${gop ? HANG_GOP : HANG} border-b ${nen}`} style={{ borderColor: 'var(--line)' }}>
+    <div role="row" className={`${gop ? tom ? HANG_TUYEN : HANG_GOP : HANG} border-b ${nen}`} style={{ borderColor: 'var(--line)' }}>
       <span role="cell" className="min-w-0 py-2.5 pr-2.5 max-sm:pb-1">
         <span className="flex flex-wrap items-center gap-2">
           <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[14px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+          {tom && <button type="button" className="inline-grid h-6 w-6 place-items-center rounded-md text-dim hover:bg-[color:var(--accent-soft)] max-sm:h-11 max-sm:w-11" aria-expanded={khay}
+            aria-label={khay ? t('Thu gọn tuyến {ten}', { ten: luot.studentName }) : t('Mở tuyến {ten}', { ten: luot.studentName })} onClick={() => setKhay((x) => !x)}>
+            <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={khay ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>}
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>
         <DiemMotDong th={luot.the} />
         {han && <HanEm han={han} onSua={!tvv && a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />}
       </span>
+      {tom && gop && <span role="cell" className={`${O} grid content-center gap-1`}><ChuoiCham chuoi={tom.chuoi} />
+        {tom.dangO && <span className="text-[13px] text-dim">{tom.dangO.nguoi === null ? tom.dangO.ten : <>{tom.dangO.ten} · {tom.dangO.nguoi}</>}</span>}</span>}
       {mo === 'xac-nhan' ? (
         <span role="cell" className={`${O} ${gop ? 'col-span-2' : 'col-span-3'} max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} onTaiLai={doi} /></span>
       ) : (
@@ -291,6 +309,23 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, gop = false }: {
           <FormBo id={a.id} tvv={tvv ? a.tvv!.viecId : null} onDong={() => setMo(null)} onXong={() => { setMo(null); doi(); }} />
         </span>
       )}
+      {khay && tom && <span role="cell" className="col-span-full pb-3"><KhayEm a={a} attemptId={luot.attemptId} onChanged={doi} /></span>}
+    </div>
+  );
+}
+
+/**
+ * KHAY MỘT EM (TUYEN-2, mockup v27 T5): khối Phụ trách · Hạn · Theo dõi của việc này + Tuyến cả lượt (GET /tuyen/phoi_hop/{lượt} — chỉ khi mở) + Việc con.
+ * Không khối chung đầu panel (đặc tả 4.6: panel nhiều em — khối của TỪNG em trong khay).
+ */
+function KhayEm({ a, attemptId, onChanged }: { a: CoordAction; attemptId: number; onChanged: () => void }) {
+  const gv = useGiaoViec('phoi_hop', a.id);
+  const { data: tuyen } = useApi<Tuyen>(`/tuyen/phoi_hop/${attemptId}`, [attemptId]);
+  return (
+    <div className="grid gap-3 rounded-[10px] px-3 py-3" style={{ background: 'color-mix(in srgb, var(--accent-soft) 38%, var(--surface))' }}>
+      {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onChanged} />}
+      <KhoiTuyen tuyen={tuyen} />
+      {gv.g && <MucViecCon g={gv.g} onDoi={gv.reload} />}
     </div>
   );
 }

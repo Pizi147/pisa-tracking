@@ -34,6 +34,7 @@ import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
 import { PanelTraLai } from './PanelTraLai.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
+import type { TomTuyen } from '../yThuc/kieu.ts';
 import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
@@ -451,7 +452,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
   /* GV-2 (N58): một việc Phối hợp (`phoi_hop_viec:<id>` — việc đã giao / một em) → khối giao việc đầu thân + thẻ Phối hợp CỦA EM (người được giao không cần quyền xem cả lớp). */
   const mot = it.key.startsWith('phoi_hop_viec:') && it.viecId ? it.viecId : null;
   const gv = useGiaoViec('phoi_hop', mot);
-  const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(mot && it.studentId ? `/students/${it.studentId}/phoi-hop-sos` : `/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId, mot]);
+  const { data, error, reload } = useApi<{ rows: CoordTurn[]; chuoiTuyen?: Record<number, TomTuyen> }>(mot && it.studentId ? `/students/${it.studentId}/phoi-hop-sos` : `/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId, mot]);
   const ten = tvv ? t('Báo PH · Meeting CX/GĐCN') : dich(it.tieuDe.split(' · ')[0]);
   const { homNay } = useNgayNghiepVu();
   /* GD-4b Q53 / Q54 / Q62: dòng Meeting CX/GĐCN → câu Meeting (TVV nhận việc báo PH); dòng khác → câu Xác nhận. "Bỏ" chọn ở từng em → vào ⓘ. */
@@ -475,7 +476,8 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
         {gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={onDaLam} />}
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : !data ? <Skeleton rows={4} />
-          : <BangPhoiHop anHan={!!mot} turns={data.rows} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId} lop={it.classCode ?? undefined}
+          /* TUYEN-2 (mockup v27 T5): cột Tuyến (chuỗi chấm + Đang ở) + khay em — chuỗi đi cùng GET Phối hợp lớp (0 request thêm). */
+          : <BangPhoiHop anHan={!!mot} turns={data.rows} chuoi={mot ? null : data.chuoiTuyen ?? null} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId} lop={it.classCode ?? undefined}
               onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>
