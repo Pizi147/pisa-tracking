@@ -914,7 +914,12 @@ export function xemMeeting(p: Principal, phoiHopId: number): { phoiHopId: number
   const ids = db().prepare(`SELECT id FROM meeting_phan WHERE phoi_hop_id = ? ORDER BY CASE phan WHEN 'xep_lich' THEN 0 ELSE 1 END`).all(phoiHopId) as any[];
   if (!ids.length) throw notFound('Meeting này chưa có phần Xếp lịch họp / Kết quả meeting.');
   const bp = db().prepare('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?').get(phoiHopId) as { id: number } | undefined;
-  const phan = ids.map((r) => xemGiaoViec(p, 'meeting', r.id));   // kiểm quyền đọc từng phần (requireDoc) TRƯỚC khi đọc bối cảnh
+  /* TUYEN-2: chỉ các phần người xem ĐỌC ĐƯỢC (requireDoc từng phần, TRƯỚC khi đọc bối cảnh) — BPXL giữ Xếp lịch họp không đọc phần Kết quả meeting
+     (trước: một phần 403 → cả panel 403). Phần kia hiện ở khối Tuyến (khung bước, nội dung theo quyền — C3). Không phần nào đọc được → 403 như cũ. */
+  const phan: KhoiGiaoViec[] = [];
+  let chan: unknown = null;
+  for (const r of ids) { try { phan.push(xemGiaoViec(p, 'meeting', r.id)); } catch (e: any) { if (e?.status !== 403) throw e; chan = e; } }
+  if (!phan.length) throw chan;
   /* GV-2 (mockup v22 G8a): bối cảnh đầu panel — một câu: mức SOS của lượt · ngày + GVCN xác nhận · ghi chú GVCN · PH. SĐT PH chỉ cho người LÀM được một
      phần / người đổi được việc (Head · QT · CX) / người quản lý Ý thức của em (GVCN, Head) — người theo dõi thuần không thấy. */
   const x = db().prepare(`SELECT x.performed_on, x.note, x.student_id, u.full_name AS gvcn, s.parent_name, s.parent_relation, s.parent_phone,

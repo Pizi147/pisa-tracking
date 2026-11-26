@@ -195,7 +195,7 @@ const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_92px] max-sm:grid-cols-[minm
 const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_92px] max-sm:grid-cols-[minmax(0,1fr)_auto]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
 /** TUYEN-2 (mockup v27 T5): Học viên · Tuyến (chuỗi chấm + Đang ở) · Cần làm · ⋯. */
-const HANG_TUYEN = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_200px_60px] max-sm:grid-cols-[minmax(0,1fr)_auto]';
+const HANG_TUYEN = 'grid grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_160px_92px] max-sm:grid-cols-[minmax(0,1fr)_auto]';
 
 /**
  * Hạn — luật hạn NHẸ HƠN (chủ SP 22/11): dd/mm/yyyy tô theo `mucHan` (chữ phụ · vàng còn ≤ 2 ngày · đỏ + nền đỏ nhạt quá hạn, không ⚠).
