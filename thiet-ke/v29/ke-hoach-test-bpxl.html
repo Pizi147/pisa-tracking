@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BPXL Kế hoạch Test · v29</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../v21/v21.css">
+<link rel="stylesheet" href="../v21/bang-mau.css">
+<link rel="stylesheet" href="../v21/test.css">
+<link rel="stylesheet" href="../v21/luu-tru.css">
+<link rel="stylesheet" href="../v22/v22.css">
+<link rel="stylesheet" href="v29.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></symbol>
+  <symbol id="i-xuong" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-tim" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></symbol>
+  <symbol id="i-chuong" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14a1.5 1.5 0 0 0 3 0"/></symbol>
+  <symbol id="i-cv" viewBox="0 0 16 16"><path d="M3 4l1.5 1.5L7 3M3 9l1.5 1.5L7 8M9 4.5h4M9 9.5h4M3 13h10"/></symbol>
+  <symbol id="i-hv" viewBox="0 0 16 16"><circle cx="6" cy="6" r="2.2"/><circle cx="11.2" cy="6.6" r="1.7"/><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3"/></symbol>
+  <symbol id="i-test" viewBox="0 0 16 16"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h4M6 12h2"/></symbol>
+</svg>
+
+<div class="trang v22">
+  <header class="dau-mk">
+    <h1>v29 · ① BPXL — Kế hoạch Test: chi nhánh · Nhận lớp · lớp chi nhánh khác chỉ lịch</h1>
+    <p>Đặc tả <code>docs/superpowers/specs/2026-11-26-vai-gdcn-lead-tvv-bpxl/thiet-ke.md</code> (chủ SP duyệt 26/11 — <b>N77</b>) + chủ SP 26/11 <b>"Ẩn điểm, chỉ lịch"</b>. Nền: v22 BPXL trang đầu (đã chạy trên web) — giữ hàng lọc, dải số lặng, lưới HV × MT, + MT, S Ex, Xếp nhiều MT…, Xuất Excel…</p>
+    <p>Dữ liệu bịa: BPXL <b>Hoàng Minh Đức</b> (gán Monbay) · BPXL khác <b>Lương Thu Trang</b>. Hôm nay <b>thứ Tư 16/09/2026 · W3 SEP</b>. Nền vàng viền đứt = chú thích, không lên web. Dòng xanh <b>"Đổi: …"</b> = khác web hiện tại.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#k1">K1 · Chi nhánh · Nhận lớp</a><a href="#k2">K2 · Chi nhánh khác · chỉ lịch</a><a href="#k3">K3 · Nhận lớp: Hoàn tác · lỗi</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu cả trang"><button type="button" data-che="goc" aria-pressed="true">Gốc</button><button type="button" data-che="toi" aria-pressed="false">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="k1">
+    <h2>K1 · Kế hoạch Test của BPXL — ô Chi nhánh + cụm "Xếp lịch" ở hàng lớp</h2>
+    <p class="ghi"><span class="so-mk">1</span><b>Ô Chi nhánh</b> đầu hàng lọc: mặc định chi nhánh được gán (Monbay); chọn được mọi chi nhánh và "Mọi chi nhánh" (N77: BPXL xếp lịch mọi chi nhánh) · <span class="so-mk">2</span>cuối mỗi hàng lớp một cụm <b>Xếp lịch</b>: <b>Bạn · Bỏ nhận</b> / <b>{tên} · Nhận lại</b> / <b>Chưa ai nhận · Nhận lớp</b> — một nút, bấm là lưu, có Hoàn tác (K3); người nhận lớp nhận mọi việc xếp lịch tự sinh của lớp · <span class="so-mk">3</span>không thêm cột, không thêm bước; số "Chưa xếp lịch MT · n em", "Vắng · n em" giữ chỗ cũ.</p>
+    <div class="hang-khung" data-khu="K1"></div>
+  </section>
+
+  <section class="khu" id="k2">
+    <h2>K2 · Chọn chi nhánh khác (Cẩm Phả) — lịch đầy đủ, KHÔNG điểm</h2>
+    <p class="ghi"><span class="so-mk">1</span>Chủ SP 26/11 "Ẩn điểm, chỉ lịch": lớp chi nhánh không được gán — máy chủ <b>không trả</b> band, Overall, kỳ vọng, nhận xét; ô lượt ghi <b>trạng thái bằng chữ</b> ("Đã có điểm", "Chờ chấm"), lịch S Ex giữ tuần, bỏ điểm · <span class="so-mk">2</span>xếp / dời / + MT / S Ex vẫn làm được như chi nhánh mình; tên em không là link (không mở hồ sơ chi nhánh khác) · <span class="so-mk">3</span>một dòng ⓘ ở hàng lọc giải thích vì sao không có điểm (không thêm đoạn chú thích trên trang).</p>
+    <div class="hang-khung" data-khu="K2"></div>
+  </section>
+
+  <section class="khu" id="k3">
+    <h2>K3 · Sau khi bấm — Hoàn tác · lỗi 409 (người khác vừa nhận)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Bấm <b>Nhận lớp</b> → lưu ngay; toast nói <b>việc nào chuyển sang bạn</b> + <b>Hoàn tác</b> (15 phút) · <span class="so-mk">2</span><b>Nhận lại</b> lớp người khác: không hộp xác nhận (không khoá cứng) — người cũ nhận một tin "Cập nhật" · <span class="so-mk">3</span>hai người bấm cùng lúc → người sau gặp câu <b>"Lớp vừa được người khác nhận — mở lại để xem."</b> + nút <b>Tải lại</b>; không mất gì đã xếp.</p>
+    <div class="hang-khung" data-khu="K3"></div>
+  </section>
+</div>
+
+<script>
+/* ================= DỮ LIỆU + KHUÔN (chép cách vẽ v22 K1 / K5) ================= */
+const ic = (t, st = '') => `<svg class="ic" aria-hidden="true"${st ? ` style="${st}"` : ''}><use href="#i-${t}"/></svg>`;
+const chev = (mo) => `<svg class="chev" aria-hidden="true"${mo ? ' style="transform:rotate(90deg)"' : ''}><use href="#i-chev"/></svg>`;
+const tt = `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Test</span><span class="m">Học viên &amp; Lớp</span><span class="m">Công việc</span>
+  <span class="phai"><span class="tim-tt">${ic('tim')}Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt">${ic('chuong')}<i class="cham-tin"></i></span><span class="ten-tt"><span class="av-tt">MĐ</span>Hoàng Minh Đức</span></span></div>`;
+const ttDt = `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt">${ic('tim')}</span><span class="nut-tt">${ic('chuong')}<i class="cham-tin"></i></span><span class="av-tt">MĐ</span></span></div>`;
+const duoi = `<nav class="thanh-duoi"><a href="#" class="dang">${ic('test')}<span>Test</span></a><a href="#">${ic('hv')}<span>HV &amp; Lớp</span></a><a href="#">${ic('cv')}<span>Công việc</span></a></nav>`;
+const dauTest = (dt) => `<div class="dau-test"><h1>Test</h1><span class="phai">${dt ? '' : '<button type="button" class="nut">Xuất Excel…</button>'}<button type="button" class="nut nut-chinh">Xếp nhiều MT…</button></span></div>
+  <div class="tabs tst-tab" role="tablist"><button class="tab" role="tab" aria-selected="false">Lịch Test tuần</button><button class="tab" role="tab" aria-selected="true">Kế hoạch Test</button></div>`;
+const dai = (s) => `<div class="dai-cs lang" aria-label="Số cần xếp"><span>Chưa xếp lịch MT <button type="button" class="oso">${s[0]}</button></span><span>Vắng tuần này <button type="button" class="oso">${s[1]}</button></span><span>Bài chưa có điểm <button type="button" class="oso">${s[2]}</button></span><span>Lượt MT tuần này <button type="button" class="oso">${s[3]}</button></span></div>`;
+const oCn = (cn) => `<button type="button" class="o-cn" aria-haspopup="listbox" aria-label="Chi nhánh: ${cn}"><span class="lb">Chi nhánh</span><b>${cn}</b>${ic('xuong')}</button>`;
+const hangLoc = (cn, hv, dt, khac) => dt
+  ? `<div class="hang-loc">${oCn(cn)}<span class="doan k"><button class="on">Fast Track <span class="dm">${khac ? 4 : 6}</span></button><button>Lớp thường <span class="dm">${khac ? 9 : 16}</span></button></span>
+     <div class="oc-vung" style="width:100%"><div class="oc">${ic('tim')}<span class="goi">Tìm lớp, học viên hoặc email</span></div></div></div>`
+  : `<div class="hang-loc">${oCn(cn)}<span class="doan" role="group" aria-label="Khung lớp"><button class="on">Fast Track <span class="dm">${khac ? 4 : 6}</span></button><button>Lớp thường <span class="dm">${khac ? 9 : 16}</span></button></span>
+     <div class="oc-vung"><div class="oc">${ic('tim')}<span class="goi">Tìm lớp, học viên hoặc email</span><span class="mui-xuong">${ic('xuong')}</span></div></div>
+     <button type="button" class="nut-i" aria-label="${khac ? 'Vì sao không có điểm: lớp chi nhánh bạn không được gán — chỉ lịch' : 'Luật xếp lịch Test'}">ⓘ</button>
+     <span class="phai"><span><b>${hv}</b> HV</span><button type="button" class="nut nut-nho">Mở tất cả lớp</button></span></div>`;
+/* cụm Xếp lịch: 'toi' | tên người khác | null (chưa ai) */
+const xl = (ai) => ai === 'toi' ? `<span class="xl"><span class="ai">Xếp lịch <b>Bạn</b></span><button type="button" class="nut nut-nho">Bỏ nhận</button></span>`
+  : ai ? `<span class="xl"><span class="ai">Xếp lịch <b>${ai}</b></span><button type="button" class="nut nut-nho">Nhận lại</button></span>`
+  : `<span class="xl"><span class="ai chua">Chưa ai nhận</span><button type="button" class="nut nut-nho nut-chinh">Nhận lớp</button></span>`;
+const hangLop = (l, dt) => dt
+  ? `<div class="kh-lop${l.mo ? ' mo' : ''}">${chev(l.mo)}<a class="ma" href="#">${l.ma}</a><span class="so-hv">${l.hv} <small>HV</small></span><span class="gvcn">GVCN <b>${l.gvcn}</b>${l.tinh ? ` · ${l.tinh}` : ''}</span>${l.oso?.length ? `<span class="tinh" style="display:flex;flex-wrap:wrap;gap:4px 14px">${l.oso.map((o) => `<button type="button" class="oso">${o}</button>`).join('')}</span>` : ''}${xl(l.xl)}</div>`
+  : `<div class="kh-lop${l.mo ? ' mo' : ''}">${chev(l.mo)}<a class="ma" href="#">${l.ma}</a><span class="so-hv">${l.hv} <small>HV</small></span><span class="gvcn">GVCN <b>${l.gvcn}</b></span><span class="tinh">${l.tinh ?? ''}</span><span style="display:flex;gap:16px">${(l.oso ?? []).map((o) => `<button type="button" class="oso">${o}</button>`).join('')}</span><span class="phai">${xl(l.xl)}</span></div>`;
+const knb = '<span class="knb"><i>L</i><i>R</i><i>W</i><i>S</i></span>';
+const knbCho = '<span class="knb"><i class="cho">L</i><i class="cho">R</i><i class="cho">W</i><i class="cho">S</i></span>';
+/* lưới MB FT 104 (chi nhánh mình — giữ như v22) */
+const luoiMb = `<table class="kh"><colgroup><col class="c-hv"><col class="c-mt"><col class="c-mt"><col class="c-mt"><col class="c-them"></colgroup>
+  <thead><tr><th>Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>Thêm</th></tr></thead><tbody>
+  <tr><td><a class="ten-hv" href="#">Trần Bảo An</a></td><td><button type="button" class="omt cho"><span class="h1">W1 JUL${knbCho}</span><span class="st">Chờ chấm</span></button><span class="sex co">S Ex 1 · 6.5 · W2 SEP</span></td><td><button type="button" class="omt"><span class="h1">W2 AUG${knb}</span><span class="st dat">✓ 6.5</span></button></td><td><button type="button" class="omt"><span class="h1">W4 SEP${knb}</span><span class="st">S dời từ W3 SEP</span></button></td><td><button type="button" class="nut nut-nho">+ MT ${ic('xuong', 'width:12px;height:12px')}</button></td></tr>
+  <tr><td><a class="ten-hv" href="#">Phạm Ngọc Diệp</a></td><td><button type="button" class="omt"><span class="h1">W3 SEP${knb}</span><span class="st">L R vắng · dời W4 SEP</span></button><button type="button" class="sex">+ S Ex 1</button></td><td><button type="button" class="omt"><span class="h1">W4 OCT${knb}</span></button></td><td><button type="button" class="omt"><span class="h1">W3 NOV${knb}</span></button></td><td></td></tr>
+  <tr><td><a class="ten-hv" href="#">Hồ Gia Bảo</a><span class="ly-tai" style="display:block">mới vào · W2 SEP</span></td><td><span class="xep-o"><button type="button" class="nut nut-nho">Xếp MT1</button><span class="ly-tai">đề xuất W4 SEP</span></span></td><td><span class="xep-o"><button type="button" class="nut nut-nho" aria-disabled="true">Xếp MT2</button><span class="ly-tai">Xếp MT1 trước</span></span></td><td><span class="o-kt">—</span></td><td><button type="button" class="nut nut-nho">+ S Ex</button></td></tr>
+  </tbody></table><div class="chan-kh"><button type="button" class="nut nut-nho">+ Ghi chú lớp</button><span>30 HV khác</span><button type="button" class="nut nut-nho">Hiện tất cả 33</button></div>`;
+/* lưới CP FT 110 (chi nhánh khác — chỉ lịch, tên không link) */
+const luoiCp = `<table class="kh"><colgroup><col class="c-hv"><col class="c-mt"><col class="c-mt"><col class="c-mt"><col class="c-them"></colgroup>
+  <thead><tr><th>Học viên</th><th>MT1</th><th>MT2</th><th>MT3</th><th>Thêm</th></tr></thead><tbody>
+  <tr><td><span class="ten-hv">Đặng Minh Châu</span></td><td><button type="button" class="omt"><span class="h1">W2 AUG${knb}</span><span class="st lich">Đã có điểm</span></button><span class="sex lich">S Ex 1 · W1 SEP</span></td><td><button type="button" class="omt cho"><span class="h1">W2 SEP${knbCho}</span><span class="st">Chờ chấm</span></button></td><td><button type="button" class="omt"><span class="h1">W2 OCT${knb}</span></button></td><td><button type="button" class="nut nut-nho">+ MT ${ic('xuong', 'width:12px;height:12px')}</button></td></tr>
+  <tr><td><span class="ten-hv">Vương Hải Đăng</span></td><td><button type="button" class="omt"><span class="h1">W2 AUG${knb}</span><span class="st lich">Đã có điểm</span></button></td><td><button type="button" class="omt"><span class="h1">W3 SEP${knb}</span><span class="st">W vắng · dời W4 SEP</span></button></td><td><button type="button" class="omt"><span class="h1">W2 OCT${knb}</span></button></td><td></td></tr>
+  <tr><td><span class="ten-hv">Lý Thu Hà</span></td><td><button type="button" class="omt"><span class="h1">W4 AUG${knb}</span><span class="st lich">Đã có điểm</span></button><button type="button" class="sex">+ S Ex 1</button></td><td><span class="xep-o"><button type="button" class="nut nut-nho">Xếp MT2</button><span class="ly-tai">đề xuất W4 SEP</span></span></td><td><span class="o-kt">—</span></td><td><button type="button" class="nut nut-nho">+ S Ex</button></td></tr>
+  </tbody></table><div class="chan-kh"><button type="button" class="nut nut-nho">+ Ghi chú lớp</button><span>9 HV khác</span><button type="button" class="nut nut-nho">Hiện tất cả 12</button></div>`;
+const LOP_MB = (o = {}) => [
+  { ma: 'MB FT 104', hv: 33, gvcn: 'Đinh Thu Hằng', tinh: 'MT1 đang làm bài', oso: ['Chưa xếp lịch MT · 1 em', 'Vắng · 4 em'], xl: 'toi', mo: !o.dong },
+  { ma: 'MB FT 102', hv: 5, gvcn: 'Cao Minh Tú', tinh: 'MT1 đang làm bài', oso: ['Chưa xếp lịch MT · 2 em'], xl: 'Lương Thu Trang' },
+  { ma: 'MB FT 103', hv: 3, gvcn: 'Cao Minh Tú', tinh: 'MT2 đang làm bài', xl: o.daNhan ? 'toi' : null },
+  { ma: 'MB FT 105', hv: 7, gvcn: 'Lâm Quốc Bảo', tinh: 'MT1 đang làm bài', oso: ['Chưa xếp lịch MT · 7 em', 'Vắng · 3 em'], xl: 'toi' },
+  { ma: 'MB FT RF 12', hv: 3, gvcn: 'Lê Minh Khoa', tinh: 'MT1 đang làm bài', xl: null },
+];
+const LOP_CP = [
+  { ma: 'CP FT 110', hv: 12, gvcn: 'Tống Văn Hưng', tinh: 'MT2 đang làm bài', oso: ['Chưa xếp lịch MT · 1 em', 'Vắng · 1 em'], xl: 'Phùng Thảo', mo: true },
+  { ma: 'CP FT 111', hv: 9, gvcn: 'Tống Văn Hưng', tinh: 'MT1 đang làm bài', xl: null },
+  { ma: 'CP FT 108', hv: 6, gvcn: 'Đoàn Thị Mai', tinh: 'MT3 đang làm bài', xl: 'Phùng Thảo' },
+];
+const toastNhan = `<div class="toast" role="status"><span><b>✓ Đã nhận MB FT 103</b> · 2 việc Xếp lịch họp chuyển sang bạn</span><button type="button" class="nut">Hoàn tác</button></div>`;
+const toastLoi = `<div class="toast loi" role="alert"><span><b>Lớp vừa có người khác nhận.</b></span><button type="button" class="nut">Tải lại</button></div>`;
+
+const man = ({ w = 1440, h = 900, cn = 'Monbay', hv = 51, lop, luoi, toast = '', so = [10, 7, 23, 38], khac }) => `<div class="man toi" data-web style="width:${w}px;height:${h}px;position:relative">${tt}<div class="noi-dung">${dauTest(false)}${dai(so)}${hangLoc(cn, hv, false, khac)}
+  <div class="lt-the">${lop.map((l, i) => hangLop(l, false) + (l.mo && i === 0 ? luoi : '')).join('')}</div></div>${toast}</div>`;
+const manDt = ({ cn = 'Monbay', lop, toast = '', so = [10, 7, 23, 38], khac, h = 812, luoi = '' }) => `<div class="dt sang" data-web style="height:${h}px;position:relative">${ttDt}<div class="noi-dung" style="padding-bottom:80px">${dauTest(true)}${dai(so)}${hangLoc(cn, 0, true, khac)}
+  <div class="lt-the">${lop.map((l, i) => hangLop({ ...l, mo: l.mo && !!luoi }, true) + (l.mo && i === 0 ? luoi : '')).join('')}</div></div>${toast}${duoi}</div>`;
+const hinh = (nhan, anh, than, doi) => `<figure><figcaption>${nhan}</figcaption>${doi ? `<p class="cap-doi">Đổi: ${doi}</p>` : ''}${than.replace('data-web', `data-web data-anh="${anh}"`)}</figure>`;
+const luoiDt = (bang) => `<div class="cuon-ngang">${bang.replace('<col class="c-mt"><col class="c-them">', '').replace('<th>MT3</th><th>Thêm</th>', '').replace(/<td>(?:(?!<td>).)*?<\/td><td>(?:(?!<td>).)*?<\/td><\/tr>/g, '</tr>').replace(/<div class="chan-kh">.*$/, '')}</div>`;
+
+const q = (s) => document.querySelector(`[data-khu="${s}"]`);
+q('K1').innerHTML = hinh('K1a · 1440 · tối · BPXL gán Monbay — mặc định', 'K1a-1440-toi', man({ lop: LOP_MB(), luoi: luoiMb }), '<b>ô Chi nhánh</b> đầu hàng lọc · cụm <b>Xếp lịch</b> cuối hàng lớp (Bạn · Bỏ nhận / tên · Nhận lại / Chưa ai nhận · Nhận lớp). Mọi thứ khác giữ.')
+  + hinh('K1b · 1280 · tối · cùng màn (soi cân cột hàng lớp)', 'K1b-1280-toi', man({ w: 1280, lop: LOP_MB(), luoi: luoiMb }))
+  + hinh('K1c · 375 · sáng · cụm Xếp lịch xuống dòng riêng, nút cao 44', 'K1c-375-sang', manDt({ lop: LOP_MB({ dong: true }) }));
+q('K2').innerHTML = hinh('K2a · 1440 · tối · chọn Cẩm Phả — lớp CP FT 110 mở: chỉ lịch', 'K2a-1440-toi', man({ cn: 'Cẩm Phả', hv: 27, lop: LOP_CP, luoi: luoiCp, so: [1, 1, 6, 12], khac: true }), 'ô lượt chi nhánh khác: <b>"Đã có điểm"</b> thay band ✓ 6.5; S Ex giữ tuần, bỏ điểm; tên em không link.')
+  + hinh('K2b · 375 · sáng · chi nhánh khác', 'K2b-375-sang', manDt({ cn: 'Cẩm Phả', lop: LOP_CP, luoi: luoiDt(luoiCp), so: [1, 1, 6, 12], khac: true, h: 900 }));
+q('K3').innerHTML = hinh('K3a · 1440 · tối · vừa bấm Nhận lớp MB FT 103 → toast + Hoàn tác', 'K3a-1440-toi-nhan', man({ h: 640, lop: LOP_MB({ dong: true, daNhan: true }), luoi: '', toast: toastNhan }))
+  + hinh('K3b · 375 · sáng · lỗi: người khác vừa nhận', 'K3b-375-sang-loi', manDt({ lop: LOP_MB({ dong: true }), toast: toastLoi }));
+
+/* công tắc Gốc / Tối / Sáng (Gốc: 1440 · 1280 tối, 375 sáng) */
+document.querySelectorAll('[data-che]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-web]').forEach((k) => { k.classList.remove('toi', 'sang'); k.classList.add(b.dataset.che === 'goc' ? (k.classList.contains('dt') ? 'sang' : 'toi') : b.dataset.che); });
+  document.querySelectorAll('[data-che]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+}));
+</script>
+</body>
+</html>
