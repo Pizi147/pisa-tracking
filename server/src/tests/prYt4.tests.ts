@@ -174,12 +174,16 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
   const { migratePrTinhHinh } = await import('../migrate/prTinhHinh.ts');
   const { migratePrYeuCauXuLy: migLg12 } = await import('../migrate/prYeuCauXuLy.ts');
+  const { themCotPrBaoPh0 } = await import('../migrate/prBaoPh0.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
   /* DB thời trước YT4: cắt phần YT4 khỏi CHỮ schema.sql (libsql lỗi "incomplete input" khi DROP COLUMN trên bảng có chú thích). */
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
+      /* BAOPH-0 (4.6): cột giao việc "Đã thực hiện" thêm SAU quyet_luc + chỉ mục của nó — cắt trước nhất; so cột chạy lại themCotPrBaoPh0 sau cùng. */
+      .replace(/,\n  -- BAOPH-0 \(N72 ⑥, 4\.6\): giao việc[^\n]*\n  phu_trach_id[^\n]*\n\);/, '\n);')
+      .replace(/CREATE INDEX IF NOT EXISTS idx_dm_giao [^\n]*\n/, '')
       /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; so cột chạy lại migratePrYeuCauXuLy sau cùng. */
       .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')   // + DUONG-LUI-2 khong_xu_ly_vuot (cùng migratePrYeuCauXuLy)
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
@@ -209,6 +213,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     migratePrPb2b(m, []);
     migratePrTinhHinh(m, []);
     migLg12(m, []);
+    themCotPrBaoPh0(m, []);   // BAOPH-0: bước cuối thêm cột discipline_measures
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['violations', 'discipline_measures', 'y_thuc_khai_bac']) {

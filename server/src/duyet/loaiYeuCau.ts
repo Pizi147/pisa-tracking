@@ -511,6 +511,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         { bang: 'sos_case_history', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
         { bang: 'case_milestones', dk: 'case_id = ?', args: [yc.doi_tuong_id], k: 'them' },
         { bang: 'sos_coordination_actions', dk: `kind = 'bao_ph_tvv' AND attempt_id IN (SELECT attempt_id FROM case_signals WHERE case_id = ?)`, args: [yc.doi_tuong_id], k: 'ca' },
+        /* BAOPH-0: việc TVV của nguồn Báo PH kết quả Test đóng / mở theo nguồn — chụp cùng để Hoàn tác trả cả hai. */
+        { bang: 'viec_bao_ph', dk: `phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE kind = 'bao_ph_tvv' AND attempt_id IN (SELECT attempt_id FROM case_signals WHERE case_id = ?))`, args: [yc.doi_tuong_id], k: 'ca' },
         ...hanhTrinh(yc),
       ],
       tuChoi: (yc) => [

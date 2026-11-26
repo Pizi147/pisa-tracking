@@ -28,6 +28,7 @@ import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { MANAGE_MESSAGE, guiSuaKhai, khoiPhucSuaKhai, kiemKhai, luuGhiNhan, luuKhai, luuSuaKhai, luuXuLy, moTa, ngayThucHien, nguoiThucHien } from './xuLy.ts';
 import { rutYeuCau } from '../duyet/yeuCau.ts';
 import { KEY_TAKEN_MESSAGE } from './access.ts';
+import { xongViecXuLy } from '../worklist/giaoViec.ts';
 
 /** Một lô tối đa — một lớp đông nhất ~40 em; chặn thân request quá lớn. */
 const LO_TOI_DA = 200;
@@ -175,7 +176,7 @@ export function loXuLy(p: Principal, classId: number, v: {
     const ks = c.ids.map((sid) => khoaEm(sid)!);
     for (const r of db().prepare(`SELECT idempotency_key AS k, student_id, created_by, kind FROM discipline_measures WHERE idempotency_key IN (${ks.map(() => '?').join(',')})`).all(...ks) as any[]) daGui.set(r.k, r);
   }
-  return {
+  const kq = {
     em: tungEm(c, (sid, em, hv) => {
       const k = khoaEm(sid);
       const cu = k ? daGui.get(k) : undefined;
@@ -192,6 +193,9 @@ export function loXuLy(p: Principal, classId: number, v: {
       return { nhan: nhanLoaiXuLy(m.kind) };
     }),
   };
+  /* BAOPH-0 (4.6): khối giao việc Xử lý vi phạm của các em vừa xử lý kết thúc — MỘT câu cho cả lô. */
+  xongViecXuLy(kq.em.filter((e) => e.ok).map((e) => e.studentId));
+  return kq;
 }
 
 export function loGhiNhan(p: Principal, classId: number, v: { studentIds?: unknown }): { em: KqEm[] } {

@@ -87,7 +87,7 @@ export async function runPrSoLieu4Tests(t: YThucTestKit) {
       JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id AND b.code = 'MB'
       WHERE v.trang_thai = 'mo' AND v.phu_trach_id IS NULL AND s.consultant_user_id IS NOT NULL ORDER BY v.id LIMIT 1`);
     assert(r, 'seed có Báo PH mở của em MB có TVV');
-    const khoa = (it: any) => it.group === 'bao_ph_yt' && String(it.key).endsWith(`:${r.id}`);
+    const khoa = (it: any) => (it.group === 'bao_ph_yt' || it.group === 'phoi_hop_tvv') && String(it.key) === `bao-ph:${r.id}`;   // BAOPH-0: việc TVV Trao đổi gia đình ở nhóm Phối hợp
     xoaNho();
     const truoc = myWork(P.mbManager) as any;
     assert(!(truoc.items as any[]).some((it) => khoa(it) && it.mine), 'trước: Head không giữ (TVV còn vai)');

@@ -118,6 +118,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
   const dai: any = await import('../classes/daiChuyenLop.ts');
   const sched: any = await import('../classes/schedule.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const baoPhS5: any = await import('../yThuc/baoPhTvv.ts');   // BAOPH-0
   const { quyenBoTro } = await import('../cases/boTro.ts');
   const fs = await import('node:fs');
   const GV = (conn.prepare(`SELECT DISTINCT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
@@ -343,12 +344,15 @@ export async function runPrS5fATests(t: YThucTestKit) {
     vaoNgay(t.addDays(THU_HAI, 7), () => reg.saveRegularScore(P.admin, af.id, 'speaking', { score: 20, total: 25 }));
     assert(tutor() === 1, `điểm về → không thêm Case Tutor: ${tutor()}`);
 
-    /* Báo PH Giữa khoá: Quản lý xem "Tất cả" thấy GVCN lớp em đang học, không "chưa ai phụ trách". */
+    /* BAOPH-0 (N72 ⑤, thay N6): Báo PH Giữa khoá là việc TVV — Quản lý xem "Tất cả" thấy người giữ (TVV của em, không có → Head), không GVCN. */
     reg.planRegularTests(P.admin, be, { studentIds: [e], kinds: ['progress'] });
     const aGk = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND class_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`, e, be) ?? aBe;
     const bp = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?,?, 'bao_ph_tvv', 1, 'pending', ?)`)
       .run(aGk.id, e, new Date().toISOString()).lastInsertRowid);
-    const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `baoph:${bp}`);
-    assert(viec && viec.ownerId === GV[3] && viec.owner, `Báo PH: ${JSON.stringify(viec ?? null)}`);
+    const [vId] = baoPhS5.dongBoViecTvvLuot([aGk.id]);
+    const viec = (myWork(P.mbManager, { nguoi: 'tat-ca' }) as any).items.find((i: any) => i.key === `bao-ph:${vId}`);
+    const tvvEm = get('SELECT consultant_user_id AS u FROM students WHERE id = ?', e).u ?? P.mbManager.userId;
+    assert(vId && viec && viec.ownerId === tvvEm && viec.ownerId !== GV[3], `Báo PH: ${JSON.stringify(viec ?? null)}`);
+    void bp;
   });
 }

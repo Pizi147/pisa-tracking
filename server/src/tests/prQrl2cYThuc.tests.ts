@@ -101,7 +101,7 @@ export async function runPrQrl2cYThucTests(t: YThucTestKit) {
   const PH = 'sos_coordination_actions';
 
   await checkAsync('Q2C-PH1 · Bỏ Phối hợp → mở lại: NGUYÊN dòng trước khi bỏ (ghi chú sau "Đã xong → Đưa lại", cả ngày / người / nội dung còn trên dòng) ; GVBM 403; lần hai 409', () => thu(() => {
-    const { r, gv } = viecPhoiHop('bao_ph_tvv');
+    const { r, gv } = viecPhoiHop('gvcn_meeting');   // BAOPH-0: Báo PH kết quả Test là việc TVV — Bỏ / Khôi phục ở việc Báo PH (phép kiểm BAOPH-0)
     phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã nhờ TVV gọi mẹ em', performerName: 'Cô CS' });
     phoiHop.moLaiCoordination(gv, r.id);   // Đã xong → Đưa lại Cần xử lý (cách cũ: bỏ ngày / người, giữ ghi chú)
     /* Dòng "Cần xử lý" còn mang ngày / người / nội dung (dữ liệu cũ) — cách cũ của Khôi phục xoá trắng; đảo phải giữ. */

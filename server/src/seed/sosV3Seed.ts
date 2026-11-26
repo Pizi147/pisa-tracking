@@ -10,6 +10,7 @@ import { hanKyGhiKetQua, issuesForTopic, lichMtGoc, tuanHocCuaMt } from '../../.
 import { guiKhongTheoDoi, xacNhanPaQuyChe } from '../cases/sosAuto.ts';
 import { duyetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { confirmCoordination } from '../yThuc/phoiHop.ts';
+import { baoXongNguonTvv } from '../yThuc/baoPhTvv.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
 import { emailThu } from './emailThu.ts';
@@ -123,7 +124,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
   hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
-  confirmCoordination(gvcn, actionOf(khoiA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã gọi cho mẹ em, gia đình nhắc em luyện nói mỗi ngày.' });   // OV-13n: SOS2 không điền sẵn trao đổi với HV
+  baoXongNguonTvv(actionOf(khoiA.id, 'talk_family').id, addDays(DEMO_DATE, -1), 'Đã gọi cho mẹ em, gia đình nhắc em luyện nói mỗi ngày.');   // BAOPH-0: việc TVV   // OV-13n: SOS2 không điền sẵn trao đổi với HV
   /*
    * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
    * GVCN tự ghi → tự Đã ghi nhận (PR-YT4 Q5).
@@ -148,7 +149,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
   duyetYeuCau(quanLy, theKtd(lanSp.id));
   guiKhongTheoDoi(activeTeacher('reading'), caseOf(lan.id, 'reading').id, { reasonCode: 'other', reasonText: 'Em ốm hai ngày trước buổi thi' });
-  confirmCoordination(gvcn, actionOf(lanA.id, 'talk_family').id, { performedOn: addDays(DEMO_DATE, -3), note: 'CS gọi cho mẹ em, gia đình nắm tình hình.', performerName: 'CS Thu Hà' });
+  baoXongNguonTvv(actionOf(lanA.id, 'talk_family').id, addDays(DEMO_DATE, -3), 'Đã gọi cho mẹ em, gia đình nắm tình hình.');
 
   // ---------------------------------------------------------------- Bùi Thảo Vy — MT3 · SOS1 (lượt hoàn thành)
   const vy = addStudent('Bùi Thảo Vy', 3, 1);
@@ -156,7 +157,8 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   for (const k of ['listening', 'reading', 'writing1', 'writing2']) score(vyA, k, 7);
   score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1 (Overall 6.5)
   caseOf(vy.id, 'speaking');   // D7 (7): PA còn chờ xác nhận
-  for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã làm' });
+  confirmCoordination(gvcn, actionOf(vyA.id, 'talk_student').id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã làm' });
+  baoXongNguonTvv(actionOf(vyA.id, 'talk_family').id, addDays(DEMO_DATE, -1), 'Đã báo gia đình kết quả MT3.');
 
   // ---------------------------------------------------------------- D7 (4): Trịnh Gia Bảo — MT1 · Listening, Quản lý từ chối "không theo dõi"
   const bao = addStudent('Trịnh Gia Bảo', 1, 3);

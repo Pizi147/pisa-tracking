@@ -249,7 +249,8 @@ export async function runYThucTests(t: YThucTestKit) {
     const cols = colsOf('discipline_measures');
     const want = ['id', 'student_id', 'cycle_id', 'class_id', 'kind', 'custom_name', 'status', 'owner_user_id', 'note', 'performed_on',
       'performed_by', 'performer_name', 'participants', 'confirmed_by', 'confirmed_at', 'violation_count_at_confirm', 'idempotency_key',
-      'created_at', 'created_by', 'updated_at', /* PR-YT4: ngày QL duyệt / từ chối */ 'quyet_luc'];
+      'created_at', 'created_by', 'updated_at', /* PR-YT4: ngày QL duyệt / từ chối */ 'quyet_luc',
+      /* BAOPH-0 (4.6): giao việc "Đã thực hiện" — người được giao · hạn đặt tay (không phải cột duyệt) */ 'phu_trach_id', 'giao_boi', 'giao_luc', 'han_chon'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột discipline_measures sai: ${cols.join(', ')}`);
     assert(!cols.some((c) => /approv|pending/.test(c)), 'Y01: không có cột duyệt');
     for (const ix of ['idx_measure_student', 'idx_measure_class', 'idx_measure_preparing']) {

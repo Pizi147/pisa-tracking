@@ -145,6 +145,7 @@ import { migratePrK316 } from './migrate/prK316.ts';
 import { migratePrTinhLuiPc } from './migrate/prTinhLuiPhanCong.ts';
 import { migratePrVeLopLucThi } from './migrate/prVeLopLucThi.ts';
 import { migratePrLuuTruDong } from './migrate/prLuuTruDong.ts';
+import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -580,7 +581,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
      khôi phục `khoiPhucVeLopLucThi` (đổi dữ liệu MỘT lần, khoá demo_config). Sau đó chạy `npm run nap-so`. */
   buoc(() => migratePrVeLopLucThi(conn, applied));
   /* LUU-TRU-DONG (chủ SP 26/11): em đang Lưu trữ còn việc mở → đóng như lúc vào Lưu trữ; nhật ký `student.luu_tru_dong`, khôi phục `khoiPhucLuuTruDong` (một lần, khoá demo_config). */
+  buoc(() => themCotPrBaoPh0(conn, applied));   // BAOPH-0: TRƯỚC Lưu trữ — `dongViecLuuTru` đọc `viec_xu_ly`
   buoc(() => migratePrLuuTruDong(conn, applied));
+  buoc(() => migratePrBaoPh0(conn, applied));   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

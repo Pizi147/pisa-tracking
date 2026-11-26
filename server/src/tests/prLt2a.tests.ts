@@ -22,6 +22,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   const students: any = await import('../students/students.ts');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const baoPhTvvSvc: any = await import('../yThuc/baoPhTvv.ts');   // BAOPH-0
   const { createApp } = await import('../app.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -136,7 +137,9 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(cs.length === 2 && cs.flatMap((c) => paCua(c.id)).length === 2, 'chạy lặp không thêm Case/PA');
     assert(all(`SELECT 1 FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`, em.pt).length === 1, 'một dòng Báo PH');
     const tb = all(`SELECT user_id, title, body, dedup_key FROM notifications WHERE dedup_key IN (?, ?, ?)`, `sos-case:${cs[0].id}`, `sos-case:${cs[1].id}`, `bao-ph:${em.pt}`);
-    assert(tb.filter((x) => x.dedup_key === `bao-ph:${em.pt}`).length === 1 && tb.some((x) => x.user_id === gvcnFou && /Báo PH kết quả Test/.test(x.title)), 'GVCN nhận một thông báo Báo PH');
+    /* BAOPH-0 (N72 ⑤, thay N6): Báo PH kết quả Progress là việc TVV — GVCN không nhận tin "nhờ TVV"; một việc TVV (chạy lặp không nhân đôi). */
+    assert(!tb.some((x) => x.dedup_key === `bao-ph:${em.pt}`), 'GVCN không còn tin Báo PH kết quả Test');
+    assert(all(`SELECT 1 FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id WHERE x.attempt_id = ? AND x.kind = 'bao_ph_tvv' AND v.trang_thai = 'mo' AND v.nhan = 'Kết quả Progress'`, em.pt).length === 1, 'một việc TVV Báo PH · Kết quả Progress');
     assert(tb.filter((x) => /^sos-case:/.test(x.dedup_key)).length === 2, 'mỗi Case một thông báo cho GVBM');
     /* OV-12c: tên Case mang nhãn SOS theo số môn trượt — thông báo GVBM nói đúng tên Case; Báo PH không nói SOS. */
     /* Điểm nhập dần: lúc G+V trượt mới 1 môn (SOS 1), P trượt thì 2 môn (SOS 2) — thông báo nói tên Case lúc Case ra đời. */
@@ -343,7 +346,11 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(/không tự huỷ/.test(qc({ thuong: true })) && !/lần 2 huỷ/.test(qc({ thuong: true })), 'Progress / Final lớp thường: dời, không tự huỷ');
     assert(/lần 2 huỷ/.test(qc({ thuong: false })), 'Mock FT: lần 2 huỷ');
     const bp = dongViec(ha, 'baoph:', em.id);
-    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo PH kết quả Test · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
+    /* BAOPH-0 (N72 ⑤): GVCN thôi việc Báo PH kết quả Test — người giữ việc TVV (TVV của em, không có → Head) thấy `bao-ph:{id}`, hạn 5 ngày (N2). */
+    assert(!bp.length, `GVCN không còn Báo PH kết quả Test: ${JSON.stringify(bp.map((x) => x.key))}`);
+    const giu = loadPrincipal(baoPhTvvSvc.nguoiGiuBaoPh(em.id)[0]);
+    const tvv = dongViec(giu, 'bao-ph:', em.id);
+    assert(tvv.length === 1 && tvv[0].group === 'bao_ph_yt' && tvv[0].due && tvv[0].tieuDe === 'Báo PH · Kết quả Progress · LT2a VIEC', `Việc TVV: ${JSON.stringify(tvv.map((x) => [x.group, x.due, x.tieuDe]))}`);
     assert(!dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải GVCN — không thấy Báo PH');
     assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
   });
@@ -379,9 +386,13 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const act = luot.actions.find((x: any) => x.kind === 'bao_ph_tvv');
     assert(act && act.kindLabel === 'Báo PH kết quả Test' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
     assert(act.noiDung[0].includes('2/4 môn đạt') && act.noiDung[1].includes('G+V, P') && act.noiDung[2].includes('Em mất điểm ở phần này') && act.noiDung[3].includes('học lại'), act.noiDung.join(' | '));
-    assert(maLoi(() => phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' })) === 403, 'GVBM không phải GVCN đánh dấu → 403');
-    phoiHop.confirmCoordination(ha, act.id, { performedOn: TODAY, note: 'Đã gửi task cho TVV trên Base.' });
-    assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', act.id).status === 'done', 'xong');
+    /* BAOPH-0 (N72 ⑤): GVCN / GVBM không đánh dấu nữa — TVV ghi ở việc Báo PH; nguồn theo (xong + bản chụp 4 nội dung). */
+    assert(maLoi(() => phoiHop.confirmCoordination(ha, act.id, { performedOn: TODAY, note: 'Đã làm' })) === 400, 'GVCN đánh dấu → 400 (việc TVV)');
+    assert(act.lamDuoc === false, 'GVCN không có nút ở nguồn TVV');
+    baoPhTvvSvc.baoXongNguonTvv(act.id, TODAY, 'TVV đã gọi phụ huynh, báo 4 nội dung.');
+    const nguon = get('SELECT status, noi_dung_luc_bao FROM sos_coordination_actions WHERE id = ?', act.id);
+    assert(nguon.status === 'done' && JSON.parse(nguon.noi_dung_luc_bao).length === 4, `xong + bản chụp: ${JSON.stringify(nguon)}`);
+    void khoa;
     assert(!dongViec(ha, 'baoph:', em.id).length, 'đã làm → hết việc');
     assert(!(d.COORDINATION_KINDS as readonly string[]).slice(0, 6).includes('bao_ph_tvv'), 'bao_ph_tvv chỉ máy tạo (ngoài sáu loại người dùng chọn)');
   });
