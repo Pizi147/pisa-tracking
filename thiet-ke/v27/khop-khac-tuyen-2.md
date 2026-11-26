@@ -53,7 +53,7 @@ Lệch hình nhỏ còn lại (không tính dòng riêng): khay em ở T11a có 
 - `baoPhTvv.ts`: `xemViecBaoPh` + `nguonTvv`; `viecBaoPhCuaToi` Trao đổi gia đình nhóm `bao_ph_yt` + `gopNguon` (nhãn "Trao đổi gia đình · MT{n}").
 - `giaoViec.ts` `xemMeeting`: chỉ trả phần người xem đọc được (từng phần `requireDoc`); không phần nào → 403 như cũ.
 - `shared/domain/gopViec.ts`: `gopNguon` gộp được dù nhóm giữ từng dòng.
-- Nguồn **Chuyển lớp** (LPB-0 #2266) chưa merge — để chỗ: `gopNguon` nhận mọi nguồn mới, không đổi web khi thêm.
+- Nguồn **Chuyển lớp** (LPB-0 #2266 đã merge, gộp vào nhánh): việc Báo PH · Chuyển lớp mang `gopNguon` `chuyen_lop:{nhãn}` + lớp của dòng = lớp NGUỒN lệnh → một dòng "Báo PH · Chuyển lớp · {lớp cũ} · n em" mở panel nhiều em (khay = panel một em). Cột Máy điền sẵn: "{lớp cũ} → {lớp mới}"; khối bối cảnh chuyển lớp trong khay là việc LPB-2 (web). Phép kiểm: `prLpb0` LPB-11 (hai em một lệnh → một khoá gộp). Băm TD4-a chụp lại (4 băm QL / QT).
 
 ## [XM]
 1. T11c (bung trong danh sách) vs T11a (panel nhiều em) cho cùng dòng "n em" — chọn T11a (PTA chốt hợp lệ).
