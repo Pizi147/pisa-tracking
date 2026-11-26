@@ -22,6 +22,7 @@ export async function runPrLopCuTests(t: YThucTestKit) {
   const canCham: any = await import('../cham/canCham.ts');
   const so: any = await import('../phanTich/soNghiaVu.ts');
   const dtl: any = await import('../cham/diemTheoLuot.ts');
+  const mig: any = await import('../migrate/prVeLopLucThi.ts');
   const studentsSvc: any = await import('../students/students.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const QL = P.mbManager;
@@ -44,12 +45,14 @@ export async function runPrLopCuTests(t: YThucTestKit) {
     return sid;
   };
   const [A, D] = ['A', 'D'].map((x) => taoEm(x, L1.id));
-  const [B, E, F] = ['B', 'E', 'F'].map((x) => taoEm(x, L3.id));
+  const [B, E, F, G, H] = ['B', 'E', 'F', 'G', 'H'].map((x) => taoEm(x, L3.id));
   regular.planRegularTests(P.admin, L1.id);
   regular.planRegularTests(P.admin, L3.id);
   loTrinh.ghiLoTrinhTiep(QL, A, { huong: 'fast_track' });   // MT0 của A ở lớp L1
+  loTrinh.ghiLoTrinhTiep(QL, G, { huong: 'fast_track' });   // MT0 của G ở lớp L3
   const luot = (sid: number, kind: string) => get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = ? AND status != 'cancelled'`, sid, kind).id as number;
   const [fA, fD, fB, fE, fF, m0A] = [luot(A, 'final'), luot(D, 'final'), luot(B, 'final'), luot(E, 'final'), luot(F, 'final'), luot(A, 'mt0')];
+  const [fG, m0G, fH] = [luot(G, 'final'), luot(G, 'mt0'), luot(H, 'final')];
   const datTuan = (aid: number, thu: string) => {
     const pid = week.ensurePeriod(thu).id;
     conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(pid, aid);
@@ -59,6 +62,9 @@ export async function runPrLopCuTests(t: YThucTestKit) {
   /* Thi TRƯỚC ngày M (2 tuần trước, đã quá hạn nhập) — còn nợ. D, E: thi SAU ngày M (tuần này) — lớp / khoá đã sang trang, không nợ. */
   for (const aid of [fA, fB, fF, m0A]) datTuan(aid, thu2(3));
   for (const aid of [fD, fE]) datTuan(aid, thu2(1));
+  /* N71 lên lớp (chủ SP 26/11, ELE 79 → FT): G lên FT ngày M, Final + MT0 của L3 thi SAU ngày đó (tuần này) — vẫn là bài lớp cũ. H: Final thi trước M. */
+  for (const aid of [fG, m0G]) datTuan(aid, thu2(1));
+  datTuan(fH, thu2(3));
 
   /* GV lớp lúc thi: một GV giữ mọi môn + chủ nhiệm L1, L3. GV lớp mới của B, E (L2): GV khác, không dạy L1 / L3 / FT 101. */
   const gv1Id = P.w1Teacher.userId as number;
@@ -82,6 +88,11 @@ export async function runPrLopCuTests(t: YThucTestKit) {
   chuyen(A, FT101, 'LT1', ctFt); chuyen(D, FT101, 'LT1', ctFt);
   chuyen(B, L2.id, null, 'BE'); chuyen(E, L2.id, null, 'BE');
   conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(M, L1.id);
+  chuyen(G, FT101, 'LT1', ctFt);
+  /* H chuyển L3 → L2 GIỮ khoá; code trước #2175 kéo cả Final (ô thi trước ngày chuyển) sang L2 — dữ liệu bản chính cũ. */
+  conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(M, H);
+  conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(H, L2.id, M, now);
+  conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(L2.id, fH);
 
   const gv1 = perms.loadPrincipal(gv1Id), gv2 = perms.loadPrincipal(gv2Id);
   const lr = perms.loadPrincipal(P.lrTeacher.userId), gvcnFt = perms.loadPrincipal(P.coreTeacher.userId);
@@ -179,5 +190,24 @@ export async function runPrLopCuTests(t: YThucTestKit) {
     const v = viec(gv1, 'final');
     assert(!v.has(A) && !v.has(B), 'còn việc sau khi nhập đủ');
     assert(so.tinhBai(fA).every((d: any) => d.xongLuc), `sổ chưa ghi xong: ${JSON.stringify(so.tinhBai(fA))}`);
+  });
+
+  check('N71-LEN-LOP-1 · em lên FT trước tuần Final: Final + MT0 lớp cũ thi SAU ngày chuyển thuộc GV lớp cũ ở sổ nghĩa vụ (Phân tích GV) như Công việc', () => {
+    assert(noCuaGv(L3.id).has(fG) && viec(gv1, 'final').has(G), 'tiền đề: Công việc / nợ điểm của GV lớp cũ có Final của G');
+    for (const aid of [fG, m0G]) {
+      const d = so.tinhBai(aid).filter((x: any) => !x.sCheo);
+      assert(d.length > 0 && d.every((x: any) => x.lop === L3.id && x.nguoi === gv1Id && x.khongTinh === null), `sổ nghĩa vụ lượt ${aid}: ${JSON.stringify(d)}`);
+    }
+  });
+
+  check('N71-LEN-LOP-2 · migrate VE-LOP-LUC-THI: lượt bị kéo sang lớp mới còn ô thi trước ngày vào lớp → về lớp lúc thi (nhật ký, chạy lại không đổi, khôi phục được)', () => {
+    assert(!noCuaGv(L3.id).has(fH) && so.tinhBai(fH).every((x: any) => x.lop === L3.id), 'tiền đề: lượt H ở L2, sổ đã theo lớp lúc thi');
+    const doi = mig.doiVeLopLucThi(conn);
+    assert(doi.some((d: any) => d.id === fH && d.cu === L2.id && d.moi === L3.id), `đổi: ${JSON.stringify(doi)}`);
+    assert(get('SELECT class_id FROM assessment_attempts WHERE id = ?', fH).class_id === L3.id && noCuaGv(L3.id).has(fH), 'Final của H chưa về việc GV lớp cũ');
+    assert(!doi.some((d: any) => [fA, fB, fF, fG, m0A, m0G].includes(d.id)), 'đổi lượt đang đúng lớp');
+    assert(!mig.doiVeLopLucThi(conn).length, 'chạy lại còn đổi');
+    const tra = mig.khoiPhucVeLopLucThi(conn);
+    assert(tra.includes(fH) && get('SELECT class_id FROM assessment_attempts WHERE id = ?', fH).class_id === L2.id && !mig.khoiPhucVeLopLucThi(conn).length, 'khôi phục');
   });
 }
