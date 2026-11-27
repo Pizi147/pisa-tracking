@@ -51,7 +51,26 @@ type ViecBaoPh = {
   measureId: number | null; choGvSua?: boolean; traLai?: TraLaiMo[]; coTheTraLai?: boolean;
   /** TUYEN-0: tuyến của việc (vi phạm · tình hình · Phối hợp). */
   tuyen?: Tuyen | null;
+  /** LPB-2b: nguồn Chuyển lớp — nội dung MÁY điền từ lệnh (null: việc không phải nguồn chuyển lớp). Gộp với Kết quả Final: có cả `boiCanh` Final lẫn khối này. */
+  chuyenLop?: { lenhId: number; loai: 'moi' | 'bao_lai' | 'huy'; lopCu: { id: number; code: string } | null; lopMoi: { id: number; code: string } | null; tuan: string | null; maTuan: string | null;
+    gvcnMoi: string | null; huong: string | null; lyDo: string | null; lenhDaHuy: boolean } | null;
 };
+
+/** LPB-2b (mockup v28 L2a / L2b): khối "Chuyển lớp · máy điền sẵn" — lớp cũ → mới · tuần bắt đầu · hướng · lý do, đọc thẳng từ lệnh (lệnh sửa thì đổi theo). */
+function KhoiChuyenLop({ c }: { c: NonNullable<ViecBaoPh['chuyenLop']> }) {
+  const huy = c.loai === 'huy' || c.lenhDaHuy;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <h3 className="m-0 text-[14px] font-bold">{huy ? t('Huỷ chuyển lớp · máy điền sẵn') : t('Chuyển lớp · máy điền sẵn')}</h3>
+      <BoiCanh dong={[
+        [t('Lớp'), c.lopCu || c.lopMoi ? <span className="font-normal">{c.lopCu?.code}{c.lopMoi && <> → <b className="font-semibold">{c.lopMoi.code}</b></>}{c.gvcnMoi ? ` · ${t('GVCN')} ${c.gvcnMoi}` : ''}{huy ? ` · ${t('đã huỷ')}` : ''}</span> : null],
+        [t('Bắt đầu'), c.tuan ? <span className="font-normal"><b className="font-semibold tabular-nums">{c.maTuan}</b> · {t('thứ Hai {ngay}', { ngay: shortDate(c.tuan) })}</span> : null],
+        [t('Hướng'), c.huong ? <span className="font-normal">{dich(c.huong)}</span> : null],
+        [t('Lý do'), c.lyDo ? <span className="whitespace-pre-line font-normal">{c.lyDo}</span> : null],
+      ]} />
+    </div>
+  );
+}
 
 /** "0912 345 678" — chỉ để đọc; `tel:` giữ số gốc. */
 const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
@@ -264,6 +283,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem, nh
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
         {v.boiCanh.viPham.length > 0 && !(v.tuyen && !laMeeting && v.tuyen.buoc.some((b) => b.khoa === 'ghi')) && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
+        {v.chuyenLop && <KhoiChuyenLop c={v.chuyenLop} />}
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
           /* TUYEN-2 (mockup v27 T11a / T11b): nội dung máy điền theo nguồn (lượt · Overall · kỹ năng trượt · Case / điểm từng môn). */

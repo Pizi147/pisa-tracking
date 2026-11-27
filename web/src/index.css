@@ -1452,7 +1452,7 @@
   .pc-cap .doi-ng .cu { color: var(--text-dim); }
   .pc-cap .doi-ng .moi { font-weight: 600; }
   .pc-cap .tao { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-soft);
-    font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; }
+    font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; grid-column: 2 / -1; justify-self: start; /* LPB-2b: chữ dài "Tạo việc bàn giao · báo BPXL" xuống dòng riêng dưới tên cặp (mockup v28 L1c) — không ép cột tên */ }
   .pc-hop-duoi .pc-cap .tao { min-height: 44px; }
   .pc-cap .tao input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
   .pc-cap .ct { grid-column: 2 / -1; font-size: 12px; color: var(--text-faint); }

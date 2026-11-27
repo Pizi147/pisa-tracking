@@ -36,7 +36,38 @@ export type XemChuyenLopData = {
   bacYThuc?: number;
   /** Rà #1879: lớp đang chọn KHÁC gợi ý Cuối khoá → Lý do bắt buộc (máy chủ tính như lúc ra lệnh); còn lại Lý do tuỳ chọn (N56 ②). */
   canLyDo?: boolean;
+  /** LPB-2b: người nhận ba việc tự giao khi lưu lệnh (máy chủ, cùng GET). */
+  seGiao?: { banGiao: string | null; baoPh: { ten: string | null; laHead: boolean }; nhanTin: string | null; han: string } | null;
 };
+
+/**
+ * LPB-2b (mockup v28 L1a / L1b): "Sau khi lưu · việc tự giao" — ba hàng việc · người nhận · hạn. "Ngay hôm nay" không sinh việc Báo PH / Nhận thông tin (chủ SP 26/11):
+ * còn mỗi hàng Bàn giao + một câu nói rõ điều đó.
+ */
+function SeGiao({ g, hanBanGiao, ngayNay }: { g: NonNullable<XemChuyenLopData['seGiao']>; hanBanGiao: string; ngayNay: boolean }) {
+  const hang: [string, string | null, string][] = [
+    [t('Bàn giao'), g.banGiao ? t('GVCN {ten} + GV bộ môn', { ten: g.banGiao }) : t('GV bộ môn'), hanBanGiao],
+    ...(ngayNay ? [] : [
+      [t('Báo PH'), g.baoPh.ten ? `${g.baoPh.laHead ? 'Head' : 'TVV'} ${g.baoPh.ten}` : null, g.han],
+      [t('Nhận thông tin'), g.nhanTin ? `BPXL ${g.nhanTin}` : null, g.han],
+    ] as [string, string | null, string][]),
+  ];
+  return (
+    <section className="mt-3.5 rounded-[10px] border px-3.5 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+      <h3 className="mb-2.5 mt-0 text-[12px] font-semibold text-slate-500">{t('Sau khi lưu · việc tự giao')}</h3>
+      <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-baseline gap-x-4 gap-y-1.5 text-sm max-sm:grid-cols-[max-content_minmax(0,1fr)]">
+        {hang.map(([viec, nguoi, han]) => (
+          <div key={viec} className="contents">
+            <dt className="font-semibold">{viec}</dt>
+            <dd className="m-0 min-w-0">{nguoi ?? '—'}</dd>
+            <dd className="m-0 whitespace-nowrap text-right text-[13px] tabular-nums text-dim max-sm:col-start-2 max-sm:text-left">{t('hạn {ngay}', { ngay: ngay(han) })}</dd>
+          </div>
+        ))}
+      </dl>
+      {ngayNay && <p className="mb-0 mt-2 text-[13px] text-dim">{t('Chuyển ngay hôm nay: không giao việc Báo PH (TVV) và Nhận thông tin (BPXL).')}</p>}
+    </section>
+  );
+}
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
 export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string | null; lyDo: string | null; /** N36: lựa chọn "Reset bậc vi phạm" của GVCN. */ resetBac?: boolean };
@@ -357,6 +388,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             {oReset && <OResetBac checked={resetBac} onChange={setResetBac} disabled={busy} phu={t('Đang ở {bac}', { bac: tenBac(bacNay) })} />}
           </Khoi>
 
+          {/* LPB-2b (mockup v28 L1a / L1b): ai nhận ba việc tự giao — lưu ý hậu quả của lệnh, không phải chú thích tĩnh. */}
+          {!dx && xemLop?.seGiao && <SeGiao g={xemLop.seGiao} hanBanGiao={hanGvcn} ngayNay={ngayNay} />}
           {dx ? (
             <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Head duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
           ) : toClassId && (

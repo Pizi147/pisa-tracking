@@ -745,6 +745,20 @@ export function tuyenCuaEm(p: Principal, sid: number): { tuyen: Tuyen | null; ch
 export const chuoiPhoiHop = (p: Principal, attemptIds: readonly number[]): Record<number, TomTuyen> =>
   Object.fromEntries(dungTuyenLo(p, [...new Set(attemptIds)].map((id) => ({ loai: 'phoi_hop' as const, khoa: String(id) }))).map((t) => [Number(t.khoa), tomTat(t)]));
 
+/**
+ * LPB-2b (mockup v28 L2a): bảng Báo PH nhiều em nguồn Chuyển lớp — mỗi lệnh: lớp mới · tuần vào (mã tuần) · TVV của em + chuỗi chấm tuyến Chuyển lớp.
+ * Hai câu cho cả lô (tên lệnh + tuyến theo lô), không N+1; lệnh ngoài quyền xem khung tuyến → chuỗi null.
+ */
+export function loChuyenLop(p: Principal, lenhIds: readonly number[]): Record<number, { lopMoi: string | null; tuan: string | null; tvv: string | null; chuoi: TrangThaiBuoc[] | null }> {
+  const ids = [...new Set(lenhIds)];
+  if (!ids.length) return {};
+  const homNay = demoToday();
+  const dong = db().prepare(`SELECT l.id, c.code AS dich, l.tuan_bat_dau AS tuan, u.full_name AS tvv FROM lenh_chuyen_lop l LEFT JOIN classes c ON c.id = l.lop_dich_id
+      JOIN students s ON s.id = l.student_id LEFT JOIN users u ON u.id = s.consultant_user_id WHERE l.id IN (SELECT value FROM json_each(?1))`).all(JSON.stringify(ids)) as { id: number; dich: string | null; tuan: string | null; tvv: string | null }[];
+  const chuoi = new Map(dungTuyenLo(p, ids.map((id) => ({ loai: 'chuyen_lop' as const, khoa: String(id) }))).map((t) => [Number(t.khoa), t.buoc.map((b) => b.trangThai)]));
+  return Object.fromEntries(dong.map((r) => [r.id, { lopMoi: r.dich, tuan: r.tuan ? tuanLich(r.tuan, homNay) : null, tvv: r.tvv, chuoi: chuoi.get(r.id) ?? null }]));
+}
+
 /* ---------------------------------------------------------------- theo dõi theo tuyến (C1) */
 
 const NGAY_BUOC = 60;

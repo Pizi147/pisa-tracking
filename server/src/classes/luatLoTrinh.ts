@@ -10,6 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { sauDoiChiNhanhEm } from '../worklist/giaoViec.ts';
+import { seGiaoChuyenLop } from './lienPhongBan.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { closeCasesBySystem, closeCasesOnProgrammeSwitch, dongPhoiHopLoTrinh, programmeOfCase } from '../cases/systemClose.ts';
@@ -580,9 +581,12 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
   let mt0: { tuXep: string | null } | null = null;
   let veThuong: { route: string | null; mt0: { coDiem: boolean; kyNang: string[] } | null; mockHuy: string[]; giuDiem: string[] } | null = null;
   let khoi: { khiChuyen: string[]; canhBao: boolean } = { khiChuyen: [], canhBao: false };
+  /** LPB-2b: "Sau khi lưu · việc tự giao" — chỉ khi đã chọn lớp đích (cùng GET, không request mới). */
+  let seGiao: ReturnType<typeof seGiaoChuyenLop> | null = null;
   if (toClassId) {
     const toClass = lopDichHopLe(toClassId, enr.class_id);
     if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
+    seGiao = seGiaoChuyenLop(sid, enr.class_id, { id: toClassId, branch_id: toClass.branch_id ?? null });
     const tuLop: LoaiLop = { ma: (enr.programme_code ?? null) as ProgrammeCode | null, ft, lt: enr.route };
     const denLop: LoaiLop = { ma: (toClass.programme_code ?? null) as ProgrammeCode | null, ft: !!toClass.is_fast_track, lt: toClass.route };
     huong = huongChuyenMotEm(enr, toClass, homNay, tuCuoiKhoa);
@@ -650,7 +654,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     luat, canLuuY: openCases.length === 0, doiChiNhanh, canLyDo,
     /** PR-CL (B3): bối cảnh + hướng máy chủ sẽ ra lệnh; Target đã có khi Lên FT (`null` → web hiện ô Target); MT0; việc FT → thường. */
     boiCanh: huong?.boiCanh ?? null, huong: huong?.huong ?? null, targetSan, nguonTarget, mt0, veThuong,
-    khiChuyen: khoi.khiChuyen, canhBao: khoi.canhBao,
+    khiChuyen: khoi.khiChuyen, canhBao: khoi.canhBao, seGiao,
     /** OV-11d (HV-13): tuần Final của lớp nguồn (lớp thường) — panel tính hạn bàn giao bằng `hanBanGiaoLenh` như lúc ra lệnh. */
     tuanFinal: (pr?.finalWeekStart ?? null) as string | null,
     /** Em FT có ghi danh ngay trước ở lớp thường → mã lớp đó ("tuần 1 · từ CP ELE 30"). */

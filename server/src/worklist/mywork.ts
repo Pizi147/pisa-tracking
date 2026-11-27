@@ -190,7 +190,7 @@ export type WorkItem = {
   hocVienLienQuan?: string;
   hangMuc?: string | null;
   /** LPB-0 (N73 ①): việc Báo PH · Chuyển lớp — lớp NGUỒN của lệnh; web gom một dòng "Chuyển lớp · {lớp cũ} · n em". */
-  nhomChuyenLop?: { lopId: number; ma: string } | null;
+  nhomChuyenLop?: { lopId: number; ma: string; /** LPB-2b: mã tuần vào lớp mới ("W3 SEP") — dòng "Chuyển lớp · vào …". */ vao?: string | null; /** Dòng em: "Lên MB ELE 02" · "Lên FT · MB FT 112". */ chiTiet?: string | null } | null;
 };
 
 /**

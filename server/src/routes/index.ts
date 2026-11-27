@@ -1737,13 +1737,19 @@ api.get('/y-thuc/bao-ph-lo', requireAuth, wrap((req) => {
   /* RA-2711: CX / Lead TVV xem "Tất cả" như QL (`nhinNhuQl`, như /my-work) — trước tập rỗng (CX) / chỉ việc mình chốt (Lead TVV): panel nhiều em trả {}. */
   const pXem = coVaiCx(p) && phamViXemViec(p) ? nhinNhuQl(p) : p;
   const cua = new Set(baoPhSvc.viecBaoPhCuaToi(pXem, { today: demoToday(), tatCa: true, branchId: null }).map((x) => x.viecId));
-  const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
-      WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
-    .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number; luot: number }[];
+  /* LPB-2b: + việc nguồn Chuyển lớp (`lenh_chuyen_id`; gộp với Kết quả Final thì có cả hai) — cùng câu, cùng quyền. */
+  const nguon = db().prepare(`SELECT v.id, v.phoi_hop_id AS ph, x.attempt_id AS luot, v.lenh_chuyen_id AS lenh FROM viec_bao_ph v LEFT JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id
+      WHERE v.id IN (SELECT value FROM json_each(?1)) AND (v.phoi_hop_id IS NOT NULL OR v.lenh_chuyen_id IS NOT NULL) AND (v.id IN (SELECT value FROM json_each(?2)) OR v.phu_trach_id = ?3)`)
+    .all(JSON.stringify(xin), JSON.stringify(xin.filter((id) => cua.has(id))), p.userId) as { id: number; ph: number | null; luot: number | null; lenh: number | null }[];
   if (!nguon.length) return {};
-  const chuoi = tuyenSvc.chuoiPhoiHop(p, nguon.map((r) => r.luot));
-  const nd = phoiHopSvc.noiDungNguonTvvLo(p, nguon.map((r) => r.ph));
-  return Object.fromEntries(nguon.map((r) => [r.id, { chuoi: chuoi[r.luot]?.chuoi ?? null, mayDien: nd.get(r.ph) ?? null }]));
+  const coPh = nguon.filter((r) => r.luot != null);
+  const chuoi = tuyenSvc.chuoiPhoiHop(p, coPh.map((r) => r.luot!));
+  const nd = phoiHopSvc.noiDungNguonTvvLo(p, coPh.map((r) => r.ph!));
+  const cl = tuyenSvc.loChuyenLop(p, nguon.filter((r) => r.lenh != null).map((r) => r.lenh!));
+  return Object.fromEntries(nguon.map((r) => {
+    const l = r.lenh != null ? cl[r.lenh] : undefined;
+    return [r.id, { chuoi: (r.luot != null ? chuoi[r.luot]?.chuoi : l?.chuoi) ?? null, mayDien: r.ph != null ? nd.get(r.ph) ?? null : null, ...(l ? { lopMoi: l.lopMoi, tuan: l.tuan, tvv: l.tvv } : {}) }];
+  }));
 }));
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
