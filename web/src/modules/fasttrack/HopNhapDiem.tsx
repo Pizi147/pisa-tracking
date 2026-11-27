@@ -221,14 +221,17 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     : null;
   if (!suaDuoc(cell)) {
     const vang = cell.sitStatus === 'absent' && cell.band === null && !cell.daChot;
+    /* TACH-LOP (PTA rà #2312): thẻ em 375 (`lon` + hai tầng) — ô chỉ xem cũng hai tầng: band trên, "n câu" dưới (không cắt "26/4"). */
+    const haiDong = lon && haiTangNgoai && !h.kieu && cell.rawScore !== null && cell.band !== null;
     return (
       <span className="inline-flex flex-col items-center">
         <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
           title={h.kieu === 'huy' ? h.doc : cell.noShow?.text ?? lyDoChiDoc(cell)}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
-          {vang ? t('Vắng') : h.kieu === 'huy' ? <ChipDaHuy ly={lyDoHuyO(cell)} /> : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
+          {vang ? t('Vắng') : h.kieu === 'huy' ? <ChipDaHuy ly={lyDoHuyO(cell)} /> : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span>
+            : <>{kyHieu}{haiDong ? <span className={`text-[14px] font-bold ${lopKq(kq)}`}>{h.chu}</span> : so}</>}
         </span>
-        {phu}
+        {phu ?? (haiDong ? <span className="block text-xs leading-4 text-[color:var(--text-dim)]" data-phu-odiem="">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span> : null)}
       </span>
     );
   }

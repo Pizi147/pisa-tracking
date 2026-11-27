@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useState, type ReactNode } from 'react';
-import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
+import { OHaiTang, OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
@@ -680,6 +680,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
       {(!cungDot || kyVong != null) && <span className="-mt-2 text-xs text-slate-400">{cungDot ? null : (row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[40px] items-start pt-0.5">MT{row.attemptNo}</span>
         : <Link className="link inline-flex min-h-[40px] items-start pt-0.5" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? `${cungDot ? '' : ' · '}${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>}
       {vangHang && <span className="-mt-2 text-xs"><DongVang vang={vangHang} tuan={tuanThiCua(oThe.filter((c, i) => chuVangThe[i]), homNay)} /></span>}
+      {/* TACH-LOP (PTA rà #2312): 375 năm ô một hàng — ô HAI TẦNG (band trên, "n câu" dưới, như #2196) thay "6.0 · 26/40" một dòng bị cắt / tràn mép thẻ. */}
+      <OHaiTang.Provider value>
       <div className="grid grid-cols-5 gap-1.5 text-center">
         {(['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const).map((s) => {
           const cell = cellOf(s);
@@ -703,6 +705,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
           );
         })}
       </div>
+      </OHaiTang.Provider>
       {(status !== 'idle' || soLoi > 0 || !!sEx?.length) && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />

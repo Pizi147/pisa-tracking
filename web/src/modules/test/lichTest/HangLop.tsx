@@ -96,21 +96,6 @@ export const ODot = ({ luot, classId, kind }: { luot: readonly LuotHang[]; class
   return <span className="lt-dot"><span><DotChinh luot={luot[0]} classId={classId} kind={kind} /></span>{phu && <small>{phu}</small>}</span>;
 };
 
-/** LT-DONG-GV (v23 L1 `.gv`): "GV A · B" dưới mã lớp (GV đang dạy, máy chủ `gvLop`); > 2 người → "GV A · B +n", đủ tên ở tooltip. Không phân công thì không vẽ. */
-/* Hai tên dài hơn ~27 ký tự thì không vừa cột Lớp (256, chữ 12) một dòng → chỉ tên đầu + "+n" (không để "…" nuốt mất "+n"). */
-const VUA_HAI_TEN = 27;
-function soTenHien(ds: readonly string[]): number {
-  return ds.length > 1 && ds.slice(0, 2).join(' · ').length > VUA_HAI_TEN ? 1 : Math.min(2, ds.length);
-}
-export function chuGvLop(ds: readonly string[] | undefined): string {
-  if (!ds?.length) return '';
-  const n = soTenHien(ds);
-  return t('GV {ten}', { ten: ds.slice(0, n).join(' · ') + (ds.length > n ? ` +${ds.length - n}` : '') });
-}
-export const DongGv = ({ ds }: { ds: readonly string[] | undefined }) => {
-  const chu = chuGvLop(ds);
-  return chu ? <small className="lt-gv" title={ds!.length > soTenHien(ds!) ? ds!.join(' · ') : undefined}>{chu}</small> : null;
-};
 
 /**
  * GIAM-COMPUTE C1 (chủ SP 21/11 "Làm C1"): lưới hàng lớp đang mở chỉ gắn (gọi `/classes/:id/cham`) khi tới gần khung nhìn — lề một màn trên / dưới. "Mở tất cả lớp"
@@ -137,10 +122,8 @@ function KhiToiGan({ ngay, children }: { ngay: boolean; children: ReactNode }) {
  * · hạn chấm (ngày tô màu theo luật hạn, lớp xong thì trống) · tiến độ (kèm thẻ "n bài chờ duyệt dời"; tooltip có "còn chờ: GV (môn)") · trạng thái; một hàng tiêu đề cột mảnh ở đầu.
  * Mở ra là lưới chấm tại chỗ đúng tuần thi của hàng (KHÔNG đổi). < 1024 px: mỗi lớp một thẻ (mã · tiến độ / đợt · môn / hạn · chờ dời · trạng thái).
  */
-export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
+export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
   lop: LopLichTest[];
-  /** LT-DONG-GV: classId → GV đang dạy (`LichTest.gvLop`). */
-  gvLop: LichTest['gvLop'];
   moCua: (l: LopLichTest) => boolean;
   onMo: (l: LopLichTest) => void;
   /** R1-LUU-TIEP: hết bài của người xem ở lớp đang chấm → "Lớp tiếp: {mã} ›" mở lớp kế trong tuần còn bài của người xem. */
@@ -184,7 +167,6 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
           <span className="block min-w-0 flex-1">
             <Link to={`/hoc-vien/lop/${l.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>
             {coChiNhanh && <small className="ml-2 whitespace-nowrap text-xs font-normal text-dim">{l.branchName}</small>}
-            {!gon && <DongGv ds={gvLop[l.classId]} />}
           </span>
         );
         return (
@@ -196,7 +178,6 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
                 /* ⑦ A6: thẻ ba dòng — mã · tiến độ / đợt / hạn · chờ dời · trạng thái. */
                 <span className="lt-the">
                   <span className="h1">{maLop}{tienDo}</span>
-                  <DongGv ds={gvLop[l.classId]} />
                   <span className="h2"><b><DotChinh luot={l.luot[0]} classId={l.classId} kind={l.kind} /></b>{dotPhu && <span className="text-xs text-dim">{dotPhu}</span>}</span>
                   <span className="h3">{han}<TheChoDoi n={l.choDuyetDoi} /><NhanLop l={l} chuaLuu={chuaLuu[k]} /></span>
                 </span>
