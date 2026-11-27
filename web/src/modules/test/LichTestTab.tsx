@@ -413,7 +413,7 @@ export function LichTestTab() {
                 : data.tvv?.dang ? t('Em của TVV:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
-            <KhoiNo no={noTab} gvLop={data.gvLop} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
+            <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
               dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
               onMoDong={(d, viTri) => {
                 /* Dòng đang mở còn ô chưa lưu: đóng nó là mất giá trị đã gõ — hỏi trước. */
@@ -428,7 +428,7 @@ export function LichTestTab() {
                 tieuDe={data.laTuanNay ? t('Tuần này') : maTuan} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}
                 <ChiOTrongContext.Provider value={chiTrong}>
-                <HangLop lop={lopTab} gvLop={data.gvLop} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
+                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
                 </ChiOTrongContext.Provider>
               </NhomDau>
