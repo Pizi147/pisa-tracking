@@ -122,7 +122,7 @@ export const ChuConCho = ({ ds }: { ds: string }) => (
 
 /** Dòng công cụ lưới FT: trái "Còn chờ", phải (nguyên khối, hết chỗ thì cả khối xuống dưới) chú giải + ô "GV chấm S". */
 const ThanhGv = ({ conCho, phai, className }: { conCho: string; phai: ReactNode; className: string }) => (
-  <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-3 ${className}`}>
+  <div className={`thanh-gv flex flex-wrap items-center gap-x-4 gap-y-1 px-3 ${className}`}>
     {conCho && <span className="min-w-0 text-[13px] leading-snug text-dim"><ChuConCho ds={conCho} /></span>}
     {phai && <span className="ml-auto inline-flex flex-wrap items-center justify-end gap-x-4 gap-y-1">{phai}</span>}
   </div>

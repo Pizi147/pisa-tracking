@@ -1982,6 +1982,41 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   @media (min-width: 1024px) { .lt-bang > thead > tr.lt-cot > th:last-child, .lt-bang tr.lt-hang > td:last-child { text-align: right; } }
   .lt-bang tr.lt-hang:not(.dang-mo) > td:first-child { box-shadow: none; }
   .lt-bang tr.lt-hang.dang-mo > td { background-image: linear-gradient(color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), color-mix(in srgb, var(--accent-soft) 55%, var(--surface))); }
+  /* TACH-LOP (chủ SP 28/11, đặc tả 2026-11-28-lich-test-tach-lop): mỗi lớp một KHỐI — viền + bo 10, khe 16 px, vạch trái 3 px chạy suốt khối (nhấn khi mở).
+     Ba tầng nền: hàng lớp (nổi nhất, nhuốm nhấn) · tiêu đề cột lưới (dải riêng, chữ 12 mờ) · hàng em (tối nhất). Dòng "Còn chờ · GV chấm S / Tổng số câu" xuống CUỐI khối. */
+  .lt-bang.lt-tach { border-collapse: separate; border-spacing: 0; width: calc(100% - 24px); margin: 0 12px 12px; }
+  .lt-tach > tbody.lt-khe > tr > td { height: 16px; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+  .lt-tach > tbody:not(.lt-khe) > tr > td:first-child { border-left: 3px solid var(--line-strong); box-shadow: none !important; }
+  .lt-tach > tbody:not(.lt-khe):has(> tr.dang-mo) > tr > td:first-child { border-left-color: var(--accent-strong); }
+  .lt-tach > tbody:not(.lt-khe) > tr > td:last-child { border-right: 1px solid var(--line-strong); }
+  .lt-tach > tbody:not(.lt-khe) > tr:first-child > td { border-top: 1px solid var(--line-strong) !important; }
+  .lt-tach > tbody:not(.lt-khe) > tr:last-child > td { border-bottom: 1px solid var(--line-strong); }
+  .lt-tach > tbody:not(.lt-khe) > tr:first-child > td:first-child { border-top-left-radius: 10px; }
+  .lt-tach > tbody:not(.lt-khe) > tr:first-child > td:last-child { border-top-right-radius: 10px; }
+  .lt-tach > tbody:not(.lt-khe) > tr:last-child > td:first-child { border-bottom-left-radius: 10px; }
+  .lt-tach > tbody:not(.lt-khe) > tr:last-child > td:last-child { border-bottom-right-radius: 10px; }
+  .lt-tach > tbody > tr.lt-hang > td { background-color: color-mix(in srgb, var(--accent-soft) 45%, var(--surface-2)); }
+  .lt-tach > tbody > tr.lt-hang.dang-mo > td { border-bottom: 1px solid var(--line); }
+  .lt-tach .lt-luoi { overflow: clip; }
+  .lt-tach .lt-luoi > div { padding: 0; }
+  .lt-tach .lt-luoi .bang > thead > tr > th { background: var(--surface) !important; font-size: 12px; font-weight: 600; color: var(--text-faint); }
+  .lt-tach .lt-luoi .bang > tbody > tr > td { background-color: color-mix(in srgb, var(--bg) 55%, var(--surface)); }
+  /* Dòng "Còn chờ…" (FT: + GV chấm S · lớp thường: + Tổng số câu · 375 một kỹ năng) — chỉ ở Lịch Test, panel việc giữ trên lưới. */
+  .lt-tach .lt-luoi div:has(> .thanh-gv), .lt-tach .lt-luoi div:has(> .luoi-thuong) { display: flex; flex-direction: column; row-gap: 0; }
+  /* Lớp thường: bảng · "Tạo bài còn thiếu" · dòng Còn chờ + Tổng số câu cuối (bỏ hai lớp bọc để ba phần cùng một cột). */
+  .lt-tach .lt-luoi :is(.luoi-thuong, .luoi-thuong > .space-y-2) { display: contents; }
+  .lt-tach .lt-luoi .luoi-thuong > .space-y-2 > * { margin: 0 !important; }
+  .lt-tach .lt-luoi .thanh-gv, .lt-tach .lt-luoi div:has(> .cong-cu-tong) { order: 1; }
+  .lt-tach .lt-luoi :is(.thanh-gv, .cong-cu-tong) { padding: 6px 12px 6px 16px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12px; }
+  .lt-tach .lt-luoi :is(.thanh-gv, .cong-cu-tong) > span, .lt-tach .lt-luoi .cong-cu-tong label { font-size: 12px; }
+  .lt-tach .lt-luoi :is(.thanh-gv, .cong-cu-tong) :is(select, input, button) { font-size: 12px; }
+  @media (min-width: 640px) {
+    .lt-tach .lt-luoi :is(.thanh-gv, .cong-cu-tong) :is(select, button) { min-height: 0; height: 28px; }
+    .lt-tach .lt-luoi .thanh-gv .oc { min-height: 30px; padding-block: 0; }
+    .lt-tach .lt-luoi .thanh-gv .w-\[300px\] { width: 220px; }
+    .lt-tach .lt-luoi .thanh-gv .oc-bo { width: 24px; height: 24px; }
+  }
+  @media (max-width: 639px) { .lt-bang.lt-tach { width: 100%; margin: 0 0 8px; } .lt-tach > tbody:not(.lt-khe) > tr > td:first-child { border-left-width: 2px; } }   /* 375 không hẹp hơn trước: khối sát mép thẻ */
   .lt-ma { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; text-decoration: none; }
   .lt-ma:hover { color: var(--accent); text-decoration: underline; }
   .lt-the > .lt-gv { margin-top: -5px; }   /* < 1024: dòng GV riêng ngay dưới mã lớp (sát dòng mã, không cách như các dòng thẻ) */

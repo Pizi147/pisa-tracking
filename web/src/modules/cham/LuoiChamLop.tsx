@@ -10,7 +10,7 @@ import { dongCuaBai, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Dòng nhỏ "Còn chờ: GV (môn) · …" ở đầu lưới FT / một kỹ năng (lớp thường: nằm trong dòng công cụ của `LuoiThuong`). Rỗng thì không vẽ. */
-const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim"><ChuConCho ds={ds} /></p> : null);
+const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="thanh-gv m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim"><ChuConCho ds={ds} /></p> : null);
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
 export type Cham = {

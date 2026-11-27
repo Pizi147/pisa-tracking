@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
@@ -167,10 +167,11 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
   };
 
   return (
-    <table className="lt-bang w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
+    /* TACH-LOP (chủ SP 28/11): mỗi lớp một khối viền + bo góc, khe giữa hai khối (`tbody.lt-khe`) — vẫn MỘT bảng để đầu cột dính và cột thẳng nhau. */
+    <table className="lt-bang lt-tach w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
       {gon ? <colgroup><col /></colgroup> : <ColLichTest />}
       {!gon && <DauCotLichTest />}
-      {lop.map((l) => {
+      {lop.map((l, i) => {
         const k = khoaHang(l);
         const mo = moCua(l);
         /* Việc xong không nơi nào còn báo hạn: hạn chỉ khi còn bài (người có phân công: bài của mình). */
@@ -187,7 +188,9 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
           </span>
         );
         return (
-          <tbody key={k}>
+          <Fragment key={k}>
+          {i > 0 && <tbody className="lt-khe" aria-hidden><tr><td colSpan={soCot} /></tr></tbody>}
+          <tbody>
             <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={`lt-hang ${mo ? 'dang-mo' : ''}`}
               tieuDe={gon ? (
                 /* ⑦ A6: thẻ ba dòng — mã · tiến độ / đợt / hạn · chờ dời · trạng thái. */
@@ -220,6 +223,7 @@ export function HangLop({ lop, gvLop, moCua, onMo, onLopTiep, coChiNhanh, gon, u
               </HangCon>
             )}
           </tbody>
+          </Fragment>
         );
       })}
     </table>
