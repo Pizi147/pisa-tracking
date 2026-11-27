@@ -19,7 +19,7 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
 import { NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
-import { lamMoiYThucCua, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { lamMoiYThucCua, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type TomTuyen, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
@@ -54,7 +54,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
   /* S5 PR B: roster chỉ cho ô chọn em + cờ xem hồ sơ — dùng bản trang lớp đã nạp (không đọc lại khi bản > 10 s); lần ghi vô hiệu bản lưu, khối khác tải thì nhận bản mới. */
   const roster = useApi<any[]>(`/classes/${classId}/roster`, [], { dungBanLuu: true, chiNghe: true });   // R3-T5: chỉ lấy tên — không tải lại sau mỗi thao tác Ý thức
   const [includeDone, setIncludeDone] = useState(false);
-  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}`, [classId, includeDone]);
+  const coord = useApi<{ rows: CoordTurn[]; pendingCount: number; chuoiTuyen?: Record<number, TomTuyen> }>(`/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}`, [classId, includeDone]);
   /* Phân đoạn ghi vào địa chỉ (`sub`) — sang hồ sơ em rồi Quay lại về đúng chỗ. YT-a: bỏ `Cần làm | Lịch sử` (lịch sử mở trong khối em). */
   const phan: 'vi-pham' | 'phoi-hop' = params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham';
   const setPhan = (p: 'vi-pham' | 'phoi-hop') => {
@@ -527,7 +527,7 @@ export function ClassYThucCard({ classId, thuong = false }: { classId: number; t
           {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
             : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
             /* PHOI-HOP-V2 PR-2 (mockup #1368 K5–K6): bảng chung với panel Công việc. */
-            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="hocVien" onChanged={() => { coord.reload(); }} khongMo={khongMo} />}
+            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="hocVien" onChanged={() => { coord.reload(); }} khongMo={khongMo} chuoi={coord.data.chuoiTuyen} />}
         </div>
       ) : !d.emLop.length ? (
         <div className="p-4"><Empty title={t('Lớp chưa có học viên')} /></div>
