@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, laHeadHoacQt, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeLichTest, scopeXemLuotCham, type Principal,
+  activeAt, bangLop, can, classScopeSql, coVaiCx, defaultWorkScope, editableSkills, laHeadHoacQt, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeLichTest, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -28,12 +28,42 @@ import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
 import { nguoiGiuO, oCuaToi, phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { sExTuan, type DongSEx } from './sExpert.ts';
+import { dsTvv } from '../students/students.ts';
+
+/**
+ * LOC-TVV (chủ SP 28/11): bộ lọc TVV của Lịch Test — chỉ em có `consultant_user_id` = TVV đó. Head / Quản trị / CX (+ Lead TVV) chọn TVV bất kỳ;
+ * vai TVV mặc định chính mình, `all` = bỏ lọc, id khác bị thay bằng chính mình; vai khác không lọc. `raw`: tham số `tvv` trên đường dẫn.
+ */
+export const chonTvvKhac = (p: Principal): boolean => laHeadHoacQt(p) || coVaiCx(p);
+const laVaiTvv = (p: Principal): boolean => p.roleKeys.includes('consultant');
+export function tvvLoc(p: Principal, raw: string | null | undefined): number | null {
+  if (raw === 'all') return null;
+  const id = raw ? Number(raw) : NaN;
+  if (Number.isInteger(id) && id > 0) return chonTvvKhac(p) ? id : laVaiTvv(p) ? p.userId : null;
+  return laVaiTvv(p) && !chonTvvKhac(p) ? p.userId : null;
+}
+/** Em của một TVV — MỘT câu; nơi gọi lọc danh sách đã nạp (khối Quá hạn, S Ex, nhắc MT cũ, lưới lớp, ô quá hạn). */
+export const emCuaTvv = (tvv: number): Set<number> =>
+  new Set((db().prepare('SELECT id FROM students WHERE consultant_user_id = ?').all(tvv) as any[]).map((r) => r.id as number));
 
 export function chamSheet(
   p: Principal, classId: number,
   /** `attemptNo` (PR-DL): bảng FT theo một số lượt MT, không lọc tuần — thắng `periodId`. */
-  opts: { periodId?: number | null; kind?: string | null; attemptNo?: number } = {},
+  opts: { periodId?: number | null; kind?: string | null; attemptNo?: number; tvv?: number | null } = {},
   today: string = demoToday(),
+) {
+  const kq = bangCham(p, classId, opts, today);
+  /* LOC-TVV: lưới mở tại chỗ của Lịch Test lọc theo TVV — bỏ hàng em ngoài tập ở máy chủ (web không nhận em của TVV khác). */
+  if (opts.tvv) {
+    const em = emCuaTvv(opts.tvv);
+    const bang = (kq.ft ?? kq.thuong) as { rows: { studentId: number }[] } | null;
+    if (bang) bang.rows = bang.rows.filter((r) => em.has(r.studentId));
+  }
+  return kq;
+}
+
+function bangCham(
+  p: Principal, classId: number, opts: { periodId?: number | null; kind?: string | null; attemptNo?: number }, today: string,
 ) {
   const cls = db()
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
@@ -147,7 +177,7 @@ export type NhacLichSu = {
  * K2-32 — LƯỢT MT LỊCH SỬ CÒN THIẾU ĐIỂM, gom theo lớp: một dòng nhắc MỜ ở Lịch Test và một việc xám ở Việc cần làm (không số đỏ,
  * không vào dải số hay Nợ, không hạn). Chỉ lớp người xem là GVCN hoặc Quản lý (xếp tuần được lớp đó). Một câu cho mọi lớp.
  */
-export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null;
+export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null; chiEm?: ReadonlySet<number> | null;
   /** TD-VIEC-2: nơi gọi chỉ dùng lớp `loc` trả true (QL "Của tôi" — lớp chưa có GVCN khác) → chỉ đọc lượt các lớp đó. */ loc?: (classId: number) => boolean } = {}): NhacLichSu[] {
   if (o.classIds && !o.classIds.length) return [];
   /*
@@ -186,6 +216,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   const duoc = new Map<number, boolean>();
   const theoLop = new Map<number, { classCode: string; em: Set<number>; luot: Map<number, Set<number>> }>();
   for (const r of rows) {
+    if (o.chiEm && !o.chiEm.has(r.student_id)) continue;   // LOC-TVV
     if (!duoc.has(r.class_id)) duoc.set(r.class_id, isCoreTeacherOf(p, r.class_id) || can(p, PERMISSIONS.PLAN_WEEK, { classId: r.class_id }));
     if (!duoc.get(r.class_id)) continue;
     const l = theoLop.get(r.class_id) ?? { classCode: r.code as string, em: new Set<number>(), luot: new Map<number, Set<number>>() };
@@ -270,7 +301,7 @@ export type OHanRieng = { periodId: number; attemptId: number; oNhap: string };
  */
 export function noQuaHan(
   p: Principal,
-  f: { branchId?: number | null; classIds: ReadonlySet<number> | null; lopCuaToi: ReadonlySet<number>; coPhanCong?: boolean },
+  f: { branchId?: number | null; classIds: ReadonlySet<number> | null; lopCuaToi: ReadonlySet<number>; coPhanCong?: boolean; chiEm?: ReadonlySet<number> | null },
   today: string = demoToday(),
 ): { dong: DongNo[]; hanRieng: OHanRieng[] } {
   if (f.classIds && !f.classIds.size) return { dong: [], hanRieng: [] };
@@ -279,9 +310,10 @@ export function noQuaHan(
   const motLop = f.classIds && f.classIds.size === 1 ? [...f.classIds][0] : undefined;
   /* PR-UXF-a T65: em Tạm dừng không sinh nợ điểm (Lịch Test + khối Nợ). */
   /* Rà #218 I2: cùng phạm vi khối 2/3 (`scopeXemLuotCham`) — GV Speaking chấm chéo thấy S Mock quá hạn của lớp FT cùng chi nhánh. */
-  const { rows } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true, phamViLich: true, chiConO: true,
+  const { rows: moiEm } = listAttempts(p, { branchId: f.branchId ?? undefined, classId: motLop, scope: 'managed', chiDangHoc: true, phamViCham: true, phamViLich: true, chiConO: true,
     /* TD7c: khối 1 + ô hạn riêng chỉ lấy ô thi trước tuần trước (`khoiCham`: tuần trước / tuần này → khối 2, đã có `hangLopTuan`) — lượt khác không nạp. */
     chiTruocTuan: tuanTruoc });
+  const rows = f.chiEm ? moiEm.filter((a: any) => f.chiEm!.has(a.studentId)) : moiEm;   // LOC-TVV
   /* Một câu mỗi LỚP (như `isRatioClass` trước đây), không mỗi dòng: cách chấm + mã chương trình. */
   const lopInfo = new Map<number, { mode: CheDo; ct: string | null }>();
   const lopOf = (classId: number) => {
@@ -422,7 +454,7 @@ const lopToiDay = (p: Principal, today: string): Set<number> =>
   new Set([...p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId), ...(p.phanCongCu ?? []).map((a) => a.classId)]);
 
 export function oQuaHanCham(
-  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null; khung?: Khung | null }, today: string = demoToday(),
+  p: Principal, o: { branchId?: number | null; phamVi?: PhamViLichTest | null; classId?: number | null; khung?: Khung | null; tvv?: number | null }, today: string = demoToday(),
 ): { ids: number[]; khac: number[]; lop: number } {
   const coPhanCong = defaultWorkScope(p) === 'mine' && !laHeadHoacQt(p);
   const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
@@ -440,10 +472,14 @@ export function oQuaHanCham(
   const r = overdueScoreBai(p, o.branchId ?? null, today, chiLop);
   /* OV-14b: khung đang xem (công tắc FT / Lớp thường) — cùng luật `khungDong` của các khối (MT0 thuộc Lớp thường); FT + thường = cả hai. */
   const khungLuot = new Map<number, Khung>();
-  if (o.khung) {
+  /* LOC-TVV: em của lượt — cùng câu đọc lượt với khung (không thêm câu khi không lọc TVV). */
+  const emLuot = new Map<number, number>();
+  const emTvv = o.tvv ? emCuaTvv(o.tvv) : null;
+  if (o.khung || emTvv) {
     theoLoJson([...new Set(r.ids.map((id) => Math.floor(id / 10)))], (json) => {
-      for (const a of db().prepare(`SELECT id, kind, class_id FROM assessment_attempts WHERE id IN (${DS_JSON})`).all(json) as any[]) {
-        khungLuot.set(a.id, khungDong({ mode: cheDoCua(programmeOfClass(a.class_id)?.code), kind: a.kind }));
+      for (const a of db().prepare(`SELECT id, kind, class_id, student_id FROM assessment_attempts WHERE id IN (${DS_JSON})`).all(json) as any[]) {
+        if (o.khung) khungLuot.set(a.id, khungDong({ mode: cheDoCua(programmeOfClass(a.class_id)?.code), kind: a.kind }));
+        emLuot.set(a.id, a.student_id);
       }
     });
   }
@@ -453,6 +489,7 @@ export function oQuaHanCham(
     const classId = r.lopCua.get(id)!;
     if ((o.classId && classId !== o.classId) || (cuaToi && !lopCuaToi.has(classId))) continue;
     if (o.khung && khungLuot.get(Math.floor(id / 10)) !== o.khung) continue;
+    if (emTvv && !emTvv.has(emLuot.get(Math.floor(id / 10))!)) continue;
     if (cuaToi && !r.chiTiet.get(id)?.nguoi.includes(p.userId)) { khac.push(id); continue; }
     ids.push(id);
     lop.add(classId);
@@ -546,6 +583,8 @@ export type LichTest = {
   sEx: DongSEx[];
   /** LT-DONG-GV (mockup v23 L1): classId → tên GV đang dạy (phân công đang hiệu lực, thứ tự L R W S, trùng tên ghi một lần) — dòng "GV …" dưới mã lớp. */
   gvLop: Record<number, string[]>;
+  /** LOC-TVV (chủ SP 28/11): TVV đang lọc (`dang`, null = mọi em) · `ds` ô chọn TVV (Head / Quản trị / CX); cả khối `null` = vai không có bộ lọc này. */
+  tvv: { dang: number | null; ds: { id: number; ten: string }[] | null } | null;
 };
 
 type OiemLuu = {
@@ -596,12 +635,14 @@ function hangLopTuan(
     lopCuaToi: ReadonlySet<number>; giuLop: (classId: number) => boolean;
     /** TD-CHAM: đúng tập lớp `giuLop` giữ (null = mọi lớp trong phạm vi) — lọc ngay trong câu, không nạp lớp ngoài "Lớp tôi dạy" / lớp đang lọc. */
     chiLop: ReadonlySet<number> | null;
+    /** LOC-TVV: chỉ em của TVV này — lọc trong câu. */
+    tvv?: number | null;
   },
   tuan: { id: number; week_start: string; week_end: string },
   /** Khối 2 hạn riêng: chỉ các ô `${attemptId}:${ô nhập}` này. */
   loc?: ReadonlySet<string>,
 ): LopLichTest[] {
-  const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop } = ctx;
+  const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop, tvv } = ctx;
   const conn = db();
   const periodId = tuan.id;
   /* Tuần đang xem còn ở phía trước thì chưa ai nợ bài nào. */
@@ -611,6 +652,7 @@ function hangLopTuan(
   let where = `${cs.sql} AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')} AND ask.required = 1 AND ask.planned_period_id = ?`;
   if (branchId) { where += ' AND c.branch_id = ?'; params.push(branchId); }
   if (chiLop) { where += ` AND a.class_id IN (${DS_JSON})`; params.push(JSON.stringify([...chiLop])); }
+  if (tvv) { where += ' AND s.consultant_user_id = ?'; params.push(tvv); }
   const rows = conn
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
@@ -817,7 +859,7 @@ function xepLopCham(a: HangCham, b: HangCham): number { return soSanhLopCham(lop
  */
 export function lichTest(
   p: Principal, periodId: number, branchId?: number | null, today: string = demoToday(),
-  o: { phamVi?: PhamViLichTest | null; classId?: number | null } = {},
+  o: { phamVi?: PhamViLichTest | null; classId?: number | null; tvv?: number | null } = {},
 ): LichTest {
   /* PR-HSM: GV Speaking thấy thêm lớp FT cùng chi nhánh ở "Tất cả" (chấm S chéo) — chỉ màn này, không mở rộng phạm vi chung. */
   const scope = scopeLichTest(p, today);   // VAI-0 (N77): BPXL thấy lịch mọi chi nhánh
@@ -827,7 +869,7 @@ export function lichTest(
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [], sEx: [], gvLop: {},
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [], sEx: [], gvLop: {}, tvv: null,
   };
   if (scope.none) return rong;
   const conn = db();
@@ -854,11 +896,13 @@ export function lichTest(
   const lopNo: Set<number> | null = phamVi === 'cua-toi'
     ? new Set([...lopCuaToi].filter((id) => !o.classId || id === o.classId))
     : o.classId ? new Set([o.classId]) : null;
-  const ctx = { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop: lopNo };
+  const tvv = o.tvv ?? null;
+  const emTvv = tvv ? emCuaTvv(tvv) : null;
+  const ctx = { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop: lopNo, tvv };
 
   const lop = hangLopTuan(p, ctx, tuan);
 
-  const no = noQuaHan(p, { branchId, classIds: lopNo, lopCuaToi, coPhanCong }, today);
+  const no = noQuaHan(p, { branchId, classIds: lopNo, lopCuaToi, coPhanCong, chiEm: emTvv }, today);
 
   let chamTuanNay: LopLichTest[] | null = null;
   if (laTuanNay) {
@@ -907,9 +951,12 @@ export function lichTest(
     no: no.dong,
     chamTuanNay,
     lop,
-    nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId }),
-    sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today),
+    nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId, chiEm: emTvv }),
+    sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today).filter((d) => !emTvv || emTvv.has(d.studentId)),
     gvLop: gvCuaLop([...new Set([...lop, ...no.dong].map((x) => x.classId))], today),
+    /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvv`); vai TVV: web dựng ô chọn "TVV" chính mình · Tất cả HV (không cần danh sách). */
+    tvv: chonTvvKhac(p) ? { dang: tvv, ds: dsTvv(null, branchId ?? null).map(({ id, ten }) => ({ id, ten })) }
+      : laVaiTvv(p) ? { dang: tvv, ds: null } : null,
   };
 }
 

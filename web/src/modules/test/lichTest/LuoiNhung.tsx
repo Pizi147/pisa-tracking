@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { attemptCoBaiTuan, attemptCuaEm } from '@shared/domain/index.ts';
 import { useApi } from '../../../lib/useApi.ts';
@@ -8,6 +8,9 @@ import type { SExTuan } from '../../cham/LuoiFT.tsx';
 import type { OnHet } from '../../cham/phienCham.ts';
 import { DongThiContext, LuotChinhContext } from '../../cham/DongThi.tsx';
 import { t } from '@shared/i18n/index.ts';
+
+/** LOC-TVV (chủ SP 28/11): TVV đang lọc ở Lịch Test — lưới chỉ nhận em của TVV đó (máy chủ lọc). Nơi khác (panel việc) không đặt → cả lớp. */
+export const TvvLocContext = createContext<number | null>(null);
 
 /**
  * LƯỚI CHẤM MỞ TẠI CHỖ (PR-UX1) — dưới một hàng lớp hoặc một dòng Nợ. Cùng lưới với trang lưới đầy đủ (`LuoiChamLop`),
@@ -39,7 +42,8 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   /** LICH-TEST-GON: đợt chính của lớp ("MT3") — ghi ở hàng lớp; lưới không lặp ở mọi em. `null` (panel việc…) = như cũ. */
   luotChinh?: string | null;
 }) {
-  const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
+  const tvv = useContext(TvvLocContext);
+  const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind, tvv }));
   const chiAttempt = useMemo(() => {
     if (chiAttemptVao) return chiAttemptVao;
     const theoEm = chiHv && data ? attemptCuaEm(data.ft?.rows ?? data.thuong?.rows ?? [], chiHv) : null;

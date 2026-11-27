@@ -309,7 +309,8 @@ function urlFor(mau: string): string {
     .replace('{vp}', String(VP))
     .replace('{cn}', String(CN))
     .replace('{sos23}', SOS23)
-    .replace('{gv}', String(USER.GVCN));
+    .replace('{gv}', String(USER.GVCN))
+    .replace('{tvv}', String(USER.TVV));   // LOC-TVV
 }
 /* PANEL-MC: khoá trần được viết bằng chỗ thay như URL (`{ycPa}`…) — id lấy từ dữ liệu lúc chạy, không viết cứng. Khoá đã là id thật giữ nguyên. */
 const TRAN: Record<string, number> = Object.fromEntries(Object.entries(TRAN_MAU).map(([k, v]) => [urlFor(k), v]));

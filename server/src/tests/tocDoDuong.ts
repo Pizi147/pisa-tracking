@@ -142,6 +142,11 @@ export const DUONG_DO: MucDo[] = [
   /* SUA-2211-B2 (PTA rà #1987): TVV xem Lịch Test tuần (test.view, chỉ đọc) — đo trên TVV MB (49 em). */
   { trang: 'Lịch Test TVV', vai: ['TVV'], url: '/cham/lich-test' },
   { trang: 'Lịch Test TVV', vai: ['TVV'], url: '/cham/lich-test/qua-han' },
+  /* LOC-TVV (chủ SP 28/11): TVV bỏ lọc (`all` = như trước) · Head / CX chọn một TVV (`{tvv}` = TVV MB) · lưới mở tại chỗ lọc theo TVV. */
+  { trang: 'Lịch Test TVV', vai: ['TVV'], url: '/cham/lich-test?tvv=all' },
+  { trang: 'Lịch Test', vai: ['QL', 'CX'], url: '/cham/lich-test?tvv={tvv}' },
+  { trang: 'Lịch Test', vai: ['QL'], url: '/cham/lich-test/qua-han?tvv={tvv}' },
+  { trang: 'Lịch Test', vai: ['QL', 'TVV'], url: '/classes/{lopFT}/cham?tvv={tvv}' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
   /* S-CHEO-CN (16/11): mục "Chi nhánh khác" của panel Chấm Speaking — chỉ tải khi mở; GV Speaking đo ở prSCheoCn (`TRAN_CHAM_SPEAKING_CN_KHAC`). */
@@ -586,6 +591,10 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* LOC-TVV (28/11): TVV mặc định lọc em của mình (+1 câu em của TVV: 19, bỏ lọc 18) · quá hạn TVV 8 → 9 · CX + ô chọn TVV 22 → 24 · Head chọn TVV 21 ·
+     lưới lớp lọc TVV 12 → 14 (TVV 12) → đo + 10. */
+  'TVV /cham/lich-test?tvv=all': 28, 'QL /cham/lich-test?tvv={tvv}': 31, 'CX /cham/lich-test?tvv={tvv}': 31, 'QL /cham/lich-test/qua-han?tvv={tvv}': 19,
+  'QL /classes/{lopFT}/cham?tvv={tvv}': 24, 'TVV /classes/{lopFT}/cham?tvv={tvv}': 22,
   /* R3-T3 (24/11): bó phần 2 hồ sơ lớp gửi cùng lúc phần 1 (`tuy=1`). */
   'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 95,   // đo 73
   'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 58,   // đo 44

@@ -6,7 +6,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useMoSoLieu, useTenTrang } from '../../lib/quayLai.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
-import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
+import { BranchFilter, OChiNhanh, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { useDienThoai, useManHinh } from '../../ui/TheDong.tsx';
 import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
@@ -20,6 +20,7 @@ import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { NhomDau } from './lichTest/NhomDau.tsx';
+import { TvvLocContext } from './lichTest/LuoiNhung.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatTest } from './NganXuatTest.tsx';
 import { MenuDong, NUT_BA_CHAM, type MucMenu } from '../../ui/MenuDong.tsx';
@@ -80,6 +81,8 @@ export function LichTestTab() {
   const loaiParam = params.get('loai') as Loai | null;
   /* Chủ SP 26/11: bộ lọc "Còn trống" — chỉ hàng lớp / em có ô CỦA TUẦN ĐANG XEM chưa có điểm. Trên đường dẫn như `loai` (F5 / Back giữ). */
   const chiTrong = params.get('trong') === '1';
+  /* LOC-TVV (chủ SP 28/11): `tvv` = id TVV / `all` (bỏ lọc); không có → máy chủ chọn mặc định (vai TVV: chính mình). Máy chủ lọc mọi khối + lưới. */
+  const tvvParam = params.get('tvv');
 
   const qs = new URLSearchParams();
   if (periodParam) qs.set('periodId', String(periodParam));
@@ -87,6 +90,7 @@ export function LichTestTab() {
   else if (tatCaCn) qs.set('branchId', 'all');
   if (phamViParam === 'cua-toi' || phamViParam === 'tat-ca') qs.set('phamVi', phamViParam);
   if (urlClassId) qs.set('classId', String(urlClassId));
+  if (tvvParam) qs.set('tvv', tvvParam);
   const { data, error, reload } = useApi<LichTest>(`/cham/lich-test?${qs}`);
 
   const datThamSo = (doi: Record<string, string | null>) => {
@@ -319,10 +323,18 @@ export function LichTestTab() {
     ...(session?.nav?.students ? [{ key: 'lich-thi', nhan: t('Lịch thi thật ›'), onChon: () => navigate(duongLichThi) }] : []),
   ];
   const nutBaCham = mucBaCham.length > 0 && <MenuDong muc={mucBaCham} nhan={t('Thao tác khác · Test')} lopNut={NUT_BA_CHAM} />;
-  const locChiNhanh = <BranchFilter luon={bpxl} branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : bpxl ? 'all' : null, branchId: null })} />;
-  /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
-  const soLoc = (branchId && branchId !== cnGan ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
-  const coGiTrongLoc = branchCount > 1 || bpxl || !!data.coPhamViRong;
+  /* LOC-TVV: đổi chi nhánh thì bỏ TVV đã chọn (danh sách TVV theo chi nhánh). */
+  const locChiNhanh = <BranchFilter luon={bpxl} branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : bpxl ? 'all' : null, branchId: null, ...(data.tvv?.ds ? { tvv: null } : {}) })} />;
+  /* LOC-TVV (chủ SP 28/11 "TVV (tôi) và tất cả HV, mặc định là tôi"): MỘT ô chọn "TVV" cho mọi vai (`OChiNhanh`) — Head / Quản trị / CX: các TVV của chi nhánh
+     đang xem; vai TVV: chính mình (mặc định) · "Tất cả HV" (`tvv=all`; Head không lọc là mặc định nên bỏ tham số). */
+  const locTvv = data.tvv && (
+    <OChiNhanh nhan={t('TVV')} nhanTatCa={t('Tất cả HV')} hetHang={dienThoai} branchId={data.tvv.dang}
+      branches={data.tvv.ds ? data.tvv.ds.map((x) => ({ id: x.id, name: x.ten })) : [{ id: nguoiId ?? 0, name: session?.user?.fullName ?? t('TVV') }]}
+      onBranch={(id) => datThamSo({ tvv: id ? String(id) : data.tvv!.ds ? null : 'all' })} />
+  );
+  /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp); LOC-TVV: đang lọc theo TVV (cả mặc định của vai TVV — lưới ẩn em khác). */
+  const soLoc = (branchId && branchId !== cnGan ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0) + (data.tvv?.dang ? 1 : 0);
+  const coGiTrongLoc = branchCount > 1 || bpxl || !!data.coPhamViRong || !!data.tvv;
 
   /* PR-MT (K2-32): nhắc — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. U06 (mockup V11): dòng cuối TRONG thẻ nhóm, chữ nhấn. */
   const nhacMtCu = data && data.nhacLichSu.length > 0 && (
@@ -356,6 +368,7 @@ export function LichTestTab() {
           {/* ⑦ A6: 375 công tắc khung vẫn trên hàng tuần; phạm vi + chi nhánh trong "Lọc". */}
           <span className="ml-1 inline-flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">{congTacKhung}{nutChiTrong}{!dienThoai && nhomPhamVi}</span>
           {!dienThoai && locChiNhanh}
+          {!dienThoai && locTvv}
           <span className="ml-auto inline-flex items-center gap-3">
             {nutMoHet}
             {!dienThoai && nutLichThi}
@@ -370,6 +383,7 @@ export function LichTestTab() {
           {dienThoai && moLoc && (
             <div className="grid w-full gap-3 pt-1">
               {locChiNhanh}
+              {locTvv}
               {nhomPhamVi}
             </div>
           )}
@@ -391,10 +405,12 @@ export function LichTestTab() {
           /* GD-11a (⑦ A5): rỗng một dòng. */
           <div className="card px-4 py-5 text-sm text-dim">{data.tuan ? t('Tuần {maTuan} không có Test.', { maTuan }) : t('Tuần này không có Test.')}</div>
         ) : (
-          <>
+          <TvvLocContext.Provider value={data.tvv?.dang ?? null}>
             {/* UX-2 (1): ô "bài quá hạn" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
             <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
-              onBam={bamSo} dangTaiNo={!quaHan && !oQuaHan.error} thuLaiNo={!quaHan && oQuaHan.error ? oQuaHan.reload : undefined} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
+              onBam={bamSo} dangTaiNo={!quaHan && !oQuaHan.error} thuLaiNo={!quaHan && oQuaHan.error ? oQuaHan.reload : undefined} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:')
+                /* LOC-TVV: đang lọc theo TVV thì số là của em TVV đó, không phải cả chi nhánh. */
+                : data.tvv?.dang ? t('Em của TVV:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
             <KhoiNo no={noTab} gvLop={data.gvLop} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
@@ -421,7 +437,7 @@ export function LichTestTab() {
             </div>
             {nhacMtCu}
             </div>
-          </>
+          </TvvLocContext.Provider>
         )}
       <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
         confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />

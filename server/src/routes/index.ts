@@ -1156,8 +1156,9 @@ api.put('/attempts/:id/scores/speaking/phu-trach', requireAuth, wrap((req) => {
  */
 api.get('/classes/:classId/cham', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  const tvv = qStr(req, 'tvv');   // LOC-TVV: chỉ khi Lịch Test gửi — nơi khác mở lưới không lọc
   return chamSvc.chamSheet(principalOf(req), pInt(req, 'classId'), {
-    periodId: qInt(req, 'periodId') ?? null, kind: qStr(req, 'kind') ?? null,
+    periodId: qInt(req, 'periodId') ?? null, kind: qStr(req, 'kind') ?? null, tvv: tvv ? chamSvc.tvvLoc(principalOf(req), tvv) : null,
   });
 }));
 
@@ -1216,7 +1217,7 @@ api.get('/cham/lich-test', requireAuth, wrap((req) => {
   const periodId = qInt(req, 'periodId') ?? ensurePeriod(demoToday()).id;
   const pv = qStr(req, 'phamVi');
   return chamSvc.lichTest(principalOf(req), periodId, cnBpxl(req, qInt(req, 'branchId')), demoToday(), {
-    phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
+    phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null, tvv: chamSvc.tvvLoc(principalOf(req), qStr(req, 'tvv')),
   });
 }));
 
@@ -1227,7 +1228,7 @@ api.get('/cham/lich-test/qua-han', requireAuth, wrap((req) => {
   const khung = qStr(req, 'khung');   // OV-14b: khung đang xem của Lịch Test
   return chamSvc.dsQuaHanCham(principalOf(req), {
     branchId: qInt(req, 'branchId'), phamVi: pv === 'cua-toi' || pv === 'tat-ca' ? pv : null, classId: qInt(req, 'classId') ?? null,
-    khung: khung === 'ft' || khung === 'thuong' ? khung : null,
+    khung: khung === 'ft' || khung === 'thuong' ? khung : null, tvv: chamSvc.tvvLoc(principalOf(req), qStr(req, 'tvv')),
   }, demoToday(), qStr(req, 'rows') === '1');
 }));
 

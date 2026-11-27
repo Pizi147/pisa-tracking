@@ -5,6 +5,8 @@ export const EN_GD11A_LICH_TEST = {
   'Môn của bạn': 'Your skills',
   'Còn chờ': 'Waiting on',
   'Còn trống': 'Empty',
+  'Tất cả HV': 'All students',
+  'Em của TVV:': "Counsellor's students:",
   'Ghi KQ thi thật': 'Record real exam result',
   '{n} lớp · {m} bài chưa có điểm trong tuần': '{n} classes · {m} cells without a score this week',
   'Tuần {maTuan} không còn ô trống.': 'No empty cells left in {maTuan}.',
