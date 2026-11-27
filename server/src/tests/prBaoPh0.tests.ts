@@ -34,8 +34,16 @@ export async function runPrBaoPh0Tests(t: any) {
     FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND s.archived_at IS NULL
     WHERE x.kind = 'talk_family' AND x.status = 'pending' AND s.consultant_user_id IS NOT NULL ORDER BY x.id LIMIT 1`);
 
+  /* N78 (chủ SP 28/11): việc TVV Trao đổi gia đình chỉ sinh khi GVCN đã xác nhận các việc của lượt (bước đầu) — các ca dưới dựng trạng thái đó trước. */
+  const xongBuocDau = (attemptId: number) => {
+    for (const x of conn.prepare(`SELECT id, student_id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending' AND kind NOT IN ('talk_family', 'bao_ph_tvv')`).all(attemptId) as any[]) {
+      ph.confirmCoordination(P.admin, x.id, { performedOn: TODAY, note: 'GVCN đã làm việc này với em.' });
+    }
+    xoaNho();
+  };
   check('BP0-1 · Trao đổi gia đình = việc TVV: có việc + theo dõi GVCN/Head; GVCN không còn dòng, không xác nhận / bỏ được; TVV ghi → nguồn theo (xong · mở lại · bỏ · khôi phục)', () => thu('bp1', () => {
     assert(tf && tf.gvcn, 'seed: cần Trao đổi gia đình đang chờ (em có TVV, lớp có GVCN)');
+    xongBuocDau(tf.attempt_id);
     const v = get('SELECT id, trang_thai, nhan FROM viec_bao_ph WHERE phoi_hop_id = ?', tf.id);
     assert(v?.trang_thai === 'mo' && v.nhan === 'Trao đổi với gia đình', `việc TVV: ${JSON.stringify(v)}`);
     const td = new Set((conn.prepare(`SELECT user_id FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ?`).all(v.id) as any[]).map((r) => r.user_id));
@@ -70,6 +78,7 @@ export async function runPrBaoPh0Tests(t: any) {
       conn.prepare(`DELETE FROM sos_coordination_actions WHERE id = ?`).run(tf.id);
     }
     const luot = l?.gvcn ? l : { id: tf.attempt_id, student_id: tf.student_id, tvv: tf.tvv, gvcn: tf.gvcn };
+    xongBuocDau(luot.id);
     const pG = loadPrincipal(luot.gvcn), pT = loadPrincipal(luot.tvv);
     const g0 = khoa(pG).size, t0 = khoa(pT).size;
     xoaNho(); const tq0 = tq.tongQuanTvv(pT), kpi0 = tq0.baoPh.tong;
@@ -95,6 +104,7 @@ export async function runPrBaoPh0Tests(t: any) {
 
   check('BP0-3 · C8: lượt có Trao đổi gia đình → xác nhận Meeting KHÔNG sinh Báo PH Meeting (hai phần Meeting vẫn sinh); không TVV → Head giữ việc Báo PH', () => thu('bp3', () => {
     assert(tf, 'seed');
+    xongBuocDau(tf.attempt_id);
     const pG = loadPrincipal(tf.gvcn);
     const m = ph.addCoordination(pG, tf.attempt_id, { kind: 'cx_meeting_family' });
     ph.confirmCoordination(pG, m.id, { performedOn: TODAY, note: 'GVCN xác nhận họp gia đình với CX.' });
@@ -110,6 +120,7 @@ export async function runPrBaoPh0Tests(t: any) {
 
   check('BP0-4 · migrate: nguồn chờ → việc TVV; Báo PH Meeting mở gộp vào Trao đổi gia đình / đổi thành Trao đổi gia đình; chạy lại không đổi; khôi phục trả lại', () => thu('bp4', () => {
     assert(tf, 'seed');
+    xongBuocDau(tf.attempt_id);
     const now = new Date().toISOString();
     /* Dựng trạng thái trước BAOPH-0: Trao đổi gia đình chưa có việc TVV; một Báo PH Meeting đang mở cùng lượt. */
     const cu = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', tf.id).id;
@@ -235,6 +246,7 @@ export async function runPrBaoPh0Tests(t: any) {
 
   check('BP0-12 · rà #2233 P2-4: GVCN gỡ Trao đổi gia đình mình thêm nhầm (TVV chưa ghi) → việc TVV bỏ cùng; Khôi phục → cả hai mở; nguồn điền sẵn vẫn chặn', () => thu('bp12', () => {
     assert(tf?.gvcn, 'seed');
+    xongBuocDau(tf.attempt_id);
     const pG = loadPrincipal(tf.gvcn);
     const cu = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', tf.id).id;   // nhường chỗ (lượt, loại) cho việc thêm tay
     gv.donViec('bao_ph', [cu]); conn.prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(cu); conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(tf.id);

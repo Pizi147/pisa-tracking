@@ -98,6 +98,12 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   };
   const caseOf = (sid: number, category: string) => conn.prepare('SELECT * FROM sos_cases WHERE student_id = ? AND category = ? ORDER BY id DESC').get(sid, category) as any;
   const actionOf = (attemptId: number, kind: string) => conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND kind = ?').get(attemptId, kind) as any;
+  /* N78 (chủ SP 28/11): việc TVV Trao đổi gia đình chỉ sinh sau khi GVCN xác nhận các việc của lượt (bước đầu) — GVCN xác nhận trước khi TVV báo PH. */
+  const gvcnXong = (attemptId: number, ngay: string) => {
+    for (const a of conn.prepare(`SELECT id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending' AND kind NOT IN ('talk_family', 'bao_ph_tvv')`).all(attemptId) as any[]) {
+      confirmCoordination(gvcn, a.id, { performedOn: ngay, note: 'Đã làm' });
+    }
+  };
   /* PR-SOS: Quản lý chi nhánh (duyệt / từ chối thẻ) — không có thì Quản trị. */
   const qlRow = conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id
     WHERE r.key = 'manager' AND u.full_name = 'Nguyễn Khánh Vy' LIMIT 1`).get() as any;
@@ -124,6 +130,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   const khoiSp = caseOf(khoi.id, 'speaking');   // D7 (6)
   xacNhanPa(activeTeacher('speaking'), khoiSp.id, 'Tự học Speaking: ghi âm Part 2 mỗi ngày, GVBM nghe và chữa thứ Sáu.');
   hanPa(khoiSp.id, addDays(DEMO_DATE, -14), addDays(DEMO_DATE, 1));   // D8 → OV-12a: hạn hết T3 NGÀY MAI (kỳ 31/08–13/09)
+  gvcnXong(khoiA.id, addDays(DEMO_DATE, -2));
   baoXongNguonTvv(actionOf(khoiA.id, 'talk_family').id, addDays(DEMO_DATE, -1), 'Đã gọi cho mẹ em, gia đình nhắc em luyện nói mỗi ngày.');   // BAOPH-0: việc TVV   // OV-13n: SOS2 không điền sẵn trao đổi với HV
   /*
    * Vi phạm Ý thức của cùng em: ghi thẳng xuống bảng với mốc thời gian theo NGÀY DEMO (như `yThucSeed.ts`) — `recordViolation` đóng dấu giờ thật của máy.
@@ -149,6 +156,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   guiKhongTheoDoi(activeTeacher('speaking'), lanSp.id, { reasonCode: 'single_incident' });
   duyetYeuCau(quanLy, theKtd(lanSp.id));
   guiKhongTheoDoi(activeTeacher('reading'), caseOf(lan.id, 'reading').id, { reasonCode: 'other', reasonText: 'Em ốm hai ngày trước buổi thi' });
+  gvcnXong(lanA.id, addDays(DEMO_DATE, -4));
   baoXongNguonTvv(actionOf(lanA.id, 'talk_family').id, addDays(DEMO_DATE, -3), 'Đã gọi cho mẹ em, gia đình nắm tình hình.');
 
   // ---------------------------------------------------------------- Bùi Thảo Vy — MT3 · SOS1 (lượt hoàn thành)

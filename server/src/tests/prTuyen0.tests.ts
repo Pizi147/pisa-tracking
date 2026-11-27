@@ -203,16 +203,22 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
   await checkAsync('TUYEN0-7 · em SOS 3 (Trao đổi gia đình + Meeting GĐCN): ĐÚNG MỘT bước Báo PH (TVV, BAOPH-0 C8) · Meeting không Báo PH riêng · Kết quả meeting dưới cùng', () => thu(() => {
     const sid = moiEm();
     const { att, ids } = luot(sid, ['cx_meeting_family', 'talk_student', 'talk_family']);
-    bp.dongBoViecTvvLuot([att]);   // như syncSosCoordination: nguồn Trao đổi gia đình → việc TVV
+    bp.dongBoViecTvvLuot([att]);   // như syncSosCoordination
+    /* N78 (chủ SP 28/11): GVCN chưa xác nhận việc của lượt → CHƯA có việc TVV, bước Báo PH ○ "chờ GVCN … xác nhận". */
+    assert(!mot(`SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ?`, ids[2]), 'N78: GVCN chưa xác nhận mà đã sinh việc TVV');
     const a = tuyen(tvv, 'phoi_hop', att);
-    const baoPh = a.buoc.filter((b: any) => b.ten.startsWith('Báo PH'));
-    assert(baoPh.length === 1 && baoPh[0].ten === 'Báo PH · Trao đổi với gia đình' && baoPh[0].trangThai === 'dang' && baoPh[0].nguoi === tvv.fullName && !baoPh[0].cha,
-      `một lần Báo PH (TVV): ${ten(a)}`);
+    const baoPh0 = a.buoc.filter((b: any) => b.ten.startsWith('Báo PH'));
+    assert(baoPh0.length === 1 && baoPh0[0].ten === 'Báo PH · Trao đổi với gia đình' && baoPh0[0].trangThai === 'cho' && /chờ GVCN/.test(baoPh0[0].chiTiet ?? '') && !baoPh0[0].cha,
+      `N78 Báo PH chờ GVCN: ${ten(a)}`);
     assert(!a.buoc.some((b: any) => b.ten.startsWith('Trao đổi với gia đình')), `GVCN không giữ Trao đổi gia đình: ${ten(a)}`);
     assert(a.buoc.at(-1).ten === 'Kết quả meeting' && a.buoc.filter((b: any) => !b.cha).every((b: any) => b.cungLuc), `Kết quả cuối, các việc cùng lúc: ${ten(a)}`);
     /* GVCN xác nhận Meeting → hai phần Xếp lịch → Kết quả; vẫn không có Báo PH Meeting. */
     ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Cần họp GĐCN với em và phụ huynh' });
+    assert(!mot(`SELECT 1 AS c FROM viec_bao_ph WHERE phoi_hop_id = ?`, ids[2]), 'N78: còn Trao đổi ngắn với HV chờ GVCN mà đã sinh việc TVV');
+    ph.confirmCoordination(gvcn, ids[1], { performedOn: TODAY, note: 'Đã nói chuyện ngắn với em' });
     const b = tuyen(gvcn, 'phoi_hop', att);
+    const baoPh = b.buoc.filter((x: any) => x.ten.startsWith('Báo PH'));
+    assert(baoPh.length === 1 && baoPh[0].trangThai === 'dang' && baoPh[0].nguoi === tvv.fullName, `GVCN xác nhận hết → việc TVV sinh: ${ten(b)}`);
     assert(b.buoc.filter((x: any) => x.ten.startsWith('Báo PH')).length === 1 && b.buoc.at(-1).ten === 'Kết quả meeting' && b.buoc.some((x: any) => x.ten === 'Xếp lịch họp' && x.trangThai === 'dang'),
       `sau xác nhận: ${ten(b)}`);
     /* TVV báo xong → bước Báo PH xong (người, nội dung). */
@@ -221,6 +227,42 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const x = c.buoc.find((y: any) => y.ten === 'Báo PH · Trao đổi với gia đình');
     assert(x.trangThai === 'xong' && x.noiDung === 'Đã báo mẹ em kết quả và lịch họp GĐCN', `TVV xong: ${JSON.stringify(x)}`);
   }));
+
+  await checkAsync('N78-1 · Phối hợp SOS: việc TVV Trao đổi gia đình CHƯA sinh khi GVCN chưa xác nhận (không dòng TVV, không theo dõi) · xác nhận → sinh (hạn từ lúc đó) · Hoàn tác → việc chưa ghi đóng theo, xác nhận lại → mở lại · TVV đã ghi thì Hoàn tác giữ việc', () => thu(() => {
+    const sid = moiEm();
+    const { att, ids } = luot(sid, ['talk_student', 'talk_family']);
+    bp.dongBoViecTvvLuot([att]);
+    const viec = () => mot(`SELECT id, trang_thai AS t, bo_ly_do AS l, han FROM viec_bao_ph WHERE phoi_hop_id = ?`, ids[1]);
+    assert(!viec(), 'GVCN chưa xác nhận mà đã có việc TVV');
+    assert(!(myWork(tvv, {} as any).items as any[]).some((i: any) => i.viecId && i.studentId === sid), 'TVV có dòng trước bước đầu');
+    ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Đã nói chuyện ngắn với em' });
+    const v1 = viec();
+    assert(v1?.t === 'mo' && v1.han >= TODAY, `xác nhận → sinh việc: ${JSON.stringify(v1)}`);
+    ph.moLaiCoordination(gvcn, ids[0]);   // Hoàn tác bước đầu
+    assert(viec().t === 'bo' && viec().l === 'system_cho_buoc_dau', `Hoàn tác → việc chưa ghi đóng theo: ${JSON.stringify(viec())}`);
+    assert(tuyen(tvv, 'phoi_hop', att).buoc.some((b: any) => b.ten === 'Báo PH · Trao đổi với gia đình' && b.trangThai === 'cho'), 'tuyến: Báo PH về ○ chờ GVCN');
+    ph.confirmCoordination(gvcn, ids[0], { performedOn: TODAY, note: 'Đã nói chuyện ngắn với em' });
+    assert(viec().t === 'mo' && viec().id === v1.id, 'xác nhận lại → việc mở lại (cùng việc)');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v1.id], ketQua: 'chua_lien_he', ghiChu: 'Gọi mẹ em chưa được, sẽ gọi lại.' });
+    ph.moLaiCoordination(gvcn, ids[0]);
+    assert(viec().t === 'mo', 'TVV đã ghi một lần → Hoàn tác bước đầu giữ việc');
+  }));
+
+  await checkAsync('N78-2 · migrate prN78: việc Trao đổi gia đình đã sinh sớm (GVCN chưa xác nhận), chưa ghi → chờ; đã ghi giữ; chạy lần hai không đổi', async () => {
+    const { migratePrN78 } = await import('../migrate/prN78.ts');
+    thu(() => {
+      const sid = moiEm();
+      const { ids } = luot(sid, ['talk_student', 'talk_family']);
+      const tao = Number(conn.prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, 'Trao đổi với gia đình', ?, 'mo', ?)`)
+        .run(ids[1], sid, TODAY, new Date().toISOString()).lastInsertRowid);   // dữ liệu luật cũ: việc TVV có ngay
+      const lan1: string[] = [];
+      migratePrN78(conn, lan1);
+      assert(lan1.length === 1 && /N78: \d+ việc/.test(lan1[0]) && mot('SELECT bo_ly_do AS l FROM viec_bao_ph WHERE id = ?', tao).l === 'system_cho_buoc_dau', `migrate: ${lan1.join(' | ')}`);
+      const lan2: string[] = [];
+      migratePrN78(conn, lan2);
+      assert(!lan2.length, `chạy lại: ${lan2.join(' | ')}`);
+    });
+  });
 
   await checkAsync('TUYEN3-1 · tuyến Vi phạm: dòng "Lần trước: {bậc} · {ngày}" (lần xử lý trước của em) — người xem được Ý thức em; BPXL không', () => thu(() => {
     const sid = moiEm();

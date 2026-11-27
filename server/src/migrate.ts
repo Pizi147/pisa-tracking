@@ -148,6 +148,7 @@ import { migratePrTinhLuiPc } from './migrate/prTinhLuiPhanCong.ts';
 import { migratePrVeLopLucThi } from './migrate/prVeLopLucThi.ts';
 import { migratePrLuuTruDong } from './migrate/prLuuTruDong.ts';
 import { migratePrBaoPh0, themCotPrBaoPh0 } from './migrate/prBaoPh0.ts';
+import { migratePrN78 } from './migrate/prN78.ts';
 import { migratePrTuyen0 } from './migrate/prTuyen0.ts';
 import { migratePrVaiMoi, themCotPrVaiMoi } from './migrate/prVaiMoi.ts';
 import { migratePrLpb0 } from './migrate/prLpb0.ts';
@@ -597,7 +598,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => { const t: string[] = []; themCotPrVaiMoi(conn, t); if (t.length) applied.push(`VAI-0 (cột): ${t.join(', ')}.`); });
   /* LPB-0 (N73): viec_bao_ph.lenh_chuyen_id / lenh_mau + bảng viec_nhan_tin TRƯỚC BAOPH-0 — `dongBoViecTvvLuot` gộp Kết quả Final với Báo PH · Chuyển lớp đọc cột này. */
   buoc(() => migratePrLpb0(conn, applied));
-  buoc(() => migratePrBaoPh0(conn, applied));   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
+  buoc(() => migratePrBaoPh0(conn, applied));
+  buoc(() => migratePrN78(conn, applied));   // N78: SAU BAOPH-0 (việc TVV đã có) — việc Trao đổi gia đình sinh trước bước đầu GVCN → chờ   // SAU Lưu trữ: em Lưu trữ không sinh việc TVV
   /* TUYEN-0 (N72 ①): bảng tuyen_bo_theo_doi + chỉ mục người làm bước (chỉ thêm, chạy lặp được). */
   buoc(() => migratePrTuyen0(conn, applied));
   /* VAI-0 (N74–N77): vai GĐCN + Lead TVV, bảng lop_xep_lich, meeting_phan.nguoi_luat + chốt một người cho phần Meeting đang mở. */

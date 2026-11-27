@@ -47,7 +47,9 @@ export const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', syste
   /* BAOPH-0 (N72 ⑤): nguồn việc TVV gỡ theo điểm (sửa điểm hết trượt / mức SOS đổi) · C8: việc Báo PH Meeting cũ gộp vào việc Trao đổi gia đình cùng lượt. */
   system_nguon_go: 'Nguồn việc đã gỡ theo điểm', system_gop_trao_doi: 'Gộp vào Trao đổi gia đình', system_sau_thi: 'Lộ trình đã có KQ thi thật',
   /* LPB-0 (N73 ①): việc Báo PH · Chuyển lớp tự đóng theo lệnh (`classes/lienPhongBan.ts`) — lệnh trở lại thì mở lại. */
-  system_lenh_huy: 'Quyết định chuyển lớp đã huỷ', system_chuyen_ngay: 'Đã chuyển lớp ngay hôm nay', system_lenh_khoi_phuc: 'Quyết định chuyển lớp đã khôi phục' } as const;
+  system_lenh_huy: 'Quyết định chuyển lớp đã huỷ', system_chuyen_ngay: 'Đã chuyển lớp ngay hôm nay', system_lenh_khoi_phuc: 'Quyết định chuyển lớp đã khôi phục',
+  /* N78 (chủ SP 28/11): việc Trao đổi gia đình chưa ai ghi — GVCN đưa việc của lượt về chờ xác nhận (Hoàn tác / Đưa lại) → đóng theo, GVCN xác nhận lại thì mở lại. */
+  system_cho_buoc_dau: 'Chờ GVCN xác nhận lại' } as const;
 /** PHOI-HOP-V2: việc TVV sau Meeting CX đóng vì GVCN đưa Meeting về Cần xử lý / bỏ — xác nhận lại thì mở lại (`phoiHop.ts dongBoViecTvv`). */
 export const LY_DO_MEETING_MO_LAI = 'system_meeting_mo_lai';
 type LyDoHeThong = keyof typeof LY_DO_HE_THONG;
@@ -208,7 +210,7 @@ const nhanViecTvvNguon = (kind: string, pb: number | null, aKind: string | null)
  * Nguồn người dùng bỏ / xong / Lưu trữ: việc đã theo cùng lúc (`nguonTheoViecTvv`, `dongViecLuuTru`) — không đụng.
  */
 /** Lý do đóng việc TVV vì nguồn bị HỆ THỐNG gỡ (điểm sửa / mức SOS · huỷ lượt · Lộ trình mới / chốt Cuối khoá) — nguồn hồi thì việc mở lại. */
-const NGUON_GO = new Set(['system_nguon_go', 'system_luot_huy', 'system_ket_thuc_lo_trinh', 'system_sau_thi']);
+const NGUON_GO = new Set(['system_nguon_go', 'system_luot_huy', 'system_ket_thuc_lo_trinh', 'system_sau_thi', 'system_cho_buoc_dau']);
 /** N46: việc TVV của các lộ trình vừa có / gỡ KQ thi thật — đóng / mở lại theo `dongBoViecTvvLuot`. TRONG tx; hai câu. */
 export function dongBoViecTvvLoTrinh(cycleIds: readonly number[]): void {
   if (!cycleIds.length) return;
@@ -219,9 +221,13 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
   if (!attemptIds.length) return [];
   const rows = db().prepare(
     `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, a.status AS a_tt, v.id AS viec, v.trang_thai, v.bo_ly_do, v.lenh_chuyen_id AS lenh,
-            (a.status = 'cancelled' OR ${LUOT_SAU_THI_SQL('a')}) AS ngoai   -- N46 (rà #2233 P1-4): lượt huỷ / lộ trình đã thi thật không sinh việc
+            (a.status = 'cancelled' OR ${LUOT_SAU_THI_SQL('a')}) AS ngoai,   -- N46 (rà #2233 P1-4): lượt huỷ / lộ trình đã thi thật không sinh việc
+            /* N78 (chủ SP 28/11): Trao đổi gia đình chờ bước đầu — lượt còn việc của GVCN (không phải việc TVV) chưa xác nhận. */
+            (x.kind = 'talk_family' AND EXISTS (SELECT 1 FROM sos_coordination_actions g WHERE g.attempt_id = x.attempt_id AND g.status = 'pending'
+              AND g.kind NOT IN (SELECT value FROM json_each(?2)))) AS cho_dau,
+            (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan
        FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id LEFT JOIN viec_bao_ph v ON v.phoi_hop_id = x.id
-      WHERE x.attempt_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`,
+      WHERE x.attempt_id IN (SELECT value FROM json_each(?1)) AND x.kind IN (SELECT value FROM json_each(?2))`,
   ).all(JSON.stringify(attemptIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[];
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
@@ -231,6 +237,12 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
   const tachFinal = (viec: number) => db().prepare(`UPDATE viec_bao_ph SET phoi_hop_id = NULL, nhan = ? WHERE id = ? AND trang_thai = 'mo'`).run(NHAN_CHUYEN_LOP, viec);
   for (const r of rows) {
     if (r.ngoai && r.lenh && r.trang_thai === 'mo') { tachFinal(r.viec); continue; }
+    /* N78 (chủ SP 28/11): bước đầu (GVCN xác nhận việc của lượt) chưa xong → CHƯA sinh việc TVV; việc đang mở chưa ai ghi → đóng theo (mở lại khi GVCN xác nhận,
+       hạn tính từ lúc đó); đã ghi một lần → giữ. */
+    if (r.cho_dau && r.status === 'pending' && !r.ngoai) {
+      if (r.trang_thai === 'mo' && !r.so_lan) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_cho_buoc_dau', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(luc, r.viec);
+      continue;
+    }
     if (r.ngoai) {
       /* N46 (rà #2233 vòng 2 P1-A): lộ trình đã có KQ thi thật / lượt huỷ → việc còn mở ĐÓNG ở gốc (Việc được giao, KPI đọc DB) — KQ thi thật gỡ thì mở lại (nhánh dưới). */
       if (r.trang_thai === 'mo') db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)

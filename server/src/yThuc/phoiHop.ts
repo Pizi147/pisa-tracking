@@ -401,7 +401,9 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
  */
 function dongBoViecTvv(id: number, truoc: string): void {
   const r = loadAction(id);
-  if (laViecTvvBaoPh(r.kind)) return;   // BAOPH-0: việc TVV của nguồn theo `dongBoViecTvvLuot` / `nguonTheoViecTvv`, không theo luồng Meeting
+  if (laViecTvvBaoPh(r.kind)) return;
+  /* N78 (chủ SP 28/11): GVCN xác nhận / bỏ / đưa lại một việc của lượt → việc TVV Trao đổi gia đình của lượt sinh khi hết việc GVCN chờ (đóng theo khi về chờ). */
+  if (truoc !== r.status) dongBoViecTvvLuot([r.attempt_id]);   // BAOPH-0: việc TVV của nguồn theo `dongBoViecTvvLuot` / `nguonTheoViecTvv`, không theo luồng Meeting
   const v = db().prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as { id: number; trang_thai: string; bo_ly_do: string | null } | undefined;
   /* CAU-HINH-CASE-SOS: bước TVV theo bản chụp của dòng (`pb_moc`); không có bước TVV → không sinh việc.
      BAOPH-0 C8 (chủ SP 26/11): lượt đã có Trao đổi gia đình (việc TVV báo PH, nói luôn việc họp) → Meeting KHÔNG sinh việc Báo PH thứ hai — còn hai phần Xếp lịch → Kết quả. */
