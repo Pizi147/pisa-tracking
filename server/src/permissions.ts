@@ -273,20 +273,15 @@ function classIsFastTrack(classId: number): boolean {
  */
 export function branchesOfStudent(studentId: number): number[] {
   return nho('hv-cn:' + studentId, () => {
-    const conn = db();
-    const activeRows = conn
-      .prepare(
-        `SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id
-          WHERE e.student_id = ? AND e.status = 'active'`,
-      )
-      .all(studentId) as any[];
-    const rows = activeRows.length
-      ? activeRows
-      : (conn
-        .prepare(`SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?`)
-        .all(studentId) as any[]);
-    const set = new Set<number>(rows.map((r) => r.b).filter((b) => b != null));
-    const studentBranch = (conn.prepare('SELECT branch_id AS b FROM students WHERE id = ?').get(studentId) as any)?.b;
+    /* TOC-4: MỘT câu (trước 2–3 câu): k = 0 chi nhánh lớp đang học · 1 mọi lớp từng học · 2 `students.branch_id`. Luật như cũ. */
+    const tat = db().prepare(
+      `SELECT 0 AS k, b AS b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1 AND e.status = 'active')
+       UNION ALL SELECT 1, b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1)
+       UNION ALL SELECT 2, branch_id FROM students WHERE id = ?1`,
+    ).all(studentId) as { k: number; b: number | null }[];
+    const k = tat.some((r) => r.k === 0) ? 0 : 1;
+    const set = new Set<number>(tat.filter((r) => r.k === k && r.b != null).map((r) => r.b!));
+    const studentBranch = tat.find((r) => r.k === 2)?.b;
     if (studentBranch != null) set.add(studentBranch);
     return [...set];
   });
