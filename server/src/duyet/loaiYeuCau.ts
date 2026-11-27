@@ -556,6 +556,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const doi = db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
         .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
       if (doi) dongViecTheoXuLy(yc.doi_tuong_id, 'system_tu_choi', lyDo, p.userId);   // SV-YT-TVV (Q-D1 ①): chỉ khi lần xử lý thật sự vừa bị từ chối
+      /* LOI-4 (chủ SP 28/11): việc Xử lý vi phạm làm lại về NGƯỜI ĐÃ GỬI — người được giao đợt đó gửi → khối giao việc của đợt mở lại (giữ người được giao, hạn);
+         không ai được giao (GVCN tự gửi) → dòng giữ 'xong', việc về người theo luật (GVCN). Người được giao hết hiệu lực → `docViec` tự về GVCN. */
+      if (doi && yc.nguoi_xin) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo' WHERE id = (SELECT student_id FROM discipline_measures WHERE id = ?) AND trang_thai = 'xong' AND phu_trach_id = ?`)
+        .run(yc.doi_tuong_id, yc.nguoi_xin);
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
@@ -569,6 +573,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'violations', dk: 'id IN (SELECT violation_id FROM measure_violations WHERE measure_id = ?)', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'viec_xu_ly', dk: 'id = (SELECT student_id FROM discipline_measures WHERE id = ?)', args: [yc.doi_tuong_id], k: 'sua' },   // LOI-4: khối giao việc mở lại cho người gửi
       ],
       /* Sau Từ chối, GVCN xác nhận / gửi lần xử lý MỚI cho chính các vi phạm đó (dòng violations không đổi) → đảo sẽ để hai lần xử lý sống, thang bậc
          tính hai lần → chặn khi vi phạm của lần này đã nằm trong lần xử lý khác tạo sau (id lớn hơn), còn hiệu lực. */

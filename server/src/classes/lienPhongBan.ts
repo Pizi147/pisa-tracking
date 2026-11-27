@@ -6,7 +6,8 @@
  *    Xét lại, duyệt đề xuất, Lộ trình mới). "Ngay hôm nay" / không lớp đích (Bảo lưu, Dừng học) / xếp lớp lần đầu: không việc. Hạn Chủ nhật (`hanChuNhat`).
  *    Em chưa có TVV → Lead TVV chốt lúc sinh (`chotLeadBaoPh`) → Head. Theo dõi: Head + CX + Lead TVV (`theoDoiVaiBaoPh`) + người ra lệnh.
  *    Gộp với "Kết quả Final" đang mở (một dòng hai nguồn, hạn muộn hơn) — chiều ngược ở `dongBoViecTvvLuot`.
- *    Lệnh sửa: việc mở đọc nội dung từ lệnh; đã báo mà lớp đích / tuần đổi → "Báo lại · Chuyển lớp". Huỷ: mở → tự đóng; đã báo → "Báo lại · Huỷ chuyển lớp".
+ *    Lệnh sửa: việc mở đọc nội dung từ lệnh; đã báo mà lớp đích / tuần đổi → "Báo lại · Chuyển lớp". Huỷ: mở → tự đóng; đã báo → "Báo lại · Huỷ chuyển lớp"
+ *    (sửa sang Bảo lưu / Dừng học — không lớp đích: KHÔNG báo lại, chủ SP 28/11 LOI-4).
  *    Sửa sang "Ngay hôm nay": mở → tự đóng, đã báo → không gì. Khôi phục lệnh → việc tự đóng mở lại.
  *  · BPXL "Nhận thông tin · Chuyển lớp" (`viec_nhan_tin`, loai chuyen_lop): một việc mỗi LỚP ĐÍCH còn mở (N77 — lệnh sau dồn vào, đã xác nhận → việc mới);
  *    người nhận MỘT người lúc sinh: CVXL nhận lớp đích → BPXL chi nhánh ít việc nhất → Head (`nguoiNhanTuDong`). CVXL lớp nguồn + người ra lệnh theo dõi.
@@ -24,7 +25,7 @@ import { can, type Principal } from '../permissions.ts';
 import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
 import { CON_VAI_BPXL, chonLanLuot, headCua, nhomVaiCn } from '../worklist/nguoiNhan.ts';
 import { chotLeadBaoPh } from '../yThuc/baoPhTvv.ts';
-import { HL_NHAN_TIN, baoTheoDoi, docViec, ghiLan, laLeadBpxl, theoDoiVaiBaoPh, vaiQuanLy, xemGiaoViec, type KhoiGiaoViec } from '../worklist/giaoViec.ts';
+import { GVCN_NGUON_NT, HL_NHAN_TIN, baoTheoDoi, docViec, ghiLan, laLeadBpxl, theoDoiVaiBaoPh, vaiQuanLy, xemGiaoViec, type KhoiGiaoViec } from '../worklist/giaoViec.ts';
 
 export const LOAI_NHAN_TIN = ['chuyen_lop', 'doi_gv'] as const;
 export type LoaiNhanTin = (typeof LOAI_NHAN_TIN)[number];
@@ -120,7 +121,7 @@ function dongBoBaoPh(ls: Lenh[], homNay: string): void {
     } else if (cur?.trang_thai === 'mo' && cur.lenh_mau !== 'huy') {
       if (cur.phoi_hop_id) tach.push(cur.id);   // gộp Kết quả Final: việc còn, chỉ bỏ phần chuyển lớp
       else dong[t === 'ngay' ? 'system_chuyen_ngay' : 'system_lenh_huy'].push(cur.id);
-    } else if (t === 'huy' && cur?.trang_thai === 'xong' && cur.lenh_mau !== 'huy') {
+    } else if (t === 'huy' && l.lop_dich_id != null && cur?.trang_thai === 'xong' && cur.lenh_mau !== 'huy') {
       them.push([l.student_id, NHAN_BAO_PH_CL.huy, l.id, 'huy']);   // PH đã nghe em chuyển lớp — báo lại lệnh huỷ
     }
   }
@@ -347,7 +348,8 @@ function theoDoiNhanTinLo(cap: readonly [number, number][], boi: number | null):
   if (!cap.length) return;
   db().prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
       SELECT 'nhan_tin', v.id, json_extract(j.value, '$[1]'), 'tay', ?2, ?3 FROM json_each(?1) j JOIN viec_nhan_tin v ON v.id = json_extract(j.value, '$[0]')
-       WHERE json_extract(j.value, '$[1]') IS NOT COALESCE(v.phu_trach_id, v.nguoi_luat) AND ${HL_NHAN_TIN("json_extract(j.value, '$[1]')", 'v.branch_id')}
+       WHERE json_extract(j.value, '$[1]') IS NOT COALESCE(v.phu_trach_id, v.nguoi_luat)
+         AND (${HL_NHAN_TIN("json_extract(j.value, '$[1]')", 'v.branch_id')} OR ${GVCN_NGUON_NT("json_extract(j.value, '$[1]')", 'v.id')})   -- LOI-4: GVCN lớp nguồn khác CN
       ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(J(cap), boi, nowIso());
 }
 

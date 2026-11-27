@@ -234,6 +234,7 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
   const homNay = demoToday(), luc = nowIso();
   const moi: { id: number; sid: number }[] = [];
   const chotLead: number[] = [];
+  const gopMeeting: number[] = [];   // nguồn Trao đổi gia đình vừa có việc mở (C8)
   /* LPB-0 (rà PTA #2266 P1-4): dòng gộp Kết quả Final + Chuyển lớp mà nguồn Final bị HỆ THỐNG gỡ (huỷ lượt / sau thi thật / gỡ theo điểm) → tách phần Final, việc
      Chuyển lớp còn nguyên (không đóng cả dòng). Nguồn hồi → `gopFinalVaoChuyenLop` nhập lại. */
   const tachFinal = (viec: number) => db().prepare(`UPDATE viec_bao_ph SET phoi_hop_id = NULL, nhan = ? WHERE id = ? AND trang_thai = 'mo'`).run(NHAN_CHUYEN_LOP, viec);
@@ -263,13 +264,11 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
       const k = db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(r.id, r.student_id, nhanViecTvvNguon(r.kind, r.pb_moc ?? null, r.a_kind ?? null), hanBaoPh(homNay), luc);
       moi.push({ id: Number(k.lastInsertRowid), sid: r.student_id });
-      chotLead.push(Number(k.lastInsertRowid));
-      /* C8 + N78 (rà #2295 P1): Trao đổi gia đình sinh SAU (GVCN vừa xác nhận) → Báo PH Meeting TVV còn mở, chưa ghi, của cùng lượt gộp vào (một lần báo PH). */
-      if (r.kind === 'talk_family' && !o.khongGopMeeting) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_gop_trao_doi', bo_boi = NULL, bo_luc = ? WHERE trang_thai = 'mo'
-          AND phoi_hop_id IN (SELECT m.id FROM sos_coordination_actions m WHERE m.attempt_id = (SELECT attempt_id FROM sos_coordination_actions WHERE id = ?) AND m.kind IN ('cx_meeting_student', 'cx_meeting_family'))
-          AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)`).run(luc, r.id);   // VAI-0 (N76b) — chốt theo lô sau vòng lặp (RA-2711: trước một câu mỗi việc)
+      chotLead.push(Number(k.lastInsertRowid));   // VAI-0 (N76b) — chốt theo lô sau vòng lặp (RA-2711: trước một câu mỗi việc)
+      if (r.kind === 'talk_family') gopMeeting.push(r.id);
     } else if (r.status === 'pending' && r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do)) {   // rà #2233 P1-1 / P1-2: cả huỷ lượt, kết thúc lộ trình
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`).run(hanBaoPh(homNay), r.viec);
+      if (r.kind === 'talk_family') gopMeeting.push(r.id);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do) && r.lenh) {
       tachFinal(r.viec);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do)) {
@@ -277,6 +276,11 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
         .run(NGUON_GO.has(r.ly_do) ? r.ly_do : 'system_nguon_go', luc, r.viec);
     }
   }
+  /* C8 + N78 (rà #2295 P1) + LOI-4 (chủ SP 28/11): Trao đổi gia đình vừa có việc TVV mở (sinh SAU / mở lại) → Báo PH Meeting TVV còn mở của cùng lượt gộp vào — MỘT việc
+     báo PH, kể cả khi TVV đã ghi "chưa liên hệ được" ở việc Meeting (lần ghi giữ ở việc đã gộp). Một câu cho cả lô. */
+  if (gopMeeting.length && !o.khongGopMeeting) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_gop_trao_doi', bo_boi = NULL, bo_luc = ?1 WHERE trang_thai = 'mo'
+      AND phoi_hop_id IN (SELECT m.id FROM sos_coordination_actions m WHERE m.kind IN ('cx_meeting_student', 'cx_meeting_family')
+        AND m.attempt_id IN (SELECT attempt_id FROM sos_coordination_actions WHERE id IN (SELECT value FROM json_each(?2))))`).run(luc, JSON.stringify(gopMeeting));
   chotLeadBaoPh(chotLead);
   if (moi.length) {
     /* Rà #2233 P2-3: theo dõi theo LÔ — GVCN hiệu lực lớp em đang học (nguồn `gvcn`) · người tạo (còn hoạt động ở chi nhánh em) · Head + CX — ba câu cho cả lô. */

@@ -37,6 +37,7 @@ export type KhoiGv = {
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
   /** BAOPH-0 (N72 ⑥): việc con (N59) gắn việc này — Vận hành không có (việc con ở `subtasks`). */
   viecCon?: { id: number; ten: string; nguoi: string | null; han: string | null; tienDo: string }[];
+  /** LOI-4: máy chủ cho tạo / tick / sửa hạn việc con. */ quanViecCon?: boolean;
   /** TUYEN-0: tuyến đi cùng khối (Tình hình · Xử lý vi phạm · Đã thực hiện). */
   tuyen?: Tuyen | null;
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
