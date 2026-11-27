@@ -20,6 +20,8 @@ export type ThoiGianXuat =
   | { kieu: 'dot'; dot: string[] };                    // 'mt:1'…'mt:8' | 'giua' | 'checkpoint' | 'cuoi'
 export type BoLocXuatMt = {
   khung: KhungXuat; chiNhanh: number[]; lop: number[]; thoiGian: ThoiGianXuat; chiDuDiem: boolean; cot: CotXuat;
+  /** LOC-TVV-XUAT: TVV đang lọc ở Lịch Test (chỉ em của TVV đó); máy chủ ép quyền qua `tvvLoc`. Không có = mọi em. */
+  tvv?: number | null;
 };
 export type Cell = string | number | null;
 /** G1-08: `nx` = Gọn + 2 cột nhận xét (L · R, W · S — nội dung "Điểm + nhận xét" của ngăn Xuất điểm Test cũ); chỉ Fast Track. */
@@ -65,6 +67,9 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
   if (cot !== 'gon' && cot !== 'nx' && cot !== 'day-du') return 'Cột phải là gọn, gọn + nhận xét hoặc đầy đủ.';
   if (cot === 'nx' && khung !== 'ft') return 'Cột gọn + nhận xét chỉ có ở Fast Track.';
   const du = o.du === true || chuoi(o.du) === '1' || chuoi(o.du) === 'true';
+  const tvvChu = o.tvv === undefined || o.tvv === null ? '' : String(o.tvv);
+  if (tvvChu && !/^[1-9]\d{0,9}$/.test(tvvChu)) return 'TVV không hợp lệ.';
+  const tvv = tvvChu ? Number(tvvChu) : null;
 
   const tg = chuoi(o.tg);
   let thoiGian: ThoiGianXuat;
@@ -89,7 +94,7 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
     if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT10.' : 'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.';
     thoiGian = { kieu: 'dot', dot: [...new Set(ds)] };
   } else return 'Chọn cách lọc thời gian: theo tuần, theo tháng hoặc theo đợt.';
-  return { khung, chiNhanh, lop, thoiGian, chiDuDiem: du, cot };
+  return { khung, chiNhanh, lop, thoiGian, chiDuDiem: du, cot, tvv };
 }
 
 /** Hình phẳng của bộ lọc — body POST; GET dùng `queryXuatMt` (cùng khoá, danh sách nối dấu phẩy). */
@@ -98,6 +103,7 @@ export function bodyXuatMt(f: BoLocXuatMt) {
   return {
     khung: f.khung, chiNhanh: f.chiNhanh, lop: f.lop, cot: f.cot, du: f.chiDuDiem ? 1 : 0, tg: t.kieu,
     ...(t.kieu === 'dot' ? { dot: t.dot } : { tu: t.tu, den: t.den }),
+    ...(f.tvv ? { tvv: f.tvv } : {}),
   };
 }
 export function queryXuatMt(f: BoLocXuatMt): string {
@@ -124,7 +130,7 @@ export function tuanDauThangCua(thuHai: string): string {
 const nhanThang = (m: string) => `${m.slice(5)}/${m.slice(0, 4)}`;
 
 /** Các dòng `[nhãn, giá trị]` mô tả bộ lọc — dùng cho sheet "Bộ lọc đã dùng" và nhãn nhật ký. `ten` = tên chi nhánh / mã lớp đã chọn. */
-export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string[] }): [string, string][] {
+export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string[]; tvv?: string | null }): [string, string][] {
   const t = f.thoiGian;
   return [
     ['Khung', f.khung === 'ft' ? 'Fast Track (Mock Test)' : 'Lớp thường (Progress Test · Final Test)'],
@@ -134,6 +140,7 @@ export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string
       : t.kieu === 'thang' ? `Theo tháng: ${nhanThang(t.tu)} – ${nhanThang(t.den)}` : `Theo đợt: ${t.dot.map(nhanKhoaDot).join(', ')}`],
     ['Lượt', f.chiDuDiem ? 'Chỉ lượt đủ điểm' : 'Mọi lượt'],
     ['Cột', f.cot === 'gon' ? 'Cột gọn' : f.cot === 'nx' ? 'Cột gọn + nhận xét' : 'Cột đầy đủ'],
+    ...(ten.tvv ? [['TVV', ten.tvv] as [string, string]] : []),
   ];
 }
 

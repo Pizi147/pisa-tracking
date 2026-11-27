@@ -41,8 +41,10 @@ const doRong = (aoa: Cell[][]) => (aoa[0] ?? []).map((_, c) => ({
  * Xem trước gọi máy chủ sau 400 ms kể từ lần đổi lọc cuối; bấm Xuất gọi CÙNG bộ lọc nên số dòng tệp = số lượt xem trước.
  * Máy chủ trả mảng hai chiều, trình duyệt chỉ dựng `.xlsx` (thư viện nạp động — không vào gói chính).
  */
-export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, tieuDe = t('Xuất Excel · Điểm Test'), tabs, vungTab, onDong }: {
+export function NganXuatMt({ khung: khungDau, chiNhanh, lop, tvv = null, thoiGianMacDinh, tieuDe = t('Xuất Excel · Điểm Test'), tabs, vungTab, onDong }: {
   khung: KhungXuat; chiNhanh?: number | null; lop?: { id: number; ma: string } | null;
+  /** LOC-TVV-XUAT: TVV đang lọc ở Lịch Test — tệp chỉ gồm em của TVV đó (máy chủ ép quyền). */
+  tvv?: number | null;
   thoiGianMacDinh: ThoiGianXuat; tieuDe?: string; tabs?: ReactNode; vungTab?: { id: string; nhan: string }; onDong: () => void;
 }) {
   const toast = useToast();
@@ -64,9 +66,9 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
 
   /* Bộ lọc phẳng đi qua CHÍNH `docBoLocXuatMt` của máy chủ — web kiểm trước chỉ để báo sớm. */
   const f = useMemo(() => docBoLocXuatMt({
-    khung, chiNhanh: cn, lop: lopChon.map((l) => l.id), cot, du: chiDu ? 1 : 0, tg: kieu,
+    khung, chiNhanh: cn, lop: lopChon.map((l) => l.id), cot, du: chiDu ? 1 : 0, tg: kieu, tvv,
     ...(kieu === 'dot' ? { dot } : kieu === 'tuan' ? tuan : thang),
-  }), [khung, cn, lopChon, cot, chiDu, kieu, dot, tuan, thang]);
+  }), [khung, cn, lopChon, cot, chiDu, kieu, dot, tuan, thang, tvv]);
   const loiNhap = typeof f === 'string' ? f : null;
   /* Lỗi thời gian hiện ngay khi xảy ra (đổi ô là kiểm lại), qua `useLoiForm` như mọi form KhungPanel. */
   const lf = useLoiForm();

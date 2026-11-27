@@ -9,6 +9,8 @@ export async function runPrLocTvvTests(t: any) {
   const { createApp } = await import('../app.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const cham: any = await import('../cham/canCham.ts');
+  const xm: any = await import('../phanTich/xuatMt.ts');
+  const sd: any = await import('../../../shared/domain/xuatMt.ts');
 
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /* Hai TVV cùng chi nhánh, đông em nhất (seed): A lọc, B là "TVV khác". */
@@ -28,6 +30,29 @@ export async function runPrLocTvvTests(t: any) {
     assert(cham.tvvLoc(pA, null) === A.id && cham.tvvLoc(pA, String(B.id)) === A.id && cham.tvvLoc(pA, 'all') === null, 'TVV');
     assert(cham.tvvLoc(ql, null) === null && cham.tvvLoc(ql, String(B.id)) === B.id && cham.tvvLoc(ql, 'abc') === null, 'Head');
     assert(cham.tvvLoc(gv, String(A.id)) === null, 'GV không được lọc theo TVV');
+  });
+
+  check('LOC-TVV-6 · Xuất Excel điểm (Head) theo TVV đang lọc: chỉ em của TVV đó, ít hơn / bằng không lọc; GV gửi tvv → bỏ qua; TVV vẫn 403; tvv sai → lỗi nhập', () => {
+    const boLoc = (khung: 'ft' | 'thuong', tvv?: unknown) => sd.docBoLocXuatMt({ khung, tg: 'dot', dot: (khung === 'ft' ? sd.DOT_XUAT_FT : sd.DOT_XUAT_THUONG).join(','), ...(tvv === undefined ? {} : { tvv }) });
+    const mailA = new Set((conn.prepare(`SELECT email FROM students WHERE consultant_user_id = ?`).all(A.id) as any[]).map((r) => r.email));
+    let soDongA = 0;
+    for (const khung of ['ft', 'thuong'] as const) {
+      const moi = xm.duLieuXuatMt(ql, boLoc(khung));
+      const loc = xm.duLieuXuatMt(ql, boLoc(khung, String(A.id)));
+      assert(loc.dem.luot <= moi.dem.luot, `${khung}: lọc ${loc.dem.luot} > không lọc ${moi.dem.luot}`);
+      for (const s of loc.sheets.filter((x: any) => x.ten !== 'Bộ lọc đã dùng')) {
+        const iMail = (s.aoa[0] as string[]).indexOf('Email');
+        for (const r of s.aoa.slice(1)) { assert(mailA.has(r[iMail]), `${khung}: dòng em ngoài TVV A`); soDongA++; }
+      }
+      assert(loc.moTa.some((r: string[]) => r[0] === 'TVV'), 'Bộ lọc đã dùng phải ghi TVV');
+      const gvMoi = xm.duLieuXuatMt(gv, boLoc(khung)), gvLoc = xm.duLieuXuatMt(gv, boLoc(khung, String(A.id)));
+      assert(gvMoi.dem.luot === gvLoc.dem.luot, `${khung}: GV gửi tvv mà tệp đổi`);
+    }
+    assert(soDongA > 0, 'em của TVV A không có lượt nào để xuất');
+    let ma = 0;
+    try { xm.duLieuXuatMt(pA, boLoc('ft', String(A.id))); } catch (e: any) { ma = e.status; }
+    assert(ma === 403, `TVV xuất: ${ma}`);
+    assert(typeof boLoc('ft', 'abc') === 'string', 'tvv sai phải báo lỗi');
   });
 
   const may = createApp().listen(0);
@@ -55,6 +80,7 @@ export async function runPrLocTvvTests(t: any) {
       const loc = await goi(ql.userId, `${q}&tvv=${A.id}`);
       assert(loc.tvv?.dang === A.id && Array.isArray(loc.tvv.ds) && loc.tvv.ds.some((x: any) => x.id === A.id), `tvv: ${JSON.stringify(loc.tvv)}`);
       assert(moi.tvv?.dang === null, 'Head mặc định không lọc');
+      assert(!('gvLop' in moi), 'Lịch Test không còn gửi gvLop (web bỏ dòng GV dưới mã lớp từ #2312)');
       assert(loc.lop.length > 0, 'TVV A không có hàng lớp ở tuần thử');
       for (const l of loc.lop) {
         const soEmA = one(`SELECT COUNT(DISTINCT a.student_id) n FROM assessment_attempts a JOIN students s ON s.id = a.student_id
