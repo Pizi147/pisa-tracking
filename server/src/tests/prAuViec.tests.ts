@@ -174,7 +174,7 @@ export async function runPrAuViecTests(t: any) {
 
   check('P1-04 (rà #1788) · Phối hợp SOS ở hồ sơ: người giữ như Công việc (GVCN hiệu lực); GV bộ môn / TVV không đọc (0 việc)', () => {
     const em = all(`SELECT DISTINCT x.student_id AS sid, e.class_id FROM sos_coordination_actions x JOIN enrollments e ON e.student_id = x.student_id AND e.status = 'active'
-       JOIN classes c ON c.id = e.class_id AND c.code = 'MB FT 101' WHERE x.status = 'pending' LIMIT 3`);
+       JOIN classes c ON c.id = e.class_id AND c.code = 'MB FT 101' WHERE x.status = 'pending' AND x.kind NOT IN ('talk_family', 'bao_ph_tvv') LIMIT 3`);   // N78: việc GVCN chờ (việc TVV không ở nhóm này)
     assert(em.length, 'seed: MB FT 101 có Phối hợp SOS chờ');
     for (const { sid } of em) {
       const ql = hoSo(P.mbManager, sid).filter((v) => v.loai === 'phoi-hop-sos');

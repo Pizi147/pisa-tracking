@@ -219,7 +219,10 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(get('SELECT trang_thai AS t FROM viec_xu_ly WHERE id = ?', sid).t === 'mo', 'rút đề xuất: khối giao Xử lý vi phạm chưa mở lại');
     assert(nhatKy('request.withdraw', g.the.id).length === 1, 'nhật ký rút');
     const g2 = guiWl3(sid, [v2]);
+    /* N78 (chủ SP 28/11): đề xuất chờ Head duyệt → CHƯA có việc Báo PH của TVV; duyệt → sinh. */
+    assert(!get('SELECT 1 AS c FROM viec_bao_ph WHERE measure_id = ?', g2.measureId), 'N78: chờ Head duyệt mà đã có việc Báo PH');
     yc.duyetYeuCau(P.mbManager, g2.the.id);
+    assert(get('SELECT 1 AS c FROM viec_bao_ph WHERE measure_id = ?', g2.measureId), 'N78: Head duyệt mà chưa sinh việc Báo PH');
     assert(maLoi(() => yc.rutYeuCau(gvcn, g2.the.id)) === 400 && maLoi(() => yc.suaYeuCau(gvcn, g2.the.id, { note: 'Sửa sau khi Head đã duyệt' })) === 400, 'QL đã trả lời → như nay (400)');
   }));
 
