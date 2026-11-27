@@ -10,6 +10,9 @@ import { NguoiGiu, ThePhu } from '../congViec/DanhSachViec.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { KhoiDuyetYThuc } from '../yThuc/KhoiDuyetYThuc.tsx';
+import { KhoiTuyen } from '../yThuc/KhoiTuyen.tsx';
+import type { Tuyen } from '../yThuc/kieu.ts';
+import { useApi } from '../../lib/useApi.ts';
 import { DemNguocYThuc } from './DemNguocYThuc.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -354,6 +357,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             {!cho && !boKetQua && <><span>{t('Kết quả')}</span><span><KetQua yc={yc} ngan={ngan} /></span></>}
             {yc.mo && <><span aria-hidden /><span><Link to={yc.mo} className="link font-semibold">{typeof yc.duLieu?.caseId === 'number' ? t('Hồ sơ Case ›') : t('Mở ›')}</Link></span></>}
           </div>
+          {/* TUYEN-3 (N72 ②, mockup v27 T9): thẻ Ý thức (khác mặc định · thu hồi · sửa cấp bậc) — khối Tuyến của lần xử lý / yêu cầu ngay trong phần mở tại dòng
+              (Head thấy GV ghi, GVCN xử lý, bước của mình, bước sau khi duyệt). GET /tuyen chỉ khi dòng mở. */}
+          {(yThuc || yc.loai === 'sua_khai_bac') && <TuyenDuyet loai={yThuc ? 'vi_pham' : 'cap_bac'} khoa={yThuc ? yc.doiTuongId as number : yc.id} />}
           {viecPhu && (
             <div className="dyc-hang items-center">
               {tuDuyetDuoc && <span className="text-[13px] text-muted" title={t('Bạn tự gửi yêu cầu này. Duyệt được — nhật ký ghi \'tự duyệt\' và Quản trị được báo.')}>{t('Bạn tự gửi · tự duyệt được')}</span>}
@@ -544,4 +550,10 @@ function KetQua({ yc, ngan }: { yc: TheYeuCauDto; ngan: (d: string | null | unde
   if (yc.trangThai === 'tu_dong') return <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Tự đóng: {lyDoDong}', { lyDoDong: yc.lyDoDong })}</p>;
   if (!yc.traLoi) return goVang ? <p className="m-0 mt-1 text-[12px] text-slate-400">{t('{ai} đã duyệt{goVang}', { ai, goVang })}</p> : null;
   return <p className="m-0 mt-1 text-[12px] text-slate-400">{ai}: “{yc.traLoi}”{goVang}</p>;
+}
+
+/** TUYEN-3 (mockup v27 T9): khối Tuyến của thẻ Ý thức đang mở tại dòng — không có tuyến / không quyền thì thôi (thẻ vẫn đủ để quyết). */
+function TuyenDuyet({ loai, khoa }: { loai: 'vi_pham' | 'cap_bac'; khoa: number }) {
+  const { data } = useApi<Tuyen>(`/tuyen/${loai}/${khoa}`, [loai, khoa]);
+  return <KhoiTuyen tuyen={data} className="max-w-[880px]" />;
 }

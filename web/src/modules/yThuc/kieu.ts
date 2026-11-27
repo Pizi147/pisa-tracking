@@ -87,11 +87,13 @@ export type TrangThaiBuoc = 'xong' | 'dang' | 'cho' | 'bo' | 'tam_dung';
 export type BuocTuyen = {
   khoa: string; ten: string; trangThai: TrangThaiBuoc; chiTiet: string | null; nguoi: string | null; laToi: boolean;
   ngay: string | null; han: string | null; cha: string | null; cungLuc: boolean; coNoiDung: boolean; khongQuyen: boolean; noiDung?: string;
+  /** Việc lưu sẵn của bước (máy chủ `ViecBuoc`) — TUYEN-3: panel Đang theo dõi mở nội dung việc đang ở. */ viec?: { loai: string; id: number } | null;
 };
 export type Tuyen = {
   loai: string; khoa: string; tieuDe: string; em: { id: number; ten: string; lop: string | null };
   buoc: BuocTuyen[]; xong: number; tong: number; soDang: number; ketThuc: boolean;
   /** Tên một Head chi nhánh em (`headCua`, N74) — tuyến "đang chờ xử lý". */ head?: string | null;
+  /** TUYEN-3 (mockup v27 T9): "Lần trước: {bậc} · {ngày} · đã báo PH {ngày}" — tuyến Vi phạm, người xem được Ý thức em. */ lanTruoc?: string;
 };
 
 /** TUYEN-0 `tomTat` — chuỗi chấm một tuyến (bảng nhiều em, hồ sơ). */

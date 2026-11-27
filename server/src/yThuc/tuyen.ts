@@ -14,6 +14,7 @@ import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
   COORDINATION_KINDS, PERMISSIONS, addDaysIso, buocTvvViec, tuanLich, laViecTvvBaoPh, hanBaoPhHieuLuc, hanPhanMeeting, hanPhoiHop, hanTai, hanTheoNgay, laMeetingCx, ngayTheoGioVN, nhanLoaiXuLy, tenViec,
+  buocNgan,
 } from '../../../shared/domain/index.ts';
 import { can, laTvvCuaEm, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, notFound, nowIso } from '../util.ts';
@@ -61,6 +62,8 @@ export type Tuyen = {
   ketThuc: boolean; ketThucLuc: string | null;
   /** TUYEN-1 (N74): tên MỘT Head của chi nhánh em (`headCua`) — chỉ tuyến "đang chờ xử lý": web xem trước bước ○ Head duyệt khi GVCN chọn cách khác mặc định. */
   head?: string | null;
+  /** TUYEN-3 (mockup v27 T9): dòng "Lần trước…" đầu khối — tuyến Vi phạm, người xem được Ý thức em. */
+  lanTruoc?: string;
 };
 
 /* ---------------------------------------------------------------- phần dùng chung */
@@ -76,7 +79,8 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** RA-2711 (PTA rà #2290): THỜI ĐIỂM thật của bước khi nguồn có (giờ ghi) — "làm khi tuyến còn mở" so theo đây; nguồn chỉ có ngày thì không có. */ luc?: string | null;
 };
 type TuyenNoi = Omit<Tuyen, 'buoc' | 'xong' | 'tong' | 'soDang' | 'dangO' | 'ketThuc' | 'ketThucLuc' | 'head' | 'lop' | 'phuTrachChinh'> & { buoc: BuocNoi[]; luc: string | null; tvv: number | null; cn: number | null;
-  lop?: Tuyen['lop']; /** LPB-0: phụ trách chính (có mặt cả tuyến). */ chinh?: { id: number; ten: string } | null; /** LPB-0: khoá lô chuyển lớp (lớp nguồn × ngày ra lệnh) — Đang theo dõi một dòng mỗi lô. */ lo?: string };
+  lop?: Tuyen['lop']; /** LPB-0: phụ trách chính (có mặt cả tuyến). */ chinh?: { id: number; ten: string } | null; /** LPB-0: khoá lô chuyển lớp (lớp nguồn × ngày ra lệnh) — Đang theo dõi một dòng mỗi lô. */ lo?: string;
+  /** TUYEN-3 (đặc tả 4.5, mockup v27 T9): "Lần trước: {bậc} · {ngày} · đã báo PH {ngày}" — lần xử lý trước của em (tuyến Vi phạm). */ lanTruoc?: string | null };
 
 const ngay10 = (s: string | null | undefined): string | null => (s ? (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ngayTheoGioVN(s) ?? s.slice(0, 10)) : null);
 /** `ngay` + `luc` từ một mốc giờ của nguồn (RA-2711). */
@@ -179,7 +183,12 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
                 'nhan', COALESCE(t.phu_trach_id, t.nguoi_nhan), 'nhanTen', nu.full_name, 'kq', t.ket_qua, 'traLoi', t.tra_loi, 'xongBoi', t.xong_boi, 'xongTen', xb.full_name, 'xongLuc', t.xong_luc,
                 'vp', t.violation_id))
               FROM vi_pham_tra_lai t LEFT JOIN users tu ON tu.id = t.nguoi_tra LEFT JOIN users nu ON nu.id = COALESCE(t.phu_trach_id, t.nguoi_nhan) LEFT JOIN users xb ON xb.id = t.xong_boi
-              WHERE t.measure_id = m.id OR (t.violation_id IN (SELECT mv2.violation_id FROM measure_violations mv2 WHERE mv2.measure_id = m.id) AND t.tra_luc >= m.created_at))) AS tl
+              WHERE t.measure_id = m.id OR (t.violation_id IN (SELECT mv2.violation_id FROM measure_violations mv2 WHERE mv2.measure_id = m.id) AND t.tra_luc >= m.created_at))) AS tl,
+            /* TUYEN-3: lần xử lý TRƯỚC (đã duyệt / đã thực hiện) của em + ngày báo PH đầu — dòng "Lần trước" đầu khối (đặc tả 4.5). */
+            (SELECT json_object('kind', p.kind, 'ten', p.custom_name, 'ngay', COALESCE(p.performed_on, substr(p.created_at, 1, 10)),
+                'bao', (SELECT MIN(l.ngay) FROM viec_bao_ph b2 JOIN viec_bao_ph_lan l ON l.viec_id = b2.id WHERE b2.measure_id = p.id AND l.ket_qua = 'da_bao'))
+              FROM discipline_measures p WHERE p.student_id = m.student_id AND p.id != m.id AND p.created_at < m.created_at AND p.status IN ('da_duyet', 'done')
+              ORDER BY p.created_at DESC LIMIT 1) AS truoc
        FROM discipline_measures m JOIN students s ON s.id = m.student_id LEFT JOIN users tv ON tv.id = s.consultant_user_id
        LEFT JOIN users pu ON pu.id = m.performed_by LEFT JOIN users cu ON cu.id = m.created_by LEFT JOIN users mpt ON mpt.id = m.phu_trach_id
       WHERE m.id IN (SELECT value FROM json_each(?1)) AND m.status != 'nhap'`,
@@ -188,6 +197,11 @@ function dungViPham(ids: number[], homNay: string): TuyenNoi[] {
     const gv = m.gvcn ? JSON.parse(m.gvcn) as [number, string] : null;
     const t: TuyenNoi = { loai: 'vi_pham', khoa: String(m.id), tieuDe: `Vi phạm · ${nhanLoaiXuLy(m.kind, m.custom_name)}`, em: { id: m.sid, ten: m.em_ten, lop: m.lop ?? null },
       chiXem: !!m.archived_at, buoc: [], luc: m.created_at, tvv: m.tvv ?? null, cn: m.cn ?? null };
+    if (m.truoc) {
+      const p = JSON.parse(m.truoc);
+      const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+      t.lanTruoc = `Lần trước: ${nhanLoaiXuLy(p.kind, p.ten)} · ${dmy(p.ngay)}${p.bao ? ` · đã báo PH ${p.bao.slice(8, 10)}/${p.bao.slice(5, 7)}` : ''}`;
+    }
     const giuGvcn = gv ? { ids: [gv[0]], nguoi: gv[1], vai: false } : theoVai(head(t.cn), 'Head chi nhánh');
     const vp = ds(m.vp).sort((a, b) => a.ngay.localeCompare(b.ngay) || a.id - b.id);
     const nguoiGhi = [...new Set(vp.map((v) => v.boi as number))];
@@ -616,6 +630,7 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
   const ketThuc = !t.buoc.some((b) => b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho');
   return {
     loai: t.loai, khoa: t.khoa, tieuDe: t.tieuDe, em: t.em, lop: t.lop ?? null, phuTrachChinh: t.chinh?.ten ?? null, chiXem: t.chiXem, buoc: buocRa,
+    ...(t.lanTruoc && xemEm ? { lanTruoc: t.lanTruoc } : {}),   // TUYEN-3: lần xử lý trước — người xem được Ý thức em (Head, GVCN…)
     xong: t.buoc.filter((b) => b.trangThai === 'xong').length, tong: t.buoc.length, soDang: dang.length,
     dangO: dau ? { ten: dau.ten, nguoi: dau.nguoi, han: dau.han } : dang.length ? { ten: `${dang.length} bước cùng lúc`, nguoi: null, han: null } : null,
     ketThuc, ketThucLuc: ketThuc ? t.buoc.map((b) => b.ngay).filter((x): x is string => !!x).sort().at(-1) ?? null : null,
@@ -873,7 +888,8 @@ export function theoDoiTuyen(p: Principal): { tuyen: DongTheoDoiTuyen[]; an: Set
     const han = dang.map((b) => b.han).filter((h): h is string => !!h).sort()[0] ?? null;
     ra.push({ loai: t.loai, khoa: t.khoa, tieuDe: t.tieuDe, studentId: t.em?.id ?? null, studentName: t.em?.ten ?? null, classCode: t.em?.lop ?? t.lop?.code ?? null,
       nhan: x.ketThuc ? `Xong${x.ketThucLuc ? ` ${x.ketThucLuc.slice(8, 10)}/${x.ketThucLuc.slice(5, 7)}/${x.ketThucLuc.slice(0, 4)}` : ''}`
-        : x.dangO ? `Đang ở ${x.dangO.ten}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
+                /* TUYEN-3 (rà PTA #2281, mockup v27 T8a): tên bước NGẮN ("Báo PH · Kết quả Progress" → "Báo PH" — nguồn đã ở tên mục) để dòng một tầng. */
+        : x.dangO ? `Đang ở ${buocNgan(x.dangO.ten)}${x.dangO.nguoi ? ` · ${x.dangO.nguoi}` : ''}` : 'Đang ở —',
       han, quaHan: !!han && han < homNay, ketThuc: x.ketThuc, ketThucLuc: x.ketThucLuc, chuoi: x.buoc.map((b) => b.trangThai), viec: d.viec,
       ...(t.lo ? { lo: t.lo, chuaBaoPh: t.buoc.some((b) => b.khoa.startsWith('bao_ph:') && (b.trangThai === 'dang' || b.trangThai === 'tam_dung')) } : {}) });
   }

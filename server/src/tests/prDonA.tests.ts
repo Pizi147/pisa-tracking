@@ -742,6 +742,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     /* OV-13b: Tổng quan GV mở việc tại chỗ (`PanelViec`) — cây panel việc chỉ gọi khi bấm một việc, không lúc mở trang. */
     '/attachments': 'PanelViec (OV-13b) — chỉ khi bấm việc',
     '/tuyen/phoi_hop/': 'BangPhoiHop (TUYEN-2) — khay một em, chỉ khi bấm mở tuyến của em',
+    '/tuyen/': 'TheYeuCau (TUYEN-3) — khối Tuyến của thẻ Ý thức, chỉ khi mở dòng Chờ duyệt',
     '/y-thuc/bao-ph-lo': 'PanelBaoPhNhieu (TUYEN-2) — chỉ khi mở dòng Báo PH "n em"',
     '/lich-su': 'LichSuYeuCau (panel Chờ duyệt Tổng quan = HopChoDuyet của tab Công việc) — chỉ khi mở một dòng yêu cầu rồi mở Lịch sử',
     '/interventions/luoi-ket-qua': 'PanelViec (GD-20c) — lưới Ghi kết quả PA, chỉ khi bấm dòng gộp',

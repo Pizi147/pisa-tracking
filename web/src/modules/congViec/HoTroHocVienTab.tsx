@@ -594,12 +594,14 @@ export function HoTroHocVienTab() {
   /* GV-2: tab "Đang theo dõi" — việc đang mở ở panel chỉ đọc (`theo=loai:id`, cùng kiểu `viec=`); dòng chọn nhớ bản dòng (panel đứng khi tải lại). */
   const theo = tab === 'theo-doi' ? params.get('theo') : null;
   const [theoDong, setTheoDong] = useState<DongTd | null>(null);
-  const theoChon = theo && theoDong && `${theoDong.loai}:${theoDong.refId}` === theo ? theoDong : null;
+  /* TUYEN-3: dòng tuyến khoá `tuyen:{loai}:{khoa}` (như `khoaTd`, không import để TabTheoDoi tải khi cần). */
+  const khoaTheo = (d: DongTd) => (d.tuyen ? `tuyen:${d.tuyen.loai}:${d.tuyen.khoa}` : `${d.loai}:${d.refId}`);
+  const theoChon = theo && theoDong && khoaTheo(theoDong) === theo ? theoDong : null;
   /* NHẸ HƠN: panel bám mép phải (KhungPanel tại chỗ, ≥ 1024) đang mở → đầu trang + danh sách bó về cột trái min(556 px, 42 % − 48 px); không mở → bố cục cũ. */
   const coPanel = !!(chon || theId || theoChon);
   /* KHUÔN A (24/11): chưa mở panel: danh sách rộng hết khung (GV / TVV: cạnh khối phải 420 px); mở panel 720 → danh sách min(680 px, 100vw − 784 px), không co thêm. */
   const coKhoiPhai = laGv || laTvv;
-  const moTheo = (d: DongTd) => { setTheoDong(d); setParam('theo', `${d.loai}:${d.refId}`); };
+  const moTheo = (d: DongTd) => { setTheoDong(d); setParam('theo', khoaTheo(d)); };
   const dongTheo = () => { setParam('theo', null); lamMoiGiaoViec(); };
   const anTrenDienThoai = chon || theId || theoChon ? 'max-lg:hidden' : '';
   /* GD-1 (mockup v21 K8): < 1024 px không có khung phải — công tắc "Việc · Lớp của tôi" thay hai cột. */

@@ -59,6 +59,8 @@ export const VIEC_CHAM_CHEO = 'Chấm Speaking';
 /** OV-14c: khoá MỘT việc "Chấm Speaking · n bài" của GV Speaking — panel hàng đợi từng em. */
 export const KHOA_CHAM_SPEAKING = 'score:cham-speaking|cc';
 
+/** TUYEN-3 (rà PTA #2281): tên bước NGẮN cho dòng "Đang ở {bước} · {người}" — phần đầu tên ("Báo PH · Kết quả Progress" → "Báo PH"); "Nhận thông tin" → "Nhận tin". */
+export const buocNgan = (ten: string): string => { const d = ten.split(' · ')[0]; return d === 'Nhận thông tin' ? 'Nhận tin' : d; };
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 
 /** UI-CV-TVV (mockup `tvv.html`): việc TVV theo từng em — mỗi việc một dòng, một panel (Báo PH có lịch sử từng em; Sau thi; Chốt ngày thi). */

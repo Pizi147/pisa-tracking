@@ -207,7 +207,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem, nh
   const khoi = gv.g && <KhoiGiaoViec g={gv.g} dat={gv.dat} reload={gv.reload} onDaDoi={daiDoi} gon={laMeeting} anTheoDoi={laMeeting} />;
   const than = (
       <div className={`relative flex flex-col gap-4 ${nhung ? '' : 'pt-4'}`}>
-        {chiXem && gv.g && <DaiChiXem g={gv.g} onBo={onDong} />}
+        {chiXem && gv.g && !nhung && <DaiChiXem g={gv.g} onBo={onDong} />}
         {vua && <DaiDaLam chu={vua.chu} het={vua.het} onHet={() => setVua(null)} onHoanTac={vua.hoanTac} />}
         {dsMo.map((y) => <DaiChoGvSua key={y.id} y={y} hn={hn} onRut={v.coTheTraLai && !chiXem ? () => rut(y) : null}
           moTa={y.measureId ? t('Cả lần xử lý') : t('1 vi phạm')} />)}
@@ -306,7 +306,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem, nh
   if (nhung) return (
     <div className="grid gap-3">
       {than}
-      {(chan.trai || chan.chinh) && <div className="flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+      {/* TUYEN-3: nhúng chỉ xem (panel Đang theo dõi) — chân là của panel ngoài. */}
+      {!chiXem && (chan.trai || chan.chinh) && <div className="flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
         <span className="min-w-0 flex-1 text-sm">{chan.trai}</span>{chan.chinh}</div>}
     </div>
   );
