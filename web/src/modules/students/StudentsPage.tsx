@@ -436,7 +436,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const giaTriTvv = tvvDang === 'toi' ? 'toi' : tvvDang === 'chua' ? '-' : tvvDang !== null ? String(tvvDang) : 'tat-ca';
   const iTvv = mucTvv.findIndex((x) => x.gt === giaTriTvv);
   const oTvv = pv && (
-    <div className="w-[230px] max-sm:min-w-0 max-sm:flex-1" data-hd="hvl-tvv">
+    <div className="w-[200px] max-sm:w-[calc(50%-4px)] max-sm:min-w-0" data-hd="hvl-tvv">
       <ChonNguoi nhan={t('TVV')} gon nhom="nhan_vien" choToi={false} choNgoai={false} ariaLabel={t('TVV')} placeholder={t('Gõ tên TVV…')}
         value={iTvv >= 0 ? { kieu: 'tai_khoan', id: iTvv + 1, ten: mucTvv[iTvv].ten } : null} macDinhTrong={t('Tất cả')}
         ds={mucTvv.map((x, k) => ({ id: k + 1, ten: x.ten }))}
@@ -464,7 +464,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         ds={nhomLopToi((data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => ({ id: c.id, ma: c.code,
           phu: phuLop({ ct: c.route ? `${c.programmeCode ?? 'FT'} ${c.route}` : c.programmeCode, cn: branchId ? null : c.branchName, siSo: c.studentCount, tuan: c.currentWeek }) })), lopToi)} />
   );
-  const locChung = <>{locTim}{locLop}</>;
+  /* Chủ SP 28/11 (xem bản đầu PR): ô TVV ở hàng lọc, cạnh "Mọi lớp" — đầu trang không còn ô TVV. */
+  const locChung = <>{locTim}{locLop}{oTvv}</>;
   /* Chip lọc (B11, G6 "số 0 không bấm"): số 0 mờ, không bấm — trừ khi đang bật (để còn tắt được). */
   const chipLoc = (key: string, nhan: string, so: number | string, bat: boolean, onBat: () => void, title?: string, tat?: boolean) => (so === 0 && !bat) || tat
     ? <span key={key} className="nut-loc nut-loc-tat" aria-disabled="true" title={title}>{nhan} <b className="tabular-nums">{so}</b></span>
@@ -514,7 +515,6 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {/* Đầu trang một hàng (mockup U04): tên · Xem · Fast Track / Lớp thường · phải: Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯ (B26). */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="m-0 mr-1 text-[20px] font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
-        {!dienThoai && oTvv}
         {!dienThoai && oXem}
         {!dienThoai && chonKhung}
         <div className="ml-auto flex items-center gap-2">
@@ -525,8 +525,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           {menuTrang.length > 0 && nutMenuTrang}
         </div>
       </div>
-      {dienThoai && (oTvv || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:shrink-0 [&>.doan:only-child]:flex-1">{oTvv}{chonKhung}</div>}
-      {dienThoai && oXem}
+      {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:shrink-0 [&>.doan:only-child]:flex-1">{oXem}{chonKhung}</div>}
 
       {/* PTA rà #1690: 375 nhãn "Phân công" gọn. PTA rà #1704: "Đang SOS" một tên ở mọi cỡ màn (mockup K8b "Đang SOS 10"); hàng tab cuộn ngang khi chật. */}
       <HangTab className="max-sm:[&>[role=tab]]:flex-1 max-sm:[&>[role=tab]]:justify-center" panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
@@ -550,11 +549,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             <div className="loc-hvl flex flex-wrap items-center gap-2" data-hd="hvl-goc">
               {locTim}
               {dienThoai && (
-                <button type="button" className={`btn btn-sm min-h-[44px] ${moLoc || dangLoc ? 'nut-loc-dang' : ''}`} aria-expanded={moLoc} onClick={() => setMoLoc(!moLoc)}>{t('Lọc')}</button>
+                <button type="button" className={`btn btn-sm min-h-[44px] ${moLoc || anLopRong ? 'nut-loc-dang' : ''}`} aria-expanded={moLoc} onClick={() => setMoLoc(!moLoc)}>{t('Lọc')}</button>
               )}
               {(!dienThoai || moLoc) && <>
                 {/* GD-13a: Mọi lớp · Mọi TVV có cả ở Tất cả (link cũ `classId` — badge quá hạn của lớp — vào ô Mọi lớp, ✕ để bỏ). */}
                 {locLop}
+                {oTvv}
                 <span aria-hidden className="vach-loc max-sm:hidden" />
                 {chipLoc('thi', t('Thi tháng này'), demThi, locThiThang, () => setParam({ thi: locThiThang ? null : '1' }))}
                 {laVai && CHIP_VAI_TRANG.filter((k) => !laChipPhu(k) || chipVai === k).map(chipVaiNut)}
@@ -673,7 +673,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
         {goc === 'lich-thi' && (
           <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
-            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locTim} locLop={locLop} dangLocLop={!!chiLop} loc={trongLoc}
+            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locTim} locLop={<>{locLop}{oTvv}</>} dangLocLop={!!chiLop} loc={trongLoc}
             onMoCase={(id, caseId) => setPanelEm({ id, caseMo: caseId })} />
         )}
 
