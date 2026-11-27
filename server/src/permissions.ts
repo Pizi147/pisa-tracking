@@ -275,7 +275,7 @@ export function branchesOfStudent(studentId: number): number[] {
   return nho('hv-cn:' + studentId, () => {
     /* TOC-4: MỘT câu (trước 2–3 câu): k = 0 chi nhánh lớp đang học · 1 mọi lớp từng học · 2 `students.branch_id`. Luật như cũ. */
     const tat = db().prepare(
-      `SELECT 0 AS k, b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1 AND e.status = 'active')
+      `SELECT 0 AS k, b AS b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1 AND e.status = 'active')
        UNION ALL SELECT 1, b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1)
        UNION ALL SELECT 2, branch_id FROM students WHERE id = ?1`,
     ).all(studentId) as { k: number; b: number | null }[];
