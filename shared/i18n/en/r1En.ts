@@ -195,6 +195,8 @@ export const EN_R1_EN = {
   'Để trống: xuất mọi lớp bạn được xem.': 'Leave empty to export every class you can see.',
   'Bỏ lớp {ma}': 'Remove class {ma}',
   'bỏ lớp': 'remove class',
+  'Bỏ lọc TVV {ten}': 'Remove counsellor filter {ten}',
+  'bỏ lọc TVV': 'remove counsellor filter',
   'Cách lọc thời gian': 'Time filter',
   'Theo đợt': 'By round',
   'Lượt phải khớp cả chi nhánh, lớp và đợt đã chọn.': 'Attempts must match the chosen branch, class and round.',
