@@ -63,8 +63,8 @@ function KhoiChuyenLop({ c }: { c: NonNullable<ViecBaoPh['chuyenLop']> }) {
     <div className="flex flex-col gap-1.5">
       <h3 className="m-0 text-[14px] font-bold">{huy ? t('Huỷ chuyển lớp · máy điền sẵn') : t('Chuyển lớp · máy điền sẵn')}</h3>
       <BoiCanh dong={[
-        [t('Lớp'), c.lopCu || c.lopMoi ? <span className="font-normal">{c.lopCu?.code}{c.lopMoi && <> → <b className="font-semibold">{c.lopMoi.code}</b></>}{c.gvcnMoi ? ` · ${t('GVCN')} ${c.gvcnMoi}` : ''}{huy ? ` · ${t('đã huỷ')}` : ''}</span> : null],
-        [t('Bắt đầu'), c.tuan ? <span className="font-normal"><b className="font-semibold tabular-nums">{c.maTuan}</b> · {t('thứ Hai {ngay}', { ngay: shortDate(c.tuan) })}</span> : null],
+        [t('Lớp'), c.lopCu || c.lopMoi ? <span className="font-normal"><span className="whitespace-nowrap">{c.lopCu?.code}</span>{c.lopMoi && <> → <b className="whitespace-nowrap font-semibold">{c.lopMoi.code}</b></>}{c.gvcnMoi ? ` · ${t('GVCN')} ${c.gvcnMoi}` : ''}{huy ? ` · ${t('đã huỷ')}` : ''}</span> : null],
+        [t('Bắt đầu'), c.tuan ? <span className="font-normal"><b className="whitespace-nowrap font-semibold tabular-nums">{c.maTuan}</b> · {t('thứ Hai {ngay}', { ngay: shortDate(c.tuan) })}</span> : null],
         [t('Hướng'), c.huong ? <span className="font-normal">{dich(c.huong)}</span> : null],
         [t('Lý do'), c.lyDo ? <span className="whitespace-pre-line font-normal">{c.lyDo}</span> : null],
       ]} />

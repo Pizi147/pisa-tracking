@@ -263,7 +263,9 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
               <div className="pc-ket-bg">
                 <span>→ {nguoiCu.length === 1 && soViec === 1
                   ? <><b>{t('1 việc')}</b> {t('cho {gv}', { gv: [...viec.values()][0].nguoi })} · {[...viec.values()][0].cot.join(', ')} × {t('{n} em', { n: [...viec.values()][0].soEm })} = <b>{t('{n} góp ý', { n: soGopY })}</b></>
-                  : <b>{t('{n} việc · {k} góp ý', { n: soViec, k: soGopY })}</b>} · <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(hanBanGiaoGv(hn), hn) })}</span></span>
+                  : <b>{t('{n} việc · {k} góp ý', { n: soViec, k: soGopY })}</b>}</span>
+                {/* LPB-2b: hạn là MỘT khối — cả khối xuống dòng cùng nhau, không rơi lẻ một viên. */}
+                <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(hanBanGiaoGv(hn), hn) })}</span>
               </div>
             )}
             {cap.length > 0 && (

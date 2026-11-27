@@ -11,6 +11,7 @@ export const EN_LPB2B = {
   'Chuyển ngay hôm nay: không giao việc Báo PH (TVV) và Nhận thông tin (BPXL).': 'Moving today: no Parent update (consultant) or Information (scheduler) task is created.',
   'Tạo việc bàn giao · báo BPXL': 'Create handover task · tell the scheduler',
   'Không tạo việc nào cho cặp này': 'No task is created for this pair',
+  'Mỗi em một việc Báo PH. Bấm Ghi để mở khay của em: Phụ trách · Hạn · Theo dõi, Tuyến, nội dung máy điền sẵn và form Kết quả. Lưu xong, em rời danh sách ở lần tải lại.': 'One Parent update task per student. Tap Record to open the tray of the student: Assignee · Due · Followers, Track, auto-filled content and the Result form. Once saved, the student leaves the list on the next refresh.',
   'Bàn giao · hạn {ngay}': (b) => `Handover · due ${b.ngay}`,
   'BPXL nhận thông tin · hạn {ngay}': (b) => `Scheduler receives info · due ${b.ngay}`,
 } satisfies Record<string, Dich>;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KhungPanel, NhapViec } from '../../ui/KhungPanel.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { dauViec } from '../../ui/KhuonViec.tsx';
 import { LOP_MUC_HAN } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -27,7 +28,9 @@ export function PanelBaoPhNhieu({ it, onDong, onDaLam, onTiep }: { it: WorkItem;
   /* LPB-2b (mockup v28 L2a): nguồn Chuyển lớp — đầu panel "n em · vào W3 SEP" (chỉ khi cả lô cùng một tuần), cột 3 = Lớp mới · tuần, dưới tên em = TVV của em. */
   const laChuyenLop = ds.length > 0 && ds.every((c) => lo?.[c.viecId ?? 0]?.lopMoi);
   const tuanVao = [...new Set(ds.map((c) => lo?.[c.viecId ?? 0]?.tuan).filter(Boolean))];
-  const dau = dauViec({ lop: it.classCode, ngCanh: [t('{n} em', { n: ds.length }), laChuyenLop && tuanVao.length === 1 ? t('vào {tuan}', { tuan: tuanVao[0] }) : null].filter(Boolean).join(' · ') });
+  const dau = { ...dauViec({ lop: it.classCode, ngCanh: [t('{n} em', { n: ds.length }), laChuyenLop && tuanVao.length === 1 ? t('vào {tuan}', { tuan: tuanVao[0] }) : null].filter(Boolean).join(' · ') }),
+    /* LPB-2b (mockup v28 L2a): ⓘ giải thích ngắn cạnh ✕ — thay đoạn chú thích tĩnh. */
+    ghim: <NutLuat>{t('Mỗi em một việc Báo PH. Bấm Ghi để mở khay của em: Phụ trách · Hạn · Theo dõi, Tuyến, nội dung máy điền sẵn và form Kết quả. Lưu xong, em rời danh sách ở lần tải lại.')}</NutLuat> };
   return (
     <KhungPanel hd="bao-ph" tieuDe={t('Báo PH · {bac}', { bac: nguon })} dau={dau} onDong={onDong}
       chan={{ huy: null, chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined }}>

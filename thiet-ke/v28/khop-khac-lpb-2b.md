@@ -25,12 +25,13 @@ Mã tuần demo "W4 SEP" thay "W3 SEP" của mockup (ngày demo 14/09/2026, tu�
 | L2a / L2b khối "Chuyển lớp · máy điền sẵn" (Lớp · Bắt đầu · Hướng · Lý do) | `KhoiChuyenLop` (đọc `chuyenLop` của `GET /y-thuc/bao-ph/:id`, máy chủ đã có từ LPB-0) | tvv-1440 / 375 | KHỚP |
 | L2b việc gộp: hai khối bối cảnh (Final + Chuyển lớp) | khối Final = hàng "Máy điền sẵn" của `BoiCanh` (sẵn có) + `KhoiChuyenLop` | (demo: chưa có em gộp) | KHÁC nhỏ — khối Final không có tiêu đề riêng "Kết quả Final · máy điền sẵn"; chưa có ảnh dữ liệu thật |
 | L2a / L2c lệnh huỷ → "Báo lại · Huỷ chuyển lớp", khối "Huỷ chuyển lớp · máy điền sẵn" | `KhoiChuyenLop` (`loai` huỷ / `lenhDaHuy`) | — | KHỚP theo mã (chưa có ảnh dữ liệu thật) |
-| L2a tên bước Tuyến "Lệnh chuyển lớp" | tuyến LPB-0 đặt tên "Quyết định chuyển lớp" (máy chủ, PR trước) | tvv-1440 | KHÁC nhỏ — [XM] 1 |
+| L2a tên bước Tuyến "Lệnh chuyển lớp" | tuyến LPB-0 đặt tên "Quyết định chuyển lớp" (máy chủ, PR trước) | tvv-1440 | KHÁC nhỏ — có lý do: trùng tên nút "Quyết định chuyển lớp" ở panel (một khái niệm một tên; PTA chốt 28/11) |
 | L2d em chưa có TVV → việc ở Head, dòng "… · chưa có TVV" | `chiTiet` máy chủ thêm "· chưa có TVV" | — (Head: việc ở tab Ý thức & Phối hợp, chưa chụp) | KHỚP theo mã |
-| L2a đầu panel ⓘ · ⋯ | — | — | **BỎ** — ⓘ cần mục trợ giúp `hd` mới (như LPB-2a); ⋯ "Bỏ việc" đã ở ⋯ từng khay em |
+| L2a đầu panel ⓘ | `PanelBaoPhNhieu` `dau.ghim` = `NutLuat` (ⓘ giải thích ngắn) | tvv-1440 / 1280 | KHỚP |
+| L2a đầu panel ⋯ | — | — | **BỎ** — panel nhiều em không có thao tác thật để đặt vào ⋯ ("Bỏ việc" đã ở ⋯ trong khay từng em) |
 | L2a chân "Lưu · Lưu · việc tiếp ›" | chân panel nhiều em: "Việc tiếp ›"; nút Lưu ở cuối khay từng em (TUYEN-2) | tvv-1440 | GIỮ |
 
-Tỉ lệ khớp (KHỚP + KHÁC nhỏ + GIỮ trên tổng; BỎ không tính): 13 KHỚP / GIỮ · 2 KHÁC nhỏ · 1 BỎ → **≈ 94 %**.
+Tỉ lệ khớp (KHỚP + KHÁC nhỏ + GIỮ trên tổng; BỎ không tính): 14 KHỚP / GIỮ · 2 KHÁC nhỏ · 1 BỎ → **≈ 94 %**.
 
 ## Thao tác TRƯỚC → SAU PR
 
@@ -50,10 +51,15 @@ Không mất thao tác nào.
 - `GET /students/:id/chuyen-lop?toClassId=…`: thêm `seGiao` (người nhận Báo PH · Nhận thông tin, hạn) — dùng bộ chọn người của LPB-0 (`boChonNhanTin`); trần câu của đường này nâng theo số đo (`tocDoDuong.ts`).
 - `/my-work`: `nhomChuyenLop` thêm `vao`, `chiTiet` (thêm cột vào câu sẵn có, không câu mới).
 
+## Sửa theo PTA rà ảnh (28/11)
+
+- 375: hàng Theo dõi — nút "+" nằm trong dòng chip (xuống dòng cùng chip, không đè chip dài); lỗi có từ nền `Cum` (LPB-2a trở về trước), sửa luôn.
+- 375: khối Tuyến — mỗi mã lớp / mã tuần một khối không bẻ; tên bước một dòng, người (trái) + hạn (phải) ở dòng dưới (như mockup).
+- Hộp Lưu phân công: "hạn …" là một khối riêng, xuống dòng cùng nhau.
+
 ## [XM]
 
-1. Tên bước Tuyến Chuyển lớp: mockup "Lệnh chuyển lớp", máy chủ LPB-0 "Quyết định chuyển lớp" — đổi chữ ở `dungChuyenLop` (PR riêng, đụng phép kiểm tuyến) hay sửa mockup?
-2. ⓘ + ⋯ ở đầu panel nhiều em (như [XM] của LPB-2a).
+Không còn.
 
 ## Chú thích `ponytail:`
 

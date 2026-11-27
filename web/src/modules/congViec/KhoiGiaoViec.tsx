@@ -93,13 +93,13 @@ const NUT_NHO = 'btn btn-sm min-h-[44px] sm:h-[28px] sm:min-h-[28px]';
  * MỘT CỤM của khối (v23 `.pht1 > span`): nhãn nhỏ · giá trị · nút. 1440: dàn ngang trong hàng; 375: lưới 64 px · giá trị · nút (mỗi cụm một dòng ≥ 44 px).
  * `rong` = cụm chiếm cả hàng (Theo dõi, Mô tả việc, ô đang sửa).
  */
-function Cum({ nhan, nut, rong, children }: { nhan: ReactNode; nut?: ReactNode; rong?: boolean; children: ReactNode }) {
+function Cum({ nhan, nut, rong, nutTrong, children }: { nhan: ReactNode; nut?: ReactNode; rong?: boolean; /** LPB-2b: nút "+" nằm TRONG dòng chip (xuống dòng cùng chip, không đè chip dài ở 375). */ nutTrong?: boolean; children: ReactNode }) {
   return (
-    <div className={`flex min-w-0 items-center gap-x-2 gap-y-1 max-sm:grid max-sm:min-h-[44px] max-sm:basis-full max-sm:grid-cols-[64px_minmax(0,1fr)_auto] max-sm:py-1 ${rong ? 'basis-full' : ''}`}>
+    <div className={`flex min-w-0 items-center gap-x-2 gap-y-1 max-sm:grid max-sm:min-h-[44px] max-sm:basis-full ${nutTrong ? 'max-sm:grid-cols-[64px_minmax(0,1fr)]' : 'max-sm:grid-cols-[64px_minmax(0,1fr)_auto]'} max-sm:py-1 ${rong ? 'basis-full' : ''}`}>
       <span className="self-center whitespace-nowrap text-xs font-semibold text-faint">{nhan}</span>
       {/* Không nút (ô đang sửa) → giá trị trải hết hàng; có nút → nút đứng ngay sau giá trị (v23: "+" sau tên người theo dõi). */}
-      <span className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 ${rong && !nut ? 'flex-1' : ''}`}>{children}</span>
-      {nut ?? <span className="hidden max-sm:block" />}
+      <span className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 ${rong && !nut ? 'flex-1' : ''}`}>{children}{nutTrong && nut}</span>
+      {nutTrong ? null : nut ?? <span className="hidden max-sm:block" />}
     </div>
   );
 }
@@ -462,7 +462,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng, thaoTac = thaoTacChung }: 
   };
   const ds1 = [...nguoi.values()];
   const an = moHet ? 0 : Math.max(0, ds1.length - TRAN_THEO_DOI);
-  const dong = <Cum nhan={t('Theo dõi')} rong nut={suaDuoc && ds.some((g) => g.mo)
+  const dong = <Cum nhan={t('Theo dõi')} rong nutTrong nut={suaDuoc && ds.some((g) => g.mo)
     ? <button ref={nut} type="button" className="inline-grid min-h-[44px] min-w-[44px] place-items-center rounded-full border border-dashed bg-transparent p-0 text-base text-dim hover:text-[color:var(--text)] sm:h-[28px] sm:min-h-[28px] sm:w-[28px] sm:min-w-[28px]"
       style={{ borderColor: 'var(--line-strong)' }} aria-label={t('Thêm người theo dõi')} aria-haspopup="dialog" aria-expanded={hop} onClick={() => setHop(true)}>+</button> : undefined}>
     {ds1.length ? ds1.slice(0, ds1.length - an).map(chip) : <span className="text-sm text-faint">{t('Chưa có')}</span>}
