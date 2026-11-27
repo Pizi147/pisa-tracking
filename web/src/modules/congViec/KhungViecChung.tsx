@@ -16,9 +16,9 @@ import { lucVn } from './gioVn.ts';
 const KheCuoi = createContext<((n: ReactNode) => void) | null>(null);
 /** Trong khung: đưa `children` xuống khe cuối; ngoài khung (hồ sơ HV / lớp): vẽ tại chỗ như cũ. */
 export function CuoiThan({ children }: { children: ReactNode }) {
-  const dat = useContext(KheCuoi);
-  useEffect(() => { if (!dat) return undefined; dat(children); return () => dat(null); });
-  return dat ? null : <>{children}</>;
+  const veCuoi = useContext(KheCuoi);
+  useEffect(() => { if (veCuoi === null) return undefined; veCuoi(children); return () => veCuoi(null); });
+  return veCuoi ? null : <>{children}</>;
 }
 
 export type KhungCuaViec = { loai: LoaiKhung; id: number | null; lopId?: number | null; mon?: string | null };
