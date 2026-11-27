@@ -886,11 +886,13 @@ export function guiDeXuat(p: Principal, measureId: number) {
     if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
     ghiPhanHoi(vIds);
     if (!deXuatHopLe(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
+    /* LOI-4b: người được giao lúc gửi (null = GVCN theo luật) — Head từ chối so với giá trị này, không so GVCN lúc quyết (lớp đổi GVCN giữa chừng). */
+    const giao = ptXuLy(m.student_id)() ?? null;
     xongViecXuLy([m.student_id]);   // BAOPH-0 (4.6): Xử lý vi phạm rời việc cần làm khi chờ Head — khối giao việc của đợt này kết thúc
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
-      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length, cach: cachDeXuat(m.kind, em.bac) },
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length, cach: cachDeXuat(m.kind, em.bac), giao },
     });
     /* N1 (sửa 12/11): lần chờ QL KHÔNG sinh việc TVV — sinh khi QL duyệt hoặc tự chốt (`chotDeXuatYThuc`). */
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,

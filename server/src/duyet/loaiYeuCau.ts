@@ -26,6 +26,7 @@ import { db, tx } from '../db.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { gvcnCuaEm } from '../yThuc/access.ts';
+import { conHieuLuc } from '../worklist/hieuLuc.ts';
 import { badRequest, chuTuDo, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { dongDaoDoiLoTrinh } from '../fasttrack/doiLoTrinh.ts';
@@ -560,10 +561,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       /* LOI-4 (chủ SP 28/11): việc Xử lý vi phạm làm lại về NGƯỜI ĐÃ GỬI. Người gửi không phải GVCN = người được giao đợt đó (Head áp thẳng, không qua thẻ) →
          dòng của đợt mở lại cho họ: dòng 'xong' của chính họ · hoặc dòng 'mo' chưa giao ai (em có vi phạm mới sau khi gửi — PTA rà #2300 P2-4); hạn chọn đã quá
          → bỏ (hạn luật tính lại). GVCN tự gửi → không đổi, việc về người theo luật (GVCN). Người được giao hết hiệu lực → `docViec` tự về GVCN. */
+      /* LOI-4b: "người gửi là người được giao" đọc ở `du_lieu.giao` lưu lúc gửi — GVCN tự gửi rồi lớp đổi GVCN → không gán GVCN cũ, việc về GVCN hiện tại.
+         Thẻ gửi trước LOI-4b (không có `giao`) → so GVCN hiện tại như cũ. Người được giao hết vai ở chi nhánh em → không gán (về GVCN). Gán = hệ thống: giao_luc now, giao_boi NULL. */
       const hom = demoToday();
-      if (doi && yc.nguoi_xin && yc.hoc_vien_id && yc.nguoi_xin !== gvcnCuaEm(yc.hoc_vien_id, hom).gvcn) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo', phu_trach_id = ?2,
+      const d = JSON.parse(yc.du_lieu ?? '{}') as { giao?: number | null };
+      const laNguoiGiao = !!yc.nguoi_xin && !!yc.hoc_vien_id && ('giao' in d ? d.giao === yc.nguoi_xin : yc.nguoi_xin !== gvcnCuaEm(yc.hoc_vien_id, hom).gvcn);
+      if (doi && laNguoiGiao && conHieuLuc(yc.nguoi_xin!, yc.hoc_vien_id!)) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo', phu_trach_id = ?2, giao_boi = NULL, giao_luc = ?4,
           han_chon = CASE WHEN han_chon < ?3 THEN NULL ELSE han_chon END WHERE id = ?1 AND ((trang_thai = 'xong' AND phu_trach_id = ?2) OR (trang_thai = 'mo' AND phu_trach_id IS NULL))`)
-        .run(yc.hoc_vien_id, yc.nguoi_xin, hom);
+        .run(yc.hoc_vien_id, yc.nguoi_xin, hom, new Date().toISOString());
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
