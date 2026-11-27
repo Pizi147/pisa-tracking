@@ -144,10 +144,13 @@ export async function runPrLoi4Tests(t: any) {
     const moi = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
         AND ur.branch_id = (SELECT branch_id FROM students WHERE id = ?) AND u.id != ? ORDER BY u.id LIMIT 1`, xl.sid, xl.gvcn).id as number;
     const pCu = loadPrincipal(xl.gvcn);
-    const vids = [1, 2, 3].map((i) => viol.recordViolation(pCu, { studentId: xl.sid, category: 'homework', ten: `LOI4d ${i}`, occurredOn: addDays(TODAY, -i) }).violation.id);
+    const vids = [1, 2, 3].map((i) => viol.recordViolation(pCu, { studentId: xl.sid, category: 'homework', ten: `LOI4d ${i}`, occurredOn: addDays(TODAY, -i), skill: 'speaking' }).violation.id);
     const nhap = xu.deXuat(pCu, xl.sid, { kind: 'wl_3', violationIds: vids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     att.addLink(pCu, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     xu.guiDeXuat(pCu, nhap.id);
+    /* Đợt mới đã có dòng "mo" chưa giao (vi phạm mới sau khi gửi) — trước LOI-4b dòng này bị gán GVCN cũ. */
+    conn.prepare(`INSERT INTO viec_xu_ly (id, student_id, trang_thai, tao_luc) VALUES (?1, ?1, 'mo', ?2)
+        ON CONFLICT(id) DO UPDATE SET trang_thai = 'mo', phu_trach_id = NULL, giao_boi = NULL, giao_luc = NULL`).run(xl.sid, TODAY);
     /* Đổi GVCN: phân công chủ nhiệm cũ kết thúc hôm qua, GV khác nhận từ hôm nay. */
     conn.prepare(`UPDATE teacher_assignments SET effective_to = ? WHERE class_id = ? AND is_core = 1 AND status = 'active'`).run(addDays(TODAY, -1), lopId);
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,NULL,1,?, 'active', ?)`)
@@ -156,7 +159,7 @@ export async function runPrLoi4Tests(t: any) {
     yc.tuChoiYeuCau(P.admin, id, 'Chưa đủ căn cứ');
     xoaNho();
     const r = get('SELECT phu_trach_id FROM viec_xu_ly WHERE id = ?', xl.sid);
-    assert(r.phu_trach_id !== xl.gvcn, `việc gán GVCN cũ: ${JSON.stringify(r)}`);
+    assert(r.phu_trach_id === null, `việc gán GVCN cũ: ${JSON.stringify(r)}`);
     const v = gv.docViec('xu_ly', xl.sid);
     assert(v.mo && v.phuTrach[0] === moi, `sau từ chối: ${JSON.stringify({ mo: v.mo, pt: v.phuTrach })}`);
   }));
