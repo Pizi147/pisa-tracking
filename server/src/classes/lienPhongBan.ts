@@ -417,6 +417,8 @@ export type DongDoiNhanTin = { doiId: number; khoa: string; gvCu: string | null;
 export type NhanTinView = { id: number; loai: LoaiNhanTin; tieuDe: string; lop: { id: number; code: string }; trangThai: 'mo' | 'xong' | 'bo';
   xong: { nguoi: string | null; luc: string } | null; coTheXacNhan: boolean; coTheMoLai: boolean; em: DongEmNhanTin[]; doi: DongDoiNhanTin[] };
 
+/** Tên lượt ngắn trong cột lịch của bảng Nhận thông tin: MT2 · Progress 1 · Final · Checkpoint. */
+const TEN_LUOT: Record<string, string> = { mock: 'MT', progress: 'Progress', final: 'Final', checkpoint: 'Checkpoint' };
 /** Bảng của panel (sau `docViec` đã kiểm quyền đọc ở `xemGiaoViec`) — hai câu. Em vào Lưu trữ không còn trong bảng. */
 export function xemNhanTin(p: Principal, id: number): NhanTinView {
   const v = docViec('nhan_tin', id);
@@ -428,8 +430,8 @@ export function xemNhanTin(p: Principal, id: number): NhanTinView {
   const lopToi = xemHet ? null : new Set((db().prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND is_core = 1 AND status = 'active'`).all(p.userId) as any[]).map((x) => x.class_id as number));
   const em: DongEmNhanTin[] = r.loai !== 'chuyen_lop' ? [] : (db().prepare(`SELECT d.lenh_id, l.student_id, s.full_name, l.lop_nguon_id, l.nguoi_ra_lenh, cn.code AS nguon, cn.is_fast_track AS nguon_ft,
         l.lop_dich_id, cd.code AS dich, cd.is_fast_track AS dich_ft, l.tuan_bat_dau, l.trang_thai, l.huong, l.boi_canh, d.mau,
-        (SELECT json_group_array(json_object('no', a.attempt_no, 'tuan', rp.week_start)) FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-          WHERE a.student_id = l.student_id AND a.status = 'planned' AND a.kind = 'mock' AND a.class_id = l.lop_nguon_id) AS mt
+        (SELECT json_group_array(json_object('no', a.attempt_no, 'kind', a.kind, 'tuan', rp.week_start)) FROM assessment_attempts a LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+          WHERE a.student_id = l.student_id AND a.status = 'planned' AND a.kind IN ('mock', 'progress', 'final', 'checkpoint') AND a.class_id = l.lop_nguon_id) AS mt
       FROM viec_nhan_tin_dong d JOIN lenh_chuyen_lop l ON l.id = d.lenh_id JOIN students s ON s.id = l.student_id AND s.archived_at IS NULL
       JOIN classes cn ON cn.id = l.lop_nguon_id LEFT JOIN classes cd ON cd.id = l.lop_dich_id WHERE d.viec_id = ? AND ${CON_DONG('d')} ORDER BY s.full_name, d.id`).all(id) as any[])
     .filter((x) => !lopToi || x.nguoi_ra_lenh === p.userId || lopToi.has(x.lop_nguon_id)).map((x) => {
@@ -438,8 +440,10 @@ export function xemNhanTin(p: Principal, id: number): NhanTinView {
       lenhId: x.lenh_id, studentId: x.student_id, ten: x.full_name, lopCu: { id: x.lop_nguon_id, code: x.nguon }, lopMoi: x.lop_dich_id ? { id: x.lop_dich_id, code: x.dich } : null,
       tuan: x.tuan_bat_dau, huong: NHAN_HUONG[x.huong] ?? null,
       trangThai: x.trang_thai === 'huy' ? 'huy' : x.lop_dich_id !== r.class_id ? 'roi' : x.trang_thai,
-      lichMock: (JSON.parse(x.mt ?? '[]') as { no: number; tuan: string | null }[]).filter((m) => m.no != null).sort((a, b) => a.no - b.no)
-        .map((m) => ({ ten: `MT${m.no}${m.tuan ? ` · ${tuanLich(m.tuan, homNay)}` : ''}`, kieu })),
+      /* LPB-2a (PTA rà #2292): lớp FT — lượt Mock đã xếp; lớp thường — Progress / Final / Checkpoint đã xếp (BPXL cần để xếp lịch). Xếp theo tuần rồi số lượt. */
+      lichMock: (JSON.parse(x.mt ?? '[]') as { no: number | null; kind: string; tuan: string | null }[])
+        .sort((a, b) => (a.tuan ?? '9').localeCompare(b.tuan ?? '9') || (a.no ?? 0) - (b.no ?? 0))
+        .map((m) => ({ ten: `${TEN_LUOT[m.kind] ?? m.kind}${m.kind === 'mock' || m.kind === 'progress' ? (m.kind === 'mock' ? '' : ' ') + (m.no ?? '') : ''}${m.tuan ? ` · ${tuanLich(m.tuan, homNay)}` : ''}`, kieu })),
     } as DongEmNhanTin;
   });
   const doi: DongDoiNhanTin[] = r.loai !== 'doi_gv' ? [] : (db().prepare(`SELECT d.doi_id, p.khoa, uc.full_name AS cu, um.full_name AS moi, p.hieu_luc, p.trang_thai

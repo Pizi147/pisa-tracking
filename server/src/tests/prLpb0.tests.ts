@@ -485,5 +485,54 @@ export async function runPrLpb0Tests(t: any) {
     const panel = lpb.xemNhanTin(P.mbManager, nt.id).em.length;
     assert(it && it.count === panel && panel === 1, `dòng ${it?.count} · panel ${panel}`);
   }));
+
+  /* ---------------------------------------------------------------- LPB-2a (panel Nhận thông tin) */
+  await t.checkAsync('LPB2a-1 · HTTP đầu-cuối: MỌI dòng tab Nhận thông tin của Head và của CVXL lớp đích → GET panel 200 (bảng em, chuỗi chấm) → Xác nhận 200 (rời danh sách) → Hoàn tác 200 (về lại)', async () => {
+    const { nguon, dich } = dung();
+    const e1 = em(nguon);
+    /* PTA rà #2292: lớp thường — lượt Progress đã xếp ở lớp cũ hiện ở cột "Lịch đã xếp" của bảng (BPXL cần để xếp lịch). */
+    const cyc = get('SELECT id FROM learning_cycles WHERE student_id = ?', e1).id;
+    conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?, ?, 2, 'progress', ?, ?, 'planned', ?)`)
+      .run(cyc, e1, nguon, week.ensurePeriod(d.mondayOfDate(addDays(TODAY, 14))).id, new Date().toISOString());
+    ra(nguon, dich, [e1, em(nguon)]);
+    const cvxl = accounts.createAccount(P.admin, { email: `lpb0.2a${accounts.EMAIL_SUFFIX}`, password: 'matkhau-lpb0', fullName: 'Thử LPB2a CVXL', roles: [{ role: 'scheduler', branches: ['MB'] }] }).userId;
+    xoaNho();
+    xl.ganXepLich(loadPrincipal(cvxl), dich, { userId: cvxl, cu: xl.xemXepLich(dich)?.userId ?? null }); xoaNho();
+    assert(ntCua(dich)[0].nguoi_luat === cvxl, `CVXL nhận lớp đích: ${ntCua(dich)[0].nguoi_luat}`);
+    const { createApp } = await import('../app.ts');
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    try {
+      const vao = async (userId: number) => (await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) }))
+        .headers.get('set-cookie')?.split(';')[0] ?? '';
+      const goi = async (cookie: string, url: string, m = 'GET') => { const r = await fetch(`http://127.0.0.1:${cong}/api${url}`, { method: m, headers: { cookie } }); let j: any = null; try { j = await r.json(); } catch { /* */ } return { s: r.status, j }; };
+      for (const [ten, uid, nguoi] of [['CVXL lớp đích', cvxl, ''], ['Head', P.mbManager.userId, '?nguoi=tat-ca']] as const) {
+        const ck = await vao(uid);
+        const dong = ((await goi(ck, `/my-work${nguoi}`)).j?.dong ?? []).filter((i: any) => i.group === 'nhan_tin');   // HTTP trả `dong` (nheMyWork)
+        assert(dong.length > 0, `${ten}: tab Nhận thông tin rỗng`);
+        for (const d of dong) {
+          const id = Number(String(d.key).split(':')[1]);
+          const pn = await goi(ck, `/giao-viec/nhan_tin/${id}`);
+          assert(pn.s === 200 && pn.j?.nhanTin?.id === id && Array.isArray(pn.j.nhanTin.em), `${ten}: panel ${d.key} → ${pn.s}`);
+          /* PTA rà #2292 (mockup L3a): dòng ghi "Chuyển lớp · vào {tuần}", không lặp "Nhận thông tin". */
+          assert(/^Chuyển lớp( · vào W\d [A-Z]{3})?$/.test(d.contextLabel ?? ''), `${ten}: chữ dòng "${d.contextLabel}"`);
+        }
+      }
+      /* CVXL giữ việc lớp đích: Xác nhận → việc rời danh sách của CVXL; Hoàn tác → về lại. */
+      const ck = await vao(cvxl);
+      const nt = ntCua(dich)[0];
+      const bang = (await goi(ck, `/giao-viec/nhan_tin/${nt.id}`)).j?.nhanTin?.em ?? [];
+      const lich = bang.find((x: any) => x.studentId === e1)?.lichMock ?? [];
+      assert(lich.length === 1 && /^Progress 2 · W\d [A-Z]{3}$/.test(lich[0].ten), `cột lịch lớp thường: ${JSON.stringify(lich)}`);
+      assert(/^Chuyển lớp · vào W\d [A-Z]{3}$/.test(((await goi(ck, '/my-work')).j?.dong ?? []).find((i: any) => i.key === `nhan_tin:${nt.id}`)?.contextLabel ?? ''), 'chữ dòng CVXL');
+      const coDong = async () => ((await goi(ck, '/my-work')).j?.dong ?? []).some((i: any) => i.key === `nhan_tin:${nt.id}`);
+      assert(await coDong(), 'CVXL lớp đích không có dòng việc lớp đích');
+      const xn = await goi(ck, `/giao-viec/nhan_tin/${nt.id}/xac-nhan`, 'POST');
+      assert(xn.s === 200 && xn.j?.nhanTin?.trangThai === 'xong' && xn.j.nhanTin.coTheMoLai, `Xác nhận: ${xn.s} ${JSON.stringify(xn.j?.nhanTin?.trangThai)}`);
+      assert(!(await coDong()), 'đã xác nhận mà dòng còn ở danh sách');
+      const ml = await goi(ck, `/giao-viec/nhan_tin/${nt.id}/mo-lai`, 'POST');
+      assert(ml.s === 200 && ml.j?.nhanTin?.trangThai === 'mo' && (await coDong()), `Hoàn tác: ${ml.s}`);
+    } finally { may.close(); }
+  });
 }
 
