@@ -548,14 +548,14 @@
    * U04 HỌC VIÊN & LỚP (V11 `thiet-ke/v11/hoc-vien-lop.html`, chủ SP duyệt 03/11) — hàng lớp lưới thẳng cột, ô Overall mở dải dưới hàng, việc trong ô có khung,
    * hộp nhỏ tại chỗ (điểm thành phần, Ý thức K7), ô "Xem" (G1), đoạn chọn Fast Track / Lớp thường. Màu chỉ token.
    */
-  .hl-lop { display: grid; grid-template-columns: 28px 112px 100px minmax(0, 250px) minmax(0, 290px) minmax(0, 1fr) 36px; align-items: center; gap: 0 12px;
+  .hl-lop { display: grid; grid-template-columns: 28px 112px 124px minmax(0, 250px) minmax(0, 290px) minmax(0, 1fr) 36px; align-items: center; gap: 0 12px;
     min-height: 52px; padding: 4px 12px 4px 10px; border-top: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
   .bang-hv > section:first-child > .hl-lop { border-top: 0; }
   .hl-lop.mo-lop { box-shadow: inset 3px 0 0 var(--accent); }
   .hl-o { min-width: 0; }
   .hl-lop > :first-child { justify-self: center; }
   .hl-nut { justify-self: end; }
-  @media (max-width: 1439.98px) { .hl-lop { grid-template-columns: 16px 100px 96px minmax(0, 190px) minmax(0, 330px) minmax(0, 1fr) 36px; } }
+  @media (max-width: 1439.98px) { .hl-lop { grid-template-columns: 16px 100px 120px minmax(0, 190px) minmax(0, 330px) minmax(0, 1fr) 36px; } }
   @media (max-width: 639.98px) {
     /* S2 (rà 19/11 P2-7): ⋯ ghim góc phải dòng 1 (như ▾ ghim trái) — chữ dòng 1 dài (TVV "4/5 HV của tôi · N. B. Nam") xuống dòng, ⋯ không rơi dòng riêng. */
     .hl-lop { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 48px 8px 36px; position: relative; }

@@ -815,7 +815,7 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi, ch
     <>
       <span className="hl-o">{lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui text-[14px] font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}</span>
-      <span className="hl-o text-[13px] text-dim">
+      <span className="hl-o whitespace-nowrap text-[13px] text-dim">
         <span className="tabular-nums font-medium text-slate-100">{n}</span>{day && (dangLoc || cuaToi) ? <span className="tabular-nums">/{day.studentCount}</span> : null} {dangLoc ? t('HV khớp') : cuaToi ? t('HV của tôi') : 'HV'}
       </span>
       <span className="hl-o text-[13px] text-dim">{day?.gvcn && <>
