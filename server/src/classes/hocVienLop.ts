@@ -26,6 +26,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
 import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
 import { coTheNhapThiThat, loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
+import { dsTvv } from '../students/students.ts';
 
 export type LopHocVienLop = ClassSummary & {
   gvcn: { id: number; name: string } | null;
@@ -44,7 +45,9 @@ export type LopHocVienLop = ClassSummary & {
 export type TrangHocVienLop = {
   rows: LopHocVienLop[];
   scopeEmpty: boolean;
-  phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null };
+  phamVi: { coThe: PhamVi[]; dangDung: PhamVi; chiNhanh: number | null;
+    /** HV-LOC-TVV: ô "TVV ▾" — `dang`: 'toi' · id TVV · 'chua' (chưa có TVV) · null (tất cả); `ds`: TVV của chi nhánh đang xem. */
+    tvv: { dang: number | 'chua' | 'toi' | null; ds: { id: number; ten: string }[] } };
   dem: Record<LocHocVien, number>;
   /** `khung`: Fast Track hay lớp thường của em — công tắc `Tất cả · Fast Track · Lớp thường` đếm chip bằng `demLoc(hocVien, khung)`. */
   hocVien: { id: number; classId: number; loc: LocHocVien[]; khung: 'ft' | 'thuong'; ten: string; ma: string; thieu?: string[]; ketThuc?: true; them?: ThemEm; hang?: HangHv;
@@ -66,7 +69,16 @@ export type TrangHocVienLop = {
 const demRong = (): Record<LocHocVien, number> => demLoc([], 'tat-ca');
 
 /** Phạm vi đang dùng của trang (Lớp tôi dạy · Chi nhánh · Toàn hệ thống) + chi nhánh đang xem — dùng chung cho `/hoc-vien-lop` và `/hoc-vien-lop/ids`. */
-export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null }, today: string) {
+/** HV-LOC-TVV (chủ SP 28/11): điều kiện em theo TVV — id TVV · `chua` = em chưa có TVV · null = mọi em. `s` = bảng `students`. */
+export const sqlTvv = (tvv: number | 'chua' | null | undefined): { sql: string; ts: number[] } =>
+  tvv == null ? { sql: '', ts: [] } : tvv === 'chua' ? { sql: ' AND s.consultant_user_id IS NULL', ts: [] } : { sql: ' AND s.consultant_user_id = ?', ts: [tvv] };
+/** Em của TVV (`sqlTvv`) — MỘT câu; nơi gọi lọc tập đã nạp (Đang SOS, danh sách theo vai). */
+export const emTheoTvv = (tvv: number | 'chua'): Set<number> => {
+  const w = sqlTvv(tvv);
+  return new Set((db().prepare(`SELECT s.id FROM students s WHERE 1 = 1${w.sql}`).all(...w.ts) as any[]).map((r) => r.id as number));
+};
+
+export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?: string | null; cnNho?: number | null; tvv?: string | null }, today: string) {
   const conn = db();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   const phanCong = p.assignments.filter((a) => a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));
@@ -83,9 +95,19 @@ export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?
   const duocXemChiNhanh = scope.all
     ? (conn.prepare(`SELECT id FROM branches WHERE status = 'active' ORDER BY id`).all() as any[]).map((r) => r.id as number)
     : scope.branchIds;
+  /*
+   * HV-LOC-TVV (chủ SP 28/11): ô "TVV ▾" — `tvv` = `toi` · id TVV · `-` / `chua` (chưa có TVV) · `tat-ca`; tên TVV = link cũ (lọc `tvv=` trước PR).
+   * "Tôi" không kèm phạm vi = "HV của tôi" (`cua-toi`, như cũ); kèm Chi nhánh / Mọi chi nhánh = em của tôi trong phạm vi đó. Chọn TVV khác / Chưa có / Tất cả
+   * thì bỏ `cua-toi`. Lọc chỉ HẸP phạm vi đang xem — không mở thêm em nào ngoài quyền.
+   */
+  const raw = f.tvv || null;
+  const toiCuaToi = raw === 'toi' && coThe.includes('cua-toi') && (!f.phamVi || f.phamVi === 'cua-toi');
+  const tvv: number | 'chua' | null = raw === null || raw === 'tat-ca' || toiCuaToi ? null : raw === 'toi' ? p.userId : raw === '-' || raw === 'chua' ? 'chua'
+    : /^\d+$/.test(raw) ? Number(raw) : (conn.prepare('SELECT id FROM users WHERE full_name = ?').get(raw) as any)?.id ?? null;
+  const coTheChon = raw !== null && !toiCuaToi ? coThe.filter((v) => v !== 'cua-toi') : coThe;
   /* Link cũ `/hoc-vien?branchId=` (bảng chi nhánh, báo cáo tuần) không ghi phạm vi → coi là xem MỘT chi nhánh. */
-  const muon = f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
-  const dangDung: PhamVi = (coThe as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coThe, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
+  const muon = toiCuaToi ? 'cua-toi' : f.phamVi ?? (f.branchId && coThe.includes('chi-nhanh') ? 'chi-nhanh' : null);
+  const dangDung: PhamVi = (coTheChon as string[]).includes(muon ?? '') ? (muon as PhamVi) : phamViMacDinh(coTheChon, p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
   let chiNhanh: number | null = null;
   if (dangDung === 'chi-nhanh') {
     /* PR-NV (T9): link `branchId` → lần chọn trước (`cnNho`, web nhớ; ngoài phạm vi thì bỏ, không 403) → gợi ý theo vai → chi nhánh đầu.
@@ -94,7 +116,10 @@ export function phamViTrang(p: Principal, f: { branchId?: number | null; phamVi?
     const goiY = goiYChiNhanh(p, today);
     chiNhanh = hopLe(f.branchId) ? f.branchId : hopLe(f.cnNho) ? f.cnNho : hopLe(goiY) ? goiY : duocXemChiNhanh[0] ?? null;
   }
-  return { coThe, dangDung, chiNhanh, phanCong, lopCuaToi };
+  /* Ô TVV: đang chọn ('toi' = "HV của tôi" hoặc em của tôi trong phạm vi) + chi nhánh của danh sách TVV (đang xem; TVV "HV của tôi" một chi nhánh → chi nhánh đó). */
+  const tvvDang: number | 'chua' | 'toi' | null = dangDung === 'cua-toi' || raw === 'toi' ? 'toi' : tvv;
+  const cnTvv = chiNhanh ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
+  return { coThe, dangDung, chiNhanh, phanCong, lopCuaToi, tvv, tvvDang, cnTvv };
 }
 
 /**
@@ -153,7 +178,8 @@ const thieuCua = (h: any, ft: boolean) => missingForStudent({
 });
 
 /** Em đang học (ghi danh active, chưa lưu trữ) của các lớp `ids` — MỘT câu; dùng chung `danhSachHocVienLop` và cờ Thiếu thông tin (`thieuThongTinHocVien`). */
-function docHocVien(ids: readonly number[], f: { cuaToi?: number; chuaTvv?: boolean }): any[] {
+function docHocVien(ids: readonly number[], f: { tvv?: number | 'chua' | null }): any[] {
+  const w = sqlTvv(f.tvv);
   const ph = ids.map(() => '?').join(',');
   const thu2 = mondayOfDate(demoToday());   // tuần này — mốc kế tiếp (SO_LUOT_SQL dùng hai lần)
   const hv = db().prepare(
@@ -168,18 +194,18 @@ function docHocVien(ids: readonly number[], f: { cuaToi?: number; chuaTvv?: bool
        LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
        LEFT JOIN report_periods erp ON erp.id = cy.exam_period_id
        LEFT JOIN users tv ON tv.id = s.consultant_user_id
-      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${f.cuaToi ? ' AND s.consultant_user_id = ?' : ''}${f.chuaTvv ? ' AND s.consultant_user_id IS NULL' : ''}`,
-  ).all(...(hocVienLopCuKhiKiem.soLuot ? [thu2] : [thu2, thu2]), ...ids, ...(f.cuaToi ? [f.cuaToi] : [])) as any[];
+      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${w.sql}`,
+  ).all(...(hocVienLopCuKhiKiem.soLuot ? [thu2] : [thu2, thu2]), ...ids, ...w.ts) as any[];
   if (!hocVienLopCuKhiKiem.soLuot) tachSoLuot(hv);
   return hv;
 }
 
 export function danhSachHocVienLop(
-  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean; chuaTvv?: boolean } = {},
+  p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean; tvv?: string | null } = {},
 ): TrangHocVienLop {
   const today = demoToday();
   const conn = db();
-  const { coThe, dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, today);
+  const { coThe, dangDung, chiNhanh, phanCong, lopCuaToi, tvv, tvvDang, cnTvv } = phamViTrang(p, f, today);
   /* TL-HVL: Toàn hệ thống — ba nơi đọc phân công lọc từ một câu. Phạm vi hẹp hơn giữ câu theo lớp: ít dòng hơn cả bảng (đo QL: 2 595 so với 2 630 dòng, thêm 2 câu). */
   if (coNho() && dangDung === 'tat-ca') phanCongDangHoatDong();
   /*
@@ -187,7 +213,8 @@ export function danhSachHocVienLop(
    * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
    */
   const coTheTaoLop = chiNhanhTaoLop(p).length > 0;
-  const phamVi = { coThe, dangDung, chiNhanh };
+  /* HV-LOC-TVV: ô "TVV ▾" — đang chọn + TVV của chi nhánh (`dsTvv`, cùng ô Lịch Test); MỘT câu. */
+  const phamVi = { coThe, dangDung, chiNhanh, tvv: { dang: tvvDang, ds: dsTvv(null, cnTvv).map(({ id, ten }) => ({ id, ten })) } };
   const dl = danhSachLuuTru(p, {});
   const demLuuTru = { lop: dl.lop.length, hv: dl.hocVien.length };
   const xt = lopXemTam(p, today);
@@ -228,7 +255,7 @@ export function danhSachHocVienLop(
    * HIỆN TẠI của từng em, dùng lại để gom Case về đúng lớp em đang học, thay vì tự viết thêm một
    * câu SQL enrollment→class riêng (như hàm dựng riêng cũ ở `dongHocVien.ts` từng làm).
    */
-  const hv = docHocVien(ids, { cuaToi: dangDung === 'cua-toi' ? p.userId : undefined, chuaTvv: f.chuaTvv });
+  const hv = docHocVien(ids, { tvv: dangDung === 'cua-toi' ? p.userId : tvv });
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 
   /*
@@ -359,13 +386,13 @@ export function danhSachHocVienLop(
  * → cùng kết quả với `danhSachHocVienLop(p, f).hocVien` (thứ tự dòng, em học hai lớp hai dòng). Chỉ trả dòng có ô thiếu.
  */
 export function thieuThongTinHocVien(p: Principal, f: { branchId?: number | null; phamVi?: string | null }): { id: number; thieu: string[] }[] {
-  const { dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, demoToday());
+  const { dangDung, chiNhanh, phanCong, lopCuaToi, tvv } = phamViTrang(p, f, demoToday());
   const lopToi = new Set(phanCong.map((a) => a.classId));
   const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? [])
     .filter((c) => (dangDung === 'toi' ? lopToi.has(c.id) : dangDung === 'cua-toi' ? lopCuaToi.has(c.id) : true));
   if (!lops.length) return [];
   const laFt = new Map(lops.map((c) => [c.id as number, c.programme_code === 'FT']));
-  return docHocVien(lops.map((c) => c.id as number), { cuaToi: dangDung === 'cua-toi' ? p.userId : undefined })
+  return docHocVien(lops.map((c) => c.id as number), { tvv: dangDung === 'cua-toi' ? p.userId : tvv })
     .map((h) => ({ id: h.id as number, thieu: thieuCua(h, !!laFt.get(h.class_id)).map((m) => m.label) }))
     .filter((h) => h.thieu.length);
 }

@@ -7,8 +7,6 @@ import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { ChonLoc } from '../../ui/PeoplePicker.tsx';
-import { useSession } from '../../lib/session.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -59,8 +57,6 @@ const COT_LICH: CotBang[] = [
   { key: 'mo', nhan: '', kieu: 'nut', rong: 52 },
 ];
 const [C_TEN, C_LICH, C_TARGET, C_MT, C_SOS, C_GHI, C_MO] = COT_LICH;
-/** Hàng công cụ: lọc TVV — "-" = em chưa có TVV. */
-const TVV_CHUA = '-';
 const HOAN_TAC_MS = 10_000;
 /** Đoạn lọc trạng thái thi ([XM-1], lời 37). */
 const LOC_THI: { key: LocThi | null; nhan: () => string }[] = [
@@ -118,12 +114,11 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   const [mo, setMo] = useState<Set<number>>(new Set());
   const [hop, setHop] = useState<Hanh['hop']>(null);
   const [panel, setPanel] = useState<{ id: number; cycleId: number; ten: string; lop: string; nut: ThaoTacLichThi } | null>(null);
-  /* LICH-THI-NOI-THI (Việc để sau GD-13b): lọc trạng thái thi + Mọi TVV trên URL (replace) — Quay lại / F5 giữ bộ lọc; `tvv` cùng khoá với tab Tất cả. */
+  /* LICH-THI-NOI-THI (Việc để sau GD-13b): lọc trạng thái thi trên URL (replace) — Quay lại / F5 giữ bộ lọc. HV-LOC-TVV: TVV ở ô "TVV ▾" đầu trang (máy chủ lọc). */
   const [locThiUrl, datLocThi] = useThamSoUrl('locThi', '');
   const locThi: LocThi | null = (['chua-chot', 'da-chot', 'cho-kq', 'co-kq'] as const).find((k) => k === locThiUrl) ?? null;
   const setLocThi = (k: LocThi | null) => datLocThi(k ?? '');
   const [suaGhi, setSuaGhi] = useState<number | null>(null);
-  const [tvv, setTvv] = useThamSoUrl('tvv', '');
   const [moLoc, setMoLoc] = useState(false);
   const hen = useRef(new Set<ReturnType<typeof setTimeout>>());
   useEffect(() => () => { hen.current.forEach(clearTimeout); }, []);
@@ -131,7 +126,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   /* Luật 5b: lưu xong chỉ sửa hàng đó tại chỗ — hàng không nhảy chỗ giữa buổi họp. Thứ tự chốt lúc tập em đổi (tải khoảng mới, em mới vào). */
   const idsKey = rows.map((r) => r.studentId).sort((a, b) => a - b).join(',');
   const thuTu = useMemo(() => new Map(xepLichThiTheoLop(rows).map((r, i) => [r.studentId, i])), [idsKey]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const trongPham = rows.filter((r) => (!loc || loc(r.classId, !r.thuong)) && (!tvv || (tvv === TVV_CHUA ? !r.tvv : r.tvv === tvv)));
+  const trongPham = rows.filter((r) => !loc || loc(r.classId, !r.thuong));
   const soLoc = (k: LocThi | null) => (k ? trongPham.filter((r) => locThiCua(r) === k).length : trongPham.length);
   /* Hàng vừa đổi trạng thái (vd chốt ngày khi đang lọc "Chưa chốt ngày") ở lại tới khi đổi bộ lọc — không biến mất giữa lúc làm. */
   const daHien = useRef(new Set<number>());
@@ -141,9 +136,6 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   const chonLoc = (k: LocThi | null) => { daHien.current = new Set(); setLocThi(k); };
   const hienKey = hien.map((r) => r.studentId).join(',');
   useEffect(() => { onIds?.(hien.map((r) => r.studentId)); }, [hienKey]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const dsTvv = useMemo(() => [...new Set(rows.map((r) => r.tvv).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'vi')), [rows]);
-  const coChuaTvv = rows.some((r) => !r.tvv);
-  const toi = useSession().session?.user?.fullName ?? null;
   /* Dải nhóm lớp: mã lớp · số em — đếm từ dữ liệu đã nạp. */
   const dauLop = useMemo(() => {
     const m = new Map<number, { lop: string; classId: number; n: number }>();
@@ -257,15 +249,8 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
       })}
     </span>
   );
-  const locTvv = (dsTvv.length > 0 || coChuaTvv) && (
-    /* GD-5 (R5.2 #53, `10` mục B): ô lọc có tìm — "Tôi" (khi là TVV) lên trước, rồi TVV chi nhánh, "Chưa có TVV" cuối. */
-    <ChonLoc className="lt-o-loc w-[176px] max-sm:w-[calc(50%-4px)]" ariaLabel={t('TVV')} tatCa={t('Mọi TVV')} placeholder={t('Gõ tên TVV…')} value={tvv} onChange={setTvv}
-      ds={[...dsTvv.filter((x) => x === toi).map((x) => ({ gt: x, ten: x, nhom: t('Tôi') })),
-        ...dsTvv.filter((x) => x !== toi).map((x) => ({ gt: x, ten: x, ...(toi && dsTvv.includes(toi) ? { nhom: t('TVV chi nhánh') } : {}) })),
-        ...(coChuaTvv ? [{ gt: TVV_CHUA, ten: t('Chưa có TVV') }] : [])]} />
-  );
-  /* 375: số bộ lọc đang bật trên nút "Lọc" (lớp · TVV · trạng thái thi). */
-  const soDangLoc = Number(!!dangLocLop) + Number(!!tvv) + Number(!!locThi);
+  /* 375: số bộ lọc đang bật trên nút "Lọc" (lớp · trạng thái thi). */
+  const soDangLoc = Number(!!dangLocLop) + Number(!!locThi);
   const tenLoc = LOC_THI.find((x) => x.key === locThi)?.nhan();
 
   return (
@@ -280,7 +265,6 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
         )}
         {(!dienThoai || moLoc) && <>
           {locLop}
-          {locTvv}
           <span className="flex items-center gap-2 max-sm:w-full max-sm:[&>span]:min-w-0 max-sm:[&>span]:flex-1">
             <span className="text-[13px] font-medium text-faint max-sm:hidden">{t('Tháng thi')}</span>
             <span className="w-[134px]">{oTu}</span><span aria-hidden className="text-faint max-sm:!flex-none">→</span><span className="w-[134px]">{oDen}</span>

@@ -20,7 +20,7 @@ import { lopCuaTap } from '../worklist/chuongTrinh.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
-import { phamViTrang } from './hocVienLop.ts';
+import { emTheoTvv, phamViTrang } from './hocVienLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemTuStanding } from '../worklist/diemDong.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
@@ -102,7 +102,7 @@ export const sosCuaLuot = (a: AttemptEval) => ({
 /* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
 export const xemDuocSos = (p: Principal): boolean => vaiXemHocVien(p.roleKeys) !== 'admin' && can(p, PERMISSIONS.CASE_VIEW, { anyScope: true });
 
-type LocSos = { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null };
+type LocSos = { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null; tvv?: string | null };
 
 /** Tập em "Đang SOS" của trang (phạm vi, ô tìm) + lượt SOS từng em — phần chung của bảng (`dangSos`) và số trên tab (`demSos`). */
 function tapSos(p: Principal, f: LocSos) {
@@ -111,7 +111,7 @@ function tapSos(p: Principal, f: LocSos) {
   const homNay = demoToday();
   /* TVV mặc định "HV của tôi", CX mọi chi nhánh — như trang TVV / CX (OV-10b). */
   const muon = f.phamVi ?? (vai === 'tvv' ? 'cua-toi' : vai === 'cx' && !f.branchId ? 'tat-ca' : null);
-  const { dangDung, chiNhanh, phanCong } = phamViTrang(p, { ...f, phamVi: muon }, homNay);
+  const { dangDung, chiNhanh, phanCong, tvv } = phamViTrang(p, { ...f, phamVi: muon }, homNay);
 
   /* SL2 (9.1-4): MỘT tập — `hv-sos-hien-tai` (cùng quyền `attempt.view`) giao phạm vi trang; lớp của dòng = lớp em ĐANG học (cùng cách chia cột SOS Tổng quan). */
   const sos = metricSet(p, 'hv-sos-hien-tai', { branchId: dangDung === 'chi-nhanh' ? chiNhanh : null });
@@ -121,9 +121,11 @@ function tapSos(p: Principal, f: LocSos) {
     const lopToi = new Set(phanCong.map((a) => a.classId));
     ids = ids.filter((id) => lopToi.has(lop.get(id)?.classId ?? -1));
   }
-  if (dangDung === 'cua-toi') {
-    const cuaToi = new Set((db().prepare('SELECT id FROM students WHERE consultant_user_id = ?').all(p.userId) as any[]).map((r) => r.id as number));
-    ids = ids.filter((id) => cuaToi.has(id));
+  /* HV-LOC-TVV: "HV của tôi" hoặc ô TVV (một TVV / chưa có TVV) — cùng `emTheoTvv`. */
+  const theoTvv = dangDung === 'cua-toi' ? p.userId : tvv;
+  if (theoTvv !== null) {
+    const em = emTheoTvv(theoTvv);
+    ids = ids.filter((id) => em.has(id));
   }
   const em = thongTinEm(ids);
   const q = (f.q ?? '').trim().toLowerCase();

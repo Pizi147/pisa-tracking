@@ -158,6 +158,9 @@ export function duongHocVienLop(params: { get(k: string): string | null }, o: { 
   if (cn) s.set('branchId', String(Number(cn)));
   /* PR-NV (T9): lần chọn trước — máy chủ bỏ nếu ngoài phạm vi; không đổi Phạm vi như `branchId`. Link trỏ một đích thì không gửi (rà PR #205). */
   else if (!o.tuLienKet && typeof o.daNho === 'number') s.set('cnNho', String(o.daNho));
+  /* HV-LOC-TVV: ô "TVV ▾" — máy chủ lọc (`toi` · id · `-` · `tat-ca`; tên = link cũ). */
+  const tvv = params.get('tvv');
+  if (tvv) s.set('tvv', tvv);
   /* OV-15h2 (ý 3): Bộ lọc thêm đang mở (`lt`) / đang lọc → máy chủ gắn nhãn từng em (`them=1`); không thì trang đọc như cũ. */
   if (params.get('lt') === '1' || ['lc', 'lk', 'lq', 'ltu'].some((k) => params.get(k))) s.set('them', '1');
   return `/hoc-vien-lop?${s.toString()}`;

@@ -133,7 +133,7 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
     const tTvv = tap(tvv, { phamVi: 'cua-toi' });
     assert(it[0].href.includes('phamVi=cua-toi') && tTvv.size === it[0].count && !lech(tTvv, it[0].emIds), `TVV lệch: ${lech(tTvv, it[0].emIds)}`);
     const MB = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
-    const tQl = tap(ql, { phamVi: 'chi-nhanh', branchId: MB, chuaTvv: true });
+    const tQl = tap(ql, { phamVi: 'chi-nhanh', branchId: MB, tvv: 'chua' });
     assert(q[0].href.includes('tvv=chua') && tQl.size === q[0].count && !lech(tQl, q[0].emIds), `QL lệch: ${tQl.size} / ${q[0].count} — ${lech(tQl, q[0].emIds)}`);
     /* Em Tạm dừng thiếu hồ sơ: vẫn Bổ sung (như chip), không Chốt ngày thi. */
     const dung = moiEm(tvv, { email: null });
