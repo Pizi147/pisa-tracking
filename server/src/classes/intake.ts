@@ -413,8 +413,7 @@ export function previewIntake(
       const raw = r.consultantUserId === null ? '' : String(r.consultantUserId).trim();
       consultantUserId = raw === '' ? null : Number(raw);
       if (consultantUserId !== null && !tvv.some((x) => x.id === consultantUserId)) {
-        if (!Number.isInteger(consultantUserId)) throw badRequest(`Dòng ${rowNo} · TVV: chọn một tài khoản Tư vấn viên đang hoạt động.`);
-        kiemTvvCungChiNhanh(consultantUserId, cls.branch_id ?? null);
+        if (Number.isInteger(consultantUserId)) kiemTvvCungChiNhanh(consultantUserId, cls.branch_id ?? null);
         throw badRequest('TVV: chọn một tài khoản Tư vấn viên đang hoạt động.');
       }
     } else if (coDuLieu(r.consultant)) {
