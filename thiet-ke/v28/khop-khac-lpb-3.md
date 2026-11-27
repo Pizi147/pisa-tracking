@@ -23,7 +23,8 @@ Panel mở ở hồ sơ lớp / HV không bọc. Bàn giao môn chưa có dòng 
 | L6a thân panel (form việc) giữ nguyên | panel Sau thi / Chốt ngày thi sẵn có | tvv-1440 | GIỮ |
 | L6a Việc con + "+ Việc con" | `MucViecCon` (cờ `quanViecCon`) | tvv-1440 / 375 | KHỚP |
 | L6a Lịch sử ô gập dưới Việc con | `LichSuGap` lịch sử giao (chỉ hiện khi có đổi người / hạn / theo dõi) | — (demo chưa đổi) | KHỚP theo mã |
-| L6a thứ tự Việc con → Lịch sử | panel Sau thi giữ link "Lịch sử" riêng (mở view Lịch sử điểm / bước tiếp) ở cuối thân → Việc con nằm sau link đó | tvv-1440 | KHÁC nhỏ — giữ thao tác cũ |
+| L6a thứ tự Việc con → Lịch sử | khe cuối của khung (`CuoiThan`): link Lịch sử riêng của panel Sau thi xuống SAU Việc con, cùng dáng dòng gập "› Lịch sử" (`NutLichSuGap`, mở view Lịch sử như cũ) | tvv-1440 / 375 | KHỚP (PTA rà #2318) |
+| L6a dòng Lịch sử ghi "n mục · Máy tạo dd/mm" | Lịch sử của Sau thi chưa biết số mục khi chưa mở (đếm cần thêm một request mỗi lần mở panel) → chỉ "Lịch sử"; lịch sử giao (khung) ẩn khi 0 mục | tvv-1440 | KHÁC nhỏ — tránh request thêm |
 | L6b khối việc trên Bàn giao · Chuyển lớp | `KhoiGiaoViec` trên `BanGiaoPanel` | ban-giao-1440 / 375 | KHỚP |
 | L6b Việc con cuối thân Bàn giao | `MucViecCon` | ban-giao-375 | KHỚP |
 | L6b khối Tuyến trong Bàn giao | — (Bàn giao chưa có `tuyen` trong khối máy chủ) | — | BỎ — [XM-2] |
@@ -32,7 +33,7 @@ Panel mở ở hồ sơ lớp / HV không bọc. Bàn giao môn chưa có dòng 
 | L6c / L6d việc Head mở TẠI DÒNG (khay dưới dòng) + nút "Mở Cuối khoá ›" | web đã mở Chốt lộ trình / Xét lại làm PANEL tại chỗ (v25 chủ SP duyệt 25/11, R3-T2) → khối vào panel; "Mở ở trang riêng ›" sẵn có ở đầu panel | head-1440 | KHÁC — có lý do, [XM-1] |
 | Đầu panel ⓘ · ✕ | `KhungPanel` sẵn có | mọi ảnh | KHỚP |
 
-Tỉ lệ khớp (KHỚP + GIỮ + KHÁC nhỏ trên tổng; BỎ không tính, KHÁC có lý do tính nửa): 10 KHỚP / GIỮ · 1 KHÁC nhỏ · 1 KHÁC ½ · 1 BỎ → 11,5 / 12 ≈ **96 %**.
+Tỉ lệ khớp (KHỚP + GIỮ + KHÁC nhỏ trên tổng; BỎ không tính, KHÁC có lý do tính nửa): 11 KHỚP / GIỮ · 1 KHÁC nhỏ · 1 KHÁC ½ · 1 BỎ → 12,5 / 13 ≈ **96 %**.
 
 ## Thao tác TRƯỚC → SAU PR
 
@@ -49,11 +50,11 @@ Không mất thao tác nào.
 
 Không đổi máy chủ, không đường API mới. Mở panel thêm MỘT `GET /giao-viec/:loai/:id` (đường sẵn có, như mọi panel có khối); Bàn giao môn chưa có dòng thêm một `POST …/ban_giao_mon/mo` (một lần).
 
-## [XM]
+## [XM] — PTA chốt 28/11
 
-- **XM-1** Việc quản lý của Head: mockup mở tại dòng (khay); web giữ panel tại chỗ đã duyệt (v25 Chốt lộ trình, Xét lại R3-T2) — "một danh sách một kiểu mở". PTA chốt.
-- **XM-2** L6b khối Tuyến "Chuyển lớp" trong panel Bàn giao: máy chủ chưa gửi `tuyen` cho loại `ban_giao` → PR sau (máy chủ nhỏ, dùng `GET /tuyen/chuyen_lop/:khoa` sẵn có).
-- **XM-3** Theo dõi mặc định (mockup L6a "GVCN …", L6b "Head …, GVCN …") — máy chủ LPB-1 chưa đặt người theo dõi mặc định cho việc có khung; web hiện "Chưa có". PR máy chủ sau nếu chủ SP muốn.
+- **XM-1** Việc quản lý của Head: mockup mở tại dòng (khay); web giữ panel tại chỗ đã duyệt (v25 Chốt lộ trình, Xét lại R3-T2) — "một danh sách một kiểu mở". PTA chốt: GIỮ panel.
+- **XM-2** L6b khối Tuyến "Chuyển lớp" trong panel Bàn giao: máy chủ chưa gửi `tuyen` cho loại `ban_giao` → Việc để sau, PR máy chủ riêng sau PR 2 (VAI-1 XM-2).
+- **XM-3** Theo dõi mặc định (mockup L6a "GVCN …", L6b "Head …, GVCN …") — máy chủ LPB-1 chưa đặt người theo dõi mặc định cho việc có khung; web hiện "Chưa có". PTA: máy chủ đặt Head như Báo PH — Việc để sau, cùng PR máy chủ với XM-2.
 - Bổ sung hồ sơ thiếu: dòng gộp nhiều em, máy chủ không gắn `khungViec` → không có khối (đúng máy chủ).
 
 ## Chú thích `ponytail:`

@@ -4,7 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, LOP_DA_LUU, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
-import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
+import { LichSuThayDoi, NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
+import { CuoiThan } from './KhungViecChung.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -310,10 +311,8 @@ export function PanelSauThi({ cycleId, em, lop, han, quayLai, onDong, onDaLam, o
         )}
         {giaHan && b.han && <HopGiaHan x={{ cycleId, han: b.han, daGiaHan: b.daGiaHan }} hocVien={em.ten} lop={lop} onClose={() => setGiaHan(false)} onDone={() => { bt.reload(); onDaLam(); }} />}
 
-        <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          {/* GD-4c: cùng link "Lịch sử" như Kết quả thi thật / Bước tiếp (mở panel Lịch sử thay nội dung) — bỏ "▸" giả gập. */}
-          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
-        </div>
+        {/* GD-4c: "Lịch sử" mở panel Lịch sử thay nội dung. LPB-3 (PTA rà #2318): cùng dáng dòng gập "Lịch sử" (mockup L6a), nằm sau Việc con khi có khung việc. */}
+        <CuoiThan><div className="[&>.nut-ls]:flex [&>.nut-ls>button]:min-h-[44px]"><NutLichSuGap so={null} mo={false} nhan={em.ten} onClick={() => setLichSu(true)} /></div></CuoiThan>
       </div>
     </KhungPanel>
   );
