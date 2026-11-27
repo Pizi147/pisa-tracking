@@ -580,8 +580,9 @@ function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai
   const ct = chamS ? xepTin([t('{soBai} bài', { soBai: it.soBai ?? 0 }), it.baiQuaHan ? `${it.baiQuaHan} ${t('quá hạn')}` : ''], true, null) : chiTiet(it, gop, diem, ghiLoai, daXong, mk);
   const giao = !daXong && (it.giaoBoi ? t('{ten} giao', { ten: it.giaoBoi }) : it.nguoiTra ? t('{ten} trả', { ten: it.nguoiTra }) : null);
   const tvv = laViecTvvTheoEm(it) && !daXong && !it.choGvSua ? chuTvv(it) : null;
-  const chu = ghepChu([...ct, tvv, giao, it.coNhap ? t('Có nháp') : null]);
   const kt = daXong ? null : chuKhongTvv(it);
+  /* PTA rà #2326: có lý do TVV → ô chi tiết giữ cụm đầu (mockup V4 "Kết quả Final · chưa có TVV") để dòng một tầng; đủ chữ ở title + panel. */
+  const chu = ghepChu([...(kt ? ct.slice(0, 1) : ct), tvv, giao, it.coNhap ? t('Có nháp') : null]);
   const tenNut = tenViecKl ? tenViec(tenBoEmGoc(it)) : motBs ? motBs.ten : aiChu ?? '';
   const sosChip = motEm && !daXong ? chipMucA(it) : null;
   return (
@@ -596,7 +597,7 @@ function DongA({ it, ghiLoai, mk, ...dong }: ChungDong & { it: WorkItem; ghiLoai
           </button>
           {sosChip}
         </span>
-        <span className="cvA-ct" title={kt ? ghepChu([chu, kt]) : chu}>{chu}{kt && <span className="text-faint">{chu ? ' · ' : ''}{kt}</span>}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
+        <span className="cvA-ct" title={kt ? ghepChu([...ct, kt]) : chu}>{chu}{kt && <span className="whitespace-nowrap text-faint">{chu ? ' · ' : ''}{kt}</span>}{it.choGvSua && !daXong && <span className="ml-2 inline-flex align-middle"><TheChoGv /></span>}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
         <HanA it={it} daXong={daXong} />
         {dong.moTrang(it) && it.group !== 'xuat_bc_ph' && !con && !daXong && <MuiDi />}
       </div>
@@ -617,8 +618,8 @@ function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { co
   const nEm = diem?.n || it.emIds?.length || it.count || 0;
   const ai = it.studentId !== null || !nEm ? dich(it.conTen) : t('{n} em', { n: nEm });
   const ct = chiTiet(it, false, diem, ghiLoai, daXong, mk);
-  const chu = ghepChu([...ct, it.coNhap ? t('Có nháp') : null]);
   const kt = chuKhongTvv(it);
+  const chu = ghepChu([...(kt ? ct.slice(0, 1) : ct), it.coNhap ? t('Có nháp') : null]);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={bam} title={bacNgan(dich(it.reason))} className={`cvA-v ${dangChon ? 'dang-chon' : ''} ${daXong ? 'cvA-xong' : ''}`}>
       <span className="cvA-lop" aria-hidden />
@@ -627,7 +628,7 @@ function DongCon({ it, mk, ghiLoai, ...dong }: ChungDong & { it: WorkItem & { co
           {daXong && <span aria-hidden className="text-ok">✓ </span>}<span className={daXong ? 'line-through' : undefined}>{ai}</span></button>
         {!daXong && chipMucA(it)}
       </span>
-      <span className="cvA-ct" title={kt ? ghepChu([chu, kt]) : chu}>{chu}{kt && <span className="text-faint">{chu ? ' · ' : ''}{kt}</span>}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
+      <span className="cvA-ct" title={kt ? ghepChu([...ct, kt]) : chu}>{chu}{kt && <span className="whitespace-nowrap text-faint">{chu ? ' · ' : ''}{kt}</span>}{nguoi && !daXong && <span className="text-faint">{dauGv(chu)}{nguoi}</span>}</span>
       <HanA it={it} daXong={daXong} />
     </div>
   );

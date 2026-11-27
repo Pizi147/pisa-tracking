@@ -17,10 +17,10 @@ Mockup không có khung 1280 → web 1280 ghép với V4a.
 | V4a khối "Em chưa có TVV · TVV  Chưa gán · Gán TVV cho em ›" | `KhoiKhongTvv` (PanelBaoPhTvv, cùng khuôn `KhoiChuyenLop` — tiêu đề + `BoiCanh`) | lead-tvv-1440 / 375 | KHỚP |
 | V4a vị trí khối: ngay dưới khối Phụ trách | web: dưới khối Tuyến (Tuyến sẵn có nằm ngay dưới khối giao việc) | lead-tvv-1440 | KHÁC nhỏ — giữ thứ tự sẵn có |
 | "Gán TVV cho em ›" | link "›" sang hồ sơ em mở panel Bổ sung hồ sơ (`viec=bo-sung`, có ô TVV); quyền gán chặn ở máy chủ (đường sửa hồ sơ sẵn có) | — | KHỚP (luật "›" = đổi trang) |
-| V4b dòng 375 một tầng | dòng gộp Kết quả Final · Chuyển lớp dài hơn mockup → ô chi tiết xuống dòng (luật HAI-BEN: không cắt "…") | lead-tvv-ds-375 | KHÁC nhỏ — dữ liệu dài hơn |
+| V4a / V4b mỗi dòng một tầng | có lý do TVV → ô chi tiết giữ cụm đầu + "· chưa có TVV" (như mockup "Kết quả Final · chưa có TVV"); cụm lý do `nowrap`, không "…"; đủ chữ ở title + panel (PTA rà #2326) | lead-tvv-1440 / 1280 / ds-375 | KHỚP |
 | Khối giao việc / Việc con / Lịch sử | sẵn có | mọi ảnh | GIỮ |
 
-Tỉ lệ khớp (KHỚP + GIỮ + KHÁC nhỏ trên tổng): 6 KHỚP / GIỮ · 2 KHÁC nhỏ → 8 / 8 hàng có mặt; tính KHÁC nhỏ nửa → **≈ 94 %**.
+Tỉ lệ khớp (KHỚP + GIỮ + KHÁC nhỏ trên tổng): 7 KHỚP / GIỮ · 1 KHÁC nhỏ; tính KHÁC nhỏ nửa → 7,5 / 8 ≈ **94 %**.
 
 ## Thao tác TRƯỚC → SAU PR
 
@@ -42,7 +42,7 @@ Không mất thao tác nào.
 
 ## [XM]
 
-- Sau thi (Bước tiếp / KQ thi thật) và Bổ sung hồ sơ (dòng gộp) chưa mang cờ — mockup V4 chỉ vẽ Báo PH; thêm khi chủ SP muốn.
+- Sau thi (Bước tiếp / KQ thi thật) và Bổ sung hồ sơ (dòng gộp) chưa mang cờ — PTA chốt: Việc để sau, gộp vào PR máy chủ XM-2 / XM-3 (sau LPB-3).
 
 ## Chú thích `ponytail:`
 
