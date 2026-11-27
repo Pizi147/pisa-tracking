@@ -25,7 +25,7 @@ import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, 
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
 import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
-import { nguoiGiuO, oCuaToi, phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { nguoiGiuO, oCuaToi } from '../worklist/scoreDebt.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { sExTuan, type DongSEx } from './sExpert.ts';
 import { dsTvv } from '../students/students.ts';
@@ -581,8 +581,6 @@ export type LichTest = {
   nhacLichSu: NhacLichSu[];
   /** SV-S-EXPERT: lượt S Expert của tuần đang xem (`loai: 's-ex'`, khác S MT) — KHÔNG vào dải số / nợ / còn bài. */
   sEx: DongSEx[];
-  /** LT-DONG-GV (mockup v23 L1): classId → tên GV đang dạy (phân công đang hiệu lực, thứ tự L R W S, trùng tên ghi một lần) — dòng "GV …" dưới mã lớp. */
-  gvLop: Record<number, string[]>;
   /** LOC-TVV (chủ SP 28/11): TVV đang lọc (`dang`, null = mọi em) · `ds` ô chọn TVV (Head / Quản trị / CX); cả khối `null` = vai không có bộ lọc này. */
   tvv: { dang: number | null; ds: { id: number; ten: string }[] | null } | null;
 };
@@ -869,7 +867,7 @@ export function lichTest(
   const khong: TongQuanLich = { daCham: 0, tong: 0, conPhaiCham: 0, no: { bai: 0, lop: 0 }, khac: { con: 0, no: 0 } };
   const rong: LichTest = {
     scopeEmpty: scope.none, tuan: null, laTuanNay: false, phamVi, coPhamViRong: false, coPhanCong, lopDangLoc: null,
-    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [], sEx: [], gvLop: {}, tvv: null,
+    tongQuan: khong, tongQuanKhung: { ft: khong, thuong: khong }, no: [], chamTuanNay: null, lop: [], nhacLichSu: [], sEx: [], tvv: null,
   };
   if (scope.none) return rong;
   const conn = db();
@@ -953,20 +951,8 @@ export function lichTest(
     lop,
     nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId, chiEm: emTvv }),
     sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today).filter((d) => !emTvv || emTvv.has(d.studentId)),
-    gvLop: gvCuaLop([...new Set([...lop, ...no.dong].map((x) => x.classId))], today),
     /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvv`); vai TVV: web dựng ô chọn "TVV" chính mình · Tất cả HV (không cần danh sách). */
     tvv: chonTvvKhac(p) ? { dang: tvv, ds: dsTvv(null, branchId ?? null).map(({ id, ten }) => ({ id, ten })) }
       : laVaiTvv(p) ? { dang: tvv, ds: null } : null,
   };
-}
-
-/** LT-DONG-GV: GV đang dạy của các lớp — MỘT lô (`phanCongDangHieuLuc`, nhớ theo lớp trong request: lớp đã nạp cho "Còn chờ" không hỏi lại). */
-function gvCuaLop(classIds: number[], today: string): Record<number, string[]> {
-  if (!classIds.length) return {};
-  const theoLop = new Map<number, { kn: string; ten: string }[]>();
-  for (const [k, v] of phanCongDangHieuLuc(classIds, today)) {
-    const [id, kn] = k.split('|');
-    (theoLop.get(+id) ?? theoLop.set(+id, []).get(+id)!).push({ kn, ten: v.ten });
-  }
-  return Object.fromEntries([...theoLop].map(([id, ds]) => [id, [...new Set(ds.sort((a, b) => theoThuTu(a.kn, b.kn)).map((x) => x.ten))]]));
 }

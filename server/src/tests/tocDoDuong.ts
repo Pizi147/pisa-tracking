@@ -1045,6 +1045,8 @@ export const TRAN: Record<string, number> = {
   // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
   // LT-DONG-GV 23/11 — dòng "GV …" dưới mã lớp (`gvLop`, một lô phân công mọi lớp trên trang): +1 câu mọi vai, +4–15 dòng —
   // đo QL 20→21 · QT 23→24 · GVCN 18→19 · GVBM 18→19 · CX 22→23 · TVV 19→20; `?classId=` không đổi (19). Trong trần, giữ.
+  // GO-GVLOP 28/11 — web bỏ dòng GV (#2312) → máy chủ gỡ `gvLop`: −1 câu mọi vai — đo QL 20→19 · QT 25→24 · GVCN 17→16 · GVBM 17→16 · CX 24→23 · TVV 19→18;
+  // `?classId=` không đổi (18). Trần giữ.
   'QL /cham/lich-test': 30,   // TL-NEN: đo 20 (trước 27)
   'GVCN /cham/lich-test': 28,   // TL-NEN: đo 18 (trước 25)
   'GVBM /cham/lich-test': 29,   // TL-NEN: đo 19 (trước 26)
