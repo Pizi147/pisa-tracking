@@ -1,0 +1,47 @@
+/* Cẩm nang PISA Progress — in A4 (HTML → PDF bằng Chromium). */
+@page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+:root { --chu: #1f2937; --nhat: #64748b; --nen: #f5f6fa; --vien: #dfe3ec; --chinh: #26388a; --hong: #e7336f; --vang: #fff7e0; --vang-vien: #e9c46a; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.5; color: var(--chu); background: #fff; }
+h1, h2, h3 { color: var(--chinh); line-height: 1.25; margin: 0; }
+h1 { font-size: 26pt; }
+h2 { font-size: 16pt; margin: 0 0 8pt; padding-bottom: 4pt; border-bottom: 2pt solid var(--hong); break-after: avoid; }
+h3 { font-size: 12.5pt; margin: 14pt 0 6pt; break-after: avoid; }
+p { margin: 0 0 6pt; }
+b { color: #111827; }
+.bia { height: 255mm; display: flex; flex-direction: column; justify-content: center; break-after: page; }
+.bia .logo { font-size: 14pt; letter-spacing: .08em; color: var(--chinh); font-weight: 700; margin-bottom: 18pt; }
+.bia .logo span { color: var(--hong); }
+.bia h1 { margin-bottom: 8pt; }
+.bia .phu { font-size: 13pt; color: var(--nhat); margin-bottom: 26pt; }
+.bia .ghi { font-size: 9.5pt; color: var(--nhat); border-left: 3pt solid var(--vien); padding-left: 8pt; }
+.muc-luc { break-after: page; }
+.muc-luc ol { padding-left: 18pt; margin: 6pt 0; }
+.muc-luc li { margin: 3pt 0; }
+.muc-luc ol ol { list-style: none; padding-left: 12pt; font-size: 9.5pt; color: var(--nhat); }
+.muc-luc a { color: var(--chu); text-decoration: none; }
+.chuong { break-before: page; }
+.chuong.lien { break-before: auto; margin-top: 18pt; }
+.viec { border: 1pt solid var(--vien); border-radius: 6pt; padding: 8pt 10pt 4pt; margin: 8pt 0 12pt; }
+.viec > h3 { margin-top: 0; }
+table.the { width: 100%; border-collapse: collapse; margin: 4pt 0 6pt; font-size: 10pt; }
+table.the th { width: 24mm; text-align: left; vertical-align: top; color: var(--nhat); font-weight: 600; padding: 3pt 6pt 3pt 0; }
+table.the td { padding: 3pt 0; vertical-align: top; }
+table.the tr + tr th, table.the tr + tr td { border-top: .5pt solid #edf0f5; }
+ol.buoc { margin: 2pt 0 4pt; padding-left: 16pt; }
+ol.buoc li { margin: 1.5pt 0; }
+ul { margin: 2pt 0 6pt; padding-left: 16pt; }
+li { margin: 1.5pt 0; }
+figure { margin: 6pt 0 10pt; break-inside: avoid; }
+figure img { width: 100%; border: .75pt solid var(--vien); border-radius: 4pt; display: block; }
+figure.nua img { width: 72%; margin: 0 auto; }
+figcaption { font-size: 8.5pt; color: var(--nhat); margin-top: 3pt; text-align: center; }
+.sap { background: var(--vang); border: 1pt solid var(--vang-vien); border-radius: 5pt; padding: 5pt 8pt; margin: 6pt 0 10pt; font-size: 9.5pt; break-inside: avoid; }
+.sap::before { content: "Sắp có · "; font-weight: 700; color: #9a6b00; }
+.luu-y { background: #eef2ff; border-left: 3pt solid var(--chinh); padding: 5pt 8pt; margin: 6pt 0 10pt; font-size: 9.8pt; break-inside: avoid; }
+table.nhip { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 6pt 0 10pt; }
+table.nhip th, table.nhip td { border: .75pt solid var(--vien); padding: 5pt 7pt; vertical-align: top; text-align: left; }
+table.nhip th { background: var(--nen); width: 30mm; color: var(--chinh); }
+.nho { font-size: 9pt; color: var(--nhat); }
+.k { display: inline-block; border: .75pt solid #c7cede; border-radius: 3pt; padding: 0 4pt; font-size: 9pt; background: var(--nen); white-space: nowrap; }
