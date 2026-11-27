@@ -513,8 +513,12 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const activeOf = (attemptId: number) => coordOf(attemptId).filter((r) => r.status !== 'removed');
   /* BAOPH-0 (N72 ⑤): Trao đổi gia đình là việc TVV — xong qua việc Báo PH của TVV; việc khác GVCN xác nhận. */
   const baoPhTvvSvc: any = await import('../yThuc/baoPhTvv.ts');
+  /* N78 (chủ SP 28/11): việc TVV chỉ sinh sau khi GVCN xác nhận việc của lượt — các ca ở đây kiểm luật KHÁC (SOS đổi, chỉ số…), nên khi chưa có việc thì dựng việc TVV
+     như dữ liệu trước N78 rồi báo xong (luật N78 kiểm ở prTuyen0 N78-1). */
+  const viecTvv = (r: any) => get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', r.id) ?? conn.prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc)
+      VALUES (NULL, ?, ?, 'Trao đổi với gia đình', ?, 'mo', ?)`).run(r.id, r.student_id, TODAY, new Date().toISOString());
   const xongViec = (r: any, ngay = TODAY, note = 'Đã làm') => domain.laViecTvvBaoPh(r.kind)
-    ? baoPhTvvSvc.baoXongNguonTvv(r.id, ngay, note) : phoiHop.confirmCoordination(gvcn, r.id, { performedOn: ngay, note });
+    ? (viecTvv(r), baoPhTvvSvc.baoXongNguonTvv(r.id, ngay, note)) : phoiHop.confirmCoordination(gvcn, r.id, { performedOn: ngay, note });
   const effectivenessSvc: any = await import('../cases/effectiveness.ts');
   const myworkSvc: any = await import('../worklist/mywork.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');

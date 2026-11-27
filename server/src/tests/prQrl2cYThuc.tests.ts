@@ -109,7 +109,10 @@ export async function runPrQrl2cYThucTests(t: YThucTestKit) {
     const truoc = dong(PH, r.id);
     phoiHop.removeCoordination(gv, r.id, { reasonCode: 'handled_otherwise' });
     assert(get(`SELECT status FROM ${PH} WHERE id = ?`, r.id).status === 'removed', 'đã bỏ');
-    assert(ma(() => phoiHop.moLaiCoordination(gvbm, r.id)) === 403, 'GVBM 403');
+    /* N78: bộ demo đổi (GVCN meeting của Khôi / Lan đã xác nhận) — việc mẫu có thể ở lớp khác: GVBM = GV không chủ nhiệm lớp em. */
+    const gvNgoai = loadPrincipal(get(`SELECT ta.user_id FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.is_core = 0 AND ta.class_id = ?
+        AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) LIMIT 1`, r.class_id, r.class_id)?.user_id ?? gvbm.userId);
+    assert(ma(() => phoiHop.moLaiCoordination(gvNgoai, r.id)) === 403, 'GVBM 403');
     const kp = phoiHop.moLaiCoordination(gv, r.id);
     assert(kp.status === 'pending' && kp.note === 'Đã nhờ TVV gọi mẹ em' && kp.performerName === 'Cô CS', JSON.stringify(kp));
     assert(dong(PH, r.id) === truoc, `dòng lệch: ${dong(PH, r.id)} ≠ ${truoc}`);
