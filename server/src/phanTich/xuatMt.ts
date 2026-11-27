@@ -13,6 +13,7 @@ import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fast
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotKck } from '../worklist/danhGia.ts';
 import { LUOT_XUAT_SQL } from '../students/tamDung.ts';
+import { tvvLoc } from '../cham/canCham.ts';
 
 
 /**
@@ -188,6 +189,10 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   ];
   if (f.chiNhanh.length) dk.push([`c.branch_id IN (${dauHoi(f.chiNhanh.length)})`, f.chiNhanh]);
   if (f.lop.length) dk.push([`c.id IN (${dauHoi(f.lop.length)})`, f.lop]);
+  /* LOC-TVV-XUAT: đang lọc một TVV ở Lịch Test → chỉ em của TVV đó (cùng `tvvLoc` ép quyền như Lịch Test; cùng định nghĩa `emCuaTvv` =
+     `students.consultant_user_id`, viết thành điều kiện để không thêm câu). Vai không được chọn TVV khác → bỏ qua tham số. */
+  const tvv = f.tvv ? tvvLoc(p, String(f.tvv)) : null;
+  if (tvv) dk.push([`st.consultant_user_id = ?`, [tvv]]);
   const where = dk.map(([sql]) => sql), params = dk.flatMap(([, ps]) => ps);
   const luot = db().prepare(
     `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.cycle_id, a.created_at, a.bo_mon,
@@ -245,7 +250,8 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
 
   /* Không chọn chi nhánh mà phạm vi chỉ có MỘT chi nhánh (Quản lý, GVCN): tên chi nhánh đó vào tên tệp và bộ lọc — "Monbay", không "mọi chi nhánh". */
   const cnTen = f.chiNhanh.length ? f.chiNhanh.map((id) => phamVi.chiNhanh.find((c) => c.id === id)!.ten) : phamVi.chiNhanh.length === 1 ? [phamVi.chiNhanh[0].ten] : [];
-  const ten = { chiNhanh: cnTen, lop: lopChon.map((l) => l!.ma) };
+  const ten = { chiNhanh: cnTen, lop: lopChon.map((l) => l!.ma),
+    tvv: tvv ? ((db().prepare('SELECT full_name FROM users WHERE id = ?').get(tvv) as { full_name?: string } | undefined)?.full_name ?? `#${tvv}`) : null };
   const moTa = moTaBoLoc(f, ten);
   sheets.push({ ten: 'Bộ lọc đã dùng', aoa: bangBoLoc({ khung: f.khung, nguoiXuat: p.fullName, luc, moTa, soLuot: soLuot.size }) });
   return {

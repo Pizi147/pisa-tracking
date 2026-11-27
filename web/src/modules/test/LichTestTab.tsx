@@ -446,7 +446,7 @@ export function LichTestTab() {
         ? <span className="inline-flex shrink-0" data-hd={session?.nav?.students ? 'test-lich-thi-that' : undefined}>{nutBaCham}</span> : nutXuat, choNut)}
       {moXuat && data.tuan && (
         <NganXuatTest dau="diem" lich={{ branchId, classIds: [] }} onDong={() => setMoXuat(false)}
-          diem={{ khung: loai ?? 'ft', chiNhanh: branchId, lop: urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null,
+          diem={{ khung: loai ?? 'ft', chiNhanh: branchId, lop: urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null, tvv: data.tvv?.dang ?? null,
             thoiGianMacDinh: { kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart } }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ />
       )}
     </div>
