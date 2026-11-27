@@ -1437,6 +1437,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  *   "QT tat-ca cn", GVS / QL / GVCN "Của tôi", QL xem GVCN): chỉ thêm 3 việc `xem_nx_s` + hai nhãn "còn tồn từ" của GV S như dưới; còn lại trùng.
  * 21/10 SV-YT-TVV: chụp lại 5 băm QL / QT (Của tôi, Tất cả, Tất cả chi nhánh) — đổi CÓ CHỦ Ý: seed gửi đề xuất Ý thức qua `guiDeXuat` nên có việc
  *   "Báo PH vi phạm" (`bao_ph_yt`) — em demo chưa có TVV → QL chi nhánh giữ. Việc GV không đổi (6 băm GV / Admin giữ).
+ * 28/11 LPB-2a (PTA rà #2292): chụp lại 'QL toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: chữ dòng việc Nhận thông tin (`contextLabel`)
+ *   "Chuyển lớp · n em" → "Chuyển lớp · vào {tuần}" như mockup v28 L3a (chỉ bốn góc nhìn có việc Nhận thông tin của Head demo). Các băm khác giữ.
  * 21/10 SV-TVV-VIEC: chụp lại 5 băm QL / QT (Của tôi, Tất cả, Tất cả chi nhánh) — đổi CÓ CHỦ Ý: Chốt ngày thi / Cập nhật KQ thi thật / Chọn bước tiếp có
  *   MỘT người giữ (TVV của em; em demo chưa có TVV → QL chi nhánh), KQ thi thật không hạn, thêm dòng "Bổ sung hồ sơ thiếu". 6 băm GV / Admin giữ.
  * 22/10 UI-CV-TVV: chụp lại 'QT toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý (mockup `tvv.html`): Báo PH · KQ thi thật · Chọn bước tiếp ·
@@ -1610,14 +1612,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* TUYEN-2 sau gộp LPB-0 (27/11): chụp lại 4 băm — đổi CÓ CHỦ Ý: việc Báo PH · Chuyển lớp mang `gopNguon` + lớp của dòng = lớp NGUỒN lệnh (dòng gộp
        "Chuyển lớp · {lớp cũ} · n em", mockup v27 T11c), cộng đổi Trao đổi gia đình ở trên. Trước (main sau LPB-0): QL toi b716cdf0509e9853, QL tat-ca 16673cf5d9e3c76f,
        QT tat-ca f51ee151b7d33334, QT tat-ca cn fcdec41d090473ae */
-    'QL toi': '2f605293934691d9', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
+    'QL toi': '5cf94755d0ba544c', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '76085aca4af1451d', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': 'e13988efbaa6302a', 'QT tat-ca': '333a8951950cad36',
-    'QT tat-ca cn': 'b5e6d34fabb94c9d', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '76085aca4af1451d', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': '058c8dbe8ec1f0ec', 'QT tat-ca': 'b9b363ab34131f9e',
+    'QT tat-ca cn': '8d003a0065654f3a', 'QL gvcn': '90fce858f01dd25b', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

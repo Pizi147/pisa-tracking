@@ -26,6 +26,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'khai_bac': return it.studentId !== null || it.classId !== null;   // OV-13d: nhiều em → Xác nhận cấp bậc theo lô
     case 'phoi_hop_sos': case 'phoi_hop_tvv': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'meeting_xep_lich': case 'meeting_ket_qua': return !!it.phoiHopId;   // GV-2: panel Meeting ba phần tại chỗ
+    case 'nhan_tin': return soCuaKhoa(it.key) !== null;   // LPB-2a (N73): BPXL Nhận thông tin — panel tại chỗ, một nút Xác nhận
     case 'yt_hoi_tinh_hinh': return soCuaKhoa(it.key) !== null;   // TINH-HINH: GVCN ghi kết quả TVV hỏi tại chỗ
     case 'yt_tra_lai': return soCuaKhoa(it.key) !== null;   // TL-2 (N61): Vi phạm bị trả lại — ba lựa chọn tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': case 'thi_that': return soCuaKhoa(it.key) !== null;   // OV-13q: Kết quả thi thật tại chỗ
