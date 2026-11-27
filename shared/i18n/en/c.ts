@@ -20,6 +20,7 @@ export const EN_C = {
   'Xem': 'View',
   'Học lại': 'Re-enrol',
   'TVV': 'Counsellor',
+  'Không bắt buộc. TVV thêm em thì mặc định là chính TVV đó — đổi hoặc bỏ trống được.': 'Optional. When a counsellor adds the student, it defaults to that counsellor — change or clear it.',
   'GVBM': 'Subject teacher',
   'Em': 'Student',
   'PH': 'Parent',

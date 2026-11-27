@@ -197,7 +197,7 @@ const COT_TUAN: CotLuoi = { key: 'startWeek', nhan: 'Tuần bắt đầu', batBu
  *  Lớp thường (Pre FOU · FOU · BE · ELE): Họ tên · Ngày sinh · Email · Target · Dự kiến thi · Tuần bắt đầu. Cột Tình trạng do giao diện vẽ. */
 export const cotLuoiNhap = (lopThuong: boolean): CotLuoi[] =>
   lopThuong ? [...COT_DAU, ...COT_MUC_TIEU, COT_TUAN] : [...COT_DAU, ...COT_BAND, ...COT_MUC_TIEU, COT_DA_THI, COT_TUAN];
-const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ trình', consultant: 'Tư vấn viên' };
+const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ trình', consultant: 'Tư vấn viên', consultantUserId: 'TVV' };
 export const nhanCotNhap = (field: string) => cotLuoiNhap(false).find((c) => c.key === field)?.nhan ?? NHAN_KHAC[field] ?? field;
 
 /**
