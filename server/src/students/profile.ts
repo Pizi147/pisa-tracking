@@ -560,13 +560,15 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const enrollments = conn
     .prepare(
       `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt, c.route, c.status AS class_status, c.is_fast_track, b.name AS branch_name,
-              rp.week_start AS class_start_week
+              rp.week_start AS class_start_week, c.programme_code AS class_programme_code, c.moc_lap AS class_moc_lap
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
          LEFT JOIN report_periods rp ON rp.id = c.start_period_id
         WHERE e.student_id = ? ORDER BY e.started_at DESC, e.id DESC`,
     )
     .all(studentId) as any[];
   const current = enrollments.find((e) => e.status === 'active') ?? null;
+  /* TOC-4: `activeClassOf` (ghi danh `active`, id lớn nhất) tính từ dòng vừa đọc — khỏi một câu. */
+  datNho(`lop-dang-hoc:${studentId}`, enrollments.filter((e) => e.status === 'active').sort((a, b) => b.id - a.id)[0]?.class_id ?? null);
   /* PR-VAI-b (KIỂM 5): Tạm dừng chuyển ghi danh sang `paused` nhưng em GIỮ lớp — đầu hồ sơ (lớp · GVCN · khoá) đọc ghi danh đó, không "Chưa xếp lớp". */
   const lopDangGiu = current ?? (s.status === 'inactive' ? enrollments.find((e) => e.status === 'paused') ?? null : null);
 
@@ -850,11 +852,12 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const cuoiKhoaEm = (() => {
     /* MỘT câu: lớp đang học + lớp thường vừa rời (nếu có). PR-S5F-a: vừa chuyển (lên lớp / học lại / sang FT) mà lớp đang học chưa có điểm Cuối khoá
        → vẫn thấy % Cuối khoá của lớp thường vừa rời (hộp Kết luận khoá; kỳ vọng đầu ra BE/ELE — Quản lý đánh dấu được cả sau khi em đã sang FT). */
-    const ds = db().prepare(
-      `SELECT e.class_id, e.status, c.code, c.programme_code, c.is_fast_track, c.moc_lap FROM enrollments e JOIN classes c ON c.id = e.class_id
-        WHERE e.student_id = ? AND (e.status = 'active' OR (e.status = 'transferred' AND c.is_fast_track = 0))
-        ORDER BY e.status = 'active' DESC, e.ended_at DESC, e.id DESC LIMIT 2`,
-    ).all(studentId) as any[];
+    /* TOC-4: lọc từ `enrollments` đã đọc (trước một câu riêng) — cùng điều kiện + thứ tự: đang học trước, `ended_at` giảm (NULL cuối), id giảm. */
+    const giam = (x: string | null, y: string | null) => (x === y ? 0 : x === null ? 1 : y === null ? -1 : y < x ? -1 : 1);
+    const ds = enrollments.filter((e) => e.status === 'active' || (e.status === 'transferred' && e.is_fast_track === 0))
+      .sort((a, b) => Number(b.status === 'active') - Number(a.status === 'active') || giam(a.ended_at, b.ended_at) || b.id - a.id)
+      .slice(0, 2)
+      .map((e) => ({ class_id: e.class_id, status: e.status, code: e.class_code, programme_code: e.class_programme_code, is_fast_track: e.is_fast_track, moc_lap: e.class_moc_lap }));
     const dangHoc = ds.find((r) => r.status === 'active');
     if (!dangHoc) return null;
     /* PR-KV: BE/ELE — gợi ý kỳ vọng đầu ra theo MT0 (điền sẵn kỹ năng ở "Không đạt"), cùng hàm với panel cả lớp. */
