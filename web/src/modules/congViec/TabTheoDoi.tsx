@@ -31,7 +31,8 @@ export type DongTd = { loai: LoaiTd; refId: number; tieuDe: string; studentId: n
   /** TUYEN-3: dòng một tuyến (loai 'tuyen'). */ tuyen?: DongTuyen };
 type TheoDoi = { nhom: { loai: LoaiTd; ten: string; mo: DongTd[]; vuaXong: DongTd[] }[]; tuyen?: DongTuyen[] };
 export const khoaTd = (d: Pick<DongTd, 'loai' | 'refId' | 'tuyen'>) => (d.tuyen ? `tuyen:${d.tuyen.loai}:${d.tuyen.khoa}` : `${d.loai}:${d.refId}`);
-const ICON: Record<LoaiTd, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc', tra_lai: 'y-thuc', xu_ly: 'y-thuc', da_thuc_hien: 'y-thuc', van_hanh: 'van-hanh', tuyen: 'y-thuc' };
+/* LPB-3: việc có khung (LPB-1) theo dõi được → nhóm dùng dấu Vận hành. */
+const ICON: Partial<Record<LoaiTd, string>> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', tinh_hinh: 'tinh-hinh', meeting: 'y-thuc', tra_lai: 'y-thuc', xu_ly: 'y-thuc', da_thuc_hien: 'y-thuc', van_hanh: 'van-hanh', tuyen: 'y-thuc' };
 /** Tên mục / tên tuyến — đúng tên nhóm việc ở Công việc (đặc tả 4.4). */
 /** Mục = tên tuyến (phần đầu `tieuDe` máy chủ: "Vi phạm · WL 3", "Phối hợp SOS · MT2 · SOS 3", "Báo PH kết quả Test"…) — thứ tự như mockup T8a, tên lạ xếp sau. */
 const tenTuyen = (x: Pick<DongTuyen, 'tieuDe'>) => x.tieuDe.split(' · ')[0];
@@ -96,7 +97,7 @@ export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo
         const dongGap = gap.has(g.loai), q = g.mo.filter((x) => x.quaHan).length;
         return (
           <section key={g.loai} className="card cvA-sub overflow-clip p-0" aria-label={dich(g.ten)}>
-            <DaiNhom k={ICON[g.loai]} nhan={dich(g.ten)} chip={t('{n} việc', { n: g.mo.length })} mo={!dongGap} onMo={() => doi(g.loai, !dongGap)} chevSauTen
+            <DaiNhom k={ICON[g.loai] ?? 'van-hanh'} nhan={dich(g.ten)} chip={t('{n} việc', { n: g.mo.length })} mo={!dongGap} onMo={() => doi(g.loai, !dongGap)} chevSauTen
               dieuKhien={dongGap ? undefined : `td-${g.loai}`} phu={q ? <span className="font-bold tabular-nums text-late">{q} {t('quá hạn')}</span> : null} />
             {!dongGap && <ul id={`td-${g.loai}`} className="cvA-sub">
               <DsDong ds={g.mo} gop={g.loai === 'bao_ph'} chon={chon} onMo={onMo} />

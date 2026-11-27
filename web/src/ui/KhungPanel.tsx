@@ -194,6 +194,12 @@ export const DemViecPanel = createContext<{ i: number; n: number; nhan: string }
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
 
+/**
+ * LPB-3 (N73 ⑤): nơi mở panel bọc THÂN panel chính của việc (Công việc: khối Phụ trách · Hạn · Theo dõi + Việc con — `KhungViecChung`). Chỉ panel không có "‹ quay lại"
+ * (view con tự truyền `quayLai` — Bàn giao từ Chốt lộ trình, Lịch sử… — không bọc; "‹ danh sách" của Tổng quan đi context, vẫn bọc); panel lồng bên trong không bọc lại.
+ */
+export const BocThanPanel = createContext<((than: ReactNode) => ReactNode) | null>(null);
+
 export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRieng, tabs, vungTab, ngCanh, daiLamThay: daiRieng, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, anDau = false, hd, nutHd = true, onDong, children }: {
   tieuDe: string;
   /** NHẸ HƠN: phần phụ CÙNG DÒNG đầu panel, sau tên việc (em · lớp · hạn) — chữ phụ, "·" giữa các mục. */
@@ -256,6 +262,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   const khung = useRef<HTMLDivElement>(null);
   const quayLaiNgoai = useContext(QuayLaiPanel);
   const quayLai = quayLaiRieng ?? quayLaiNgoai ?? undefined;
+  const boc = useContext(BocThanPanel);
   /* GD-4d (⑤ H5): tên bậc trong tiêu đề panel viết hoa, viết đủ (panel là nơi quyết) — chuỗi máy chủ "Báo PH · Report 1" → "REPORT 1". */
   const tieuDe = bacDu(tieuDeGoc);
   const dongRef = useRef(onDong);
@@ -451,7 +458,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
-        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`pn-than min-h-0 flex-1 ${trongThe || la720 ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : la720 ? 'overflow-y-auto overscroll-contain' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`pn-than min-h-0 flex-1 ${trongThe || la720 ? 'px-0' : 'px-4 sm:px-5'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : la720 ? 'overflow-y-auto overscroll-contain' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}><BocThanPanel.Provider value={null}>{boc && !quayLaiRieng ? boc(children) : children}</BocThanPanel.Provider></BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
