@@ -114,6 +114,8 @@ export const viecTvvCuKhiKiem = { bat: false };
 const laQl = (p: Principal) => can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true });
 const laQlNhanh = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.CYCLE_EDIT));
 /** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. VAI-0: + Lead TVV (giữ việc em chưa có TVV ở chi nhánh mình — N76b). */
+/** VAI-1 XM-2: việc TVV không ở TVV của em — em chưa từng có TVV (`chua_co`) hay TVV đã hết vai / nghỉ (`da_nghi`). */
+export const khongTvvCua = (tvvGoc: number | null | undefined): 'chua_co' | 'da_nghi' => (tvvGoc ? 'da_nghi' : 'chua_co');
 export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laLeadTvv(p) || laQl(p);
 
 /**
@@ -236,6 +238,8 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
           tieuDe: 'Chốt ngày thi', phu: 'Chốt ngày thi', actionLabel: 'Chốt ngày', href: `/hoc-vien?view=lich-thi&thang=${lich.thang}`,
           ownerId: chu.ownerId, owner: null, mine: chu.mine, due: chu.han ?? null, statusLabel: chu.han ? `hạn ${chu.han.slice(8, 10)}/${chu.han.slice(5, 7)}` : 'Không tính hạn',
           ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'chot_ngay_thi', id: r.cycle_id },
+          /* VAI-1 XM-2: người giữ theo luật không phải TVV của em (Lead TVV / Head) → lý do trên dòng. */
+          ...(!chu.giaoBoi && chu.ownerId !== null && (!r.tvv || chu.ownerId !== r.tvv) ? { khongTvv: khongTvvCua(r.tvv) } : {}),
           ...(chu.han ? { urgency: chu.han < o.today ? 'overdue' : chu.han === o.today ? 'today' : 'normal' } : {}),
         });
       }

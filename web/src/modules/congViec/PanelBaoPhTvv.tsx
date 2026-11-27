@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, NUT_DONG, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -16,7 +17,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacDu, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacDu, duongHoSoHocVien, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { gioVnNay, lucVn } from './gioVn.ts';
@@ -68,6 +69,20 @@ function KhoiChuyenLop({ c }: { c: NonNullable<ViecBaoPh['chuyenLop']> }) {
         [t('Hướng'), c.huong ? <span className="font-normal">{dich(c.huong)}</span> : null],
         [t('Lý do'), c.lyDo ? <span className="whitespace-pre-line font-normal">{c.lyDo}</span> : null],
       ]} />
+    </div>
+  );
+}
+
+/**
+ * VAI-1 XM-2 (mockup v29 V4a): việc về Lead TVV / Head vì em chưa có TVV / TVV đã nghỉ — nói lý do + lối gán TVV ("›" = sang hồ sơ em, panel Bổ sung hồ sơ có ô TVV;
+ * quyền gán do máy chủ chặn ở đường sửa hồ sơ sẵn có).
+ */
+function KhoiKhongTvv({ loai, studentId }: { loai: NonNullable<WorkItem['khongTvv']>; studentId: number }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <h3 className="m-0 text-[14px] font-bold">{loai === 'chua_co' ? t('Em chưa có TVV') : t('TVV của em đã nghỉ')}</h3>
+      <BoiCanh dong={[[t('TVV'), <span className="font-normal"><span className="text-dim">{loai === 'chua_co' ? t('Chưa gán') : t('Đã nghỉ')}</span> · <Link className="link whitespace-nowrap"
+        to={duongHoSoHocVien(studentId, { viec: 'bo-sung' })}>{t('Gán TVV cho em ›')}</Link></span>]]} />
     </div>
   );
 }
@@ -283,6 +298,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem, nh
         {/* TL-2 (mockup v22 T1 / T6b / T8b): vi phạm = dòng bấm được, chi tiết ngay dưới dòng + "Trả lại" (phía TVV). */}
         {v.boiCanh.viPham.length > 0 && !(v.tuyen && !laMeeting && v.tuyen.buoc.some((b) => b.khoa === 'ghi')) && <DsViPhamBaoPh viPham={v.boiCanh.viPham} mo={dsMo} coTheTraLai={traLaiDuoc && !caLanMo} hn={hn}
           onTraLai={(vid, lyDo) => traLai({ violationId: vid }, lyDo)} />}
+        {it.khongTvv && it.studentId != null && <KhoiKhongTvv loai={it.khongTvv} studentId={it.studentId} />}
         {v.chuyenLop && <KhoiChuyenLop c={v.chuyenLop} />}
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[

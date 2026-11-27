@@ -199,6 +199,11 @@ export async function runPrVaiMoiTests(t: any) {
     const hs = [...kq.cuaBan, ...kq.nguoiKhac].filter((x: any) => x.key === `bao-ph:${v.id}`);
     assert(hs.length === 1 && hs[0].cuaBan, `hồ sơ: ${JSON.stringify(hs)}`);
     assert(bp.nguoiGiuBaoPh(v.student_id, leadMb).join() === String(leadMb), 'nguoiGiuBaoPh cùng nguồn');
+    /* VAI-1 XM-2 (mockup v29 V4): dòng mang lý do — chưa có TVV / TVV không còn vai TVV ở chi nhánh em (đã nghỉ). */
+    assert(co(lp)[0].khongTvv === 'chua_co', `chua_co: ${co(lp)[0].khongTvv}`);
+    conn.prepare(`UPDATE students SET consultant_user_id = ? WHERE id = ?`).run(P.mbManager.userId, v.student_id);
+    xoaNho();
+    assert(co(loadPrincipal(leadMb))[0]?.khongTvv === 'da_nghi', 'da_nghi');
   }));
 
   check('VM-9 · (rà C2) CVXL chi nhánh X nhận lớp MB → phần Xếp lịch họp của em lớp đó ở /my-work của CVXL', () => thu(() => {

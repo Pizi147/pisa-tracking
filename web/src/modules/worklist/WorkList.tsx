@@ -54,6 +54,8 @@ export type WorkItem = {
   /** TUYEN-2: Báo PH theo nguồn × đợt — gộp "n em" theo lớp × nguồn. */ gopNguon?: string;
   /** LPB-0 / LPB-2b: Báo PH · Chuyển lớp — lớp NGUỒN của lệnh + mã tuần vào lớp mới (dòng "Chuyển lớp · vào W3 SEP"). */
   nhomChuyenLop?: { lopId: number; ma: string; vao?: string | null; chiTiet?: string | null } | null;
+  /** VAI-1 XM-2: việc TVV về Lead TVV / Head vì em chưa có TVV (`chua_co`) / TVV đã nghỉ (`da_nghi`). */
+  khongTvv?: 'chua_co' | 'da_nghi';
   /** SOS-TAM-PA: dòng Xác nhận PA là "Chọn PA" (HD3-2: thẻ Hướng dẫn riêng). */
   chonPa?: boolean;
   /** BO-QUA-XEP-MT: QL bỏ qua được ngay trên dòng (việc `moc:` Xếp lịch MT / Nhập dự kiến thi). */

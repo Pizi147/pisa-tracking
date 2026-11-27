@@ -1646,7 +1646,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* PHOI-HOP-SOS-INFO (06/11): dòng Phối hợp SOS thêm `theSos` (thẻ kết quả SOS); băm bỏ trường đó → 11 băm cũ trùng ảnh main (không việc nào khác đổi, không chụp lại). */
     /* CV-TAB b (06/11): việc thêm `cn` (chi nhánh lớp), kết quả thêm `chiNhanh` (GV liên chi nhánh) / `cnAn` (QL xem một GV); băm bỏ ba trường đó → 11 băm cũ trùng (không chụp lại). */
     /* LPB-1 (N73 ⑤): việc có khung thêm `khungViec` ({ loai, id } cho panel giao việc); băm bỏ trường đó — dữ liệu mẫu không có việc khung đã giao → 11 băm cũ trùng (không chụp lại). */
-    const bo = (k: string, v: any) => (k === 'kns' || k === 'knsQuaHan' || k === 'theSos' || k === 'lamThay' || k === 'chiXem' || k === 'cn' || k === 'chiNhanh' || k === 'cnAn' || k === 'khungViec' ? undefined
+    /* VAI-1 XM-2: việc TVV về Lead TVV / Head thêm `khongTvv` (lý do); băm bỏ trường đó. */
+    const bo = (k: string, v: any) => (k === 'kns' || k === 'knsQuaHan' || k === 'theSos' || k === 'lamThay' || k === 'chiXem' || k === 'cn' || k === 'chiNhanh' || k === 'cnAn' || k === 'khungViec' || k === 'khongTvv' ? undefined
       : k === 'summary' && v ? Object.fromEntries(Object.entries(v).filter(([x]) => !MOI.has(x))) : v);
     const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn(), bo)).digest('hex').slice(0, 16));
     if (ANH[ten] !== bam) sai.push(`'${ten}': '${bam}',`);

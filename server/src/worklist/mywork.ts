@@ -179,6 +179,8 @@ export type WorkItem = {
   giaoBoi?: string | null;
   /** LPB-1 (N73 ⑤): việc có khung (Phụ trách · Hạn · Theo dõi · Việc con) — `/giao-viec/{loai}/{id}`; Bàn giao môn chưa có dòng → id null (`POST /giao-viec/ban_giao_mon/mo`). */
   khungViec?: { loai: LoaiKhung; id: number | null };
+  /** VAI-1 XM-2 (mockup v29 V4): việc TVV về Lead TVV / Head vì em chưa có TVV / TVV đã nghỉ — web ghi "· chưa có TVV" / "· TVV đã nghỉ" + "Gán TVV cho em ›". */
+  khongTvv?: 'chua_co' | 'da_nghi';
   /** GV-2: dòng Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) — id hành động Meeting, panel đọc `/phoi-hop-sos/:id/meeting`. */
   phoiHopId?: number;
   /** VH-1 (N59): việc Vận hành — nhóm tự đặt (null = Không phân loại) để web chia "Việc được giao" theo nhóm. */
