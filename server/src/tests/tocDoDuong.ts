@@ -596,13 +596,13 @@ export const TRAN: Record<string, number> = {
   'TVV /cham/lich-test?tvv=all': 28, 'QL /cham/lich-test?tvv={tvv}': 31, 'CX /cham/lich-test?tvv={tvv}': 31, 'QL /cham/lich-test/qua-han?tvv={tvv}': 19,
   'QL /classes/{lopFT}/cham?tvv={tvv}': 24, 'TVV /classes/{lopFT}/cham?tvv={tvv}': 22,
   /* R3-T3 (24/11): bó phần 2 hồ sơ lớp gửi cùng lúc phần 1 (`tuy=1`). */
-  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 95,   // đo 73
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 82,   // đo 73   // TOC-4: đo QL 74 → 61 (trần −13)
   'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 58,   // đo 44
   'GVBM /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 50,   // đo 38
-  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 88,   // đo 67
+  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 75,   // đo 67   // TOC-4: đo QL 67 → 54 (trần −13)
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases&tuy=1': 48,   // đo 37
   /* R3-T4 / T5 (24/11): bó gộp sau lưu ở hồ sơ lớp (trước 6 GET lẻ 145 câu QL tab Học viên → 2 GET 125; Ý thức "Đã xem" 9 GET 178 → 5 GET 152). */
-  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 91,   // đo 70
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 78,   // đo 70   // TOC-4: đo QL 71 → 58 (trần −13)
   'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 54,   // đo 41
   'QL /classes/{lopFT}/ho-so?phan=overview,roster': 64,   // đo 49
   'GVCN /classes/{lopFT}/ho-so?phan=overview,roster': 67,   // đo 51
@@ -614,19 +614,19 @@ export const TRAN: Record<string, number> = {
   'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 71,   // B2-14 (TURSO-5): URL trang gửi, đo 54
   'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 69,   // B2-14 (TURSO-5): URL trang gửi, đo 53
   'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot': 72,   // B2-14 (TURSO-5): URL trang gửi, đo 55
-  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 94,   // B2-14 (TURSO-5): URL trang gửi, đo 72
+  'QL /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 81,   // B2-14 (TURSO-5): URL trang gửi, đo 72   // TOC-4: đo QL 74 → 61 (trần −13)
   'GVCN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 58,   // B2-14 (TURSO-5): URL trang gửi, đo 44
   'GVBM /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 50,   // B2-14 (TURSO-5): URL trang gửi, đo 38
   'GVCN_THUONG /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 58,   // B2-14 (TURSO-5): URL trang gửi, đo 44
-  'QT /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 94,   // B2-14 (TURSO-5): URL trang gửi, đo 72
+  'QT /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 81,   // B2-14 (TURSO-5): URL trang gửi, đo 72   // TOC-4: đo QT 73 → 60 (trần −13)
   'TVV /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 25,   // B2-14 (TURSO-5): URL trang gửi, đo 15
-  'CX /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 34,   // B2-14 (TURSO-5): URL trang gửi, đo 24
+  'CX /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 21,   // B2-14 (TURSO-5): URL trang gửi, đo 24   // TOC-4: đo CX 24 → 11 (trần −13)
   'ADMIN /classes/{lopFT}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc,cases': 32,   // B2-14 (TURSO-5): URL trang gửi, đo 22
   'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 79,   // B2-14 (TURSO-5): URL trang gửi, đo 64
   'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 77,   // B2-14 (TURSO-5): URL trang gửi, đo 63
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot': 80,   // B2-14 (TURSO-5): URL trang gửi, đo 65
-  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 86,   // B2-14 (TURSO-5): URL trang gửi, đo 66
-  'QT /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 88,   // B2-14 (TURSO-5): URL trang gửi, đo 67
+  'QL /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 73,   // B2-14 (TURSO-5): URL trang gửi, đo 66   // TOC-4: đo QL 67 → 54 (trần −13)
+  'QT /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 75,   // B2-14 (TURSO-5): URL trang gửi, đo 67   // TOC-4: đo QT 67 → 54 (trần −13)
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=xetLai,viecCuaToi,xoaKetThuc': 49,   // B2-14 (TURSO-5): URL trang gửi, đo 37
   'GVCN /tong-quan/lop-toi-day/hai-khoi?gon=1': 35,   // B2-14 (TURSO-5): URL trang gửi, đo 25
   'GVBM /tong-quan/lop-toi-day/hai-khoi?gon=1': 35,   // B2-14 (TURSO-5): URL trang gửi, đo 25
@@ -1321,11 +1321,11 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /thung-rac?loai=hoc_vien': 13,   // đo 3
   'QT /thung-rac?loai=hoc_vien': 13,   // đo 3
   'TVV /classes/{lopFT}/bao-cao-ph': 12,   // đo 2
-  'QL /classes/{lopFT}/xoa-ket-thuc': 27,   // đo 17
+  'QL /classes/{lopFT}/xoa-ket-thuc': 14,   // đo 17   // TOC-4: đo QL 17 → 4 (trần −13)
   'GVCN /classes/{lopFT}/xoa-ket-thuc': 12,   // đo 2
   'GVBM /classes/{lopFT}/xoa-ket-thuc': 12,   // đo 2
   'GVCN_THUONG /classes/{lopFT}/xoa-ket-thuc': 12,   // đo 2
-  'QT /classes/{lopFT}/xoa-ket-thuc': 27,   // đo 17
+  'QT /classes/{lopFT}/xoa-ket-thuc': 14,   // đo 17   // TOC-4: đo QT 17 → 4 (trần −13)
   'GVBM /tutors/chon?paId={paTutor}': 17,   // đo 7
   'QL /students/{hv}/lich-su-sua': 16,   // đo 6
   'QT /students/{hv}/lich-su-sua': 14,   // đo 4

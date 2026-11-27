@@ -41,28 +41,34 @@ function docLop(classId: number) {
 
 /** Số học viên từng ghi danh / đang học và những thứ đang gắn lớp — một lần đếm cho cả hai việc. */
 export function tinhTrangLop(classId: number) {
-  const conn = db();
-  const dem = (sql: string, ...a: unknown[]) => (conn.prepare(sql).get(...a) as { n: number }).n;
-  const soTungGhiDanh = dem('SELECT COUNT(*) n FROM enrollments WHERE class_id = ?', classId);
-  const soDangHoc = dem(`SELECT COUNT(*) n FROM enrollments WHERE class_id = ? AND status = 'active'`, classId);
+  /* TOC-4: MỘT câu (trước 15 câu COUNT riêng — mỗi câu một vòng mạng Turso). `?1` = classId ở mọi câu con. */
+  const r = db().prepare(
+    `SELECT (SELECT COUNT(*) FROM enrollments WHERE class_id = ?1) AS tung,
+            (SELECT COUNT(*) FROM enrollments WHERE class_id = ?1 AND status = 'active') AS dang,
+            (SELECT COUNT(*) FROM lenh_chuyen_lop WHERE lop_dich_id = ?1 AND trang_thai = 'cho') AS sap_nhan,
+            ${BANG_DU_LIEU.map(([bang], i) =>
+              /* VH-1b (N62): việc tay (Vận hành) gắn lớp chỉ là liên kết — không làm lớp "có dữ liệu"; xoá lớp thì gỡ liên kết. */
+              `(SELECT COUNT(*) FROM ${bang} WHERE class_id = ?1${bang === 'tasks' ? " AND kind != 'branch_ops'" : ''}) AS b${i},`).join('\n')}
+            (SELECT COUNT(*) FROM lo_trinh_tiep_theo WHERE class_id = ?1 OR lop_du_kien_id = ?1) AS lo_trinh,
+            (SELECT COUNT(*) FROM lenh_chuyen_lop WHERE lop_nguon_id = ?1 OR lop_dich_id = ?1) AS lenh,
+            (SELECT COUNT(*) FROM classes WHERE previous_class_id = ?1) AS hoc_tiep,
+            (SELECT COUNT(*) FROM mini_test m JOIN assessment_attempts a ON a.id = m.tu_attempt_id WHERE a.class_id = ?1 AND m.ty_le IS NULL) AS mini,
+            (SELECT COUNT(*) FROM lenh_chuyen_lop WHERE lop_nguon_id = ?1 AND trang_thai = 'cho') AS cho_n,
+            (SELECT MIN(tuan_bat_dau) FROM lenh_chuyen_lop WHERE lop_nguon_id = ?1 AND trang_thai = 'cho') AS cho_tu`,
+  ).get(classId) as Record<string, number> & { cho_tu: string | null };
+  const soTungGhiDanh = r.tung;
+  const soDangHoc = r.dang;
   /* PR-LUI-b: quyết định chuyển lớp CHƯA thi hành mà lớp này là lớp ĐẾN ("Sắp nhận n em") — kết thúc lớp sẽ làm chúng hỏng. */
-  const soSapNhan = dem(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`, classId);
+  const soSapNhan = r.sap_nhan;
   const gan: string[] = [];
-  for (const [bang, nhan] of BANG_DU_LIEU) {
-    /* VH-1b (N62): việc tay (Vận hành) gắn lớp chỉ là liên kết — không làm lớp "có dữ liệu"; xoá lớp thì gỡ liên kết. */
-    const n = dem(`SELECT COUNT(*) n FROM ${bang} WHERE class_id = ?${bang === 'tasks' ? " AND kind != 'branch_ops'" : ''}`, classId);
-    if (n > 0) gan.push(`${n} ${nhan}`);
-  }
-  const nLoTrinh = dem('SELECT COUNT(*) n FROM lo_trinh_tiep_theo WHERE class_id = ? OR lop_du_kien_id = ?', classId, classId);
-  if (nLoTrinh > 0) gan.push(`${nLoTrinh} lộ trình tiếp theo`);
-  const nLenh = dem('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE lop_nguon_id = ? OR lop_dich_id = ?', classId, classId);
-  if (nLenh > 0) gan.push(`${nLenh} quyết định chuyển lớp`);
-  const nHocTiep = dem('SELECT COUNT(*) n FROM classes WHERE previous_class_id = ?', classId);
-  if (nHocTiep > 0) gan.push(`${nHocTiep} lớp học tiếp từ lớp này`);
+  BANG_DU_LIEU.forEach(([, nhan], i) => { if (r[`b${i}`] > 0) gan.push(`${r[`b${i}`]} ${nhan}`); });
+  if (r.lo_trinh > 0) gan.push(`${r.lo_trinh} lộ trình tiếp theo`);
+  if (r.lenh > 0) gan.push(`${r.lenh} quyết định chuyển lớp`);
+  if (r.hoc_tiep > 0) gan.push(`${r.hoc_tiep} lớp học tiếp từ lớp này`);
   /* PR-LT2b (K2-35): việc còn treo — KHÔNG chặn Kết thúc lớp, chỉ nói ra: Mini Test của em từ lớp này chưa ghi. */
-  const nMiniTest = dem(`SELECT COUNT(*) n FROM mini_test m JOIN assessment_attempts a ON a.id = m.tu_attempt_id WHERE a.class_id = ? AND m.ty_le IS NULL`, classId);
+  const nMiniTest = r.mini;
   /* K2-35: quyết định chuyển lớp CHƯA tới tuần chuyển — nói ra cùng chỗ (chữ chuyển lớp một nguồn `CHU_CHUYEN_LOP`, tuần là mã tuần). */
-  const cho = conn.prepare(`SELECT COUNT(*) n, MIN(tuan_bat_dau) tu FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho'`).get(classId) as { n: number; tu: string | null };
+  const cho = { n: r.cho_n, tu: r.cho_tu };
   const treo = [
     nMiniTest > 0 ? `${nMiniTest} Mini Test chưa ghi` : null,
     cho.n > 0 && cho.tu ? `${CHU_CHUYEN_LOP.sapChuyen(tuanLich(cho.tu, demoToday()))} (${cho.n} em)` : null,
