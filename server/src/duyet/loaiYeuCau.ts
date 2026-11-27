@@ -25,6 +25,7 @@ import { addJourney } from '../platform/audit.ts';
 import { db, tx } from '../db.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
+import { gvcnCuaEm } from '../yThuc/access.ts';
 import { badRequest, chuTuDo, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { dongDaoDoiLoTrinh } from '../fasttrack/doiLoTrinh.ts';
@@ -556,6 +557,13 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const doi = db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
         .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
       if (doi) dongViecTheoXuLy(yc.doi_tuong_id, 'system_tu_choi', lyDo, p.userId);   // SV-YT-TVV (Q-D1 ①): chỉ khi lần xử lý thật sự vừa bị từ chối
+      /* LOI-4 (chủ SP 28/11): việc Xử lý vi phạm làm lại về NGƯỜI ĐÃ GỬI. Người gửi không phải GVCN = người được giao đợt đó (Head áp thẳng, không qua thẻ) →
+         dòng của đợt mở lại cho họ: dòng 'xong' của chính họ · hoặc dòng 'mo' chưa giao ai (em có vi phạm mới sau khi gửi — PTA rà #2300 P2-4); hạn chọn đã quá
+         → bỏ (hạn luật tính lại). GVCN tự gửi → không đổi, việc về người theo luật (GVCN). Người được giao hết hiệu lực → `docViec` tự về GVCN. */
+      const hom = demoToday();
+      if (doi && yc.nguoi_xin && yc.hoc_vien_id && yc.nguoi_xin !== gvcnCuaEm(yc.hoc_vien_id, hom).gvcn) db().prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo', phu_trach_id = ?2,
+          han_chon = CASE WHEN han_chon < ?3 THEN NULL ELSE han_chon END WHERE id = ?1 AND ((trang_thai = 'xong' AND phu_trach_id = ?2) OR (trang_thai = 'mo' AND phu_trach_id IS NULL))`)
+        .run(yc.hoc_vien_id, yc.nguoi_xin, hom);
       /* PR-Pb2-b (Q14): vi phạm chưa từng bắt buộc nay thành Cần xử lý → chốt hạn; đã chốt thì giữ. */
       if (yc.hoc_vien_id) chotHanXuLy([yc.hoc_vien_id]);
     },
@@ -569,6 +577,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'violations', dk: 'id IN (SELECT violation_id FROM measure_violations WHERE measure_id = ?)', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'viec_xu_ly', dk: 'id = (SELECT student_id FROM discipline_measures WHERE id = ?)', args: [yc.doi_tuong_id], k: 'sua' },   // LOI-4: khối giao việc mở lại cho người gửi
       ],
       /* Sau Từ chối, GVCN xác nhận / gửi lần xử lý MỚI cho chính các vi phạm đó (dòng violations không đổi) → đảo sẽ để hai lần xử lý sống, thang bậc
          tính hai lần → chặn khi vi phạm của lần này đã nằm trong lần xử lý khác tạo sau (id lớn hơn), còn hiệu lực. */

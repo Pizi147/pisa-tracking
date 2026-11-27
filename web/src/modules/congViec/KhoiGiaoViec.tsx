@@ -10,7 +10,7 @@ import { NoiTren } from '../../ui/NoiTren.tsx';
 import { CHIP_NGUOI, NUT_X_CHIP } from '../../ui/Nhan.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { locNguoiChon, shortDate, type NguoiChon } from '@shared/domain/index.ts';
+import { ROLE_LABEL, locNguoiChon, shortDate, type NguoiChon } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { lucVn } from './gioVn.ts';
@@ -37,6 +37,7 @@ export type KhoiGv = {
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
   /** BAOPH-0 (N72 ⑥): việc con (N59) gắn việc này — Vận hành không có (việc con ở `subtasks`). */
   viecCon?: { id: number; ten: string; nguoi: string | null; han: string | null; tienDo: string }[];
+  /** LOI-4: máy chủ cho tạo / tick / sửa hạn việc con. */ quanViecCon?: boolean;
   /** TUYEN-0: tuyến đi cùng khối (Tình hình · Xử lý vi phạm · Đã thực hiện). */
   tuyen?: Tuyen | null;
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
@@ -81,7 +82,7 @@ export function useGiaoViec(loai: LoaiGiao, id: number | null | undefined) {
 }
 
 /** GV-3 (PTA chốt): nhãn chip theo VAI máy chủ trả (`theoDoi[].vai`), không theo nguồn — dòng người dùng thêm cũng có nhãn. */
-const NHAN_VAI: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', cx: 'CX', admin: 'Admin', qt: 'Quản trị', gv: 'GV' };
+const NHAN_VAI: Record<string, string> = { gvcn: 'GVCN', tvv: 'TVV', gv_ghi: 'GV ghi', head: 'Head', gdcn: ROLE_LABEL.branch_director, cx: 'CX', admin: 'Admin', qt: 'Quản trị', gv: 'GV' };
 /** Trần chữ Mô tả — cùng số với máy chủ (`TRAN_MO_TA`, đếm sau khi bỏ khoảng trắng hai đầu). */
 const TRAN_MO_TA = 500;
 /** NHẸ HƠN PR-2b (chủ SP 22/11 mục 6.4): theo dõi đông → hiện chừng này tên + "+n người" bấm mở hết tại chỗ. */

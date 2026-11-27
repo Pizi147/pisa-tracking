@@ -16,7 +16,7 @@ import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/att
 import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
-import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
+import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent, xemYThucHv } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon, dongBoViecTvvLuot, chotLeadBaoPh } from './baoPhTvv.ts';
 import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, dongPhanMeeting, laNguoiGiao, moPhanMeeting, luatMeeting } from '../worklist/giaoViec.ts';
 
@@ -510,6 +510,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       }) as string[]; };
     }
     const quanLy = canManageDiscipline(p, a.student_id);
+    const xemYt = quanLy || xemYThucHv(p, a.student_id);   // LOI-4: ghi chú GVCN gửi Meeting — ai xem được Ý thức em thì xem (cùng panel Meeting / Tuyến)
     let hl: boolean | null = null;   // một câu khi có việc giao cho người xem
     const duocGiao = () => (hl ??= conHieuLuc(p.userId, a.student_id));
     out.push({
@@ -521,7 +522,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
         /* GV-2 (N58): cờ theo TỪNG việc — người được giao (còn hiệu lực) làm đúng việc của mình, không thấy nút việc khác của lượt. */
-        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, meeting: phanMt.get(r.id) ?? null, lamDuoc: !laViecTvvBaoPh(r.kind) && (quanLy || (r.phu_trach_id === p.userId && duocGiao())) };
+        const x = { ...shapeAction(r, attachments), ...(laMeetingCx(r.kind) && !xemYt ? { note: null } : {}), tvv: tvv.get(r.id) ?? null, meeting: phanMt.get(r.id) ?? null, lamDuoc: !laViecTvvBaoPh(r.kind) && (quanLy || (r.phu_trach_id === p.userId && duocGiao())) };
         if (r.kind !== 'bao_ph_tvv' || !noiDungCua) return x;
         /* PR-PHH: việc đã xong → bản chụp lúc xác nhận; dòng cũ (chưa có bản chụp) → nội dung hiện tại + cờ. */
         const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;

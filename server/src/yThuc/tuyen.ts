@@ -73,6 +73,7 @@ type BuocNoi = Omit<BuocTuyen, 'laToi' | 'coNoiDung' | 'khongQuyen' | 'noiDung'>
   /** Người ĐÃ LÀM bước (theo dõi theo tuyến, C1). */ lam: number[];
   nd: string | null;
   /** TUYEN-2 (rà #2273 P2-3): phần nội dung CHỈ người xem được Ý thức em đọc (liên hệ phụ huynh) — nối sau `nd`. */ ndEm?: string | null;
+  /** LOI-4 (chủ SP 28/11): ghi chú GVCN gửi Meeting — CHỈ người xem được Ý thức em (`xemYThucHv`, cùng panel Meeting / hồ sơ HV); không qua quyền riêng của bước. */ ndYt?: string | null;
   /** Chủ SP 27/11 (#2273 P1): có thì THAY xem Ý thức em cho `ndEm` và mở đọc cả bước — luật liên hệ PH `xemLienHePh`. */ docEm?: (p: Principal) => boolean;
   /** Đọc nội dung bằng quyền riêng của bước (ngoài quyền xem Ý thức em): người có mặt, người theo dõi tay việc đó, TVV của em… */ docRieng?: (p: Principal) => boolean;
   /** Người giữ theo VAI cả chi nhánh (mọi BPXL / CX / Head) — bước ○ của họ KHÔNG tính là có mặt (PTA rà #2231 P2-6). */ vai?: boolean;
@@ -379,10 +380,11 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
       if (laMeetingCx(x.kind) && x.status === 'done') {
         const ph = [x.ph_qh ? `${x.ph_qh.charAt(0).toUpperCase()}${x.ph_qh.slice(1)}` : null, x.ph_ten, x.ph_sdt].filter(Boolean).join(' · ');
         const b = t.buoc.at(-1)!;
-        /* Rà #2273 P2-3: "Nội dung gửi" theo quyền đọc nội dung bước như cũ; dòng Phụ huynh (`ndEm`) CHỈ người xem được Ý thức em. */
-        b.nd = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
+        /* LOI-4 (chủ SP 28/11): "Nội dung gửi" (ghi chú GVCN) — ai xem được Ý thức em thì xem (`ndYt`); dòng Phụ huynh (`ndEm`) theo `xemLienHePh` (dưới). */
+        b.nd = null;
+        b.ndYt = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
         b.ndEm = ph ? `Phụ huynh: ${ph}` : null;
-        /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc cả bước (ghi chú + PH) — cùng luật `xemMeeting` boiCanh. */
+        /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc PH của bước (ghi chú GVCN thì không — `ndYt`) — cùng luật `xemMeeting` boiCanh. */
         const kp2 = [`${khoa}:xep_lich`, `${khoa}:ket_qua`];
         b.docEm = (p) => xemLienHePh(p, { id: t.em!.id, tvv: t.tvv, cn: t.cn },
           t.buoc.some((y) => kp2.includes(y.khoa) && y.trangThai === 'dang' && y.ids.includes(p.userId)));
@@ -390,8 +392,9 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
       const baoPh = () => {
-        /* C8: việc "Báo PH Meeting" đã gộp vào Trao đổi gia đình (`system_gop_trao_doi`) không còn là bước. */
-        if (bp && bp.bo === 'system_gop_trao_doi') return;
+        /* C8: việc "Báo PH Meeting" đã gộp vào Trao đổi gia đình (`system_gop_trao_doi`) chưa ai ghi → không còn là bước; đã có lần ghi (vd "Chưa liên hệ được" —
+           LOI-4, PTA rà #2300 P2-3) → giữ bước kèm lần ghi, dòng cuối "Gộp vào Trao đổi gia đình". */
+        if (bp && bp.bo === 'system_gop_trao_doi' && !((bp.lan ?? []) as any[]).some((l) => l?.id != null)) return;
         if (bp) t.buoc.push(...buocBaoPh(t, bp, { khoa: `${khoa}:bp`, ten: 'Báo PH', cha: khoa, tvvTen }));
         else if (x.status === 'pending' && coBaoPhSau(x, luot)) t.buoc.push(baoPhCho(t, { khoa: `${khoa}:bp`, ten: 'Báo PH', sau: 'chờ GVCN xác nhận', cha: khoa, tvvTen }));
       };
@@ -622,12 +625,12 @@ function xuat(p: Principal, t: TuyenNoi): Tuyen {
   const xemEm = t.em ? xemYThucHv(p, t.em.id) : false;
   const hd = conVaiO(p, t.cn);
   const buocRa: BuocTuyen[] = t.buoc.map((b) => {
-    const co = !!b.nd?.trim() || !!b.ndEm;
+    const co = !!b.nd?.trim() || !!b.ndEm || !!b.ndYt;
     /* `docEm` (bước GVCN xác nhận Meeting): luật liên hệ PH `xemLienHePh` quyết cả dòng PH lẫn đọc cả bước; bước khác: `ndEm` theo xem Ý thức em. */
     const em = b.docEm ? b.docEm(p) : xemEm;
-    const nd = [b.nd?.trim() ? b.nd : null, em ? b.ndEm : null].filter(Boolean).join('\n');
+    const nd = [b.nd?.trim() ? b.nd : null, xemEm ? b.ndYt : null, em ? b.ndEm : null].filter(Boolean).join('\n');
     const duoc = !!nd && (xemEm || em || (hd && (b.docRieng ? b.docRieng(p) : b.ids.includes(p.userId))));
-    const { ids: _i, lam: _l, nd: _n, ndEm: _e, docEm: _m, docRieng: _d, vai: _v, luc: _c, ...goc } = b;
+    const { ids: _i, lam: _l, nd: _n, ndEm: _e, ndYt: _y, docEm: _m, docRieng: _d, vai: _v, luc: _c, ...goc } = b;
     return { ...goc, laToi: b.ids.includes(p.userId) && (b.trangThai === 'dang' || b.trangThai === 'tam_dung' || b.trangThai === 'cho' || b.lam.includes(p.userId)),
       coNoiDung: duoc, khongQuyen: co && !duoc, ...(duoc ? { noiDung: nd! } : {}) };
   });

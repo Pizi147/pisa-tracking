@@ -17,7 +17,7 @@ const XONG = (x: ViecCon) => x.tienDo === 'done' || x.tienDo === 'stopped';
 /**
  * VIỆC CON (TUYEN-1, N72 ⑥ — mockup v27 `.vcon`, như việc Vận hành N59): một tầng, tên · người · hạn, tick = xong; không chặn việc cha, không vào số việc của việc cha.
  * Dữ liệu đi cùng khối giao việc (`GET /giao-viec/:loai/:id` → `viecCon`) — không request riêng. Tạo = `POST /mgmt-tasks` (`chaLoai`, `chaId`, BAOPH-0);
- * PTA chốt (theo mockup): NGƯỜI ĐANG GIỮ việc cha (người phụ trách của khối) tạo / tick / sửa hạn việc con như Head · Quản trị · CX (`nav.vanHanh`); người được giao
+ * PTA chốt (theo mockup): NGƯỜI ĐANG GIỮ việc cha (người phụ trách của khối) tạo / tick / sửa hạn việc con như Head · Quản trị · CX CHI NHÁNH việc (cờ `quanViecCon` của máy chủ — LOI-4); người được giao
  * việc con tick được việc của mình; người theo dõi chỉ xem. Máy chủ kiểm lại (`giuViecCha`, mgmttasks.ts). Hạn = ô bấm (sửa tại chỗ, `PATCH /mgmt-tasks/:id`).
  */
 export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
@@ -28,8 +28,8 @@ export function MucViecCon({ g, onDoi }: { g: KhoiGv; onDoi: () => void }) {
   const [them, setThem] = useState(false);
   const [dang, setDang] = useState<number | null>(null);
   const ds = g.viecCon ?? [];
-  const giu = g.phuTrach.some((x) => x.id === session?.user?.id);
-  const quan = (!!session?.nav?.vanHanh || giu) && g.mo;
+  /* LOI-4: quyền quản việc con lấy từ máy chủ (`quanViecCon` — cùng điều kiện tạo việc con), không đoán theo `nav.vanHanh` (lệch chi nhánh). */
+  const quan = !!g.quanViecCon;
   const taoDuoc = quan;
   const [suaHan, setSuaHan] = useState<{ id: number; han: string } | null>(null);
   if (!ds.length && !taoDuoc) return null;

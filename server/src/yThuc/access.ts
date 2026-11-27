@@ -62,9 +62,10 @@ export function requireViewStudent(p: Principal, studentId: number) {
 export const xemYThucHv = (p: Principal, studentId: number): boolean => can(boVaiBpxl(p), PERMISSIONS.STUDENT_VIEW, studentCtx(studentId));
 
 /**
- * Chủ SP 27/11 (rà #2273 P1): MỘT luật liên hệ phụ huynh (tên · quan hệ · SĐT + ghi chú GVCN) của Meeting CX/GĐCN — panel Meeting (`xemMeeting` boiCanh) VÀ bước
+ * Chủ SP 27/11 (rà #2273 P1): MỘT luật liên hệ phụ huynh (tên · quan hệ · SĐT) của Meeting CX/GĐCN — panel Meeting (`xemMeeting` boiCanh) VÀ bước
  * GVCN xác nhận của Tuyến: người xử lý Ý thức em (GVCN, Head, QT) · Head / CX / QT chi nhánh em · TVV của em · người ĐANG GIỮ một phần Meeting còn mở (`giuPhanMo`
  * — BPXL giữ Xếp lịch họp, CX giữ Kết quả). BPXL khác / theo dõi / đã giao đi / phần đã xong · GV bộ môn chỉ xem → không.
+ * Ghi chú GVCN gửi Meeting KHÔNG theo luật này: ai xem được Ý thức em thì xem (`xemYThucHv` — LOI-4, chủ SP 28/11).
  */
 export const xemLienHePh = (p: Principal, em: { id: number; tvv: number | null; cn: number | null }, giuPhanMo: boolean): boolean =>
   giuPhanMo || canManageDiscipline(p, em.id) || laTvvCuaEm(p, { consultant_user_id: em.tvv, student_id: em.id, em_branch: em.cn })

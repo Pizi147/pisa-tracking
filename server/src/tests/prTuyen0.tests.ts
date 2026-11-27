@@ -182,12 +182,12 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(ten(b) === 'Meeting CX/GĐCN (sau Mock) · HV:xong → Xếp lịch họp:dang → Báo PH:dang → Kết quả meeting:dang', `sau xác nhận: ${ten(b)}`);
     assert(b.buoc.at(-1).ten === 'Kết quả meeting' && b.soDang === 3 && b.dangO?.ten === '3 bước cùng lúc', `Kết quả cuối · đang ở: ${JSON.stringify(b.dangO)}`);
     assert(soViec(tvv) >= viecTvv, 'TVV: việc Báo PH thật');
-    /* BPXL (giữ Xếp lịch họp): thấy khung; đọc được phần mình; KHÔNG đọc nội dung Báo PH. Chủ SP 27/11 (#2273 P1): đang giữ Xếp lịch họp còn mở → ĐỌC bước GVCN
-       xác nhận (ghi chú + PH) — trước TUYEN-2: không (C3). */
+    /* BPXL (giữ Xếp lịch họp): thấy khung; đọc được phần mình; KHÔNG đọc nội dung Báo PH. Chủ SP 27/11 (#2273 P1): đang giữ Xếp lịch họp còn mở → đọc PH của bước GVCN;
+       LOI-4 (chủ SP 28/11): ghi chú GVCN gửi Meeting CHỈ người xem được Ý thức em — BPXL không (lượt này không có PH → bước không nội dung). */
     const baoPhId = b.buoc[2].viec.id;
     bp.ghiKetQuaBaoPh(tvv, { viecIds: [baoPhId], ketQua: 'da_bao', ghiChu: 'Đã báo mẹ em lịch họp' });
     const c = tuyen(bpxl, 'phoi_hop', att);
-    assert(c.buoc[0].coNoiDung && c.buoc[0].noiDung?.includes('Nội dung gửi'), `BPXL giữ Xếp lịch: đọc bước GVCN: ${JSON.stringify(c.buoc[0])}`);
+    assert(!c.buoc[0].noiDung?.includes('Nội dung gửi') && c.buoc[0].khongQuyen, `BPXL giữ Xếp lịch: đọc ghi chú GVCN: ${JSON.stringify(c.buoc[0])}`);
     assert(c.buoc[2].trangThai === 'xong' && c.buoc[2].khongQuyen && !('noiDung' in c.buoc[2]) && !c.buoc[2].coNoiDung, `BPXL: Báo PH không noiDung: ${JSON.stringify(c.buoc[2])}`);
     assert(c.buoc[1].laToi && c.dangO?.ten === 'Xếp lịch họp', `BPXL: Xếp lịch là của mình: ${JSON.stringify(c.dangO)}`);
     /* BPXL ngoài tuyến (lượt khác) → 403. */
@@ -368,16 +368,17 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     const a = tuyen(gvcn, 'phoi_hop', att);
     const xn = a.buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN'));
     assert(xn?.noiDung?.includes('Nội dung gửi: Cần họp GĐCN') && xn.noiDung.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà · 0912345678'), `GVCN: ${JSON.stringify(xn)}`);
-    /* Chủ SP 27/11 (P1 "Có, khi đang giữ việc"): BPXL ĐANG GIỮ phần Xếp lịch họp còn mở thấy PH + ghi chú (tuyến + boiCanh panel); BPXL khác / đã giao đi → không. */
+    /* Chủ SP 27/11 (P1 "Có, khi đang giữ việc"): BPXL ĐANG GIỮ phần Xếp lịch họp còn mở thấy PH (tuyến + boiCanh panel); BPXL khác / đã giao đi → không.
+       LOI-4 (chủ SP 28/11): ghi chú GVCN — chỉ người xem được Ý thức em → BPXL không. */
     const xl = mot(`SELECT id FROM meeting_phan WHERE phoi_hop_id = ? AND phan = 'xep_lich'`, ids[0]).id as number;
     const bpxl2 = taiKhoan('bpxl2', 'scheduler');
     xoaNho(); gv.doiPhuTrach(ql, 'meeting', xl, { userId: bpxl.userId, phuTrachCu: null });
     /* Không có mặt trong tuyến (BPXL khác / đã giao đi) → 404 như không có tuyến: cũng là "không PH". */
     const buocXn = (p: any) => { try { return tuyen(p, 'phoi_hop', att).buoc.find((x: any) => x.ten.startsWith('Meeting CX/GĐCN')); } catch (e: any) { if (e?.status === 404) return null; throw e; } };
     const c = buocXn(bpxl);
-    assert(c?.noiDung?.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà') && c.noiDung.includes('Nội dung gửi'), `BPXL giữ việc: tuyến có PH: ${JSON.stringify(c)}`);
+    assert(c?.noiDung?.includes('Phụ huynh: Mẹ · Nguyễn Thu Hà') && !c.noiDung.includes('Nội dung gửi'), `BPXL giữ việc: tuyến có PH, không ghi chú: ${JSON.stringify(c)}`);
     xoaNho(); const bc = gv.xemMeeting(bpxl, ids[0]).boiCanh;
-    assert(bc.phuHuynh?.sdt === '0912345678' && bc.ghiChu, `BPXL giữ việc: boiCanh PH: ${JSON.stringify(bc)}`);
+    assert(bc.phuHuynh?.sdt === '0912345678' && bc.ghiChu === null, `BPXL giữ việc: boiCanh PH, không ghi chú: ${JSON.stringify(bc)}`);
     const c2 = buocXn(bpxl2);
     assert(!c2?.noiDung?.includes('Phụ huynh'), `BPXL khác: không PH trong tuyến: ${JSON.stringify(c2)}`);
     xoaNho(); assert(ma(() => { const b2 = gv.xemMeeting(bpxl2, ids[0]).boiCanh; if (b2.phuHuynh || b2.ghiChu) throw Object.assign(new Error('lộ'), { status: 999 }); }) !== 999, 'BPXL khác: boiCanh không PH');
