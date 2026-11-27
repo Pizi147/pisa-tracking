@@ -3,6 +3,9 @@
  * Đạt = Overall MT0 ≥ ngưỡng (BE 4.0, ELE 4.5); Không đạt → Trung tâm (mỗi kỹ năng một Case + PA Tutor 10 buổi, Người dạy GV cũ) hoặc Học viên
  * (lý do bắt buộc, Case không PA); Lưu một lần trong một tx, theo lô.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrKvTests(t: YThucTestKit) {
@@ -94,6 +97,12 @@ export async function runPrKvTests(t: YThucTestKit) {
 
   /* KY-VONG-MT0 (chủ SP 14/11): em đã sang FT → việc theo lớp FT em đang học (bảng Kết quả đầu ra); em MT0 đạt mốc tự Đạt, không đếm. */
   const maFt = get('SELECT code FROM classes WHERE id = ?', ft).code as string;
+  /* 28/11: việc Kỳ vọng không nằm nhóm Chốt lộ trình, không mở PanelChotLoTrinh (đi theo href máy chủ). */
+  check('KV2b · web: Kỳ vọng nhóm riêng, không làm tại chỗ bằng panel Chốt lộ trình', () => {
+    const doc = (f: string) => fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../../..', 'web/src/modules/congViec', f), 'utf8');
+    assert(/case 'ky_vong_dau_ra': return \['ky-vong'/.test(doc('DanhSachViec.tsx')) && !/case 'chot_len_ft': case 'ky_vong_dau_ra': return \['chot-lo-trinh'/.test(doc('DanhSachViec.tsx')), 'nhóm Kỳ vọng chưa tách');
+    assert(!/case 'chot_len_ft': case 'ky_vong_dau_ra'/.test(doc('PanelViec.tsx')) && !/ky_vong_dau_ra\W+return it\.classId/.test(doc('lamTaiCho.ts')) && !/case 'chot_len_ft': case 'ky_vong_dau_ra': return it\.classId/.test(doc('lamTaiCho.ts')), 'Kỳ vọng còn mở PanelChotLoTrinh');
+  });
   check('KV2 · việc QL: chưa em nào đủ MT0 → không dòng; đủ MT0 → MỘT dòng mỗi lớp FT "Kỳ vọng · lớp · n em" (N22 ② đổi tên), không dòng mỗi em; em tự Đạt không đếm; chỉ số = em chưa đánh dấu; GVCN không thấy', () => {
     lenFt(ele, [A, B, C], ft, true);
     assert(!viecKv(P.mbManager).some((i) => i.classId === ft), 'chưa có MT0 mà đã có việc');
