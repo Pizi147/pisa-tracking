@@ -325,16 +325,13 @@ export function LichTestTab() {
   const nutBaCham = mucBaCham.length > 0 && <MenuDong muc={mucBaCham} nhan={t('Thao tác khác · Test')} lopNut={NUT_BA_CHAM} />;
   /* LOC-TVV: đổi chi nhánh thì bỏ TVV đã chọn (danh sách TVV theo chi nhánh). */
   const locChiNhanh = <BranchFilter luon={bpxl} branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : bpxl ? 'all' : null, branchId: null, ...(data.tvv?.ds ? { tvv: null } : {}) })} />;
-  /* LOC-TVV: Head / Quản trị / CX — ô chọn TVV của chi nhánh đang xem (cùng ô `OChiNhanh`); vai TVV — chip "Em tôi phụ trách" (mặc định bật, bỏ được). */
-  const locTvv = data.tvv && (data.tvv.ds
-    ? <OChiNhanh nhan={t('TVV')} branches={data.tvv.ds.map((x) => ({ id: x.id, name: x.ten }))} branchId={data.tvv.dang}
-        hetHang={dienThoai} onBranch={(id) => datThamSo({ tvv: id ? String(id) : null })} />
-    : (
-      <button type="button" className="nut-loc max-sm:min-h-[44px]" aria-pressed={data.tvv.dang !== null} data-hd="lich-test-tvv"
-        onClick={() => datThamSo({ tvv: data.tvv!.dang !== null ? 'all' : null })}>
-        {t('Em tôi phụ trách')}
-      </button>
-    ));
+  /* LOC-TVV (chủ SP 28/11 "TVV (tôi) và tất cả HV, mặc định là tôi"): MỘT ô chọn "TVV" cho mọi vai (`OChiNhanh`) — Head / Quản trị / CX: các TVV của chi nhánh
+     đang xem; vai TVV: chính mình (mặc định) · "Tất cả HV" (`tvv=all`; Head không lọc là mặc định nên bỏ tham số). */
+  const locTvv = data.tvv && (
+    <OChiNhanh nhan={t('TVV')} nhanTatCa={t('Tất cả HV')} hetHang={dienThoai} branchId={data.tvv.dang}
+      branches={data.tvv.ds ? data.tvv.ds.map((x) => ({ id: x.id, name: x.ten })) : [{ id: nguoiId ?? 0, name: session?.user?.fullName ?? t('TVV') }]}
+      onBranch={(id) => datThamSo({ tvv: id ? String(id) : data.tvv!.ds ? null : 'all' })} />
+  );
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp); LOC-TVV: đang lọc theo TVV (cả mặc định của vai TVV — lưới ẩn em khác). */
   const soLoc = (branchId && branchId !== cnGan ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0) + (data.tvv?.dang ? 1 : 0);
   const coGiTrongLoc = branchCount > 1 || bpxl || !!data.coPhamViRong || !!data.tvv;
@@ -413,7 +410,7 @@ export function LichTestTab() {
             <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
               onBam={bamSo} dangTaiNo={!quaHan && !oQuaHan.error} thuLaiNo={!quaHan && oQuaHan.error ? oQuaHan.reload : undefined} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:')
                 /* LOC-TVV: đang lọc theo TVV thì số là của em TVV đó, không phải cả chi nhánh. */
-                : data.tvv?.dang ? (data.tvv.dang === nguoiId ? t('Em tôi phụ trách:') : t('Em của TVV:')) : t('Cả chi nhánh:')} />
+                : data.tvv?.dang ? t('Em của TVV:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
             <KhoiNo no={noTab} gvLop={data.gvLop} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}

@@ -954,7 +954,7 @@ export function lichTest(
     nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId, chiEm: emTvv }),
     sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today).filter((d) => !emTvv || emTvv.has(d.studentId)),
     gvLop: gvCuaLop([...new Set([...lop, ...no.dong].map((x) => x.classId))], today),
-    /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvv`); vai TVV có nút "Em tôi phụ trách" (không cần danh sách). */
+    /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvv`); vai TVV: web dựng ô chọn "TVV" chính mình · Tất cả HV (không cần danh sách). */
     tvv: chonTvvKhac(p) ? { dang: tvv, ds: dsTvv(null, branchId ?? null).map(({ id, ten }) => ({ id, ten })) }
       : laVaiTvv(p) ? { dang: tvv, ds: null } : null,
   };
