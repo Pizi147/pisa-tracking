@@ -16,7 +16,8 @@ Chủ SP: giữa các hàng cần "cái gì đó lộ rõ hơn để phân biệ
 ## Thiết kế
 - Mỗi lớp = một khối có viền + bo góc; khoảng hở ~16–20 px giữa hai khối.
 - Hàng tên lớp = đầu khối: nền sáng hơn rõ các hàng em; vạch màu bên trái chạy dọc SUỐT khối (hiện chỉ hàng lớp có).
-- Hàng "Còn chờ… · GV chấm S" + tiêu đề cột: thuộc phần đầu khối, chữ nhỏ / nhạt hơn, không ngang hàng lớp.
+- MÀU (chủ SP 28/11 bổ sung: "hàng lớp và hàng thông tin đang hơi giống nhau"): ba tầng nền khác nhau rõ — hàng lớp (sáng nhất, chữ đậm) · tiêu đề cột (dải nền riêng, chữ nhỏ nhạt) · hàng em (nền tối nhất). Không ai được nhìn nhầm hàng lớp với hàng tiêu đề / hàng "Còn chờ".
+- THỨ TỰ trong khối (chủ SP 28/11): hàng lớp → tiêu đề cột (ngay dưới hàng lớp) → các hàng em → hàng "Còn chờ… · GV chấm S" ở CUỐI khối, gọn một dòng (chữ nhỏ; ô GV chấm S nhỏ lại, vẫn đủ 44 px chạm ở 375).
 - Hàng em: giữ nguyên (ô nhập, Kết quả, SOS).
 - Dùng token màu sẵn có trong `DESIGN.md` / `index.css`; không màu mới nếu có token hợp; trạng thái không chỉ bằng màu (vạch là ranh giới, không mang nghĩa).
 
