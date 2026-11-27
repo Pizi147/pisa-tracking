@@ -153,7 +153,8 @@ const loaiNhom = (it: WorkItem): [string, string, number] => {
     case 'xac_nhan_pa': case 'do_plan': return ['xn-pa', t('Xác nhận PA'), 3];
     case 'mini_test': return ['mini-test', t('Ghi Mini Test'), 4];
     case 'ghi_ket_qua_pa': return ['kq-pa', t('Ghi kết quả PA'), 5];
-    case 'chot_len_ft': case 'ky_vong_dau_ra': return ['chot-lo-trinh', t('Chốt lộ trình'), 6];
+    case 'chot_len_ft': return ['chot-lo-trinh', t('Chốt lộ trình'), 6];
+    case 'ky_vong_dau_ra': return ['ky-vong', t('Kỳ vọng'), 6.5];   // 28/11: việc riêng (N22 ②) — không gộp Chốt lộ trình, không mở panel Chốt lộ trình
     case 'xet_lai_lo_trinh': return ['xet-lai', t('Xét lại lộ trình'), 7];
     case 'yt_xu_ly': return ['xu-ly', t('Xử lý vi phạm'), 8];
     case 'yt_thuc_hien': return ['da-lam', t('Đã thực hiện'), 9];

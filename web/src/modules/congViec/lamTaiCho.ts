@@ -16,7 +16,7 @@ export function lamTaiCho(it: WorkItem): boolean {
   if (moCaDong(it) || it.key === KHOA_CHAM_SPEAKING) return true;   // OV-14c: Chấm Speaking — panel hàng đợi từng em
   switch (it.group) {
     case 'cause': case 'ghi_nhan_xet': case 'xem_nx_s': return it.caseId !== null;
-    case 'xet_lai_lo_trinh': case 'chot_len_ft': case 'ky_vong_dau_ra': return it.classId !== null;   // CHOT-LO-TRINH-PANEL (v25): panel Chốt lộ trình tại chỗ
+    case 'xet_lai_lo_trinh': case 'chot_len_ft': return it.classId !== null;   // CHOT-LO-TRINH-PANEL (v25): panel Chốt lộ trình tại chỗ. Kỳ vọng KHÔNG ở đây: đi theo `href` máy chủ (Kết quả đầu ra lớp FT / Cuối khoá)
     case 'xac_nhan_pa': case 'ghi_ket_qua_pa': case 'mini_test': return it.caseId !== null && !!it.paId;
     case 'no_plan': return it.caseId !== null;
     case 'score': return (!!it.luot || !!it.periodId) && it.classId !== null;

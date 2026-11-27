@@ -237,8 +237,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     /* P9a: panel Xét lại tại chỗ — thanh Việc cần làm ở hồ sơ lớp · R3-T2 (rà 24/11): cả Công việc (trước "Xét lại ›" mở trang lớp, ~125 câu, mất danh sách). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;
-    /* CHOT-LO-TRINH-PANEL (v25, chủ SP duyệt 25/11): Chốt lộ trình + Kỳ vọng FT làm tại chỗ ở khe 720 — trước "Cuối khoá ›" mở trang. */
-    case 'chot_len_ft': case 'ky_vong_dau_ra':
+    /* CHOT-LO-TRINH-PANEL (v25, chủ SP duyệt 25/11): Chốt lộ trình làm tại chỗ ở khe 720 — trước "Cuối khoá ›" mở trang. Kỳ vọng: không panel này (28/11). */
+    case 'chot_len_ft':
       return <PanelChotLoTrinh key={it.key} classId={it.classId!} onDong={onDong} onDone={onTaiLai} />;
     case 'no_owner':
       return it.thieuNguoi ? <PanelPhanCongMon key={it.key} it={it} onDong={onDong} onDaLam={doi} /> : <PanelChonPhuTrach key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
