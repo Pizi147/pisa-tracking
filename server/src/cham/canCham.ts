@@ -36,10 +36,22 @@ import { dsTvv } from '../students/students.ts';
  */
 export const chonTvvKhac = (p: Principal): boolean => laHeadHoacQt(p) || coVaiCx(p);
 const laVaiTvv = (p: Principal): boolean => p.roleKeys.includes('consultant');
+/**
+ * LOC-TVV-P2 (PTA rà #2320): tên TVV nếu `id` là TVV đang hoạt động ở một chi nhánh trong phạm vi người xem (vai toàn hệ thống: mọi chi nhánh) — cùng
+ * điều kiện `TVV_SQL` của `dsTvv`. Một câu. Không thuộc → null: nơi gọi bỏ tham số (không lọc theo người lạ, không ghi tên họ vào tệp xuất).
+ */
+export function tenTvvTrongPhamVi(p: Principal, id: number): string | null {
+  const cns = p.grants.some((g) => g.branchId == null) ? null : [...new Set(p.grants.map((g) => g.branchId))];
+  const r = db().prepare(`SELECT u.full_name FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant'
+     WHERE u.id = ? AND u.status = 'active' AND u.approval_state = 'approved'${cns ? ' AND ur.branch_id IN (SELECT value FROM json_each(?))' : ''} LIMIT 1`)
+    .get(id, ...(cns ? [JSON.stringify(cns)] : [])) as { full_name: string } | undefined;
+  return r?.full_name ?? null;
+}
 export function tvvLoc(p: Principal, raw: string | null | undefined): number | null {
   if (raw === 'all') return null;
   const id = raw ? Number(raw) : NaN;
-  if (Number.isInteger(id) && id > 0) return chonTvvKhac(p) ? id : laVaiTvv(p) ? p.userId : null;
+  if (Number.isInteger(id) && id > 0) return chonTvvKhac(p) ? (tenTvvTrongPhamVi(p, id) != null ? id : null) : laVaiTvv(p) ? p.userId : null;
   return laVaiTvv(p) && !chonTvvKhac(p) ? p.userId : null;
 }
 /** Em của một TVV — MỘT câu; nơi gọi lọc danh sách đã nạp (khối Quá hạn, S Ex, nhắc MT cũ, lưới lớp, ô quá hạn). */

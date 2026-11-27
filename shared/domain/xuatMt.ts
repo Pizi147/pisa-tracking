@@ -316,8 +316,9 @@ export function bangBoLoc(o: { khung: KhungXuat; nguoiXuat: string; luc: string;
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const nhomTen = (ten: string[], danhTu: string) => (ten.length > 3 ? `${ten.length}-${danhTu}` : ten.map(slug).join('-'));
 
-export function tenTepXuatMt(o: { khung: KhungXuat; chiNhanhTen: string[]; lopMa: string[]; thoiGian: ThoiGianXuat }): string {
-  const pv = [o.chiNhanhTen.length && nhomTen(o.chiNhanhTen, 'chi-nhanh'), o.lopMa.length && nhomTen(o.lopMa, 'lop')].filter(Boolean).join('_') || 'tat-ca';
+export function tenTepXuatMt(o: { khung: KhungXuat; chiNhanhTen: string[]; lopMa: string[]; thoiGian: ThoiGianXuat; tvvTen?: string | null }): string {
+  const pv = [o.chiNhanhTen.length && nhomTen(o.chiNhanhTen, 'chi-nhanh'), o.lopMa.length && nhomTen(o.lopMa, 'lop'), o.tvvTen && `TVV-${slug(o.tvvTen)}`]
+    .filter(Boolean).join('_') || 'tat-ca';
   const t = o.thoiGian;
   let kh: string;
   if (t.kieu === 'tuan') { const a = tuanLich(t.tu).replace(' ', ''), b = tuanLich(t.den).replace(' ', ''); kh = a === b ? a : `${a}-${b}`; }

@@ -55,6 +55,23 @@ export async function runPrLocTvvTests(t: any) {
     assert(typeof boLoc('ft', 'abc') === 'string', 'tvv sai phải báo lỗi');
   });
 
+  check('LOC-TVV-7 · (P2 rà #2320) tvv chỉ nhận TVV trong phạm vi người xem: TVV chi nhánh khác / người không phải TVV → bỏ qua ở Lịch Test và Xuất (tệp, "Bộ lọc đã dùng" không có tên họ); tên tệp ghi TVV', () => {
+    const cnQl = [...new Set(ql.grants.map((g: any) => g.branchId))];
+    const ngoai = one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant' JOIN users u ON u.id = ur.user_id AND u.status = 'active'
+        WHERE ur.status = 'active' AND ur.branch_id IS NOT NULL AND ur.branch_id NOT IN (SELECT value FROM json_each(?))
+          AND ur.user_id NOT IN (SELECT user_id FROM user_roles x JOIN roles y ON y.id = x.role_id AND y.key = 'consultant' WHERE x.status = 'active' AND (x.branch_id IS NULL OR x.branch_id IN (SELECT value FROM json_each(?))))
+        ORDER BY ur.user_id LIMIT 1`, JSON.stringify(cnQl), JSON.stringify(cnQl))?.id as number | undefined;
+    assert(ngoai, 'seed: cần một TVV chỉ ở chi nhánh ngoài phạm vi QL');
+    assert(cham.tvvLoc(ql, String(ngoai)) === null, 'Lịch Test nhận TVV ngoài phạm vi');
+    assert(cham.tvvLoc(ql, String(gv.userId)) === null, 'Lịch Test nhận người không phải TVV');
+    assert(cham.tvvLoc(P.admin, String(ngoai)) === ngoai, 'Quản trị (toàn hệ thống) phải chọn được mọi TVV');
+    const boLoc = (tvv?: number) => sd.docBoLocXuatMt({ khung: 'ft', tg: 'dot', dot: sd.DOT_XUAT_FT.join(','), ...(tvv ? { tvv: String(tvv) } : {}) });
+    const moi = xm.duLieuXuatMt(ql, boLoc()), la = xm.duLieuXuatMt(ql, boLoc(ngoai));
+    assert(la.dem.luot === moi.dem.luot && !la.moTa.some((r: string[]) => r[0] === 'TVV') && la.tenTep === moi.tenTep, 'Xuất: TVV ngoài phạm vi vẫn lọc / ghi tên');
+    const coA = xm.duLieuXuatMt(ql, boLoc(A.id));
+    assert(coA.tenTep.includes('_TVV-') && coA.tenTep !== moi.tenTep, `tên tệp thiếu TVV: ${coA.tenTep}`);
+  });
+
   const may = createApp().listen(0);
   const cong = (may.address() as any).port as number;
   const phien = new Map<number, string>();
