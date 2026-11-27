@@ -93,6 +93,7 @@ export const HL_NHAN_TIN = (u: string, cn: string) => `(${HOAT_DONG_O(u, cn)} OR
  */
 export const GVCN_NGUON_NT = (u: string, viec: string) => `EXISTS (SELECT 1 FROM viec_nhan_tin_dong d_ JOIN lenh_chuyen_lop l_ ON l_.id = d_.lenh_id
   JOIN teacher_assignments ta_ ON ta_.class_id = l_.lop_nguon_id WHERE d_.viec_id = ${viec} AND COALESCE(d_.mau, '') != 'x' AND ta_.user_id = ${u} AND ta_.is_core = 1 AND ta_.status = 'active'
+  AND ta_.effective_from <= '${demoToday()}' AND (ta_.effective_to IS NULL OR ta_.effective_to >= '${demoToday()}')
   AND ${HOAT_DONG_O(u, '(SELECT c_.branch_id FROM classes c_ WHERE c_.id = l_.lop_nguon_id)')})`;
 /** Câu SQL "còn hoạt động + còn vai ở chi nhánh của việc" theo loại. `viec` (id việc) có → người THEO DÕI việc Nhận thông tin gồm cả GVCN lớp nguồn (`GVCN_NGUON_NT`). */
 const HD_VIEC = (loai: LoaiTheoDoi, u: string, cn: string, viec?: string) => (loai === 'nhan_tin'
@@ -117,10 +118,10 @@ type Viec = {
 const ten = (r: any) => r.full_name as string;
 /** GV-3 (PTA chốt): nhãn vai của người theo dõi — vai cao nhất LIÊN QUAN tới việc: Head · CX (vai ở chi nhánh việc / toàn hệ thống) > GVCN · TVV của em > GV ghi vi phạm > vai TVV
  * > Admin · Quản trị > GV. Không vai nào → null (web không gắn nhãn). `t.vai` = các khoá vai (group_concat) đọc cùng câu theo dõi. */
-export type VaiTheoDoi = 'head' | 'cx' | 'gvcn' | 'tvv' | 'gv_ghi' | 'admin' | 'qt' | 'gv';
+export type VaiTheoDoi = 'head' | 'gdcn' | 'cx' | 'gvcn' | 'tvv' | 'gv_ghi' | 'admin' | 'qt' | 'gv';
 const vaiTheoDoi = (v: Viec, t: { user_id: number; nguon: string; vai: string | null }): VaiTheoDoi | null => {
   const k = new Set((t.vai ?? '').split(',').filter(Boolean));
-  return k.has('manager') ? 'head' : k.has('cx') ? 'cx' : t.user_id === v.gvcn ? 'gvcn' : t.user_id === v.tvv ? 'tvv' : t.nguon === 'gv_ghi' ? 'gv_ghi' : k.has('consultant') ? 'tvv'
+  return k.has('manager') ? 'head' : k.has(VAI_GDCN) ? 'gdcn' : k.has('cx') ? 'cx' : t.user_id === v.gvcn ? 'gvcn' : t.user_id === v.tvv ? 'tvv' : t.nguon === 'gv_ghi' ? 'gv_ghi' : k.has('consultant') ? 'tvv'
     : k.has('office_admin') ? 'admin' : k.has('system_admin') ? 'qt' : k.has('teacher') ? 'gv' : null;
 };
 /** Head chi nhánh (chi nhánh NULL → Head toàn hệ thống); không có ai → Quản trị. */

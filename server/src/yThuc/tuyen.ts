@@ -384,7 +384,7 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
         b.nd = null;
         b.ndYt = x.note?.trim() ? `Nội dung gửi: ${x.note.trim()}` : null;
         b.ndEm = ph ? `Phụ huynh: ${ph}` : null;
-        /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc cả bước (ghi chú + PH) — cùng luật `xemMeeting` boiCanh. */
+        /* Chủ SP 27/11 (P1): người đang giữ phần Xếp lịch họp CÒN MỞ của em (BPXL) đọc PH của bước (ghi chú GVCN thì không — `ndYt`) — cùng luật `xemMeeting` boiCanh. */
         const kp2 = [`${khoa}:xep_lich`, `${khoa}:ket_qua`];
         b.docEm = (p) => xemLienHePh(p, { id: t.em!.id, tvv: t.tvv, cn: t.cn },
           t.buoc.some((y) => kp2.includes(y.khoa) && y.trangThai === 'dang' && y.ids.includes(p.userId)));
@@ -392,8 +392,9 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
       const bp = ds(x.bp)[0];
       const tvvTen = r0.tvv_ten ?? null;
       const baoPh = () => {
-        /* C8: việc "Báo PH Meeting" đã gộp vào Trao đổi gia đình (`system_gop_trao_doi`) không còn là bước. */
-        if (bp && bp.bo === 'system_gop_trao_doi') return;
+        /* C8: việc "Báo PH Meeting" đã gộp vào Trao đổi gia đình (`system_gop_trao_doi`) chưa ai ghi → không còn là bước; đã có lần ghi (vd "Chưa liên hệ được" —
+           LOI-4, PTA rà #2300 P2-3) → giữ bước kèm lần ghi, dòng cuối "Gộp vào Trao đổi gia đình". */
+        if (bp && bp.bo === 'system_gop_trao_doi' && !((bp.lan ?? []) as any[]).some((l) => l?.id != null)) return;
         if (bp) t.buoc.push(...buocBaoPh(t, bp, { khoa: `${khoa}:bp`, ten: 'Báo PH', cha: khoa, tvvTen }));
         else if (x.status === 'pending' && coBaoPhSau(x, luot)) t.buoc.push(baoPhCho(t, { khoa: `${khoa}:bp`, ten: 'Báo PH', sau: 'chờ GVCN xác nhận', cha: khoa, tvvTen }));
       };

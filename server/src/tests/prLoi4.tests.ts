@@ -66,6 +66,9 @@ export async function runPrLoi4Tests(t: any) {
     return sids.map((s) => get('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1', s).id as number);
   };
   const tvvCua = (lenhId: number) => all('SELECT * FROM viec_bao_ph WHERE lenh_chuyen_id = ? ORDER BY id', lenhId);
+  /** Mã chi nhánh HIỆN TẠI của em (lớp đang học → hồ sơ). */
+  const cnCode = (sid: number) => get(`SELECT b.code FROM branches b WHERE b.id = COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id
+      WHERE e.student_id = ?1 AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), (SELECT branch_id FROM students WHERE id = ?1))`, sid).code as string;
   const theoDoi = (loai: string, id: number, u: number) => !!get(`SELECT 1 AS c FROM viec_theo_doi WHERE loai = ? AND ref_id = ? AND user_id = ?`, loai, id, u);
 
   // ------------------------------------------------------------------ (1) GĐCN theo dõi mặc định Báo PH như Head
@@ -82,6 +85,9 @@ export async function runPrLoi4Tests(t: any) {
     assert(theoDoi('bao_ph', vb.id, gd), 'GĐCN MB không theo dõi việc Head giữ (em chưa TVV)');
     assert(!theoDoi('bao_ph', va.id, gdCp), 'GĐCN CP theo dõi việc em MB');
     assert(get(`SELECT nguon FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`, va.id, gd).nguon === 'head', 'nguồn dòng theo dõi = head');
+    xoaNho();
+    const chip = gv.xemGiaoViec(P.admin, 'bao_ph', va.id).theoDoi.find((x: any) => x.id === gd);
+    assert(chip?.vai === 'gdcn', `nhãn chip GĐCN: ${JSON.stringify(chip)}`);   // PTA rà #2300 P2-6
     /* Thôi vai GĐCN → dòng mặc định bỏ (cùng đường đổi vai của Head). */
     conn.prepare(`UPDATE user_roles SET status = 'inactive' WHERE user_id = ?`).run(gd);
     gv.theoDoiVaiBaoPh({ userId: gd });
@@ -130,6 +136,38 @@ export async function runPrLoi4Tests(t: any) {
     const v = gv.docViec('xu_ly', xl.sid);
     assert(v.mo && v.phuTrach[0] === xl.gvcn && !v.pt, `sau từ chối: ${JSON.stringify({ mo: v.mo, pt: v.phuTrach, giao: v.pt })}`);
   }));
+  check('LOI4-2c · (PTA rà #2300 P2-4) người được giao gửi; trước khi Head quyết, dòng đợt là "mo" chưa giao (vi phạm mới) → từ chối: việc về người gửi; hạn chọn đã quá bỏ', () => thu(() => {
+    assert(xl, 'seed');
+    const gvbm = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
+        AND ur.branch_id = (SELECT branch_id FROM students WHERE id = ?) AND u.id != ? ORDER BY u.id LIMIT 1`, xl.sid, xl.gvcn).id as number;
+    gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: gvbm, phuTrachCu: null });
+    xoaNho();
+    const pB = loadPrincipal(gvbm);
+    const vids = [1, 2, 3].map((i) => viol.recordViolation(pB, { studentId: xl.sid, category: 'homework', ten: `LOI4c ${i}`, occurredOn: addDays(TODAY, -i) }).violation.id);
+    const nhap = xu.deXuat(pB, xl.sid, { kind: 'wl_3', violationIds: vids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    att.addLink(pB, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(pB, nhap.id);
+    /* Đợt mới đã có dòng "mo" chưa giao ai, mang hạn chọn đã quá. */
+    conn.prepare(`UPDATE viec_xu_ly SET trang_thai = 'mo', phu_trach_id = NULL, giao_boi = NULL, han_chon = ? WHERE id = ?`).run(addDays(TODAY, -3), xl.sid);
+    const id = get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id;
+    yc.tuChoiYeuCau(P.admin, id, 'Chưa đủ căn cứ');
+    xoaNho();
+    const r = get('SELECT trang_thai, phu_trach_id, han_chon FROM viec_xu_ly WHERE id = ?', xl.sid);
+    assert(r.trang_thai === 'mo' && r.phu_trach_id === gvbm && r.han_chon === null, `dòng sau từ chối: ${JSON.stringify(r)}`);
+  }));
+  check('LOI4-1b · (PTA rà #2300 P2-1) Head duyệt đề xuất → Báo PH vi phạm sinh: GĐCN chi nhánh em theo dõi nguồn "head" ngay lúc sinh', () => thu(() => {
+    assert(xl, 'seed');
+    const gd = tao([{ role: 'branch_director', branches: [cnCode(xl.sid)] }]);
+    const pG = loadPrincipal(xl.gvcn);
+    const vids = [1, 2, 3].map((i) => viol.recordViolation(pG, { studentId: xl.sid, category: 'homework', ten: `LOI4b ${i}`, occurredOn: addDays(TODAY, -i), skill: 'speaking' }).violation.id);
+    const nhap = xu.deXuat(pG, xl.sid, { kind: 'wl_3', violationIds: vids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    att.addLink(pG, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(pG, nhap.id);
+    yc.duyetYeuCau(P.admin, get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id);
+    const v = get('SELECT id FROM viec_bao_ph WHERE measure_id = ?', nhap.id);
+    assert(v, 'duyệt sinh Báo PH');
+    assert(get(`SELECT nguon FROM viec_theo_doi WHERE loai = 'bao_ph' AND ref_id = ? AND user_id = ?`, v.id, gd)?.nguon === 'head', 'GĐCN không theo dõi nguồn head lúc sinh');
+  }));
 
   // ------------------------------------------------------------------ (3) Bảo lưu / Dừng học sau khi đã báo PH → KHÔNG "Báo lại · Huỷ chuyển lớp"
   check('LOI4-3 · lệnh đã báo PH sửa sang Bảo lưu / Dừng học → KHÔNG sinh "Báo lại · Huỷ chuyển lớp"; Huỷ lệnh vẫn báo lại (giữ); migrate đóng việc cũ còn mở', () => thu(() => {
@@ -147,9 +185,14 @@ export async function runPrLoi4Tests(t: any) {
     /* Dữ liệu cũ: việc "Báo lại · Huỷ chuyển lớp" đang mở, lệnh nay là Bảo lưu → migrate đóng; việc của lệnh huỷ giữ. */
     const cu = Number(conn.prepare(`INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc, lenh_chuyen_id, lenh_mau) VALUES (?, 'Báo lại · Huỷ chuyển lớp', ?, 'mo', ?, ?, 'huy')`)
       .run(a, TODAY, new Date().toISOString(), ls[0]).lastInsertRowid);
+    /* PTA rà #2300 P2-5: lệnh Bảo lưu rồi bị huỷ (không lớp đích) — code không báo lại → migrate cũng đóng. */
+    const cu2 = Number(conn.prepare(`INSERT INTO viec_bao_ph (student_id, nhan, han, trang_thai, tao_luc, lenh_chuyen_id, lenh_mau) VALUES (?, 'Báo lại · Huỷ chuyển lớp', ?, 'mo', ?, ?, 'huy')`)
+      .run(b, TODAY, new Date().toISOString(), ls[1]).lastInsertRowid);
+    conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE id = ?`).run(ls[1]);
     const lan: string[] = [];
     migratePrLoi4(conn, lan);
     assert(get('SELECT trang_thai, bo_ly_do FROM viec_bao_ph WHERE id = ?', cu).trang_thai === 'bo' && lan.some((x) => /Báo lại/.test(x)), `migrate: ${JSON.stringify(get('SELECT * FROM viec_bao_ph WHERE id = ?', cu))} ${lan}`);
+    assert(get('SELECT trang_thai FROM viec_bao_ph WHERE id = ?', cu2).trang_thai === 'bo', 'migrate bỏ sót lệnh Bảo lưu đã huỷ');
     assert(tvvCua(ls[2]).at(-1).trang_thai === 'mo', 'migrate đóng nhầm việc của lệnh huỷ');
     const lan2: string[] = [];
     migratePrLoi4(conn, lan2);
@@ -175,8 +218,8 @@ export async function runPrLoi4Tests(t: any) {
     xoaNho();
     assert(gv.viecTheoDoi(pGv).nhom.some((g: any) => g.mo.some((x: any) => x.loai === 'nhan_tin' && x.refId === nt.id)), 'Đang theo dõi không có việc');
     assert(!theoDoi('nhan_tin', nt.id, P.cpManager.userId), 'Head lớp nguồn CP theo dõi việc BPXL');
-    /* Thôi GVCN lớp nguồn → không còn đọc qua đường theo dõi. */
-    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE user_id = ? AND class_id = ?`).run(gvCp, nguon);
+    /* Phân công GVCN hết hiệu lực (effective_to đã qua — PTA rà #2300 P2-6) → không còn đọc qua đường theo dõi. */
+    conn.prepare(`UPDATE teacher_assignments SET effective_to = ? WHERE user_id = ? AND class_id = ?`).run(addDays(TODAY, -1), gvCp, nguon);
     xoaNho();
     assert(ma(() => gv.xemGiaoViec(pGv, 'nhan_tin', nt.id)) === 403, 'thôi GVCN vẫn mở được việc');
   }));
@@ -246,6 +289,11 @@ export async function runPrLoi4Tests(t: any) {
     xoaNho();
     const mo = all(`SELECT v.id, v.nhan FROM viec_bao_ph v JOIN sos_coordination_actions x ON x.id = v.phoi_hop_id WHERE x.attempt_id = ? AND v.trang_thai = 'mo'`, tf.attempt_id);
     assert(mo.length === 1, `việc Báo PH mở của lượt: ${JSON.stringify(mo)}`);
+    /* PTA rà #2300 P2-3: Báo PH Meeting đã gộp nhưng có lần ghi → Tuyến giữ bước, nhãn "Gộp vào Trao đổi gia đình". */
+    xoaNho();
+    const bs = tuyen.dungTuyen(pG, tuyen.khoaCuaViec('phoi_hop', m.id)).buoc as any[];
+    assert(bs.some((b) => b.viec?.loai === 'bao_ph' && b.viec.id === bm.id && b.chiTiet === 'Gộp vào Trao đổi gia đình')
+      && bs.some((b) => b.viec?.id === bm.id && /Chưa liên hệ được/.test(b.chiTiet ?? '')), `Tuyến: ${JSON.stringify(bs.map((b) => [b.ten, b.chiTiet]))}`);
     /* Dữ liệu cũ bị đôi (luật cũ không gộp việc đã ghi) → migrate gộp; chạy lại không đổi. */
     conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_luc = NULL WHERE id = ?`).run(bm.id);
     const lan: string[] = [];
@@ -254,6 +302,26 @@ export async function runPrLoi4Tests(t: any) {
     const lan2: string[] = [];
     migratePrLoi4(conn, lan2);
     assert(!lan2.length, `chạy lại còn đổi: ${lan2}`);
+  }));
+  check('LOI4-5b · (PTA rà #2300 P2-2) panel Báo PH Meeting: ghi chú GVCN chỉ người xem được Ý thức em — BPXL theo dõi tay không thấy; TVV / GVCN thấy', () => thu(() => {
+    assert(tf?.gvcn, 'seed');
+    conn.prepare('DELETE FROM viec_bao_ph WHERE phoi_hop_id = ?').run(tf.id);
+    conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(tf.id);
+    xongBuocDau(tf.attempt_id);
+    const pG = loadPrincipal(tf.gvcn), pT = loadPrincipal(tf.tvv);
+    const m = ph.addCoordination(pG, tf.attempt_id, { kind: 'cx_meeting_family' });
+    ph.confirmCoordination(pG, m.id, { performedOn: TODAY, note: GHI });
+    const bm = get('SELECT id FROM viec_bao_ph WHERE phoi_hop_id = ?', m.id);
+    assert(bm, 'Meeting không sinh Báo PH');
+    const bpxl = tao([{ role: 'scheduler', branches: [cnCode(tf.student_id)] }]);
+    gv.themTheoDoi(P.admin, 'bao_ph', bm.id, { userIds: [bpxl] });
+    xoaNho();
+    const xB = bp.xemViecBaoPh(loadPrincipal(bpxl), bm.id);
+    assert(xB.boiCanh.ghiChu === null && xB.boiCanh.noiDung === null, `BPXL theo dõi: ${JSON.stringify(xB.boiCanh)}`);
+    xoaNho();
+    assert(bp.xemViecBaoPh(pT, bm.id).boiCanh.ghiChu === GHI, 'TVV không thấy ghi chú');
+    xoaNho();
+    assert(bp.xemViecBaoPh(pG, bm.id).boiCanh.ghiChu === GHI, 'GVCN không thấy ghi chú');
   }));
   check('LOI4-6b · C8: Meeting Báo PH chưa ai ghi → thêm Trao đổi gia đình gộp (một việc mở); Trao đổi gia đình xong trước Meeting → Meeting không sinh Báo PH (giữ)', () => thu(() => {
     assert(tf?.gvcn, 'seed');

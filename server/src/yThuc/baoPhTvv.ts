@@ -23,8 +23,8 @@ import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung,
 import type { WorkItem } from '../worklist/mywork.ts';
 import { laLeadTvv, tvvConVai, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { KHONG_TVV_SQL, chonLanLuot, conVaiO, headCua } from '../worklist/nguoiNhan.ts';
-import { VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
-import { canManageDiscipline, gvcnCuaEm } from './access.ts';
+import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
+import { canManageDiscipline, gvcnCuaEm, xemYThucHv } from './access.ts';
 import { HOAT_DONG_O, NGUOI_VAI, VAI_THEO_DOI_BAO_PH, baoTheoDoi, conHieuLuc, donViec, laNguoiGiao, laNguoiTheoDoi, themTheoDoiDong, theoDoiVaiBaoPh } from '../worklist/giaoViec.ts';
 import { banChupBaoPh, noiDungNguonTvv } from './phoiHop.ts';
 import { CN_EM } from '../worklist/hieuLuc.ts';
@@ -122,7 +122,7 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
        SELECT x.reported_by AS uid, '2gv_ghi' AS nguon FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id WHERE mv.measure_id = ?2
        UNION ALL SELECT ta.user_id, '1gvcn' FROM teacher_assignments ta WHERE ta.class_id = (SELECT e.class_id FROM enrollments e WHERE e.student_id = ?3 AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
          AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?4 AND (ta.effective_to IS NULL OR ta.effective_to >= ?4)
-       UNION ALL SELECT ur.user_id, CASE r.key WHEN 'manager' THEN '3head' ELSE '4cx' END FROM viec_bao_ph v2 JOIN students s2 ON s2.id = v2.student_id, ${NGUOI_VAI}
+       UNION ALL SELECT ur.user_id, CASE WHEN r.key IN ('manager', '${VAI_GDCN}') THEN '3head' ELSE '4cx' END FROM viec_bao_ph v2 JOIN students s2 ON s2.id = v2.student_id, ${NGUOI_VAI}
          WHERE v2.measure_id = ?2 AND ${VAI_THEO_DOI_BAO_PH('v2', 's2')}
      ) n WHERE v.measure_id = ?2 AND n.uid IS NOT NULL AND ${HOAT_DONG_O('n.uid', CHI_NHANH_EM)}
      GROUP BY n.uid
@@ -475,7 +475,9 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
       ? { nguoiLuu: null, luuLuc: v.tao_luc ?? null, lop: null, noiDung: noiDungNguonTvv(p, v.phoi_hop_id), viPham: [], ghiChu: null }
       : v.phoi_hop_id != null
       /* PHOI-HOP-V2: bối cảnh = GVCN xác nhận Meeting (ngày, người, nội dung gửi TVV). */
-      ? { nguoiLuu: v.ph_nguoi ?? null, luuLuc: v.ph_ngay ?? null, lop: null, noiDung: v.ph_note?.trim() || null, viPham: [], ghiChu: v.ph_note?.trim() || null }
+      /* LOI-4 (chủ SP 28/11, luật 7): ghi chú GVCN gửi Meeting — ai xem được Ý thức em thì xem (cùng Tuyến / panel Meeting / hồ sơ HV); người theo dõi tay khác không. */
+      ? (() => { const nd = xemYThucHv(p, v.student_id) ? v.ph_note?.trim() || null : null;
+        return { nguoiLuu: v.ph_nguoi ?? null, luuLuc: v.ph_ngay ?? null, lop: null, noiDung: nd, viPham: [], ghiChu: nd }; })()
       : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, ngayLam: v.m_ngay ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null, xuLyId: v.measure_id ?? v.bao_lai_cua ?? null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
     choQlDuyet: choQl,

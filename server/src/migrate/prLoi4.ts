@@ -24,7 +24,7 @@ function baoLaiBaoLuu(conn: any, applied: string[]): void {
   if (!co(conn, 'viec_bao_ph') || !co(conn, 'lenh_chuyen_lop') || !conn.prepare(`SELECT 1 FROM pragma_table_info('viec_bao_ph') WHERE name = 'lenh_mau'`).get()) return;
   const ds = conn.prepare(`SELECT v.id, b.code AS cn FROM viec_bao_ph v JOIN lenh_chuyen_lop l ON l.id = v.lenh_chuyen_id JOIN students s ON s.id = v.student_id
       LEFT JOIN branches b ON b.id = ${CHI_NHANH_EM}
-     WHERE v.trang_thai = 'mo' AND v.lenh_mau = 'huy' AND l.lop_dich_id IS NULL AND l.trang_thai != 'huy'
+     WHERE v.trang_thai = 'mo' AND v.lenh_mau = 'huy' AND l.lop_dich_id IS NULL
        AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan x WHERE x.viec_id = v.id)`).all() as { id: number; cn: string | null }[];
   if (!ds.length) return;
   conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_lenh_huy', bo_boi = NULL, bo_luc = ? WHERE trang_thai = 'mo' AND id IN (SELECT value FROM json_each(?))`)
