@@ -1452,12 +1452,13 @@
   .pc-cap .doi-ng .cu { color: var(--text-dim); }
   .pc-cap .doi-ng .moi { font-weight: 600; }
   .pc-cap .tao { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-soft);
-    font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; }
+    font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; grid-column: 2 / -1; justify-self: start; /* LPB-2b: chữ dài "Tạo việc bàn giao · báo BPXL" xuống dòng riêng dưới tên cặp (mockup v28 L1c) — không ép cột tên */ }
   .pc-hop-duoi .pc-cap .tao { min-height: 44px; }
   .pc-cap .tao input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
   .pc-cap .ct { grid-column: 2 / -1; font-size: 12px; color: var(--text-faint); }
-  .pc-ket-bg { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--text-dim); }
+  .pc-ket-bg { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 13px; color: var(--text-dim); }
   .pc-ket-bg b { color: var(--text); font-weight: 600; }
+  .pc-ket-bg .pc-han { flex-basis: 100%; height: auto; padding: 0; border-radius: 0; background: none; font-size: 13px; /* LPB-2b: hạn = dòng riêng gọn dưới tóm tắt, không viên lẻ */ }
   .pc-han { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--surface-2); color: var(--text-dim); }
   .pc-chu-xem { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: var(--text-faint); }
   .pc-chu-xem svg { flex: none; margin-top: 2px; }
@@ -2399,16 +2400,22 @@ th.th.th-phai, td.td.td-phai { text-align: right; }
 .tn-ds > li.xem::before { content: ""; position: absolute; left: 23.5px; top: 6px; bottom: 6px; width: 1.5px; background-image: linear-gradient(var(--line-strong) 50%, transparent 0); background-size: 1.5px 5px; }
 .tb-phu2 { display: none; }
 @container (max-width: 560px) {
-  .tn-ds { grid-template-columns: 32px minmax(0,1fr) 7.5rem 30px; column-gap: 10px; }
+  .tn-ds { grid-template-columns: 32px minmax(0,1fr) 30px; column-gap: 10px; }
   .tn-ds > li { column-gap: 10px; }
-  .tn-ds > li.tb { grid-template-areas: "d ten ngay mo" "d phu phu mo"; row-gap: 1px; padding-top: 7px; padding-bottom: 7px; min-height: 44px; }
+  .tn-ds > li.tb { grid-template-areas: "d ten mo" "d phu mo";   /* LPB-2b: tên bước một dòng; người (trái) + hạn (phải) cùng dòng dưới (`.tb-phu2`) — như mockup v28 */ row-gap: 1px; padding-top: 7px; padding-bottom: 7px; min-height: 44px; }
   .tn-ds > li.tb::before, .tn-ds > li.nhom::before, .tn-ds > li.nd::before, .tn-ds > li.xem::before { left: 21.5px; }
   .tb-dau { grid-area: d; align-self: start; margin-top: 1px; }
   .tb-ten { grid-area: ten; white-space: normal; }
-  .tb-ngay { grid-area: ngay; align-self: start; padding-top: 2px; max-width: 8.5rem; white-space: normal; text-align: right; }
+  .tb-ngay { display: none; }
   .tb-mo { grid-area: mo; align-self: start; }
   .tb-ng, .tb-ct { display: none; }
-  .tb-phu2 { display: block; grid-area: phu; font-size: 13px; color: var(--text-dim); white-space: normal; }
+  .tb-phu2 { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 8px; grid-area: phu; font-size: 13px; color: var(--text-dim); white-space: normal; }
+  .tb-phu2-t { min-width: 0; }
+  .tb-ngay2 { flex: none; margin-left: auto; white-space: nowrap; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tb-ngay2.gan { color: rgb(var(--soon-rgb)); font-weight: 600; }
+  .tb-ngay2.qua { color: rgb(var(--late-rgb)); font-weight: 600; }
+  .tb.cho .tb-ngay2 { color: var(--text-faint); font-weight: 400; }
+  .tb.tam .tb-ngay2 { color: rgb(var(--soon-rgb)); font-weight: 600; }
   .tn-ds > li.tb.con .tb-phu2 { padding-left: 20px; }
   .tn-ds > li.tb.con::after { left: 22px; top: 17px; }
   .tn-ds > li.tb.con .tb-dau { margin-top: 3px; }

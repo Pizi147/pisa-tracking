@@ -535,7 +535,17 @@ function chiTiet(it: WorkItem, gop: boolean, diem: ReturnType<typeof dongDiem>, 
   const hang = [lead, ...tenCon, ...monCon, ctx]
     .flatMap((x) => (x ? x.split(' · ').map((y) => bo(dich(y))) : []))
     .filter((x) => !laThe(x) && !/^SOS \d/.test(x) && x !== it.studentName && x !== t('Công việc quản lý') && x !== t('Ý thức') && !deMuc.includes(x));
-  return xepTin(hang, loaiDaNoi, tuanDong(it)).slice(0, 2);   // bốn ô, một dòng chữ: tuần - loại · kỹ năng / chi tiết — nhiều hơn thì ở panel
+  /* LPB-2b (mockup v28 L2a / L2c): Báo PH · Chuyển lớp — dòng gộp ghi "vào {tuần}" (chỉ khi cả lô cùng một tuần); dòng em ghi hướng · lớp mới ("Lên MB ELE 02"). */
+  const sau: string[] = [];
+  if (it.group === 'bao_ph_yt') {
+    const vao = [...new Set((it.con ?? [it]).map((c) => c.nhomChuyenLop?.vao ?? null))];
+    const them = gop ? (vao.length === 1 ? vao[0] && t('vào {tuan}', { tuan: vao[0] }) : null) : it.nhomChuyenLop?.chiTiet;
+    if (them) sau.push(them);   // sau `xepTin`: mã tuần không bị đẩy lên đầu dòng
+  }
+  const xep = xepTin(hang, loaiDaNoi, tuanDong(it));
+  /* Dòng em của lô Chuyển lớp: chỉ "Lên MB ELE 02" (tên lô đã ở dòng cha — mockup L2c). */
+  if (sau.length && !gop && 'conTen' in it) return [...xep.filter((x) => x !== t('Chuyển lớp')), ...sau].slice(0, 2);
+  return (sau.length ? [...xep.slice(0, 1), ...sau] : xep).slice(0, 2);   // bốn ô, một dòng chữ: tuần - loại · kỹ năng / chi tiết — nhiều hơn thì ở panel
 }
 
 /** MỘT DÒNG (mọi loại việc, mọi vai): lớp · ai · chi tiết · hạn. */

@@ -24,6 +24,7 @@ import { badRequest, conflict, forbidden, nowIso } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { HOAT_DONG_O } from '../worklist/hieuLuc.ts';
 import { CON_VAI_BPXL, chonLanLuot, headCua, nhomVaiCn } from '../worklist/nguoiNhan.ts';
+import { tvvConVai } from '../worklist/viecTvv.ts';
 import { chotLeadBaoPh } from '../yThuc/baoPhTvv.ts';
 import { GVCN_NGUON_NT, HL_NHAN_TIN, baoTheoDoi, docViec, ghiLan, laLeadBpxl, theoDoiVaiBaoPh, vaiQuanLy, xemGiaoViec, type KhoiGiaoViec } from '../worklist/giaoViec.ts';
 
@@ -243,6 +244,25 @@ export function phuTrachChinh(ids: readonly number[]): Map<number, { id: number;
     for (const [c, h] of thieu) ra.set(c, { id: h, ten: ten.get(h) ?? '' });
   }
   return ra;
+}
+
+/**
+ * LPB-2b (mockup v28 L1a): khối "Sau khi lưu · việc tự giao" ở panel Chuyển lớp — AI nhận ba việc nếu lưu lệnh này (cùng luật với lúc sinh việc, không câu mới theo em):
+ * Bàn giao → GVCN lớp nguồn (không GVCN → Head) · Báo PH → TVV của em còn vai ở chi nhánh em, không thì Head · Nhận thông tin → người nhận của lớp đích (`boChonNhanTin`).
+ * Hạn Báo PH / Nhận thông tin: Chủ nhật từ hôm nay (`hanChuNhat`); hạn Bàn giao do web tính bằng `hanBanGiaoLenh` (đã có `tuanFinal`, `boiCanh` trong cùng GET).
+ */
+export function seGiaoChuyenLop(sid: number, lopNguonId: number, lopDich: { id: number; branch_id: number | null }): { banGiao: string | null; baoPh: { ten: string | null; laHead: boolean }; nhanTin: string | null; han: string } {
+  const s = db().prepare(`SELECT s.consultant_user_id AS tvv, c.branch_id AS cn FROM students s JOIN classes c ON c.id = ?2 WHERE s.id = ?1`).get(sid, lopNguonId) as { tvv: number | null; cn: number | null } | undefined;
+  const tvv = s?.tvv && tvvConVai(s.tvv, s.cn) ? s.tvv : null;
+  const head = headCua(s?.cn);
+  const bpxl = boChonNhanTin(cvxlCacLop([lopDich.id]))(lopDich.id, lopDich.branch_id);
+  const ten = new Map((db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(J([tvv, head, bpxl].filter((x): x is number => x != null))) as { id: number; full_name: string }[]).map((u) => [u.id, u.full_name]));
+  return {
+    banGiao: phuTrachChinh([lopNguonId]).get(lopNguonId)?.ten ?? null,
+    baoPh: { ten: ten.get(tvv ?? head ?? 0) ?? null, laHead: !tvv },
+    nhanTin: bpxl != null ? ten.get(bpxl) ?? null : null,
+    han: hanChuNhat(demoToday()),
+  };
 }
 
 /**

@@ -105,7 +105,7 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
             <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 fill-none stroke-current" strokeWidth={1.6}><path d={moNd ? 'M3 7.5L6 4.5 9 7.5' : 'M3 4.5L6 7.5 9 4.5'} /></svg></button>
           : <span />}
         {/* 375 (khung ≤ 560 px): tầng hai — người · chi tiết. */}
-        <span className="tb-phu2">{[b.laToi ? t('Bạn') : b.nguoi, chiTiet].filter(Boolean).join(' · ')}</span>
+        <span className="tb-phu2"><span className="tb-phu2-t">{[b.laToi ? t('Bạn') : b.nguoi, chiTiet].filter(Boolean).join(' · ')}</span>{ngayVe ? <span className={`tb-ngay2${muc === 'sap' ? ' gan' : muc === 'qua' ? ' qua' : ''}`}>{ngayVe}</span> : null}</span>
       </li>,
     );
     if (moNd) dong.push(<li key={`nd-${b.khoa}`} className="nd">{rieng ? <div className="nd-rieng">{rieng}</div> : <div className="nd-than">{b.noiDung}</div>}</li>);
@@ -115,7 +115,7 @@ function ThanTuyen({ tuyen, className, moSan, thanRieng }: PropTuyen & { tuyen: 
     <section className={`tn ${className ?? ''}`} aria-label={t('Tuyến · {ten}', { ten: tuyen.tieuDe })}>
       <div className="tn-dau">
         <h3>{t('Tuyến')}</h3>
-        <span className="ten-tn">{tuyen.tieuDe}</span>
+        <span className="ten-tn">{tuyen.tieuDe.split(/( · | → )/).map((x, i) => (i % 2 ? x : <span key={i} className="whitespace-nowrap">{x}</span>))}</span>   {/* LPB-2b: mỗi mã lớp / mã tuần một khối, không bẻ giữa "MB FT 105" */}
         <span className="phai">
           <span className="tien">{t('Xong')} <b>{tuyen.xong}/{tuyen.tong}</b></span>
           <NutLuat label={t('Về tuyến')} phai>

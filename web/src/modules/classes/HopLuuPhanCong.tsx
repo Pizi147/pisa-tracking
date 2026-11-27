@@ -8,7 +8,7 @@ import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import {
-  hanBanGiaoGv, mondayOfDate, ngay, tuanLich, xemDen,
+  hanBanGiaoGv, hanChuNhat, mondayOfDate, ngay, tuanLich, xemDen,
   type DoiChoPc, type HieuLucVao, type KetQuaLuuPc, type SlotPhanCong, type XemTruocLuu,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -207,9 +207,13 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
           <label className="tao">
             <input type="checkbox" checked={!boTao.has(k)} aria-label={t('Tạo việc bàn giao {mon} cho {gv}', { mon: c.nhan, gv: ten(c.nguoiCu) })}
               onChange={(e) => setBoTao((s) => { const n = new Set(s); if (e.target.checked) n.delete(k); else n.add(k); return n; })} />
-            {t('Tạo việc bàn giao')}
+            {t('Tạo việc bàn giao · báo BPXL')}
           </label>
         )}
+        {/* LPB-2b (mockup v28 L1c / L1d): một tích = hai việc (Bàn giao cho GV cũ + Nhận thông tin cho BPXL), mỗi việc một dòng hạn; bỏ tích nói rõ không việc nào. */}
+        {!c.cotMo && (boTao.has(k)
+          ? <span className="ct">{t('Không tạo việc nào cho cặp này')}</span>
+          : <span className="ct">{t('Bàn giao · hạn {ngay}', { ngay: ngay(hanBanGiaoGv(hn), hn) })}<br />{t('BPXL nhận thông tin · hạn {ngay}', { ngay: ngay(hanChuNhat(hn), hn) })}</span>)}
         {chuyen && <span className="ct">{t('Luôn chuyển sang {gv}: {ds}.', { gv: ten(c.nguoiMoi), ds: chuyen })}</span>}
         {c.nguoiViet.loai !== 'gv-cu' && (
           <span className="ct">{c.nguoiViet.loai === 'gvcn'
@@ -259,7 +263,9 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
               <div className="pc-ket-bg">
                 <span>→ {nguoiCu.length === 1 && soViec === 1
                   ? <><b>{t('1 việc')}</b> {t('cho {gv}', { gv: [...viec.values()][0].nguoi })} · {[...viec.values()][0].cot.join(', ')} × {t('{n} em', { n: [...viec.values()][0].soEm })} = <b>{t('{n} góp ý', { n: soGopY })}</b></>
-                  : <b>{t('{n} việc · {k} góp ý', { n: soViec, k: soGopY })}</b>} · <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(hanBanGiaoGv(hn), hn) })}</span></span>
+                  : <b>{t('{n} việc · {k} góp ý', { n: soViec, k: soGopY })}</b>}</span>
+                {/* LPB-2b: hạn là MỘT khối — cả khối xuống dòng cùng nhau, không rơi lẻ một viên. */}
+                <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(hanBanGiaoGv(hn), hn) })}</span>
               </div>
             )}
             {cap.length > 0 && (

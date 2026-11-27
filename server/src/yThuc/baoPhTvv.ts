@@ -707,7 +707,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
             ph.kind AS ph_kind, pa.kind AS ph_a_kind, pa.attempt_no AS ph_luot,   -- BAOPH-0: nguồn của việc TVV (Trao đổi gia đình · kết quả Progress / Final)
             v.lenh_chuyen_id, (SELECT l.lop_nguon_id FROM lenh_chuyen_lop l WHERE l.id = v.lenh_chuyen_id) AS lc_nguon_id,   -- LPB-0
             (SELECT c2.code FROM lenh_chuyen_lop l JOIN classes c2 ON c2.id = l.lop_nguon_id WHERE l.id = v.lenh_chuyen_id) AS lc_nguon,
-            (SELECT c3.code FROM lenh_chuyen_lop l JOIN classes c3 ON c3.id = l.lop_dich_id WHERE l.id = v.lenh_chuyen_id) AS lc_dich
+            (SELECT c3.code FROM lenh_chuyen_lop l JOIN classes c3 ON c3.id = l.lop_dich_id WHERE l.id = v.lenh_chuyen_id) AS lc_dich,
+            (SELECT l.tuan_bat_dau FROM lenh_chuyen_lop l WHERE l.id = v.lenh_chuyen_id) AS lc_tuan,   -- LPB-2b: dòng danh sách ghi "vào {tuần}" + dòng em "Lên MB ELE 02"
+            (SELECT l.huong FROM lenh_chuyen_lop l WHERE l.id = v.lenh_chuyen_id) AS lc_huong
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN sos_coordination_actions ph ON ph.id = v.phoi_hop_id LEFT JOIN assessment_attempts pa ON pa.id = ph.attempt_id
        LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
@@ -785,7 +787,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
         due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
-        nhomChuyenLop: r.lc_nguon_id ? { lopId: r.lc_nguon_id, ma: r.lc_nguon } : null,
+        nhomChuyenLop: r.lc_nguon_id ? { lopId: r.lc_nguon_id, ma: r.lc_nguon, vao: r.lc_tuan ? tuanLich(r.lc_tuan, o.today) : null,
+          chiTiet: r.lc_dich ? (({ len_lop: `Lên ${r.lc_dich}`, fast_track: `Lên FT · ${r.lc_dich}`, hoc_lai: `Học lại · ${r.lc_dich}` } as Record<string, string>)[r.lc_huong] ?? r.lc_dich) + (tvv ? '' : ' · chưa có TVV') : null } : null,
       });
       continue;
     }
