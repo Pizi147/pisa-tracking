@@ -2135,6 +2135,8 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   @container (min-width: 600px) {
     .cvA { grid-template-columns: max-content max-content minmax(0, 1fr) max-content; }
   }
+  /* TUYEN-3 (rà PTA #2281): Đang theo dõi — chữ chi tiết 13 px, khe cột 14 px: "Đang ở {bước} · {người}" một tầng ở cạnh panel (1440 → 656 px). */
+  @container (min-width: 600px) { .td-A .cvA { column-gap: 14px; } .td-A .cvA-v .cvA-ct { font-size: 13px; } }
   @container (min-width: 600px) and (max-width: 1099px) {
     .cvA-v .cvA-ct { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.3; padding-block: 6px; }
   }
@@ -2154,12 +2156,12 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 }
 
 /* YÊU CẦU CỦA TÔI (v26, PTA bấm thử 25/11): ô Thông tin luôn dài → dưới 600 px dòng có BA tầng: lớp + ngày · tên · thông tin (trải hết bề ngang, căn mép tên, không "·" treo).
-   Chỉ trong `.yc-A`; `.cvA` dùng chung của Công việc không đổi. */
+   Chỉ trong `.yc-A`; `.cvA` dùng chung của Công việc không đổi. TUYEN-3: `.td-A` (Đang theo dõi — tên em + chip SOS + "Đang ở …" không vừa một tầng) cùng kiểu. */
 @layer components {
   @container (max-width: 599px) {
-    .yc-A .cvA-v { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'lop hn' 'ai ai' 'ct ct'; align-items: start; }
-    .yc-A .cvA-v .cvA-ct { justify-self: stretch; }
-    .yc-A .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
+    .yc-A .cvA-v, .td-A .cvA-v:not(.cvA-kl) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'lop hn' 'ai ai' 'ct ct'; align-items: start; }
+    .yc-A .cvA-v .cvA-ct, .td-A .cvA-v .cvA-ct { justify-self: stretch; }
+    .yc-A .cvA-v .cvA-ai + .cvA-ct::before, .td-A .cvA-v .cvA-ai + .cvA-ct::before { content: none !important; }
   }
 }
 

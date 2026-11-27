@@ -222,6 +222,17 @@ export async function runPrTuyen0Tests(t: YThucTestKit) {
     assert(x.trangThai === 'xong' && x.noiDung === 'Đã báo mẹ em kết quả và lịch họp GĐCN', `TVV xong: ${JSON.stringify(x)}`);
   }));
 
+  await checkAsync('TUYEN3-1 · tuyến Vi phạm: dòng "Lần trước: {bậc} · {ngày}" (lần xử lý trước của em) — người xem được Ý thức em; BPXL không', () => thu(() => {
+    const sid = moiEm();
+    const a = xuLy(sid);
+    const b = xuLy(sid);
+    const t1 = tuyen(ql, 'vi_pham', a.mid);
+    assert(!t1.lanTruoc, `lần đầu: không "Lần trước": ${t1.lanTruoc}`);
+    const t2 = tuyen(ql, 'vi_pham', b.mid);
+    assert(typeof t2.lanTruoc === 'string' && t2.lanTruoc.startsWith('Lần trước: ') && /\d{2}\/\d{2}\/\d{4}/.test(t2.lanTruoc), `lần hai: ${t2.lanTruoc}`);
+    assert(tuyen(gvcn, 'vi_pham', b.mid).lanTruoc === t2.lanTruoc, 'GVCN cùng dòng');
+  }));
+
   await checkAsync('TUYEN2-1 · Meeting: BPXL mở panel chỉ nhận phần Xếp lịch (không lộ phần Kết quả, không 403); bước GVCN xác nhận kèm Phụ huynh — chỉ người xem được em; việc TVV từ nguồn `nguonTvv`', () => thu(() => {
     const sid = moiEm();
     conn.prepare(`UPDATE students SET parent_name = 'Nguyễn Thu Hà', parent_relation = 'mẹ', parent_phone = '0912345678' WHERE id = ?`).run(sid);
