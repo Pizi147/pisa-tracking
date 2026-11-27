@@ -59,7 +59,8 @@ export const laDotFt = (c: Pick<Lop, 'programme_code' | 'is_fast_track'>, d: Pic
  */
 export function docTuyChinhDot(classIds: readonly number[]): Map<number, TuyChinhDot> {
   /* LG-13: GET nhớ theo đúng danh sách lớp — việc Báo cáo PH và "Sắp tới" của `/my-work` cùng tập lớp, một câu. Kết quả chỉ đọc. */
-  return nho(`tuy-chinh-dot:${classIds.join(',')}`, () => tinhTuyChinhDot(classIds));
+  /* TOC-4: khoá theo TẬP lớp đã sắp (hai nơi gọi cùng tập, khác thứ tự → trước đọc hai lần). Kết quả là Map theo lớp, không phụ thuộc thứ tự vào. */
+  return nho(`tuy-chinh-dot:${[...new Set(classIds)].sort((a, b) => a - b).join(',')}`, () => tinhTuyChinhDot(classIds));
 }
 function tinhTuyChinhDot(classIds: readonly number[]): Map<number, TuyChinhDot> {
   const out = new Map<number, { bo: Set<string>; them: DotBc[] }>();
