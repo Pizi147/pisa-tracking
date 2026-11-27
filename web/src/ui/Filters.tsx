@@ -253,15 +253,17 @@ export function BranchFilter({ branchId, onBranch, hetHang = false, luon = false
  * D3 CHON-CHI-NHANH (chủ SP 27/10): ô chọn chi nhánh gọn — nhãn nằm TRONG ô bên trái, cao 32 (điện thoại 44) bằng nút lọc / công tắc
  * cùng hàng, chữ 13 / 600. Một mẫu cho mọi trang (không nhãn chồng trên ô như `.label` + `.field` cũ).
  */
-export function OChiNhanh({ branches, branchId, onBranch, tatCa = true, hetHang = false }: {
-  branches: Branch[]; branchId: number | null; onBranch: (id: number | null) => void;
+export function OChiNhanh({ branches, branchId, onBranch, tatCa = true, hetHang = false, nhan = t('Chi nhánh') }: {
+  branches: Pick<Branch, 'id' | 'name'>[]; branchId: number | null; onBranch: (id: number | null) => void;
+  /** LOC-TVV: cùng ô cho bộ lọc khác (Lịch Test "TVV"). */
+  nhan?: string;
   hetHang?: boolean;
   /** HV & Lớp: phạm vi "Tất cả" nằm ở ô Phạm vi riêng — ô này chỉ chọn một chi nhánh. */
   tatCa?: boolean;
 }) {
   return (
     <label className={`inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--o-nhap-vien)] bg-[var(--o-nhap-nen)] text-[13px] font-semibold focus-within:border-[var(--accent)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] max-sm:min-h-[44px] ${hetHang ? 'relative max-sm:w-full' : ''}`}>
-      <span className="whitespace-nowrap pl-2.5 pr-1.5 text-slate-400">{t('Chi nhánh')}</span>
+      <span className="whitespace-nowrap pl-2.5 pr-1.5 text-slate-400">{nhan}</span>
       <select className={`min-w-0 cursor-pointer self-stretch max-sm:min-h-[44px] rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 font-semibold text-slate-100 outline-none ${hetHang ? 'flex-1 appearance-none pr-8' : 'pr-2'}`}
         value={branchId ?? ''} onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
         {tatCa && <option value="">{t('Tất cả')}</option>}

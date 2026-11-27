@@ -77,6 +77,8 @@ export type LichTest = {
   /** LT-DONG-GV (v23 L1): classId → tên GV đang dạy (thứ tự L R W S, trùng tên một lần) — dòng "GV …" dưới mã lớp ở cả hai nhóm. */
   gvLop: Record<number, string[]>;
   nhacLichSu: { classId: number; classCode: string; soEm: number; href: string; luot: { so: number; soEm: number; href: string }[] }[];
+  /** LOC-TVV (chủ SP 28/11): TVV đang lọc (`dang`, null = mọi em) · `ds` ô chọn TVV (Head / Quản trị / CX); `null` = vai không có bộ lọc này. */
+  tvv: { dang: number | null; ds: { id: number; ten: string }[] | null } | null;
 };
 
 /** Khoá một hàng lớp trên màn (nhớ mở/thu, React key): khối 2 có thể có hai hàng cùng lớp ở hai tuần thi khác nhau. */

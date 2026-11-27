@@ -21,10 +21,11 @@ export type Cham = {
 };
 
 /** Đường API của lưới một lớp: FT theo tuần (`periodId`), lớp thường cả lớp (lọc bài ở web). */
-export function duongCham(classId: number, o: { periodId?: number | null; kind?: string | null } = {}): string {
+export function duongCham(classId: number, o: { periodId?: number | null; kind?: string | null; tvv?: number | null } = {}): string {
   const q = new URLSearchParams();
   if (o.periodId) q.set('periodId', String(o.periodId));
   if (o.kind) q.set('kind', o.kind);
+  if (o.tvv) q.set('tvv', String(o.tvv));   // LOC-TVV: lưới Lịch Test chỉ em của TVV đang lọc (máy chủ lọc)
   const s = q.toString();
   return `/classes/${classId}/cham${s ? `?${s}` : ''}`;
 }
