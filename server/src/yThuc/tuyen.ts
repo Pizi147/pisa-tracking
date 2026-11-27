@@ -356,9 +356,10 @@ function dungPhoiHop(ids: number[], homNay: string): TuyenNoi[] {
       const bpNguon = laViecTvvBaoPh(x.kind) ? ds(x.bp)[0] : null;
       const tenBp = x.kind === 'bao_ph_tvv' ? `Báo PH · Kết quả ${r0.a_kind === 'final' ? 'Final' : 'Progress'}` : `Báo PH · ${ten}`;
       /* N78 (chủ SP 28/11): Trao đổi gia đình chờ bước đầu (GVCN chưa xác nhận việc của lượt) — chưa có việc / việc đóng chờ → bước ○ "chờ GVCN xác nhận". */
-      if (x.kind === 'talk_family' && x.status === 'pending' && (!bpNguon || (bpNguon.tt === 'bo' && bpNguon.bo === 'system_cho_buoc_dau'))
-        && luot.some((g) => g.status === 'pending' && !laViecTvvBaoPh(g.kind))) {
-        t.buoc.push({ ...baoPhCho(t, { khoa, ten: tenBp, sau: gv ? `chờ GVCN ${gv[1]} xác nhận` : 'chờ GVCN xác nhận', tvvTen: r0.tvv_ten ?? null }), cungLuc: song });
+      const choDau = luot.find((g) => g.status === 'pending' && !laViecTvvBaoPh(g.kind));
+      if (x.kind === 'talk_family' && x.status === 'pending' && choDau && (!bpNguon || (bpNguon.tt === 'bo' && bpNguon.bo === 'system_cho_buoc_dau'))) {
+        /* Rà #2295 P2: "chờ {người giữ việc GVCN đang chờ} xác nhận" (người được giao / GVCN / Head) — bước SAU, không "cùng lúc". */
+        t.buoc.push({ ...baoPhCho(t, { khoa, ten: tenBp, sau: `chờ ${giuGvcn(choDau).nguoi ?? 'GVCN'} xác nhận`, tvvTen: r0.tvv_ten ?? null }), cungLuc: false });
         continue;
       }
       if (bpNguon) {

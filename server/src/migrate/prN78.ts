@@ -17,7 +17,7 @@ export function migratePrN78(conn: any, applied: string[]): void {
     .all(JSON.stringify(VIEC_TVV_BAO_PH)) as { luot: number; cn: string | null }[];
   if (!ds.length) return;
   const luot = [...new Set(ds.map((r) => r.luot))];
-  for (let i = 0; i < luot.length; i += 200) dongBoViecTvvLuot(luot.slice(i, i + 200));
+  for (let i = 0; i < luot.length; i += 200) dongBoViecTvvLuot(luot.slice(i, i + 200), null, { dongKhiCho: true });
   const theoCn = new Map<string, number>();
   for (const r of ds) theoCn.set(r.cn ?? '?', (theoCn.get(r.cn ?? '?') ?? 0) + 1);
   applied.push(`N78: ${ds.length} việc TVV Trao đổi gia đình sinh trước khi GVCN xác nhận → chờ (${[...theoCn].map(([k, n]) => `${k} ${n}`).join(' · ')}).`);

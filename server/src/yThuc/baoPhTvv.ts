@@ -217,7 +217,9 @@ export function dongBoViecTvvLoTrinh(cycleIds: readonly number[]): void {
   dongBoViecTvvLuot((db().prepare(`SELECT DISTINCT x.attempt_id AS id FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
       WHERE a.cycle_id IN (SELECT value FROM json_each(?)) AND x.kind IN (SELECT value FROM json_each(?))`).all(JSON.stringify(cycleIds), JSON.stringify(VIEC_TVV_BAO_PH)) as any[]).map((r) => r.id as number));
 }
-export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: number | null = null): number[] {
+/** `dongKhiCho` (N78): chỉ Hoàn tác / Đưa lại / Khôi phục bước đầu của GVCN (và migrate prN78) mới đưa việc TVV ĐANG MỞ chưa ghi về chờ — GVCN thêm việc mới / đồng bộ
+ *  SOS thì giữ việc đã mở (PTA chốt rà #2295: tránh chập chờn). */
+export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: number | null = null, o: { dongKhiCho?: boolean; /** migrate BAOPH-0 tự gộp + ghi nhật ký (bước ②) */ khongGopMeeting?: boolean } = {}): number[] {
   if (!attemptIds.length) return [];
   const rows = db().prepare(
     `SELECT x.id, x.student_id, x.kind, x.pb_moc, x.status, x.remove_reason_code AS ly_do, a.kind AS a_kind, a.status AS a_tt, v.id AS viec, v.trang_thai, v.bo_ly_do, v.lenh_chuyen_id AS lenh,
@@ -240,7 +242,10 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
     /* N78 (chủ SP 28/11): bước đầu (GVCN xác nhận việc của lượt) chưa xong → CHƯA sinh việc TVV; việc đang mở chưa ai ghi → đóng theo (mở lại khi GVCN xác nhận,
        hạn tính từ lúc đó); đã ghi một lần → giữ. */
     if (r.cho_dau && r.status === 'pending' && !r.ngoai) {
-      if (r.trang_thai === 'mo' && !r.so_lan) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_cho_buoc_dau', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(luc, r.viec);
+      if (r.so_lan) continue;   // đã ghi một lần → giữ
+      if (r.trang_thai === 'mo' && o.dongKhiCho) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_cho_buoc_dau', bo_boi = NULL, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(luc, r.viec);
+      /* Rà #2295 P2: việc đang đóng vì nguồn hệ thống (huỷ lượt / Lộ trình mới / KQ thi thật) hồi lại khi GVCN còn chờ → đổi lý do sang chờ bước đầu (tuyến ○, mở khi GVCN xác nhận). */
+      else if (r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do) && r.bo_ly_do !== 'system_cho_buoc_dau') db().prepare(`UPDATE viec_bao_ph SET bo_ly_do = 'system_cho_buoc_dau' WHERE id = ? AND trang_thai = 'bo'`).run(r.viec);
       continue;
     }
     if (r.ngoai) {
@@ -258,7 +263,11 @@ export function dongBoViecTvvLuot(attemptIds: readonly number[], nguoiTao: numbe
       const k = db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(r.id, r.student_id, nhanViecTvvNguon(r.kind, r.pb_moc ?? null, r.a_kind ?? null), hanBaoPh(homNay), luc);
       moi.push({ id: Number(k.lastInsertRowid), sid: r.student_id });
-      chotLead.push(Number(k.lastInsertRowid));   // VAI-0 (N76b) — chốt theo lô sau vòng lặp (RA-2711: trước một câu mỗi việc)
+      chotLead.push(Number(k.lastInsertRowid));
+      /* C8 + N78 (rà #2295 P1): Trao đổi gia đình sinh SAU (GVCN vừa xác nhận) → Báo PH Meeting TVV còn mở, chưa ghi, của cùng lượt gộp vào (một lần báo PH). */
+      if (r.kind === 'talk_family' && !o.khongGopMeeting) db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_gop_trao_doi', bo_boi = NULL, bo_luc = ? WHERE trang_thai = 'mo'
+          AND phoi_hop_id IN (SELECT m.id FROM sos_coordination_actions m WHERE m.attempt_id = (SELECT attempt_id FROM sos_coordination_actions WHERE id = ?) AND m.kind IN ('cx_meeting_student', 'cx_meeting_family'))
+          AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)`).run(luc, r.id);   // VAI-0 (N76b) — chốt theo lô sau vòng lặp (RA-2711: trước một câu mỗi việc)
     } else if (r.status === 'pending' && r.trang_thai === 'bo' && NGUON_GO.has(r.bo_ly_do)) {   // rà #2233 P1-1 / P1-2: cả huỷ lượt, kết thúc lộ trình
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`).run(hanBaoPh(homNay), r.viec);
     } else if (r.status === 'removed' && r.trang_thai === 'mo' && r.ly_do !== 'system_luu_tru' && !laLyDoNguoiDung(r.ly_do) && r.lenh) {
@@ -603,6 +612,11 @@ export function khoiPhucViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     else if (!db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
                  WHERE id = ? AND trang_thai = 'bo' AND bo_ly_do = ?`).run(id, x.bo_ly_do).changes) throw conflict('Việc vừa được cập nhật — mở lại.');
     if (!r) nguonTheoViecTvv(p, x, 'mo');   // BAOPH-0: bản ghi đảo đã trả cả nguồn; cách cũ mở nguồn theo
+    /* N78 (rà #2295 P2): khôi phục khi GVCN còn chờ bước đầu → việc về chờ (không mở). */
+    if (x.phoi_hop_id && laViecTvvBaoPh(x.ph_kind ?? '')) {
+      const luot = (db().prepare('SELECT attempt_id AS a FROM sos_coordination_actions WHERE id = ?').get(x.phoi_hop_id) as { a: number } | undefined)?.a;
+      if (luot) dongBoViecTvvLuot([luot], null, { dongKhiCho: true });
+    }
     writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph_khoi_phuc', entityType: 'discipline_measure', entityId: x.measure_id,
       entityLabel: `${x.student_code} · khôi phục Báo PH · ${x.nhan}`, before: { trangThai: 'bo', lyDo: x.bo_ly_do, chu: x.bo_ly_do_chu ?? null }, after: { trangThai: 'mo' } });
   });
