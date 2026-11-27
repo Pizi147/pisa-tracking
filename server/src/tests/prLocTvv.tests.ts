@@ -65,6 +65,10 @@ export async function runPrLocTvvTests(t: any) {
     assert(cham.tvvLoc(ql, String(ngoai)) === null, 'Lịch Test nhận TVV ngoài phạm vi');
     assert(cham.tvvLoc(ql, String(gv.userId)) === null, 'Lịch Test nhận người không phải TVV');
     assert(cham.tvvLoc(P.admin, String(ngoai)) === ngoai, 'Quản trị (toàn hệ thống) phải chọn được mọi TVV');
+    /* Ô chọn TVV (không chọn chi nhánh) cùng phạm vi: không liệt kê TVV chọn vào sẽ bị bỏ qua. */
+    const dsQl = cham.dsTvvTrongPhamVi(ql) as { id: number }[];
+    assert(dsQl.length && !dsQl.some((x) => x.id === ngoai) && dsQl.every((x) => cham.tvvLoc(ql, String(x.id)) === x.id), 'ô chọn TVV của QL lệch luật nhận tham số');
+    assert((cham.dsTvvTrongPhamVi(P.admin) as { id: number }[]).some((x) => x.id === ngoai), 'Quản trị thấy mọi TVV');
     const boLoc = (tvv?: number) => sd.docBoLocXuatMt({ khung: 'ft', tg: 'dot', dot: sd.DOT_XUAT_FT.join(','), ...(tvv ? { tvv: String(tvv) } : {}) });
     const moi = xm.duLieuXuatMt(ql, boLoc()), la = xm.duLieuXuatMt(ql, boLoc(ngoai));
     assert(la.dem.luot === moi.dem.luot && !la.moTa.some((r: string[]) => r[0] === 'TVV') && la.tenTep === moi.tenTep, 'Xuất: TVV ngoài phạm vi vẫn lọc / ghi tên');
