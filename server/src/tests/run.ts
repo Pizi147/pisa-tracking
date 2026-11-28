@@ -141,7 +141,13 @@ function bocTep<T extends object>(ten: string, m: T): T {
           if (d0) dongThem[ten] = (dongThem[ten] ?? 0) + demDong() - d0;
           if (ban) {
             if (soiBB) { tepHienTai = `[BB] ${ten}`; check('bất biến prTk trên dữ liệu tệp', () => batBienDb({ conn: ban!.conn, assert, seedMax: SEED_MAX })); }
-            ban!.dong();
+            /*
+             * `checkAsync` không `await` còn chạy sau khi tệp trả → dùng kết nối bản chép ĐÃ ĐÓNG → libsql panic `database.rs:155`, chết cả nhóm
+             * (28/11: khung + prOv11f chung nhóm). Ghi KHÔNG ĐẠT, để kết nối mở cho phép kiểm dở chạy nốt.
+             */
+            const thieuAwait = asyncDangChay > 0;
+            if (thieuAwait) { failures.push(`[${ten}] checkAsync chưa xong khi tệp đã trả — thiếu await`); console.log(`  ✗ ${ten}.tests.ts: checkAsync thiếu await`); }
+            ban!.dong(thieuAwait);
             conn = chuoi;
           }
           trongTep = false; tepHienTai = '';
@@ -262,15 +268,20 @@ function check(name: string, fn: () => void) {
     console.log(`  ✗ ${name}\n      ${e.message}`);
   }
 }
+/** Số `checkAsync` đang chạy — `bocTep` soi khi tệp xong: còn > 0 là thiếu `await` (xem `xong`). */
+let asyncDangChay = 0;
 async function checkAsync(name: string, fn: () => Promise<void>) {
-  if (imLang()) { try { await fn(); } catch { /* nhóm 1 in + đếm */ } return; }
-  demPhep();
-  try { await fn(); passed++; console.log(`  ✓ ${name}`); }
-  catch (e: any) {
-    failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
-    console.log(`  ✗ ${name}
+  asyncDangChay++;
+  try {
+    if (imLang()) { try { await fn(); } catch { /* nhóm 1 in + đếm */ } return; }
+    demPhep();
+    try { await fn(); passed++; console.log(`  ✓ ${name}`); }
+    catch (e: any) {
+      failures.push(`${tepHienTai ? `[${tepHienTai}] ` : ''}${name}: ${e.message}`);
+      console.log(`  ✗ ${name}
       ${e.message}`);
-  }
+    }
+  } finally { asyncDangChay--; }
 }
 function assert(cond: unknown, msg: string) { if (!cond) throw new Error(msg); }
 function assertThrows(fn: () => unknown, match: RegExp, msg: string) {
@@ -10144,6 +10155,9 @@ await runPrLpb1Tests({ check, checkAsync, assert, conn, TODAY, P, addDays, class
 // ==================================================================== LOI-4 (chủ SP 28/11): trả lời 7 [Hỏi] của đợt rà lỗi tuyến công việc
 const { runPrLoi4Tests } = bocTep('prLoi4', await import('./prLoi4.tests.ts'));
 await runPrLoi4Tests({ check, checkAsync, assert, conn, TODAY, P, addDays } as any);
+// ==================================================================== TVV-THEM (chủ SP 28/11): ô TVV khi thêm học viên
+const { runPrTvvThemTests } = bocTep('prTvvThem', await import('./prTvvThem.tests.ts'));
+await runPrTvvThemTests({ check, checkAsync, assert, conn, TODAY, P, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

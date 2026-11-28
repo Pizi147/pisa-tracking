@@ -16,11 +16,13 @@ import {
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 
 /** Một dòng của lưới: chữ thô như người nhập gõ/dán — máy chủ đọc và kiểm lại (ngày `dd/mm/yyyy`, email, band). */
-type Row = Partial<Record<CotNhap, string | number | null>>;
-type PreviewRow = { row: number; issues: VanDeNhap[] };
-type Preview = { rows: PreviewRow[]; issues: VanDeNhap[]; defaultStartWeek?: string | null };
+/** TVV-THEM: `consultantUserId` không có = theo máy chủ (cột chữ dán / người thêm là TVV); '' = để trống; số = TVV đã chọn. */
+type Row = Partial<Record<CotNhap | 'consultantUserId', string | number | null>>;
+type PreviewRow = { row: number; issues: VanDeNhap[]; consultantUserId?: number | null };
+type Preview = { rows: PreviewRow[]; issues: VanDeNhap[]; defaultStartWeek?: string | null; tvv?: NguoiTrongDs[]; tvvMacDinh?: number | null };
 type KetQua = {
   added: number; hangDaThem: number[];
   /** R2 C5: id lô — Hoàn tác `POST /intake/hoan-tac`. */
@@ -38,8 +40,9 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 const RONG: Partial<Record<CotNhap, number>> = {
   /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
   /* #9: thêm cột Lộ trình 80 — Họ tên, Email, Dự kiến thi, Đã thi tới MT, Tuần bắt đầu, Trạng thái gọn lại để lưới FT vẫn vừa 1440 (không cuộn ngang). */
-  fullName: 160, dob: 170, email: 176, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 80, examDate: 96, daThiToiMt: 96, startWeek: 150, route: 80,   // OV-9: Target 80 cho "6.5 KCK"
+  /* TVV-THEM (PTA rà #2328): thêm cột TVV mà lưới FT vẫn vừa 1440 (vùng lưới 1399 px) — các cột gọn lại. */
+  fullName: 140, dob: 172, email: 128, baselineScore: 64, entryListening: 44, entryReading: 44, entryWriting: 44,
+  entrySpeaking: 44, target: 80, examDate: 84, daThiToiMt: 100, startWeek: 128, route: 72,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'),
@@ -51,6 +54,9 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   startWeek: t('Theo tuần chọn ở đầu panel; đổi riêng từng dòng được. Em vào muộn: cột Trạng thái báo trước MT nào sẽ là MT cũ.'),
   route: t('Lộ trình của em — mặc định theo lớp; đổi riêng từng em. Lịch MT tạo theo lộ trình em.'),
 };
+/** TVV-THEM (chủ SP 28/11): cột TVV không bắt buộc, sau cùng (trước Trạng thái) — như ô TVV của Sửa cả lớp. */
+const RONG_TVV = 132;
+const RONG_TRANG_THAI = 88;
 /** #9 (LO-TRINH-THEO-HV, chủ SP 11/11): lớp FT có cột Lộ trình từng em (LT1 · LT2 · RF; "Khác" mở ở Bước tiếp › Lộ trình mới). */
 const COT_LO_TRINH: CotLuoi = { key: 'route', nhan: 'Lộ trình' };
 const LO_TRINH_NHAP: readonly string[] = ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC);
@@ -102,6 +108,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const idempotencyKey = useRef(moiKhoa());
 
   const pv = preview;
+  /* TVV-THEM: danh sách TVV chi nhánh lớp (từ xem trước) giữ qua lúc gõ — xem trước về null mỗi lần sửa, ô không được nháy trống. */
+  const [tvv, setTvv] = useState<{ ds: NguoiTrongDs[]; dong: (number | null | undefined)[]; macDinh: number | null }>({ ds: [], dong: [], macDinh: null });
   const cls = (classes.data ?? []).find((c: any) => c.id === classId) ?? null;
   const lopThuong = cls?.scoring_mode === 'ratio';
   const ktLop = kyThiCuaChuongTrinh(cls?.programme_code);   // P13: lớp KET / PET — Target theo thang Cambridge
@@ -112,7 +120,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const tuanChung = startWeek || macDinh || '';
 
   const doiLuoi = (f: (rs: Row[]) => Row[]) => { setRows(f); setPreview(null); };
-  const setCell = (i: number, key: CotNhap, v: string) => doiLuoi((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: v } : r)));
+  const setCell = (i: number, key: keyof Row, v: string) => doiLuoi((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: v } : r)));
 
   const handlePaste = async (text: string, coTieuDe?: boolean) => {
     if (!text.trim()) return;
@@ -128,7 +136,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const runPreview = useCallback(async () => {
     if (!classId) { setPreview(null); return; }
     try {
-      setPreview(await api.post<Preview>('/intake/preview', { rows, classId, defaultStartWeek: tuanChung || null }));
+      const r = await api.post<Preview>('/intake/preview', { rows, classId, defaultStartWeek: tuanChung || null });
+      setPreview(r);
+      setTvv({ ds: r.tvv ?? [], macDinh: r.tvvMacDinh ?? null, dong: rows.map((_, i) => r.rows.find((x) => x.row === i + 1)?.consultantUserId) });
     } catch (e: any) { toast.push('error', e.message); }
   }, [rows, classId, tuanChung, toast]);
 
@@ -218,7 +228,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
             {/* Rà ngoài 01 B4: lỗi tải ≠ "Đang tải…" — báo tại ô + Thử lại; dòng đã gõ / ô dán giữ nguyên. */}
             {classes.error && !classes.data ? <LoiTaiNho id={lf.oId('lop')} chu={t('Không tải được lớp.')} onRetry={classes.reload} className="" /> :
             <ChonLop ariaLabel={t('Thêm vào lớp')} {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : t('Đang tải…')}
-              onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
+              onChange={(id) => {
+                setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null);
+                /* TVV-THEM: đổi lớp = có thể đổi chi nhánh → bỏ TVV đã chọn, theo mặc định của lớp mới. */
+                setTvv({ ds: [], dong: [], macDinh: null }); doiLuoi((rs) => rs.map(({ consultantUserId: _bo, ...r }) => r));
+              }}
               ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code,
                 phu: phuLop({ ct: c.programme_name, cn: motCn ? null : c.branch_code, siSo: c.student_count, tuan: tuanHoc(c.start_date, homNay) }) }))} />}
           </Field>
@@ -289,11 +303,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 960 : 1390 }}>
+          {/* TVV-THEM: màn hẹp chữ ô nhập to hơn (16 px) — lưới cuộn ngang sẵn, nên mọi cột rộng thêm 20 % (`--k`), 1440 giữ vừa khung. */}
+          <table className="w-full table-fixed text-sm [--k:1] max-sm:[--k:1.2]"
+            style={{ minWidth: `calc(${32 + cols.reduce((n, c) => n + (RONG[c.key] ?? 0), 0) + RONG_TVV + RONG_TRANG_THAI}px * var(--k))` }}>
             <colgroup>
-              <col style={{ width: 32 }} />
-              {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}
-              <col style={{ width: 100 }} />
+              {[32, ...cols.map((c) => RONG[c.key] ?? 0), RONG_TVV, RONG_TRANG_THAI].map((w, i) => <col key={i} style={{ width: `calc(${w}px * var(--k))` }} />)}
             </colgroup>
             <thead>
               <tr>
@@ -303,6 +317,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                     {nhanCot(c.nhan)}{c.batBuoc && <span className="text-bad"> *</span>}
                   </Th>
                 ))}
+                <Th hint={t('Không bắt buộc. TVV thêm em thì mặc định là chính TVV đó — đổi hoặc bỏ trống được.')}>{t('TVV')}</Th>
                 <Th>{t('Trạng thái')}</Th>
               </tr>
             </thead>
@@ -316,6 +331,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 /* #9: ô trống = lộ trình lớp; chữ dán không phải mã (sai / chữ lạ) giữ ô gõ — xem trước báo lưu ý, lưu theo lớp. */
                 const ltGo = String(r.route ?? '').trim().toUpperCase();
                 const ltO = ltGo || cls?.route || '';
+                /* TVV-THEM: đã chọn ở ô thắng; chưa chọn → máy chủ quyết (cột chữ dán khớp tên / người thêm là TVV). */
+                const tvvChon = r.consultantUserId !== undefined ? r.consultantUserId : tvv.dong[i] !== undefined ? tvv.dong[i] : tvv.macDinh;
+                const tvvId = tvvChon === '' || tvvChon == null ? null : Number(tvvChon);
                 return (
                   <Fragment key={i}>
                     <tr data-needs-fix={nLoi > 0 ? 'true' : undefined}>
@@ -358,6 +376,13 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                           </td>
                         );
                       })}
+                      <td className="td px-1.5 py-1.5">
+                        <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={tvv.ds} choTrong={t('— Chưa chọn —')} placeholder={t('Chọn')}
+                          ariaLabel={t('{cot} dòng {n}', { cot: t('TVV'), n: i + 1 })}
+                          value={tvvId ? { kieu: 'tai_khoan', id: tvvId, ten: tvv.ds.find((x) => x.id === tvvId)?.ten ?? `#${tvvId}` } : null}
+                          onChange={(x) => setCell(i, 'consultantUserId', x?.kieu === 'tai_khoan' ? String(x.id) : '')}
+                          khongKhop={(go) => t('Không có tư vấn viên khớp “{go}”', { go })} />
+                      </td>
                       <td className="td px-2 py-1.5 whitespace-nowrap text-xs">
                         {dongTrong(r) || !pv ? <span className="text-slate-500">—</span>
                           : ds.length === 0 ? <span className="text-ok">✓ {t('Sẵn sàng')}</span>
@@ -372,7 +397,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                     </tr>
                     {mo && (
                       <tr>
-                        <td colSpan={cols.length + 2} className="td surface-2 px-2 py-2 text-[13px] text-slate-200">
+                        <td colSpan={cols.length + 3} className="td surface-2 px-2 py-2 text-[13px] text-slate-200">
                           {/* Chi tiết trải ngang nhưng neo ở mép trái vùng cuộn — trên điện thoại vẫn đọc được, không phải cuộn ngang. */}
                           <div className="sticky left-0 max-w-[calc(100vw-4rem)] whitespace-normal">
                             {t('Dòng {n}', { n: i + 1 })}
