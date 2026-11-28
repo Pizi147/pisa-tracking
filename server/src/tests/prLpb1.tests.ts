@@ -238,6 +238,14 @@ export async function runPrLpb1Tests(t: any) {
     assert((await goi(ckC, 'POST', `/giao-viec/ban_giao/${nguon}/phu-trach`, { userId: G, phuTrachCu: null })).status === 200, 'GVCN giao việc Bàn giao');
     assert(!coViec(pC, `ban_giao:${nguon}`) && coViec(pG, `ban_giao:${nguon}`)?.mine, 'việc chưa rời GVCN / chưa vào người được giao');
     assert((await goi(ckH, 'POST', `/lenh-chuyen/${lenhId}/xac-nhan`, { nhanXetChung: 'Em học chăm, cần luyện thêm nghe.' })).status === 403, 'người ngoài (GVCN lớp đích) xác nhận được');
+    /* Rà #2334 P2-6 (LPB-3 [XM-2]): Tuyến của em trong panel Bàn giao — panel đọc `lenhId` từ GET bàn giao rồi gọi đường tuyến SẴN CÓ; GVCN lớp nguồn xem được,
+       người ngoài (GV không dạy lớp nào của em) không (404 — đường tuyến không lộ việc có tồn tại). */
+    const bg = await goi(ckC, 'GET', `/lenh-chuyen/ban-giao?lop=${nguon}`);
+    assert(bg.status === 200 && (bg.json?.ds ?? []).some((e: any) => e.lenhId === lenhId), `GET bàn giao thiếu lenhId: ${bg.status}`);
+    const tu = await goi(ckC, 'GET', `/tuyen/chuyen_lop/${lenhId}`);
+    assert(tu.status === 200 && tu.json?.buoc?.some((b: any) => b.khoa === 'ban_giao'), `GVCN xem tuyến: ${tu.status} ${tu.json?.error}`);
+    const [X] = gvRanh(nguon, 6).filter((u) => ![GVCN, GVL, G, H].includes(u));
+    assert((await goi(await vao(X), 'GET', `/tuyen/chuyen_lop/${lenhId}`)).status === 404, 'người ngoài xem được tuyến Chuyển lớp của em');
     /* Bàn giao môn (Listening): id khung qua `mo`, giao cho H; H ghi đúng môn đó, môn khác 403. */
     assert((await goi(ckH, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'listening' })).status === 403, 'người ngoài lớp nguồn mở được id khung môn');
     assert((await goi(ckL, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'khong_co' })).status === 400, 'cặp (lớp, môn) không có việc vẫn mở được');
@@ -452,21 +460,25 @@ export async function runPrLpb1Tests(t: any) {
   });
 
   /* PR máy chủ sau LPB-3 / VAI-1 XM-2 (PTA 28/11). */
-  check('LPB1-16 · khongTvvDong: người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / việc đã giao tay / chưa ai giữ → không', () => {
+  check('LPB1-16 · khongTvvDong (Chốt ngày thi · Bước tiếp · KQ thi thật · Bổ sung hồ sơ): người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / đã giao tay / chưa ai giữ → không; /my-work thật', () => {
     const vt = vtMod;
     assert(vt.khongTvvDong({ ownerId: 5 }, null) === 'chua_co', 'chưa có TVV');
     assert(vt.khongTvvDong({ ownerId: 5 }, 9) === 'da_nghi', 'TVV hết vai (người giữ khác TVV)');
     assert(vt.khongTvvDong({ ownerId: 9 }, 9) === null, 'TVV giữ');
     assert(vt.khongTvvDong({ ownerId: 5, giaoBoi: 'Head' }, null) === null, 'đã giao tay');
     assert(vt.khongTvvDong({ ownerId: null }, null) === null, 'chưa ai giữ');
-    /* Sau thi (Bước tiếp · KQ thi thật) + Bổ sung hồ sơ + Chốt ngày thi dùng CÙNG hàm. */
-    for (const f of ['server/src/loTrinh/buocTiep.ts', 'server/src/loTrinh/thiThat.ts', 'server/src/worklist/viecTvv.ts']) {
-      assert(/khongTvv: khongTvvDong\(|kt\.add\(khongTvvDong\(/.test(fs.readFileSync(path.join(REPO, f), 'utf8')), `${f} chưa gắn khongTvv`);
-    }
-  });
-  check('LPB1-14 · [XM-2] panel Bàn giao GVCN: Tuyến Chuyển lớp của em đang xem qua đường sẵn có /tuyen/chuyen_lop/:lệnh (không đường mới)', () => {
-    const s = fs.readFileSync(path.join(REPO, 'web/src/modules/classes/BanGiaoPanel.tsx'), 'utf8');
-    assert(s.includes('<TuyenEm lenhId={em.lenhId} />') && s.includes('`/tuyen/chuyen_lop/${lenhId}`'), 'thiếu Tuyến em trong panel Bàn giao');
+    /* Đường thật (/my-work): Chốt ngày thi của em chưa có TVV → về Head, dòng `chua_co`; TVV không còn vai TVV ở chi nhánh em → `da_nghi`. */
+    thu(() => {
+      const lop = lopMoi('FT', true);
+      const { sid, cy } = emFt(lop);
+      const k = `chot-ngay-thi:${cy}`;
+      conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid); xoaNho();
+      assert(coViec(P.mbManager, k)?.khongTvv === 'chua_co', `chua_co: ${JSON.stringify(coViec(P.mbManager, k))?.slice(0, 160)}`);
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(nguoiVai('teacher', 1)[0], sid); xoaNho();
+      assert(coViec(P.mbManager, k)?.khongTvv === 'da_nghi', 'da_nghi');
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(TVV, sid); xoaNho();
+      assert(coViec(loadPrincipal(TVV), k) && !coViec(loadPrincipal(TVV), k).khongTvv, 'TVV giữ mà vẫn có cờ');
+    });
   });
   check('LPB1-15 · [XM-3] Head + GĐCN theo dõi mặc định việc khung ĐÃ GIAO (tính khi đọc): khối + tab Đang theo dõi cùng hàm; chưa giao → không; bỏ theo dõi → hết ở cả hai, có lịch sử', () => thu(() => {
     const HEAD = nguoiVai('manager', 1)[0];
@@ -487,10 +499,10 @@ export async function runPrLpb1Tests(t: any) {
     assert(!all(`SELECT 1 FROM viec_theo_doi WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND user_id = ?`, cy, HEAD).length, 'không chèn dòng theo dõi (tính khi đọc)');
     assert(trongTab(), 'tab Đang theo dõi của Head thiếu việc đã giao');
     xoaNho();
-    /* Tốc độ: hàm mới +2 câu (tập việc khung đã giao · lịch sử "bỏ"); đọc việc khung để vẽ dòng là đường SẴN CÓ (`docViecLo`, như mọi việc khung đang theo dõi). */
+    /* Tốc độ (rà #2334 P2-1): dòng mặc định dựng gọn từ `giaoKhung` (không `docViecLo`) — +1 câu lịch sử "bỏ" khi có ứng viên (tập giao đã đọc ở n0). */
     const n1 = cauTab();
     console.log(`      (đo: Đang theo dõi của Head ${n0} → ${n1} câu khi có một việc khung đã giao)`);
-    assert(n1 - n0 <= 6, `Đang theo dõi ${n0} → ${n1} câu`);
+    assert(n1 - n0 <= 1, `Đang theo dõi ${n0} → ${n1} câu`);
     xoaNho();
     const sau = gv.boTheoDoi(pH, 'chot_ngay_thi', cy, HEAD);
     assert(!coHead(sau) && !trongTab(), 'bỏ theo dõi mặc định mà vẫn còn');

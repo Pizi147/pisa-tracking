@@ -34,7 +34,7 @@ import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
 import { CON_VAI_BPXL, KHONG_TVV_SQL, conVaiO, headCua, headGdcnO, nguoiNhanTuDong } from './nguoiNhan.ts';
 import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV, tenMon, tuanLich } from '../../../shared/domain/index.ts';
-import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, giaoKhung, laKhung, type LoaiKhung } from './khungViec.ts';
+import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, giaoKhung, laKhung, type GiaoKhung, type LoaiKhung } from './khungViec.ts';
 import { docViecKhung, docViecKhungLo, type ViecKhung } from './khungDoc.ts';
 import { coTheChotLoTrinh } from '../classes/quyenChuyenLop.ts';
 import { quyenBanGiao, viecBanGiao } from '../classes/banGiao.ts';
@@ -1657,7 +1657,10 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
         OR (t.loai = 'van_hanh' AND (vh.progress NOT IN ('done','stopped') OR vh.updated_at >= ?3)))`,
   ).all(p.userId, today, tu) as any[];
   /* PTA 28/11 (a): Head / GĐCN — việc khung đã GIAO cho người khác ở chi nhánh mình, theo dõi mặc định tính khi đọc (CÙNG `theoDoiMacDinhKhung` với khối); trừ việc
-     đã có dòng theo dõi và việc người xem đã bỏ theo dõi. +1 câu (tập việc khung đã giao `giaoKhung`, nhớ theo request) · +1 câu lịch sử "bỏ" chỉ khi có ứng viên. */
+     đã có dòng theo dõi và việc người xem đã bỏ theo dõi. +1 câu (tập việc khung đã giao `giaoKhung`, nhớ theo request) · +1 câu lịch sử "bỏ" chỉ khi có ứng viên.
+     Rà #2334 P2-1 (đo bản chép thật: 21 việc · 8 loại → +33 câu qua `docViecLo`): dòng mặc định dựng GỌN từ `giaoKhung` (tên · người được giao · hạn đặt tay),
+     không đọc đủ việc từng loại — bấm dòng mở panel đọc đủ. */
+  const macDinh: GiaoKhung[] = [];
   if (p.roleKeys.includes('manager') || p.roleKeys.includes(VAI_GDCN)) {
     const co = new Set(rows.map((r) => `${r.loai}:${r.ref_id}`));
     const ung = [...new Set(giaoKhung().values())].filter((g) => !co.has(`${g.loai}:${g.id}`) && theoDoiMacDinhKhung(g.loai, g.pt, g.cn).some((x) => x.u === p.userId));
@@ -1665,7 +1668,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
       const bo = new Set((db().prepare(`SELECT j.value AS k FROM json_each(?2) j WHERE (SELECT x.moi IS NULL AND x.cu = ?1 FROM viec_giao_lan x
           WHERE x.loai = json_extract(j.value, '$[0]') AND x.ref_id = json_extract(j.value, '$[1]') AND x.truong = 'theo_doi' AND (x.cu = ?1 OR x.moi = ?1) ORDER BY x.id DESC LIMIT 1)`)
         .all(String(p.userId), JSON.stringify(ung.map((g) => [g.loai, g.id]))) as { k: string }[]).map((r) => r.k));
-      for (const g of ung) if (!bo.has(JSON.stringify([g.loai, g.id]))) rows.push({ loai: g.loai, ref_id: g.id });
+      for (const g of ung) if (!bo.has(JSON.stringify([g.loai, g.id]))) macDinh.push(g);
     }
   }
   const giu = giuViecQl(p);
@@ -1678,6 +1681,13 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
   }
   const theoLoai = new Map<LoaiTheoDoi, { mo: DongTheoDoi[]; vuaXong: DongTheoDoi[] }>();
   const theoVai: [DongTheoDoi, number[]][] = [];
+  for (const g of macDinh) {
+    const d: DongTheoDoi = { loai: g.loai, refId: g.id, tieuDe: `${NHAN_KHUNG[g.loai]} · ${g.ten ?? ''}`, studentId: g.sid, studentName: g.sid ? g.ten : null, classCode: g.sid ? null : g.ten,
+      phuTrach: null, han: g.han, quaHan: !!g.han && g.han < today, trangThai: 'mo', nhanTrangThai: 'Chưa xong', xongLuc: null };
+    theoVai.push([d, [g.pt!]]);
+    const n = theoLoai.get(g.loai) ?? theoLoai.set(g.loai, { mo: [], vuaXong: [] }).get(g.loai)!;
+    n.mo.push(d);
+  }
   for (const r of rows) {
     if (r.loai === 'meeting') { const l = luatMeeting(r.mp_phan, r.mp_cn ?? r.em_branch ?? null, r.mp_nl); r.mp_vai = l?.u ?? null; r.mp_vai_key = l?.vai ?? null; }
     const loai = r.loai as LoaiTheoDoi;
