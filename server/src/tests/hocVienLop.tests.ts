@@ -712,4 +712,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       'Em đã tạm dừng không còn trong roster "Cần hỗ trợ" — badge phải về 0, không đếm Case của em qua fallback lớp lúc đánh giá');
     eq(roster, 1, 'Nợ để lại quirk cases.ts: listCases({classId}) vẫn trả case này qua fallback a.class_id — badge KHÔNG được dùng con số này thẳng');
   });
+  /* HV-LOC-TVV (chủ SP 28/11): ô TVV — chạy trong tệp này (cùng trang Học viên & Lớp), không đăng ký tệp riêng ở run.ts: tệp độc lập mới đổi cách
+     chia nhóm của check và làm lộ lỗi có sẵn (libsql panic khi `prOv11f` rồi `khung` chung một nhóm). */
+  await (await import('./prHvLocTvv.tests.ts')).runPrHvLocTvvTests(t as any);
 }

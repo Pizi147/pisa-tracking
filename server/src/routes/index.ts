@@ -1862,12 +1862,12 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* OV-12f + SL2: góc "Đang SOS" = SOS hiện tại (`hv-sos-hien-tai`) trong phạm vi trang — không lọc tuần (link cũ `tuan=` bỏ qua). */
   const p = principalOf(req);
-  const fSos = { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null };
+  const fSos = { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null, tvv: qStr(req, 'tvv') ?? null };
   if (qStr(req, 'goc') === 'sos') return hocVienSosSvc.dangSos(p, fSos);
   const trang = hocVienLopSvc.danhSachHocVienLop(p, {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
-    chuaTvv: qStr(req, 'tvv') === 'chua',   // SV-TVV-VIEC: em chưa có TVV — tập việc "Bổ sung hồ sơ thiếu" của QL
+    tvv: qStr(req, 'tvv') ?? null,   // HV-LOC-TVV: ô TVV (`toi` · id · `-` / `chua` — SV-TVV-VIEC "Bổ sung hồ sơ thiếu" của QL · `tat-ca`)
   });
   /* TURSO-1211: `kem=sos` — "Đang SOS" (số trên tab + góc) trong CÙNG request: lượt / điểm / Case đã nạp cho trang dùng lại (bản chép thật: SOS thêm ~50 %
      thay 100 % của request riêng). Không xem được Case → `sos: null` (trước: request riêng 403). */
@@ -1891,8 +1891,12 @@ api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => {
   if (qStr(req, 'theoTrang') !== '1') return hocVienTheoVai(p, { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') });
   /* TD-NGUOI: trang Học viên gửi CÙNG tham số phạm vi của `/hoc-vien-lop` → chọn phạm vi bằng chính `phamViTrang` (như trang trả về), để web gọi song song
      thay vì chờ `/hoc-vien-lop` về rồi mới gọi (bớt một lượt mạng). Kết quả như cũ: chi nhánh đang xem → `chi-nhanh`, còn lại mặc định của vai. */
-  const { dangDung, chiNhanh } = hocVienLopSvc.phamViTrang(p, { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null }, demoToday());
-  return hocVienTheoVai(p, dangDung === 'chi-nhanh' && chiNhanh ? { phamVi: 'chi-nhanh', branchId: chiNhanh } : {});
+  const { dangDung, chiNhanh, tvv } = hocVienLopSvc.phamViTrang(p, { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, tvv: qStr(req, 'tvv') ?? null }, demoToday());
+  const kq = hocVienTheoVai(p, dangDung === 'chi-nhanh' && chiNhanh ? { phamVi: 'chi-nhanh', branchId: chiNhanh } : dangDung !== 'cua-toi' && tvv !== null ? { phamVi: 'chi-nhanh' } : {});
+  /* HV-LOC-TVV: ô TVV — cùng tập em với `/hoc-vien-lop` (máy chủ lọc, web không nhận em ngoài lựa chọn). */
+  if (tvv === null || dangDung === 'cua-toi') return kq;
+  const em = hocVienLopSvc.emTheoTvv(tvv);
+  return { ...kq, rows: kq.rows.filter((r) => em.has(r.id)), ids: Object.fromEntries(Object.entries(kq.ids).map(([k, v]) => [k, v.filter((id) => em.has(id))])) as typeof kq.ids };
 }));
 
 /** OV-15f: Học viên & Lớp › Lịch thi — rà soát lịch thi thật theo tháng dự kiến (mockup 5); lưu một kết luận / ghi chú họp qua `updateCycle` + nhật ký. */
@@ -1900,6 +1904,7 @@ api.get('/hoc-vien-lop/lich-thi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return lichThiSvc.danhSachLichThi(principalOf(req), {
     thang: qStr(req, 'thang') ?? null, branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null, cnNho: qInt(req, 'cnNho') ?? null,
+    tvv: qStr(req, 'tvv') ?? null,
   });
 }));
 api.get('/hoc-vien-lop/lich-thi/:cycleId/lich-su', requireAuth, wrap((req) => ({ dong: lichThiSvc.lichSuLichThiMotEm(principalOf(req), pInt(req, 'cycleId')) })));

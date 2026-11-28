@@ -190,6 +190,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp TVV', vai: ['TVV'], url: '/hoc-vien-lop/theo-vai?phamVi=chi-nhanh' },
   { trang: 'Học viên & Lớp CX', vai: ['CX'], url: '/hoc-vien-lop/theo-vai?branchId={cn}' },
   { trang: 'Học viên & Lớp Admin', vai: ['ADMIN'], url: '/hoc-vien-lop' },
+  /* HV-LOC-TVV (chủ SP 28/11): ô "TVV ▾" — máy chủ lọc (Chưa có TVV · TVV bỏ "Tôi" xem Tất cả · theo vai cùng lọc). */
+  { trang: 'Học viên & Lớp · ô TVV', vai: ['QL', 'TVV'], url: '/hoc-vien-lop?tvv=-' },
+  { trang: 'Học viên & Lớp · ô TVV', vai: ['TVV'], url: '/hoc-vien-lop?tvv=tat-ca' },
+  { trang: 'Học viên & Lớp · ô TVV', vai: ['TVV', 'CX'], url: '/hoc-vien-lop/theo-vai?theoTrang=1&tvv=-' },
   /* OV-12f: góc Đang SOS (tuần mặc định · Toàn bộ 8 tuần) + panel một em; Admin không có góc này (403). */
   { trang: 'Học viên & Lớp · Đang SOS', vai: [...MOI_VAI, 'TVV', 'CX'], url: '/hoc-vien-lop?goc=sos' },
   { trang: 'Học viên & Lớp · Đang SOS', vai: ['QL', 'QT', 'CX'], url: '/hoc-vien-lop?goc=sos&tuan=tat-ca' },

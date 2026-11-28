@@ -106,7 +106,7 @@ export async function runPrS3CauConTests(t: any) {
       xoaNho();
       const dau = (() => { try { return hvl.danhSachHocVienLop(p, {}); } catch { return null; } })();
       for (const phamVi of dau?.phamVi?.coThe ?? [null]) for (const chuaTvv of [false, true]) {
-        const f = { phamVi, chuaTvv, ...(phamVi === 'chi-nhanh' ? { branchId: chiNhanh[0] } : {}) };
+        const f = { phamVi, tvv: chuaTvv ? 'chua' : null, ...(phamVi === 'chi-nhanh' ? { branchId: chiNhanh[0] } : {}) };
         dem.lan++;
         xoaNho(); hvl.hocVienLopCuKhiKiem.soLuot = SAU_COT_CU;
         let cu;

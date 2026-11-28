@@ -18,7 +18,7 @@ import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { lopTrongPhamVi } from './classes.ts';
-import { phamViTrang } from './hocVienLop.ts';
+import { phamViTrang, sqlTvv } from './hocVienLop.ts';
 import { cycleById, examPlanOf, updateCycle } from '../fasttrack/cycles.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemCuaLuot } from '../fasttrack/attempts.ts';
@@ -139,11 +139,12 @@ const coTheSua = (p: Principal, studentId: number) =>
  * Một em học hai lớp = một hàng (lớp đầu). Xếp theo lớp rồi tên.
  */
 export function danhSachLichThi(
-  p: Principal, f: { thang?: string | null; branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null } = {},
+  p: Principal, f: { thang?: string | null; branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; tvv?: string | null } = {},
 ): TrangLichThi {
   const thang = dsThangLichThi(f.thang);
   const hom = demoToday();
-  const { dangDung, chiNhanh, phanCong } = phamViTrang(p, f, hom);
+  const { dangDung, chiNhanh, phanCong, tvv } = phamViTrang(p, f, hom);
+  const w = sqlTvv(dangDung === 'cua-toi' ? p.userId : tvv);   // HV-LOC-TVV: ô TVV đầu trang
   const lopToi = new Set(phanCong.map((a) => a.classId));
   /* Cả lớp FT lẫn lớp thường (đặc tả mục 4 "chỉ thi thật" = loại kỳ thi, không phải loại lớp); nhóm "Chưa có dự kiến" chỉ em FT (lọc ở `chon`). */
   const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? []).filter((c) => dangDung !== 'toi' || lopToi.has(c.id));
@@ -167,10 +168,10 @@ export function danhSachLichThi(
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
          LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
          LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi
-        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}
+        WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${w.sql}
           AND (cy.id IS NULL OR (cy.exam_month IS NULL AND cy.exam_date IS NULL AND cy.exam_period_id IS NULL)${mm
             ? ` OR cy.exam_month IN (${mm}) OR substr(cy.exam_date, 1, 7) IN (${mm}) OR substr(rp.week_start, 1, 7) IN (${mm})` : ''})
-        ORDER BY e.id`).all(...lo, ...(dangDung === 'cua-toi' ? [p.userId] : []), ...(mm ? [...thang, ...thang, ...thang] : [])) as any[]);
+        ORDER BY e.id`).all(...lo, ...w.ts, ...(mm ? [...thang, ...thang, ...thang] : [])) as any[]);
   });
   const dau = new Map<number, any>();
   for (const r of em) if (!dau.has(r.id) && khop(r)) dau.set(r.id, r);
