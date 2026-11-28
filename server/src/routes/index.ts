@@ -1191,7 +1191,7 @@ api.get('/classes/:classId/bao-cao-ph/phan', requireAuth, wrap((req) => {
 }));
 /** BAO-CAO-PH b: Excel một lớp (`em` vắng) hoặc một em — QL, Admin, TVV. BCPH-PDF: `kieu=pdf` → nội dung từng em, web dựng PDF. */
 api.get('/classes/:classId/bao-cao-ph/xuat', requireAuth, wrap((req) => xuatBaoCaoPhSvc.xuatLopBaoCaoPh(principalOf(req), pInt(req, 'classId'),
-  typeof req.query.dot === 'string' ? req.query.dot : null, toInt(req.query.em), req.query.kieu === 'pdf' ? 'pdf' : 'xlsx')));
+  typeof req.query.dot === 'string' ? req.query.dot : null, toInt(req.query.em), req.query.kieu === 'pdf' ? 'pdf' : 'xlsx', req.query.diem !== '0')));   // diem=0: không ghi điểm cả tệp
 /** BC-DOT-QL: QL / Quản trị / Admin bỏ hoặc thêm đợt Báo cáo PH (một lớp hoặc nhiều lớp cùng chi nhánh); Hoàn tác = khôi phục / xoá. */
 api.get('/bao-cao-ph/lop', requireAuth, wrap((req) => ({ rows: baoCaoPhSvc.lopChoQuyetDot(principalOf(req), qInt(req, 'branchId') ?? 0) })));
 api.post('/bao-cao-ph/dot', requireAuth, wrap((req) => doiDotBaoCaoPh(principalOf(req), req.body ?? {})));

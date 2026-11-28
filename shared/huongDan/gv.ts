@@ -713,7 +713,7 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Xuất báo cáo PH', cua: 'việc của Admin' }],
       muc: [
         { id: 'pbc-viet', viec: 'bao-cao-ph', ten: 'Viết Báo cáo PH',
-          buoc: ['Điểm tự điền từ lượt Test; bạn ghi nhận xét theo tiêu chí.', 'Cạnh ô chữ: <b>Bạn đã ghi tháng này</b> (lớp thường: đợt này) — nhận xét Test, kết quả PA, vi phạm bạn và GV khác đã ghi. <b>Chèn</b> đưa câu vào cuối ô rồi sửa; <b>Hoàn tác chèn</b> trong 10 giây. Ô không tự điền.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế.'] },
+          buoc: ['Điểm tự điền từ lượt Test; bạn ghi nhận xét theo tiêu chí.', 'Dưới ô chữ: <b>Bạn đã ghi tháng này</b> (lớp thường: đợt này) — nhận xét Test, kết quả PA, vi phạm bạn và GV khác đã ghi. <b>Chèn</b> đưa câu vào cuối ô rồi sửa; <b>Hoàn tác chèn</b> trong 10 giây. Ô không tự điền.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế.'] },
       ],
     },
     {

@@ -135,4 +135,17 @@ export const EN_BAO_CAO_PH = {
   'Khôi phục · {n} em': 'Restore · {n} students',
   'Đã khôi phục báo cáo · {n} em': 'Report restored · {n} students',
   'Chỉ Head, Quản trị, Admin của chi nhánh bỏ được báo cáo PH của học viên.': 'Only Heads, System Admins and Admins of the branch can drop a student’s parent report.',
+  /* BC-PH-KY-NANG (chủ SP 28/11): bỏ từng kỹ năng, mức tiêu chí không bắt buộc, không ghi điểm. */
+  'Không báo cáo {ky} · {ten}': 'No report {ky} · {ten}',
+  'Không báo cáo {ky} · {n} em': 'No report {ky} · {n} students',
+  'Không cần báo cáo': 'No report needed',
+  'Cả em': 'Whole student',
+  'Ghi điểm': 'Include scores',
+  'nên chọn': 'recommended',
+  'Ghi vào báo cáo': 'Include in report',
+  'Không ghi vào báo cáo': 'Not in report',
+  '{n} tiêu chí chưa chọn · nên chọn': '{n} criteria not chosen · recommended',
+  'Kỹ năng không hợp lệ': 'Invalid skill',
+  'Chọn ít nhất một kỹ năng': 'Choose at least one skill',
+  'Bỏ báo cáo PH một số kỹ năng': 'Dropped parent report for some skills',
 } satisfies Record<string, Dich>;

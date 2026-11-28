@@ -9,6 +9,7 @@ import { programmeOf } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { soKyVong } from './chipSos.ts';
 import { chuDiem } from './diemDong.ts';
+import { chuanMon, type MonVao } from './monDangKy.ts';
 
 /** Thang mọi tiêu chí (đặc tả §3). Excel ghi "Khá (Sound)". */
 export const MUC_BC = ['xuat_sac', 'tot', 'kha', 'yeu'] as const;
@@ -118,12 +119,50 @@ export const nhanOChu = (p: Pick<PhanBc, 'khoa'>): string => (p.khoa === 'chung'
  * Bản ghi một (đợt, em, phần). `datSan`: tiêu chí còn mức đặt sẵn theo đợt trước (GV chưa đổi) — vẽ viền đứt.
  * `diemSua`: điểm sửa tay — số, hoặc (FT, chủ SP 07/11) CHỮ tự do như mẫu PDF ("6.5 - 7.0"); cột REAL của SQLite giữ chữ dạng TEXT.
  */
-export type BanGhiBc = { muc: Record<string, MucBc>; datSan: string[]; chu: string; diemSua: number | string | null };
+/** `boDiem` (BC-PH-KY-NANG, chủ SP 28/11): GV chọn "Không ghi điểm" — tệp xuất để trống ô điểm phần này; điểm gốc / sửa tay giữ để bật lại. */
+export type BanGhiBc = { muc: Record<string, MucBc>; datSan: string[]; chu: string; diemSua: number | string | null; boDiem?: boolean };
 
-/** Em ĐỦ ở một phần (đặc tả §5.1 + ghi chú mockup mục 5): mọi tiêu chí có mức (đặt sẵn cũng tính) + ô chữ không trống. Điểm không bắt buộc. */
-export function phanDu(p: PhanBc, b: Pick<BanGhiBc, 'muc' | 'chu'> | null | undefined): boolean {
-  if (!b || !b.chu.trim()) return false;
-  return tieuChiPhan(p).every((x) => MUC_BC.includes(b.muc[x.khoa]));
+/**
+ * Em ĐỦ ở một phần: ô chữ không trống. BC-PH-KY-NANG (chủ SP 28/11 "GV cũng có quyền lựa chọn không chọn mức độ tiêu chí, nhưng vẫn cần thể hiện là nên chọn"):
+ * mức tiêu chí KHÔNG bắt buộc — ô chưa chọn chỉ nhắc "nên chọn" ở panel. Điểm không bắt buộc. `p` giữ cho nơi gọi (mọi phần cùng luật).
+ */
+export function phanDu(_p: PhanBc, b: Pick<BanGhiBc, 'muc' | 'chu'> | null | undefined): boolean {
+  return !!b && !!b.chu.trim();
+}
+
+/**
+ * BC-PH-KY-NANG (chủ SP 28/11): phần KHÔNG cần làm của MỘT em trong một đợt — `khong_hoc`: kỹ năng em không học (lớp FT, môn đăng ký của lộ trình — N13;
+ * lớp thường không chia môn → đủ); `bo`: Head / Quản trị / Admin bỏ kỹ năng đó (`bao_cao_ph_bo_em.phan`). "Nhận xét chung" luôn cần (bỏ cả em là việc khác).
+ * MỘT hàm cho mọi nơi đếm (tab, n/N, việc GV, việc Admin / QL, chip, xuất) — đi cùng `phanCanLam`.
+ */
+export type KhongCan = Record<string, 'khong_hoc' | 'bo'>;
+export function phanKhongCan(bo: readonly Pick<PhanBc, 'khoa'>[], ft: boolean, mon: MonVao, boPhan: readonly string[] | null | undefined): KhongCan {
+  const out: KhongCan = {};
+  let hoc: ReadonlySet<string> | null = null;
+  if (ft && mon) { try { hoc = chuanMon(mon); } catch { hoc = null; } }   // dữ liệu môn hỏng → coi như đủ môn (không bớt việc nhầm)
+  for (const p of bo) {
+    if (p.khoa === 'chung') continue;
+    if (hoc && !hoc.has(p.khoa)) out[p.khoa] = 'khong_hoc';
+    else if (boPhan?.includes(p.khoa)) out[p.khoa] = 'bo';
+  }
+  return out;
+}
+/** Phần em phải làm (bộ phần − `phanKhongCan`). */
+export const phanCanLam = <T extends Pick<PhanBc, 'khoa'>>(bo: readonly T[], khong: KhongCan): T[] => bo.filter((p) => !khong[p.khoa]);
+/** Em đủ cả đợt: mọi phần cần làm đã đủ (`du(khoa)`). */
+export const emDuDot = (bo: readonly Pick<PhanBc, 'khoa'>[], khong: KhongCan, du: (khoa: string) => boolean): boolean => phanCanLam(bo, khong).every((p) => du(p.khoa));
+/**
+ * Cột `bao_cao_ph_bo_em` của em (máy chủ ghép `đợt` hoặc `đợt=["phần",…]`, cách nhau "|") → quyết định cho đợt `ma`: 'em' = bỏ cả em · mảng = kỹ năng bỏ · null = không bỏ.
+ */
+export function boCuaDot(bo: string | null | undefined, ma: string): 'em' | string[] | null {
+  if (!bo) return null;
+  for (const x of bo.split('|')) {
+    const i = x.indexOf('=');
+    if ((i < 0 ? x : x.slice(0, i)) !== ma) continue;
+    if (i < 0) return 'em';
+    try { const v = JSON.parse(x.slice(i + 1)); return Array.isArray(v) ? v.filter((k): k is string => typeof k === 'string') : null; } catch { return null; }
+  }
+  return null;
 }
 /**
  * BAO-PH-DAT-NHANH (chủ SP 15/11): tiêu chí còn TRỐNG của một em ở một phần — bản đã lưu, chưa có thì mức đặt sẵn như đợt trước (như panel viết:
