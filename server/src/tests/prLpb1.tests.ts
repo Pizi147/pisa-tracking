@@ -468,4 +468,32 @@ export async function runPrLpb1Tests(t: any) {
     const s = fs.readFileSync(path.join(REPO, 'web/src/modules/classes/BanGiaoPanel.tsx'), 'utf8');
     assert(s.includes('<TuyenEm lenhId={em.lenhId} />') && s.includes('`/tuyen/chuyen_lop/${lenhId}`'), 'thiếu Tuyến em trong panel Bàn giao');
   });
+  check('LPB1-15 · [XM-3] Head + GĐCN theo dõi mặc định việc khung ĐÃ GIAO (tính khi đọc): khối + tab Đang theo dõi cùng hàm; chưa giao → không; bỏ theo dõi → hết ở cả hai, có lịch sử', () => thu(() => {
+    const HEAD = nguoiVai('manager', 1)[0];
+    const lop = lopMoi('FT', true);
+    const [G] = gvRanh(lop, 1);
+    const { cy } = emFt(lop);
+    const pT = loadPrincipal(TVV), pH = loadPrincipal(HEAD);
+    const cauTab = () => chayTrongRequest('GET', () => { const a = soCauSql(); gv.viecTheoDoi(pH); return soCauSql() - a; });
+    xoaNho();
+    const n0 = cauTab();
+    const coHead = (k: any) => k.theoDoi.some((x: any) => x.id === HEAD && x.vai === 'head');
+    const trongTab = () => { xoaNho(); return gv.viecTheoDoi(pH).nhom.some((n: any) => n.mo.some((x: any) => x.loai === 'chot_ngay_thi' && x.refId === cy)); };
+    assert(!coHead(gv.xemGiaoViec(pT, 'chot_ngay_thi', cy)) && !trongTab(), 'việc ở người theo luật mà Head đã theo dõi');
+    gv.doiPhuTrach(pT, 'chot_ngay_thi', cy, { userId: G, phuTrachCu: null });
+    xoaNho();
+    const k = gv.xemGiaoViec(pH, 'chot_ngay_thi', cy);
+    assert(coHead(k) && k.toiTheoDoi, `khối thiếu Head: ${JSON.stringify(k.theoDoi)}`);
+    assert(!all(`SELECT 1 FROM viec_theo_doi WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND user_id = ?`, cy, HEAD).length, 'không chèn dòng theo dõi (tính khi đọc)');
+    assert(trongTab(), 'tab Đang theo dõi của Head thiếu việc đã giao');
+    xoaNho();
+    /* Tốc độ: hàm mới +2 câu (tập việc khung đã giao · lịch sử "bỏ"); đọc việc khung để vẽ dòng là đường SẴN CÓ (`docViecLo`, như mọi việc khung đang theo dõi). */
+    const n1 = cauTab();
+    console.log(`      (đo: Đang theo dõi của Head ${n0} → ${n1} câu khi có một việc khung đã giao)`);
+    assert(n1 - n0 <= 6, `Đang theo dõi ${n0} → ${n1} câu`);
+    xoaNho();
+    const sau = gv.boTheoDoi(pH, 'chot_ngay_thi', cy, HEAD);
+    assert(!coHead(sau) && !trongTab(), 'bỏ theo dõi mặc định mà vẫn còn');
+    assert(all(`SELECT 1 FROM viec_giao_lan WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND truong = 'theo_doi' AND cu = ? AND moi IS NULL`, cy, String(HEAD)).length === 1, 'thiếu lịch sử bỏ');
+  }));
 }

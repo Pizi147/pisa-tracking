@@ -81,11 +81,14 @@ export function cvxlCuaLop(lopId: number | null | undefined): number | null {
       AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = l.user_id AND ur.status = 'active' AND r.key = 'scheduler')`).get(lopId) as any)?.u ?? null;
 }
 
-/** Người giữ vai Head / Quản trị / Lead TVV (mọi chi nhánh) — MỘT câu mỗi request; sắp theo lúc được gán. Kiểm "còn hiệu lực" lúc đọc, Head lùi một người. */
+/** Người giữ vai Head / Quản trị / Lead TVV / GĐCN (mọi chi nhánh) — MỘT câu mỗi request; sắp theo lúc được gán. Kiểm "còn hiệu lực" lúc đọc, Head lùi một người. */
 const giuVai = () => nho('nguoi-nhan:giu-vai', () => db().prepare(`SELECT r.key AS k, ur.user_id AS u, ur.branch_id AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-    JOIN users u ON u.id = ur.user_id WHERE r.key IN ('manager', 'system_admin', 'lead_consultant') AND ${HOAT_DONG} ORDER BY ur.created_at, ur.id`).all() as { k: string; u: number; b: number | null }[]);
+    JOIN users u ON u.id = ur.user_id WHERE r.key IN ('manager', 'system_admin', 'lead_consultant', 'branch_director') AND ${HOAT_DONG} ORDER BY ur.created_at, ur.id`).all() as { k: string; u: number; b: number | null }[]);
 /** `u` còn giữ vai `vai` gán ĐÚNG chi nhánh `cn`. */
 export const conVaiO = (u: number | null | undefined, vai: string, cn: number | null | undefined): boolean => !!u && !!cn && giuVai().some((x) => x.u === u && x.k === vai && x.b === cn);
+/** PTA 28/11 (a): Head + GĐCN gán ĐÚNG chi nhánh `cn` (mọi người, như theo dõi Báo PH) — 0 câu (cùng tập `giuVai`). */
+export const headGdcnO = (cn: number | null | undefined): { u: number; k: string }[] =>
+  (cn ? giuVai().filter((x) => (x.k === 'manager' || x.k === 'branch_director') && x.b === cn).filter((x, i, a) => a.findIndex((y) => y.u === x.u) === i) : []);
 /** N74: Head lùi MỘT người — Head gán chi nhánh sớm nhất → Head toàn hệ thống sớm nhất → Quản trị sớm nhất (như `ql` cũ nhưng một người). */
 export function headCua(cn: number | null | undefined): number | null {
   const ds = giuVai();

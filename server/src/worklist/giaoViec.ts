@@ -31,10 +31,10 @@ import { giuViecQl, tvvConVai } from './viecTvv.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import type { WorkItem } from './mywork.ts';
 import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
-import { CON_VAI_BPXL, KHONG_TVV_SQL, conVaiO, headCua, nguoiNhanTuDong } from './nguoiNhan.ts';
+import { CON_VAI_BPXL, KHONG_TVV_SQL, conVaiO, headCua, headGdcnO, nguoiNhanTuDong } from './nguoiNhan.ts';
 import { nhanTinHetHieuLuc } from '../classes/lienPhongBan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV, tenMon, tuanLich } from '../../../shared/domain/index.ts';
-import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, laKhung, type LoaiKhung } from './khungViec.ts';
+import { BANG_KHUNG, CN_KHUNG, KHUNG_CO_QUYEN, KHUNG_KHONG_BPXL, LOAI_KHUNG, NHAN_KHUNG, SID_KHUNG, giaoCua, giaoKhung, laKhung, type LoaiKhung } from './khungViec.ts';
 import { docViecKhung, docViecKhungLo, type ViecKhung } from './khungDoc.ts';
 import { coTheChotLoTrinh } from '../classes/quyenChuyenLop.ts';
 import { quyenBanGiao, viecBanGiao } from '../classes/banGiao.ts';
@@ -119,6 +119,21 @@ const ten = (r: any) => r.full_name as string;
 /** GV-3 (PTA chốt): nhãn vai của người theo dõi — vai cao nhất LIÊN QUAN tới việc: Head · CX (vai ở chi nhánh việc / toàn hệ thống) > GVCN · TVV của em > GV ghi vi phạm > vai TVV
  * > Admin · Quản trị > GV. Không vai nào → null (web không gắn nhãn). `t.vai` = các khoá vai (group_concat) đọc cùng câu theo dõi. */
 export type VaiTheoDoi = 'head' | 'gdcn' | 'cx' | 'gvcn' | 'tvv' | 'gv_ghi' | 'admin' | 'qt' | 'gv';
+/**
+ * PTA 28/11 (a) — tiền lệ #2290, luật 26/11 "lead chủ yếu theo dõi việc đã giao": việc KHUNG đã GIAO cho người khác (`pt`) → Head + GĐCN chi nhánh việc là người theo dõi
+ * MẶC ĐỊNH, TÍNH KHI ĐỌC (không chèn `viec_theo_doi`): trừ người được giao và người đã bỏ theo dõi (`daBo` — lịch sử theo dõi mới nhất của người đó là "bỏ").
+ * MỘT hàm cho khối (`xemGiaoViec`), bỏ theo dõi (`boTheoDoi`) và tab Đang theo dõi (`viecTheoDoi`). 0 câu (`headGdcnO` đọc tập vai đã nhớ theo request).
+ * Việc đang ở người theo luật: không người theo dõi mặc định (Head thấy ở "Tất cả").
+ */
+export const theoDoiMacDinhKhung = (loai: string, pt: number | null, branchId: number | null, daBo: (uid: number) => boolean = () => false): { u: number; k: string }[] =>
+  (laKhung(loai) && pt ? headGdcnO(branchId).filter((x) => x.u !== pt && !daBo(x.u)) : []);
+/** Lịch sử theo dõi sắp CŨ → MỚI → người có lần cuối là "bỏ". */
+const daBoTheoDoi = (lan: { truong: string; cu: string | null; moi: string | null }[]) => (uid: number) => {
+  const s = String(uid);
+  const cuoi = lan.filter((l) => l.truong === 'theo_doi' && (l.cu === s || l.moi === s)).at(-1);
+  return !!cuoi && cuoi.moi === null;
+};
+
 const vaiTheoDoi = (v: Viec, t: { user_id: number; nguon: string; vai: string | null }): VaiTheoDoi | null => {
   const k = new Set((t.vai ?? '').split(',').filter(Boolean));
   return k.has('manager') ? 'head' : k.has(VAI_GDCN) ? 'gdcn' : k.has('cx') ? 'cx' : t.user_id === v.gvcn ? 'gvcn' : t.user_id === v.tvv ? 'tvv' : t.nguon === 'gv_ghi' ? 'gv_ghi' : k.has('consultant') ? 'tvv'
@@ -542,6 +557,8 @@ export function boTheoDoi(p: Principal, loai: LoaiGiao, id: number, uid: number)
     if (db().prepare('DELETE FROM viec_theo_doi WHERE loai = ? AND ref_id = ? AND user_id = ?').run(loai, id, uid).changes) {
       ghiLan(loai, id, 'theo_doi', uid, null, p.userId);
       luuGhiDao(db(), { ...GD_BO_TD(loai, uid), id, nguoi: p.userId, ghi: g });   // để Hoàn tác thêm lại đúng nguồn
+    } else if (theoDoiMacDinhKhung(loai, v.pt, v.branchId).some((x) => x.u === uid)) {
+      ghiLan(loai, id, 'theo_doi', uid, null, p.userId);   // PTA 28/11 (a): bỏ người theo dõi MẶC ĐỊNH (không dòng) — lịch sử "bỏ" là điều kiện ẩn; Hoàn tác thêm lại thành dòng `tay`
     }
   });
   /* Tự bỏ theo dõi mà không còn quyền xem việc → không trả khối (tránh 403 ngay sau thao tác thành công). */
@@ -954,7 +971,9 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
      UNION ALL SELECT CASE h.mac_dinh WHEN 2 THEN 'han_tinh_lai' ELSE 'han' END, h.han_cu, NULLIF(h.han_moi, ''), h.luc, u.full_name FROM viec_han_lan h LEFT JOIN users u ON u.id = h.boi WHERE h.loai = ?1 AND h.viec_id = ?2
      ORDER BY 4`,
   ).all(loai, id) as any[];
-  const ids = new Set<number>([...v.phuTrach, ...v.macDinh, ...(r.giao_boi ? [r.giao_boi] : []), ...(r.xong_boi ? [r.xong_boi] : []), ...(r.nhap_ho_boi ? [r.nhap_ho_boi] : []),
+  /* PTA 28/11 (a): Head + GĐCN theo dõi mặc định việc khung đã giao — tính khi đọc (`lan` sắp cũ → mới), chưa có dòng `viec_theo_doi` thì thêm vào danh sách. */
+  const md = theoDoiMacDinhKhung(loai, v.pt, v.branchId, daBoTheoDoi(lan)).filter((x) => !td.some((t) => t.user_id === x.u));
+  const ids = new Set<number>([...md.map((x) => x.u), ...v.phuTrach, ...v.macDinh, ...(r.giao_boi ? [r.giao_boi] : []), ...(r.xong_boi ? [r.xong_boi] : []), ...(r.nhap_ho_boi ? [r.nhap_ho_boi] : []),
     ...lan.filter((l) => l.truong === 'phu_trach' || l.truong === 'theo_doi').flatMap((l) => [l.cu, l.moi]).filter(Boolean).map(Number)]);
   const tenCua = new Map<number, string>((db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(JSON.stringify([...ids])) as any[]).map((u) => [u.id, u.full_name]));
   const nguoi = (uid: number): Nguoi => ({ id: uid, ten: tenCua.get(uid) ?? null });
@@ -973,8 +992,9 @@ export function xemGiaoViec(p: Principal, loai: LoaiGiao, id: number): KhoiGiaoV
     hanTinhLai: (() => { const c = lan.filter((l) => l.truong === 'han' || l.truong === 'han_tinh_lai').at(-1); return c?.truong === 'han_tinh_lai' && c.moi === h.chon; })(),
     /* GV-3 (rà PTA): người đang phụ trách (kể cả người theo luật khi việc về mặc định) không hiện là người theo dõi việc của chính mình — dòng giữ trong bảng
        (giao đi lần nữa thì hiện lại; Hoàn tác cần dòng còn nguyên), chỉ lọc khi đọc. Tab Đang theo dõi đã bỏ việc của mình (`viecTheoDoi`). */
-    theoDoi: td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon, vai: vaiTheoDoi(v, t) })),
-    toiTheoDoi: td.some((t) => t.user_id === p.userId) && !v.phuTrach.includes(p.userId),
+    theoDoi: [...td.filter((t) => !v.phuTrach.includes(t.user_id)).map((t) => ({ id: t.user_id, ten: t.full_name ?? null, nguon: t.nguon, vai: vaiTheoDoi(v, t) })),
+      ...md.map((x) => ({ id: x.u, ten: tenCua.get(x.u) ?? null, nguon: 'head', vai: (x.k === 'manager' ? 'head' : 'gdcn') as VaiTheoDoi }))],
+    toiTheoDoi: (td.some((t) => t.user_id === p.userId) || md.some((x) => x.u === p.userId)) && !v.phuTrach.includes(p.userId),
     coTheDoiNguoi: doiDuoc, coTheSuaTheoDoi: v.mo && coTheSuaTheoDoi(p, v), hoanTacDuoc: !!gd,
     moTa: mt ? { noiDung: mt.noi_dung, suaBoi: mt.full_name ?? null, suaLuc: mt.sua_luc } : null, coTheSuaMoTa: coTheSuaMoTa(p, v), viecCon: con,
     quanViecCon: v.mo && (v.phuTrach.includes(p.userId) || quanLyVanHanh(p, { branchId: v.branchId })),
@@ -1636,6 +1656,18 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
         OR (t.loai = 'tra_lai' AND (tl.trang_thai = 'mo' OR tl.xong_luc >= ?3))
         OR (t.loai = 'van_hanh' AND (vh.progress NOT IN ('done','stopped') OR vh.updated_at >= ?3)))`,
   ).all(p.userId, today, tu) as any[];
+  /* PTA 28/11 (a): Head / GĐCN — việc khung đã GIAO cho người khác ở chi nhánh mình, theo dõi mặc định tính khi đọc (CÙNG `theoDoiMacDinhKhung` với khối); trừ việc
+     đã có dòng theo dõi và việc người xem đã bỏ theo dõi. +1 câu (tập việc khung đã giao `giaoKhung`, nhớ theo request) · +1 câu lịch sử "bỏ" chỉ khi có ứng viên. */
+  if (p.roleKeys.includes('manager') || p.roleKeys.includes(VAI_GDCN)) {
+    const co = new Set(rows.map((r) => `${r.loai}:${r.ref_id}`));
+    const ung = [...new Set(giaoKhung().values())].filter((g) => !co.has(`${g.loai}:${g.id}`) && theoDoiMacDinhKhung(g.loai, g.pt, g.cn).some((x) => x.u === p.userId));
+    if (ung.length) {
+      const bo = new Set((db().prepare(`SELECT j.value AS k FROM json_each(?2) j WHERE (SELECT x.moi IS NULL AND x.cu = ?1 FROM viec_giao_lan x
+          WHERE x.loai = json_extract(j.value, '$[0]') AND x.ref_id = json_extract(j.value, '$[1]') AND x.truong = 'theo_doi' AND (x.cu = ?1 OR x.moi = ?1) ORDER BY x.id DESC LIMIT 1)`)
+        .all(String(p.userId), JSON.stringify(ung.map((g) => [g.loai, g.id]))) as { k: string }[]).map((r) => r.k));
+      for (const g of ung) if (!bo.has(JSON.stringify([g.loai, g.id]))) rows.push({ loai: g.loai, ref_id: g.id });
+    }
+  }
   const giu = giuViecQl(p);
   const coVai = (key: string, b: number | null) => p.grants.some((g) => laVaiThat(g, key) && (g.branchId === null || g.branchId === b));
   /* Rà PTA #2280 (tốc độ): việc khung đọc theo LOẠI một lượt (`docViecLo`). */
