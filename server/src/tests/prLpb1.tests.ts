@@ -17,6 +17,7 @@ export async function runPrLpb1Tests(t: any) {
   const luu: any = await import('../students/dongLuuTru.ts');
   const xoaHv: any = await import('../students/xoaHocVien.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const vtMod: any = await import('../worklist/viecTvv.ts');
   const { migratePrLpb1 } = await import('../migrate/prLpb1.ts');
   const { catLpb1 } = await import('./catBaoPh0.ts');
   const { default: SqliteDb } = await import('libsql') as any;
@@ -448,5 +449,23 @@ export async function runPrLpb1Tests(t: any) {
     const giao = chayTrongRequest('GET', () => { const a = soCauSql(); kv.giaoKhung(); kv.giaoKhung(); return soCauSql() - a; });
     assert(giao === 1, `đọc khung việc đã giao ${giao} câu (nhớ theo request)`);
     assert(n > 0, `số câu /my-work ${n}`);
+  });
+
+  /* PR máy chủ sau LPB-3 / VAI-1 XM-2 (PTA 28/11). */
+  check('LPB1-13 · khongTvvDong: người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / việc đã giao tay / chưa ai giữ → không', () => {
+    const vt = vtMod;
+    assert(vt.khongTvvDong({ ownerId: 5 }, null) === 'chua_co', 'chưa có TVV');
+    assert(vt.khongTvvDong({ ownerId: 5 }, 9) === 'da_nghi', 'TVV hết vai (người giữ khác TVV)');
+    assert(vt.khongTvvDong({ ownerId: 9 }, 9) === null, 'TVV giữ');
+    assert(vt.khongTvvDong({ ownerId: 5, giaoBoi: 'Head' }, null) === null, 'đã giao tay');
+    assert(vt.khongTvvDong({ ownerId: null }, null) === null, 'chưa ai giữ');
+    /* Sau thi (Bước tiếp · KQ thi thật) + Bổ sung hồ sơ + Chốt ngày thi dùng CÙNG hàm. */
+    for (const f of ['server/src/loTrinh/buocTiep.ts', 'server/src/loTrinh/thiThat.ts', 'server/src/worklist/viecTvv.ts']) {
+      assert(/khongTvv: khongTvvDong\(|kt\.add\(khongTvvDong\(/.test(fs.readFileSync(path.join(REPO, f), 'utf8')), `${f} chưa gắn khongTvv`);
+    }
+  });
+  check('LPB1-14 · [XM-2] panel Bàn giao GVCN: Tuyến Chuyển lớp của em đang xem qua đường sẵn có /tuyen/chuyen_lop/:lệnh (không đường mới)', () => {
+    const s = fs.readFileSync(path.join(REPO, 'web/src/modules/classes/BanGiaoPanel.tsx'), 'utf8');
+    assert(s.includes('<TuyenEm lenhId={em.lenhId} />') && s.includes('`/tuyen/chuyen_lop/${lenhId}`'), 'thiếu Tuyến em trong panel Bàn giao');
   });
 }

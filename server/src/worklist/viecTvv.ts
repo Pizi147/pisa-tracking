@@ -116,6 +116,9 @@ const laQlNhanh = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMI
 /** GV / GVCN không giữ việc TVV nào — khỏi tốn câu. VAI-0: + Lead TVV (giữ việc em chưa có TVV ở chi nhánh mình — N76b). */
 /** VAI-1 XM-2: việc TVV không ở TVV của em — em chưa từng có TVV (`chua_co`) hay TVV đã hết vai / nghỉ (`da_nghi`). */
 export const khongTvvCua = (tvvGoc: number | null | undefined): 'chua_co' | 'da_nghi' => (tvvGoc ? 'da_nghi' : 'chua_co');
+/** VAI-1 XM-2: việc TVV (khung) có người giữ THEO LUẬT không phải TVV của em (Lead TVV / Head) → lý do trên dòng; việc đã giao tay thì không. 0 câu. */
+export const khongTvvDong = (chu: { ownerId: number | null; giaoBoi?: string | null }, tvvGoc: number | null | undefined): 'chua_co' | 'da_nghi' | null =>
+  (!chu.giaoBoi && chu.ownerId !== null && (!tvvGoc || chu.ownerId !== tvvGoc) ? khongTvvCua(tvvGoc) : null);
 export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant') || laLeadTvv(p) || laQl(p);
 
 /**
@@ -220,7 +223,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   ).all(...thamSoLoc, ...thamSo, ...(dkGiu.length && emToi.length ? [JSON.stringify(emToi)] : [])) as any[];
   const out: WorkItem[] = [];
   /* [XM7] #2070 (Việc để sau 25/11): giữ từng em (lớp · tên · thiếu gì) để dòng gộp mở ra "lớp · em · Thiếu: …" — cùng câu đọc, 0 câu thêm. */
-  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number>; con: { r: any; thieu: string[] }[]; han: string | null; giaoBoi: string | null }>();
+  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number>; con: { r: any; thieu: string[] }[]; han: string | null; giaoBoi: string | null; kt: Set<string | null> }>();
   const daChot = new Set<number>();
   for (const r of ds.sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
     const goc = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
@@ -239,7 +242,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
           ownerId: chu.ownerId, owner: null, mine: chu.mine, due: chu.han ?? null, statusLabel: chu.han ? `hạn ${chu.han.slice(8, 10)}/${chu.han.slice(5, 7)}` : 'Không tính hạn',
           ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'chot_ngay_thi', id: r.cycle_id },
           /* VAI-1 XM-2: người giữ theo luật không phải TVV của em (Lead TVV / Head) → lý do trên dòng. */
-          ...(!chu.giaoBoi && chu.ownerId !== null && (!r.tvv || chu.ownerId !== r.tvv) ? { khongTvv: khongTvvCua(r.tvv) } : {}),
+          ...(khongTvvDong(chu, r.tvv) ? { khongTvv: khongTvvDong(chu, r.tvv)! } : {}),
           ...(chu.han ? { urgency: chu.han < o.today ? 'overdue' : chu.han === o.today ? 'today' : 'normal' } : {}),
         });
       }
@@ -250,11 +253,12 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
     /* LPB-1: em đã giao (Bổ sung hồ sơ) rời nhóm của người mặc định, vào nhóm người được giao. */
     const chu = chuKhung(p, o.tatCa, 'bo_sung_ho_so', r.id, goc);
     if (!chu) continue;
-    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>(), con: [], han: null, giaoBoi: null };
+    const g = theoNguoi.get(chu.ownerId) ?? { mine: chu.mine, em: new Set<number>(), truong: new Map<string, number>(), con: [], han: null, giaoBoi: null, kt: new Set<string | null>() };
     if (g.em.has(r.id)) continue;
     if (chu.han && (!g.han || chu.han < g.han)) g.han = chu.han;   // LPB-1: hạn đặt tay của em sớm nhất = hạn của dòng gộp
     g.giaoBoi ??= chu.giaoBoi ?? null;
     g.em.add(r.id);
+    g.kt.add(khongTvvDong(chu, r.tvv));   // VAI-1 XM-2: dòng gộp mang lý do khi MỌI em cùng một lý do
     g.con.push({ r, thieu: thieu.map((m) => m.label) });
     for (const m of thieu) g.truong.set(m.label, (g.truong.get(m.label) ?? 0) + 1);
     theoNguoi.set(chu.ownerId, g);
@@ -273,6 +277,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       ...(g.han ? { urgency: g.han < o.today ? 'overdue' : g.han === o.today ? 'today' : 'normal' } : {}), ...(g.giaoBoi ? { giaoBoi: g.giaoBoi } : {}),
       /* Từng em: lớp · tên · thiếu gì — dòng một em ghi thẳng lớp · tên; panel ghi tên + lớp từng em. Chỉ hiển thị: việc vẫn MỘT dòng mỗi người giữ
          (không `con` — `con` là việc thật, các đường đếm / gán việc theo em đọc nó). */
+      ...(g.kt.size === 1 && [...g.kt][0] ? { khongTvv: [...g.kt][0] as 'chua_co' | 'da_nghi' } : {}),
       emBoSung: g.con.map(({ r, thieu }) => ({ id: r.id, ten: r.full_name, lop: r.class_code ?? null, thieu: thieu.join(' · ') })),
     });
   }

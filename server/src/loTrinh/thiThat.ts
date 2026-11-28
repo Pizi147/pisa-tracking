@@ -10,7 +10,7 @@ import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, laAdminCua, lopDayDu, type Principal } from '../permissions.ts';
-import { coTheGiuViecTvv, nguoiGiuTvv } from '../worklist/viecTvv.ts';
+import { coTheGiuViecTvv, khongTvvDong, nguoiGiuTvv } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { cycleById, examPlanOf } from '../fasttrack/cycles.ts';
@@ -307,6 +307,7 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
       due: chu.han ?? null, statusLabel: chu.han ? `hạn ${chu.han.slice(8, 10)}/${chu.han.slice(5, 7)}` : 'Không tính hạn',
       ...(chu.han ? { urgency: chu.han < f.today ? 'overdue' : chu.han === f.today ? 'today' : 'normal' } : {}),
       ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'thi_that', id: c.id },
+      ...(khongTvvDong(chu, c.tvv) ? { khongTvv: khongTvvDong(chu, c.tvv)! } : {}),   // VAI-1 XM-2
     });
   }
   return out;

@@ -17,6 +17,8 @@ import { lopKq } from '../../ui/BieuTuong.tsx';
 import { DaiChenLo, DuoiOChu, KhoiDaGhi, useChen, useChenLo } from '../../ui/KhoiDaGhi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { KhoiTuyen } from '../yThuc/KhoiTuyen.tsx';
+import type { Tuyen } from '../yThuc/kieu.ts';
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2, mockup 20 màn F · G · đọc bàn giao) — MỘT panel, ba dạng theo người mở:
@@ -245,6 +247,7 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
               {!em.xacNhan && em.hanGvcn && <Han loai="viec-van-hanh" han={em.hanGvcn} />}
             </div>
 
+            <TuyenEm lenhId={em.lenhId} />
             <TuDienEm tuDien={em.tuDien} daChup={em.tuDienDaChup} />
 
             <section aria-label={t('Thông tin bàn giao của GVBM')}>
@@ -340,6 +343,15 @@ function MasterDetail({ dto, lenhId, chiDoc, laMon = false, onClose, onDone, rel
  * Cột "Kết quả" của bảng GVBM (GD-20b, chủ SP duyệt #1745: "cho điểm xuống dòng và làm rõ"): dòng 1 lượt + tổng (Overall / %) đậm, ✓ / ✗ màu như ô điểm;
  * dòng 2 điểm từng kỹ năng lưới hai cột, chữ số đều, kỹ năng đang bàn giao đậm hơn. Cùng nguồn `diemMon` (FT: kỹ năng bàn giao; lớp thường: mọi môn).
  */
+/**
+ * LPB-3 [XM-2] (mockup v28 L6b): Tuyến Chuyển lớp của em đang xem — tuyến tính theo LỆNH (một em), việc Bàn giao GVCN là của cả lớp nên khối giao việc không mang tuyến;
+ * tải khi chọn em (`GET /tuyen/chuyen_lop/:lệnh`, quyền = xem Ý thức em). Không xem được / lỗi → không vẽ (phần bàn giao vẫn dùng được).
+ */
+function TuyenEm({ lenhId }: { lenhId: number }) {
+  const { data } = useApi<Tuyen>(`/tuyen/chuyen_lop/${lenhId}`, [lenhId]);
+  return <KhoiTuyen tuyen={data} />;
+}
+
 function KetQuaBanGiao({ d, monBanGiao }: { d: DiemHv; monBanGiao: readonly string[] }) {
   const pt = d.soVoi?.nhan === 'ngưỡng' || d.donVi === '%';
   const datTong = d.overall === null || !d.soVoi ? null : d.overall >= d.soVoi.v;
