@@ -1617,14 +1617,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        QT tat-ca f51ee151b7d33334, QT tat-ca cn fcdec41d090473ae */
     /* LPB-2b (28/11): chụp lại 4 băm — đổi CÓ CHỦ Ý: việc Báo PH · Chuyển lớp thêm `nhomChuyenLop.vao` (mã tuần) + `chiTiet` ("Lên MB BE 09" · "… · chưa có TVV") cho dòng "Chuyển lớp · vào W…" (mockup v28 L2a / L2c).
        Việc / người / hạn không đổi. Trước: QL toi e06b412e0dab9ceb, QL tat-ca 1d4b787c053ff3a8, QT tat-ca ffeb71493ae399ac, QT tat-ca cn 6cbcb2d84e901c32 */
-    'QL toi': '3387b7985813d2c2', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '443d93ad2f57d486', 'GVBM toi': '926ec6a8f4882c77',
+    'QL toi': '93e3528f50903e5a', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': '443d93ad2f57d486', 'GVBM toi': '926ec6a8f4882c77',
     /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
        không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
     /* NHẸ HƠN (chủ SP 22/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý CHỈ chuỗi ngày: ngày luôn dd/mm/yyyy (`shortDate` / `ngay`) ở `reason` / `contextLabel`
        ("đã thi 15/08/2026", "Đã thi 05/09/2026"). Đã kiểm: bỏ "/2026" khỏi mọi ngày trong JSON (trừ "· thi dd/mm/yyyy" của `examPlanOf` vốn đã có năm) →
        băm trùng ảnh cũ. 10 băm khác giữ. Trước: QT tat-ca dc1d7094099dce13 */
-    'GVCN_THUONG toi': '443d93ad2f57d486', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': 'dde9dd81b2ba509a', 'QT tat-ca': 'da3f209cf0812f91',
-    'QT tat-ca cn': 'eb69400f19fd1aae', 'QL gvcn': '23c08bc903d6eb33', 'GVS toi': '204bfff0241a33aa',
+    'GVCN_THUONG toi': '443d93ad2f57d486', 'ADMIN toi': '55b7510462572732', 'QL tat-ca': 'a5ddc03755bb6365', 'QT tat-ca': 'a2c98580a36308c5',
+    'QT tat-ca cn': '8dbaff8030fb4b90', 'QL gvcn': '23c08bc903d6eb33', 'GVS toi': '204bfff0241a33aa',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1646,7 +1646,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* PHOI-HOP-SOS-INFO (06/11): dòng Phối hợp SOS thêm `theSos` (thẻ kết quả SOS); băm bỏ trường đó → 11 băm cũ trùng ảnh main (không việc nào khác đổi, không chụp lại). */
     /* CV-TAB b (06/11): việc thêm `cn` (chi nhánh lớp), kết quả thêm `chiNhanh` (GV liên chi nhánh) / `cnAn` (QL xem một GV); băm bỏ ba trường đó → 11 băm cũ trùng (không chụp lại). */
     /* LPB-1 (N73 ⑤): việc có khung thêm `khungViec` ({ loai, id } cho panel giao việc); băm bỏ trường đó — dữ liệu mẫu không có việc khung đã giao → 11 băm cũ trùng (không chụp lại). */
-    const bo = (k: string, v: any) => (k === 'kns' || k === 'knsQuaHan' || k === 'theSos' || k === 'lamThay' || k === 'chiXem' || k === 'cn' || k === 'chiNhanh' || k === 'cnAn' || k === 'khungViec' ? undefined
+    /* VAI-1 XM-2: việc TVV về Lead TVV / Head thêm `khongTvv` (lý do); băm bỏ trường đó. Dòng em Chuyển lớp không còn chữ cứng " · chưa có TVV" trong
+       `nhomChuyenLop.chiTiet` (web ghi từ `khongTvv`) → chụp lại 4 băm QL / QT (chỉ đổi chuỗi đó). */
+    const bo = (k: string, v: any) => (k === 'kns' || k === 'knsQuaHan' || k === 'theSos' || k === 'lamThay' || k === 'chiXem' || k === 'cn' || k === 'chiNhanh' || k === 'cnAn' || k === 'khungViec' || k === 'khongTvv' ? undefined
       : k === 'summary' && v ? Object.fromEntries(Object.entries(v).filter(([x]) => !MOI.has(x))) : v);
     const bam = chayTrongRequest('GET', () => createHash('sha256').update(JSON.stringify(fn(), bo)).digest('hex').slice(0, 16));
     if (ANH[ten] !== bam) sai.push(`'${ten}': '${bam}',`);

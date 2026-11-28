@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, LUOT_SAU_THI_SQL, SU_KIEN_TAM_DUNG_SQL, khoangTamDung, khoangTuSuKien } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
-import { laLeadTvv, tvvConVai, tvvHieuLuc } from '../worklist/viecTvv.ts';
+import { khongTvvCua, laLeadTvv, tvvConVai, tvvHieuLuc } from '../worklist/viecTvv.ts';
 import { KHONG_TVV_SQL, chonLanLuot, conVaiO, headCua } from '../worklist/nguoiNhan.ts';
 import { VAI_GDCN, VAI_LEAD_TVV } from '../../../shared/domain/index.ts';
 import { canManageDiscipline, gvcnCuaEm, xemYThucHv } from './access.ts';
@@ -739,6 +739,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     else if (!tvv) { if (headCua(r.branch_id) === p.userId) ownerId = p.userId; else if (o.tatCa) ownerId = headCua(r.branch_id); else continue; }   // VAI-0 (N74): một Head
     else if (o.tatCa) ownerId = tvv;
     else continue;
+    /* VAI-1 XM-2 (mockup v29 V4): việc về Lead TVV / Head vì em chưa có TVV hoặc TVV hết vai — dòng + panel ghi lý do (đọc từ cột sẵn có, 0 câu thêm). */
+    const kt = r.phu_trach_id == null && !tvv ? { khongTvv: khongTvvCua(r.tvv) } : {};
     const han = hanBaoPhHieuLuc(r.han, khoangTuSuKien(r.dung), r.han_chon);
     /* TL-1 (N61): "Chờ GV sửa" — hạn tạm dừng (không quá hạn, không "hôm nay"), cờ cho web. */
     const urgency = r.tra_lai_id ? 'normal' : quaHanBaoPh(han, o.today) ? 'overdue' : han === o.today ? 'today' : 'normal';
@@ -756,7 +758,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         tieuDe: `Báo PH · ${traoDoi ? 'Trao đổi gia đình' : r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: traoDoi && r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
         ownerId, owner: null, mine: ownerId === p.userId,
-        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
+        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...kt,
       });
       continue;
     }
@@ -770,7 +772,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         tieuDe: `Báo PH · Meeting CX/GĐCN · ${r.full_name}`, phu: chuHop(r.hop), actionLabel: 'Ghi KQ',
         href: r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&sub=phoi-hop` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
         ownerId, owner: null, mine: ownerId === p.userId,
-        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
+        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...kt,
       });
       continue;
     }
@@ -786,9 +788,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         reason: `${r.lc_nguon ?? ''} → ${r.lc_dich ?? ''} — báo phụ huynh và ghi kết quả`,
         tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
-        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
+        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...kt,
         nhomChuyenLop: r.lc_nguon_id ? { lopId: r.lc_nguon_id, ma: r.lc_nguon, vao: r.lc_tuan ? tuanLich(r.lc_tuan, o.today) : null,
-          chiTiet: r.lc_dich ? (({ len_lop: `Lên ${r.lc_dich}`, fast_track: `Lên FT · ${r.lc_dich}`, hoc_lai: `Học lại · ${r.lc_dich}` } as Record<string, string>)[r.lc_huong] ?? r.lc_dich) + (tvv ? '' : ' · chưa có TVV') : null } : null,
+          chiTiet: r.lc_dich ? (({ len_lop: `Lên ${r.lc_dich}`, fast_track: `Lên FT · ${r.lc_dich}`, hoc_lai: `Học lại · ${r.lc_dich}` } as Record<string, string>)[r.lc_huong] ?? r.lc_dich) : null } : null,
       });
       continue;
     }
@@ -801,7 +803,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
         reason: `${r.th_nguoi ?? 'GV'} báo tình hình học tập — báo phụ huynh và ghi kết quả`,
         tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
         href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
-        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
+        due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...kt,
       });
       continue;
     }
@@ -813,7 +815,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       reason: r.bao_lai_cua ? `${r.nhan} — báo lại phụ huynh và ghi kết quả` : `Đã lưu xử lý ${r.nhan} — báo phụ huynh và ghi kết quả`,
       tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
-      due: han, statusLabel: r.tra_lai_id ? CHO_GV_SUA : r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...cho,
+      due: han, statusLabel: r.tra_lai_id ? CHO_GV_SUA : r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan, ...cho, ...kt,
     });
   }
   return items;
