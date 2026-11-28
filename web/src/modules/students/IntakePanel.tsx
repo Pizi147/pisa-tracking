@@ -40,8 +40,9 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 const RONG: Partial<Record<CotNhap, number>> = {
   /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
   /* #9: thêm cột Lộ trình 80 — Họ tên, Email, Dự kiến thi, Đã thi tới MT, Tuần bắt đầu, Trạng thái gọn lại để lưới FT vẫn vừa 1440 (không cuộn ngang). */
-  fullName: 160, dob: 170, email: 176, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 80, examDate: 96, daThiToiMt: 96, startWeek: 150, route: 80,   // OV-9: Target 80 cho "6.5 KCK"
+  /* TVV-THEM (PTA rà #2328): thêm cột TVV mà lưới FT vẫn vừa 1440 (vùng lưới 1399 px) — các cột gọn lại. */
+  fullName: 140, dob: 172, email: 128, baselineScore: 64, entryListening: 44, entryReading: 44, entryWriting: 44,
+  entrySpeaking: 44, target: 80, examDate: 84, daThiToiMt: 100, startWeek: 128, route: 72,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'),
@@ -54,7 +55,8 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   route: t('Lộ trình của em — mặc định theo lớp; đổi riêng từng em. Lịch MT tạo theo lộ trình em.'),
 };
 /** TVV-THEM (chủ SP 28/11): cột TVV không bắt buộc, sau cùng (trước Trạng thái) — như ô TVV của Sửa cả lớp. */
-const RONG_TVV = 180;
+const RONG_TVV = 132;
+const RONG_TRANG_THAI = 88;
 /** #9 (LO-TRINH-THEO-HV, chủ SP 11/11): lớp FT có cột Lộ trình từng em (LT1 · LT2 · RF; "Khác" mở ở Bước tiếp › Lộ trình mới). */
 const COT_LO_TRINH: CotLuoi = { key: 'route', nhan: 'Lộ trình' };
 const LO_TRINH_NHAP: readonly string[] = ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC);
@@ -301,12 +303,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: (lopThuong ? 960 : 1390) + RONG_TVV }}>
+          {/* TVV-THEM: màn hẹp chữ ô nhập to hơn (16 px) — lưới cuộn ngang sẵn, nên mọi cột rộng thêm 20 % (`--k`), 1440 giữ vừa khung. */}
+          <table className="w-full table-fixed text-sm [--k:1] max-sm:[--k:1.2]"
+            style={{ minWidth: `calc(${32 + cols.reduce((n, c) => n + (RONG[c.key] ?? 0), 0) + RONG_TVV + RONG_TRANG_THAI}px * var(--k))` }}>
             <colgroup>
-              <col style={{ width: 32 }} />
-              {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}
-              <col style={{ width: RONG_TVV }} />
-              <col style={{ width: 100 }} />
+              {[32, ...cols.map((c) => RONG[c.key] ?? 0), RONG_TVV, RONG_TRANG_THAI].map((w, i) => <col key={i} style={{ width: `calc(${w}px * var(--k))` }} />)}
             </colgroup>
             <thead>
               <tr>
