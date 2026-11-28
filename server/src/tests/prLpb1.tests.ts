@@ -452,7 +452,7 @@ export async function runPrLpb1Tests(t: any) {
   });
 
   /* PR máy chủ sau LPB-3 / VAI-1 XM-2 (PTA 28/11). */
-  check('LPB1-13 · khongTvvDong: người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / việc đã giao tay / chưa ai giữ → không', () => {
+  check('LPB1-16 · khongTvvDong: người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / việc đã giao tay / chưa ai giữ → không', () => {
     const vt = vtMod;
     assert(vt.khongTvvDong({ ownerId: 5 }, null) === 'chua_co', 'chưa có TVV');
     assert(vt.khongTvvDong({ ownerId: 5 }, 9) === 'da_nghi', 'TVV hết vai (người giữ khác TVV)');
