@@ -13,6 +13,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const require_mg: any = await import('../migrate/prBcPhViecGv.ts');
   const cfg: any = await import('../demoConfig.ts');
+  const mg: any = await import('../migrate/prBaoCaoPhKyNang.ts');
   console.log('\nBAO-CAO-PH — báo cáo gửi phụ huynh: đợt, quyền, em đủ, điểm sửa tay');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -54,7 +55,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   check('BC-4 · em đủ = mọi tiêu chí có mức + ô chữ; P (không tiêu chí) đủ khi có chữ; điểm không bắt buộc', () => {
     const L = d.boPhanBc('FT')[1];
     const du = { muc: { c1: 'tot', c2: 'kha', c3: 'kha', c4: 'yeu' }, chu: 'Nghe tốt' };
-    assert(d.phanDu(L, du) && !d.phanDu(L, { ...du, chu: '  ' }) && !d.phanDu(L, { ...du, muc: { c1: 'tot' } }), 'L');
+    /* BC-PH-KY-NANG (chủ SP 28/11): mức tiêu chí không bắt buộc — đủ khi có chữ. */
+    assert(d.phanDu(L, du) && !d.phanDu(L, { ...du, chu: '  ' }) && d.phanDu(L, { ...du, muc: { c1: 'tot' } }) && d.phanDu(L, { muc: {}, chu: 'x' }), 'L');
     assert(d.phanDu(d.boPhanBc('FOU')[4], { muc: {}, chu: 'x' }), 'P');
     assert(d.loiDiemSua(6.5, null) === null && d.loiDiemSua(6.3, null) && d.loiDiemSua(9.5, null), 'band');
     assert(d.loiDiemSua(17, 25) === null && d.loiDiemSua(26, 25) && d.loiDiemSua(17.5, 25), 'điểm / tổng');
@@ -81,7 +83,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     }
     assertThrows(() => bc.trangBaoCaoPh(P.cpManager, lop, null), /./, 'Head chi nhánh khác không xem');
     const o = bc.trangBaoCaoPh(P.mbManager, lop, trang.dot).em.find((e: any) => e.id === sid).o;
-    assert(o.listening === 'du' && o.chung === 'nhap' && o.speaking === 'nhap' && o.reading === null, JSON.stringify(o));
+    assert(o.listening === 'du' && o.chung === 'nhap' && o.speaking === 'du' && o.reading === null, JSON.stringify(o));   // BC-PH-KY-NANG: không chọn mức vẫn đủ
     assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: 'thang:2099-01', phan: 'listening', studentId: sid, muc, chu: 'x' }), /./, 'đợt chưa mở');
     assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: trang.dot, phan: 'listening', studentId: sid, muc: { c1: 'tuyet' }, chu: 'x' }), /./, 'mức lạ');
   }));
@@ -695,5 +697,161 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     xoaNho();
     assert(bc.trangBaoCaoPh(P.mbManager, lop, ma2).em.find((e: any) => e.id === e0.id)?.bo === null, 'đợt sau: em vẫn báo cáo');
     assert(xbc.viecBaoCaoPhGv([P.sTeacher], TODAY).find((v: any) => v.classId === lop && v.dot === ma2)?.soEm === n, 'đợt sau: việc GV đủ n em');
+  }));
+
+  check('BC-25 · BC-PH-KY-NANG: em không học W (môn đăng ký) → không cần W1 / W2 ở mọi nơi; Head bỏ từng kỹ năng + Hoàn tác; GV 403; không chọn mức vẫn đủ', () => thu(() => {
+    const { soCauSql } = nc;
+    /* luật thuần */
+    const boFt = d.boPhanBc('FT');
+    const k0 = d.phanKhongCan(boFt, true, '["listening","reading","speaking"]', null);
+    assert(JSON.stringify(k0) === '{"writing1":"khong_hoc","writing2":"khong_hoc"}', 'không học W: ' + JSON.stringify(k0));
+    assert(!Object.keys(d.phanKhongCan(boFt, false, '["listening"]', null)).length, 'lớp thường không chia môn: đủ phần');
+    assert(JSON.stringify(d.phanKhongCan(boFt, true, null, { bo: ['speaking', 'chung'] })) === '{"speaking":"bo"}', 'Chung không bỏ theo kỹ năng; không dữ liệu môn = đủ');
+    assert(JSON.stringify(d.phanKhongCan(boFt, true, '["listening","reading","speaking"]', { bo: [], can: ['writing1'] })) === '{"writing2":"khong_hoc"}', 'ghi đè Cần W1');
+    assert(d.boCuaDot('a|b={"bo":["speaking"],"can":[]}', 'b')?.bo[0] === 'speaking' && d.boCuaDot('a|b=["x"]', 'a') === 'em' && d.boCuaDot('a', 'c') === null, 'boCuaDot');
+    const han = d.addDaysIso(TODAY, 6);
+    const ma = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt kỹ năng', mo: TODAY, han }).ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const n = tr.em.length;
+    const coFt = (id: number) => conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? AND route IS NOT NULL ORDER BY seq DESC LIMIT 1').get(id) as any;
+    const e0 = tr.em.find((e: any) => coFt(e.id));
+    const e1 = tr.em.find((e: any) => e.id !== e0?.id);
+    assert(e0 && e1 && tr.em.every((e: any) => !Object.keys(e.khong).length), 'tiền đề: ≥ 2 em, một em có lộ trình FT, chưa em nào bớt phần');
+    conn.prepare('UPDATE learning_cycles SET mon_dang_ky = ? WHERE id = ?').run('["listening","reading","speaking"]', coFt(e0.id).id);
+    xoaNho();
+    const gvW1 = tr.phan.find((p: any) => p.khoa === 'writing1')?.gv?.[0]?.id;
+    const pW1 = gvW1 ? loadPrincipal(gvW1) : null;
+    const cuaW1 = () => (pW1 ? xbc.viecBaoCaoPhGv([pW1], TODAY).find((v: any) => v.classId === lop && v.dot === ma) : null);
+    const s1 = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id);
+    assert(s1.khong.writing1 === 'khong_hoc' && s1.khong.writing2 === 'khong_hoc' && !s1.khong.speaking && s1.bo === null, 'tab: W1 / W2 "Không học": ' + JSON.stringify(s1.khong));
+    assert(!bc.phanBaoCaoPh(P.mbManager, lop, ma, 'writing1').em.some((e: any) => e.id === e0.id), 'panel W1 không có em không học W');
+    assert(bc.phanBaoCaoPh(P.mbManager, lop, ma, 'listening').em.some((e: any) => e.id === e0.id), 'panel L vẫn có em');
+    if (pW1) assert(cuaW1()?.soEm === n - 1, 'việc GV W1: n − 1 em');
+
+    /* Head bỏ TỪNG kỹ năng: e1 không cần S */
+    const cuaS = () => xbc.viecBaoCaoPhGv([P.sTeacher], TODAY).find((v: any) => v.classId === lop && v.dot === ma);
+    assert(cuaS()?.soEm === n, 'trước: S n em');
+    for (const x of [P.lrTeacher, P.coreTeacher, nguoi('consultant', 'MB')].filter(Boolean)) {
+      let ma403 = 0;
+      try { bc.boEmBaoCaoPh(x, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] }); } catch (err: any) { ma403 = err?.status ?? -1; }
+      assert(ma403 === 403, `${x.fullName}: bỏ kỹ năng phải 403, được ${ma403}`);
+    }
+    for (const sai of [{ phan: [] }, { phan: ['chung'] }, { phan: ['abc'] }, { phan: 'speaking' }, { phan: ['speaking'], can: ['speaking'] }, { can: [] }]) {
+      assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], ...sai }), /./, 'kỹ năng sai → 400: ' + JSON.stringify(sai));
+    }
+    xoaNho();
+    const c0 = soCauSql();
+    const r = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] });
+    const cau = soCauSql() - c0;
+    console.log(`    đo bỏ một kỹ năng một em: ${cau} câu`);
+    assert(r.doi.join() === String(e1.id) && r.truoc[e1.id] === null && cau <= 15, `bỏ kỹ năng: ${JSON.stringify(r)} · ${cau} câu`);
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] }).doi.length === 0, 'bỏ lặp: không ghi');
+    xoaNho();
+    const s2 = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e1.id);
+    assert(s2.khong.speaking === 'bo' && s2.bo === null, 'tab: S "bo", em vẫn báo cáo phần khác');
+    assert(cuaS()?.soEm === n - 1 && !bc.phanBaoCaoPh(P.sTeacher, lop, ma, 'speaking').em.some((e: any) => e.id === e1.id), 'việc + panel S: bớt e1');
+    assert((conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'bao_cao_ph.bo_phan' AND entity_id = ?").get(e1.id) as any).n === 1, 'nhật ký bỏ kỹ năng');
+    /* đổi sang bỏ cả em rồi Hoàn tác về đúng "bỏ S" */
+    const ca = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id] });
+    assert(JSON.stringify(ca.truoc[e1.id]) === '{"bo":["speaking"],"can":[]}', 'truoc = quyết định kỹ năng cũ: ' + JSON.stringify(ca.truoc[e1.id]));
+    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ca.truoc[e1.id].bo, can: ca.truoc[e1.id].can });
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e1.id).khong.speaking === 'bo', 'Hoàn tác cả em → về bỏ S');
+    /* Khôi phục → S trở lại */
+    assert(bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], khoiPhuc: true }).doi.length === 1, 'khôi phục');
+    xoaNho();
+    assert(cuaS()?.soEm === n, 'S trở lại n em');
+    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] });
+
+    /* GHI ĐÈ "Cần báo cáo" (PTA chốt 28/11): e0 không học W nhưng Head chọn Cần W1 → W1 thành việc thường; GV 403; Hoàn tác (khôi phục) → "Không học" lại */
+    let ma403c = 0;
+    try { bc.boEmBaoCaoPh(P.lrTeacher, lop, { dot: ma, studentIds: [e0.id], can: ['writing1'] }); } catch (err: any) { ma403c = err?.status ?? -1; }
+    assert(ma403c === 403, 'GV ghi đè → 403');
+    const gd = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], can: ['writing1'] });
+    assert(gd.truoc[e0.id] === null, 'truoc ghi đè = chưa quyết');
+    xoaNho();
+    const g0 = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id);
+    assert(!g0.khong.writing1 && g0.khong.writing2 === 'khong_hoc' && g0.ghiDe.join() === 'writing1' && g0.khongHoc.includes('writing1'), 'tab: W1 cần, W2 vẫn Không học: ' + JSON.stringify(g0));
+    assert(bc.phanBaoCaoPh(P.mbManager, lop, ma, 'writing1').em.some((e: any) => e.id === e0.id), 'panel W1 có lại e0');
+    if (pW1) assert(cuaW1()?.soEm === n, 'việc GV W1: n em');
+    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], khoiPhuc: true });
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id).khong.writing1 === 'khong_hoc', 'Hoàn tác ghi đè → Không học');
+
+    /* Không chọn mức vẫn đủ; e0 đủ khi xong Chung + L R S (không W); e1 đủ không cần S */
+    const k = bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: {}, chu: 'Không chọn mức' });
+    assert(k.du === true, 'không chọn mức tiêu chí vẫn đủ');
+    xoaNho();
+    const tr2 = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    for (const e of tr2.em) for (const p of tr2.phan) {
+      if (e.khong[p.khoa]) continue;
+      bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: p.khoa, studentId: e.id, muc: {}, chu: 'Ổn' });
+    }
+    xoaNho();
+    assert(!cuaS() && !cuaW1(), 'việc GV S / W1 rời khi xong phần CẦN LÀM');
+    try {
+      cfg.setConfig('demo_date', d.addDaysIso(han, 3)); xoaNho();
+      const chip = bc.chipBaoCaoPh(P.mbManager, lop);
+      assert(!chip || chip.dot !== ma, 'chip quá hạn: đợt không còn thiếu: ' + JSON.stringify(chip));
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
+    if (admin) assert(xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu === 0 && v.soEm === n), 'Admin: lớp đủ n em');
+    if (admin) assert((conn.prepare("SELECT COUNT(*) n FROM notifications WHERE dedup_key = ?").get(`bc_ph_du:${lop}:${ma}`) as any).n >= 1, 'tin Admin "đủ"');
+    /* tệp xuất: cột e0 ô W1 trống; PDF e0 không có khối W1 / W2 */
+    const aoa = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null).sheets[0].aoa;
+    const cot = aoa[0].indexOf(e0.ten);
+    const i = aoa.findIndex((h: any[]) => String(h[0]).startsWith('Giáo viên viết 1'));
+    assert(cot > 0 && i > 0 && aoa[i + 2][cot] === null && aoa.find((h: any[]) => String(h[0]).startsWith('Nhận xét chung'))[cot] === 'Ổn', 'Excel: W1 của e0 trống, Chung có');
+    const pdf = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id, 'pdf').ds[0].phan.map((x: any) => x.khoa);
+    assert(!pdf.includes('writing1') && !pdf.includes('writing2') && pdf.includes('listening'), 'PDF e0: không khối W: ' + pdf.join());
+    /* "Không ghi điểm" (chủ SP 28/11): ô điểm L của e0 trống ở Excel + PDF; bật lại → điểm về như cũ; sai kiểu → 400; phần Chung (không điểm) → 400 */
+    const diemL = () => {
+      const a = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null).sheets[0].aoa;
+      const j = a.findIndex((h: any[]) => String(h[0]).startsWith('Giáo viên nghe'));
+      return { xl: a[j + 1][cot], pdf: xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id, 'pdf').ds[0].phan.find((x: any) => x.khoa === 'listening').diem };
+    };
+    bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: {}, chu: 'Ổn', diemSua: 6.5 });
+    assert(diemL().xl === 6.5 && diemL().pdf === '6.5', 'tiền đề: điểm sửa tay in ra: ' + JSON.stringify(diemL()));
+    const bd = bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: {}, chu: 'Ổn', diemSua: 6.5, boDiem: true });
+    assert(bd.du && diemL().xl === null && diemL().pdf === null, 'Không ghi điểm: ô trống, vẫn đủ: ' + JSON.stringify(diemL()));
+    assert(bc.phanBaoCaoPh(P.mbManager, lop, ma, 'listening').em.find((e: any) => e.id === e0.id).banGhi.boDiem === true, 'panel đọc lại boDiem');
+    bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: {}, chu: 'Ổn', diemSua: 6.5, boDiem: false });
+    assert(diemL().xl === 6.5, 'Ghi lại điểm: điểm sửa tay còn');
+    /* lúc XUẤT chọn không ghi điểm cả tệp (`diem=0`) */
+    const a0 = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null, 'xlsx', false).sheets[0].aoa;
+    assert(a0.filter((h: any[]) => String(h[0]).startsWith('Điểm')).every((h: any[]) => h.slice(1).every((x: any) => x === null)), 'xuất không điểm: mọi ô điểm trống');
+    assert(xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id, 'pdf', false).ds[0].phan.every((x: any) => x.diem === null), 'PDF không điểm');
+    /* xuất nhiều lớp (Học viên & Lớp) — một kiểu "Ghi điểm" */
+    const nhieu = (gd?: boolean) => xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids: [e0.id], thang: TODAY.slice(0, 7), ...(gd === undefined ? {} : { ghiDiem: gd }) });
+    try {
+      const sh = nhieu(false).sheets;
+      assert(sh.every((s: any) => s.aoa.filter((h: any[]) => String(h[0]).startsWith('Điểm')).every((h: any[]) => h.slice(1).every((x: any) => x === null))), 'xuất nhiều lớp không điểm');
+    } catch (err: any) { if (!/Không có lớp/.test(err?.message ?? '')) throw err; }
+    assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, chu: 'Ổn', boDiem: 'co' }), /./, 'boDiem sai kiểu');
+    assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'chung', studentId: e0.id, chu: 'Ổn', boDiem: true }), /./, 'Chung không có điểm');
+    /* PTA rà #2335 P1: em có lộ trình MỚI (bắt đầu sau hạn đợt, học đủ — thêm W) → đợt cũ vẫn theo lộ trình lúc mốc: W1 / W2 "Không học", lớp vẫn đủ */
+    assert(bc.monCuaDot('1#2026-01-05#["listening"]|2#2026-12-01#', { han: '2026-11-30' }, '2026-12-05') === '["listening"]', 'monCuaDot chọn lộ trình theo mốc');
+    assert(bc.monCuaDot('1#2026-01-05#["listening"]|2#2026-11-01#', { han: '2026-11-30' }, '2026-12-05') === null, 'lộ trình mới trước mốc → môn mới (đủ)');
+    const cotLc = (conn.prepare("SELECT name FROM pragma_table_info('learning_cycles')").all() as any[]).map((r) => r.name).filter((x: string) => x !== 'id');
+    const chon = cotLc.map((x: string) => (x === 'seq' ? 'seq + 1' : x === 'started_at' ? '?' : x === 'mon_dang_ky' ? 'NULL' : x === 'status' ? "'planned'" : x)).join(', ');
+    conn.prepare(`INSERT INTO learning_cycles (${cotLc.join(', ')}) SELECT ${chon} FROM learning_cycles WHERE id = ?`).run(`${d.addDaysIso(han, 1)}T00:00:00.000Z`, coFt(e0.id).id);
+    try {
+      cfg.setConfig('demo_date', d.addDaysIso(han, 3)); xoaNho();
+      const e0Sau = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id);
+      assert(e0Sau.khong.writing1 === 'khong_hoc' && e0Sau.khong.writing2 === 'khong_hoc', 'đợt cũ giữ môn lúc mốc: ' + JSON.stringify(e0Sau.khong));
+      if (admin) assert(!xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu > 0), 'Admin: đợt cũ không thành thiếu');
+      if (pW1) assert(!xbc.viecBaoCaoPhGv([pW1], d.addDaysIso(han, 3)).some((v: any) => v.classId === lop && v.dot === ma), 'GV W1: việc đợt cũ không hiện lại');
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
+    /* Hoàn tác Đặt nhanh giữ dòng có "Không ghi điểm" (PTA P2-5) */
+    const e2 = tr2.em.find((e: any) => !Object.keys(e.khong).length && e.id !== e0.id && e.id !== e1.id);
+    conn.prepare('DELETE FROM bao_cao_ph WHERE dot = ? AND student_id = ? AND phan = ?').run(ma, e2.id, 'listening');
+    bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e2.id, muc: {}, chu: '', boDiem: true });
+    const dn = bc.datNhanhBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { [e2.id]: ['c1'] } });
+    bc.datNhanhBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { [e2.id]: dn.o[0].khoa }, moi: [e2.id], hoanTac: true });
+    assert((conn.prepare('SELECT bo_diem FROM bao_cao_ph WHERE dot = ? AND student_id = ? AND phan = ?').get(ma, e2.id, 'listening') as any)?.bo_diem === 1, 'Hoàn tác Đặt nhanh giữ bo_diem');
+    /* migrate chạy lặp không làm gì */
+    const ap: string[] = [];
+    mg.migratePrBaoCaoPhKyNang(conn, ap);
+    assert(!ap.length, 'migrate lặp: không đổi');
   }));
 }

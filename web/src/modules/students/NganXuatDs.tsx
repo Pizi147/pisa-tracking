@@ -54,6 +54,8 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   const dsThang = Array.from({ length: 12 }, (_, i) => { const d = new Date(Date.UTC(Number(homNay.slice(0, 4)), Number(homNay.slice(5, 7)) - 1 - i, 1)); return d.toISOString().slice(0, 7); });
   const [thang, setThang] = useState(() => homNay.slice(0, 7));
   const [dem, setDem] = useState<DemBc | null>(null);
+  /* BC-PH-KY-NANG (PTA chốt 28/11): "Ghi điểm" như xuất một lớp — bỏ tick thì tệp không có điểm. */
+  const [ghiDiem, setGhiDiem] = useState(true);
   useEffect(() => {
     if (loai !== 'bc' || !dsId.length) { setDem(null); setLoi(null); return undefined; }   // PTA rà #2162: lỗi đếm cũ không treo khi đổi sang phạm vi 0 HV
     let con = true;
@@ -65,7 +67,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
     if (busy || !dsId.length) return;
     setBusy(true); setLoi(null); setXong(null);
     try {
-      const r = await api.post<KetQua & { khongDot: string[] }>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang });
+      const r = await api.post<KetQua & { khongDot: string[] }>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang, ...(ghiDiem ? {} : { ghiDiem: false }) });
       await taiXlsx(r.sheets, r.tenTep);
       const gio = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setXong(t('Đã tạo {tep} · {n} HV · {gio}', { tep: r.tenTep, n: r.dem.hocVien, gio }));
@@ -142,6 +144,9 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
               </div>
             ))}
           </dl>
+          <label className="mt-1 flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-slate-200 sm:min-h-[28px]">
+            <input type="checkbox" checked={ghiDiem} onChange={(e) => { setGhiDiem(e.target.checked); setXong(null); }} />{t('Ghi điểm')}
+          </label>
         </Khoi>
       ) : (
       <Khoi tieuDe={t('Cột')}>

@@ -2812,6 +2812,7 @@ CREATE TABLE bao_cao_ph (
   du INTEGER NOT NULL DEFAULT 0,
   sua_boi INTEGER REFERENCES users(id),
   sua_luc TEXT NOT NULL,
+  bo_diem INTEGER NOT NULL DEFAULT 0,   -- BC-PH-KY-NANG (chủ SP 28/11): 1 = "Không ghi điểm" vào tệp. migrate/prBaoCaoPhKyNang.ts
   UNIQUE (dot, student_id, phan)
 );
 CREATE INDEX idx_bcph_lop_dot ON bao_cao_ph(class_id, dot);
@@ -2840,6 +2841,7 @@ CREATE TABLE bao_cao_ph_bo_em (
   class_id INTEGER NOT NULL REFERENCES classes(id),
   nguoi INTEGER REFERENCES users(id),
   luc TEXT NOT NULL,
+  phan TEXT,   -- BC-PH-KY-NANG (chủ SP 28/11): JSON {"bo":[kỹ năng không cần],"can":[kỹ năng không học mà vẫn cần]}; NULL = bỏ cả em. migrate/prBaoCaoPhKyNang.ts
   PRIMARY KEY (student_id, class_id, dot)
 );
 CREATE INDEX idx_bcph_bo_em_lop ON bao_cao_ph_bo_em(class_id, dot);

@@ -38,15 +38,26 @@ export type TrangBc = {
   /** LG-2: đợt thêm chưa tới ngày mở (mọi người xem lớp) · đợt sắp mở đang xem (thẻ, không bảng). */
   dsSapMo: DotSapMo[]; sapMo: DotSapMo | null;
   /** BO-BAO-CAO-PH: `bo` = em đã bỏ báo cáo đợt này (ai, lúc nào) — hiện mờ cuối bảng, không đếm "n/N". */
-  phan: PhanCot[]; em: { id: number; ten: string; o: Record<string, OBc>; bo: { ten: string | null; luc: string } | null }[]; vietHo: boolean; xuat: boolean;
+  phan: PhanCot[]; em: EmBc[]; vietHo: boolean; xuat: boolean;
+};
+/** BC-PH-KY-NANG: `khong` = phần em không cần làm — 'khong_hoc' (môn đăng ký FT) · 'bo' (Head / Quản trị / Admin bỏ kỹ năng). */
+type EmBc = {
+  id: number; ten: string; o: Record<string, OBc>; bo: { ten: string | null; luc: string } | null; khong: Record<string, 'khong_hoc' | 'bo'>;
+  /** Kỹ năng em không học (môn đăng ký, trước ghi đè) · kỹ năng không học mà Head / QT / Admin đã chọn "Cần báo cáo" (PTA chốt 28/11). */
+  khongHoc: string[]; ghiDe: string[];
 };
 type EmPhan = { id: number; ten: string; banGhi: BanGhiBc | null; du: boolean; mucTruoc: Record<string, MucBc> | null; goc: DiemGocBc | null; sua: { ten: string | null; luc: string } | null };
 type DuLieuPhan = { lop: { id: number; ma: string }; dot: { ma: string; nhan: string; han: string }; dotTruoc: string | null; phan: string; viet: boolean; vietHo: boolean; ft: boolean; em: EmPhan[] };
 type Mo = { phan: string; em: number; kieu: 'viet' | 'doc' };
 type DotSapMo = { ma: string; id: number; nhan: string; ten: string | null; mo: string; han: string };
 
+/** Nút bật (aria-pressed) trên thanh chọn: viền + nền nhấn, như ô đang chọn của dải `.thang-bc`. */
+const NUT_BAT = '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] font-semibold text-slate-100';
 const duongTrang = (lopId: number, dot: string | null) => `/classes/${lopId}/bao-cao-ph${dot ? `?dot=${encodeURIComponent(dot)}` : ''}`;
-const emDuHet = (o: Record<string, OBc>, ds: readonly PhanCot[]) => ds.every((p) => o[p.khoa] === 'du');
+/** Em đủ ở các phần `ds` — phần em không cần làm (BC-PH-KY-NANG) không tính (cùng luật máy chủ `emDuDot`). */
+const emDuHet = (e: Pick<EmBc, 'o' | 'khong'>, ds: readonly PhanCot[]) => ds.every((p) => e.khong[p.khoa] || e.o[p.khoa] === 'du');
+/** Em cần làm phần `k`? */
+const can = (e: Pick<EmBc, 'khong'>, k: string) => !e.khong[k];
 
 /**
  * TAB "BÁO CÁO PH" CỦA HỒ SƠ LỚP (đặc tả BAO-CAO-PH mục 12, mockup v15 t1 · d1 · e1 · d5 · g2). Chọn đợt · "n/N em đủ" · Xuất lớp (PR b) · bảng em × phần.
@@ -69,13 +80,13 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   useEffect(() => setDoi({}), [data]);
   useEffect(() => {
     if (!data?.dot || !onDuHet) return;
-    const can = data.em.filter((e) => !e.bo);
-    onDuHet(data.dot, can.length > 0 && can.every((e) => data.phan.every((p) => (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
+    const ds = data.em.filter((e) => !e.bo);
+    onDuHet(data.dot, ds.length > 0 && ds.every((e) => data.phan.every((p) => e.khong[p.khoa] || (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
   }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!viet || !data?.dot) return;
     const ph = data.phan.find((p) => p.cuaToi);
-    const e = ph && data.em.find((x) => !x.bo && x.o[ph.khoa] !== 'du');
+    const e = ph && data.em.find((x) => !x.bo && can(x, ph.khoa) && x.o[ph.khoa] !== 'du');
     if (ph && e) setMo({ phan: ph.khoa, em: e.id, kieu: 'viet' });
     onViet?.();
   }, [viet, data]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -91,6 +102,18 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   const chonGoc = useChonNhieu();
   const [dangBo, setDangBo] = useState(false);
   useEffect(() => chonGoc.tatCa([], false), [lopId, dot]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* BC-PH-KY-NANG (chủ SP 28/11): kỹ năng không cần báo cáo của các em đã tick — [] = cả em. Chọn một em đã bỏ kỹ năng → chọn sẵn đúng kỹ năng đó. */
+  const [kyBo, setKyBo] = useState<string[]>([]);
+  /* PTA chốt 28/11 ("kĩ năng nào không cần HOẶC CÓ CẦN"): kỹ năng em không học mà vẫn cần báo cáo — ghi đè "Không học". */
+  const [kyCan, setKyCan] = useState<string[]>([]);
+  const chonKey = [...chonGoc.chon].sort().join(',');
+  useEffect(() => {
+    const mot = chonGoc.chon.size === 1 ? data?.em.find((e) => chonGoc.chon.has(e.id)) : null;
+    setKyBo(mot && !mot.bo ? Object.keys(mot.khong).filter((k) => mot.khong[k] === 'bo') : []);
+    setKyCan(mot && !mot.bo ? mot.ghiDe : []);
+  }, [chonKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* "Không ghi điểm" lúc xuất (chủ SP 28/11): bỏ tick → tệp xuất không có điểm (mọi em, mọi phần). */
+  const [ghiDiem, setGhiDiem] = useState(true);
   /* Xuất Excel (PR b) / PDF (BCPH-PDF): `null` = không đang xuất · "xlsx:0" = cả lớp · "pdf:{id em}". File = ảnh lúc bấm; không đánh dấu "đã xuất". */
   const [dangXuat, setDangXuat] = useState<string | null>(null);
   const [td, setTd] = useState<[number, number] | null>(null);   // tiến độ PDF cả lớp: [em đang dựng, tổng]
@@ -98,7 +121,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
     if (dangXuat !== null || !data?.dot) return;
     setDangXuat(`${kieu}:${emId ?? 0}`); setTd(null);
     try {
-      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(kieu, lopId, data.dot, emId, (i, n) => setTd([i, n])) }));
+      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(kieu, lopId, data.dot, emId, (i, n) => setTd([i, n]), ghiDiem) }));
     } catch (e: any) {
       toast.push('error', e?.message ?? t('Chưa tạo được file.'));
     } finally { setDangXuat(null); }
@@ -111,14 +134,18 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   /* BO-BAO-CAO-PH: `em` = em CẦN báo cáo đợt này (mọi số đếm, ô viết, Đặt nhanh); `emBo` = em Head / Quản trị / Admin đã bỏ — dòng mờ cuối bảng. */
   const em = tatCa.filter((e) => !e.bo);
   const emBo = tatCa.filter((e) => e.bo);
-  const soDu = em.filter((e) => emDuHet(e.o, data.phan)).length;
+  const soDu = em.filter((e) => emDuHet(e, data.phan)).length;
   /* GD-6 (mockup v21 ② K5, R2.5): "bạn còn n / m em" = em chưa đủ MỌI phần của người xem (cột `cuaToi`); không có phần của mình → không ghi. */
   const phanToi = data.phan.filter((p) => p.cuaToi);
-  const toiCon = phanToi.length ? em.filter((e) => !emDuHet(e.o, phanToi)).length : null;
+  const emToi = em.filter((e) => phanToi.some((p) => can(e, p.khoa)));   // em cần ít nhất một phần của người xem
+  const toiCon = phanToi.length ? emToi.filter((e) => !emDuHet(e, phanToi)).length : null;
   const dotHien = data.dsDot.find((d) => d.ma === data.dot);
   const mo_ = (phan: PhanCot, emId: number) => setMo({ phan: phan.khoa, em: emId, kieu: phan.cuaToi ? 'viet' : 'doc' });
   const tenGv = (p: PhanCot) => (p.cuaToi ? t('Bạn') : p.gv.length ? p.gv.map((g) => g.ten).join(', ') : t('Chưa phân công'));
   const nhanO = (e: { ten: string }, p: PhanCot, o: OBc) => `${e.ten} · ${p.ngan} · ${o === 'du' ? t('Đủ') : o === 'nhap' ? t('Nháp') : t('Chưa viết')}`;
+  const nhanKhong = (k: 'khong_hoc' | 'bo') => (k === 'khong_hoc' ? t('Không học') : t('Không cần'));
+  /* Số em cần phần `k` (mẫu số "n/N" từng cột). */
+  const canPhan = (k: string) => em.filter((e) => can(e, k));
 
   /* BC-DOT-QL: QL / Quản trị / Admin bỏ đợt (hoặc xoá đợt thêm) · thêm đợt bất chợt · khôi phục đợt bỏ. Mọi việc có Hoàn tác (toast). */
   const sauDoi = (ma?: string | null) => { onDoiDot?.(); if (ma !== undefined && ma !== dot) onDot(ma); else reload(); };
@@ -148,29 +175,74 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   /* BO-BAO-CAO-PH: bỏ / khôi phục báo cáo các em đã tick, đợt này — làm ngay, MỘT toast Hoàn tác cho cả lô (không hộp hỏi: khôi phục được, bài đã viết giữ). */
   const chon = { ...chonGoc, bat: data.quyetDot };
   const daChon = tatCa.filter((e) => chonGoc.chon.has(e.id));
-  const chonCan = daChon.filter((e) => !e.bo), chonBo = daChon.filter((e) => e.bo);
-  const boEm = async (ds: { id: number; ten: string }[], khoiPhuc: boolean) => {
+  /* BC-PH-KY-NANG: "Khôi phục" cả em bỏ lẫn em đã bỏ một số kỹ năng. */
+  const coBoKy = (e: EmBc) => Object.values(e.khong).includes('bo') || e.ghiDe.length > 0;
+  const chonCan = daChon.filter((e) => !e.bo), chonBo = daChon.filter((e) => e.bo || coBoKy(e));
+  type QuyetDinh = 'em' | { bo: string[]; can: string[] } | null;
+  const gui = async (ids: number[], q: QuyetDinh) => (await api.post<{ doi: number[]; truoc: Record<string, QuyetDinh> }>(`/classes/${lopId}/bao-cao-ph/bo-em`,
+    { dot: data.dot, studentIds: ids, ...(q === null ? { khoiPhuc: true } : q === 'em' ? {} : { phan: q.bo, can: q.can }) }));
+  const nganKy = (ds: string[]) => ds.map((k) => data.phan.find((p) => p.khoa === k)?.ngan ?? k).join(' · ');
+  /* "Không báo cáo W2 · Cần báo cáo W1" — chữ của nút và toast. */
+  const chuKy = (q: { bo: string[]; can: string[] }) => [q.bo.length ? t('Không báo cáo {ky}', { ky: nganKy(q.bo) }) : null,
+    q.can.length ? t('Cần báo cáo {ky}', { ky: nganKy(q.can) }) : null].filter(Boolean).join(' · ');
+  const boEm = async (ds: { id: number; ten: string }[], q: QuyetDinh) => {
     if (!ds.length || dangBo) return;
-    const gui = async (ids: number[], kp: boolean) => (await api.post<{ doi: number[] }>(`/classes/${lopId}/bao-cao-ph/bo-em`, { dot: data.dot, studentIds: ids, khoiPhuc: kp })).doi;
-    const nhan = ds.length === 1
-      ? t(khoiPhuc ? 'Đã khôi phục báo cáo · {ten}' : 'Không báo cáo · {ten}', { ten: ds[0].ten })
-      : t(khoiPhuc ? 'Đã khôi phục báo cáo · {n} em' : 'Không báo cáo · {n} em', { n: ds.length });
+    const ai = ds.length === 1 ? ds[0].ten : t('{n} em', { n: ds.length });
+    const nhan = q === null ? t('Đã khôi phục báo cáo · {ten}', { ten: ai })
+      : q === 'em' ? t('Không báo cáo · {ten}', { ten: ai }) : `${chuKy(q)} · ${ai}`;
     setDangBo(true);
     try {
-      const doi = await gui(ds.map((e) => e.id), khoiPhuc); lamMoiBaoCaoPh();
+      const r = await gui(ds.map((e) => e.id), q); lamMoiBaoCaoPh();
       chonGoc.tatCa([], false);
-      if (doi.length) {
+      if (r.doi.length) {
+        /* Hoàn tác: trả từng em về đúng quyết định trước (không bỏ / bỏ cả em / bỏ đúng các kỹ năng cũ) — gom em cùng quyết định, mỗi nhóm một lần gửi. */
+        const nhom = new Map<string, number[]>();
+        for (const id of r.doi) { const k = JSON.stringify(r.truoc?.[id] ?? null); nhom.set(k, [...(nhom.get(k) ?? []), id]); }
         toast.hoanTac(nhan, async () => {
-          try { await gui(doi, !khoiPhuc); lamMoiBaoCaoPh(); toast.push('ok', t('Đã hoàn tác')); sauDoi(); } catch (x) { loiToast(x); }
+          try {
+            for (const [k, ids] of nhom) await gui(ids, JSON.parse(k));
+            lamMoiBaoCaoPh(); toast.push('ok', t('Đã hoàn tác')); sauDoi();
+          } catch (x) { loiToast(x); }
         }, { key: `bc-bo-em:${lopId}` });
       }
       sauDoi();
     } catch (x) { loiToast(x); } finally { setDangBo(false); }
   };
+  const kyNang = data.phan.filter((p) => p.khoa !== 'chung');
+  /* Hàng "Cần báo cáo": chỉ kỹ năng có em đã chọn KHÔNG học (môn đăng ký). Bật một kỹ năng ở hàng này thì gỡ nó khỏi "Không cần" và ngược lại. */
+  const kyKhongHoc = kyNang.filter((p) => chonCan.some((e) => e.khongHoc.includes(p.khoa)));
+  const theoThuTu = (ds: string[]) => kyNang.map((y) => y.khoa).filter((k) => ds.includes(k));
+  const bat = (k: string, hang: 'bo' | 'can') => {
+    const [cua, khac] = hang === 'bo' ? [setKyBo, setKyCan] : [setKyCan, setKyBo];
+    cua((x) => (x.includes(k) ? x.filter((y) => y !== k) : theoThuTu([...x, k])));
+    khac((x) => x.filter((y) => y !== k));
+  };
+  const kyQuyet = kyBo.length || kyCan.length ? { bo: kyBo, can: kyCan } : null;
+  const nutKy = (p: PhanCot, on: boolean, hang: 'bo' | 'can') => (
+    <button key={p.khoa} type="button" aria-pressed={on} title={p.ten} className={`btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 ${on ? NUT_BAT : ''}`}
+      onClick={() => bat(p.khoa, hang)}>{p.ngan}</button>
+  );
   const thanhChon = data.quyetDot && (
-    <ThanhChonNhieu chon={chon} dangChay={dangBo} onViec={(k) => void boEm(k === 'bo' ? chonCan : chonBo, k !== 'bo')}
+    <ThanhChonNhieu chon={chon} dangChay={dangBo} onViec={(k) => void (k === 'bo' ? boEm(chonCan, kyQuyet ?? 'em') : boEm(chonBo, null))}
+      /* Chọn tại chỗ trên thanh: "Cả em" hoặc từng kỹ năng không cần / cần báo cáo (bấm lại để bỏ chọn) — không mở hộp. */
+      dongTren={chonCan.length > 0 && (
+        <span className="grid gap-1.5">
+          <span role="group" aria-label={t('Không cần báo cáo')} className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 min-w-[124px] text-[13px] text-slate-400">{t('Không cần báo cáo')}</span>
+            <button type="button" aria-pressed={!kyQuyet} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${!kyQuyet ? NUT_BAT : ''}`} onClick={() => { setKyBo([]); setKyCan([]); }}>{t('Cả em')}</button>
+            {kyNang.map((p) => nutKy(p, kyBo.includes(p.khoa), 'bo'))}
+          </span>
+          {kyKhongHoc.length > 0 && (
+            <span role="group" aria-label={t('Cần báo cáo')} className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 min-w-[124px] text-[13px] text-slate-400">{t('Cần báo cáo')}</span>
+              {kyKhongHoc.map((p) => nutKy(p, kyCan.includes(p.khoa), 'can'))}
+              <span className="text-[12px] text-slate-400">{t('dù không học')}</span>
+            </span>
+          )}
+        </span>
+      )}
       viec={[
-        ...(chonCan.length ? [{ key: 'bo', nhan: t('Không báo cáo · {n} em', { n: chonCan.length }), chinh: true }] : []),
+        ...(chonCan.length ? [{ key: 'bo', nhan: kyQuyet ? `${chuKy(kyQuyet)} · ${t('{n} em', { n: chonCan.length })}` : t('Không báo cáo · {n} em', { n: chonCan.length }), chinh: true }] : []),
         ...(chonBo.length ? [{ key: 'khoi-phuc', nhan: t('Khôi phục · {n} em', { n: chonBo.length }), chinh: !chonCan.length }] : []),
       ]} />
   );
@@ -178,7 +250,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   const nhanBo = (b: { ten: string | null; luc: string }) => [t('Không báo cáo'), b.ten, b.luc ? ngay(b.luc.slice(0, 10), homNay) : null].filter(Boolean).join(' · ');
   const nutDot = 'btn btn-sm min-h-[44px] font-semibold sm:min-h-0';
   /* Phần người xem đặt nhanh được = phần viết được (GV đúng phần · QL viết hộ — như quyền máy chủ) có tiêu chí. */
-  const phanDat = data.dot && em.length ? data.phan.filter((p) => (p.cuaToi || data.vietHo) && tieuChiPhan(bo.find((x) => x.khoa === p.khoa)!).length) : [];
+  const phanDat = data.dot && em.length ? data.phan.filter((p) => (p.cuaToi || data.vietHo) && canPhan(p.khoa).length && tieuChiPhan(bo.find((x) => x.khoa === p.khoa)!).length) : [];
   const congCu = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
       <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? data.sapMo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value || null)}>
@@ -205,6 +277,12 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
       </>}
       {data.quyetDot && data.dot && dotHien && !dotHien.them && <button type="button" className={nutDot} onClick={() => setHop('bo')}>{t('Không báo cáo đợt này')}</button>}
       {data.quyetDot && <button type="button" className={nutDot} onClick={() => setHop('them')}>{t('+ Đợt báo cáo')}</button>}
+      {/* "Không ghi điểm" lúc xuất (chủ SP 28/11) — một ô tick cạnh nút Xuất, áp cho Xuất lớp + Xuất từng em. */}
+      {data.xuat && data.dot && (
+        <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 text-[13px] text-slate-300 sm:min-h-0">
+          <input type="checkbox" className="h-4 w-4" checked={ghiDiem} onChange={(ev) => setGhiDiem(ev.target.checked)} />{t('Ghi điểm')}
+        </label>
+      )}
       {data.xuat && data.dot && (['xlsx', 'pdf'] as const).map((k) => (
         <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null, k)}
           title={k === 'pdf' ? t('Mỗi em một tệp PDF, gói .zip') : undefined}>
@@ -221,7 +299,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
       onClose={() => setHop(null)} onDone={sauDoi} />
   ) || (datNhanh && data.dot && (
     <HopDatNhanh neo={nutDatNhanh} lopId={lopId} lopMa={data.lop.ma} dot={data.dot} bo={bo}
-      phan={phanDat.map((p) => ({ khoa: p.khoa, ngan: p.ngan, ten: p.khoa === 'chung' ? t('Nhận xét chung') : p.ten, vietHo: !p.cuaToi, conThieu: em.some((e) => e.o[p.khoa] !== 'du') }))}
+      phan={phanDat.map((p) => ({ khoa: p.khoa, ngan: p.ngan, ten: p.khoa === 'chung' ? t('Nhận xét chung') : p.ten, vietHo: !p.cuaToi, conThieu: canPhan(p.khoa).some((e) => e.o[p.khoa] !== 'du') }))}
       onDoi={(ds) => setDoi((x) => ({ ...x, ...ds }))} onDong={() => setDatNhanh(false)} />
   ));
   if (!data.dot) {
@@ -260,7 +338,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
     }
     const phanTiep = data.phan.filter((p) => p.cuaToi && p.khoa !== mo.phan);
     return <PanelVietBc key={`${mo.phan}:${data.dot}`} lopId={lopId} lopMa={data.lop.ma} dot={data.dot!} phan={ph} emDau={mo.em} onDoi={capNhat}
-      phanTiep={phanTiep.map((p) => ({ khoa: p.khoa, ten: p.ten, thieu: em.filter((e) => e.o[p.khoa] !== 'du').map((e) => e.id) }))}
+      phanTiep={phanTiep.map((p) => ({ khoa: p.khoa, ten: p.ten, thieu: canPhan(p.khoa).filter((e) => e.o[p.khoa] !== 'du').map((e) => e.id) }))}
       onPhanTiep={(k, emId) => setMo({ phan: k, em: emId, kieu: 'viet' })} onDong={() => setMo(null)} />;
   })();
 
@@ -276,10 +354,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             <p className="m-0 mb-1.5 text-[13px] font-medium text-slate-400">{t('Phần của bạn')}</p>
             <div className="grid grid-cols-2 gap-2">
               {cuaToi.map((p) => {
-                const n = em.filter((e) => e.o[p.khoa] === 'du').length;
-                const dau = em.find((e) => e.o[p.khoa] !== 'du') ?? em[0];
+                const ds = canPhan(p.khoa);
+                const n = ds.filter((e) => e.o[p.khoa] === 'du').length;
+                const dau = ds.find((e) => e.o[p.khoa] !== 'du') ?? ds[0];
                 return <button key={p.khoa} type="button" className="btn min-h-[44px] justify-center font-semibold" disabled={!dau} title={dau ? undefined : t('Lớp chưa có học viên')}
-                  onClick={() => dau && setMo({ phan: p.khoa, em: dau.id, kieu: 'viet' })}>{t('Viết {phan} · {n}/{tong}', { phan: p.ngan, n, tong: em.length })}</button>;
+                  onClick={() => dau && setMo({ phan: p.khoa, em: dau.id, kieu: 'viet' })}>{t('Viết {phan} · {n}/{tong}', { phan: p.ngan, n, tong: ds.length })}</button>;
               })}
             </div>
             {/* S4-GD (đề xuất 14): nút "Viết …" mờ vì lớp chưa có em — nói lý do ngay dưới nút (375 không có tooltip). */}
@@ -288,8 +367,9 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
         )}
         <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
           {hien.map((e) => {
-            const thieu = data.phan.filter((p) => !e.o[p.khoa]);
-            const nhap = data.phan.filter((p) => e.o[p.khoa] === 'nhap');
+            const thieu = data.phan.filter((p) => can(e, p.khoa) && !e.o[p.khoa]);
+            const nhap = data.phan.filter((p) => can(e, p.khoa) && e.o[p.khoa] === 'nhap');
+            const khong = data.phan.filter((p) => !can(e, p.khoa));
             const nutPhan = (p: PhanCot) => (
               <button key={p.khoa} type="button" onClick={() => mo_(p, e.id)} aria-label={nhanO(e, p, e.o[p.khoa])}
                 className={`inline-flex min-h-[32px] appearance-none items-center border-0 bg-transparent px-0.5 font-bold ${p.cuaToi ? 'text-[color:var(--accent)] hover:underline' : 'text-slate-100'}`}>{p.ngan}</button>
@@ -303,6 +383,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
                 {!thieu.length && !nhap.length && <div className="text-[13px] text-slate-400">✓ {t('đủ')}</div>}
                 {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
                 {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
+                {/* BC-PH-KY-NANG: phần em không cần làm — một dòng mờ, không bấm. */}
+                {khong.length > 0 && <div className="text-[13px] text-slate-400">{(['khong_hoc', 'bo'] as const).map((k) => {
+                  const ds = khong.filter((p) => e.khong[p.khoa] === k);
+                  return ds.length ? `${nhanKhong(k)} ${ds.map((p) => p.ngan).join(' · ')}` : null;
+                }).filter(Boolean).join(' · ')}</div>}
               </li>
             );
           })}
@@ -320,8 +405,9 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
           </ul>
         )}
         <div className="mt-3 flex flex-wrap gap-x-3 border-t pt-2 text-[12px] text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-          <span>{t('Đủ')} /{em.length}</span>
-          {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{em.filter((e) => e.o[p.khoa] === 'du').length}</b></span>)}
+          {/* BC-PH-KY-NANG (PTA rà #2335): mẫu số theo từng cột = em cần phần đó (như hàng Đủ ở 1440). */}
+          <span>{t('Đủ')}</span>
+          {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{canPhan(p.khoa).filter((e) => e.o[p.khoa] === 'du').length}</b>/{canPhan(p.khoa).length}</span>)}
         </div>
         {thanhChon}
         {panel}
@@ -360,6 +446,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             }
             const p = data.phan.find((x) => x.khoa === c.key)!;
             const o = e.o[p.khoa];
+            /* BC-PH-KY-NANG: em không cần phần này — chữ mờ, không bấm, không đếm. */
+            if (e.khong[p.khoa]) return <span className="text-[12px] text-slate-400">{nhanKhong(e.khong[p.khoa])}</span>;
             return (
               <button type="button" aria-label={nhanO(e, p, o)} onClick={() => mo_(p, e.id)}
                 className={`o-bc ${o === 'du' ? 'du' : o === 'nhap' ? `nhap${p.cuaToi ? ' cua' : ''}` : `chua${p.cuaToi || data.vietHo ? '' : ' doc'}`}`}>
@@ -370,7 +458,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
           cuoi={(
             <tr className="hang-du">
               <td className="td" data-kieu="ten">{t('Đủ')}</td>
-              {data.phan.map((p) => <td key={p.khoa} className="td" data-kieu="so">{em.filter((e) => e.o[p.khoa] === 'du').length}/{em.length}</td>)}
+              {data.phan.map((p) => <td key={p.khoa} className="td" data-kieu="so">{canPhan(p.khoa).filter((e) => e.o[p.khoa] === 'du').length}/{canPhan(p.khoa).length}</td>)}
               {data.xuat && <td className="td" data-kieu="nut" />}
             </tr>
           )} />
@@ -404,7 +492,7 @@ function HopDatNhanh({ neo, lopId, lopMa, dot, bo, phan, onDoi, onDong }: {
   const { data: dl, loading, error, reload } = useApi<DuLieuPhan>(`${duong}/phan?dot=${encodeURIComponent(dot)}&phan=${khoa}`, [lopId, dot, khoa]);
   /* harden: vừa đổi phần mà bản phần cũ còn trên tay → coi như đang tải (không đếm / gửi ô của phần cũ). */
   const data = dl?.phan === khoa ? dl : null;
-  /* Ô trống từng em (em đủ thì không còn ô trống — `phanDu` cần mọi tiêu chí). */
+  /* Ô trống từng em (BC-PH-KY-NANG: em đủ vẫn có thể còn ô trống — mức không bắt buộc, Đặt nhanh vẫn điền được). */
   const o = useMemo(() => Object.fromEntries((data?.em ?? []).map((e) => [e.id, tieuChiTrong(ph, e.banGhi, e.mucTruoc)] as const).filter(([, k]) => k.length)), [data, ph]);
   const soEm = Object.keys(o).length;
   const soO = Object.values(o).reduce((n, k) => n + k.length, 0);
@@ -467,7 +555,7 @@ function HopDatNhanh({ neo, lopId, lopMa, dot, bo, phan, onDoi, onDong }: {
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : loading || !data ? <Skeleton rows={2} />
           : soO ? <>
-            <p className="m-0 text-slate-100"><b className="tabular-nums">{soO}</b> {t('ô trống')} · <b className="tabular-nums">{soEm}</b> {t('em chưa đủ')}</p>
+            <p className="m-0 text-slate-100"><b className="tabular-nums">{soO}</b> {t('ô trống')} · <b className="tabular-nums">{soEm}</b> {t('em')}</p>
             <p className="m-0 mt-1 text-slate-400">{t('Ô đã chấm giữ nguyên.')}</p>
             {thieuChu > 0 && <p className="m-0 mt-1 font-semibold text-soon">{t('{n} em còn thiếu {o} — viết từng em sau', { n: thieuChu, o: oChu })}</p>}
           </> : <p className="m-0 text-slate-400">{t('Mọi em đã có mức ở phần này.')}</p>}
@@ -509,18 +597,18 @@ function DaiChon({ nhan, ds, chon, onChon }: { nhan: string; ds: { k: string; ch
 
 type KieuXuat = 'xlsx' | 'pdf';
 /** Tải báo cáo PH: Excel, hoặc PDF (BCPH-PDF — mỗi em một tệp; thư viện + phông nạp lười chỉ khi bấm). Trả tên tệp. */
-async function taiBc(kieu: KieuXuat, lopId: number, dot: string, emId: number | null, tienDo?: (i: number, n: number) => void): Promise<string> {
-  if (kieu === 'xlsx') return taiBaoCaoPh(lopId, dot, emId);
+async function taiBc(kieu: KieuXuat, lopId: number, dot: string, emId: number | null, tienDo?: (i: number, n: number) => void, ghiDiem = true): Promise<string> {
+  if (kieu === 'xlsx') return taiBaoCaoPh(lopId, dot, emId, ghiDiem);
   const { taiPdfBaoCaoPh } = await import('./xuatPdfBaoCaoPh.ts');
-  return taiPdfBaoCaoPh(lopId, dot, emId, tienDo);
+  return taiPdfBaoCaoPh(lopId, dot, emId, tienDo, ghiDiem);
 }
 /** Chữ nút xuất cả lớp khi đang chạy: PDF cả lớp → "Đang tạo i/n" (U04; trước khi dựng em đầu: "Đang tải…"). */
 const chuDangXuat = (kieu: KieuXuat, td: [number, number] | null) =>
   kieu === 'pdf' ? (td ? t('Đang tạo {i}/{n}', { i: td[0], n: td[1] }) : t('Đang tải…')) : t('Đang tạo file…');
 
 /** Tải Excel báo cáo PH một lớp (`emId` null) / một em — trả tên tệp. Dùng ở tab và việc Admin ở Công việc. */
-export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null): Promise<string> {
-  const r = await api.get<{ sheets: SheetXuat[]; tenTep: string }>(`/classes/${lopId}/bao-cao-ph/xuat?dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}`);
+export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null, ghiDiem = true): Promise<string> {
+  const r = await api.get<{ sheets: SheetXuat[]; tenTep: string }>(`/classes/${lopId}/bao-cao-ph/xuat?dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}${ghiDiem ? '' : '&diem=0'}`);
   await taiXlsx(r.sheets, r.tenTep);
   return r.tenTep;
 }
@@ -530,14 +618,19 @@ export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
   const toast = useToast();
   const [busy, setBusy] = useState<KieuXuat | null>(null);
   const [td, setTd] = useState<[number, number] | null>(null);
+  /* BC-PH-KY-NANG (PTA rà #2335): "Ghi điểm" ở MỌI chỗ xuất — một kiểu như tab lớp. */
+  const [ghiDiem, setGhiDiem] = useState(true);
   /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất bấm trong tab. */
   return (
-    <span className="inline-flex gap-2 max-sm:hidden">
+    <span className="inline-flex items-center gap-2 max-sm:hidden">
+      <label className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-300">
+        <input type="checkbox" className="h-4 w-4" checked={ghiDiem} onChange={(ev) => setGhiDiem(ev.target.checked)} />{t('Ghi điểm')}
+      </label>
       {(['xlsx', 'pdf'] as const).map((k) => (
         <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy !== null}
           onClick={async () => {
             setBusy(k); setTd(null);
-            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null, (i, n) => setTd([i, n])) })); }
+            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null, (i, n) => setTd([i, n]), ghiDiem) })); }
             catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
             finally { setBusy(null); }
           }}>{busy === k ? chuDangXuat(k, td) : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
@@ -549,11 +642,11 @@ export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
 // ---------------------------------------------------------------- panel viết
 
 type Form = BanGhiBc;
-const rong = (): Form => ({ muc: {}, datSan: [], chu: '', diemSua: null });
+const rong = (): Form => ({ muc: {}, datSan: [], chu: '', diemSua: null, boDiem: false });
 /** Bản đầu của form một em: bản đã lưu, không có thì mức đặt sẵn như đợt trước (ô chữ luôn trống — đặc tả §6). */
 const formDau = (e: EmPhan): Form => e.banGhi
   ? { ...e.banGhi }
-  : e.mucTruoc ? { muc: { ...e.mucTruoc }, datSan: Object.keys(e.mucTruoc), chu: '', diemSua: null } : rong();
+  : e.mucTruoc ? { muc: { ...e.mucTruoc }, datSan: Object.keys(e.mucTruoc), chu: '', diemSua: null, boDiem: false } : rong();
 const json = (f: Form) => JSON.stringify(f);
 
 /**
@@ -650,7 +743,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   };
 
   return (
-    <KhungPanel hd="bao-cao-ph" tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
+    <KhungPanel hd="bao-cao-ph" tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="viet" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
       dau={{ dong2: ngCanh ?? [] }} chan={chan}
       /* GD-4b Q37–Q40: theo đợt / phần đã nạp; thẻ "Xong phần" không có dòng. */
       quyChe={data && em && !xong ? quyCheBaoCaoPh({ ft: data.ft, chung: phan.khoa === 'chung', dot: dich(data.dot.nhan), han: data.dot.han, homNay }) : null}>
@@ -749,7 +842,8 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
         <h3 className="m-0 flex-1 text-[16px] font-bold text-slate-100">{em.ten}</h3>
         {du ? <Nhan tone="done">{t('Đủ')}</Nhan> : nhap ? <Nhan tone="soon">{t('Nháp')}</Nhan> : null}
       </div>
-      {phan.coDiem && <DongDiem goc={em.goc} thang={thang} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
+      {phan.coDiem && <DongDiem goc={em.goc} thang={thang} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)}
+        boDiem={!!form.boDiem} onBoDiem={(v) => onDoi((f) => ({ ...f, boDiem: v }), true)} />}
       {tc.length > 1 && (
         <div className="-mx-3 mt-3 grid items-center gap-x-3.5 gap-y-2 rounded-lg surface-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <span id={`ca-em-${em.id}`} className="text-sm font-semibold text-slate-100">{t('Cả {n} tiêu chí', { n: tc.length })}</span>
@@ -772,8 +866,9 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
       })}
       <div className="mt-4">
         <label htmlFor={`bc-chu-${em.id}`} className="mb-1.5 block text-[14px] font-bold text-slate-100">{nhanOChu(phan)}</label>
-        {/* GD-20a (A1 · A3 · A6): khối "Bạn đã ghi" bên phải ô; không có câu → ô rộng như cũ; ô đã có chữ / em đã đủ → khối gập. */}
-        <div className={`viet-ghi${daGhi.ds.length ? '' : ' mot'}`}>
+        {/* BC-PH-KY-NANG (chủ SP 28/11 "để hẳn dưới ô đề xuất cải thiện, đừng để chật chội ở bên phải"): khối "Bạn đã ghi" NGAY DƯỚI ô chữ, hết bề ngang;
+            ô đã có chữ / em đã đủ → khối gập (GD-20a A3 · A6 giữ). */}
+        <div className="viet-ghi mot">
           <div className="o-chu">
             <textarea id={`bc-chu-${em.id}`} className="field w-full" rows={4} value={form.chu}
               placeholder={phan.khoa === 'chung' ? t('Viết cho phụ huynh: tình hình chung, ý thức, điều gia đình cần phối hợp') : t('Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào')} onChange={(ev) => { const chu = ev.target.value; onDoi((f) => ({ ...f, chu }), false); }} onBlur={onRoiChu} />
@@ -805,7 +900,9 @@ function HangThang({ ten, muc, san, dotTruoc, onChon }: { ten: string; muc: MucB
   const id = useRef(`tc-${Math.random().toString(36).slice(2)}`).current;
   return (
     <div className="grid items-center gap-x-3.5 gap-y-2 border-t py-2 first-of-type:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto]" style={{ borderColor: 'var(--line)' }}>
-      <span id={id} className="text-sm leading-[1.45] text-slate-100">{!muc && <span aria-hidden className="mr-1.5 align-[2px] text-[12px] leading-none text-soon">●</span>}{ten}</span>
+      {/* BC-PH-KY-NANG (chủ SP 28/11): mức không bắt buộc — ô chưa chọn nhắc "nên chọn" (vàng nhẹ, không đỏ, không chặn lưu). */}
+      <span id={id} className="text-sm leading-[1.45] text-slate-100">{!muc && <span aria-hidden className="mr-1.5 align-[2px] text-[12px] leading-none text-soon">●</span>}{ten}
+        {!muc && <span className="ml-1.5 whitespace-nowrap text-[12px] font-medium text-soon">{t('nên chọn')}</span>}</span>
       <span ref={ref} role="radiogroup" aria-labelledby={id} onKeyDown={phim} className={`thang-bc${muc ? '' : ' trong'}`}>
         {MUC_BC.map((m, k) => {
           const on = muc === m;
@@ -822,7 +919,10 @@ function HangThang({ ten, muc, san, dotTruoc, onChon }: { ten: string; muc: MucB
 
 /** Dòng Điểm: "✓ 6.5 · MT4 · W3 NOV · Sửa"; đã sửa: "✗ 6.0 · đã sửa · gốc 6.5 · Về điểm gốc"; ô sửa tại chỗ (Enter / rời ô lưu, sai thì viền đỏ, không lưu). */
 /** BCPH-PDF: FT sửa được thành CHỮ tự do ("6.5 - 7.0", như mẫu PDF) — in nguyên chữ, không tô ✓ / ✗; chữ số vẫn kiểm band. */
-function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; thang: boolean; diemSua: number | string | null; homNay: string; onDoi: (v: number | string | null) => void }) {
+/** BC-PH-KY-NANG (chủ SP 28/11 "lựa chọn không ghi / để lại điểm"): ô tick "Ghi vào báo cáo" ở mép phải dòng Điểm — bỏ tick thì tệp xuất để trống ô điểm em này. */
+function DongDiem({ goc, thang, diemSua, homNay, onDoi, boDiem, onBoDiem }: {
+  goc: DiemGocBc | null; thang: boolean; diemSua: number | string | null; homNay: string; onDoi: (v: number | string | null) => void; boDiem: boolean; onBoDiem: (v: boolean) => void;
+}) {
   const [sua, setSua] = useState(false);
   const [chu, setChu] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
@@ -861,6 +961,9 @@ function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | nul
       {!sua && coTheSua && (diemSua != null && goc
         ? <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => onDoi(null)}>{t('Về điểm gốc')}</button>
         : <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => { setChu(laChu ? diemSua as string : so == null ? '' : chuSo(so)); setSua(true); }}>{t('Sửa')}</button>)}
+      <label className="ml-auto inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 text-[13px] text-slate-300 sm:min-h-0">
+        <input type="checkbox" className="h-4 w-4" checked={!boDiem} onChange={(ev) => onBoDiem(!ev.target.checked)} />{t('Ghi vào báo cáo')}
+      </label>
     </div>
   );
 }
@@ -899,6 +1002,7 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
               <span className="inline-flex flex-wrap items-center gap-2">
                 {typeof sua === 'string' ? <ODiem kieu="doc" so={sua} kq={null} nhan={t('Điểm')} />
                   : <ODiem kieu={ft ? 'doc' : 'ti-le'} so={ft ? fmtBand(so!) : String(so)} tong={em.goc?.tong ?? undefined} kq={kqDiemBc(so, em.goc)} nhan={t('Điểm')} />}
+                {b?.boDiem && <span className="text-[12px] font-medium text-slate-400">{t('Không ghi vào báo cáo')}</span>}
                 {b?.diemSua != null ? <span className="text-[12px] text-slate-400">{t('đã sửa')}</span>
                   : em.goc && <span className="rounded surface-2 px-1.5 py-0.5 text-[12px] font-semibold text-slate-300">{em.goc.luot}{em.goc.tuan ? ` · ${tuanLich(em.goc.tuan, homNay)}` : ''}</span>}
               </span>
@@ -906,7 +1010,7 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
             {tc.length > 0 && hang(t('Tiêu chí'), (
               <div className="space-y-0.5">
                 {chon.map((x) => <div key={x.khoa}>{chuBc(x)} <b>{nhanMucBc(b!.muc[x.khoa])}</b></div>)}
-                {chon.length < tc.length && <div className="text-slate-400">{t('{n} tiêu chí chưa chọn', { n: tc.length - chon.length })}</div>}
+                {chon.length < tc.length && <div className="text-soon">{t('{n} tiêu chí chưa chọn · nên chọn', { n: tc.length - chon.length })}</div>}
               </div>
             ))}
             {hang(nhanOChu(phan), b?.chu.trim() ? <span className="whitespace-pre-wrap break-words">{b.chu}</span> : <span className="text-slate-400">{t('Chưa viết')}</span>)}

@@ -13,25 +13,32 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { nhoTheoGhi } from '../platform/mocHeThong.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { COT_BAI_ROI, COT_BO_EM, diemGoc, docTuyChinhDot, dotCuaLop, emTrongDot, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { COT_BAI_ROI, COT_BO_EM, COT_MON_EM, diemGoc, docTuyChinhDot, dotCuaLop, emTrongDot, khongCuaEm, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  addDaysIso, boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
+  addDaysIso, boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, emDuDot, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type KhongCan,
+  type MucBc, type PhanBc,
 } from '../../../shared/domain/index.ts';
 
 export type SheetXuat = { ten: string; aoa: (string | number | null)[][] };
-type Em = { id: number; ten: string };
+/** `khong`: phần em không cần làm (BC-PH-KY-NANG — `khongCuaEm`). */
+type Em = { id: number; ten: string; khong: KhongCan };
 
-/** Một phần của một em: GV phụ trách (lúc hạn đợt), ô chữ, điểm sửa tay / điểm gốc, mức từng tiêu chí. */
-type PhanEm = { p: PhanBc; gv: string; chu: string; sua: number | string | null; goc: DiemGocBc | null; muc: Record<string, MucBc> };
+/** Một phần của một em: GV phụ trách (lúc hạn đợt), ô chữ, điểm sửa tay / điểm gốc, mức từng tiêu chí. `can` = false: em không cần phần này → ô trống, PDF bỏ khối. */
+type PhanEm = { p: PhanBc; can: boolean; gv: string; chu: string; sua: number | string | null; goc: DiemGocBc | null; muc: Record<string, MucBc> };
 /** NỘI DUNG một (lớp, đợt) — MỘT nguồn cho Excel (`dungSheet`) và PDF (`baoCaoPdf`), BCPH-PDF. */
 type NoiDung = { em: Em; phan: PhanEm[] }[];
-function noiDung(bo: readonly PhanBc[], em: readonly Em[], ghi: Map<string, BanGhiBc>, gv: Map<string, string[]>, goc: Map<string, Map<number, DiemGocBc>>): NoiDung {
+function noiDung(bo: readonly PhanBc[], em: readonly Em[], ghi: Map<string, BanGhiBc>, gv: Map<string, string[]>, goc: Map<string, Map<number, DiemGocBc>>,
+  khongDiem = false): NoiDung {
   return em.map((e) => ({
     em: e,
     phan: bo.map((p) => {
+      const gvP = (gv.get(p.khoa) ?? []).join(', ');
+      if (e.khong[p.khoa]) return { p, can: false, gv: gvP, chu: '', sua: null, goc: null, muc: {} };
       const b = ghi.get(`${e.id}:${p.khoa}`) ?? null;
-      return { p, gv: (gv.get(p.khoa) ?? []).join(', '), chu: b?.chu ?? '', sua: p.coDiem ? b?.diemSua ?? null : null, goc: goc.get(p.khoa)?.get(e.id) ?? null, muc: b?.muc ?? {} };
+      /* BC-PH-KY-NANG: GV chọn "Không ghi điểm" → ô điểm trống (Excel, PDF). */
+      const coDiem = p.coDiem && !b?.boDiem && !khongDiem;
+      return { p, can: true, gv: gvP, chu: b?.chu ?? '', sua: coDiem ? b?.diemSua ?? null : null, goc: coDiem ? goc.get(p.khoa)?.get(e.id) ?? null : null, muc: b?.muc ?? {} };
     }),
   }));
 }
@@ -69,7 +76,7 @@ function dungSheet(ten: string, ma: string, bo: readonly PhanBc[], nd: NoiDung):
 function baoCaoPdf(c: LopBc, nd: NoiDung, cn: { dia_chi: string | null; so_dien_thoai: string | null } | undefined): BaoCaoPdf[] {
   return nd.map((x) => ({
     ft: lopFt(c), diaChi: cn?.dia_chi ?? null, soDienThoai: cn?.so_dien_thoai ?? null, hocVien: x.em.ten, lop: c.code,
-    phan: x.phan.map((o) => ({
+    phan: x.phan.filter((o) => o.can).map((o) => ({
       khoa: o.p.khoa, ngan: o.p.ngan, gv: o.gv, chu: o.chu, diem: o.p.coDiem ? chuDiemPdf(o.sua, o.goc) : null,
       nhom: o.p.nhom.map((n) => ({ vi: n.vi, en: n.en, ds: n.ds.map((tc) => ({ vi: tc.vi, en: tc.en, muc: o.muc[tc.khoa] ?? null })) })),
     })),
@@ -85,7 +92,8 @@ function tenSheet(goc: string, daDung: Set<string>): string {
   return ten;
 }
 
-type Viec = { c: LopBc; d: DotBc; bo: readonly PhanBc[]; em: Em[]; tenSheet: string };
+/** `khongDiem` (chủ SP 28/11): người xuất chọn bỏ điểm cả tệp — mọi ô điểm trống. */
+type Viec = { c: LopBc; d: DotBc; bo: readonly PhanBc[]; em: Em[]; tenSheet: string; khongDiem?: boolean };
 
 /** Em của nhiều (lớp, đợt) — MỘT câu ghi danh; cùng luật `emCuaDot` (phủ ngày mốc, em đang học; BO-BAO-CAO-PH: em đã bỏ đợt đó không có). */
 function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<string, Em[]> {
@@ -94,14 +102,16 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
   theoLoJson([...new Set(ds.map((x) => x.c.id))], (json) => {
     /* TOC-DO-2511c: `docNho` — Tổng quan kèm "Của tôi" (Admin) gọi hai lượt Công việc cùng câu (dòng chỉ đọc). */
     rows.push(...docNho(
-      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo, s.id, s.full_name
+      `SELECT e.class_id, substr(e.started_at, 1, 10) AS tu, substr(e.ended_at, 1, 10) AS den, ${COT_BAI_ROI('e')} AS bai, ${COT_BO_EM('s', 'e')} AS bo, ${COT_MON_EM('e')} AS mon,
+              s.id, s.full_name
          FROM enrollments e JOIN students s ON s.id = e.student_id
         WHERE e.class_id IN (${DS_JSON}) AND ${HV_DANG_HOC_SQL('s')} AND e.status != 'withdrawn' ORDER BY s.full_name`, json));
   });
   for (const { c, d } of ds) {
     const thay = new Set<number>();
+    const bo = boPhanBc(c.programme_code ?? c.kind) ?? [];
     out.set(`${c.id}|${d.ma}`, rows.filter((r) => r.class_id === c.id && emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id))
-      .map((r) => ({ id: r.id, ten: r.full_name })));
+      .map((r) => ({ id: r.id, ten: r.full_name, khong: khongCuaEm(r, c, bo, d, homNay) })));
   }
   return out;
 }
@@ -113,10 +123,10 @@ function dungNoiDung(viec: readonly Viec[]): NoiDung[] {
   const dots = [...new Set(viec.map((v) => v.d.ma))];
   const sids = [...new Set(viec.flatMap((v) => v.em.map((e) => e.id)))];
   theoLoJson(sids, (json) => {
-    for (const r of db().prepare(`SELECT dot, student_id, phan, muc, chu, diem_sua FROM bao_cao_ph WHERE dot IN (SELECT value FROM json_each(?)) AND student_id IN (${DS_JSON})`)
+    for (const r of db().prepare(`SELECT dot, student_id, phan, muc, chu, diem_sua, bo_diem FROM bao_cao_ph WHERE dot IN (SELECT value FROM json_each(?)) AND student_id IN (${DS_JSON})`)
       .all(JSON.stringify(dots), json) as any[]) {
       const m = ghi.get(r.dot) ?? new Map<string, BanGhiBc>();
-      m.set(`${r.student_id}:${r.phan}`, { muc: r.muc ? JSON.parse(r.muc) : {}, datSan: [], chu: r.chu ?? '', diemSua: r.diem_sua ?? null });
+      m.set(`${r.student_id}:${r.phan}`, { muc: r.muc ? JSON.parse(r.muc) : {}, datSan: [], chu: r.chu ?? '', diemSua: r.diem_sua ?? null, boDiem: !!r.bo_diem });
       ghi.set(r.dot, m);
     }
   });
@@ -154,7 +164,7 @@ function dungNoiDung(viec: readonly Viec[]): NoiDung[] {
     for (const p of ds[0].bo) if (p.coDiem) m.set(p.khoa, diemGoc(ds[0].c, ds[0].d, p.khoa, em));
     goc.set(k, m);
   }
-  return viec.map((v) => noiDung(v.bo, v.em, ghi.get(v.d.ma) ?? new Map(), gvLuc(v), goc.get(nhomGoc(v)) ?? new Map()));
+  return viec.map((v) => noiDung(v.bo, v.em, ghi.get(v.d.ma) ?? new Map(), gvLuc(v), v.khongDiem ? new Map() : goc.get(nhomGoc(v)) ?? new Map(), v.khongDiem));
 }
 
 /** Sheets Excel của các việc. */
@@ -166,7 +176,7 @@ const tep = (...phan: string[]) => `PISA_BaoCaoPH_${phan.join('_').replace(/[^\p
  * GET /classes/:id/bao-cao-ph/xuat?dot=&em=&kieu= — một lớp (mọi em của đợt) hoặc một em. Excel: một sheet một cột / em.
  * `kieu=pdf` (BCPH-PDF): nội dung từng em (`BaoCaoPdf`) — web dựng PDF; + 1 câu địa chỉ / SĐT chi nhánh lớp (1 dòng).
  */
-export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | null, emId: number | null, kieu: 'xlsx' | 'pdf' = 'xlsx') {
+export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | null, emId: number | null, kieu: 'xlsx' | 'pdf' = 'xlsx', coDiem = true) {
   const c = lopDayDu().get(classId) as LopBc | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
   if (!quyenBc(p, c).xuat) throw forbidden('Xuất báo cáo PH: chỉ Head, Admin, Tư vấn viên.');
@@ -181,9 +191,9 @@ export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | n
     if (!em.length) throw badRequest('Học viên không có trong đợt báo cáo này');
   }
   const nhan = nhanDotBc(d, homNay);
-  const viec: Viec[] = [{ c, d, bo: dl.bo, em, tenSheet: tenSheet(c.code, new Set()) }];
+  const viec: Viec[] = [{ c, d, bo: dl.bo, em, tenSheet: tenSheet(c.code, new Set()), khongDiem: !coDiem }];
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.xuat', entityType: emId ? 'student' : 'class', entityId: emId ?? c.id, entityLabel: c.code,
-    after: { dot: d.ma, soHv: em.length, ...(kieu === 'pdf' ? { kieu } : {}) } });
+    after: { dot: d.ma, soHv: em.length, ...(kieu === 'pdf' ? { kieu } : {}), ...(coDiem ? {} : { khongDiem: true }) } });
   if (kieu === 'pdf') {
     const cn = db().prepare('SELECT dia_chi, so_dien_thoai FROM branches WHERE id = ?').get(c.branch_id) as any;
     return { ds: baoCaoPdf(c, dungNoiDung(viec)[0], cn), lop: c.code, nhanDot: nhan, dem: { hocVien: em.length, lop: 1 } };
@@ -237,7 +247,7 @@ function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
  * POST /hoc-vien-lop/xuat-bao-cao-ph { ids, thang, xemTruoc } — Học viên & Lớp › Xuất Excel › mẫu "Báo cáo PH".
  * `xemTruoc`: chỉ đếm (lớp FT / lớp thường có đợt, không đợt, em đủ mọi phần) — không đọc điểm, không ghi nhật ký.
  */
-export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: unknown; xemTruoc?: unknown }) {
+export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: unknown; xemTruoc?: unknown; ghiDiem?: unknown }) {
   const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0) : [];
   const { viec, khongDot, homNay } = viecTheoThang(p, ids, String(body.thang ?? ''));
   const demLop = (ft: boolean) => {
@@ -246,18 +256,19 @@ export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: u
   };
   const tong = new Set(viec.flatMap((x) => x.em.map((e) => e.id))).size;
   if (body.xemTruoc) {
-    /* Em đủ mọi phần: một câu đếm bản ghi `du` theo (đợt, em). */
-    const du = new Map<string, number>();
+    /* Em đủ mọi phần CẦN LÀM (BC-PH-KY-NANG `emDuDot`): một câu bản ghi `du` theo (đợt, em, phần). */
+    const du = new Set<string>();
     const sids = [...new Set(viec.flatMap((v) => v.em.map((e) => e.id)))];
     theoLoJson(sids, (json) => {
-      for (const r of db().prepare(`SELECT dot, student_id, COUNT(*) n FROM bao_cao_ph WHERE du = 1 AND student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`)
-        .all(json, JSON.stringify([...new Set(viec.map((v) => v.d.ma))])) as any[]) du.set(`${r.dot}|${r.student_id}`, r.n);
+      for (const r of db().prepare(`SELECT dot, student_id, phan FROM bao_cao_ph WHERE du = 1 AND student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?))`)
+        .all(json, JSON.stringify([...new Set(viec.map((v) => v.d.ma))])) as any[]) du.add(`${r.dot}|${r.student_id}|${r.phan}`);
     });
-    const emDu = new Set(viec.flatMap((v) => v.em.filter((e) => (du.get(`${v.d.ma}|${e.id}`) ?? 0) >= v.bo.length).map((e) => e.id))).size;
+    const emDu = new Set(viec.flatMap((v) => v.em.filter((e) => emDuDot(v.bo, e.khong, (k) => du.has(`${v.d.ma}|${e.id}|${k}`))).map((e) => e.id))).size;
     return { ft: demLop(true), thuong: demLop(false), khongDot, emDu, tong };
   }
   if (!viec.length) throw badRequest('Không có lớp nào có đợt báo cáo PH trong tháng này');
-  const sheets = dungSheets(viec);
+  /* BC-PH-KY-NANG: `ghiDiem: false` — không ghi điểm cả tệp (như `?diem=0` của xuất một lớp). */
+  const sheets = dungSheets(body.ghiDiem === false ? viec.map((v) => ({ ...v, khongDiem: true })) : viec);
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.xuat', entityType: 'xuat_hoc_vien', entityLabel: `${tong} học viên · ${viec.length} lớp`,
     after: { thang: body.thang, soLop: viec.length, soHv: tong } });
   return { sheets, tenTep: tep(String(body.thang), `${viec.length}-lop`), dem: { hocVien: tong, lop: viec.length }, khongDot, homNay };
@@ -296,15 +307,17 @@ function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, hom
     if (!cap.length) return [];
     const emDot = emTheoLo(cap, homNay);
     const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
-    const dem = new Map<string, { du: number; luc: string }>();
+    /* BC-PH-KY-NANG: phần đã đủ của từng (đợt, em) — em đủ = mọi phần cần làm đủ (`emDuDot`). */
+    const dem = new Map<string, { du: Set<string>; luc: string }>();
     theoLoJson(sids, (json) => {
-      for (const r of docNho(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`,
-        json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))]))) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
+      for (const r of docNho(`SELECT dot, student_id, group_concat(CASE WHEN du = 1 THEN phan END) du, MAX(sua_luc) luc FROM bao_cao_ph
+          WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`,
+        json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))]))) dem.set(`${r.dot}|${r.student_id}`, { du: new Set(r.du ? String(r.du).split(',') : []), luc: r.luc });
     });
     const ket = cap.flatMap(({ c, d, bo }) => {
       const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
       if (!em.length) return [];
-      const thieu = em.filter((e) => (dem.get(`${d.ma}|${e.id}`)?.du ?? 0) < bo.length).length;
+      const thieu = em.filter((e) => !emDuDot(bo, e.khong, (k) => !!dem.get(`${d.ma}|${e.id}`)?.du.has(k))).length;
       const luc = thieu ? null : em.map((e) => dem.get(`${d.ma}|${e.id}`)?.luc ?? '').sort().at(-1)!;
       return [{ c, d, soEm: em.length, thieu, luc, qh: soNgayQuaHan(d, homNay) }];
     });
@@ -415,8 +428,9 @@ export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu 
   });
   const out: ViecBcGv[] = [];
   for (const { userId, c, d, phan } of cap) {
-    const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
-    const thieu = em.filter((e) => phan.some((ph) => !du.has(`${d.ma}|${e.id}|${ph.khoa}`))).length;
+    /* BC-PH-KY-NANG: chỉ em CẦN phần của người giữ (không học / Head bỏ → không là việc). */
+    const em = (emDot.get(`${c.id}|${d.ma}`) ?? []).filter((e) => phan.some((ph) => !e.khong[ph.khoa]));
+    const thieu = em.filter((e) => phan.some((ph) => !e.khong[ph.khoa] && !du.has(`${d.ma}|${e.id}|${ph.khoa}`))).length;
     if (thieu) out.push({ userId, classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, phan: phan.map((ph) => ph.khoa) });
   }
   return out;
@@ -434,11 +448,11 @@ export function dotBcSapMoGv(n: NguoiBc, homNay: string, batTu = ''): DotBcSapMo
   const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
   const den = addDaysIso(homNay, 7);
-  const cap = can.flatMap(({ c }) => (dotCuaLop(c, den, tienDo, tuyChinh)?.ds ?? []).filter((d) => d.mo > homNay && d.han >= batTu).map((d) => ({ c, d })));
+  const cap = can.flatMap(({ c, phan }) => (dotCuaLop(c, den, tienDo, tuyChinh)?.ds ?? []).filter((d) => d.mo > homNay && d.han >= batTu).map((d) => ({ c, d, phan })));
   if (!cap.length) return [];
-  /* Lớp không em nào trong đợt thì không sinh việc — một câu em, chỉ những ngày có đợt sắp mở. */
+  /* Lớp không em nào CẦN phần của người giữ trong đợt (BC-PH-KY-NANG — như `viecBaoCaoPhGv`) thì không sinh việc — một câu em, chỉ những ngày có đợt sắp mở. */
   const emDot = emTheoLo(cap, den);
-  return cap.filter(({ c, d }) => emDot.get(`${c.id}|${d.ma}`)?.length)
+  return cap.filter(({ c, d, phan }) => emDot.get(`${c.id}|${d.ma}`)?.some((e) => phan.some((ph) => !e.khong[ph.khoa])))
     .map(({ c, d }) => ({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), mo: d.mo }))
     .sort((a, b) => a.mo.localeCompare(b.mo) || a.classId - b.classId);
 }

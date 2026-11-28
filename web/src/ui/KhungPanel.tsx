@@ -222,7 +222,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   /** `vua` 1180 px: panel bàn giao (mockup v11 — bảng hai cột không trải hết 1440). */
-  rong?: 'viec' | 'hep' | 'rong' | 'vua' | 'toan' | /** PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ bài chấm của một GV — 640. */ 'so' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang' | /** TU2-6 (mockup Ⓣ2 P1): panel một người dạy — 880. */ 'nguoi-day' | /** SO-720 (chủ SP 24/11, mockup v24 `phan-tich-panel-so.html` B0): panel số của Phân tích — 720, CAO HẾT như panel Công việc (chủ SP 25/11, #2119: dưới thanh menu tới đáy, danh sách ngắn chừa trống), KHÔNG nền mờ (trang bên trái vẫn đọc / bấm được, bấm số khác thì đổi nội dung); thân sát mép, không chân. ≤ 639 toàn màn. */ 'so720';
+  rong?: 'viec' | 'hep' | 'rong' | 'vua' | 'toan' | /** PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ bài chấm của một GV — 640. */ 'so' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang' | /** TU2-6 (mockup Ⓣ2 P1): panel một người dạy — 880. */ 'nguoi-day' | /** SO-720 (chủ SP 24/11, mockup v24 `phan-tich-panel-so.html` B0): panel số của Phân tích — 720, CAO HẾT như panel Công việc (chủ SP 25/11, #2119: dưới thanh menu tới đáy, danh sách ngắn chừa trống), KHÔNG nền mờ (trang bên trái vẫn đọc / bấm được, bấm số khác thì đổi nội dung); thân sát mép, không chân. ≤ 639 toàn màn. */ 'so720' | /** BC-PH-KY-NANG (chủ SP 28/11 "làm panel rộng hơn cũng được"): panel viết Báo cáo PH — 960 (danh sách em + form + khối "Bạn đã ghi" dưới ô chữ). */ 'viet';
   tabs?: ReactNode; ngCanh?: ReactNode;
   /** N64: dải làm thay của chính panel (vd bàn giao: "Đang giao cho … — bạn làm thay") — cùng chỗ, thắng dải chung của Công việc. */
   daiLamThay?: ReactNode;
@@ -275,7 +275,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
   const chuoi = useContext(XemCha);
   const rong = rongRieng ?? chuoi?.rong ?? 'viec';
   const la720 = rong === 'so720';   // SO-720: không nền mờ, không khoá cuộn trang, cao hết như panel Công việc
-  const laBang = rong === 'bang' || rong === 'vua' || rong === 'so' || la720;
+  const laBang = rong === 'bang' || rong === 'vua' || rong === 'so' || rong === 'viet' || la720;
   const top = useDayThanhTren();
   /* NEN-PANEL (K12): panel ngoài cùng của việc — ô `useNhap` còn chữ → coi là đang sửa như `chan.daSua`. */
   const nhap = useContext(NhapCuaPanel);
@@ -522,7 +522,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, phu, rong: rongRie
     /* NHẸ HƠN (v23): khung bắt đầu NGAY DƯỚI thanh menu (menu không bị phủ), tới đáy. */
     <div className={`fixed inset-x-0 !mt-0 ${z} flex justify-end`} style={{ top, bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} data-pn={rong === 'toan' ? undefined : laBang ? 'bang' : 'viec'} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : 'sm:w-[720px] sm:max-w-full'} ${rong === 'toan' ? '' : 'lg:w-[720px]'}`}
+      <div ref={khung} tabIndex={-1} data-pn={rong === 'toan' ? undefined : laBang ? 'bang' : 'viec'} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'viet' ? 'sm:w-[960px] sm:max-w-full' : 'sm:w-[720px] sm:max-w-full'} ${rong === 'toan' ? '' : rong === 'viet' ? 'lg:w-[960px]' : 'lg:w-[720px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {/* HD3-1 (15 mục 8.3): "?" nổi trên nền mờ, sát mép trái panel, cùng dáng "?" thanh trên — "?" thanh trên bị panel che. ≥ 640 px (375 panel phủ hết). */}
         {nutHd && rong !== 'toan' && (

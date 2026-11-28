@@ -9,9 +9,9 @@ import urlDam from '../../assets/quicksand/Quicksand-Bold.ttf?url';
  * phông Quicksand chỉ tải khi xuất, không vào gói trang đầu. Máy chủ trả nội dung từng em (cùng nguồn Excel), trình duyệt dựng PDF.
  * Một em → "{Lớp} - {Tên HV} - {Đợt}.pdf"; cả lớp → MỖI EM MỘT TỆP PDF, gói một .zip tải một lần (chủ SP 07/11). Trả tên tệp đã tải.
  */
-export async function taiPdfBaoCaoPh(lopId: number, dot: string, emId: number | null, tienDo?: (i: number, n: number) => void): Promise<string> {
+export async function taiPdfBaoCaoPh(lopId: number, dot: string, emId: number | null, tienDo?: (i: number, n: number) => void, ghiDiem = true): Promise<string> {
   const [r, lib, fontkit, { dungPdfBaoCao, tenTepPdf, sachTenTep: sach }, r1, r2] = await Promise.all([
-    api.get<{ ds: BaoCaoPdf[]; lop: string; nhanDot: string }>(`/classes/${lopId}/bao-cao-ph/xuat?kieu=pdf&dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}`),
+    api.get<{ ds: BaoCaoPdf[]; lop: string; nhanDot: string }>(`/classes/${lopId}/bao-cao-ph/xuat?kieu=pdf&dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}${ghiDiem ? '' : '&diem=0'}`),
     import('pdf-lib'), import('@pdf-lib/fontkit'), import('@shared/domain/pdfBaoCaoPh.ts'),
     fetch(urlThuong).then((x) => x.arrayBuffer()), fetch(urlDam).then((x) => x.arrayBuffer()),
   ]);
