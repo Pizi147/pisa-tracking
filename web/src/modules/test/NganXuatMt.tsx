@@ -43,8 +43,8 @@ const doRong = (aoa: Cell[][]) => (aoa[0] ?? []).map((_, c) => ({
  */
 export function NganXuatMt({ khung: khungDau, chiNhanh, lop, tvv = null, thoiGianMacDinh, tieuDe = t('Xuất Excel · Điểm Test'), tabs, vungTab, onDong }: {
   khung: KhungXuat; chiNhanh?: number | null; lop?: { id: number; ma: string } | null;
-  /** LOC-TVV-XUAT: TVV đang lọc ở Lịch Test — tệp chỉ gồm em của TVV đó (máy chủ ép quyền). */
-  tvv?: number | null;
+  /** LOC-TVV-XUAT: TVV đang lọc ở Lịch Test — tệp chỉ gồm em của TVV đó (máy chủ ép quyền); nhãn "TVV" ✕ trong Phạm vi bỏ lọc ngay trong ngăn (P2). */
+  tvv?: { id: number; ten: string } | null;
   thoiGianMacDinh: ThoiGianXuat; tieuDe?: string; tabs?: ReactNode; vungTab?: { id: string; nhan: string }; onDong: () => void;
 }) {
   const toast = useToast();
@@ -52,6 +52,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, tvv = null, thoiGia
   const [khung, setKhung] = useState<KhungXuat>(khungDau);
   const [cn, setCn] = useState<number[]>(chiNhanh ? [chiNhanh] : []);
   const [lopChon, setLopChon] = useState<{ id: number; ma: string }[]>(lop ? [lop] : []);
+  const [tvvChon, setTvvChon] = useState(tvv);
 
   const macDinhDot = (k: KhungXuat) => [...(k === 'ft' ? DOT_XUAT_FT : DOT_XUAT_THUONG)];
   const t0 = thoiGianMacDinh;
@@ -66,9 +67,9 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, tvv = null, thoiGia
 
   /* Bộ lọc phẳng đi qua CHÍNH `docBoLocXuatMt` của máy chủ — web kiểm trước chỉ để báo sớm. */
   const f = useMemo(() => docBoLocXuatMt({
-    khung, chiNhanh: cn, lop: lopChon.map((l) => l.id), cot, du: chiDu ? 1 : 0, tg: kieu, tvv,
+    khung, chiNhanh: cn, lop: lopChon.map((l) => l.id), cot, du: chiDu ? 1 : 0, tg: kieu, tvv: tvvChon?.id ?? null,
     ...(kieu === 'dot' ? { dot } : kieu === 'tuan' ? tuan : thang),
-  }), [khung, cn, lopChon, cot, chiDu, kieu, dot, tuan, thang, tvv]);
+  }), [khung, cn, lopChon, cot, chiDu, kieu, dot, tuan, thang, tvvChon]);
   const loiNhap = typeof f === 'string' ? f : null;
   /* Lỗi thời gian hiện ngay khi xảy ra (đổi ô là kiểm lại), qua `useLoiForm` như mọi form KhungPanel. */
   const lf = useLoiForm();
@@ -200,6 +201,15 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, tvv = null, thoiGia
                 </div>
               )}
             </Truong>
+            {tvvChon && (
+              <Truong nhan={t('TVV')} as="div">
+                <div className="flex flex-wrap gap-1.5">
+                  <button type="button" title={t('Bỏ lọc TVV {ten}', { ten: tvvChon.ten })} onClick={() => setTvvChon(null)} className="nut-loc nut-loc-dang">
+                    {tvvChon.ten}<span aria-hidden>✕</span><span className="sr-only">{t('bỏ lọc TVV')}</span>
+                  </button>
+                </div>
+              </Truong>
+            )}
           </>
         )}
       </Khoi>

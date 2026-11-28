@@ -28,7 +28,6 @@ import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
 import { nguoiGiuO, oCuaToi } from '../worklist/scoreDebt.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { sExTuan, type DongSEx } from './sExpert.ts';
-import { dsTvv } from '../students/students.ts';
 
 /**
  * LOC-TVV (chủ SP 28/11): bộ lọc TVV của Lịch Test — chỉ em có `consultant_user_id` = TVV đó. Head / Quản trị / CX (+ Lead TVV) chọn TVV bất kỳ;
@@ -36,10 +35,27 @@ import { dsTvv } from '../students/students.ts';
  */
 export const chonTvvKhac = (p: Principal): boolean => laHeadHoacQt(p) || coVaiCx(p);
 const laVaiTvv = (p: Principal): boolean => p.roleKeys.includes('consultant');
+/**
+ * LOC-TVV-P2 (PTA rà #2320): TVV đang hoạt động ở chi nhánh trong phạm vi người xem (vai toàn hệ thống: mọi chi nhánh; `branchId` thu về một chi nhánh) —
+ * cùng điều kiện `TVV_SQL` của `dsTvv`. Một câu. Ô chọn TVV của Lịch Test và việc nhận tham số `tvv` (Lịch Test, lưới, Xuất) dùng chung — id ngoài danh sách
+ * bị bỏ qua (không lọc theo người lạ, không ghi tên họ vào tệp xuất).
+ */
+export function dsTvvTrongPhamVi(p: Principal, o: { id?: number; branchId?: number | null } = {}): { id: number; ten: string }[] {
+  const cns = p.grants.some((g) => g.branchId == null) ? null : [...new Set(p.grants.map((g) => g.branchId))];
+  const dk: [string, unknown][] = [];
+  if (o.id != null) dk.push(['u.id = ?', o.id]);
+  if (cns) dk.push(['ur.branch_id IN (SELECT value FROM json_each(?))', JSON.stringify(cns)]);
+  if (o.branchId != null) dk.push(['ur.branch_id = ?', o.branchId]);
+  const ds = db().prepare(`SELECT DISTINCT u.id, u.full_name AS ten FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'consultant'
+     WHERE u.status = 'active' AND u.approval_state = 'approved'${dk.map(([x]) => ` AND ${x}`).join('')}`).all(...dk.map(([, v]) => v)) as { id: number; ten: string }[];
+  return ds.sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+}
+export const tenTvvTrongPhamVi = (p: Principal, id: number): string | null => dsTvvTrongPhamVi(p, { id })[0]?.ten ?? null;
 export function tvvLoc(p: Principal, raw: string | null | undefined): number | null {
   if (raw === 'all') return null;
   const id = raw ? Number(raw) : NaN;
-  if (Number.isInteger(id) && id > 0) return chonTvvKhac(p) ? id : laVaiTvv(p) ? p.userId : null;
+  if (Number.isInteger(id) && id > 0) return chonTvvKhac(p) ? (tenTvvTrongPhamVi(p, id) != null ? id : null) : laVaiTvv(p) ? p.userId : null;
   return laVaiTvv(p) && !chonTvvKhac(p) ? p.userId : null;
 }
 /** Em của một TVV — MỘT câu; nơi gọi lọc danh sách đã nạp (khối Quá hạn, S Ex, nhắc MT cũ, lưới lớp, ô quá hạn). */
@@ -951,8 +967,8 @@ export function lichTest(
     lop,
     nhacLichSu: mtLichSuChuaNhap(p, { classIds: lopNo ? [...lopNo] : null, branchId, chiEm: emTvv }),
     sEx: sExTuan(p, String(tuan.week_start), { branchId, giuLop }, today).filter((d) => !emTvv || emTvv.has(d.studentId)),
-    /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvv`); vai TVV: web dựng ô chọn "TVV" chính mình · Tất cả HV (không cần danh sách). */
-    tvv: chonTvvKhac(p) ? { dang: tvv, ds: dsTvv(null, branchId ?? null).map(({ id, ten }) => ({ id, ten })) }
+    /* LOC-TVV: ô chọn TVV chỉ cho Head / Quản trị / CX (một câu `dsTvvTrongPhamVi` — LOC-TVV-P2: chỉ TVV trong phạm vi); vai TVV: web dựng ô chọn "TVV" chính mình · Tất cả HV (không cần danh sách). */
+    tvv: chonTvvKhac(p) ? { dang: tvv, ds: dsTvvTrongPhamVi(p, { branchId }) }
       : laVaiTvv(p) ? { dang: tvv, ds: null } : null,
   };
 }

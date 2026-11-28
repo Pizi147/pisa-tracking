@@ -163,6 +163,40 @@ export async function runPrLoi4Tests(t: any) {
     const v = gv.docViec('xu_ly', xl.sid);
     assert(v.mo && v.phuTrach[0] === moi, `sau từ chối: ${JSON.stringify({ mo: v.mo, pt: v.phuTrach })}`);
   }));
+  /** P2 rà #2320: người được giao (GV khác) gửi đề xuất; `truocQuyet` chạy giữa lúc gửi và lúc Head từ chối. Trả dòng `viec_xu_ly` + docViec sau từ chối. */
+  const giaoGuiTuChoi = (truocQuyet: (ycId: number, gvbm: number) => void) => {
+    const gvbm = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
+        AND ur.branch_id = (SELECT branch_id FROM students WHERE id = ?) AND u.id != ? ORDER BY u.id LIMIT 1`, xl.sid, xl.gvcn).id as number;
+    gv.doiPhuTrach(loadPrincipal(xl.gvcn), 'xu_ly', xl.sid, { userId: gvbm, phuTrachCu: null });
+    xoaNho();
+    const pB = loadPrincipal(gvbm);
+    const vids = [1, 2, 3].map((i) => viol.recordViolation(pB, { studentId: xl.sid, category: 'homework', ten: `LOI4e ${i}`, occurredOn: addDays(TODAY, -i) }).violation.id);
+    const nhap = xu.deXuat(pB, xl.sid, { kind: 'wl_3', violationIds: vids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
+    att.addLink(pB, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
+    xu.guiDeXuat(pB, nhap.id);
+    const id = get(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id;
+    assert(JSON.parse(get('SELECT du_lieu FROM yeu_cau_duyet WHERE id = ?', id).du_lieu).giao === gvbm, 'du_lieu.giao phải là người được giao lúc gửi');
+    truocQuyet(id, gvbm);
+    xoaNho();
+    yc.tuChoiYeuCau(P.admin, id, 'Chưa đủ căn cứ');
+    xoaNho();
+    return { gvbm, r: get('SELECT trang_thai, phu_trach_id FROM viec_xu_ly WHERE id = ?', xl.sid), v: gv.docViec('xu_ly', xl.sid) };
+  };
+  check('LOI4-2e · thẻ gửi trước LOI-4b (không có du_lieu.giao) → như cũ: người gửi không phải GVCN hiện tại = người được giao → việc về họ', () => thu(() => {
+    assert(xl, 'seed');
+    const { gvbm, v } = giaoGuiTuChoi((ycId) => {
+      const d = JSON.parse(get('SELECT du_lieu FROM yeu_cau_duyet WHERE id = ?', ycId).du_lieu);
+      delete d.giao;
+      conn.prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify(d), ycId);
+    });
+    assert(v.mo && v.phuTrach[0] === gvbm, `thẻ cũ: ${JSON.stringify({ mo: v.mo, pt: v.phuTrach })}`);
+  }));
+  check('LOI4-2f · người được giao hết vai trước khi Head từ chối → không gán lại cho họ; việc về GVCN', () => thu(() => {
+    assert(xl, 'seed');
+    const { gvbm, r, v } = giaoGuiTuChoi((_id, u) => { conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?`).run(u); });
+    assert(r?.phu_trach_id !== gvbm || r?.trang_thai !== 'mo', `dòng gán người hết vai: ${JSON.stringify(r)}`);
+    assert(!v.mo || v.phuTrach[0] === xl.gvcn, `sau từ chối: ${JSON.stringify({ mo: v.mo, pt: v.phuTrach })}`);
+  }));
   check('LOI4-2c · (PTA rà #2300 P2-4) người được giao gửi; trước khi Head quyết, dòng đợt là "mo" chưa giao (vi phạm mới) → từ chối: việc về người gửi; hạn chọn đã quá bỏ', () => thu(() => {
     assert(xl, 'seed');
     const gvbm = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND u.status = 'active'
