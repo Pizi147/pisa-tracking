@@ -17,6 +17,7 @@ export async function runPrLpb1Tests(t: any) {
   const luu: any = await import('../students/dongLuuTru.ts');
   const xoaHv: any = await import('../students/xoaHocVien.ts');
   const { myWork } = await import('../worklist/mywork.ts');
+  const vtMod: any = await import('../worklist/viecTvv.ts');
   const { migratePrLpb1 } = await import('../migrate/prLpb1.ts');
   const { catLpb1 } = await import('./catBaoPh0.ts');
   const { default: SqliteDb } = await import('libsql') as any;
@@ -237,6 +238,14 @@ export async function runPrLpb1Tests(t: any) {
     assert((await goi(ckC, 'POST', `/giao-viec/ban_giao/${nguon}/phu-trach`, { userId: G, phuTrachCu: null })).status === 200, 'GVCN giao việc Bàn giao');
     assert(!coViec(pC, `ban_giao:${nguon}`) && coViec(pG, `ban_giao:${nguon}`)?.mine, 'việc chưa rời GVCN / chưa vào người được giao');
     assert((await goi(ckH, 'POST', `/lenh-chuyen/${lenhId}/xac-nhan`, { nhanXetChung: 'Em học chăm, cần luyện thêm nghe.' })).status === 403, 'người ngoài (GVCN lớp đích) xác nhận được');
+    /* Rà #2334 P2-6 (LPB-3 [XM-2]): Tuyến của em trong panel Bàn giao — panel đọc `lenhId` từ GET bàn giao rồi gọi đường tuyến SẴN CÓ; GVCN lớp nguồn xem được,
+       người ngoài (GV không dạy lớp nào của em) không (404 — đường tuyến không lộ việc có tồn tại). */
+    const bg = await goi(ckC, 'GET', `/lenh-chuyen/ban-giao?lop=${nguon}`);
+    assert(bg.status === 200 && (bg.json?.ds ?? []).some((e: any) => e.lenhId === lenhId), `GET bàn giao thiếu lenhId: ${bg.status}`);
+    const tu = await goi(ckC, 'GET', `/tuyen/chuyen_lop/${lenhId}`);
+    assert(tu.status === 200 && tu.json?.buoc?.some((b: any) => b.khoa === 'ban_giao'), `GVCN xem tuyến: ${tu.status} ${tu.json?.error}`);
+    const [X] = gvRanh(nguon, 6).filter((u) => ![GVCN, GVL, G, H].includes(u));
+    assert((await goi(await vao(X), 'GET', `/tuyen/chuyen_lop/${lenhId}`)).status === 404, 'người ngoài xem được tuyến Chuyển lớp của em');
     /* Bàn giao môn (Listening): id khung qua `mo`, giao cho H; H ghi đúng môn đó, môn khác 403. */
     assert((await goi(ckH, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'listening' })).status === 403, 'người ngoài lớp nguồn mở được id khung môn');
     assert((await goi(ckL, 'POST', '/giao-viec/ban_giao_mon/mo', { lopId: nguon, mon: 'khong_co' })).status === 400, 'cặp (lớp, môn) không có việc vẫn mở được');
@@ -449,4 +458,72 @@ export async function runPrLpb1Tests(t: any) {
     assert(giao === 1, `đọc khung việc đã giao ${giao} câu (nhớ theo request)`);
     assert(n > 0, `số câu /my-work ${n}`);
   });
+
+  /* PR máy chủ sau LPB-3 / VAI-1 XM-2 (PTA 28/11). */
+  check('LPB1-16 · khongTvvDong (Chốt ngày thi · Bước tiếp · KQ thi thật · Bổ sung hồ sơ): người giữ theo luật không phải TVV của em → chua_co / da_nghi; TVV giữ / đã giao tay / chưa ai giữ → không; /my-work thật', () => {
+    const vt = vtMod;
+    assert(vt.khongTvvDong({ ownerId: 5 }, null) === 'chua_co', 'chưa có TVV');
+    assert(vt.khongTvvDong({ ownerId: 5 }, 9) === 'da_nghi', 'TVV hết vai (người giữ khác TVV)');
+    assert(vt.khongTvvDong({ ownerId: 9 }, 9) === null, 'TVV giữ');
+    assert(vt.khongTvvDong({ ownerId: 5, giaoBoi: 'Head' }, null) === null, 'đã giao tay');
+    assert(vt.khongTvvDong({ ownerId: null }, null) === null, 'chưa ai giữ');
+    /* Đường thật (/my-work): Chốt ngày thi của em chưa có TVV → về Head, dòng `chua_co`; TVV không còn vai TVV ở chi nhánh em → `da_nghi`. */
+    thu(() => {
+      const lop = lopMoi('FT', true);
+      const { sid, cy } = emFt(lop);
+      const k = `chot-ngay-thi:${cy}`;
+      conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(sid); xoaNho();
+      assert(coViec(P.mbManager, k)?.khongTvv === 'chua_co', `chua_co: ${JSON.stringify(coViec(P.mbManager, k))?.slice(0, 160)}`);
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(nguoiVai('teacher', 1)[0], sid); xoaNho();
+      assert(coViec(P.mbManager, k)?.khongTvv === 'da_nghi', 'da_nghi');
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(TVV, sid); xoaNho();
+      assert(coViec(loadPrincipal(TVV), k) && !coViec(loadPrincipal(TVV), k).khongTvv, 'TVV giữ mà vẫn có cờ');
+    });
+  });
+  check('LPB1-15 · [XM-3] Head + GĐCN theo dõi mặc định việc khung ĐÃ GIAO (tính khi đọc): khối + tab Đang theo dõi cùng hàm; chưa giao → không; bỏ theo dõi → hết ở cả hai, có lịch sử', () => thu(() => {
+    const HEAD = nguoiVai('manager', 1)[0];
+    const lop = lopMoi('FT', true);
+    const [G] = gvRanh(lop, 1);
+    const { cy } = emFt(lop);
+    const pT = loadPrincipal(TVV), pH = loadPrincipal(HEAD);
+    const cauTab = () => chayTrongRequest('GET', () => { const a = soCauSql(); gv.viecTheoDoi(pH); return soCauSql() - a; });
+    xoaNho();
+    const n0 = cauTab();
+    const coHead = (k: any) => k.theoDoi.some((x: any) => x.id === HEAD && x.vai === 'head');
+    const trongTab = () => { xoaNho(); return gv.viecTheoDoi(pH).nhom.some((n: any) => n.mo.some((x: any) => x.loai === 'chot_ngay_thi' && x.refId === cy)); };
+    assert(!coHead(gv.xemGiaoViec(pT, 'chot_ngay_thi', cy)) && !trongTab(), 'việc ở người theo luật mà Head đã theo dõi');
+    gv.doiPhuTrach(pT, 'chot_ngay_thi', cy, { userId: G, phuTrachCu: null });
+    xoaNho();
+    const k = gv.xemGiaoViec(pH, 'chot_ngay_thi', cy);
+    assert(coHead(k) && k.toiTheoDoi, `khối thiếu Head: ${JSON.stringify(k.theoDoi)}`);
+    assert(!all(`SELECT 1 FROM viec_theo_doi WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND user_id = ?`, cy, HEAD).length, 'không chèn dòng theo dõi (tính khi đọc)');
+    assert(trongTab(), 'tab Đang theo dõi của Head thiếu việc đã giao');
+    xoaNho();
+    /* Tốc độ (rà #2334, PTA chọn A + C): +1 câu lịch sử "bỏ" + kiểm "còn việc" (`docViecLo` lọc id) theo LOẠI có mặt (~+4 câu / loại). */
+    const n1 = cauTab();
+    console.log(`      (đo: Đang theo dõi của Head ${n0} → ${n1} câu khi có một việc khung đã giao)`);
+    assert(n1 - n0 <= 6, `Đang theo dõi ${n0} → ${n1} câu`);
+    xoaNho();
+    const sau = gv.boTheoDoi(pH, 'chot_ngay_thi', cy, HEAD);
+    assert(!coHead(sau) && !trongTab(), 'bỏ theo dõi mặc định mà vẫn còn');
+    assert(all(`SELECT 1 FROM viec_giao_lan WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND truong = 'theo_doi' AND cu = ? AND moi IS NULL`, cy, String(HEAD)).length === 1, 'thiếu lịch sử bỏ');
+  }));
+  check('LPB1-17 · (rà #2334) việc khung đã giao được NGƯỜI KHÁC làm xong (không lam_boi của người được giao) → rời tab Đang theo dõi của Head NGAY (không chờ quét ngày); người được giao đã làm (lam_boi) → bỏ trước, 0 câu', () => thu(() => {
+    const HEAD = nguoiVai('manager', 1)[0];
+    const lop = lopMoi('FT', true);
+    const [G] = gvRanh(lop, 1);
+    const a = emFt(lop), b = emFt(lop);
+    const pT = loadPrincipal(TVV), pH = loadPrincipal(HEAD);
+    for (const e of [a, b]) gv.doiPhuTrach(pT, 'chot_ngay_thi', e.cy, { userId: G, phuTrachCu: null });
+    const trong = (cy: number) => { xoaNho(); return gv.viecTheoDoi(pH).nhom.some((n: any) => n.mo.some((x: any) => x.loai === 'chot_ngay_thi' && x.refId === cy)); };
+    assert(trong(a.cy) && trong(b.cy), 'tiền đề: hai việc đã giao ở tab Head');
+    /* (a) người khác chốt ngày thi (đường dữ liệu như Lịch thi — không ghi lam_boi): việc hết, bảng phụ vẫn 'mo' tới lượt quét. */
+    conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = ?').run(addDays(TODAY, 20), a.cy);
+    assert(get(`SELECT trang_thai FROM viec_chot_ngay_thi WHERE id = ?`, a.cy).trang_thai === 'mo', 'tiền đề: bảng phụ chưa đóng (giữ quyền Hoàn tác)');
+    assert(!trong(a.cy), 'việc người khác đã làm xong vẫn "Chưa xong" ở tab Head');
+    /* (b) người được giao đã làm (lam_boi = người được giao) → bỏ khỏi tab, không cần đọc việc. */
+    conn.prepare('UPDATE viec_chot_ngay_thi SET lam_boi = ? WHERE id = ?').run(G, b.cy);
+    assert(!trong(b.cy), 'việc người được giao đã làm vẫn ở tab Head');
+  }));
+
 }

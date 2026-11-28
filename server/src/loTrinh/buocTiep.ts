@@ -37,7 +37,7 @@ import { closeCasesBySystem, dongPhoiHopLoTrinh, moLaiCaseHeThongDong, moLaiPhoi
 import { ghiBanChup } from './banChup.ts';
 import { docTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
-import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
+import { chuViecTvv, coTheGiuViecTvv, khongTvvDong } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { CO_KET_QUA_THI_SQL } from '../students/tamDung.ts';
@@ -739,6 +739,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
       tieuDe: 'Chọn bước tiếp', phu: null, actionLabel: 'Chốt bước tiếp',
       href: duongHoSoHocVien(c.student_id, { buocTiep: c.id }), ownerId: chu.ownerId, owner: null, mine: chu.mine,
       ...(chu.giaoBoi ? { giaoBoi: chu.giaoBoi } : {}), khungViec: { loai: 'buoc_tiep', id: c.id },
+      ...(khongTvvDong(chu, c.tvv) ? { khongTvv: khongTvvDong(chu, c.tvv)! } : {}),   // VAI-1 XM-2
       due: han, statusLabel: `hạn ${tuanLich(han, f.today)}`,
     });
   }
