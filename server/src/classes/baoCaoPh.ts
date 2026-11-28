@@ -114,7 +114,7 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   /* BC-PH-KY-NANG: em đủ = mọi phần CẦN LÀM đủ (`emDuDot`) — kỹ năng em không học / Head bỏ không tính thiếu. */
   const emDot = new Map(ungVien.map((x) => {
     const thay = new Set<number>();
-    return [x.ma, ghiDanh.filter((r) => emTrongDot(r, x, homNay) && !thay.has(r.id) && thay.add(r.id)).map((r) => ({ id: r.id as number, khong: khongCuaEm(r, c, d.bo, x) }))];
+    return [x.ma, ghiDanh.filter((r) => emTrongDot(r, x, homNay) && !thay.has(r.id) && thay.add(r.id)).map((r) => ({ id: r.id as number, khong: khongCuaEm(r, c, d.bo, x, homNay) }))];
   }));
   const moiEm = [...new Set([...emDot.values()].flat().map((e) => e.id))];
   const du = new Set<string>();
@@ -150,8 +150,8 @@ export function emCuaDot(c: Lop, bo: readonly PhanBc[], d: DotBc, homNay: string
   ).all(c.id, moc) as any[]).filter((r) => emTrongDot(r, d, homNay, kemBo) && !thay.has(r.id) && thay.add(r.id))
     .map((r) => {
       const b = boCuaDot(r.bo, d.ma);
-      const goc = phanKhongCan(bo, lopFt(c), r.mon, null);
-      return { id: r.id, ten: r.full_name, bo: b === 'em', quyet: b === 'em' ? null : b, khong: khongCuaEm(r, c, bo, d), khongHoc: Object.keys(goc) };
+      const goc = phanKhongCan(bo, lopFt(c), monCuaDot(r.mon, d, homNay), null);
+      return { id: r.id, ten: r.full_name, bo: b === 'em', quyet: b === 'em' ? null : b, khong: khongCuaEm(r, c, bo, d, homNay), khongHoc: Object.keys(goc) };
     });
 }
 
@@ -168,14 +168,29 @@ export const COT_BO_EM = (s: string, e: string) => `(SELECT group_concat(b.dot |
 /** Em đã bỏ CẢ báo cáo đợt `d`? (`bo` = cột `COT_BO_EM`). */
 export const emBoDot = (r: { bo?: string | null }, d: Pick<DotBc, 'ma'>): boolean => boCuaDot(r.bo, d.ma) === 'em';
 /**
- * BC-PH-KY-NANG (chủ SP 28/11): môn đăng ký (N13) của lộ trình FT gần nhất của em — cột kèm câu ghi danh (`e` bí danh `enrollments`), không thêm câu. NULL = đủ môn.
- * ponytail: lộ trình MỚI NHẤT, không theo đợt — đổi môn giữa tháng thì đợt đang mở theo môn mới (tệp đã xuất là ảnh lúc bấm).
+ * BC-PH-KY-NANG (chủ SP 28/11; PTA rà #2335 P1): môn đăng ký (N13) của MỌI lộ trình FT của em, "seq#ngày bắt đầu#môn" cách nhau "|" — cột kèm câu ghi danh
+ * (`e` bí danh `enrollments`), không thêm câu. `monCuaDot` chọn lộ trình theo MỐC đợt — em đổi lộ trình (thêm W) không làm đợt cũ đã đủ thành thiếu.
+ * ponytail: đổi môn TRONG cùng một lộ trình (không lưu lịch sử môn) thì đợt cũ đọc theo môn mới — cần lịch sử môn mới sửa được (Việc để sau).
  */
-export const COT_MON_EM = (e: string) => `(SELECT lc.mon_dang_ky FROM learning_cycles lc WHERE lc.student_id = ${e}.student_id AND lc.route IS NOT NULL ORDER BY lc.seq DESC LIMIT 1)`;
+export const COT_MON_EM = (e: string) => `(SELECT group_concat(lc.seq || '#' || COALESCE(substr(lc.started_at, 1, 10), '') || '#' || COALESCE(lc.mon_dang_ky, ''), '|')
+  FROM learning_cycles lc WHERE lc.student_id = ${e}.student_id AND lc.route IS NOT NULL)`;
+/** Môn của lộ trình FT có seq lớn nhất đã bắt đầu tới mốc đợt (hạn; đợt còn mở: hôm nay). Không lộ trình nào → null (đủ môn). */
+export function monCuaDot(raw: string | null | undefined, d: Pick<DotBc, 'han'>, homNay: string): string | null {
+  if (!raw) return null;
+  const moc = d.han < homNay ? d.han : homNay;
+  let chon: { seq: number; mon: string } | null = null;
+  for (const x of raw.split('|')) {
+    const [seq, tu, ...mon] = x.split('#');
+    if (tu && tu > moc) continue;
+    if (!chon || Number(seq) > chon.seq) chon = { seq: Number(seq), mon: mon.join('#') };
+  }
+  return chon?.mon || null;
+}
 /** Phần em không cần làm ở đợt `d` (`bo`, `mon` = cột `COT_BO_EM`, `COT_MON_EM`). Mọi nơi đếm đi qua hàm này. */
-export const khongCuaEm = (r: { bo?: string | null; mon?: string | null }, c: Pick<Lop, 'programme_code' | 'is_fast_track'>, bo: readonly PhanBc[], d: Pick<DotBc, 'ma'>): KhongCan => {
+export const khongCuaEm = (r: { bo?: string | null; mon?: string | null }, c: Pick<Lop, 'programme_code' | 'is_fast_track'>, bo: readonly PhanBc[], d: Pick<DotBc, 'ma' | 'han'>,
+  homNay: string): KhongCan => {
   const b = boCuaDot(r.bo, d.ma);
-  return phanKhongCan(bo, lopFt(c), r.mon, b === 'em' ? null : b);
+  return phanKhongCan(bo, lopFt(c), monCuaDot(r.mon, d, homNay), b === 'em' ? null : b);
 };
 /**
  * Em có trong đợt: ghi danh phủ ngày mốc (hạn; đợt còn mở: hôm nay). N71 (chủ SP 25/11): em rời lớp TRONG đợt Progress / Final (Cuối khoá "Ngay hôm nay" /
@@ -421,7 +436,7 @@ export function datNhanhBaoCaoPh(p: Principal, classId: number, body: any) {
   const ids = [...o.keys()].filter((sid) => emDot.has(sid));
   const bg = new Map<string, any>();
   if (ids.length) {
-    for (const r of db().prepare(`SELECT dot, student_id, muc, dat_san, chu, diem_sua FROM bao_cao_ph WHERE phan = ? AND dot IN (?, ?) AND student_id IN (${DS_JSON})`)
+    for (const r of db().prepare(`SELECT dot, student_id, muc, dat_san, chu, diem_sua, bo_diem FROM bao_cao_ph WHERE phan = ? AND dot IN (?, ?) AND student_id IN (${DS_JSON})`)
       .all(ph.khoa, d.ma, truoc?.ma ?? '', JSON.stringify(ids)) as any[]) bg.set(`${r.dot}:${r.student_id}`, r);
   }
   const luc = nowIso();
@@ -451,7 +466,7 @@ export function datNhanhBaoCaoPh(p: Principal, classId: number, body: any) {
     const du = phanDu(ph, b);
     if (!du && !b.chu.trim()) thieuChu++;
     /* Hoàn tác em vừa có dòng mới: chỉ còn mức đặt sẵn, không chữ, không điểm → xoá dòng (như trước khi đặt). */
-    if (hoanTac && moi.has(sid) && r && !b.chu.trim() && b.diemSua == null && Object.keys(b.muc).every((k) => b.datSan.includes(k))) {
+    if (hoanTac && moi.has(sid) && r && !b.chu.trim() && b.diemSua == null && !b.boDiem && Object.keys(b.muc).every((k) => b.datSan.includes(k))) {
       xoa.push(sid); ket.push({ studentId: sid, khoa: doi, o: null, moi: false }); continue;
     }
     ghi.push([classId, d.ma, sid, ph.khoa, JSON.stringify(b.muc), JSON.stringify(b.datSan), b.chu, b.diemSua, du ? 1 : 0, p.userId, luc]);

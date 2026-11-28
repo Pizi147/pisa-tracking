@@ -829,6 +829,26 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     } catch (err: any) { if (!/Không có lớp/.test(err?.message ?? '')) throw err; }
     assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, chu: 'Ổn', boDiem: 'co' }), /./, 'boDiem sai kiểu');
     assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'chung', studentId: e0.id, chu: 'Ổn', boDiem: true }), /./, 'Chung không có điểm');
+    /* PTA rà #2335 P1: em có lộ trình MỚI (bắt đầu sau hạn đợt, học đủ — thêm W) → đợt cũ vẫn theo lộ trình lúc mốc: W1 / W2 "Không học", lớp vẫn đủ */
+    assert(bc.monCuaDot('1#2026-01-05#["listening"]|2#2026-12-01#', { han: '2026-11-30' }, '2026-12-05') === '["listening"]', 'monCuaDot chọn lộ trình theo mốc');
+    assert(bc.monCuaDot('1#2026-01-05#["listening"]|2#2026-11-01#', { han: '2026-11-30' }, '2026-12-05') === null, 'lộ trình mới trước mốc → môn mới (đủ)');
+    const cotLc = (conn.prepare("SELECT name FROM pragma_table_info('learning_cycles')").all() as any[]).map((r) => r.name).filter((x: string) => x !== 'id');
+    const chon = cotLc.map((x: string) => (x === 'seq' ? 'seq + 1' : x === 'started_at' ? '?' : x === 'mon_dang_ky' ? 'NULL' : x === 'status' ? "'planned'" : x)).join(', ');
+    conn.prepare(`INSERT INTO learning_cycles (${cotLc.join(', ')}) SELECT ${chon} FROM learning_cycles WHERE id = ?`).run(`${d.addDaysIso(han, 1)}T00:00:00.000Z`, coFt(e0.id).id);
+    try {
+      cfg.setConfig('demo_date', d.addDaysIso(han, 3)); xoaNho();
+      const e0Sau = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id);
+      assert(e0Sau.khong.writing1 === 'khong_hoc' && e0Sau.khong.writing2 === 'khong_hoc', 'đợt cũ giữ môn lúc mốc: ' + JSON.stringify(e0Sau.khong));
+      if (admin) assert(!xbc.viecXuatBaoCaoPh(admin, null).some((v: any) => v.classId === lop && v.dot === ma && v.thieu > 0), 'Admin: đợt cũ không thành thiếu');
+      if (pW1) assert(!xbc.viecBaoCaoPhGv([pW1], d.addDaysIso(han, 3)).some((v: any) => v.classId === lop && v.dot === ma), 'GV W1: việc đợt cũ không hiện lại');
+    } finally { cfg.setConfig('demo_date', TODAY); xoaNho(); }
+    /* Hoàn tác Đặt nhanh giữ dòng có "Không ghi điểm" (PTA P2-5) */
+    const e2 = tr2.em.find((e: any) => !Object.keys(e.khong).length && e.id !== e0.id && e.id !== e1.id);
+    conn.prepare('DELETE FROM bao_cao_ph WHERE dot = ? AND student_id = ? AND phan = ?').run(ma, e2.id, 'listening');
+    bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e2.id, muc: {}, chu: '', boDiem: true });
+    const dn = bc.datNhanhBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { [e2.id]: ['c1'] } });
+    bc.datNhanhBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { [e2.id]: dn.o[0].khoa }, moi: [e2.id], hoanTac: true });
+    assert((conn.prepare('SELECT bo_diem FROM bao_cao_ph WHERE dot = ? AND student_id = ? AND phan = ?').get(ma, e2.id, 'listening') as any)?.bo_diem === 1, 'Hoàn tác Đặt nhanh giữ bo_diem');
     /* migrate chạy lặp không làm gì */
     const ap: string[] = [];
     mg.migratePrBaoCaoPhKyNang(conn, ap);

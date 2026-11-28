@@ -19,8 +19,8 @@ export function migratePrBaoCaoPhKyNang(conn: any, applied: string[]) {
   if (coCot(conn, 'bao_cao_ph_bo_em', 'phan') !== false) return;
   tx(() => {
     conn.exec('ALTER TABLE bao_cao_ph_bo_em ADD COLUMN phan TEXT');
-    const n = conn.prepare(`UPDATE bao_cao_ph SET du = CASE WHEN trim(COALESCE(chu, '')) <> '' THEN 1 ELSE 0 END
-      WHERE du <> CASE WHEN trim(COALESCE(chu, '')) <> '' THEN 1 ELSE 0 END`).run().changes;
+    const n = conn.prepare(`UPDATE bao_cao_ph SET du = CASE WHEN trim(COALESCE(chu, ''), ' ' || char(9, 10, 13)) <> '' THEN 1 ELSE 0 END
+      WHERE du <> CASE WHEN trim(COALESCE(chu, ''), ' ' || char(9, 10, 13)) <> '' THEN 1 ELSE 0 END`).run().changes;
     applied.push(`BC-PH-KY-NANG: cột bao_cao_ph_bo_em.phan (bỏ từng kỹ năng) + tính lại "đủ" Báo cáo PH không cần mức tiêu chí (${n} dòng đổi).`);
   });
 }

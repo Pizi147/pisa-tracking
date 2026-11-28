@@ -405,8 +405,9 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
           </ul>
         )}
         <div className="mt-3 flex flex-wrap gap-x-3 border-t pt-2 text-[12px] text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-          <span>{t('Đủ')} /{em.length}</span>
-          {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{canPhan(p.khoa).filter((e) => e.o[p.khoa] === 'du').length}</b></span>)}
+          {/* BC-PH-KY-NANG (PTA rà #2335): mẫu số theo từng cột = em cần phần đó (như hàng Đủ ở 1440). */}
+          <span>{t('Đủ')}</span>
+          {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{canPhan(p.khoa).filter((e) => e.o[p.khoa] === 'du').length}</b>/{canPhan(p.khoa).length}</span>)}
         </div>
         {thanhChon}
         {panel}
@@ -617,14 +618,19 @@ export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
   const toast = useToast();
   const [busy, setBusy] = useState<KieuXuat | null>(null);
   const [td, setTd] = useState<[number, number] | null>(null);
+  /* BC-PH-KY-NANG (PTA rà #2335): "Ghi điểm" ở MỌI chỗ xuất — một kiểu như tab lớp. */
+  const [ghiDiem, setGhiDiem] = useState(true);
   /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất bấm trong tab. */
   return (
-    <span className="inline-flex gap-2 max-sm:hidden">
+    <span className="inline-flex items-center gap-2 max-sm:hidden">
+      <label className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-300">
+        <input type="checkbox" className="h-4 w-4" checked={ghiDiem} onChange={(ev) => setGhiDiem(ev.target.checked)} />{t('Ghi điểm')}
+      </label>
       {(['xlsx', 'pdf'] as const).map((k) => (
         <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy !== null}
           onClick={async () => {
             setBusy(k); setTd(null);
-            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null, (i, n) => setTd([i, n])) })); }
+            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null, (i, n) => setTd([i, n]), ghiDiem) })); }
             catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
             finally { setBusy(null); }
           }}>{busy === k ? chuDangXuat(k, td) : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>

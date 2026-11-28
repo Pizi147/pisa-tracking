@@ -13,7 +13,7 @@ Không có mockup mới: thêm nút / ô / chữ theo mẫu sẵn có (thanh ch�
 | Mức không bắt buộc, vẫn nhắc "nên chọn" | `HangThang` "● nên chọn" (vàng nhẹ); panel đọc "· nên chọn" | `*-panel-*` | KHỚP |
 | Chèn thông tin dưới ô Đề xuất cải thiện | `viet-ghi mot` — `KhoiDaGhi` dưới `DuoiOChu`, hết bề ngang | `*-panel-chu-*` | KHỚP |
 | Không ghi điểm — lúc GV | ô tick "Ghi vào báo cáo" mép phải dòng Điểm (`DongDiem`) | `sau-panel-*` | KHỚP (đúng chỗ chủ SP khoanh) |
-| Không ghi điểm — lúc xuất | ô tick "Ghi điểm" cạnh Xuất (tab lớp) · trong khối Tháng (Học viên & Lớp › Xuất Excel › Báo cáo PH) | `sau-tab-*` | KHỚP — một kiểu ở hai nơi |
+| Không ghi điểm — lúc xuất | ô tick "Ghi điểm" cạnh Xuất (tab lớp) · nút Xuất lớp ở Công việc Admin (`NutXuatLopBc`) · khối Tháng (Học viên & Lớp › Xuất Excel › Báo cáo PH) | `sau-tab-*` | KHỚP — một kiểu ở cả ba nơi |
 | Panel rộng hơn | `KhungPanel rong="viet"` 960 px | `sau-panel-*` | **KHÁC** khung chung 720 px — lý do: chủ SP 28/11 "làm panel rộng hơn cũng được"; panel viết có danh sách em 200 px + form + khối "Bạn đã ghi" dưới ô, 720 làm tiêu chí xuống 3 dòng (ảnh trước). Chỉ panel này |
 
 BỎ: không. GIỮ: mọi thao tác cũ (mục 2).
@@ -30,3 +30,9 @@ BỎ: không. GIỮ: mọi thao tác cũ (mục 2).
 | Chèn "Bạn đã ghi" | Cột phải 280 px | Dưới ô chữ, hết bề ngang; Chèn / Hoàn tác chèn giữ |
 | Điểm trong tệp | Luôn in | GV bỏ "Ghi vào báo cáo" (từng em) hoặc người xuất bỏ "Ghi điểm" (cả tệp) |
 | Đặt nhanh · Viết · Lưu · em tiếp · Xuất · Đợt | Giữ | Giữ |
+
+## 3. Ghi chú hành vi
+
+- Chọn nhiều em rồi áp "Không cần / Cần báo cáo" theo kỹ năng: quyết định mới THAY quyết định cũ của TỪNG em (không cộng dồn). Hoàn tác trả đúng quyết định trước của từng em.
+- Môn em học theo lộ trình FT ĐANG CHẠY ở mốc đợt (hạn; đợt còn mở: hôm nay): em sang lộ trình mới (thêm W) không làm đợt cũ đã đủ thành thiếu (PTA rà #2335 P1).
+- `ponytail:` đổi môn TRONG cùng một lộ trình (không có lịch sử môn) thì đợt cũ đọc theo môn mới. Việc để sau: lưu lịch sử môn đăng ký nếu cần đúng tuyệt đối.

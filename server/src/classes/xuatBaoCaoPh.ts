@@ -111,7 +111,7 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
     const thay = new Set<number>();
     const bo = boPhanBc(c.programme_code ?? c.kind) ?? [];
     out.set(`${c.id}|${d.ma}`, rows.filter((r) => r.class_id === c.id && emTrongDot(r, d, homNay) && !thay.has(r.id) && thay.add(r.id))
-      .map((r) => ({ id: r.id, ten: r.full_name, khong: khongCuaEm(r, c, bo, d) })));
+      .map((r) => ({ id: r.id, ten: r.full_name, khong: khongCuaEm(r, c, bo, d, homNay) })));
   }
   return out;
 }
@@ -448,11 +448,11 @@ export function dotBcSapMoGv(n: NguoiBc, homNay: string, batTu = ''): DotBcSapMo
   const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
   const den = addDaysIso(homNay, 7);
-  const cap = can.flatMap(({ c }) => (dotCuaLop(c, den, tienDo, tuyChinh)?.ds ?? []).filter((d) => d.mo > homNay && d.han >= batTu).map((d) => ({ c, d })));
+  const cap = can.flatMap(({ c, phan }) => (dotCuaLop(c, den, tienDo, tuyChinh)?.ds ?? []).filter((d) => d.mo > homNay && d.han >= batTu).map((d) => ({ c, d, phan })));
   if (!cap.length) return [];
-  /* Lớp không em nào trong đợt thì không sinh việc — một câu em, chỉ những ngày có đợt sắp mở. */
+  /* Lớp không em nào CẦN phần của người giữ trong đợt (BC-PH-KY-NANG — như `viecBaoCaoPhGv`) thì không sinh việc — một câu em, chỉ những ngày có đợt sắp mở. */
   const emDot = emTheoLo(cap, den);
-  return cap.filter(({ c, d }) => emDot.get(`${c.id}|${d.ma}`)?.length)
+  return cap.filter(({ c, d, phan }) => emDot.get(`${c.id}|${d.ma}`)?.some((e) => phan.some((ph) => !e.khong[ph.khoa])))
     .map(({ c, d }) => ({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), mo: d.mo }))
     .sort((a, b) => a.mo.localeCompare(b.mo) || a.classId - b.classId);
 }
