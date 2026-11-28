@@ -228,4 +228,26 @@ export async function runPrTocTests(t: YThucTestKit) {
     assert(JSON.stringify(r.studentIds) === '[-4]', `phải trả kết quả của lời gọi trước: ${JSON.stringify(r)}`);
     assert(!conn.prepare(`SELECT id FROM students WHERE full_name = 'Song Song'`).get(), 'lời gọi thứ hai vẫn ghi học viên');
   });
+
+  await checkAsync('TOC (rà sâu P2 #2324) · branchesOfStudent: chi nhánh lớp đang học sắp tăng dần (không theo thứ tự ghi danh), rồi chi nhánh hồ sơ', async () => {
+    const { branchesOfStudent } = await import('../permissions.ts');
+    const lop = conn.prepare(`SELECT MIN(id) AS id, branch_id AS b FROM classes GROUP BY branch_id ORDER BY branch_id`).all() as { id: number; b: number }[];
+    assert(lop.length >= 3, 'seed cần ≥ 3 chi nhánh có lớp');
+    const [thap, giua, cao] = [lop[0], lop[1], lop[lop.length - 1]];
+    const sid = (conn.prepare(`SELECT id FROM students ORDER BY id LIMIT 1`).get() as any).id as number;
+    const cu = conn.prepare(`SELECT branch_id FROM students WHERE id = ?`).get(sid) as any;
+    const enrCu = conn.prepare(`SELECT id, status FROM enrollments WHERE student_id = ? AND status = 'active'`).all(sid) as any[];
+    try {
+      conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(sid);
+      /* ghi danh chi nhánh CAO trước, THẤP sau — kết quả vẫn THẤP rồi CAO */
+      for (const l of [cao, thap]) conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(sid, l.id, TODAY, TODAY);
+      conn.prepare(`UPDATE students SET branch_id = ? WHERE id = ?`).run(giua.b, sid);
+      const kq = branchesOfStudent(sid);
+      assert(JSON.stringify(kq) === JSON.stringify([thap.b, cao.b, giua.b]), `thứ tự: ${JSON.stringify(kq)}`);
+    } finally {
+      conn.prepare(`DELETE FROM enrollments WHERE student_id = ? AND status = 'active' AND class_id IN (?, ?)`).run(sid, cao.id, thap.id);
+      for (const e of enrCu) conn.prepare(`UPDATE enrollments SET status = ? WHERE id = ?`).run(e.status, e.id);
+      conn.prepare(`UPDATE students SET branch_id = ? WHERE id = ?`).run(cu.branch_id, sid);
+    }
+  });
 }
