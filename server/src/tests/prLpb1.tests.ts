@@ -499,13 +499,31 @@ export async function runPrLpb1Tests(t: any) {
     assert(!all(`SELECT 1 FROM viec_theo_doi WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND user_id = ?`, cy, HEAD).length, 'không chèn dòng theo dõi (tính khi đọc)');
     assert(trongTab(), 'tab Đang theo dõi của Head thiếu việc đã giao');
     xoaNho();
-    /* Tốc độ (rà #2334 P2-1): dòng mặc định dựng gọn từ `giaoKhung` (không `docViecLo`) — +1 câu lịch sử "bỏ" khi có ứng viên (tập giao đã đọc ở n0). */
+    /* Tốc độ (rà #2334, PTA chọn A + C): +1 câu lịch sử "bỏ" + kiểm "còn việc" (`docViecLo` lọc id) theo LOẠI có mặt (~+4 câu / loại). */
     const n1 = cauTab();
     console.log(`      (đo: Đang theo dõi của Head ${n0} → ${n1} câu khi có một việc khung đã giao)`);
-    assert(n1 - n0 <= 1, `Đang theo dõi ${n0} → ${n1} câu`);
+    assert(n1 - n0 <= 6, `Đang theo dõi ${n0} → ${n1} câu`);
     xoaNho();
     const sau = gv.boTheoDoi(pH, 'chot_ngay_thi', cy, HEAD);
     assert(!coHead(sau) && !trongTab(), 'bỏ theo dõi mặc định mà vẫn còn');
     assert(all(`SELECT 1 FROM viec_giao_lan WHERE loai = 'chot_ngay_thi' AND ref_id = ? AND truong = 'theo_doi' AND cu = ? AND moi IS NULL`, cy, String(HEAD)).length === 1, 'thiếu lịch sử bỏ');
   }));
+  check('LPB1-17 · (rà #2334) việc khung đã giao được NGƯỜI KHÁC làm xong (không lam_boi của người được giao) → rời tab Đang theo dõi của Head NGAY (không chờ quét ngày); người được giao đã làm (lam_boi) → bỏ trước, 0 câu', () => thu(() => {
+    const HEAD = nguoiVai('manager', 1)[0];
+    const lop = lopMoi('FT', true);
+    const [G] = gvRanh(lop, 1);
+    const a = emFt(lop), b = emFt(lop);
+    const pT = loadPrincipal(TVV), pH = loadPrincipal(HEAD);
+    for (const e of [a, b]) gv.doiPhuTrach(pT, 'chot_ngay_thi', e.cy, { userId: G, phuTrachCu: null });
+    const trong = (cy: number) => { xoaNho(); return gv.viecTheoDoi(pH).nhom.some((n: any) => n.mo.some((x: any) => x.loai === 'chot_ngay_thi' && x.refId === cy)); };
+    assert(trong(a.cy) && trong(b.cy), 'tiền đề: hai việc đã giao ở tab Head');
+    /* (a) người khác chốt ngày thi (đường dữ liệu như Lịch thi — không ghi lam_boi): việc hết, bảng phụ vẫn 'mo' tới lượt quét. */
+    conn.prepare('UPDATE learning_cycles SET exam_date = ? WHERE id = ?').run(addDays(TODAY, 20), a.cy);
+    assert(get(`SELECT trang_thai FROM viec_chot_ngay_thi WHERE id = ?`, a.cy).trang_thai === 'mo', 'tiền đề: bảng phụ chưa đóng (giữ quyền Hoàn tác)');
+    assert(!trong(a.cy), 'việc người khác đã làm xong vẫn "Chưa xong" ở tab Head');
+    /* (b) người được giao đã làm (lam_boi = người được giao) → bỏ khỏi tab, không cần đọc việc. */
+    conn.prepare('UPDATE viec_chot_ngay_thi SET lam_boi = ? WHERE id = ?').run(G, b.cy);
+    assert(!trong(b.cy), 'việc người được giao đã làm vẫn ở tab Head');
+  }));
+
 }

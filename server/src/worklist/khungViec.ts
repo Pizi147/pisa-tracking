@@ -42,14 +42,9 @@ const CN_LOP = (lop: string) => `(SELECT cl_.branch_id FROM classes cl_ WHERE cl
 export const CN_KHUNG = (loai: LoaiKhung, v: string): string =>
   loai === 'ban_giao_mon' ? CN_LOP(`${v}.lop_id`) : loai === 'ban_giao_gv' ? CN_LOP(`${v}.class_id`) : KHUNG_LOP.has(loai) ? CN_LOP(`${v}.id`) : CN_EM(SID_KHUNG[loai](v));
 
-/** Câu SQL: tên em (việc của em) / mã lớp (việc của lớp) của dòng bảng phụ `v`. */
-const TEN_KHUNG = (l: LoaiKhung, v: string) => (KHUNG_LOP.has(l)
-  ? `(SELECT c_.code FROM classes c_ WHERE c_.id = ${l === 'ban_giao_mon' ? `${v}.lop_id` : l === 'ban_giao_gv' ? `${v}.class_id` : `${v}.id`})`
-  : `(SELECT s_.full_name FROM students s_ WHERE s_.id = ${SID_KHUNG[l](v)})`);
 export type GiaoKhung = { loai: LoaiKhung; id: number; pt: number | null; han: string | null; giaoTen: string | null; sid: number | null; lop: number | null; mon: string | null;
   /** Rà #2280 vòng 3: người được giao đã làm (dòng còn 'mo' — Hoàn tác ngắn) + trường đã lưu (Bổ sung hồ sơ). */ lamBoi: number | null; lamTruong: string[];
-  /** PTA 28/11 (a): chi nhánh hiện tại của việc + tên em / mã lớp (Head / GĐCN theo dõi mặc định việc đã giao — tab Đang theo dõi dựng dòng gọn, rà #2334 P2-1). */
-  cn: number | null; ten: string | null };
+  /** PTA 28/11 (a): chi nhánh hiện tại của việc (Head / GĐCN theo dõi mặc định việc đã giao — tab Đang theo dõi). */ cn: number | null };
 const khoa = (loai: LoaiKhung, id: number | string) => `${loai}:${id}`;
 
 /**
@@ -62,14 +57,14 @@ export function giaoKhung(): Map<string, GiaoKhung> {
     const ve = LOAI_KHUNG.map((l) => {
       const b = BANG_KHUNG[l];
       return `SELECT '${l}' AS loai, v.id AS id, CASE WHEN v.phu_trach_id IS NOT NULL AND ${HOAT_DONG_O('v.phu_trach_id', CN_KHUNG(l, 'v'))} THEN v.phu_trach_id END AS pt,
-          v.han_chon AS han, v.giao_boi, ${SID_KHUNG[l]('v')} AS sid, ${CN_KHUNG(l, 'v')} AS cn, ${TEN_KHUNG(l, 'v')} AS ten, ${l === 'ban_giao_mon' ? 'v.lop_id' : 'NULL'} AS lop, ${l === 'ban_giao_mon' ? 'v.mon' : 'NULL'} AS mon,
+          v.han_chon AS han, v.giao_boi, ${SID_KHUNG[l]('v')} AS sid, ${CN_KHUNG(l, 'v')} AS cn, ${l === 'ban_giao_mon' ? 'v.lop_id' : 'NULL'} AS lop, ${l === 'ban_giao_mon' ? 'v.mon' : 'NULL'} AS mon,
           ${l === 'ban_giao_gv' ? 'NULL AS lam_boi, NULL AS lam_truong' : 'v.lam_boi AS lam_boi, v.lam_truong AS lam_truong'}
         FROM ${b} v WHERE v.trang_thai = 'mo' AND (v.phu_trach_id IS NOT NULL OR v.han_chon IS NOT NULL)`;
     });
     const m = new Map<string, GiaoKhung>();
     for (const r of db().prepare(`SELECT x.*, g.full_name AS giao_ten FROM (${ve.join(' UNION ALL ')}) x LEFT JOIN users g ON g.id = x.giao_boi`).all() as any[]) {
       const g: GiaoKhung = { loai: r.loai, id: r.id, pt: r.pt ?? null, han: r.han ?? null, giaoTen: r.pt ? r.giao_ten ?? null : null, sid: r.sid ?? null, lop: r.lop ?? null, mon: r.mon ?? null,
-        lamBoi: r.pt && r.lam_boi === r.pt ? r.lam_boi : null, lamTruong: r.lam_truong ? JSON.parse(r.lam_truong) : [], cn: r.cn ?? null, ten: r.ten ?? null };
+        lamBoi: r.pt && r.lam_boi === r.pt ? r.lam_boi : null, lamTruong: r.lam_truong ? JSON.parse(r.lam_truong) : [], cn: r.cn ?? null };
       m.set(khoa(g.loai, g.id), g);
       if (g.loai === 'ban_giao_mon') m.set(khoa('ban_giao_mon', `${g.lop}:${g.mon}`), g);
     }

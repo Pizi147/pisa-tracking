@@ -1658,8 +1658,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
   ).all(p.userId, today, tu) as any[];
   /* PTA 28/11 (a): Head / GĐCN — việc khung đã GIAO cho người khác ở chi nhánh mình, theo dõi mặc định tính khi đọc (CÙNG `theoDoiMacDinhKhung` với khối); trừ việc
      đã có dòng theo dõi và việc người xem đã bỏ theo dõi. +1 câu (tập việc khung đã giao `giaoKhung`, nhớ theo request) · +1 câu lịch sử "bỏ" chỉ khi có ứng viên.
-     Rà #2334 P2-1 (đo bản chép thật: 21 việc · 8 loại → +33 câu qua `docViecLo`): dòng mặc định dựng GỌN từ `giaoKhung` (tên · người được giao · hạn đặt tay),
-     không đọc đủ việc từng loại — bấm dòng mở panel đọc đủ. */
+     Rà #2334: lọc `lamBoi` trước, chỉ phần còn lại đọc `docViecLo` (dưới). */
   const macDinh: GiaoKhung[] = [];
   if (p.roleKeys.includes('manager') || p.roleKeys.includes(VAI_GDCN)) {
     const co = new Set(rows.map((r) => `${r.loai}:${r.ref_id}`));
@@ -1668,7 +1667,10 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
       const bo = new Set((db().prepare(`SELECT j.value AS k FROM json_each(?2) j WHERE (SELECT x.moi IS NULL AND x.cu = ?1 FROM viec_giao_lan x
           WHERE x.loai = json_extract(j.value, '$[0]') AND x.ref_id = json_extract(j.value, '$[1]') AND x.truong = 'theo_doi' AND (x.cu = ?1 OR x.moi = ?1) ORDER BY x.id DESC LIMIT 1)`)
         .all(String(p.userId), JSON.stringify(ung.map((g) => [g.loai, g.id]))) as { k: string }[]).map((r) => r.k));
-      for (const g of ung) if (!bo.has(JSON.stringify([g.loai, g.id]))) macDinh.push(g);
+      /* Rà #2334 (PTA chọn A + C): dòng bảng phụ chỉ đóng ở lượt quét ngày (giữ quyền Hoàn tác của người được giao — #2280 vòng 3) → bỏ ngay việc người được
+         giao ĐÃ LÀM (`lamBoi`, 0 câu); phần còn lại kiểm "còn việc" bằng `docViecLo` lọc id, chung lượt đọc với dòng theo dõi thường (dưới).
+         ponytail: chi phí theo số LOẠI có mặt (~+4 câu / loại); đo bản chép 8 loại → xem mô tả #2334 — nếu chậm thì đóng bảng phụ ngay ở đường làm xong. */
+      for (const g of ung) if (!bo.has(JSON.stringify([g.loai, g.id])) && !g.lamBoi) macDinh.push(g);
     }
   }
   const giu = giuViecQl(p);
@@ -1676,14 +1678,17 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
   /* Rà PTA #2280 (tốc độ): việc khung đọc theo LOẠI một lượt (`docViecLo`). */
   const khung = new Map<string, Viec>();
   for (const l of LOAI_KHUNG) {
-    const ids = rows.filter((r) => r.loai === l).map((r) => r.ref_id as number);
+    const ids = [...new Set([...rows.filter((r) => r.loai === l).map((r) => r.ref_id as number), ...macDinh.filter((g) => g.loai === l).map((g) => g.id)])];
     if (ids.length) for (const [id, v] of docViecLo(l, ids)) khung.set(`${l}:${id}`, v);
   }
   const theoLoai = new Map<LoaiTheoDoi, { mo: DongTheoDoi[]; vuaXong: DongTheoDoi[] }>();
   const theoVai: [DongTheoDoi, number[]][] = [];
   for (const g of macDinh) {
-    const d: DongTheoDoi = { loai: g.loai, refId: g.id, tieuDe: `${NHAN_KHUNG[g.loai]} · ${g.ten ?? ''}`, studentId: g.sid, studentName: g.sid ? g.ten : null, classCode: g.sid ? null : g.ten,
-      phuTrach: null, han: g.han, quaHan: !!g.han && g.han < today, trangThai: 'mo', nhanTrangThai: 'Chưa xong', xongLuc: null };
+    const v = khung.get(`${g.loai}:${g.id}`);
+    if (!v?.mo) continue;   // việc đã hết (người khác làm xong) — rời tab ngay, không chờ lượt quét
+    const han = hanCua(v).han;
+    const d: DongTheoDoi = { loai: g.loai, refId: g.id, tieuDe: v.tieuDe, studentId: v.studentId, studentName: v.studentId ? v.tenEm : null, classCode: v.studentId ? null : v.tenEm,
+      phuTrach: null, han, quaHan: !!han && han < today, trangThai: 'mo', nhanTrangThai: 'Chưa xong', xongLuc: null };
     theoVai.push([d, [g.pt!]]);
     const n = theoLoai.get(g.loai) ?? theoLoai.set(g.loai, { mo: [], vuaXong: [] }).get(g.loai)!;
     n.mo.push(d);
