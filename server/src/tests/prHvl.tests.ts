@@ -585,7 +585,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(/tomTatMt = pr\.programmeCode === 'FT' && can\(/.test(src), 'route progress phải kiểm quyền trước khi trả tomTatMt');
   });
 
-  checkAsync('PR-HVL (7) · K2-23: coGiuaKhoa theo chương trình — FOU có, Pre FOU không; lớp thường Final Test có cuoiKhoa {du, tong}, FT không', async () => {
+  await checkAsync('PR-HVL (7) · K2-23: coGiuaKhoa theo chương trình — FOU có, Pre FOU không; lớp thường Final Test có cuoiKhoa {du, tong}, FT không', async () => {
     eq(schedMod.classProgress(LOP_FOU).coGiuaKhoa, true, 'FOU');
     const pre = (conn.prepare(`SELECT id FROM classes WHERE code = 'MB Pre FOU 77'`).get() as any)?.id;
     if (pre) eq(schedMod.classProgress(pre).coGiuaKhoa, false, 'Pre FOU');

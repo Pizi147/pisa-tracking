@@ -70,7 +70,7 @@ export async function runKhungTests(t: YThucTestKit) {
     }
   });
 
-  checkAsync('G3-17 · migrate prG317 đổi chữ chuông cũ MỘT lần: chạy lần 2 không đổi gì thêm', async () => {
+  await checkAsync('G3-17 · migrate prG317 đổi chữ chuông cũ MỘT lần: chạy lần 2 không đổi gì thêm', async () => {
     const { conn } = t;
     const { migratePrG317 } = await import('../migrate/prG317.ts');
     const uid = (conn.prepare('SELECT id FROM users LIMIT 1').get() as any).id;

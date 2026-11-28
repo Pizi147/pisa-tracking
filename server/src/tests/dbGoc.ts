@@ -30,7 +30,7 @@ export function chupDbGoc(): string {
 }
 
 /** Mở bản chép mới của DB gốc và cho `db()` trỏ vào đó; `dong()` trả kết nối + tệp cũ, đóng, dọn. */
-export function moBanGoc(ten: string): { conn: Database.Database; tep: string; dong: () => void } {
+export function moBanGoc(ten: string): { conn: Database.Database; tep: string; dong: (giuMo?: boolean) => void } {
   const thuMuc = fs.mkdtempSync(path.join(os.tmpdir(), `z2-goc-${ten}-`));
   const tep = path.join(thuMuc, 'goc.sqlite');
   fs.copyFileSync(GOC, tep);
@@ -44,11 +44,13 @@ export function moBanGoc(ten: string): { conn: Database.Database; tep: string; d
   datTepDangDung(tep);
   datSoEmailThu(emailGoc);
   boNhoDem();
-  const dong = () => {
+  /** `giuMo`: còn phép kiểm dở trên `conn` (run.ts — thiếu await) → không đóng, không xoá tệp. */
+  const dong = (giuMo = false) => {
     datKetNoiChoPhepKiem(cu);
     datTepDangDung(tepCu);
     datSoEmailThu(emailCu);
     boNhoDem();
+    if (giuMo) return;
     try { conn.close(); } catch { /* đã đóng */ }
     try { fs.rmSync(thuMuc, { recursive: true, force: true }); } catch { /* Windows còn giữ tệp — run.ts dọn z2- sau 1 giờ */ }
   };
