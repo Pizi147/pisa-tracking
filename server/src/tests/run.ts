@@ -10155,6 +10155,9 @@ await runPrLpb1Tests({ check, checkAsync, assert, conn, TODAY, P, addDays, class
 // ==================================================================== LOI-4 (chủ SP 28/11): trả lời 7 [Hỏi] của đợt rà lỗi tuyến công việc
 const { runPrLoi4Tests } = bocTep('prLoi4', await import('./prLoi4.tests.ts'));
 await runPrLoi4Tests({ check, checkAsync, assert, conn, TODAY, P, addDays } as any);
+// ==================================================================== TVV-THEM (chủ SP 28/11): ô TVV khi thêm học viên
+const { runPrTvvThemTests } = bocTep('prTvvThem', await import('./prTvvThem.tests.ts'));
+await runPrTvvThemTests({ check, checkAsync, assert, conn, TODAY, P, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

@@ -18,6 +18,7 @@ import { ensurePeriods, mondayOf, periodById } from '../platform/week.ts';
 import { taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { lichMtCua } from './schedule.ts';
 import { cauEmailTrung, emailDangDung } from '../students/emailHocVien.ts';
+import { dsTvv, kiemTvvCungChiNhanh } from '../students/students.ts';
 
 /**
  * Thêm học viên hàng loạt.
@@ -72,7 +73,13 @@ export type IntakeRow = {
   startWeek?: string;
   /** #9 (LO-TRINH-THEO-HV, chủ SP 11/11): lộ trình của EM ở lớp FT — trống = lộ trình lớp; lớp thường bỏ qua (có báo). */
   route?: string;
+  /** Chữ "Tư vấn viên" (cột dán / file cũ) — vẫn ghi `consultant_name`; khớp tên một TVV chi nhánh lớp thì gán luôn tài khoản đó. */
   consultant?: string;
+  /**
+   * TVV-THEM (chủ SP 28/11): tài khoản TVV của em, không bắt buộc. `undefined` (không gửi) = theo cột chữ "Tư vấn viên" nếu khớp, không thì
+   * người thêm nếu chính họ là TVV chi nhánh lớp; `null` / '' = để trống. TVV ngoài chi nhánh lớp → 400 (`kiemTvvCungChiNhanh`).
+   */
+  consultantUserId?: number | string | null;
 };
 
 export type RowIssue = VanDeNhap;
@@ -82,12 +89,13 @@ const COT_CHU = ['fullName', 'classCode', 'dob', 'email', 'examDate', 'startWeek
 /** OV-9: ô Target đã qua xem trước ("6.5 KCK" / "KCK" / số) → Target + dấu KCK để ghi lộ trình. */
 const targetCua = (v: unknown) => { const t = tachKck(v); return { so: t.so === '' || t.so == null ? null : Number(t.so), kck: t.kck }; };
 
-const COT_SO = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking', 'target', 'daThiToiMt'] as const;
+const COT_SO = ['baselineScore', 'entryListening', 'entryReading', 'entryWriting', 'entrySpeaking', 'target', 'daThiToiMt', 'consultantUserId'] as const;
 
 export type IntakePreview = {
   rows: (IntakeRow & {
     row: number;
     classId: number | null;
+    consultantUserId?: number | null;
     duplicates: { id: number; studentCode: string; fullName: string; dob: string | null; email: string | null }[];
     issues: RowIssue[];
   })[];
@@ -99,6 +107,10 @@ export type IntakePreview = {
   ratio: boolean;
   classCode: string | null;
   defaultStartWeek?: string | null;
+  /** TVV-THEM: ô chọn TVV của lưới — TVV đang hoạt động cùng chi nhánh lớp (`dsTvv`). */
+  tvv?: { id: number; ten: string; phu: string }[];
+  /** TVV-THEM: TVV mặc định của dòng không chọn, không có cột chữ — người thêm nếu là TVV chi nhánh lớp. */
+  tvvMacDinh?: number | null;
 };
 
 /**
@@ -243,6 +255,11 @@ export function previewIntake(
 
   /* #9: lộ trình nhận được ở cột "Lộ trình" (lớp FT) — như ô ở Sửa thông tin: lộ trình FT đang dùng, trừ "Khác". */
   const loTrinhNhap = cls.is_fast_track && cls.route ? activeRouteCodes().filter((c) => c !== ROUTE_KHAC) : [];
+
+  /* TVV-THEM (chủ SP 28/11): MỘT câu cho cả lô — danh sách TVV chi nhánh lớp; người thêm là TVV trong đó → mặc định chính họ. */
+  const tvv = dsTvv(null, cls.branch_id ?? null);
+  const tvvTheoTen = new Map(tvv.map((x) => [normalizeName(x.ten), x.id]));
+  const tvvMacDinh = tvv.some((x) => x.id === p.userId) ? p.userId : null;
 
   /* TRÙNG HỒ SƠ đọc MỘT câu cho cả lô (PR-TOC), lọc theo ngày sinh từng dòng ở dưới. */
   const cungTen = new Map<string, any[]>();
@@ -390,6 +407,20 @@ export function previewIntake(
         + ' — em đã có hồ sơ thì dùng Chuyển lớp');
     }
 
+    /* TVV-THEM: chọn ở ô (gửi id / trống) thắng; không gửi → cột chữ khớp tên TVV chi nhánh lớp → người thêm (nếu là TVV). Chặn ở máy chủ, không chỉ web. */
+    let consultantUserId: number | null;
+    if (r.consultantUserId !== undefined) {
+      const raw = r.consultantUserId === null ? '' : String(r.consultantUserId).trim();
+      consultantUserId = raw === '' ? null : Number(raw);
+      if (consultantUserId !== null && !tvv.some((x) => x.id === consultantUserId)) {
+        if (Number.isInteger(consultantUserId)) kiemTvvCungChiNhanh(consultantUserId, cls.branch_id ?? null);
+        throw badRequest('TVV: chọn một tài khoản Tư vấn viên đang hoạt động.');
+      }
+    } else if (coDuLieu(r.consultant)) {
+      consultantUserId = tvvTheoTen.get(normalizeName(String(r.consultant).trim())) ?? null;
+      if (consultantUserId === null) luuY('consultantUserId', `Không có TVV "${String(r.consultant).trim()}" ở chi nhánh lớp — chọn ở ô TVV hoặc để trống`);
+    } else consultantUserId = tvvMacDinh;
+
     issues.push(...rowIssues);
     return {
       row: rowNo,
@@ -409,6 +440,7 @@ export function previewIntake(
       startWeek: startWeek ?? undefined,
       route: route ?? undefined,
       consultant: r.consultant,
+      consultantUserId,
       duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob, email: d.email ?? null })),
       issues: rowIssues,
     };
@@ -422,6 +454,7 @@ export function previewIntake(
     ratio,
     classCode: cls.code,
     defaultStartWeek: defaultWeek,
+    tvv, tvvMacDinh,
   };
 }
 
@@ -541,9 +574,9 @@ export function commitIntake(
       conn.prepare('UPDATE student_code_seq SET next_value = next_value + ? WHERE id = 1').run(ok.length);
       const ma = ok.map((_, i) => padCode('PISA', seq + i));
       chenNhieuDong(
-        `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status, consultant_name, created_at)`,
+        `INSERT INTO students (student_code, full_name, normalized_name, dob, email, branch_id, status, consultant_name, consultant_user_id, created_at)`,
         ok.map((r, i) => [ma[i], r.fullName, normalizeName(r.fullName!), r.dob ?? null, r.email ?? null, cls.branch_id, 'active',
-          r.consultant ?? null, now]));
+          r.consultant ?? null, r.consultantUserId ?? null, now]));
       const sidOf = new Map<string, number>();
       theoLo(ma, (lo, ph) => {
         for (const x of conn.prepare(`SELECT id, student_code FROM students WHERE student_code IN (${ph})`).all(...lo) as any[]) {
@@ -598,7 +631,7 @@ export function commitIntake(
         const [, , , , target_score, khong_cam_ket, exam_month, exam_date, , baseline_score, , baseline_listening, baseline_reading, baseline_writing,
           baseline_speaking, start_period_id] = dongLt[i];
         return { actorUserId: p.userId, action: 'student.create', entityType: 'student', entityId: sids[i], entityLabel: ma[i],
-          after: { full_name: r.fullName, dob: r.dob ?? null, email: r.email ?? null, consultant_name: r.consultant ?? null, branch_id: cls.branch_id,
+          after: { full_name: r.fullName, dob: r.dob ?? null, email: r.email ?? null, consultant_name: r.consultant ?? null, consultant_user_id: r.consultantUserId ?? null, branch_id: cls.branch_id,
             class_id: r.classId, target_score, khong_cam_ket, exam_month, exam_date, start_period_id,
             baseline_score, baseline_listening, baseline_reading, baseline_writing, baseline_speaking, _nguon: `Thêm học viên · ${cls.code}` } };
       }));
