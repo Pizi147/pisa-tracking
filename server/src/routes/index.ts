@@ -2576,10 +2576,13 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
     const cnToi = Number(cuaToiCn) || null;
     if (cuaToiCn !== undefined) lenhSvc.quetLenhDenHan();
     if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null, ...(cuaToiCn === undefined ? {} : { cuaToi: viecCuaToi(p, cnToi) }) };
+    /* TOC-5: "Của tôi" lọc từ CHÍNH lượt "Tất cả" khi cùng chi nhánh (`cuaToiTuTatCa`, JSON y hệt `viecCuaToi`) — khỏi lượt `myWork` thứ hai. Khác chi nhánh /
+       vai không dựng được → lượt riêng; khác chi nhánh thì "Của tôi" chạy TRƯỚC như cũ (bộ nhớ request dùng lại như trước). */
+    const cungCn = cuaToiCn !== undefined && cnToi === (tq.branchId ?? null);
+    const toiTruoc = cuaToiCn !== undefined && !cungCn ? viecCuaToi(p, cnToi) : null;
     const tatCa = myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true });
-    /* TOC-5: "Của tôi" lọc từ CHÍNH lượt "Tất cả" khi cùng chi nhánh (`cuaToiTuTatCa`, JSON y hệt `viecCuaToi`) — khỏi lượt `myWork` thứ hai. Vai không dựng được → lượt riêng. */
-    const dung = cuaToiCn !== undefined && cnToi === (tq.branchId ?? null) ? cuaToiTuTatCa(p, tatCa) : null;
-    const cuaToi = cuaToiCn === undefined ? {} : { cuaToi: dung ? kemTestSapToi(p, nheMyWork(dung), cnToi) : viecCuaToi(p, cnToi) };
+    const dung = cungCn ? cuaToiTuTatCa(p, tatCa) : null;
+    const cuaToi = cuaToiCn === undefined ? {} : { cuaToi: toiTruoc ?? (dung ? kemTestSapToi(p, nheMyWork(dung), cnToi) : viecCuaToi(p, cnToi)) };
     return { ...tq, viec: nheMyWork(tatCa).dong, ...cuaToi };
   }
   return tq;

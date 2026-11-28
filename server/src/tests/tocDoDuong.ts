@@ -1283,7 +1283,7 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
   'QL /tong-quan/v5?ct=ft': 46,   // DOC-PT: đo 35 (trước 40) · NHẸ HƠN PR-3: bỏ Trễ chấm + caseGv — đo 34
   'ADMIN /my-work?nguoi=tat-ca&branchId={cn}': 26, 'CX /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,   // NHẸ HƠN PR-3: đo 16 · 8 → max(đo + 10, ⌈đo × 1,3⌉)
-  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 94, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 99, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 111, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 115, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 48,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)   // TOC-DO-2511c: Admin −3 câu lặp (việc giao, Báo cáo PH ×2 — `docNho`) → 51 − 3   // TOC-4: đo QL 73 → 72 (trần −1) · QT 75 → 74
+  'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1': 94, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1': 99, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1': 46, 'QL /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 111, 'QT /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 105, 'ADMIN /tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0': 48,   // TQ-QT-NHE A2: kèm "Của tôi" của badge — đo 89 · 91 · 39 (không kèm 73 · 77 · 35 + `/my-work` riêng 32 · 32 · 9) → max(đo + 10, ⌈đo × 1,3⌉)   // TOC-DO-2511c: Admin −3 câu lặp (việc giao, Báo cáo PH ×2 — `docNho`) → 51 − 3   // TOC-4: đo QL 73 → 72 (trần −1) · QT 75 → 74 · TOC-5: QT cuaToi=0 84 → 74 ("Của tôi" dựng từ "Tất cả")
   'CX /tong-quan/v5?ct=ft&gon=1': 35,   // TQ-QT-NHE: đo QL 73 · QT 77 (trước 74 · 78) → max(đo + 10, ⌈đo × 1,3⌉) · NHẸ HƠN PR-3 (PTA rà #2002): đo 74 · 78 · 35 · 25 → max(đo + 10, ⌈đo × 1,3⌉)
   'QT /tong-quan/v5?ct=ft': 47,   // TL-TQ: đo 36 (trước 49)
   'QL /tong-quan/v5?ct=thuong': 35,   // DOC-PT: đo 25 (trước 29)
@@ -2520,7 +2520,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0', '/yeu-cau?hop=cho-duyet&branchId={cn}'],
   },
   'QT trang Tổng quan (Toàn hệ thống)': {
-    vai: 'QT', tran: 151,   // TQ-QT-NHE A2: như QL — đo 116; trang + badge 132 → 116 · TQ-QT-NHE: đo 100 (trước 101) → max(100 + 10, ⌈100 × 1,3⌉) · NHẸ HƠN PR-3 (PTA #1994, rà #2002): Tổng quan Quản trị Toàn hệ thống — đo 101 → max(101 + 10, ⌈101 × 1,3⌉)
+    vai: 'QT', tran: 141,   // TOC-5: "Của tôi" dựng từ "Tất cả" — đo 109 → 99 · TQ-QT-NHE A2: như QL — đo 116; trang + badge 132 → 116 · TQ-QT-NHE: đo 100 (trước 101) → max(100 + 10, ⌈100 × 1,3⌉) · NHẸ HƠN PR-3 (PTA #1994, rà #2002): Tổng quan Quản trị Toàn hệ thống — đo 101 → max(101 + 10, ⌈101 × 1,3⌉)
     urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft&gon=1&kemViec=1&cuaToi=0', '/yeu-cau?hop=cho-duyet'],
   },
   'CX trang Tổng quan': {
