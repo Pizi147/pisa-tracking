@@ -706,8 +706,9 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const k0 = d.phanKhongCan(boFt, true, '["listening","reading","speaking"]', null);
     assert(JSON.stringify(k0) === '{"writing1":"khong_hoc","writing2":"khong_hoc"}', 'không học W: ' + JSON.stringify(k0));
     assert(!Object.keys(d.phanKhongCan(boFt, false, '["listening"]', null)).length, 'lớp thường không chia môn: đủ phần');
-    assert(JSON.stringify(d.phanKhongCan(boFt, true, null, ['speaking', 'chung'])) === '{"speaking":"bo"}', 'Chung không bỏ theo kỹ năng');
-    assert(d.boCuaDot('a|b=["speaking"]', 'b')?.[0] === 'speaking' && d.boCuaDot('a|b=["x"]', 'a') === 'em' && d.boCuaDot('a', 'c') === null, 'boCuaDot');
+    assert(JSON.stringify(d.phanKhongCan(boFt, true, null, { bo: ['speaking', 'chung'] })) === '{"speaking":"bo"}', 'Chung không bỏ theo kỹ năng; không dữ liệu môn = đủ');
+    assert(JSON.stringify(d.phanKhongCan(boFt, true, '["listening","reading","speaking"]', { bo: [], can: ['writing1'] })) === '{"writing2":"khong_hoc"}', 'ghi đè Cần W1');
+    assert(d.boCuaDot('a|b={"bo":["speaking"],"can":[]}', 'b')?.bo[0] === 'speaking' && d.boCuaDot('a|b=["x"]', 'a') === 'em' && d.boCuaDot('a', 'c') === null, 'boCuaDot');
     const han = d.addDaysIso(TODAY, 6);
     const ma = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt kỹ năng', mo: TODAY, han }).ma[0].ma;
     xoaNho();
@@ -736,8 +737,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
       try { bc.boEmBaoCaoPh(x, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] }); } catch (err: any) { ma403 = err?.status ?? -1; }
       assert(ma403 === 403, `${x.fullName}: bỏ kỹ năng phải 403, được ${ma403}`);
     }
-    for (const sai of [[], ['chung'], ['abc'], 'speaking']) {
-      assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: sai }), /./, 'kỹ năng sai → 400: ' + JSON.stringify(sai));
+    for (const sai of [{ phan: [] }, { phan: ['chung'] }, { phan: ['abc'] }, { phan: 'speaking' }, { phan: ['speaking'], can: ['speaking'] }, { can: [] }]) {
+      assertThrows(() => bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], ...sai }), /./, 'kỹ năng sai → 400: ' + JSON.stringify(sai));
     }
     xoaNho();
     const c0 = soCauSql();
@@ -753,8 +754,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert((conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action = 'bao_cao_ph.bo_phan' AND entity_id = ?").get(e1.id) as any).n === 1, 'nhật ký bỏ kỹ năng');
     /* đổi sang bỏ cả em rồi Hoàn tác về đúng "bỏ S" */
     const ca = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id] });
-    assert(JSON.stringify(ca.truoc[e1.id]) === '["speaking"]', 'truoc = kỹ năng bỏ cũ');
-    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ca.truoc[e1.id] });
+    assert(JSON.stringify(ca.truoc[e1.id]) === '{"bo":["speaking"],"can":[]}', 'truoc = quyết định kỹ năng cũ: ' + JSON.stringify(ca.truoc[e1.id]));
+    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ca.truoc[e1.id].bo, can: ca.truoc[e1.id].can });
     xoaNho();
     assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e1.id).khong.speaking === 'bo', 'Hoàn tác cả em → về bỏ S');
     /* Khôi phục → S trở lại */
@@ -762,6 +763,21 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     xoaNho();
     assert(cuaS()?.soEm === n, 'S trở lại n em');
     bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e1.id], phan: ['speaking'] });
+
+    /* GHI ĐÈ "Cần báo cáo" (PTA chốt 28/11): e0 không học W nhưng Head chọn Cần W1 → W1 thành việc thường; GV 403; Hoàn tác (khôi phục) → "Không học" lại */
+    let ma403c = 0;
+    try { bc.boEmBaoCaoPh(P.lrTeacher, lop, { dot: ma, studentIds: [e0.id], can: ['writing1'] }); } catch (err: any) { ma403c = err?.status ?? -1; }
+    assert(ma403c === 403, 'GV ghi đè → 403');
+    const gd = bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], can: ['writing1'] });
+    assert(gd.truoc[e0.id] === null, 'truoc ghi đè = chưa quyết');
+    xoaNho();
+    const g0 = bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id);
+    assert(!g0.khong.writing1 && g0.khong.writing2 === 'khong_hoc' && g0.ghiDe.join() === 'writing1' && g0.khongHoc.includes('writing1'), 'tab: W1 cần, W2 vẫn Không học: ' + JSON.stringify(g0));
+    assert(bc.phanBaoCaoPh(P.mbManager, lop, ma, 'writing1').em.some((e: any) => e.id === e0.id), 'panel W1 có lại e0');
+    if (pW1) assert(cuaW1()?.soEm === n, 'việc GV W1: n em');
+    bc.boEmBaoCaoPh(P.mbManager, lop, { dot: ma, studentIds: [e0.id], khoiPhuc: true });
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, ma).em.find((e: any) => e.id === e0.id).khong.writing1 === 'khong_hoc', 'Hoàn tác ghi đè → Không học');
 
     /* Không chọn mức vẫn đủ; e0 đủ khi xong Chung + L R S (không W); e1 đủ không cần S */
     const k = bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: {}, chu: 'Không chọn mức' });
@@ -805,6 +821,12 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const a0 = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null, 'xlsx', false).sheets[0].aoa;
     assert(a0.filter((h: any[]) => String(h[0]).startsWith('Điểm')).every((h: any[]) => h.slice(1).every((x: any) => x === null)), 'xuất không điểm: mọi ô điểm trống');
     assert(xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, e0.id, 'pdf', false).ds[0].phan.every((x: any) => x.diem === null), 'PDF không điểm');
+    /* xuất nhiều lớp (Học viên & Lớp) — một kiểu "Ghi điểm" */
+    const nhieu = (gd?: boolean) => xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids: [e0.id], thang: TODAY.slice(0, 7), ...(gd === undefined ? {} : { ghiDiem: gd }) });
+    try {
+      const sh = nhieu(false).sheets;
+      assert(sh.every((s: any) => s.aoa.filter((h: any[]) => String(h[0]).startsWith('Điểm')).every((h: any[]) => h.slice(1).every((x: any) => x === null))), 'xuất nhiều lớp không điểm');
+    } catch (err: any) { if (!/Không có lớp/.test(err?.message ?? '')) throw err; }
     assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e0.id, chu: 'Ổn', boDiem: 'co' }), /./, 'boDiem sai kiểu');
     assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'chung', studentId: e0.id, chu: 'Ổn', boDiem: true }), /./, 'Chung không có điểm');
     /* migrate chạy lặp không làm gì */

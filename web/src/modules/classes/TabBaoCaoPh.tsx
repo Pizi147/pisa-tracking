@@ -41,7 +41,11 @@ export type TrangBc = {
   phan: PhanCot[]; em: EmBc[]; vietHo: boolean; xuat: boolean;
 };
 /** BC-PH-KY-NANG: `khong` = phần em không cần làm — 'khong_hoc' (môn đăng ký FT) · 'bo' (Head / Quản trị / Admin bỏ kỹ năng). */
-type EmBc = { id: number; ten: string; o: Record<string, OBc>; bo: { ten: string | null; luc: string } | null; khong: Record<string, 'khong_hoc' | 'bo'> };
+type EmBc = {
+  id: number; ten: string; o: Record<string, OBc>; bo: { ten: string | null; luc: string } | null; khong: Record<string, 'khong_hoc' | 'bo'>;
+  /** Kỹ năng em không học (môn đăng ký, trước ghi đè) · kỹ năng không học mà Head / QT / Admin đã chọn "Cần báo cáo" (PTA chốt 28/11). */
+  khongHoc: string[]; ghiDe: string[];
+};
 type EmPhan = { id: number; ten: string; banGhi: BanGhiBc | null; du: boolean; mucTruoc: Record<string, MucBc> | null; goc: DiemGocBc | null; sua: { ten: string | null; luc: string } | null };
 type DuLieuPhan = { lop: { id: number; ma: string }; dot: { ma: string; nhan: string; han: string }; dotTruoc: string | null; phan: string; viet: boolean; vietHo: boolean; ft: boolean; em: EmPhan[] };
 type Mo = { phan: string; em: number; kieu: 'viet' | 'doc' };
@@ -100,10 +104,13 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   useEffect(() => chonGoc.tatCa([], false), [lopId, dot]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* BC-PH-KY-NANG (chủ SP 28/11): kỹ năng không cần báo cáo của các em đã tick — [] = cả em. Chọn một em đã bỏ kỹ năng → chọn sẵn đúng kỹ năng đó. */
   const [kyBo, setKyBo] = useState<string[]>([]);
+  /* PTA chốt 28/11 ("kĩ năng nào không cần HOẶC CÓ CẦN"): kỹ năng em không học mà vẫn cần báo cáo — ghi đè "Không học". */
+  const [kyCan, setKyCan] = useState<string[]>([]);
   const chonKey = [...chonGoc.chon].sort().join(',');
   useEffect(() => {
     const mot = chonGoc.chon.size === 1 ? data?.em.find((e) => chonGoc.chon.has(e.id)) : null;
     setKyBo(mot && !mot.bo ? Object.keys(mot.khong).filter((k) => mot.khong[k] === 'bo') : []);
+    setKyCan(mot && !mot.bo ? mot.ghiDe : []);
   }, [chonKey]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* "Không ghi điểm" lúc xuất (chủ SP 28/11): bỏ tick → tệp xuất không có điểm (mọi em, mọi phần). */
   const [ghiDiem, setGhiDiem] = useState(true);
@@ -169,17 +176,20 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
   const chon = { ...chonGoc, bat: data.quyetDot };
   const daChon = tatCa.filter((e) => chonGoc.chon.has(e.id));
   /* BC-PH-KY-NANG: "Khôi phục" cả em bỏ lẫn em đã bỏ một số kỹ năng. */
-  const coBoKy = (e: EmBc) => Object.values(e.khong).includes('bo');
+  const coBoKy = (e: EmBc) => Object.values(e.khong).includes('bo') || e.ghiDe.length > 0;
   const chonCan = daChon.filter((e) => !e.bo), chonBo = daChon.filter((e) => e.bo || coBoKy(e));
-  type QuyetDinh = 'em' | string[] | null;
+  type QuyetDinh = 'em' | { bo: string[]; can: string[] } | null;
   const gui = async (ids: number[], q: QuyetDinh) => (await api.post<{ doi: number[]; truoc: Record<string, QuyetDinh> }>(`/classes/${lopId}/bao-cao-ph/bo-em`,
-    { dot: data.dot, studentIds: ids, ...(q === null ? { khoiPhuc: true } : Array.isArray(q) ? { phan: q } : {}) }));
+    { dot: data.dot, studentIds: ids, ...(q === null ? { khoiPhuc: true } : q === 'em' ? {} : { phan: q.bo, can: q.can }) }));
   const nganKy = (ds: string[]) => ds.map((k) => data.phan.find((p) => p.khoa === k)?.ngan ?? k).join(' · ');
+  /* "Không báo cáo W2 · Cần báo cáo W1" — chữ của nút và toast. */
+  const chuKy = (q: { bo: string[]; can: string[] }) => [q.bo.length ? t('Không báo cáo {ky}', { ky: nganKy(q.bo) }) : null,
+    q.can.length ? t('Cần báo cáo {ky}', { ky: nganKy(q.can) }) : null].filter(Boolean).join(' · ');
   const boEm = async (ds: { id: number; ten: string }[], q: QuyetDinh) => {
     if (!ds.length || dangBo) return;
     const ai = ds.length === 1 ? ds[0].ten : t('{n} em', { n: ds.length });
     const nhan = q === null ? t('Đã khôi phục báo cáo · {ten}', { ten: ai })
-      : Array.isArray(q) ? t('Không báo cáo {ky} · {ten}', { ky: nganKy(q), ten: ai }) : t('Không báo cáo · {ten}', { ten: ai });
+      : q === 'em' ? t('Không báo cáo · {ten}', { ten: ai }) : `${chuKy(q)} · ${ai}`;
     setDangBo(true);
     try {
       const r = await gui(ds.map((e) => e.id), q); lamMoiBaoCaoPh();
@@ -199,22 +209,40 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
     } catch (x) { loiToast(x); } finally { setDangBo(false); }
   };
   const kyNang = data.phan.filter((p) => p.khoa !== 'chung');
+  /* Hàng "Cần báo cáo": chỉ kỹ năng có em đã chọn KHÔNG học (môn đăng ký). Bật một kỹ năng ở hàng này thì gỡ nó khỏi "Không cần" và ngược lại. */
+  const kyKhongHoc = kyNang.filter((p) => chonCan.some((e) => e.khongHoc.includes(p.khoa)));
+  const theoThuTu = (ds: string[]) => kyNang.map((y) => y.khoa).filter((k) => ds.includes(k));
+  const bat = (k: string, hang: 'bo' | 'can') => {
+    const [cua, khac] = hang === 'bo' ? [setKyBo, setKyCan] : [setKyCan, setKyBo];
+    cua((x) => (x.includes(k) ? x.filter((y) => y !== k) : theoThuTu([...x, k])));
+    khac((x) => x.filter((y) => y !== k));
+  };
+  const kyQuyet = kyBo.length || kyCan.length ? { bo: kyBo, can: kyCan } : null;
+  const nutKy = (p: PhanCot, on: boolean, hang: 'bo' | 'can') => (
+    <button key={p.khoa} type="button" aria-pressed={on} title={p.ten} className={`btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 ${on ? NUT_BAT : ''}`}
+      onClick={() => bat(p.khoa, hang)}>{p.ngan}</button>
+  );
   const thanhChon = data.quyetDot && (
-    <ThanhChonNhieu chon={chon} dangChay={dangBo} onViec={(k) => void (k === 'bo' ? boEm(chonCan, kyBo.length ? kyBo : 'em') : boEm(chonBo, null))}
-      /* Chọn tại chỗ trên thanh: "Cả em" hoặc từng kỹ năng không cần báo cáo (bấm lại để bỏ chọn) — không mở hộp. */
+    <ThanhChonNhieu chon={chon} dangChay={dangBo} onViec={(k) => void (k === 'bo' ? boEm(chonCan, kyQuyet ?? 'em') : boEm(chonBo, null))}
+      /* Chọn tại chỗ trên thanh: "Cả em" hoặc từng kỹ năng không cần / cần báo cáo (bấm lại để bỏ chọn) — không mở hộp. */
       dongTren={chonCan.length > 0 && (
-        <span role="group" aria-label={t('Không cần báo cáo')} className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[13px] text-slate-400">{t('Không cần báo cáo')}</span>
-          <button type="button" aria-pressed={!kyBo.length} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${!kyBo.length ? NUT_BAT : ''}`} onClick={() => setKyBo([])}>{t('Cả em')}</button>
-          {kyNang.map((p) => {
-            const on = kyBo.includes(p.khoa);
-            return <button key={p.khoa} type="button" aria-pressed={on} title={p.ten} className={`btn btn-sm min-h-[44px] min-w-[44px] justify-center sm:min-h-0 ${on ? NUT_BAT : ''}`}
-              onClick={() => setKyBo((x) => (on ? x.filter((k) => k !== p.khoa) : kyNang.map((y) => y.khoa).filter((k) => k === p.khoa || x.includes(k))))}>{p.ngan}</button>;
-          })}
+        <span className="grid gap-1.5">
+          <span role="group" aria-label={t('Không cần báo cáo')} className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 min-w-[124px] text-[13px] text-slate-400">{t('Không cần báo cáo')}</span>
+            <button type="button" aria-pressed={!kyQuyet} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${!kyQuyet ? NUT_BAT : ''}`} onClick={() => { setKyBo([]); setKyCan([]); }}>{t('Cả em')}</button>
+            {kyNang.map((p) => nutKy(p, kyBo.includes(p.khoa), 'bo'))}
+          </span>
+          {kyKhongHoc.length > 0 && (
+            <span role="group" aria-label={t('Cần báo cáo')} className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 min-w-[124px] text-[13px] text-slate-400">{t('Cần báo cáo')}</span>
+              {kyKhongHoc.map((p) => nutKy(p, kyCan.includes(p.khoa), 'can'))}
+              <span className="text-[12px] text-slate-400">{t('dù không học')}</span>
+            </span>
+          )}
         </span>
       )}
       viec={[
-        ...(chonCan.length ? [{ key: 'bo', nhan: kyBo.length ? t('Không báo cáo {ky} · {n} em', { ky: nganKy(kyBo), n: chonCan.length }) : t('Không báo cáo · {n} em', { n: chonCan.length }), chinh: true }] : []),
+        ...(chonCan.length ? [{ key: 'bo', nhan: kyQuyet ? `${chuKy(kyQuyet)} · ${t('{n} em', { n: chonCan.length })}` : t('Không báo cáo · {n} em', { n: chonCan.length }), chinh: true }] : []),
         ...(chonBo.length ? [{ key: 'khoi-phuc', nhan: t('Khôi phục · {n} em', { n: chonBo.length }), chinh: !chonCan.length }] : []),
       ]} />
   );
@@ -356,7 +384,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
                 {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
                 {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
                 {/* BC-PH-KY-NANG: phần em không cần làm — một dòng mờ, không bấm. */}
-                {khong.length > 0 && <div className="text-[13px] text-slate-500">{(['khong_hoc', 'bo'] as const).map((k) => {
+                {khong.length > 0 && <div className="text-[13px] text-slate-400">{(['khong_hoc', 'bo'] as const).map((k) => {
                   const ds = khong.filter((p) => e.khong[p.khoa] === k);
                   return ds.length ? `${nhanKhong(k)} ${ds.map((p) => p.ngan).join(' · ')}` : null;
                 }).filter(Boolean).join(' · ')}</div>}
@@ -418,7 +446,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             const p = data.phan.find((x) => x.khoa === c.key)!;
             const o = e.o[p.khoa];
             /* BC-PH-KY-NANG: em không cần phần này — chữ mờ, không bấm, không đếm. */
-            if (e.khong[p.khoa]) return <span className="text-[12px] text-slate-500">{nhanKhong(e.khong[p.khoa])}</span>;
+            if (e.khong[p.khoa]) return <span className="text-[12px] text-slate-400">{nhanKhong(e.khong[p.khoa])}</span>;
             return (
               <button type="button" aria-label={nhanO(e, p, o)} onClick={() => mo_(p, e.id)}
                 className={`o-bc ${o === 'du' ? 'du' : o === 'nhap' ? `nhap${p.cuaToi ? ' cua' : ''}` : `chua${p.cuaToi || data.vietHo ? '' : ' doc'}`}`}>

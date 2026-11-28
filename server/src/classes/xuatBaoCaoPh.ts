@@ -247,7 +247,7 @@ function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
  * POST /hoc-vien-lop/xuat-bao-cao-ph { ids, thang, xemTruoc } — Học viên & Lớp › Xuất Excel › mẫu "Báo cáo PH".
  * `xemTruoc`: chỉ đếm (lớp FT / lớp thường có đợt, không đợt, em đủ mọi phần) — không đọc điểm, không ghi nhật ký.
  */
-export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: unknown; xemTruoc?: unknown }) {
+export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: unknown; xemTruoc?: unknown; ghiDiem?: unknown }) {
   const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0) : [];
   const { viec, khongDot, homNay } = viecTheoThang(p, ids, String(body.thang ?? ''));
   const demLop = (ft: boolean) => {
@@ -267,7 +267,8 @@ export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: u
     return { ft: demLop(true), thuong: demLop(false), khongDot, emDu, tong };
   }
   if (!viec.length) throw badRequest('Không có lớp nào có đợt báo cáo PH trong tháng này');
-  const sheets = dungSheets(viec);
+  /* BC-PH-KY-NANG: `ghiDiem: false` — không ghi điểm cả tệp (như `?diem=0` của xuất một lớp). */
+  const sheets = dungSheets(body.ghiDiem === false ? viec.map((v) => ({ ...v, khongDiem: true })) : viec);
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.xuat', entityType: 'xuat_hoc_vien', entityLabel: `${tong} học viên · ${viec.length} lớp`,
     after: { thang: body.thang, soLop: viec.length, soHv: tong } });
   return { sheets, tenTep: tep(String(body.thang), `${viec.length}-lop`), dem: { hocVien: tong, lop: viec.length }, khongDot, homNay };
