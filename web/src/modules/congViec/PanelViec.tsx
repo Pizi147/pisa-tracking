@@ -39,6 +39,7 @@ import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
 import { KhoiGiaoViec, useGiaoViec } from './KhoiGiaoViec.tsx';
+import { BocThan, type KhungCuaViec } from './KhungViecChung.tsx';
 import { PanelNhapDiemTuan, chanViecTiep, hetViec } from './PanelNhapDiemTuan.tsx';
 import { dauTuViec } from './dauPanelViec.tsx';
 const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
@@ -105,7 +106,9 @@ export function PanelViec(p: PropsViec) {
     <NhapViec khoa={p.it.key}>
       <HienLaiPanel.Provider value={dangXemCase ? xem.lui : null}>
         <XemCaseViec.Provider value={caseId !== null ? () => xem.vao('case') : null}>
-          <div ref={lopViec} hidden={dangXemCase}><PanelMotViec {...p} /></div>
+          <div ref={lopViec} hidden={dangXemCase}>
+            <BocThan k={khungCua(p.it)}><PanelMotViec {...p} /></BocThan>
+          </div>
         </XemCaseViec.Provider>
       </HienLaiPanel.Provider>
       {dangXemCase && (
@@ -123,6 +126,10 @@ export function PanelViec(p: PropsViec) {
  * "Lưu · em tiếp ›" / "Bỏ qua ›" qua em kế; hết em thì đóng. Danh sách em chốt lúc mở (lưu xong dòng việc có thể đổi nhưng thứ tự không nhảy).
  * Không chuyển trang, không đụng bộ lọc / vị trí cuộn của trang đang đứng.
  */
+/** LPB-3: khung chung của dòng (máy chủ `khungViec`); Bàn giao môn chưa có dòng → lớp + môn để mở (`ban_giao_mon:{lớp}:{môn,…}` — gộp nhiều môn: môn đầu, như máy chủ `khungId`). */
+const khungCua = (it: WorkItem): KhungCuaViec | null => it.khungViec
+  ? { ...it.khungViec, lopId: it.classId, mon: it.key.startsWith('ban_giao_mon:') ? it.key.split(':')[2]?.split(',')[0] ?? null : null } : null;
+
 function PanelBoSungHoSo({ emIds, lop, ten, onDong, onDaLam }: { emIds: readonly number[]; /** [XM7]: lớp của TỪNG em (dòng gộp nhiều lớp). */ lop: (id: number) => string | null; ten: (id: number) => string; onDong: () => void; onDaLam: () => void }) {
   const [ds] = useState(emIds);
   const [i, setI] = useState(0);

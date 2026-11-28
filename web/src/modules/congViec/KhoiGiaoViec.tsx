@@ -22,7 +22,9 @@ import type { Tuyen } from '../yThuc/kieu.ts';
  * (`coTheDoiNguoi` · `coTheSuaHan` · `coTheSuaTheoDoi`), không tự suy. Hạn = `DongHan` (một chỗ sửa hạn). Mỗi thao tác máy chủ trả lại khối → vẽ ngay, không GET thêm.
  */
 /* BAOPH-0 / TUYEN-1 (N72 ⑥): + Xử lý vi phạm (`xu_ly`, id = em) · Đã thực hiện (`da_thuc_hien`, id = lần xử lý). */
-export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting' | 'tra_lai' | 'xu_ly' | 'da_thuc_hien';
+export type LoaiGiao = 'bao_ph' | 'phoi_hop' | 'tinh_hinh' | 'meeting' | 'tra_lai' | 'xu_ly' | 'da_thuc_hien' | 'nhan_tin' | LoaiKhung;
+/** LPB-1 (N73 ⑤): việc có khung — cùng danh sách máy chủ (`khungViec.ts` `LOAI_KHUNG`). */
+export type LoaiKhung = 'chot_ngay_thi' | 'buoc_tiep' | 'thi_that' | 'bo_sung_ho_so' | 'ban_giao' | 'ban_giao_mon' | 'ban_giao_gv' | 'chot_lo_trinh' | 'xet_lai' | 'xep_lich_mt';
 type Nguoi = { id: number; ten: string | null };
 export type KhoiGv = {
   /** `van_hanh` (VH-2): việc Vận hành — thao tác đi `/mgmt-tasks` qua `thaoTac`, không qua `/giao-viec`. */

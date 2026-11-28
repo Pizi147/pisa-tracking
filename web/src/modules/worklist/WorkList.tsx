@@ -1,3 +1,4 @@
+import type { LoaiKhung } from '../congViec/KhoiGiaoViec.tsx';
 
 export type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -52,6 +53,8 @@ export type WorkItem = {
   /** UI-CV-TVV: Báo PH — id việc (`viec_bao_ph`) · số lần "Chưa liên hệ được". */
   viecId?: number; soLanThu?: number;
   /** TUYEN-2: Báo PH theo nguồn × đợt — gộp "n em" theo lớp × nguồn. */ gopNguon?: string;
+  /** LPB-1 (N73 ⑤): việc có khung (Phụ trách · Hạn · Theo dõi · Việc con) — panel bọc `KhungViecChung` (LPB-3). */
+  khungViec?: { loai: LoaiKhung; id: number | null };
   /** LPB-0 / LPB-2b: Báo PH · Chuyển lớp — lớp NGUỒN của lệnh + mã tuần vào lớp mới (dòng "Chuyển lớp · vào W3 SEP"). */
   nhomChuyenLop?: { lopId: number; ma: string; vao?: string | null; chiTiet?: string | null } | null;
   /** SOS-TAM-PA: dòng Xác nhận PA là "Chọn PA" (HD3-2: thẻ Hướng dẫn riêng). */

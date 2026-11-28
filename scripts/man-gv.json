@@ -67,6 +67,7 @@
  "web/src/modules/congViec/HoTroHocVienTab.tsx",
  "web/src/modules/congViec/HvCuaToi.tsx",
  "web/src/modules/congViec/KhoiGiaoViec.tsx",
+ "web/src/modules/congViec/KhungViecChung.tsx",
  "web/src/modules/congViec/LopCuaToi.tsx",
  "web/src/modules/congViec/LuoiKetQuaPa.tsx",
  "web/src/modules/congViec/MucViecCon.tsx",
