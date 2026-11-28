@@ -141,7 +141,7 @@ import * as tuanDaySvc from '../phanTich/tuanDay.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { O_KE_HOACH } from '../../../shared/domain/index.ts';   // MON-CT-1311: ô xếp lịch (cả L+S, R+W)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
-import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { NHOM_VIEC_TVV, boQuaViec, cuaToiTuTatCa, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { nhinNhuQl, phamViXemViec } from '../worklist/xemViec.ts';
@@ -2573,9 +2573,14 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
     /* TQ-QT-NHE A2 (PTA 24/11): `cuaToi=<chi nhánh | 0>` — kèm CHÍNH `/my-work?branchId=` "Của tôi" (cùng hàm `viecCuaToi`) cho badge / chuông của App:
        trang Tổng quan khỏi một GET `/my-work` riêng (QT toàn hệ thống −41 câu, phần kèm +~18 nhờ bộ nhớ request). Web chỉ xin khi bản badge đã cũ. */
     const cuaToiCn = qStr(req, 'cuaToi');
-    const cuaToi = cuaToiCn === undefined ? {} : (lenhSvc.quetLenhDenHan(), { cuaToi: viecCuaToi(p, Number(cuaToiCn) || null) });
-    if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null, ...cuaToi };
-    return { ...tq, viec: nheMyWork(myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true })).dong, ...cuaToi };
+    const cnToi = Number(cuaToiCn) || null;
+    if (cuaToiCn !== undefined) lenhSvc.quetLenhDenHan();
+    if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true }) || !phamViXemViec(p)) return { ...tq, viec: null, ...(cuaToiCn === undefined ? {} : { cuaToi: viecCuaToi(p, cnToi) }) };
+    const tatCa = myWork(p, { branchId: tq.branchId, nguoi: 'tat-ca', tachCuaToi: true });
+    /* TOC-5: "Của tôi" lọc từ CHÍNH lượt "Tất cả" khi cùng chi nhánh (`cuaToiTuTatCa`, JSON y hệt `viecCuaToi`) — khỏi lượt `myWork` thứ hai. Vai không dựng được → lượt riêng. */
+    const dung = cuaToiCn !== undefined && cnToi === (tq.branchId ?? null) ? cuaToiTuTatCa(p, tatCa) : null;
+    const cuaToi = cuaToiCn === undefined ? {} : { cuaToi: dung ? kemTestSapToi(p, nheMyWork(dung), cnToi) : viecCuaToi(p, cnToi) };
+    return { ...tq, viec: nheMyWork(tatCa).dong, ...cuaToi };
   }
   return tq;
 }));

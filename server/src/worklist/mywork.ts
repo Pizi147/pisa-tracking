@@ -954,6 +954,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (coNho() && !f.chiNhom) phanCongDangHoatDong();   // TL-VIEC: năm nơi đọc phân công lọc từ một câu; dựng một phần (`chiNhom`: chuông, TVV) giữ câu riêng, ít dòng hơn
   const items: WorkItem[] = [];
   const daBoQua: ViecDaBoQua[] = [];
+  const daBoQuaToi: ViecDaBoQua[] = [];   // TOC-5: phần "Đã bỏ qua" mà lượt "Của tôi" cũng có — `cuaToiTuTatCa` đọc
   const co = (...g: WorkGroupKey[]) => !f.chiNhom || g.some((x) => f.chiNhom!.has(x));
   /*
    * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
@@ -1788,8 +1789,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
         /* BO-QUA-XEP-MT: QL đã bỏ qua đúng mốc này → không là việc, chỉ ở "Đã bỏ qua" (khôi phục được). Mốc khác (MT kế khác) → hiện lại. */
         if (r.bo_qua_moc === v.dau) {
-          if (quyen) daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
-            boi: r.bo_qua_ten ?? null, luc: r.bo_qua_luc });
+          const bq = { key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+            boi: r.bo_qua_ten ?? null, luc: r.bo_qua_luc };
+          if (quyen) daBoQua.push(bq);
+          if (quyen && minh) daBoQuaToi.push(bq);   // TOC-5: lượt "Của tôi" có `giao` ⇔ bản "Tất cả" `mine` (`chuKhung`)
           continue;
         }
         items.push({
@@ -1818,8 +1821,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       if (!minh && !tatCa) continue;
       const v = viecMtThi(r);
       if (daBoQuaMtThi(r.mt_thi_bo_qua, v.dau)) {
-        daBoQua.push({ key: `mt-thi:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
-          boi: r.bo_qua_ten ?? null, luc: r.mt_thi_bo_qua_luc });
+        const bq = { key: `mt-thi:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+          boi: r.bo_qua_ten ?? null, luc: r.mt_thi_bo_qua_luc };
+        daBoQua.push(bq);
+        if (minh) daBoQuaToi.push(bq);   // TOC-5: "Của tôi" bỏ dòng `!minh` trước khi tới đây
         continue;
       }
       items.push({
@@ -2124,7 +2129,27 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     daBoQua: daBoQua.length ? daBoQua : undefined,
     /* CV-TAB b: việc ở > 1 chi nhánh (GV dạy liên chi nhánh) — mã + tên các chi nhánh đó cho dải chọn / thẻ CN ở web; một chi nhánh thì không gửi. */
     chiNhanh: chiNhanhCuaViec(flat),
+    [BO_QUA_CUA_TOI]: daBoQuaToi,   // khoá Symbol: không vào JSON
   };
+}
+
+const BO_QUA_CUA_TOI = Symbol('daBoQuaToi');
+/**
+ * TOC-5 (PTA 28/11): "Của tôi" (`myWork(p, { branchId })`) dựng từ kết quả "Tất cả" (`nguoi: 'tat-ca', tachCuaToi`, CÙNG `branchId`) — khỏi lượt thứ hai
+ * (Tổng quan V5 kèm badge). Cùng luật lọc cuối hàm: "Của tôi" của QL / Quản trị = việc mình giữ hoặc việc chưa ai giữ mà là của mình (`mine`); "Tất cả" giữ
+ * nguyên mọi trường của từng việc, xếp `flat` cùng khoá → lọc giữ thứ tự. Đã so từng byte mọi tài khoản × chi nhánh (seed + bản chép thật).
+ * null = vai không dựng được, nơi gọi chạy lượt riêng như cũ. ponytail: CX (lăng kính `nhinNhuQl` ≠ `boVaiCx`), Lead TVV / BPXL (việc giao riêng),
+ * Admin kiêm GV (phần GV ghép SAU lọc "Của tôi") — giữ lượt thứ hai.
+ */
+export function cuaToiTuTatCa(p: Principal, tatCa: any): any | null {
+  if (!tatCa?.xemNguoiKhac || tatCa.scopeEmpty || !Array.isArray(tatCa.items) || !tatCa[BO_QUA_CUA_TOI]) return null;
+  if (coVaiCx(p) || laLeadTvv(p) || p.roleKeys.includes('scheduler') || (phamViXemViec(p) === 'cham-diem' && p.roleKeys.includes('teacher'))) return null;
+  const flat = (tatCa.items as WorkItem[]).filter((it) => it.mine || it.ownerId === p.userId);
+  const dong = dungDong(flat);
+  const daBoQua = tatCa[BO_QUA_CUA_TOI] as ViecDaBoQua[];
+  /* Cùng thứ tự khoá với `myWork` (nơi gọi bỏ `items` / `groups` qua `nheMyWork`). */
+  return { summary: demSo(dong), items: flat, dong, groups: undefined, scopeEmpty: false, xemNguoiKhac: tatCa.xemNguoiKhac,
+    daBoQua: daBoQua.length ? daBoQua : undefined, chiNhanh: chiNhanhCuaViec(flat) };
 }
 
 const chiNhanhCuaViec = (ds: readonly WorkItem[]) => {
