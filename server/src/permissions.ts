@@ -277,7 +277,8 @@ export function branchesOfStudent(studentId: number): number[] {
     const tat = db().prepare(
       `SELECT 0 AS k, b AS b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1 AND e.status = 'active')
        UNION ALL SELECT 1, b FROM (SELECT DISTINCT c.branch_id AS b FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?1)
-       UNION ALL SELECT 2, branch_id FROM students WHERE id = ?1`,
+       UNION ALL SELECT 2, branch_id FROM students WHERE id = ?1
+       ORDER BY 1, 2`,   /* rà sâu P2 (#2324): thứ tự chi nhánh ổn định — người nhận thẻ ở `yeuCau.ts` khi em ở ≥ 2 chi nhánh */
     ).all(studentId) as { k: number; b: number | null }[];
     const k = tat.some((r) => r.k === 0) ? 0 : 1;
     const set = new Set<number>(tat.filter((r) => r.k === k && r.b != null).map((r) => r.b!));
